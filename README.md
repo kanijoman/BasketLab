@@ -12,7 +12,6 @@ Las funcionalidades actuales incluyen:
   * Pendiente de evaluar competiciones distintas a LF2, potencialmente se podría trabajar con cualquier competición FEB.
    * Aunque ahora aparece Primera Nacional, no es funcional, sólo a modo de placeholder para evaluar el combo box
   * Pendiente de añadir nuevas competiciones de federaciones regionales.
-  * Pendiente de revisar posibles transformaciones de datos en los JSON originales (normalización de datos)
   * Pendiente de realizar consultas a MongoDB para recuperar la información estructurada
   * Pendiente de realizar el análisis estadístico:
     * Gráficos de estadística avanzada por equipo: General, local, visitante, último mes, etc.
