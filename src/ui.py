@@ -1,9 +1,171 @@
 import requests
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QComboBox, QLabel, QProgressBar, QPushButton, QMessageBox
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QComboBox, QLabel,
+                           QProgressBar, QPushButton, QMessageBox, QTableWidget,
+                           QTableWidgetItem, QHeaderView, QHBoxLayout)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor
+import numpy as np
 from typing import List, Dict, Optional
 from scraper import FEBWebScraper
 from database import MongoDBHandler
 from utils import normalize_year
+
+class TeamStatsWindow(QMainWindow):
+    """Window to display team statistics."""
+
+    def __init__(self, team_stats: List[Dict], parent=None):
+        """Initialize the team stats window."""
+        super().__init__(parent)
+        self.setWindowTitle("Estadísticas de Equipo")
+        # Set a reasonable minimum window size
+        self.setMinimumSize(600, 400)
+        self.setup_ui(team_stats)
+
+    def get_quartile_color(self, value: float, quartiles: List[float], reverse: bool = False) -> QColor:
+        """Get color based on quartile value."""
+        if reverse:
+            if value <= quartiles[0]:
+                return QColor(144, 238, 144)  # Light green
+            elif value <= quartiles[1]:
+                return QColor(255, 255, 153)  # Light yellow
+            elif value <= quartiles[2]:
+                return QColor(255, 200, 87)   # Light orange
+            else:
+                return QColor(255, 153, 153)  # Light red
+        else:
+            if value >= quartiles[2]:
+                return QColor(144, 238, 144)  # Light green
+            elif value >= quartiles[1]:
+                return QColor(255, 255, 153)  # Light yellow
+            elif value >= quartiles[0]:
+                return QColor(255, 200, 87)   # Light orange
+            else:
+                return QColor(255, 153, 153)  # Light red
+
+    def calculate_quartiles(self, values: List[float]) -> List[float]:
+        """Calculate quartiles for a list of values."""
+        return [np.percentile(values, q) for q in [25, 50, 75]]
+
+    def setup_ui(self, team_stats: List[Dict]):
+        """Set up the UI components."""
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+
+        # Create table
+        self.table = QTableWidget()
+        layout.addWidget(self.table)
+
+        # Define columns
+        columns = [
+            "Equipo", "Total Partidos", "Local", "Visitante",
+            "Puntos a Favor", "Puntos en Contra", "Puntos/Partido", "Puntos Contra/Partido",
+            "% T2", "% T3", "% TL", "Rebotes", "Asistencias", "Robos", "Tapones"
+        ]
+
+        self.table.setColumnCount(len(columns))
+        self.table.setHorizontalHeaderLabels(columns)
+
+        # Set all columns to auto-resize to content
+        header = self.table.horizontalHeader()
+        for i in range(len(columns)):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        # Calculate quartiles for numeric columns
+        numeric_data = {
+            'points_scored': ([float(team['points_scored']) for team in team_stats], False),
+            'points_received': ([float(team['points_received']) for team in team_stats], True),
+            'points_per_game': ([team['points_per_game'] for team in team_stats], False),
+            'points_against_per_game': ([team['points_against_per_game'] for team in team_stats], True),
+            'fg2_percentage': ([team['fg2_percentage'] for team in team_stats], False),
+            'fg3_percentage': ([team['fg3_percentage'] for team in team_stats], False),
+            'ft_percentage': ([team['ft_percentage'] for team in team_stats], False),
+            'total_rebounds': ([float(team['total_rebounds']) for team in team_stats], False),
+            'assists': ([float(team['assists']) for team in team_stats], False),
+            'steals': ([float(team['steals']) for team in team_stats], False),
+            'blocks': ([float(team['blocks']) for team in team_stats], False)
+        }
+
+        quartiles = {key: self.calculate_quartiles(values) for key, (values, _) in numeric_data.items()}
+
+        # Populate table
+        self.table.setRowCount(len(team_stats))
+        for row, team in enumerate(team_stats):
+            # Team name - no color
+            self.table.setItem(row, 0, QTableWidgetItem(team["team_name"]))
+
+            # Games columns - no color
+            self.table.setItem(row, 1, QTableWidgetItem(str(team["total_games"])))
+            self.table.setItem(row, 2, QTableWidgetItem(str(team["games_home"])))
+            self.table.setItem(row, 3, QTableWidgetItem(str(team["games_away"])))
+
+            # Points columns with colors
+            numeric_cols = [
+                (4, 'points_scored', str(team["points_scored"])),
+                (5, 'points_received', str(team["points_received"])),
+                (6, 'points_per_game', f"{team['points_per_game']:.1f}"),
+                (7, 'points_against_per_game', f"{team['points_against_per_game']:.1f}"),
+                (8, 'fg2_percentage', f"{team['fg2_percentage']:.1f}%"),
+                (9, 'fg3_percentage', f"{team['fg3_percentage']:.1f}%"),
+                (10, 'ft_percentage', f"{team['ft_percentage']:.1f}%"),
+                (11, 'total_rebounds', str(team["total_rebounds"])),
+                (12, 'assists', str(team["assists"])),
+                (13, 'steals', str(team["steals"])),
+                (14, 'blocks', str(team["blocks"]))
+            ]
+
+            for col_idx, key, value_str in numeric_cols:
+                item = QTableWidgetItem(value_str)
+                value = float(value_str.rstrip('%'))  # Remove % if present
+                color = self.get_quartile_color(
+                    value,
+                    quartiles[key],
+                    numeric_data[key][1]  # Get reverse flag
+                )
+                item.setBackground(color)
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                self.table.setItem(row, col_idx, item)
+
+        # Configure scrollbars
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        # Allow table to update and calculate its dimensions
+        self.table.updateGeometry()
+
+        # Calculate total size needed
+        scrollbar_width = 30 if self.table.verticalScrollBar().isVisible() else 0
+        scrollbar_height = 30 if self.table.horizontalScrollBar().isVisible() else 0
+
+        # Add additional margins to ensure all content is visible
+        margin = 50  # Extra margin to avoid scrolling
+
+        table_width = self.table.horizontalHeader().length() + scrollbar_width + margin
+        table_height = (self.table.verticalHeader().length() +
+                       self.table.horizontalHeader().height() +
+                       scrollbar_height + margin)
+
+        # Adjust window size considering the frame
+        frame_width = self.frameGeometry().width() - self.geometry().width()
+        frame_height = self.frameGeometry().height() - self.geometry().height()
+
+        # Set window size with increased maximum limits
+        window_width = min(table_width + frame_width, 1600)  # Increased to 1600
+        window_height = min(table_height + frame_height, 1000)  # Increased to 1000
+
+        # Ensure size is not smaller than minimum
+        window_width = max(window_width, self.minimumWidth())
+        window_height = max(window_height, self.minimumHeight())
+
+        self.resize(window_width, window_height)
+
+        # Center window on screen
+        self.setGeometry(
+            (self.screen().availableGeometry().width() - window_width) // 2,
+            (self.screen().availableGeometry().height() - window_height) // 2,
+            window_width,
+            window_height
+        )
 
 class BasketballSeasonApp(QMainWindow):
     """Main application class for the Basketball Season UI using PyQt6."""
@@ -63,7 +225,7 @@ class BasketballSeasonApp(QMainWindow):
         self.competition_combo.currentTextChanged.connect(self.on_competition_select)
         layout.addWidget(self.competition_combo)
 
-        self.competition_label = QLabel("Selected Competition: ")
+        self.competition_label = QLabel("Competición seleccionada: ")
         layout.addWidget(self.competition_label)
 
         # Season ComboBox
@@ -73,7 +235,7 @@ class BasketballSeasonApp(QMainWindow):
         self.season_combo.currentTextChanged.connect(self.on_season_select)
         layout.addWidget(self.season_combo)
 
-        self.season_label = QLabel("Selected Season: ")
+        self.season_label = QLabel("Temporada seleccionada: ")
         layout.addWidget(self.season_label)
 
         # Group ComboBox
@@ -81,7 +243,7 @@ class BasketballSeasonApp(QMainWindow):
         self.group_combo.currentTextChanged.connect(self.on_group_select)
         layout.addWidget(self.group_combo)
 
-        self.group_label = QLabel("Selected Group: ")
+        self.group_label = QLabel("Grupo seleccionado: ")
         layout.addWidget(self.group_label)
 
         # Progress Bar
@@ -91,13 +253,22 @@ class BasketballSeasonApp(QMainWindow):
         layout.addWidget(self.progress_bar)
 
         # Progress Label
-        self.progress_label = QLabel("Progress: Waiting to start")
+        self.progress_label = QLabel("Progreso: Esperando para comenzar")
         layout.addWidget(self.progress_label)
 
+        # Buttons container
+        button_layout = QHBoxLayout()
+        layout.addLayout(button_layout)
+
         # Download Button
-        self.download_button = QPushButton("Download")
+        self.download_button = QPushButton("Descargar")
         self.download_button.clicked.connect(self.on_download)
-        layout.addWidget(self.download_button)
+        button_layout.addWidget(self.download_button)
+
+        # View Stats Button
+        self.stats_button = QPushButton("Ver Estadísticas")
+        self.stats_button.clicked.connect(self.on_view_stats)
+        button_layout.addWidget(self.stats_button)
 
         # Apply basic styling for a modern look
         self.setStyleSheet("""
@@ -136,14 +307,14 @@ class BasketballSeasonApp(QMainWindow):
     def on_competition_select(self, competition: str) -> None:
         """Handle competition selection event."""
         if not competition:  # If empty selection
-            self.competition_label.setText("Selected Competition: ")
+            self.competition_label.setText("Competición seleccionada: ")
             self.season_combo.clear()
             self.season_combo.addItem("")
             self.season_combo.addItems(self.seasons)  # Show all seasons
             self.update_group_options()  # This will clear the group combo
             return
 
-        self.competition_label.setText(f"Selected Competition: {competition}")
+        self.competition_label.setText(f"Competición seleccionada: {competition}")
         # Reset season and group selections when competition changes
         self.season_combo.setCurrentText("")
         self.update_group_options()
@@ -151,10 +322,10 @@ class BasketballSeasonApp(QMainWindow):
     def on_season_select(self, season: str) -> None:
         """Handle season selection event."""
         if not season:  # If empty selection
-            self.season_label.setText("Selected Season: ")
+            self.season_label.setText("Temporada seleccionada: ")
             return
 
-        self.season_label.setText(f"Selected Season: {season}")
+        self.season_label.setText(f"Temporada seleccionada: {season}")
         competition = self.competition_combo.currentText()
 
         if not competition:
@@ -174,7 +345,36 @@ class BasketballSeasonApp(QMainWindow):
 
     def on_group_select(self, group: str) -> None:
         """Handle group selection event."""
-        self.group_label.setText(f"Selected Group: {group}")
+        self.group_label.setText(f"Grupo seleccionado: {group}")
+
+    def on_view_stats(self) -> None:
+        """Handle view stats button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Warning", "Please select all options before viewing statistics.")
+                return
+
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            team_stats = self.db_handler.get_team_stats(collection_name)
+
+            if not team_stats:
+                QMessageBox.information(self, "No Data", "No statistics available for the selected options.")
+                return
+
+            # Create and show the stats window
+            self.stats_window = TeamStatsWindow(team_stats, self)
+            self.stats_window.show()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load team statistics: {str(e)}")
 
     def update_group_options(self) -> None:
         """Update the group dropdown."""
@@ -207,7 +407,7 @@ class BasketballSeasonApp(QMainWindow):
             group_text = self.group_combo.currentText()
 
             if not all([season_text, competition, group_text]):
-                QMessageBox.warning(self, "Warning", "Please select all options before downloading.")
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de descargar.")
                 return
 
             season_value = self.season_values.get(season_text, normalize_year(season_text))
@@ -217,20 +417,20 @@ class BasketballSeasonApp(QMainWindow):
 
             matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
             if not matches:
-                QMessageBox.information(self, "Códigos de partidos", "No matches found.")
+                QMessageBox.information(self, "Códigos de partidos", "No se encontraron partidos.")
                 return
 
             collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
 
             self.progress_bar.setMaximum(len(matches))
             self.progress_bar.setValue(0)
-            self.progress_label.setText("Progress: Starting download...")
+            self.progress_label.setText("Progreso: Iniciando descarga...")
             QApplication.processEvents()
 
             successful_matches = []
             failed_matches = []
             for i, match_code in enumerate(matches, 1):
-                self.progress_label.setText(f"Progress: Processing match {match_code}")
+                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
                 self.progress_bar.setValue(i)
                 QApplication.processEvents()
                 try:
