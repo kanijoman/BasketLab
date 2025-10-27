@@ -56,25 +56,25 @@ class BasketballSeasonApp(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # Season ComboBox
-        self.season_combo = QComboBox()
-        self.season_combo.addItems(self.seasons)
-        self.season_combo.setCurrentIndex(0)
-        self.season_combo.currentTextChanged.connect(self.on_season_select)
-        layout.addWidget(self.season_combo)
-
-        self.season_label = QLabel(f"Selected Season: {self.seasons[0]}")
-        layout.addWidget(self.season_label)
-
         # Competition ComboBox
         self.competition_combo = QComboBox()
+        self.competition_combo.addItem("")  # Add empty item
         self.competition_combo.addItems(self.competitions)
-        self.competition_combo.setCurrentIndex(0)
         self.competition_combo.currentTextChanged.connect(self.on_competition_select)
         layout.addWidget(self.competition_combo)
 
-        self.competition_label = QLabel(f"Selected Competition: {self.competitions[0]}")
+        self.competition_label = QLabel("Selected Competition: ")
         layout.addWidget(self.competition_label)
+
+        # Season ComboBox
+        self.season_combo = QComboBox()
+        self.season_combo.addItem("")  # Add empty item
+        self.season_combo.addItems(self.seasons)
+        self.season_combo.currentTextChanged.connect(self.on_season_select)
+        layout.addWidget(self.season_combo)
+
+        self.season_label = QLabel("Selected Season: ")
+        layout.addWidget(self.season_label)
 
         # Group ComboBox
         self.group_combo = QComboBox()
@@ -133,10 +133,34 @@ class BasketballSeasonApp(QMainWindow):
 
         self.update_group_options()
 
+    def on_competition_select(self, competition: str) -> None:
+        """Handle competition selection event."""
+        if not competition:  # If empty selection
+            self.competition_label.setText("Selected Competition: ")
+            self.season_combo.clear()
+            self.season_combo.addItem("")
+            self.season_combo.addItems(self.seasons)  # Show all seasons
+            self.update_group_options()  # This will clear the group combo
+            return
+
+        self.competition_label.setText(f"Selected Competition: {competition}")
+        # Reset season and group selections when competition changes
+        self.season_combo.setCurrentText("")
+        self.update_group_options()
+
     def on_season_select(self, season: str) -> None:
         """Handle season selection event."""
+        if not season:  # If empty selection
+            self.season_label.setText("Selected Season: ")
+            return
+
         self.season_label.setText(f"Selected Season: {season}")
-        if self.competition_combo.currentText() == "L.F. 2":
+        competition = self.competition_combo.currentText()
+
+        if not competition:
+            return
+
+        if competition == "L.F. 2":
             try:
                 start_year = normalize_year(season)
                 soup, session = self.scraper.get_page_content(start_year)
@@ -148,11 +172,6 @@ class BasketballSeasonApp(QMainWindow):
             except Exception as e:
                 print(f"[App] Failed to update groups: {str(e)}")
 
-    def on_competition_select(self, competition: str) -> None:
-        """Handle competition selection event."""
-        self.competition_label.setText(f"Selected Competition: {competition}")
-        self.update_group_options()
-
     def on_group_select(self, group: str) -> None:
         """Handle group selection event."""
         self.group_label.setText(f"Selected Group: {group}")
@@ -160,15 +179,19 @@ class BasketballSeasonApp(QMainWindow):
     def update_group_options(self) -> None:
         """Update the group dropdown."""
         selected_competition = self.competition_combo.currentText()
-        groups = self.group_options.get(selected_competition, [])
         self.group_combo.clear()
-        self.group_combo.addItems([text for text, value in groups])
-        self.group_values = {text: value for text, value in groups}
+
+        if not selected_competition:  # If no competition selected
+            self.group_label.setText("Selected Group: ")
+            return
+
+        groups = self.group_options.get(selected_competition, [])
         if groups:
-            self.group_combo.setCurrentIndex(0)
-            self.group_label.setText(f"Selected Group: {groups[0][0]}")
+            self.group_combo.addItem("")  # Add empty item first
+            self.group_combo.addItems([text for text, value in groups])
+            self.group_values = {text: value for text, value in groups}
+            self.group_label.setText("Selected Group: ")
         else:
-            self.group_combo.clear()
             self.group_label.setText("Selected Group: ")
 
     def on_download(self) -> None:

@@ -49,8 +49,38 @@ class MongoDBHandler:
 
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
-        """Generate collection name in the format {competicion}_{temporada}_{Grupo}."""
-        safe_group = re.sub(r'[\\/:*?"<>|]', '_', group)
-        safe_competition = competition.replace('.', '_')
-        safe_season = season.replace('/', '_')
-        return f"{safe_competition}_{safe_season}_{safe_group}"
+        """Generate collection name in the format {competicion}_{temporada}_{Grupo}.
+
+        Removes or replaces invalid MongoDB characters and whitespace:
+        - Replaces spaces, tabs, newlines with underscores
+        - Removes $ and other special MongoDB characters
+        - Ensures name doesn't start with 'system.' or contain null character
+        """
+        # First, replace all whitespace characters with underscore
+        safe_competition = re.sub(r'\s+', '_', competition.strip())
+        safe_season = re.sub(r'\s+', '_', season.strip())
+        safe_group = re.sub(r'\s+', '_', group.strip())
+
+        # Replace invalid MongoDB characters and common problematic characters
+        pattern = r'[\\/:*?"<>|.$\x00-\x1F\x7F]'
+        safe_competition = re.sub(pattern, '_', safe_competition)
+        safe_season = re.sub(pattern, '_', safe_season)
+        safe_group = re.sub(pattern, '_', safe_group)
+
+        # Collapse multiple underscores into one
+        safe_competition = re.sub(r'_+', '_', safe_competition)
+        safe_season = re.sub(r'_+', '_', safe_season)
+        safe_group = re.sub(r'_+', '_', safe_group)
+
+        # Remove leading/trailing underscores
+        safe_competition = safe_competition.strip('_')
+        safe_season = safe_season.strip('_')
+        safe_group = safe_group.strip('_')
+
+        collection_name = f"{safe_competition}_{safe_season}_{safe_group}"
+
+        # Ensure the name doesn't start with 'system.'
+        if collection_name.lower().startswith('system.'):
+            collection_name = 'col_' + collection_name
+
+        return collection_name
