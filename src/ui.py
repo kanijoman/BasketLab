@@ -17,8 +17,8 @@ class TeamStatsWindow(QMainWindow):
         """Initialize the team stats window."""
         super().__init__(parent)
         self.setWindowTitle("Estadísticas de Equipo")
-        # Set a reasonable minimum window size
-        self.setMinimumSize(600, 400)
+        # Set a reasonable minimum window size considering all columns
+        self.setMinimumSize(1200, 600)
         self.setup_ui(team_stats)
 
     def get_quartile_color(self, value: float, quartiles: List[float], reverse: bool = False) -> QColor:
@@ -60,65 +60,127 @@ class TeamStatsWindow(QMainWindow):
         columns = [
             "Equipo", "Total Partidos", "Local", "Visitante",
             "Puntos a Favor", "Puntos en Contra", "Puntos/Partido", "Puntos Contra/Partido",
-            "% T2", "% T3", "% TL", "Rebotes", "Asistencias", "Robos", "Tapones"
+            "% T2", "% T3", "% TL", "Reb. Tot.", "Reb. Def.", "Reb. Of.",
+            "Asistencias", "Robos", "Pérdidas", "Tapones"
         ]
 
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
+
+        # Enable sorting
+        self.table.setSortingEnabled(True)
 
         # Set all columns to auto-resize to content
         header = self.table.horizontalHeader()
         for i in range(len(columns)):
             header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
 
-        # Calculate quartiles for numeric columns
+        # Calculate quartiles for numeric columns and ensure all values are float
+        def safe_float(value):
+            try:
+                return float(value) if value is not None else 0.0
+            except (ValueError, TypeError):
+                return 0.0
+
         numeric_data = {
-            'points_scored': ([float(team['points_scored']) for team in team_stats], False),
-            'points_received': ([float(team['points_received']) for team in team_stats], True),
-            'points_per_game': ([team['points_per_game'] for team in team_stats], False),
-            'points_against_per_game': ([team['points_against_per_game'] for team in team_stats], True),
-            'fg2_percentage': ([team['fg2_percentage'] for team in team_stats], False),
-            'fg3_percentage': ([team['fg3_percentage'] for team in team_stats], False),
-            'ft_percentage': ([team['ft_percentage'] for team in team_stats], False),
-            'total_rebounds': ([float(team['total_rebounds']) for team in team_stats], False),
-            'assists': ([float(team['assists']) for team in team_stats], False),
-            'steals': ([float(team['steals']) for team in team_stats], False),
-            'blocks': ([float(team['blocks']) for team in team_stats], False)
+            'points_scored': ([safe_float(team['points_scored']) for team in team_stats], False),
+            'points_received': ([safe_float(team['points_received']) for team in team_stats], True),
+            'points_per_game': ([safe_float(team['points_per_game']) for team in team_stats], False),
+            'points_against_per_game': ([safe_float(team['points_against_per_game']) for team in team_stats], True),
+            'fg2_percentage': ([safe_float(team['fg2_percentage']) for team in team_stats], False),
+            'fg3_percentage': ([safe_float(team['fg3_percentage']) for team in team_stats], False),
+            'ft_percentage': ([safe_float(team['ft_percentage']) for team in team_stats], False),
+            'total_rebounds': ([safe_float(team['total_rebounds']) for team in team_stats], False),
+            'rebounds_def': ([safe_float(team['rebounds_def']) for team in team_stats], False),
+            'rebounds_off': ([safe_float(team['rebounds_off']) for team in team_stats], False),
+            'assists': ([safe_float(team['assists']) for team in team_stats], False),
+            'steals': ([safe_float(team['steals']) for team in team_stats], False),
+            'turnovers': ([float(team['turnovers']) for team in team_stats], True),  # True because fewer turnovers is better
+            'blocks': ([safe_float(team['blocks']) for team in team_stats], False)
         }
 
         quartiles = {key: self.calculate_quartiles(values) for key, (values, _) in numeric_data.items()}
 
+        # Custom QTableWidgetItem class for proper numeric sorting
+        class NumericTableWidgetItem(QTableWidgetItem):
+            def __init__(self, value, text, is_numeric=True):
+                super().__init__(text)
+                self.is_numeric = is_numeric
+                self._numeric_value = self._convert_to_numeric(value) if is_numeric else None
+
+            def _convert_to_numeric(self, value):
+                """Convert value to float."""
+                if value is None:
+                    return 0.0
+                try:
+                    return float(str(value).strip().replace(',', '.'))
+                except (ValueError, TypeError, AttributeError):
+                    return 0.0
+
+            def __lt__(self, other):
+                if not isinstance(other, NumericTableWidgetItem):
+                    return super().__lt__(other)
+
+                if self.is_numeric and other.is_numeric:
+                    return self._numeric_value > other._numeric_value
+
+                return self.text() < other.text()
+
         # Populate table
         self.table.setRowCount(len(team_stats))
         for row, team in enumerate(team_stats):
-            # Team name - no color
-            self.table.setItem(row, 0, QTableWidgetItem(team["team_name"]))
 
-            # Games columns - no color
-            self.table.setItem(row, 1, QTableWidgetItem(str(team["total_games"])))
-            self.table.setItem(row, 2, QTableWidgetItem(str(team["games_home"])))
-            self.table.setItem(row, 3, QTableWidgetItem(str(team["games_away"])))
+            # Team name - no color (text sorting)
+            self.table.setItem(row, 0, NumericTableWidgetItem(team["team_name"], team["team_name"], False))
+
+            # Games columns - no color (numeric sorting)
+            self.table.setItem(row, 1, NumericTableWidgetItem(team["total_games"], str(team["total_games"])))
+            self.table.setItem(row, 2, NumericTableWidgetItem(team["games_home"], str(team["games_home"])))
+            self.table.setItem(row, 3, NumericTableWidgetItem(team["games_away"], str(team["games_away"])))
 
             # Points columns with colors
-            numeric_cols = [
-                (4, 'points_scored', str(team["points_scored"])),
-                (5, 'points_received', str(team["points_received"])),
-                (6, 'points_per_game', f"{team['points_per_game']:.1f}"),
-                (7, 'points_against_per_game', f"{team['points_against_per_game']:.1f}"),
-                (8, 'fg2_percentage', f"{team['fg2_percentage']:.1f}%"),
-                (9, 'fg3_percentage', f"{team['fg3_percentage']:.1f}%"),
-                (10, 'ft_percentage', f"{team['ft_percentage']:.1f}%"),
-                (11, 'total_rebounds', str(team["total_rebounds"])),
-                (12, 'assists', str(team["assists"])),
-                (13, 'steals', str(team["steals"])),
-                (14, 'blocks', str(team["blocks"]))
+            def process_numeric_value(value, key):
+                """Convert value to numeric and format for display."""
+                try:
+                    num_value = float(str(value).strip().replace(',', '.'))
+                    # Display integers without decimal places
+                    if num_value.is_integer():
+                        return num_value, str(int(num_value))
+                    return num_value, f"{num_value:.1f}"
+                except (ValueError, TypeError):
+                    return 0.0, "0"
+
+            numeric_cols = []
+
+            # Process each column with proper numeric conversion
+            stats_config = [
+                (4, 'points_scored', team["points_scored"]),
+                (5, 'points_received', team["points_received"]),
+                (6, 'points_per_game', team['points_per_game']),
+                (7, 'points_against_per_game', team['points_against_per_game']),
+                (8, 'fg2_percentage', team['fg2_percentage']),
+                (9, 'fg3_percentage', team['fg3_percentage']),
+                (10, 'ft_percentage', team['ft_percentage']),
+                (11, 'total_rebounds', team["total_rebounds"]),
+                (12, 'rebounds_def', team["rebounds_def"]),
+                (13, 'rebounds_off', team["rebounds_off"]),
+                (14, 'assists', team["assists"]),
+                (15, 'steals', team["steals"]),
+                (16, 'turnovers', team["turnovers"]),
+                (17, 'blocks', team["blocks"])
             ]
 
-            for col_idx, key, value_str in numeric_cols:
-                item = QTableWidgetItem(value_str)
-                value = float(value_str.rstrip('%'))  # Remove % if present
+            for idx, key, raw_value in stats_config:
+                num_value, display_value = process_numeric_value(raw_value, key)
+                # Add percentage symbol for percentage stats
+                if key in ['fg2_percentage', 'fg3_percentage', 'ft_percentage']:
+                    display_value = f"{display_value}%"
+                numeric_cols.append((idx, key, num_value, display_value))
+
+            for col_idx, key, value, value_str in numeric_cols:
+                item = NumericTableWidgetItem(value, value_str)
                 color = self.get_quartile_color(
-                    value,
+                    float(value),
                     quartiles[key],
                     numeric_data[key][1]  # Get reverse flag
                 )
@@ -150,8 +212,8 @@ class TeamStatsWindow(QMainWindow):
         frame_height = self.frameGeometry().height() - self.geometry().height()
 
         # Set window size with increased maximum limits
-        window_width = min(table_width + frame_width, 1600)  # Increased to 1600
-        window_height = min(table_height + frame_height, 1000)  # Increased to 1000
+        window_width = min(table_width + frame_width, 1800)  # Increased to 1800
+        window_height = min(table_height + frame_height, 1200)  # Increased to 1200
 
         # Ensure size is not smaller than minimum
         window_width = max(window_width, self.minimumWidth())

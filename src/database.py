@@ -34,10 +34,16 @@ class MongoDBHandler:
             return False
 
     def insert_boxscore(self, collection_name: str, match_code: str, boxscore: Dict) -> bool:
-        """Insert a boxscore document into the specified collection."""
+        """Insert a boxscore document if it doesn't already exist in the collection."""
         if not self.is_connected():
             print(f"[MongoDBHandler] No connection to MongoDB")
             return False
+
+        # Check if document already exists using existing method
+        if self.document_exists(collection_name, int(match_code)):
+            # Document exists, silently skip it
+            return True
+
         try:
             collection = self.db[collection_name]
             boxscore["_id"] = int(match_code)
