@@ -1,7 +1,7 @@
 import requests
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QComboBox, QLabel,
                            QProgressBar, QPushButton, QMessageBox, QTableWidget,
-                           QTableWidgetItem, QHeaderView, QHBoxLayout)
+                           QTableWidgetItem, QHeaderView, QHBoxLayout, QApplication)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 import numpy as np
@@ -256,19 +256,10 @@ class BasketballSeasonApp(QMainWindow):
         self.progress_label = QLabel("Progreso: Esperando para comenzar")
         layout.addWidget(self.progress_label)
 
-        # Buttons container
-        button_layout = QHBoxLayout()
-        layout.addLayout(button_layout)
-
-        # Download Button
-        self.download_button = QPushButton("Descargar")
-        self.download_button.clicked.connect(self.on_download)
-        button_layout.addWidget(self.download_button)
-
         # View Stats Button
-        self.stats_button = QPushButton("Ver Estadísticas")
+        self.stats_button = QPushButton("Actualizar y Ver Estadísticas")
         self.stats_button.clicked.connect(self.on_view_stats)
-        button_layout.addWidget(self.stats_button)
+        layout.addWidget(self.stats_button)
 
         # Apply basic styling for a modern look
         self.setStyleSheet("""
@@ -348,7 +339,7 @@ class BasketballSeasonApp(QMainWindow):
         self.group_label.setText(f"Grupo seleccionado: {group}")
 
     def on_view_stats(self) -> None:
-        """Handle view stats button click."""
+        """Handle stats button click - downloads latest data and shows statistics."""
         try:
             if not self.db_handler.is_connected():
                 QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
@@ -359,22 +350,72 @@ class BasketballSeasonApp(QMainWindow):
             group_text = self.group_combo.currentText()
 
             if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Warning", "Please select all options before viewing statistics.")
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+                return
+
+            # Update data first
+            season_value = self.season_values.get(season_text, normalize_year(season_text))
+            group_value = self.group_values.get(group_text, group_text)
+            norm_year = normalize_year(season_text)
+            session = requests.Session()
+
+            # Update progress bar visibility
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            if not matches:
+                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
                 return
 
             collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
-            team_stats = self.db_handler.get_team_stats(collection_name)
 
+            self.progress_bar.setMaximum(len(matches))
+            self.progress_bar.setValue(0)
+            self.progress_label.setText("Progreso: Actualizando datos...")
+            QApplication.processEvents()
+
+            successful_matches = []
+            failed_matches = []
+            for i, match_code in enumerate(matches, 1):
+                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
+                self.progress_bar.setValue(i)
+                QApplication.processEvents()
+
+                try:
+                    # Solo descargamos si no existe o si es el último partido (para posibles actualizaciones)
+                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                        boxscore = self.scraper.fetch_boxscore(match_code, session)
+                        if boxscore and self.db_handler.insert_boxscore(collection_name, match_code, boxscore):
+                            successful_matches.append(match_code)
+                        else:
+                            failed_matches.append(match_code)
+                    else:
+                        successful_matches.append(match_code)
+                except Exception as e:
+                    print(f"[App] Error processing match {match_code}: {str(e)}")
+                    failed_matches.append(match_code)
+
+            self.progress_label.setText("Progreso: Cargando estadísticas...")
+            self.progress_bar.setValue(len(matches))
+            QApplication.processEvents()
+
+            # Now get and display the statistics
+            team_stats = self.db_handler.get_team_stats(collection_name)
             if not team_stats:
-                QMessageBox.information(self, "No Data", "No statistics available for the selected options.")
+                QMessageBox.information(self, "Sin datos", "No hay estadísticas disponibles para las opciones seleccionadas.")
                 return
+
+            # Hide progress elements after completion
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
 
             # Create and show the stats window
             self.stats_window = TeamStatsWindow(team_stats, self)
             self.stats_window.show()
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load team statistics: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Error al cargar las estadísticas: {str(e)}")
 
     def update_group_options(self) -> None:
         """Update the group dropdown."""
@@ -394,73 +435,3 @@ class BasketballSeasonApp(QMainWindow):
         else:
             self.group_label.setText("Selected Group: ")
 
-    def on_download(self) -> None:
-        """Handle download button click."""
-        from PyQt6.QtWidgets import QApplication
-        try:
-            if not self.db_handler.is_connected():
-                QMessageBox.critical(self, "Error", "No connection to MongoDB. Please check the server.")
-                return
-
-            season_text = self.season_combo.currentText()
-            competition = self.competition_combo.currentText()
-            group_text = self.group_combo.currentText()
-
-            if not all([season_text, competition, group_text]):
-                QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de descargar.")
-                return
-
-            season_value = self.season_values.get(season_text, normalize_year(season_text))
-            group_value = self.group_values.get(group_text, group_text)
-            norm_year = normalize_year(season_text)
-            session = requests.Session()
-
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
-            if not matches:
-                QMessageBox.information(self, "Códigos de partidos", "No se encontraron partidos.")
-                return
-
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
-
-            self.progress_bar.setMaximum(len(matches))
-            self.progress_bar.setValue(0)
-            self.progress_label.setText("Progreso: Iniciando descarga...")
-            QApplication.processEvents()
-
-            successful_matches = []
-            failed_matches = []
-            for i, match_code in enumerate(matches, 1):
-                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
-                self.progress_bar.setValue(i)
-                QApplication.processEvents()
-                try:
-                    if self.db_handler.document_exists(collection_name, int(match_code)):
-                        print(f"[App] Match {match_code} already exists, skipping.")
-                        successful_matches.append(match_code)
-                        continue
-                    boxscore = self.scraper.fetch_boxscore(match_code, session)
-                    if boxscore:
-                        if self.db_handler.insert_boxscore(collection_name, match_code, boxscore):
-                            successful_matches.append(match_code)
-                        else:
-                            failed_matches.append(match_code)
-                    else:
-                        failed_matches.append(match_code)
-                except Exception as e:
-                    print(f"[App] Error processing match {match_code}: {str(e)}")
-                    failed_matches.append(match_code)
-
-            self.progress_label.setText("Progress: Download complete")
-            self.progress_bar.setValue(len(matches))
-            QApplication.processEvents()
-
-            message = f"Found {len(matches)} matches.\n"
-            if successful_matches:
-                message += f"Saved {len(successful_matches)} boxscores to MongoDB collection '{collection_name}'\n"
-            if failed_matches:
-                message += f"Failed to fetch or save boxscores for {len(failed_matches)} matches: {', '.join(failed_matches)}\nPlease check the match page HTML (match_page_{failed_matches[0]}.html) or MongoDB connection."
-            QMessageBox.information(self, "Códigos de partidos", message)
-
-        except Exception as e:
-            print(f"[App] Error in download: {str(e)}")
-            QMessageBox.critical(self, "Error", str(e))
