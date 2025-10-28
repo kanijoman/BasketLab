@@ -13,6 +13,8 @@ Las funcionalidades actuales incluyen:
    * Aunque ahora aparece Primera Nacional, no es funcional, sólo a modo de placeholder para evaluar el combo box
   * Pendiente de añadir nuevas competiciones de federaciones regionales.
   * Pendiente de realizar consultas a MongoDB para recuperar la información estructurada
+    * Actualmente ya se recuperan los datos de LF2 y se almacenan en MongoDB generando un informe básico.
+    * Expandir este informe básico con más estadísticas, gráficos y ordenación.
   * Pendiente de realizar el análisis estadístico:
     * Gráficos de estadística avanzada por equipo: General, local, visitante, último mes, etc.
     * Gráficos de estadística avanzada por jugador: mismo que para equipo
