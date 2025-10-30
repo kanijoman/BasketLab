@@ -6,3 +6,8 @@ src/__pycache__/scraper.cpython-311.pyc
 src/__pycache__/utils.cpython-311.pyc
 src/__pycache__/database.cpython-311.pyc
 src/__pycache__/ui.cpython-311.pyc
+src/ui/__pycache__/__init__.cpython-311.pyc
+src/ui/__pycache__/main_window.cpython-311.pyc
+src/ui/__pycache__/stats_config.cpython-311.pyc
+src/ui/__pycache__/stats_window.cpython-311.pyc
+src/ui/__pycache__/table_items.cpython-311.pyc
