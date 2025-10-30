@@ -12,3 +12,4 @@ Las funcionalidades actuales incluyen:
   * Ventana de Estadísticas:
      * La información está coloreada en base a cuartiles: Q1 verde; Q2 amarillo, Q3 naranja y Q4 rojo
      * Se puede ordenar por cualquier columna de forma ascendente o descendente
+     * Funcionalidad de exportación de datos: permite exportar a formato CSV, PNG o PDF
