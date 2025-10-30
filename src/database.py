@@ -71,8 +71,12 @@ class MongoDBHandler:
             collection = self.db[collection_name]
 
             pipeline = [
-                # Phase 1: Prepare data before unwind
+                # Phase 1: Prepare match-level data with both teams
                 {"$addFields": {
+                    "team_0_off_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 0]}},
+                    "team_1_off_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 1]}},
+                    "team_0_def_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 0]}},
+                    "team_1_def_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 1]}},
                     "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
                     "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}}
                 }},
@@ -103,7 +107,24 @@ class MongoDBHandler:
                     "ft_attempts": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1a"},
                     "def_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
                     "off_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
+                    "opponent_def_rebounds": {
+                        "$cond": {
+                            "if": {"$eq": ["$teamIndex", 0]},
+                            "then": "$team_1_def_reb",
+                            "else": "$team_0_def_reb"
+                        }
+                    },
                     "assists": {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
+                    # Calculate possessions: FGA2 + FGA3 + (0.45 * FTA) + TO - OREB
+                    "possessions": {
+                        "$add": [
+                            {"$toInt": "$BOXSCORE.TEAM.TOTAL.p2a"},
+                            {"$toInt": "$BOXSCORE.TEAM.TOTAL.p3a"},
+                            {"$multiply": [0.45, {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1a"}]},
+                            {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
+                            {"$multiply": [-1, {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"}]}
+                        ]
+                    },
                     "steals": {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
                     "turnovers": {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
                     "blocks": {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
@@ -128,10 +149,12 @@ class MongoDBHandler:
                     "ft_attempted": {"$sum": "$ft_attempts"},
                     "rebounds_def": {"$sum": "$def_rebounds"},
                     "rebounds_off": {"$sum": "$off_rebounds"},
+                    "opponent_rebounds_def": {"$sum": "$opponent_def_rebounds"},
                     "assists": {"$sum": "$assists"},
                     "steals": {"$sum": "$steals"},
                     "turnovers": {"$sum": "$turnovers"},
                     "blocks": {"$sum": "$blocks"},
+                    "total_possessions": {"$sum": "$possessions"},
                     "match_list": {"$push": "$match_id"}
                 }},
 
@@ -140,6 +163,162 @@ class MongoDBHandler:
                     "total_rebounds": {"$add": ["$rebounds_def", "$rebounds_off"]},
                     "points_per_game": {"$divide": ["$points_scored", "$total_games"]},
                     "points_against_per_game": {"$divide": ["$points_received", "$total_games"]},
+                    "possessions_per_game": {"$divide": ["$total_possessions", "$total_games"]},
+                    # Four Factors
+                    "efg_percentage": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, 0]},
+                                0,
+                                {"$divide": [
+                                    {"$add": ["$fg2_made", {"$multiply": [1.5, "$fg3_made"]}]},
+                                    {"$add": ["$fg2_attempted", "$fg3_attempted"]}
+                                ]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "turnover_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": ["$total_possessions", 0]},
+                                0,
+                                {"$divide": ["$turnovers", "$total_possessions"]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "free_throw_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, 0]},
+                                0,
+                                {"$divide": [
+                                    "$ft_attempted",
+                                    {"$add": ["$fg2_attempted", "$fg3_attempted"]}
+                                ]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "offensive_rebound_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": ["$rebounds_off", "$opponent_rebounds_def"]}, 0]},
+                                0,
+                                {"$divide": [
+                                    "$rebounds_off",
+                                    {"$add": ["$rebounds_off", "$opponent_rebounds_def"]}
+                                ]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "defensive_rebound_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": ["$rebounds_def", "$opponent_rebounds_def"]}, 0]},
+                                0,
+                                {"$divide": [
+                                    "$rebounds_def",
+                                    {"$add": ["$rebounds_def", "$opponent_rebounds_def"]}
+                                ]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "three_point_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, 0]},
+                                0,
+                                {"$divide": [
+                                    "$fg3_attempted",
+                                    {"$add": ["$fg2_attempted", "$fg3_attempted"]}
+                                ]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "true_shooting": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [0.44, "$ft_attempted"]}]}, 0]},
+                                0,
+                                {"$divide": [
+                                    "$points_scored",
+                                    {"$multiply": [2, {"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [0.44, "$ft_attempted"]}]}]}
+                                ]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "assist_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": [{"$add": ["$fg2_made", "$fg3_made"]}, 0]},
+                                0,
+                                {"$divide": ["$assists", {"$add": ["$fg2_made", "$fg3_made"]}]}
+                            ]},
+                            100
+                        ]
+                    },
+                    "steal_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": ["$total_possessions", 0]},
+                                0,
+                                {"$divide": [{"$multiply": ["$steals", 100]}, "$total_possessions"]}
+                            ]},
+                            1
+                        ]
+                    },
+                    "block_rate": {
+                        "$multiply": [
+                            {"$cond": [
+                                {"$eq": ["$total_possessions", 0]},
+                                0,
+                                {"$divide": [{"$multiply": ["$blocks", 100]}, "$total_possessions"]}
+                            ]},
+                            1
+                        ]
+                    },
+                    "offensive_rating": {
+                        "$cond": [
+                            {"$eq": ["$total_possessions", 0]},
+                            0,
+                            {"$multiply": [
+                                {"$divide": ["$points_scored", "$total_possessions"]},
+                                100
+                            ]}
+                        ]
+                    },
+                    "defensive_rating": {
+                        "$cond": [
+                            {"$eq": ["$total_possessions", 0]},
+                            0,
+                            {"$multiply": [
+                                {"$divide": ["$points_received", "$total_possessions"]},
+                                100
+                            ]}
+                        ]
+                    },
+                    "net_rating": {
+                        "$cond": [
+                            {"$eq": ["$total_possessions", 0]},
+                            0,
+                            {"$subtract": [
+                                {"$multiply": [
+                                    {"$divide": ["$points_scored", "$total_possessions"]},
+                                    100
+                                ]},
+                                {"$multiply": [
+                                    {"$divide": ["$points_received", "$total_possessions"]},
+                                    100
+                                ]}
+                            ]}
+                        ]
+                    },
                     "fg2_percentage": {
                         "$multiply": [
                             {"$cond": [
