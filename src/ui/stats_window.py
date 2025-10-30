@@ -2,7 +2,7 @@
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTableWidget,
                               QHeaderView, QTabWidget)
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from typing import List, Dict
 
 from .table_items import NumericTableWidgetItem, process_numeric_value
@@ -39,22 +39,25 @@ class TeamStatsWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
 
         # Create tab widget
-        tab_widget = QTabWidget()
-        layout.addWidget(tab_widget)
+        self.tab_widget = QTabWidget()
+        layout.addWidget(self.tab_widget)
 
         # Create basic stats tab
         basic_tab = QWidget()
         basic_layout = QVBoxLayout(basic_tab)
         self.basic_table = QTableWidget()
         basic_layout.addWidget(self.basic_table)
-        tab_widget.addTab(basic_tab, "Estadísticas Básicas")
+        self.tab_widget.addTab(basic_tab, "Estadísticas Básicas")
 
         # Create advanced stats tab
         advanced_tab = QWidget()
         advanced_layout = QVBoxLayout(advanced_tab)
         self.advanced_table = QTableWidget()
         advanced_layout.addWidget(self.advanced_table)
-        tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
+        self.tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
+
+        # Connect tab change event to adjust window size
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
         # Setup basic table
         self.basic_table.setColumnCount(len(BASIC_COLUMNS))
@@ -159,42 +162,114 @@ class TeamStatsWindow(QMainWindow):
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.advanced_table.setItem(row, col_idx, item)
 
-    def _set_window_size(self):
-        """Calculate and set the window size based on table content."""
-        # Allow table to update and calculate its dimensions
-        self.basic_table.updateGeometry()
-        self.advanced_table.updateGeometry()
+    def _on_tab_changed(self, index: int):
+        """
+        Handle tab change event to adjust window size.
 
-        # Calculate total size needed (use basic table as reference)
-        scrollbar_width = 30 if self.basic_table.verticalScrollBar().isVisible() else 0
-        scrollbar_height = 30 if self.basic_table.horizontalScrollBar().isVisible() else 0
+        Args:
+            index: Index of the newly selected tab
+        """
+        # Use QTimer to delay resize until the tab is fully rendered
+        QTimer.singleShot(50, self._adjust_window_size_for_current_tab)
 
-        # Add additional margins to ensure all content is visible
-        margin = 50  # Extra margin to avoid scrolling
+    def _adjust_window_size_for_current_tab(self):
+        """Adjust window size based on the currently active tab."""
+        current_index = self.tab_widget.currentIndex()
 
-        table_width = self.basic_table.horizontalHeader().length() + scrollbar_width + margin
-        table_height = (self.basic_table.verticalHeader().length() +
-                       self.basic_table.horizontalHeader().height() +
-                       scrollbar_height + margin + 50)  # Extra 50 for tabs
+        # Select the appropriate table
+        if current_index == 0:
+            active_table = self.basic_table
+        else:
+            active_table = self.advanced_table
 
-        # Adjust window size considering the frame
+        self._resize_to_fit_table(active_table)
+
+    def _resize_to_fit_table(self, table: QTableWidget):
+        """
+        Resize window to fit the given table optimally.
+
+        Args:
+            table: QTableWidget to fit
+        """
+        # Force table to update its geometry
+        table.updateGeometry()
+        self.tab_widget.updateGeometry()
+        self.centralWidget().updateGeometry()
+
+        # Process pending events to ensure geometry is calculated
+        from PyQt6.QtWidgets import QApplication
+        QApplication.processEvents()
+
+        # Get screen dimensions
+        screen = self.screen().availableGeometry()
+        screen_width = screen.width()
+        screen_height = screen.height()
+
+        # Calculate margins and padding
+        TAB_HEIGHT = 45  # Height of tab bar
+        VERTICAL_MARGIN = 30  # Top and bottom margins
+        HORIZONTAL_MARGIN = 50  # Left and right margins (increased for safety)
+        SCROLLBAR_SIZE = 25  # Scrollbar size
+
+        # Get the actual frame decorations size
         frame_width = self.frameGeometry().width() - self.geometry().width()
         frame_height = self.frameGeometry().height() - self.geometry().height()
 
-        # Set window size with increased maximum limits
-        window_width = min(table_width + frame_width, 1800)
-        window_height = min(table_height + frame_height, 1200)
+        # If frame sizes aren't available yet (first time), use defaults
+        if frame_width <= 0:
+            frame_width = 16  # Default window border width
+        if frame_height <= 0:
+            frame_height = 39  # Default title bar + border height
 
-        # Ensure size is not smaller than minimum
-        window_width = max(window_width, self.minimumWidth())
-        window_height = max(window_height, self.minimumHeight())
+        # Calculate content width (all columns)
+        content_width = table.horizontalHeader().length()
 
-        self.resize(window_width, window_height)
+        # Calculate content height (all rows + header)
+        header_height = table.horizontalHeader().height()
+        rows_height = table.verticalHeader().length()
+        content_height = header_height + rows_height
 
-        # Center window on screen
-        self.setGeometry(
-            (self.screen().availableGeometry().width() - window_width) // 2,
-            (self.screen().availableGeometry().height() - window_height) // 2,
-            window_width,
-            window_height
-        )
+        # Calculate required window size including all decorations
+        # Always add scrollbar width since vertical scrollbar is often visible
+        required_width = content_width + HORIZONTAL_MARGIN + frame_width + SCROLLBAR_SIZE
+        required_height = content_height + TAB_HEIGHT + VERTICAL_MARGIN + frame_height
+
+        # Check if we need scrollbars and adjust accordingly
+        needs_horizontal_scroll = required_width > screen_width * 0.95
+        needs_vertical_scroll = required_height > screen_height * 0.9
+
+        if needs_horizontal_scroll:
+            required_width = int(screen_width * 0.95)
+            required_height += SCROLLBAR_SIZE  # Add space for horizontal scrollbar
+
+        if needs_vertical_scroll:
+            required_height = int(screen_height * 0.9)
+            required_width += SCROLLBAR_SIZE  # Add space for vertical scrollbar
+
+        # Ensure minimum size
+        required_width = max(required_width, self.minimumWidth())
+        required_height = max(required_height, self.minimumHeight())
+
+        # Apply the new size
+        self.resize(required_width, required_height)
+
+        # Center the window on screen
+        self._center_on_screen()
+
+    def _center_on_screen(self):
+        """Center the window on the screen."""
+        screen = self.screen().availableGeometry()
+        window_geometry = self.frameGeometry()
+
+        center_point = screen.center()
+        window_geometry.moveCenter(center_point)
+        self.move(window_geometry.topLeft())
+
+    def _set_window_size(self):
+        """Calculate and set the window size based on table content."""
+        # Force tables to update their geometry
+        self.basic_table.updateGeometry()
+        self.advanced_table.updateGeometry()
+
+        # Use QTimer to ensure tables are fully rendered before resizing
+        QTimer.singleShot(100, self._adjust_window_size_for_current_tab)
