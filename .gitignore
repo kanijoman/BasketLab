@@ -19,3 +19,10 @@ src/database/aggregation/__pycache__/__init__.cpython-311.pyc
 src/database/aggregation/__pycache__/advanced_stats.cpython-311.pyc
 src/database/aggregation/__pycache__/basic_stats.cpython-311.pyc
 src/database/aggregation/__pycache__/pipeline_builder.cpython-311.pyc
+src/scraper/__pycache__/__init__.cpython-311.pyc
+src/scraper/__pycache__/api_client.cpython-311.pyc
+src/scraper/__pycache__/constants.cpython-311.pyc
+src/scraper/__pycache__/data_processor.cpython-311.pyc
+src/scraper/__pycache__/feb_scraper.cpython-311.pyc
+src/scraper/__pycache__/token_manager.cpython-311.pyc
+src/scraper/__pycache__/web_client.cpython-311.pyc
