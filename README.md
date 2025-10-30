@@ -3,22 +3,12 @@ Metrics for all es una aplicación para análisis estadístico avanzado de balon
 
 Actualmente está en una primera fase de prueba de concepto con la competición de Liga Femenina 2 (LF2) de la FEB. Potencialmente se irán añadiendo más competiciones de la FEB y de otras federaciones autonómicas.
 
-Añadir nuevas federaciones resulta un cambio complejo que se abordará en fases posteriores debido a que la estructura de la información difiere de la FEB y, por tanto, habría que aplicar una transformación a estos datos de origen para poder usar los mismos métodos de análsis.
+Añadir nuevas federaciones resulta un cambio complejo que se abordará en fases posteriores debido a que la estructura de la información difiere de la FEB y, por tanto, habría que aplicar una transformación a estos datos de origen para poder usar los mismos métodos de análisis.
 Las funcionalidades actuales incluyen:
   * Ventana usando PyQt6 para selección de competición, temporada y grupo:
-    *  Pendiente de evaluar otros pontenciales GUI.
-    *  Pendiente de mejorar la UI, ahora estrictamente básica y funcional.
-    *  Pendiente añadir nueva funcionalidad para generación de informes
-  * Pendiente de evaluar competiciones distintas a LF2, potencialmente se podría trabajar con cualquier competición FEB.
-   * Aunque ahora aparece Primera Nacional, no es funcional, sólo a modo de placeholder para evaluar el combo box
-  * Pendiente de añadir nuevas competiciones de federaciones regionales.
-  * Pendiente de realizar consultas a MongoDB para recuperar la información estructurada
-    * Actualmente ya se recuperan los datos de LF2 y se almacenan en MongoDB generando un informe básico.
-    * Expandir este informe básico con más estadísticas, gráficos y ordenación.
-  * Pendiente de realizar el análisis estadístico:
-    * Gráficos de estadística avanzada por equipo: General, local, visitante, último mes, etc.
-    * Gráficos de estadística avanzada por jugador: mismo que para equipo
-    * Perfil de lanzamiento de jugador: mapa de calor y lanzamientos por zonas
-    * Perfil de juego: gráfico radial con características de juego
-    * Otros: quintetos, on/off, parejas, tríos, etc...
-  * Pendiente dejar enlaces de descarga a ejecutables stand-alone para ejecutar desde ordenadores sin entorno python
+  * Botón "Actualizar y ver estadísticas:
+     * Actualiza la información para la competición en la base de datos, de forma que tengamos siempre la versión más actualizada posible
+     * Muestra una nueva ventana de estadísticas con dos pestañas: una de estadísticas básicas y otra de estadísticas avanzadas
+  * Ventana de Estadísticas:
+     * La información está coloreada en base a cuartiles: Q1 verde; Q2 amarillo, Q3 naranja y Q4 rojo
+     * Se puede ordenar por cualquier columna de forma ascendente o descendente
