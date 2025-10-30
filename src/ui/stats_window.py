@@ -1,9 +1,14 @@
 """Team statistics display window."""
 
-from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QTableWidget,
-                              QHeaderView, QTabWidget)
+from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                              QTableWidget, QHeaderView, QTabWidget, QPushButton,
+                              QFileDialog, QMessageBox, QMenu)
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPainter, QPageLayout, QPageSize, QAction
+from PyQt6.QtPrintSupport import QPrinter
 from typing import List, Dict
+import csv
+from datetime import datetime
 
 from .table_items import NumericTableWidgetItem, process_numeric_value
 from .stats_config import (
@@ -37,6 +42,38 @@ class TeamStatsWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+
+        # Create export button container
+        export_layout = QHBoxLayout()
+        layout.addLayout(export_layout)
+
+        # Add single export button with menu
+        self.export_button = QPushButton("� Exportar")
+        self.export_button.setToolTip("Exportar tabla actual en diferentes formatos")
+
+        # Create menu for export options
+        export_menu = QMenu(self)
+
+        csv_action = QAction("📊 Exportar como CSV", self)
+        csv_action.triggered.connect(self._export_csv)
+        csv_action.setToolTip("Exportar a formato CSV (separado por punto y coma)")
+        export_menu.addAction(csv_action)
+
+        png_action = QAction("🖼️ Exportar como PNG", self)
+        png_action.triggered.connect(self._export_png)
+        png_action.setToolTip("Exportar como imagen PNG")
+        export_menu.addAction(png_action)
+
+        pdf_action = QAction("📄 Exportar como PDF", self)
+        pdf_action.triggered.connect(self._export_pdf)
+        pdf_action.setToolTip("Exportar a documento PDF")
+        export_menu.addAction(pdf_action)
+
+        self.export_button.setMenu(export_menu)
+        export_layout.addWidget(self.export_button)
+
+        # Add stretch to push button to the left
+        export_layout.addStretch()
 
         # Create tab widget
         self.tab_widget = QTabWidget()
@@ -161,6 +198,173 @@ class TeamStatsWindow(QMainWindow):
             item.setBackground(color)
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.advanced_table.setItem(row, col_idx, item)
+
+    def _get_current_table(self) -> QTableWidget:
+        """Get the currently active table based on selected tab."""
+        current_index = self.tab_widget.currentIndex()
+        return self.basic_table if current_index == 0 else self.advanced_table
+
+    def _get_current_table_name(self) -> str:
+        """Get the name of the currently active table."""
+        current_index = self.tab_widget.currentIndex()
+        return "estadisticas_basicas" if current_index == 0 else "estadisticas_avanzadas"
+
+    def _export_csv(self):
+        """Export current table to CSV format."""
+        try:
+            table = self._get_current_table()
+            table_name = self._get_current_table_name()
+
+            # Generate default filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_filename = f"{table_name}_{timestamp}.csv"
+
+            # Open file dialog
+            filename, _ = QFileDialog.getSaveFileName(
+                self,
+                "Guardar CSV",
+                default_filename,
+                "CSV Files (*.csv);;All Files (*)"
+            )
+
+            if not filename:
+                return
+
+            # Write CSV file
+            with open(filename, 'w', newline='', encoding='utf-8-sig') as file:
+                writer = csv.writer(file, delimiter=';')
+
+                # Write headers
+                headers = []
+                for col in range(table.columnCount()):
+                    headers.append(table.horizontalHeaderItem(col).text())
+                writer.writerow(headers)
+
+                # Write data rows
+                for row in range(table.rowCount()):
+                    row_data = []
+                    for col in range(table.columnCount()):
+                        item = table.item(row, col)
+                        if item:
+                            row_data.append(item.text())
+                        else:
+                            row_data.append('')
+                    writer.writerow(row_data)
+
+            QMessageBox.information(
+                self,
+                "Exportación exitosa",
+                f"Tabla exportada correctamente a:\n{filename}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error al exportar",
+                f"No se pudo exportar la tabla a CSV:\n{str(e)}"
+            )
+
+    def _export_png(self):
+        """Export current table to PNG image."""
+        try:
+            table = self._get_current_table()
+            table_name = self._get_current_table_name()
+
+            # Generate default filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_filename = f"{table_name}_{timestamp}.png"
+
+            # Open file dialog
+            filename, _ = QFileDialog.getSaveFileName(
+                self,
+                "Guardar PNG",
+                default_filename,
+                "PNG Files (*.png);;All Files (*)"
+            )
+
+            if not filename:
+                return
+
+            # Capture table as image
+            pixmap = table.grab()
+            pixmap.save(filename, 'PNG')
+
+            QMessageBox.information(
+                self,
+                "Exportación exitosa",
+                f"Tabla exportada correctamente a:\n{filename}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error al exportar",
+                f"No se pudo exportar la tabla a PNG:\n{str(e)}"
+            )
+
+    def _export_pdf(self):
+        """Export current table to PDF format."""
+        try:
+            table = self._get_current_table()
+            table_name = self._get_current_table_name()
+
+            # Generate default filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            default_filename = f"{table_name}_{timestamp}.pdf"
+
+            # Open file dialog
+            filename, _ = QFileDialog.getSaveFileName(
+                self,
+                "Guardar PDF",
+                default_filename,
+                "PDF Files (*.pdf);;All Files (*)"
+            )
+
+            if not filename:
+                return
+
+            # Create printer and configure for PDF
+            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+            printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+            printer.setOutputFileName(filename)
+
+            # Set page to landscape for better table fit
+            page_layout = QPageLayout()
+            page_layout.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            page_layout.setOrientation(QPageLayout.Orientation.Landscape)
+            printer.setPageLayout(page_layout)
+
+            # Create painter and render table
+            painter = QPainter()
+            painter.begin(printer)
+
+            # Calculate scaling to fit table in page
+            page_rect = printer.pageRect(QPrinter.Unit.DevicePixel)
+            table_rect = table.rect()
+
+            scale_x = page_rect.width() / table_rect.width()
+            scale_y = page_rect.height() / table_rect.height()
+            scale = min(scale_x, scale_y) * 0.95  # 95% to add margins
+
+            painter.scale(scale, scale)
+
+            # Render the table
+            table.render(painter)
+
+            painter.end()
+
+            QMessageBox.information(
+                self,
+                "Exportación exitosa",
+                f"Tabla exportada correctamente a:\n{filename}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error al exportar",
+                f"No se pudo exportar la tabla a PDF:\n{str(e)}"
+            )
 
     def _on_tab_changed(self, index: int):
         """
