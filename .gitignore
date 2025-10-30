@@ -11,3 +11,11 @@ src/ui/__pycache__/main_window.cpython-311.pyc
 src/ui/__pycache__/stats_config.cpython-311.pyc
 src/ui/__pycache__/stats_window.cpython-311.pyc
 src/ui/__pycache__/table_items.cpython-311.pyc
+src/database/__pycache__/__init__.cpython-311.pyc
+src/database/__pycache__/connection.cpython-311.pyc
+src/database/__pycache__/repository.cpython-311.pyc
+src/database/__pycache__/utils.cpython-311.pyc
+src/database/aggregation/__pycache__/__init__.cpython-311.pyc
+src/database/aggregation/__pycache__/advanced_stats.cpython-311.pyc
+src/database/aggregation/__pycache__/basic_stats.cpython-311.pyc
+src/database/aggregation/__pycache__/pipeline_builder.cpython-311.pyc
