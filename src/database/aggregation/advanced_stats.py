@@ -93,10 +93,19 @@ def get_playmaking_metrics() -> dict:
     total_fg_made = {"$add": ["$fg2_made", "$fg3_made"]}
 
     return {
-        "assist_rate": {
+        "assist_fg_rate": {
             "$multiply": [
                 safe_divide("$assists", total_fg_made),
                 100
+            ]
+        },
+        "assist_rate": {
+            "$multiply": [
+                safe_divide(
+                    {"$multiply": ["$assists", 100]},
+                    "$total_possessions"
+                ),
+                1
             ]
         },
         "steal_rate": {

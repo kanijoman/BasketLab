@@ -16,9 +16,9 @@ BASIC_COLUMNS = [
 # Column definitions for advanced stats table
 ADVANCED_COLUMNS = [
     "Equipo", "Total Partidos",
-    "Ritmo", "eFG%", "TS%", "3Pr", "FTr", "AST%", "ORB%", "TOV%",
-    "ROB%", "TAP%", "RD%",
-    "OER", "DER", "Net Rate"
+    "Ritmo", "OER", "DER", "Net Rate",
+    "eFG%", "TS%", "3Pr", "FTr", "AST/FG", "AST%", "TOV%",
+    "ROB%", "TAP%", "ORB%", "RD%"
 ]
 
 # Fields that should display with percentage symbol
@@ -30,7 +30,7 @@ PERCENTAGE_FIELDS = {
 ADVANCED_PERCENTAGE_FIELDS = {
     'efg_percentage', 'turnover_rate', 'offensive_rebound_rate',
     'free_throw_rate', 'three_point_rate', 'true_shooting',
-    'assist_rate', 'steal_rate', 'block_rate', 'defensive_rebound_rate'
+    'assist_fg_rate', 'assist_rate', 'steal_rate', 'block_rate', 'defensive_rebound_rate'
 }
 
 # Fields that should NOT display with percentage (possessions and ratings)
@@ -79,19 +79,20 @@ def get_advanced_stats_config(team: Dict) -> List[Tuple[int, str, any]]:
     """
     return [
         (2, 'possessions_per_game', team['possessions_per_game']),
-        (3, 'efg_percentage', team['efg_percentage']),
-        (4, 'true_shooting', team['true_shooting']),
-        (5, 'three_point_rate', team['three_point_rate']),
-        (6, 'free_throw_rate', team['free_throw_rate']),
-        (7, 'assist_rate', team['assist_rate']),
-        (8, 'offensive_rebound_rate', team['offensive_rebound_rate']),
-        (9, 'turnover_rate', team['turnover_rate']),
-        (10, 'steal_rate', team['steal_rate']),
-        (11, 'block_rate', team['block_rate']),
-        (12, 'defensive_rebound_rate', team['defensive_rebound_rate']),
-        (13, 'offensive_rating', team['offensive_rating']),
-        (14, 'defensive_rating', team['defensive_rating']),
-        (15, 'net_rating', team['net_rating'])
+        (3, 'offensive_rating', team['offensive_rating']),
+        (4, 'defensive_rating', team['defensive_rating']),
+        (5, 'net_rating', team['net_rating']),
+        (6, 'efg_percentage', team['efg_percentage']),
+        (7, 'true_shooting', team['true_shooting']),
+        (8, 'three_point_rate', team['three_point_rate']),
+        (9, 'free_throw_rate', team['free_throw_rate']),
+        (10, 'assist_fg_rate', team['assist_fg_rate']),
+        (11, 'assist_rate', team['assist_rate']),
+        (12, 'turnover_rate', team['turnover_rate']),
+        (13, 'steal_rate', team['steal_rate']),
+        (14, 'block_rate', team['block_rate']),
+        (15, 'offensive_rebound_rate', team['offensive_rebound_rate']),
+        (16, 'defensive_rebound_rate', team['defensive_rebound_rate'])
     ]
 
 
@@ -147,6 +148,7 @@ def get_advanced_numeric_data(team_stats: List[Dict]) -> Dict[str, Tuple[List[fl
         'free_throw_rate': ([safe_float(team['free_throw_rate']) for team in team_stats], False),
         'three_point_rate': ([safe_float(team['three_point_rate']) for team in team_stats], False),
         'true_shooting': ([safe_float(team['true_shooting']) for team in team_stats], False),
+        'assist_fg_rate': ([safe_float(team['assist_fg_rate']) for team in team_stats], False),
         'assist_rate': ([safe_float(team['assist_rate']) for team in team_stats], False),
         'steal_rate': ([safe_float(team['steal_rate']) for team in team_stats], False),
         'block_rate': ([safe_float(team['block_rate']) for team in team_stats], False),

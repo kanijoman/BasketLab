@@ -2,9 +2,9 @@
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QTableWidget, QHeaderView, QTabWidget, QPushButton,
-                              QFileDialog, QMessageBox, QMenu)
+                              QFileDialog, QMessageBox, QMenu, QTableWidgetItem, QLabel)
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPainter, QPageLayout, QPageSize, QAction
+from PyQt6.QtGui import QPainter, QPageLayout, QPageSize, QAction, QColor
 from PyQt6.QtPrintSupport import QPrinter
 from typing import List, Dict
 import csv
@@ -22,6 +22,16 @@ from .stats_config import (
 
 class TeamStatsWindow(QMainWindow):
     """Window to display team statistics."""
+
+    # Column group definitions: (start_col, end_col, group_name, color)
+    COLUMN_GROUPS = [
+        (0, 1, "Información", "#E0E0E0"),
+        (2, 5, "Rendimiento", "#BBDEFB"),
+        (6, 9, "Eficiencia Tiro", "#FFE0B2"),
+        (10, 12, "Jugadas y Control", "#E1BEE7"),
+        (13, 14, "Defensa", "#FFCDD2"),
+        (15, 16, "Rebotes", "#C8E6C9")
+    ]
 
     def __init__(self, team_stats: List[Dict], parent=None):
         """
@@ -89,8 +99,16 @@ class TeamStatsWindow(QMainWindow):
         # Create advanced stats tab
         advanced_tab = QWidget()
         advanced_layout = QVBoxLayout(advanced_tab)
+        advanced_layout.setSpacing(0)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+
         self.advanced_table = QTableWidget()
         advanced_layout.addWidget(self.advanced_table)
+
+        # Add color legend
+        legend_widget = self._create_color_legend()
+        advanced_layout.addWidget(legend_widget)
+
         self.tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
 
         # Connect tab change event to adjust window size
@@ -111,6 +129,9 @@ class TeamStatsWindow(QMainWindow):
         advanced_header = self.advanced_table.horizontalHeader()
         for i in range(len(ADVANCED_COLUMNS)):
             advanced_header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        # Apply colors to header based on column groups
+        self._apply_header_colors()
 
         # Get numeric data and calculate quartiles
         basic_numeric_data = get_basic_numeric_data(team_stats)
@@ -198,6 +219,56 @@ class TeamStatsWindow(QMainWindow):
             item.setBackground(color)
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.advanced_table.setItem(row, col_idx, item)
+
+    def _apply_header_colors(self):
+        """Apply background colors to column headers based on their groups."""
+        # Apply colors to header sections using class constant
+        for start_col, end_col, _, color in self.COLUMN_GROUPS:
+            for col in range(start_col, end_col + 1):
+                self.advanced_table.horizontalHeaderItem(col).setBackground(QColor(color))
+
+    def _create_color_legend(self) -> QWidget:
+        """Create a color legend widget to identify column groups."""
+        from PyQt6.QtWidgets import QFrame, QLabel, QHBoxLayout
+
+        legend_frame = QFrame()
+        legend_frame.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
+        legend_frame.setMaximumHeight(40)
+
+        legend_layout = QHBoxLayout(legend_frame)
+        legend_layout.setContentsMargins(10, 5, 10, 5)
+        legend_layout.setSpacing(15)
+
+        # Add legend title
+        title_label = QLabel("Leyenda:")
+        title_label.setStyleSheet("font-weight: bold;")
+        legend_layout.addWidget(title_label)
+
+        # Create legend items using class constant
+        for _, _, group_name, color in self.COLUMN_GROUPS:
+            # Create container for each legend item
+            item_widget = QWidget()
+            item_layout = QHBoxLayout(item_widget)
+            item_layout.setContentsMargins(0, 0, 0, 0)
+            item_layout.setSpacing(5)
+
+            # Create color box
+            color_box = QLabel()
+            color_box.setFixedSize(20, 20)
+            color_box.setStyleSheet(f"background-color: {color}; border: 1px solid #999;")
+            item_layout.addWidget(color_box)
+
+            # Create text label
+            text_label = QLabel(group_name)
+            text_label.setStyleSheet("font-size: 9pt;")
+            item_layout.addWidget(text_label)
+
+            legend_layout.addWidget(item_widget)
+
+        # Add stretch to push items to the left
+        legend_layout.addStretch()
+
+        return legend_frame
 
     def _get_current_table(self) -> QTableWidget:
         """Get the currently active table based on selected tab."""
