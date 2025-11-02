@@ -1,109 +1,109 @@
 # MetricsForAll
 
-Basketball analytics application for advanced statistical analysis using data from the Spanish Basketball Federation (FEB) and regional federations.
+Aplicación de análisis de baloncesto para análisis estadístico avanzado utilizando datos de la Federación Española de Baloncesto (FEB) y federaciones regionales.
 
-## Overview
+## Descripción General
 
-MetricsForAll is an application for advanced statistical analysis of basketball using information provided by the FEB (Spanish Basketball Federation) and various regional federations in Spain. The basic functionality includes:
+MetricsForAll es una aplicación para el análisis estadístico avanzado de baloncesto utilizando información proporcionada por la FEB (Federación Española de Baloncesto) y varias federaciones regionales en España. La funcionalidad básica incluye:
 
-- **Data scraper** from configured sources where competitions are hosted (currently only FEB)
-- **Structured information recovery** and storage in a cloud database (MongoDB, JSON-oriented)
-- **Statistical analysis tools** for basic and advanced metrics
+- **Scraper de datos** desde fuentes configuradas donde se alojan las competiciones (actualmente solo FEB)
+- **Recuperación de información estructurada** y almacenamiento en una base de datos en la nube (MongoDB, orientada a JSON)
+- **Herramientas de análisis estadístico** para métricas básicas y avanzadas
 
-Currently in the first proof-of-concept phase with the LF2 (Liga Femenina 2) competition from FEB. More competitions from FEB and other regional federations will be added in the future.
+Actualmente en la primera fase de prueba de concepto con la competición LF2 (Liga Femenina 2) de la FEB. Se añadirán más competiciones de la FEB y otras federaciones regionales en el futuro.
 
-## Features
+## Características
 
-### Data Collection
-- Scraper for FEB competition data
-- Structured data storage in MongoDB
-- Automatic updates to keep information current
+### Recopilación de Datos
+- Scraper para datos de competiciones de la FEB
+- Almacenamiento estructurado de datos en MongoDB
+- Actualizaciones automáticas para mantener la información actualizada
 
-### User Interface (PyQt6)
-- Competition, season, and group selection window
-- "Update and View Statistics" button:
-  - Updates competition information in the database
-  - Displays a new statistics window with two tabs: basic and advanced statistics
+### Interfaz de Usuario (PyQt6)
+- Ventana de selección de competición, temporada y grupo
+- Botón "Actualizar y Ver Estadísticas":
+  - Actualiza la información de la competición en la base de datos
+  - Muestra una nueva ventana de estadísticas con dos pestañas: estadísticas básicas y avanzadas
 
-### Statistics Window
-- Color-coded information based on quartiles:
-  - Q1: Green
-  - Q2: Yellow
-  - Q3: Orange
-  - Q4: Red
-- Sortable by any column (ascending/descending)
-- Data export functionality: CSV, PNG, or PDF formats
+### Ventana de Estadísticas
+- Información codificada por colores según cuartiles:
+  - Q1: Verde
+  - Q2: Amarillo
+  - Q3: Naranja
+  - Q4: Rojo
+- Ordenable por cualquier columna (ascendente/descendente)
+- Funcionalidad de exportación de datos: formatos CSV, PNG o PDF
 
-## FIBA Court Visualization
+## Visualización de Cancha FIBA
 
-This project includes a **FIBA Basketball Court Generator** module for creating half-court visualizations with official FIBA dimensions.
+Este proyecto incluye un módulo **Generador de Cancha de Baloncesto FIBA** para crear visualizaciones de media cancha con dimensiones oficiales FIBA.
 
-### Quick Start
+### Inicio Rápido
 
 ```python
 from src.shotcharts import plot_court_with_theme
 import matplotlib.pyplot as plt
 
-# Generate a FIBA half-court with white background
-fig = plot_court_with_theme(theme='light', title='FIBA Half Court')
+# Generar una media cancha FIBA con fondo blanco
+fig = plot_court_with_theme(theme='light', title='Media Cancha FIBA')
 plt.show()
 ```
 
-### Features
-- Official FIBA court dimensions (all in meters)
-- Complete court elements (key, three-point line, restricted area, etc.)
-- Predefined color themes (light, wood, dark, classic, modern)
-- Customizable colors and sizes
-- Export to multiple formats (PNG, PDF, SVG)
-- Data overlay support for shot charts and heatmaps
-- White background by default for clean visualizations
+### Características
+- Dimensiones oficiales de cancha FIBA (todas en metros)
+- Elementos completos de la cancha (zona, línea de tres puntos, área restringida, etc.)
+- Temas de color predefinidos (light, wood, dark, classic, modern)
+- Colores y tamaños personalizables
+- Exportación a múltiples formatos (PNG, PDF, SVG)
+- Soporte para superposición de datos en gráficos de tiros y mapas de calor
+- Fondo blanco por defecto para visualizaciones limpias
 
-### Documentation
+### Documentación
 
-For detailed documentation on the FIBA court generator, see:
-- [`src/shotcharts/README.md`](src/shotcharts/README.md) - Complete API reference and usage guide
-- [`src/shotcharts/example_usage.py`](src/shotcharts/example_usage.py) - Simple usage examples
+Para documentación detallada sobre el generador de cancha FIBA, consulte:
+- [`src/shotcharts/README.md`](src/shotcharts/README.md) - Referencia completa de la API y guía de uso
+- [`src/shotcharts/example_usage.py`](src/shotcharts/example_usage.py) - Ejemplos simples de uso
 
-### Example
+### Ejemplo
 
 ```python
 from src.shotcharts import FIBACourt
 import matplotlib.pyplot as plt
 
-# Create court and add shot data
+# Crear cancha y agregar datos de tiros
 court = FIBACourt()
-fig = court.plot_court(title='Shot Chart')
+fig = court.plot_court(title='Gráfico de Tiros')
 ax = fig.axes[0]
 
-# Add shots
-ax.scatter([7.5, 8.2], [3.5, 5.2], c='green', s=100, label='Made')
-ax.scatter([6.8], [7.1], c='red', s=100, marker='x', label='Missed')
+# Agregar tiros
+ax.scatter([7.5, 8.2], [3.5, 5.2], c='green', s=100, label='Anotado')
+ax.scatter([6.8], [7.1], c='red', s=100, marker='x', label='Fallado')
 ax.legend()
 
 plt.show()
 ```
 
-## Future Development
+## Desarrollo Futuro
 
-Adding new federations is a complex change that will be addressed in later phases because the information structure differs from FEB, requiring data transformation to use the same analysis methods.
+Agregar nuevas federaciones es un cambio complejo que se abordará en fases posteriores porque la estructura de información difiere de la FEB, requiriendo transformación de datos para usar los mismos métodos de análisis.
 
-## Installation
+## Instalación
 
 ```bash
-# Install required packages
+# Instalar paquetes requeridos
 pip install numpy matplotlib pymongo PyQt6
 ```
 
-## Usage
+## Uso
 
-Run the main application:
+Ejecutar la aplicación principal:
 ```bash
 python src/main.py
 ```
 
-Generate FIBA court visualizations:
+Generar visualizaciones de cancha FIBA:
 ```bash
 python -m src.shotcharts.fiba_court
-# or
+# o
 python -m src.shotcharts.example_usage
 ```
