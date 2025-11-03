@@ -9,6 +9,7 @@ from scraper import FEBWebScraper
 from database import MongoDBHandler
 from utils import normalize_year
 from .stats_window import TeamStatsWindow
+from .shotchart_window import ShotChartWindow
 
 
 class BasketballSeasonApp(QMainWindow):
@@ -107,9 +108,25 @@ class BasketballSeasonApp(QMainWindow):
         layout.addWidget(self.progress_label)
 
         # View Stats Button
-        self.stats_button = QPushButton("Actualizar y Ver Estadísticas")
+        self.stats_button = QPushButton("📊 Estadísticas")
         self.stats_button.clicked.connect(self.on_view_stats)
         layout.addWidget(self.stats_button)
+
+        # Shot Chart Button
+        self.shotchart_button = QPushButton("🎯 Gráficos de Tiro")
+        self.shotchart_button.clicked.connect(self.on_view_shotcharts)
+        self.shotchart_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #1976D2;
+            }
+        """)
+        layout.addWidget(self.shotchart_button)
 
         # Apply basic styling for a modern look
         self.setStyleSheet("""
@@ -266,6 +283,82 @@ class BasketballSeasonApp(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al cargar las estadísticas: {str(e)}")
+
+    def on_view_shotcharts(self) -> None:
+        """Handle shot chart button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Aviso",
+                                  "Por favor, seleccione competición, temporada y grupo antes de ver shot charts.")
+                return
+
+            # Update data first (same as on_view_stats)
+            season_value = self.season_values.get(season_text, normalize_year(season_text))
+            group_value = self.group_values.get(group_text, group_text)
+            norm_year = normalize_year(season_text)
+            session = requests.Session()
+
+            # Update progress bar visibility
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            if not matches:
+                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                self.progress_bar.setVisible(False)
+                self.progress_label.setVisible(False)
+                return
+
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            self.progress_bar.setMaximum(len(matches))
+            self.progress_bar.setValue(0)
+            self.progress_label.setText("Progreso: Actualizando datos...")
+            QApplication.processEvents()
+
+            for i, match_code in enumerate(matches, 1):
+                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
+                self.progress_bar.setValue(i)
+                QApplication.processEvents()
+
+                try:
+                    # Only download if it doesn't exist or if it's the last match (for possible updates)
+                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                        boxscore = self.scraper.fetch_boxscore(match_code, session)
+                        if boxscore:
+                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                except Exception as e:
+                    print(f"[App] Error processing match {match_code}: {str(e)}")
+
+            self.progress_label.setText("Progreso: Cargando shot charts...")
+            self.progress_bar.setValue(len(matches))
+            QApplication.processEvents()
+
+            # Hide progress elements
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            # Create and show shot chart window
+            self.shotchart_window = ShotChartWindow(
+                self.db_handler,
+                self.scraper,
+                collection_name,
+                self
+            )
+            self.shotchart_window.show()
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error al abrir ventana de shot charts: {str(e)}")
 
     def update_group_options(self) -> None:
         """Update the group dropdown."""
