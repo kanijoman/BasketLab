@@ -296,7 +296,7 @@ class BasketballSeasonApp(QMainWindow):
             group_text = self.group_combo.currentText()
 
             if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso", 
+                QMessageBox.warning(self, "Aviso",
                                   "Por favor, seleccione competición, temporada y grupo antes de ver shot charts.")
                 return
 
