@@ -120,12 +120,6 @@ class ShotChartWindow(QMainWindow):
         self.team_combo.currentIndexChanged.connect(self.on_team_changed)
         control_layout.addWidget(self.team_combo)
 
-        # Generate button
-        self.generate_button = QPushButton("Generar Gráfico de Tiro")
-        self.generate_button.setEnabled(False)
-        self.generate_button.clicked.connect(self.on_generate_chart)
-        control_layout.addWidget(self.generate_button)
-
         control_layout.addStretch()
 
         # Shot filter panel
@@ -154,6 +148,28 @@ class ShotChartWindow(QMainWindow):
         filter_layout.addWidget(self.radio_missed)
 
         filter_layout.addStretch()
+
+        # Visualization type panel
+        viz_layout = QHBoxLayout()
+        main_layout.addLayout(viz_layout)
+
+        viz_layout.addWidget(QLabel("Tipo de visualización:"))
+
+        # Radio buttons for visualization type
+        self.viz_group = QButtonGroup(self)
+
+        self.radio_scatter = QRadioButton("Scatter Plot")
+        self.radio_scatter.setChecked(True)
+        self.radio_scatter.toggled.connect(self.on_filter_changed)
+        self.viz_group.addButton(self.radio_scatter)
+        viz_layout.addWidget(self.radio_scatter)
+
+        self.radio_heatmap = QRadioButton("Mapa de Calor")
+        self.radio_heatmap.toggled.connect(self.on_filter_changed)
+        self.viz_group.addButton(self.radio_heatmap)
+        viz_layout.addWidget(self.radio_heatmap)
+
+        viz_layout.addStretch()
 
         # Progress bar
         self.progress_bar = QProgressBar()
@@ -234,13 +250,19 @@ class ShotChartWindow(QMainWindow):
             QMessageBox.warning(self, "Error", f"Error al actualizar lista de equipos: {str(e)}")
 
     def on_team_changed(self, index: int):
-        """Handle team selection change."""
+        """Handle team selection change and generate chart automatically."""
         team = self.team_combo.currentData()
         if team:
-            self.generate_button.setEnabled(True)
-            self.status_label.setText(f"Equipo seleccionado: {team['name']}")
+            self.status_label.setText(f"Cargando datos para {team['name']}...")
+            QApplication.processEvents()
+            # Generate chart automatically
+            self.on_generate_chart()
         else:
-            self.generate_button.setEnabled(False)
+            # Clear current data and chart
+            self.current_shots = []
+            self.current_team = None
+            self.figure.clear()
+            self.canvas.draw()
             self.status_label.setText("Seleccione un equipo para comenzar")
 
     def on_filter_changed(self):
@@ -364,7 +386,8 @@ class ShotChartWindow(QMainWindow):
             self._draw_chart()
 
             # Adjust window size to fit the chart properly
-            self.resize(1050, 1050)
+            # Account for controls, filters, viz type selector, status, progress bar, and margins
+            self.resize(1050, 1100)
 
         except Exception as e:
             self.status_label.setText("Error al generar shot chart")
@@ -427,19 +450,32 @@ class ShotChartWindow(QMainWindow):
 
         self.figure.clear()
 
-        new_fig = self.visualizer.plot_shots(
-            shots=filtered_shots,
-            title=title,
-            figsize=(10, 10),
-            show_legend=True,
-            legend_loc='lower center'
-        )
+        # Choose visualization type
+        if self.radio_heatmap.isChecked():
+            # Plot heatmap
+            new_fig = self.visualizer.plot_heatmap(
+                shots=filtered_shots,
+                title=title,
+                figsize=(10, 10),
+                alpha=0.6
+            )
+            viz_type = "Mapa de Calor"
+        else:
+            # Plot scatter (default)
+            new_fig = self.visualizer.plot_shots(
+                shots=filtered_shots,
+                title=title,
+                figsize=(10, 10),
+                show_legend=True,
+                legend_loc='lower center'
+            )
+            viz_type = "Scatter Plot"
 
         self.figure = new_fig
         self.canvas.figure = new_fig
         self.canvas.draw()
 
         self.status_label.setText(
-            f"Mostrando {filter_text}: {total_count} lanzamientos "
+            f"{viz_type} - {filter_text}: {total_count} lanzamientos "
             f"({made_count} anotados, {total_count - made_count} fallados) | Total: {total_all}"
         )
