@@ -15,11 +15,23 @@ from .shot_visualizer import (
     plot_shot_chart
 )
 
+from .court_zones import CourtZones
+
+from .detailed_zones import DetailedCourtZones, create_detailed_zones
+
+from .zone_analysis import ZoneAnalyzer
+
 __all__ = [
+    # Court and visualization
     'FIBACourt',
     'plot_court',
     'plot_court_with_theme',
     'COURT_THEMES',
     'ShotChartVisualizer',
     'plot_shot_chart',
+    # Zone systems
+    'CourtZones',
+    'DetailedCourtZones',
+    'create_detailed_zones',
+    'ZoneAnalyzer',
 ]

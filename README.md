@@ -83,6 +83,45 @@ ax.legend()
 plt.show()
 ```
 
+## Análisis de Zonas de Rendimiento
+
+El sistema incluye un **Análisis de Rendimiento por Zonas** que divide la cancha FIBA en 10 zonas tácticas detalladas y calcula estadísticas de tiro para cada zona.
+
+### Características
+- **10 zonas detalladas**: División táctica basada en distancia y posición
+  - 2 zonas interiores (área restringida, zona)
+  - 3 zonas de tiro medio (corto, medio, largo - basadas en distancia)
+  - 5 zonas de tres puntos (esquinas, alas, centro - divididas en puntos de quiebre)
+- **Visualización con gradiente de color**: Paleta suave de 8 colores (rojo → amarillo → verde)
+- **Umbrales realistas de baloncesto**:
+  - 2 puntos: Pobre <30%, Promedio 30-40%, Excelente >40%
+  - 3 puntos: Pobre <20%, Promedio 20-30%, Excelente >30%
+- **Integración con UI**: Disponible como opción "Zonas de Rendimiento" en la ventana de Shot Charts
+
+### Uso en la UI
+1. Abrir **Shot Charts** desde el menú principal
+2. Seleccionar un equipo
+3. Elegir filtro (opcional): Todos / Aciertos / Fallos
+4. Seleccionar **"Zonas de Rendimiento"** como tipo de visualización
+5. Ver análisis con zonas codificadas por colores y estadísticas
+
+### Uso Programático
+
+```python
+from src.shotcharts import ZoneAnalyzer
+
+# Inicializar analizador
+analyzer = ZoneAnalyzer(detail_level='detailed')
+
+# Cargar y analizar tiros
+shots = analyzer.load_feb_game_data('path/to/game.json')
+stats = analyzer.analyze_zone_performance(shots)
+
+# Crear visualización
+fig = analyzer.plot_zone_analysis(stats, title='Análisis de Zonas del Equipo')
+plt.show()
+```
+
 ## Desarrollo Futuro
 
 Agregar nuevas federaciones es un cambio complejo que se abordará en fases posteriores porque la estructura de información difiere de la FEB, requiriendo transformación de datos para usar los mismos métodos de análisis.
