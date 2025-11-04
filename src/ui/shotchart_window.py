@@ -11,6 +11,8 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import matplotlib.pyplot as plt
 
 from shotcharts import ShotChartVisualizer
+from shotcharts.zone_analysis import ZoneAnalyzer
+from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 
 
 class ShotChartWindow(QMainWindow):
@@ -31,6 +33,7 @@ class ShotChartWindow(QMainWindow):
         self.scraper = scraper
         self.collection_name = collection_name
         self.visualizer = ShotChartVisualizer()
+        self.zone_analyzer = ZoneAnalyzer(detail_level='detailed')
         self.current_shots = []
         self.current_team = None
 
@@ -168,6 +171,11 @@ class ShotChartWindow(QMainWindow):
         self.radio_heatmap.toggled.connect(self.on_filter_changed)
         self.viz_group.addButton(self.radio_heatmap)
         viz_layout.addWidget(self.radio_heatmap)
+
+        self.radio_zones = QRadioButton("Zonas de Rendimiento")
+        self.radio_zones.toggled.connect(self.on_filter_changed)
+        self.viz_group.addButton(self.radio_zones)
+        viz_layout.addWidget(self.radio_zones)
 
         viz_layout.addStretch()
 
@@ -451,7 +459,22 @@ class ShotChartWindow(QMainWindow):
         self.figure.clear()
 
         # Choose visualization type
-        if self.radio_heatmap.isChecked():
+        if self.radio_zones.isChecked():
+            # Plot performance zones using utility function for coordinate conversion
+            processed_shots = convert_shots_for_zone_analysis(filtered_shots)
+
+            # Analyze zone performance
+            stats = self.zone_analyzer.analyze_zone_performance(processed_shots)
+
+            # Create the zone performance visualization
+            new_fig = self.zone_analyzer.plot_zone_analysis(
+                stats=stats,
+                title=f"{self.current_team['name']} - Análisis por Zonas\n{made_count}/{total_count} ({accuracy:.1f}%)",
+                figsize=(10, 10)
+            )
+            viz_type = "Zonas de Rendimiento"
+
+        elif self.radio_heatmap.isChecked():
             # Plot heatmap
             new_fig = self.visualizer.plot_heatmap(
                 shots=filtered_shots,

@@ -15,6 +15,7 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 from .fiba_court import FIBACourt, plot_court
+from .coordinate_utils import convert_feb_to_fiba
 
 
 class ShotChartVisualizer:
@@ -24,10 +25,6 @@ class ShotChartVisualizer:
     Converts FEB JSON coordinate system (0-100 for full horizontal court)
     to FIBA half-court coordinates (meters, vertical orientation).
     """
-
-    # FEB court dimensions (assumed based on FIBA standard)
-    FEB_COURT_LENGTH = 28.0  # meters (full court)
-    FEB_COURT_WIDTH = 15.0   # meters
 
     # Shot markers configuration
     MADE_SHOT_COLOR = 'green'
@@ -105,75 +102,6 @@ class ShotChartVisualizer:
 
         return filtered
 
-    def _convert_feb_to_fiba(self, x_feb: float, y_feb: float,
-                            team: int) -> Tuple[float, float]:
-        """
-        Convert FEB coordinates (0-100, full horizontal court)
-        to FIBA half-court coordinates (meters, vertical).
-
-        All shots are mirrored to show on the offensive half-court,
-        so shots from the defensive half are reflected specularly.
-
-        FEB coordinate system:
-        - Full court, horizontal orientation (28m length x 15m width)
-        - x: 0-100 along court length (28m), 0 at one basket, 100 at the other
-        - y: 0-100 along court width (15m), 0 at bottom, 100 at top
-        - Team 0 attacks basket at x=0, Team 1 attacks basket at x=100
-
-        FIBA half-court system (this visualization):
-        - Half court, vertical orientation
-        - x: 0-15m (court width, horizontal in display)
-        - y: 0-14m (half court length, vertical in display, 0 at baseline/basket)
-        - Single basket at y=0
-
-        Conversion strategy:
-        1. Convert percentages to meters
-        2. Calculate distance from attacking basket
-        3. If shot is from defensive half (>14m), mirror it to offensive half
-        4. Mirror across center line: reflected_distance = 28m - distance
-        5. Rotate coordinates: FEB's y becomes FIBA's x, FEB's x becomes FIBA's y
-
-        Parameters:
-        -----------
-        x_feb : float
-            X coordinate from FEB JSON (0-100), along court length
-        y_feb : float
-            Y coordinate from FEB JSON (0-100), along court width
-        team : int
-            Team identifier (0=home, 1=away)
-
-        Returns:
-        --------
-        tuple
-            (x_fiba, y_fiba) in meters, always in offensive half (0-14m)
-        """
-        # Convert percentage to meters
-        x_meters = (x_feb / 100.0) * self.FEB_COURT_LENGTH  # 0-28m along court length
-        y_meters = (y_feb / 100.0) * self.FEB_COURT_WIDTH   # 0-15m along court width
-
-        # Determine distance from attacking basket
-        # Team 0 attacks x=0, Team 1 attacks x=100 (x=28m)
-        if team == 0:
-            # Distance from team 0's basket (at x=0)
-            distance_from_basket = x_meters
-        else:
-            # Distance from team 1's basket (at x=28m)
-            distance_from_basket = self.FEB_COURT_LENGTH - x_meters
-
-        # Mirror shots from defensive half to offensive half
-        # If shot is beyond half court (>14m), reflect it specularly
-        if distance_from_basket > self.FEB_COURT_LENGTH / 2:
-            # Mirror: if shot is at 20m, it becomes 28-20 = 8m (mirrored)
-            y_fiba = self.FEB_COURT_LENGTH - distance_from_basket
-            # Also mirror the x-coordinate (width)
-            x_fiba = self.FEB_COURT_WIDTH - y_meters
-        else:
-            # Shot is in offensive half, keep as is
-            y_fiba = distance_from_basket
-            x_fiba = y_meters
-
-        return x_fiba, y_fiba
-
     def _convert_and_classify_shots(self, shots: List[Dict]) -> Tuple[Tuple[List[float], List[float]],
                                                                         Tuple[List[float], List[float]]]:
         """
@@ -200,8 +128,8 @@ class ShotChartVisualizer:
             shot_team = int(shot['team'])
             made = int(shot['m']) == 1
 
-            # Convert coordinates (automatically mirrors defensive shots)
-            x_fiba, y_fiba = self._convert_feb_to_fiba(x_feb, y_feb, shot_team)
+            # Convert coordinates using shared utility (automatically mirrors defensive shots)
+            x_fiba, y_fiba = convert_feb_to_fiba(x_feb, y_feb, shot_team)
 
             # Classify shot
             if made:
@@ -521,8 +449,8 @@ class ShotChartVisualizer:
             y_feb = float(shot['y'])
             shot_team = int(shot['team'])
 
-            # Convert coordinates (automatically mirrors defensive shots)
-            x_fiba, y_fiba = self._convert_feb_to_fiba(x_feb, y_feb, shot_team)
+            # Convert coordinates using shared utility (automatically mirrors defensive shots)
+            x_fiba, y_fiba = convert_feb_to_fiba(x_feb, y_feb, shot_team)
             all_x.append(x_fiba)
             all_y.append(y_fiba)
 

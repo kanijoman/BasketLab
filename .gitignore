@@ -35,3 +35,9 @@ src/shotcharts/__pycache__/__init__.cpython-311.pyc
 src/shotcharts/__pycache__/fiba_court.cpython-311.pyc
 src/shotcharts/__pycache__/shot_visualizer.cpython-311.pyc
 src/ui/__pycache__/shotchart_window.cpython-311.pyc
+src/shotcharts/__pycache__/coordinate_utils.cpython-311.pyc
+src/shotcharts/__pycache__/court_renderer.cpython-311.pyc
+src/shotcharts/__pycache__/court_zones.cpython-311.pyc
+src/shotcharts/__pycache__/data_loaders.cpython-311.pyc
+src/shotcharts/__pycache__/detailed_zones.cpython-311.pyc
+src/shotcharts/__pycache__/zone_analysis.cpython-311.pyc
