@@ -42,7 +42,13 @@ def get_per_game_stats() -> dict:
     return {
         "points_per_game": {"$divide": ["$points_scored", "$total_games"]},
         "points_against_per_game": {"$divide": ["$points_received", "$total_games"]},
-        "possessions_per_game": {"$divide": ["$total_possessions", "$total_games"]}
+        "points_allowed_per_game": {"$divide": ["$points_received", "$total_games"]},  # Alias for compatibility
+        "possessions_per_game": {"$divide": ["$total_possessions", "$total_games"]},
+        "rebounds_per_game": {"$divide": ["$total_rebounds", "$total_games"]},
+        "assists_per_game": {"$divide": ["$assists", "$total_games"]},
+        "steals_per_game": {"$divide": ["$steals", "$total_games"]},
+        "turnovers_per_game": {"$divide": ["$turnovers", "$total_games"]},
+        "blocks_per_game": {"$divide": ["$blocks", "$total_games"]}
     }
 
 

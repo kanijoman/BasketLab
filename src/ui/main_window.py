@@ -10,6 +10,7 @@ from database import MongoDBHandler
 from utils import normalize_year
 from .stats_window import TeamStatsWindow
 from .shotchart_window import ShotChartWindow
+from .ai_analysis_window import AIAnalysisWindow
 
 
 class BasketballSeasonApp(QMainWindow):
@@ -127,6 +128,23 @@ class BasketballSeasonApp(QMainWindow):
             }
         """)
         layout.addWidget(self.shotchart_button)
+
+        # AI Analysis Button
+        self.ai_analysis_button = QPushButton("🤖 Análisis IA")
+        self.ai_analysis_button.clicked.connect(self.on_view_ai_analysis)
+        self.ai_analysis_button.setStyleSheet("""
+            QPushButton {
+                background-color: #9C27B0;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #7B1FA2;
+            }
+        """)
+        layout.addWidget(self.ai_analysis_button)
 
         # Apply basic styling for a modern look
         self.setStyleSheet("""
@@ -359,6 +377,203 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_bar.setVisible(False)
             self.progress_label.setVisible(False)
             QMessageBox.critical(self, "Error", f"Error al abrir ventana de shot charts: {str(e)}")
+
+    def on_view_ai_analysis(self) -> None:
+        """Handle AI analysis button click - auto-loads all required data."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Aviso",
+                                  "Por favor, seleccione competición, temporada y grupo antes de realizar el análisis IA.")
+                return
+
+            # Get collection name
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            # Update all data first (boxscores + shotcharts)
+            success = self._update_data_for_ai_analysis(competition, season_text, group_text, collection_name)
+
+            if not success:
+                return  # Error message already shown by _update_data_for_ai_analysis
+
+            # Build team list from collection documents
+            teams = self._get_available_teams_for_collection(collection_name)
+            if not teams:
+                QMessageBox.warning(self, "Sin Datos", "No hay equipos disponibles en esta selección.")
+                return
+
+            # Adapt to selector expected structure (name + teamCode)
+            teams_data = [
+                {"name": t.get("name", ""), "teamCode": t.get("code", ""), "id": t.get("id", "")}
+                for t in teams
+            ]
+
+            # Import here to avoid circular imports
+            from .ai_team_selector import AITeamSelector
+
+            # Show team selector dialog
+            selector = AITeamSelector(teams_data, collection_name, self.db_handler, parent=self)
+            selector.show()
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error al abrir análisis IA: {str(e)}")
+
+    def _update_data_for_ai_analysis(self, competition: str, season_text: str, group_text: str, collection_name: str) -> bool:
+        """
+        Update boxscore and shotchart data for AI analysis.
+        Returns True if successful, False otherwise.
+        """
+        try:
+            # Prepare session and parameters
+            season_value = self.season_values.get(season_text, normalize_year(season_text))
+            group_value = self.group_values.get(group_text, group_text)
+            norm_year = normalize_year(season_text)
+            session = requests.Session()
+
+            # Show progress bar
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+            self.progress_label.setText("🤖 Paso 1/3: Obteniendo lista de partidos...")
+            self.progress_bar.setMaximum(0)  # Indeterminate
+            QApplication.processEvents()
+
+            # Get matches
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            if not matches:
+                self.progress_bar.setVisible(False)
+                self.progress_label.setVisible(False)
+                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta selección.")
+                return False
+
+            # Step 2: Update boxscores
+            self.progress_label.setText(f"🤖 Paso 2/3: Actualizando estadísticas de {len(matches)} partidos...")
+            self.progress_bar.setMaximum(len(matches))
+            self.progress_bar.setValue(0)
+            QApplication.processEvents()
+
+            for i, match_code in enumerate(matches, 1):
+                self.progress_bar.setValue(i)
+                QApplication.processEvents()
+
+                try:
+                    # Only download if it doesn't exist or if it's the last match
+                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                        boxscore = self.scraper.fetch_boxscore(match_code, session)
+                        if boxscore:
+                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                except Exception as e:
+                    print(f"[AI] Error processing boxscore for match {match_code}: {str(e)}")
+
+            # Step 3: Update shotcharts
+            self.progress_label.setText(f"🤖 Paso 3/3: Actualizando datos de lanzamientos...")
+            self.progress_bar.setValue(0)
+            QApplication.processEvents()
+
+            collection = self.db_handler.connection.get_collection(collection_name)
+            if collection is None:
+                self.progress_bar.setVisible(False)
+                self.progress_label.setVisible(False)
+                QMessageBox.warning(self, "Error", "No se pudo acceder a la colección de datos.")
+                return False
+
+            documents = list(collection.find({}))
+            self.progress_bar.setMaximum(len(documents))
+
+            updated_shotcharts = 0
+            for i, doc in enumerate(documents, 1):
+                match_code = str(doc.get('_id', ''))
+                self.progress_bar.setValue(i)
+                QApplication.processEvents()
+
+                # Skip if shotchart already exists
+                if 'SHOTCHART' in doc and doc['SHOTCHART']:
+                    continue
+
+                try:
+                    token = self.scraper.token_manager.get_token()
+                    shotchart_data = self.scraper.fetch_shotchart(match_code, session, token)
+
+                    if shotchart_data:
+                        collection.update_one(
+                            {'_id': int(match_code)},
+                            {'$set': {'SHOTCHART': shotchart_data}}
+                        )
+                        updated_shotcharts += 1
+                except Exception as e:
+                    print(f"[AI] Error fetching shotchart for match {match_code}: {str(e)}")
+
+            # Hide progress bar
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            return True
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error actualizando datos: {str(e)}")
+            return False
+
+    def _get_available_teams_for_collection(self, collection_name: str) -> List[Dict]:
+        """Extract available teams from a collection (mirrors ShotChartWindow logic)."""
+        try:
+            collection = self.db_handler.connection.get_collection(collection_name)
+            if collection is None:
+                return []
+
+            documents = list(collection.find({}))
+            teams_dict = {}
+
+            for doc in documents:
+                # Primary source: BOXSCORE.TEAM list
+                if 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
+                    teams = doc['BOXSCORE']['TEAM']
+                    if isinstance(teams, list):
+                        for team in teams:
+                            if isinstance(team, dict) and 'TOTAL' in team:
+                                team_data = team['TOTAL']
+                                team_code = team_data.get('teamCode', '')
+                                team_name = team_data.get('name', '')
+                                team_id = team_data.get('id', '')
+
+                                if team_code and team_name and team_code not in teams_dict:
+                                    teams_dict[team_code] = {
+                                        'name': team_name,
+                                        'code': team_code,
+                                        'id': team_id,
+                                        'team_index': None
+                                    }
+
+                # Fallback: HEADER.TEAM
+                elif 'HEADER' in doc and 'TEAM' in doc['HEADER']:
+                    teams = doc['HEADER']['TEAM']
+                    if isinstance(teams, list):
+                        for team in teams:
+                            if isinstance(team, dict):
+                                team_code = team.get('teamCode', '')
+                                team_name = team.get('name', '')
+                                team_id = team.get('id', '')
+
+                                if team_code and team_name and team_code not in teams_dict:
+                                    teams_dict[team_code] = {
+                                        'name': team_name,
+                                        'code': team_code,
+                                        'id': team_id,
+                                        'team_index': None
+                                    }
+
+            return sorted(teams_dict.values(), key=lambda x: x['name'])
+        except Exception:
+            return []
 
     def update_group_options(self) -> None:
         """Update the group dropdown."""

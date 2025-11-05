@@ -107,6 +107,13 @@ class AggregationPipelineBuilder:
                         "else": "$team_0_def_reb"
                     }
                 },
+                "opponent_off_rebounds": {
+                    "$cond": {
+                        "if": {"$eq": ["$teamIndex", 0]},
+                        "then": "$team_1_off_reb",
+                        "else": "$team_0_off_reb"
+                    }
+                },
                 "assists": {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
                 "possessions": get_possessions_calculation(),
                 "steals": {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
@@ -143,6 +150,7 @@ class AggregationPipelineBuilder:
                 "rebounds_def": {"$sum": "$def_rebounds"},
                 "rebounds_off": {"$sum": "$off_rebounds"},
                 "opponent_rebounds_def": {"$sum": "$opponent_def_rebounds"},
+                "opponent_rebounds_off": {"$sum": "$opponent_off_rebounds"},
                 "assists": {"$sum": "$assists"},
                 "steals": {"$sum": "$steals"},
                 "turnovers": {"$sum": "$turnovers"},
