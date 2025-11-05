@@ -132,7 +132,9 @@ def get_playmaking_metrics() -> dict:
 def get_rebounding_metrics() -> dict:
     """
     Calculate rebounding metrics:
-    - RD%: Defensive Rebound Rate
+    - DRB%: Defensive Rebound Rate
+
+    Formula: DRB% = (Team Defensive Rebounds / (Team Defensive Rebounds + Opponent Offensive Rebounds)) × 100
 
     Returns:
         Dictionary with field definitions for rebounding metrics
@@ -142,7 +144,7 @@ def get_rebounding_metrics() -> dict:
             "$multiply": [
                 safe_divide(
                     "$rebounds_def",
-                    {"$add": ["$rebounds_def", "$opponent_rebounds_def"]}
+                    {"$add": ["$rebounds_def", "$opponent_rebounds_off"]}
                 ),
                 100
             ]
