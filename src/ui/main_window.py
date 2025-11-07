@@ -451,7 +451,15 @@ class BasketballSeasonApp(QMainWindow):
             if not matches:
                 self.progress_bar.setVisible(False)
                 self.progress_label.setVisible(False)
-                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta selección.")
+                QMessageBox.information(
+                    self,
+                    "Sin datos",
+                    f"No se encontraron partidos para {group_text}.\n\n"
+                    f"Esto puede ocurrir si:\n"
+                    f"• Los partidos aún no se han jugado\n"
+                    f"• Los resultados no están publicados en la web de la FEB\n"
+                    f"• El grupo seleccionado no tiene calendario disponible"
+                )
                 return False
 
             # Step 2: Update boxscores
