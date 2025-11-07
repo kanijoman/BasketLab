@@ -146,14 +146,11 @@ class TeamAnalyzer:
             if not model_name.startswith('models/'):
                 model_name = f"models/{model_name}"
 
-            print(f"[Gemini] Initializing with model: {model_name}")
             self.client = genai.GenerativeModel(model_name)
-            print("[Gemini] Successfully initialized.")
 
         except ImportError:
             raise ImportError("google-generativeai not installed. Run: pip install google-generativeai")
         except Exception as e:
-            print(f"[Gemini] CRITICAL ERROR during initialization: {e}")
             raise e
 
     def _init_openai(self):
@@ -547,20 +544,7 @@ class TeamAnalyzer:
                 }
             )
 
-            # Log response details
             response_text = response.text
-            print(f"[Gemini] Response generated successfully ({len(response_text)} chars)")
-
-            # Check if response was truncated
-            if hasattr(response, 'candidates') and response.candidates:
-                candidate = response.candidates[0]
-                if hasattr(candidate, 'finish_reason'):
-                    finish_reason = str(candidate.finish_reason)
-                    if 'MAX_TOKENS' in finish_reason or 'LENGTH' in finish_reason:
-                        print(f"[Gemini] WARNING: Response truncated! Increase MAX_TOKENS (current: {AnalysisConfig.MAX_TOKENS})")
-                        print(f"[Gemini] Response preview: {response_text[:200]}...")
-                        print(f"[Gemini] Response ending: ...{response_text[-200:]}")
-
             return response_text
 
         except Exception as e:

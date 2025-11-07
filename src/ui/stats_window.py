@@ -18,6 +18,7 @@ from .stats_config import (
     get_basic_numeric_data, get_advanced_numeric_data,
     calculate_quartiles, get_quartile_color
 )
+from .ui_utils import set_app_icon
 
 
 class TeamStatsWindow(QMainWindow):
@@ -42,9 +43,13 @@ class TeamStatsWindow(QMainWindow):
             parent: Parent widget
         """
         super().__init__(parent)
-        self.setWindowTitle("Estadísticas de Equipo")
+        self.setWindowTitle("MfA - Estadísticas de Equipo")
         # Set a reasonable minimum window size considering all columns
         self.setMinimumSize(1200, 600)
+
+        # Set application icon
+        set_app_icon(self)
+
         self.setup_ui(team_stats)
 
     def setup_ui(self, team_stats: List[Dict]):

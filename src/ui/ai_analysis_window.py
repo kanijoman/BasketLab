@@ -16,7 +16,7 @@ import os
 
 from ai import TeamAnalyzer, AnalysisConfig
 from .pdf_generator import PDFGenerator
-
+from .ui_utils import set_app_icon
 
 class AnalysisWorker(QThread):
     """Worker thread for generating analysis without freezing UI."""
@@ -60,8 +60,11 @@ class ApiKeyDialog(QDialog):
 
     def setup_ui(self):
         """Setup dialog UI."""
-        self.setWindowTitle(f"Configure {self.provider.capitalize()} API Key")
+        self.setWindowTitle(f"MfA - Configurar API Key de {self.provider.capitalize()}")
         self.setModal(True)
+
+        # Set application icon
+        set_app_icon(self)
 
         layout = QVBoxLayout()
 
@@ -153,16 +156,19 @@ class AIAnalysisWindow(QMainWindow):
         """Setup the user interface."""
         # More appropriate icons for each analysis type
         if self.analysis_type == 'opponent':
-            window_prefix = "🛡️ Scouting Rival"  # Shield = defense strategy
+            window_prefix = "MfA - Scouting Rival"
             header_emoji = "⚔️"  # Swords = battle/competition
             header_prefix = "Análisis Rival"
         else:
-            window_prefix = "� Análisis Propio"  # Lightbulb = insight/improvement
+            window_prefix = "MfA - Análisis Propio"
             header_emoji = "🏀"  # Basketball = own team
             header_prefix = "Análisis de Equipo"
 
         self.setWindowTitle(f"{window_prefix} - {self.team_name}")
         self.setMinimumSize(800, 600)
+
+        # Set application icon
+        set_app_icon(self)
 
         # Central widget
         central_widget = QWidget()
@@ -203,7 +209,7 @@ class AIAnalysisWindow(QMainWindow):
 
         # Options
         options_layout = QHBoxLayout()
-        self.include_image_checkbox = QCheckBox("Include shot chart image")
+        self.include_image_checkbox = QCheckBox("Incluir imagen de gráfico de lanzamiento")
         self.include_image_checkbox.setChecked(self.shot_chart_figure is not None)
         self.include_image_checkbox.setEnabled(self.shot_chart_figure is not None)
         options_layout.addWidget(self.include_image_checkbox)
@@ -265,6 +271,23 @@ class AIAnalysisWindow(QMainWindow):
         self.export_btn = QPushButton("Exportar a PDF")
         self.export_btn.clicked.connect(self.export_report)
         self.export_btn.setEnabled(False)
+        self.export_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                font-size: 14px;
+                font-weight: bold;
+                padding: 10px;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
         export_layout.addWidget(self.export_btn)
 
         layout.addLayout(export_layout)
@@ -373,6 +396,7 @@ class AIAnalysisWindow(QMainWindow):
 
             # Disable button and show progress
             self.generate_btn.setEnabled(False)
+            self.export_btn.setEnabled(False)  # Disable export while generating
             self.progress_bar.show()
             self.report_text.setText("Generating analysis... This may take 10-30 seconds.")
 
@@ -418,6 +442,7 @@ class AIAnalysisWindow(QMainWindow):
         """Handle analysis error."""
         self.progress_bar.hide()
         self.generate_btn.setEnabled(True)
+        self.export_btn.setEnabled(False)  # Disable export on error
         self.report_text.setText(f"Error generating analysis:\n\n{error}")
         QMessageBox.critical(self, "Analysis Error", error)
 
@@ -458,11 +483,9 @@ class AIAnalysisWindow(QMainWindow):
             # Use the original HTML from AI if available
             if self.original_html:
                 report_html = self.original_html
-                print("[PDF] Using original HTML from AI")
             else:
                 # Fallback: get from QTextEdit
                 report_html = self.report_text.toHtml()
-                print("[PDF] Using QTextEdit rendered HTML (fallback)")
 
             # Clean up HTML if AI wrapped it in markdown code blocks
             if '```html' in report_html:
@@ -476,23 +499,6 @@ class AIAnalysisWindow(QMainWindow):
                     lines = lines[:-1]
                 report_html = '\n'.join(lines).strip()
 
-            print(f"[PDF] HTML content length: {len(report_html)} chars")
-            print(f"[PDF] HTML preview (first 300 chars): {report_html[:300]}")
-            print(f"[PDF] HTML end (last 300 chars): {report_html[-300:]}")
-
-            # Check if HTML seems complete
-            if '</html>' not in report_html.lower():
-                print("[PDF] WARNING: HTML does not appear to have closing </html> tag - may be truncated!")
-            if '</body>' not in report_html.lower():
-                print("[PDF] WARNING: HTML does not appear to have closing </body> tag - may be truncated!")
-
-            # Count sections
-            h2_count = report_html.count('<h2>')
-            print(f"[PDF] Number of <h2> sections found: {h2_count}")
-            if h2_count < 4:
-                print(f"[PDF] WARNING: Expected at least 6 sections, only found {h2_count}")
-
-
             # Add team name to HTML if not present
             if '<h1>' not in report_html or 'Analisis de Equipo' in report_html[:200]:
                 report_html = report_html.replace(
@@ -501,13 +507,9 @@ class AIAnalysisWindow(QMainWindow):
                 )
 
             # Use fpdf2 with HTML parsing (most reliable on Windows)
-            print("[PDF] Using fpdf2 HTML fallback for Windows compatibility")
             self._generate_pdf_from_html_fallback(file_path, report_html)
 
         except Exception as e:
-            print(f"[PDF] Error generating PDF: {e}")
-            import traceback
-            traceback.print_exc()
             raise
 
     def _generate_pdf_from_html_fallback(self, file_path: str, html_content: str):
@@ -534,10 +536,8 @@ class AIAnalysisWindow(QMainWindow):
             Uses PDFGenerator module for consistent PDF generation across the application.
         """
         # Generate PDF using the centralized PDFGenerator
-        # Generate PDF using the centralized PDFGenerator
         PDFGenerator.generate_from_html(
             file_path=file_path,
             html_content=html_content,
             shot_chart_figure=self.shot_chart_figure
         )
-        print("[PDF] Generated successfully using PDFGenerator")

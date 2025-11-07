@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from shotcharts import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
-from .ai_analysis_window import AIAnalysisWindow
+from .ui_utils import set_app_icon
 
 
 class ShotChartWindow(QMainWindow):
@@ -38,8 +38,11 @@ class ShotChartWindow(QMainWindow):
         self.current_shots = []
         self.current_team = None
 
-        self.setWindowTitle("Shot Charts - Gráficos de Lanzamiento")
+        self.setWindowTitle("MfA - Gráficos de Lanzamiento")
         self.setMinimumSize(900, 700)
+
+        # Set application icon
+        set_app_icon(self)
 
         # Get available teams
         self.teams = self._get_available_teams()
@@ -180,27 +183,6 @@ class ShotChartWindow(QMainWindow):
 
         viz_layout.addStretch()
 
-        # AI Analysis button
-        self.ai_analysis_btn = QPushButton("🤖 AI Analysis")
-        self.ai_analysis_btn.clicked.connect(self.show_ai_analysis)
-        self.ai_analysis_btn.setEnabled(False)
-        self.ai_analysis_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                font-weight: bold;
-                padding: 5px 15px;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-            }
-        """)
-        viz_layout.addWidget(self.ai_analysis_btn)
-
         # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
@@ -297,6 +279,16 @@ class ShotChartWindow(QMainWindow):
 
     def on_filter_changed(self):
         """Handle shot filter change and redraw chart if data exists."""
+        # If Zones visualization is selected, force "All shots" filter and disable other filters
+        if self.radio_zones.isChecked():
+            self.radio_all.setChecked(True)
+            self.radio_made.setEnabled(False)
+            self.radio_missed.setEnabled(False)
+        else:
+            # Re-enable filters for other visualization types
+            self.radio_made.setEnabled(True)
+            self.radio_missed.setEnabled(True)
+
         if self.current_shots:
             # Redraw the chart with the current filter
             self._draw_chart()
@@ -305,7 +297,7 @@ class ShotChartWindow(QMainWindow):
         """Update shot chart data from FEB."""
         try:
             self.progress_bar.setVisible(True)
-            self.status_label.setText("Actualizando datos de shot charts...")
+            self.status_label.setText("Actualizando datos de gráficos de lanzamiento...")
             QApplication.processEvents()
 
             collection = self.db_handler.connection.get_collection(self.collection_name)
@@ -363,7 +355,7 @@ class ShotChartWindow(QMainWindow):
             self.refresh_teams()
 
             QMessageBox.information(self, "Actualización completa",
-                                  f"Se actualizaron {updated} partidos.\n{skipped} partidos ya tenían datos de shot chart.")
+                                  f"Se actualizaron {updated} partidos.\n{skipped} partidos ya tenían datos de gráficos de lanzamiento.")
 
         except Exception as e:
             self.progress_bar.setVisible(False)
@@ -377,7 +369,7 @@ class ShotChartWindow(QMainWindow):
             return
 
         try:
-            self.status_label.setText(f"Generando shot chart para {team['name']}...")
+            self.status_label.setText(f"Generando gráfico de lanzamiento para {team['name']}...")
             QApplication.processEvents()
 
             collection = self.db_handler.connection.get_collection(self.collection_name)
@@ -413,9 +405,6 @@ class ShotChartWindow(QMainWindow):
             self.current_shots = all_shots
             self.current_team = team
 
-            # Enable AI analysis button
-            self.ai_analysis_btn.setEnabled(True)
-
             self._draw_chart()
 
             # Adjust window size to fit the chart properly
@@ -423,8 +412,8 @@ class ShotChartWindow(QMainWindow):
             self.resize(1050, 1100)
 
         except Exception as e:
-            self.status_label.setText("Error al generar shot chart")
-            QMessageBox.critical(self, "Error", f"Error al generar shot chart: {str(e)}")
+            self.status_label.setText("Error al generar gráfico de lanzamiento")
+            QMessageBox.critical(self, "Error", f"Error al generar gráfico de lanzamiento: {str(e)}")
 
     def _get_team_index(self, doc: Dict, team_code: str) -> int:
         """
@@ -527,58 +516,3 @@ class ShotChartWindow(QMainWindow):
             f"{viz_type} - {filter_text}: {total_count} lanzamientos "
             f"({made_count} anotados, {total_count - made_count} fallados) | Total: {total_all}"
         )
-
-    def show_ai_analysis(self):
-        """Show AI analysis window for current team."""
-        if not self.current_team or not self.current_shots:
-            QMessageBox.warning(
-                self,
-                "No Data",
-                "Please select a team and load shot data first."
-            )
-            return
-
-        try:
-            # Prepare stats data
-            if self.radio_zones.isChecked():
-                # Use zone analysis stats if available
-                processed_shots = convert_shots_for_zone_analysis(self.current_shots)
-                stats = self.zone_analyzer.analyze_zone_performance(processed_shots)
-            else:
-                # Create basic stats from shots
-                total_shots = len(self.current_shots)
-                made_shots = sum(1 for s in self.current_shots if int(s.get('m', 0)) == 1)
-                stats = {
-                    'total_shots': total_shots,
-                    'made_shots': made_shots,
-                    'percentage': (made_shots / total_shots * 100) if total_shots > 0 else 0,
-                    'zone_stats': {}
-                }
-
-                # Try to add zone stats anyway for better analysis
-                try:
-                    processed_shots = convert_shots_for_zone_analysis(self.current_shots)
-                    zone_stats = self.zone_analyzer.analyze_zone_performance(processed_shots)
-                    stats['zone_stats'] = zone_stats.get('zone_stats', {})
-                except:
-                    pass
-
-            # Get current figure for image analysis
-            current_figure = self.figure if hasattr(self, 'figure') else None
-
-            # Show AI analysis window
-            team_name = self.current_team.get('name', 'Unknown Team')
-            ai_window = AIAnalysisWindow(
-                team_name=team_name,
-                stats=stats,
-                shot_chart_figure=current_figure,
-                parent=self
-            )
-            ai_window.show()
-
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error",
-                f"Failed to open AI analysis: {str(e)}"
-            )
