@@ -10,6 +10,7 @@ from typing import List, Dict
 from shotcharts.zone_analysis import ZoneAnalyzer
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ai_analysis_window import AIAnalysisWindow
+from .ui_utils import set_app_icon
 import matplotlib.pyplot as plt
 
 
@@ -37,8 +38,11 @@ class AITeamSelector(QDialog):
 
     def setup_ui(self):
         """Setup the dialog UI."""
-        self.setWindowTitle("Seleccionar Equipo para Análisis IA")
+        self.setWindowTitle("MfA - Seleccionar Equipo para Análisis IA")
         self.setMinimumSize(400, 500)
+
+        # Set application icon
+        set_app_icon(self)
 
         layout = QVBoxLayout(self)
 
@@ -245,8 +249,6 @@ class AITeamSelector(QDialog):
                 'league_stats': league_quartiles  # League-wide quartiles for comparison
             }
 
-            print(f"[AI] Prepared stats with {len(league_quartiles)} quartile metrics")
-
             # Determine analysis type
             analysis_type = 'opponent' if self.radio_opponent.isChecked() else 'own'
 
@@ -292,9 +294,6 @@ class AITeamSelector(QDialog):
             # Find this team's stats
             for team_stat in team_stats_list:
                 if team_stat.get('team_name') == team_name:
-                    # Debug: Print available keys
-                    print(f"[AI] Available stats keys for {team_name}: {list(team_stat.keys())}")
-
                     # Extract ALL available stats from the database
                     result = {
                         # Basic info
@@ -349,23 +348,12 @@ class AITeamSelector(QDialog):
                         'defensive_rebounds': safe_get(team_stat, 'rebounds_def'),
                     }
 
-                    # Debug: Print fetched values
-                    print(f"[AI] Fetched stats for {team_name}:")
-                    print(f"  - Games: {result['games_played']}")
-                    print(f"  - PPG: {result['points_per_game']:.1f}")
-                    print(f"  - ORtg: {result['offensive_rating']:.1f}")
-                    print(f"  - DRtg: {result['defensive_rating']:.1f}")
-                    print(f"  - eFG%: {result['effective_fg_percentage']:.1f}")
-                    print(f"  - TOV Rate: {result['turnover_rate']:.1f}")
-
                     return result
 
             # Return empty dict if team not found
-            print(f"[AI] Team '{team_name}' not found in stats")
             return {}
 
         except Exception as e:
-            print(f"[AI] Error fetching team stats: {e}")
             import traceback
             traceback.print_exc()
             return {}
@@ -381,14 +369,7 @@ class AITeamSelector(QDialog):
             team_stats_list = self.db_handler.get_team_stats(self.collection_name)
 
             if not team_stats_list:
-                print("[AI] No team stats available for quartile calculation")
                 return {}
-
-            print(f"[AI] Calculating quartiles from {len(team_stats_list)} teams")
-
-            # Debug: Print available fields from first team
-            if team_stats_list:
-                print(f"[AI] Available stat fields: {list(team_stats_list[0].keys())}")
 
             # Stat fields to calculate quartiles for (comprehensive list from basic_stats + advanced_stats)
             stat_fields = [
@@ -455,19 +436,13 @@ class AITeamSelector(QDialog):
                         'max': values[-1],
                         'count': n
                     }
-                else:
-                    print(f"[AI] Skipping {stat_field} - insufficient data ({len(values)} teams)")
 
-            print(f"[AI] Calculated quartiles for {len(quartiles)} statistics across {len(team_stats_list)} teams")
             return quartiles
 
         except Exception as e:
-            print(f"[AI] Error calculating league quartiles: {e}")
             import traceback
             traceback.print_exc()
             return {}
-        except Exception as e:
-            print(f"[AI] Error fetching team stats: {e}")
             import traceback
             traceback.print_exc()
             return {}

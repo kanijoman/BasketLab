@@ -11,6 +11,7 @@ from utils import normalize_year
 from .stats_window import TeamStatsWindow
 from .shotchart_window import ShotChartWindow
 from .ai_analysis_window import AIAnalysisWindow
+from .ui_utils import set_app_icon
 
 
 class BasketballSeasonApp(QMainWindow):
@@ -32,8 +33,12 @@ class BasketballSeasonApp(QMainWindow):
         self.competitions = ["L.F. 2", "Primera Nacional"]
         self.group_options = {}
         self.group_values = {}
-        self.setWindowTitle("Basketball Team Seasons")
+        self.setWindowTitle("MfA - Metrics for All")
         self.setMinimumSize(400, 400)
+
+        # Set application icon
+        set_app_icon(self)
+
         self.initialize_data()
         self.setup_ui()
 
@@ -315,7 +320,7 @@ class BasketballSeasonApp(QMainWindow):
 
             if not all([competition, season_text, group_text]):
                 QMessageBox.warning(self, "Aviso",
-                                  "Por favor, seleccione competición, temporada y grupo antes de ver shot charts.")
+                                  "Por favor, seleccione competición, temporada y grupo antes de ver los gráficos de lanzamiento.")
                 return
 
             # Update data first (same as on_view_stats)
@@ -356,7 +361,7 @@ class BasketballSeasonApp(QMainWindow):
                 except Exception as e:
                     print(f"[App] Error processing match {match_code}: {str(e)}")
 
-            self.progress_label.setText("Progreso: Cargando shot charts...")
+            self.progress_label.setText("Progreso: Cargando gráficos de lanzamiento...")
             self.progress_bar.setValue(len(matches))
             QApplication.processEvents()
 
@@ -376,7 +381,7 @@ class BasketballSeasonApp(QMainWindow):
         except Exception as e:
             self.progress_bar.setVisible(False)
             self.progress_label.setVisible(False)
-            QMessageBox.critical(self, "Error", f"Error al abrir ventana de shot charts: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Error al abrir ventana de gráficos de lanzamiento: {str(e)}")
 
     def on_view_ai_analysis(self) -> None:
         """Handle AI analysis button click - auto-loads all required data."""
@@ -479,7 +484,7 @@ class BasketballSeasonApp(QMainWindow):
                         if boxscore:
                             self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
                 except Exception as e:
-                    print(f"[AI] Error processing boxscore for match {match_code}: {str(e)}")
+                    pass  # Silently continue with other matches
 
             # Step 3: Update shotcharts
             self.progress_label.setText(f"🤖 Paso 3/3: Actualizando datos de lanzamientos...")
@@ -517,7 +522,7 @@ class BasketballSeasonApp(QMainWindow):
                         )
                         updated_shotcharts += 1
                 except Exception as e:
-                    print(f"[AI] Error fetching shotchart for match {match_code}: {str(e)}")
+                    pass  # Silently continue with other matches
 
             # Hide progress bar
             self.progress_bar.setVisible(False)
