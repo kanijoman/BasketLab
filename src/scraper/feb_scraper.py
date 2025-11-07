@@ -195,13 +195,40 @@ class FEBWebScraper:
 
         # Get initial page
         soup, _ = self.get_page_content(norm_year)
+
+        # Check if the initial page already has the correct season and group selected
+        season_dropdown = soup.find("select", {"id": SEASON_DROPDOWN_ID})
+        group_dropdown = soup.find("select", {"id": GROUP_DROPDOWN_ID})
+
+        current_season = None
+        current_group = None
+
+        if season_dropdown:
+            selected_option = season_dropdown.find("option", selected=True)
+            if selected_option:
+                current_season = selected_option.get("value")
+
+        if group_dropdown:
+            selected_option = group_dropdown.find("option", selected=True)
+            if selected_option:
+                current_group = selected_option.get("value")
+
+        # If the page already has the correct selection, use it directly
+        if current_season == season_value and current_group == group_value:
+            matches = self._extract_match_codes(soup)
+            if matches:  # If we found matches, we're done
+                return matches
+
+        # Otherwise, need to select season and group via POST
         hidden_fields = self.get_hidden_fields(soup)
 
-        # Select season
-        soup, hidden_fields = self.select_season(session, url, season_value, hidden_fields)
+        # Select season (only if different from current)
+        if current_season != season_value:
+            soup, hidden_fields = self.select_season(session, url, season_value, hidden_fields)
 
-        # Select group
-        soup = self.select_group(session, url, season_value, group_value, hidden_fields)
+        # Select group (only if different from current)
+        if current_group != group_value:
+            soup = self.select_group(session, url, season_value, group_value, hidden_fields)
 
         # Extract match codes
         return self._extract_match_codes(soup)
