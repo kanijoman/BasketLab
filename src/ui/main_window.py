@@ -296,12 +296,15 @@ class BasketballSeasonApp(QMainWindow):
                 QMessageBox.information(self, "Sin datos", "No hay estadísticas disponibles para las opciones seleccionadas.")
                 return
 
+            # Get opponent statistics
+            opponent_stats = self.db_handler.get_opponent_stats(collection_name)
+
             # Hide progress elements after completion
             self.progress_bar.setVisible(False)
             self.progress_label.setVisible(False)
 
-            # Create and show the stats window
-            self.stats_window = TeamStatsWindow(team_stats, self)
+            # Create and show the stats window with both team and opponent stats
+            self.stats_window = TeamStatsWindow(team_stats, opponent_stats, self)
             self.stats_window.show()
 
         except Exception as e:

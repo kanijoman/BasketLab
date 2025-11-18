@@ -99,3 +99,28 @@ class BasketballRepository:
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting team stats: {e}")
             return []
+
+    def get_opponent_stats(self, collection_name: str) -> List[Dict]:
+        """
+        Get aggregated opponent statistics grouped by team.
+
+        This shows what each team's opponents have done against them across all matches.
+        Useful for defensive analysis and understanding the strength of opposition faced.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            List of opponent statistics dictionaries grouped by team
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline()
+            return list(collection.aggregate(pipeline))
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting opponent stats: {e}")
+            return []
