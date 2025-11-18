@@ -34,12 +34,13 @@ class TeamStatsWindow(QMainWindow):
         (15, 16, "Rebotes", "#C8E6C9")
     ]
 
-    def __init__(self, team_stats: List[Dict], parent=None):
+    def __init__(self, team_stats: List[Dict], opponent_stats: List[Dict] = None, parent=None):
         """
         Initialize the team stats window.
 
         Args:
             team_stats: List of team statistics dictionaries
+            opponent_stats: List of opponent statistics dictionaries (optional)
             parent: Parent widget
         """
         super().__init__(parent)
@@ -50,6 +51,7 @@ class TeamStatsWindow(QMainWindow):
         # Set application icon
         set_app_icon(self)
 
+        self.opponent_stats = opponent_stats or []
         self.setup_ui(team_stats)
 
     def setup_ui(self, team_stats: List[Dict]):
@@ -116,6 +118,32 @@ class TeamStatsWindow(QMainWindow):
 
         self.tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
 
+        # Create opponent stats tab if data is available
+        if self.opponent_stats:
+            opponent_tab = QWidget()
+            opponent_layout = QVBoxLayout(opponent_tab)
+            opponent_layout.setSpacing(0)
+            opponent_layout.setContentsMargins(0, 0, 0, 0)
+
+            self.opponent_table = QTableWidget()
+            opponent_layout.addWidget(self.opponent_table)
+
+            # Add color legend for opponent stats
+            opponent_legend_widget = self._create_color_legend()
+            opponent_layout.addWidget(opponent_legend_widget)
+
+            self.tab_widget.addTab(opponent_tab, "Estadísticas Rivales")
+
+            # Setup opponent table
+            self.opponent_table.setColumnCount(len(ADVANCED_COLUMNS))
+            self.opponent_table.setHorizontalHeaderLabels(ADVANCED_COLUMNS)
+            self.opponent_table.setSortingEnabled(True)
+            opponent_header = self.opponent_table.horizontalHeader()
+            for i in range(len(ADVANCED_COLUMNS)):
+                opponent_header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+        else:
+            self.opponent_table = None
+
         # Connect tab change event to adjust window size
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
@@ -145,9 +173,19 @@ class TeamStatsWindow(QMainWindow):
         basic_quartiles = {key: calculate_quartiles(values) for key, (values, _) in basic_numeric_data.items()}
         advanced_quartiles = {key: calculate_quartiles(values) for key, (values, _) in advanced_numeric_data.items()}
 
+        # Get opponent numeric data and quartiles if available
+        if self.opponent_stats:
+            opponent_numeric_data = get_advanced_numeric_data(self.opponent_stats)
+            opponent_quartiles = {key: calculate_quartiles(values) for key, (values, _) in opponent_numeric_data.items()}
+        else:
+            opponent_numeric_data = {}
+            opponent_quartiles = {}
+
         # Populate tables
         self.basic_table.setRowCount(len(team_stats))
         self.advanced_table.setRowCount(len(team_stats))
+        if self.opponent_table:
+            self.opponent_table.setRowCount(len(self.opponent_stats))
 
         for row, team in enumerate(team_stats):
             # Populate basic stats table
@@ -155,8 +193,17 @@ class TeamStatsWindow(QMainWindow):
             # Populate advanced stats table
             self._populate_advanced_stats_row(row, team, advanced_numeric_data, advanced_quartiles)
 
-        # Configure scrollbars for both tables
-        for table in [self.basic_table, self.advanced_table]:
+        # Populate opponent stats table if available
+        if self.opponent_table and self.opponent_stats:
+            for row, opp_team in enumerate(self.opponent_stats):
+                self._populate_advanced_stats_row(row, opp_team, opponent_numeric_data, opponent_quartiles, self.opponent_table)
+
+        # Configure scrollbars for all tables
+        tables_to_configure = [self.basic_table, self.advanced_table]
+        if self.opponent_table:
+            tables_to_configure.append(self.opponent_table)
+
+        for table in tables_to_configure:
             table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
             table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
@@ -196,8 +243,14 @@ class TeamStatsWindow(QMainWindow):
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.basic_table.setItem(row, col_idx, item)
 
-    def _populate_advanced_stats_row(self, row: int, team: Dict, numeric_data: Dict, quartiles: Dict):
-        """Populate a row in the advanced stats table."""
+    def _populate_advanced_stats_row(self, row: int, team: Dict, numeric_data: Dict, quartiles: Dict, table=None):
+        """Populate a row in the advanced stats table (or opponent stats table)."""
+        # Use provided table or default to advanced_table
+        target_table = table if table is not None else self.advanced_table
+
+        # Determine if we're populating the opponent table (colors should be inverted)
+        is_opponent_table = target_table is self.opponent_table
+
         numeric_cols = []
 
         # Get advanced stats configuration for this team
@@ -211,19 +264,24 @@ class TeamStatsWindow(QMainWindow):
             numeric_cols.append((idx, key, num_value, display_value))
 
         # Team name and games
-        self.advanced_table.setItem(row, 0, NumericTableWidgetItem(team["team_name"], team["team_name"], False))
-        self.advanced_table.setItem(row, 1, NumericTableWidgetItem(team["total_games"], str(team["total_games"])))
+        target_table.setItem(row, 0, NumericTableWidgetItem(team["team_name"], team["team_name"], False))
+        target_table.setItem(row, 1, NumericTableWidgetItem(team["total_games"], str(team["total_games"])))
 
         for col_idx, key, value, value_str in numeric_cols:
             item = NumericTableWidgetItem(value, value_str)
+            # For opponent stats, invert the color logic
+            reverse_flag = numeric_data[key][1]
+            if is_opponent_table:
+                reverse_flag = not reverse_flag  # Invert for opponent stats
+
             color = get_quartile_color(
                 float(value),
                 quartiles[key],
-                numeric_data[key][1]
+                reverse_flag
             )
             item.setBackground(color)
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self.advanced_table.setItem(row, col_idx, item)
+            target_table.setItem(row, col_idx, item)
 
     def _apply_header_colors(self):
         """Apply background colors to column headers based on their groups."""
@@ -231,6 +289,9 @@ class TeamStatsWindow(QMainWindow):
         for start_col, end_col, _, color in self.COLUMN_GROUPS:
             for col in range(start_col, end_col + 1):
                 self.advanced_table.horizontalHeaderItem(col).setBackground(QColor(color))
+                # Also apply to opponent table if it exists
+                if self.opponent_table:
+                    self.opponent_table.horizontalHeaderItem(col).setBackground(QColor(color))
 
     def _create_color_legend(self) -> QWidget:
         """Create a color legend widget to identify column groups."""
@@ -278,12 +339,24 @@ class TeamStatsWindow(QMainWindow):
     def _get_current_table(self) -> QTableWidget:
         """Get the currently active table based on selected tab."""
         current_index = self.tab_widget.currentIndex()
-        return self.basic_table if current_index == 0 else self.advanced_table
+        if current_index == 0:
+            return self.basic_table
+        elif current_index == 1:
+            return self.advanced_table
+        elif current_index == 2 and self.opponent_table:
+            return self.opponent_table
+        return self.advanced_table  # fallback
 
     def _get_current_table_name(self) -> str:
         """Get the name of the currently active table."""
         current_index = self.tab_widget.currentIndex()
-        return "estadisticas_basicas" if current_index == 0 else "estadisticas_avanzadas"
+        if current_index == 0:
+            return "estadisticas_basicas"
+        elif current_index == 1:
+            return "estadisticas_avanzadas"
+        elif current_index == 2 and self.opponent_table:
+            return "estadisticas_rivales"
+        return "estadisticas_avanzadas"  # fallback
 
     def _export_csv(self):
         """Export current table to CSV format."""
@@ -550,6 +623,8 @@ class TeamStatsWindow(QMainWindow):
         # Force tables to update their geometry
         self.basic_table.updateGeometry()
         self.advanced_table.updateGeometry()
+        if self.opponent_table:
+            self.opponent_table.updateGeometry()
 
         # Use QTimer to ensure tables are fully rendered before resizing
         QTimer.singleShot(100, self._adjust_window_size_for_current_tab)
