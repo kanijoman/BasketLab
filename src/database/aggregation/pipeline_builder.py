@@ -119,13 +119,14 @@ class AggregationPipelineBuilder:
         }
 
     @staticmethod
-    def build_team_stats_pipeline(date_filter: Dict = None) -> List[Dict]:
+    def build_team_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None) -> List[Dict]:
         """
         Build complete aggregation pipeline for team statistics.
 
         Args:
             date_filter: Optional MongoDB date filter dict with datetime object
                         Example: {"$gte": datetime(2024, 1, 1)}
+            venue_filter: Optional boolean to filter by venue (True=home, False=away, None=all)
 
         Returns:
             List of aggregation pipeline stages
@@ -158,6 +159,10 @@ class AggregationPipelineBuilder:
 
         # Phase 3: Project individual match data
         pipeline.append(AggregationPipelineBuilder._project_match_data())
+
+        # Phase 3.5: Filter by venue if specified
+        if venue_filter is not None:
+            pipeline.append({"$match": {"is_local": venue_filter}})
 
         # Phase 4: Group by team
         pipeline.append(AggregationPipelineBuilder._group_by_team())
@@ -313,7 +318,7 @@ class AggregationPipelineBuilder:
         return {"$addFields": stats}
 
     @staticmethod
-    def build_opponent_stats_pipeline(date_filter: Dict = None) -> List[Dict]:
+    def build_opponent_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None) -> List[Dict]:
         """
         Build aggregation pipeline for opponent statistics grouped by team.
         This shows what each team's opponents have done against them.
@@ -321,6 +326,7 @@ class AggregationPipelineBuilder:
         Args:
             date_filter: Optional MongoDB date filter dict with datetime object
                         Example: {"$gte": datetime(2024, 1, 1)}
+            venue_filter: Optional boolean to filter by venue (True=home, False=away, None=all)
 
         Returns:
             List of aggregation pipeline stages
@@ -353,6 +359,10 @@ class AggregationPipelineBuilder:
 
         # Phase 3: Project match data focusing on opponent stats
         pipeline.append(AggregationPipelineBuilder._project_opponent_match_data())
+
+        # Phase 3.5: Filter by venue if specified
+        if venue_filter is not None:
+            pipeline.append({"$match": {"is_local": venue_filter}})
 
         # Phase 4: Group by team (aggregating their opponents' stats)
         pipeline.append(AggregationPipelineBuilder._group_opponent_by_team())
