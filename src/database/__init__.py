@@ -33,13 +33,13 @@ class MongoDBHandler:
         """Insert a boxscore document."""
         return self.repository.insert_boxscore(collection_name, match_code, boxscore)
 
-    def get_team_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None) -> list:
+    def get_team_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None, result_filter: str = None) -> list:
         """Get aggregated team statistics."""
-        return self.repository.get_team_stats(collection_name, date_filter, venue_filter)
+        return self.repository.get_team_stats(collection_name, date_filter, venue_filter, result_filter)
 
-    def get_opponent_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None) -> list:
+    def get_opponent_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None, result_filter: str = None) -> list:
         """Get opponent statistics grouped by team."""
-        return self.repository.get_opponent_stats(collection_name, date_filter, venue_filter)
+        return self.repository.get_opponent_stats(collection_name, date_filter, venue_filter, result_filter)
 
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:

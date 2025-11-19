@@ -1,12 +1,17 @@
 """MongoDB aggregation pipeline builder for team statistics."""
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from .basic_stats import get_shooting_percentages, get_per_game_stats, get_possessions_calculation
 from .advanced_stats import get_all_advanced_stats
 
 
 class AggregationPipelineBuilder:
     """Builds MongoDB aggregation pipeline for team statistics."""
+
+    # Result filter constants
+    RESULT_WON = 'won'
+    RESULT_LOST = 'lost'
+    VALID_RESULT_FILTERS = {RESULT_WON, RESULT_LOST}
 
     @staticmethod
     def _conditional_field(team_0_field: str, team_1_field: str) -> Dict:
@@ -119,7 +124,7 @@ class AggregationPipelineBuilder:
         }
 
     @staticmethod
-    def build_team_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None) -> List[Dict]:
+    def build_team_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: Optional[str] = None) -> List[Dict]:
         """
         Build complete aggregation pipeline for team statistics.
 
@@ -127,10 +132,18 @@ class AggregationPipelineBuilder:
             date_filter: Optional MongoDB date filter dict with datetime object
                         Example: {"$gte": datetime(2024, 1, 1)}
             venue_filter: Optional boolean to filter by venue (True=home, False=away, None=all)
+            result_filter: Optional string to filter by result ('won', 'lost', None=all)
 
         Returns:
             List of aggregation pipeline stages
+
+        Raises:
+            ValueError: If result_filter is not None, 'won', or 'lost'
         """
+        # Validate result_filter
+        if result_filter is not None and result_filter not in AggregationPipelineBuilder.VALID_RESULT_FILTERS:
+            raise ValueError(f"Invalid result_filter: {result_filter}. Must be 'won', 'lost', or None")
+
         pipeline = []
 
         # Phase 0: Add date conversion and filter if provided
@@ -163,6 +176,13 @@ class AggregationPipelineBuilder:
         # Phase 3.5: Filter by venue if specified
         if venue_filter is not None:
             pipeline.append({"$match": {"is_local": venue_filter}})
+
+        # Phase 3.6: Filter by result if specified
+        if result_filter is not None:
+            if result_filter == 'won':
+                pipeline.append({"$match": {"won": True}})
+            elif result_filter == 'lost':
+                pipeline.append({"$match": {"won": False}})
 
         # Phase 4: Group by team
         pipeline.append(AggregationPipelineBuilder._group_by_team())
@@ -255,7 +275,8 @@ class AggregationPipelineBuilder:
                 "turnovers": {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
                 "blocks": {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
                 "match_id": "$_id",
-                "is_local": {"$eq": ["$teamIndex", 0]}
+                "is_local": {"$eq": ["$teamIndex", 0]},
+                "won": {"$gt": [{"$toInt": "$BOXSCORE.TEAM.TOTAL.pts"}, builder._conditional_field("awayPoints", "localPoints")]}
             }
         }
 
@@ -318,7 +339,7 @@ class AggregationPipelineBuilder:
         return {"$addFields": stats}
 
     @staticmethod
-    def build_opponent_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None) -> List[Dict]:
+    def build_opponent_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: Optional[str] = None) -> List[Dict]:
         """
         Build aggregation pipeline for opponent statistics grouped by team.
         This shows what each team's opponents have done against them.
@@ -327,10 +348,18 @@ class AggregationPipelineBuilder:
             date_filter: Optional MongoDB date filter dict with datetime object
                         Example: {"$gte": datetime(2024, 1, 1)}
             venue_filter: Optional boolean to filter by venue (True=home, False=away, None=all)
+            result_filter: Optional string to filter by result ('won', 'lost', None=all)
 
         Returns:
             List of aggregation pipeline stages
+
+        Raises:
+            ValueError: If result_filter is not None, 'won', or 'lost'
         """
+        # Validate result_filter
+        if result_filter is not None and result_filter not in AggregationPipelineBuilder.VALID_RESULT_FILTERS:
+            raise ValueError(f"Invalid result_filter: {result_filter}. Must be 'won', 'lost', or None")
+
         pipeline = []
 
         # Phase 0: Add date conversion and filter if provided
@@ -363,6 +392,13 @@ class AggregationPipelineBuilder:
         # Phase 3.5: Filter by venue if specified
         if venue_filter is not None:
             pipeline.append({"$match": {"is_local": venue_filter}})
+
+        # Phase 3.6: Filter by result if specified
+        if result_filter is not None:
+            if result_filter == AggregationPipelineBuilder.RESULT_WON:
+                pipeline.append({"$match": {"won": True}})
+            elif result_filter == AggregationPipelineBuilder.RESULT_LOST:
+                pipeline.append({"$match": {"won": False}})
 
         # Phase 4: Group by team (aggregating their opponents' stats)
         pipeline.append(AggregationPipelineBuilder._group_opponent_by_team())
@@ -437,7 +473,8 @@ class AggregationPipelineBuilder:
                 "turnovers": builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
                 "blocks": builder._opponent_conditional_field("team_0_blocks", "team_1_blocks"),
                 "match_id": "$_id",
-                "is_local": {"$eq": ["$teamIndex", 0]}
+                "is_local": {"$eq": ["$teamIndex", 0]},
+                "won": {"$gt": [{"$toInt": "$BOXSCORE.TEAM.TOTAL.pts"}, builder._opponent_conditional_field("localPoints", "awayPoints")]}
             }
         }
 
