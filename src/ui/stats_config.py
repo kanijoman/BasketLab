@@ -129,7 +129,7 @@ def get_basic_numeric_data(team_stats: List[Dict]) -> Dict[str, Tuple[List[float
         Dictionary mapping field names to (values_list, reverse_flag) tuples.
         reverse_flag is True when lower values are better.
     """
-    from .table_items import safe_float
+    from .numeric_utils import safe_float
 
     return {
         'points_scored': ([safe_float(team['points_scored']) for team in team_stats], False),
@@ -160,7 +160,7 @@ def get_advanced_numeric_data(team_stats: List[Dict]) -> Dict[str, Tuple[List[fl
         Dictionary mapping field names to (values_list, reverse_flag) tuples.
         reverse_flag is True when lower values are better.
     """
-    from .table_items import safe_float
+    from .numeric_utils import safe_float
 
     return {
         'possessions_per_game': ([safe_float(team['possessions_per_game']) for team in team_stats], False),

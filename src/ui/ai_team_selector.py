@@ -7,7 +7,9 @@ from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QListWidget,
                               QRadioButton, QButtonGroup, QGroupBox, QLineEdit)
 from PyQt6.QtCore import Qt
 from typing import List, Dict
+import numpy as np
 from shotcharts.zone_analysis import ZoneAnalyzer
+from .numeric_utils import safe_float
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ai_analysis_window import AIAnalysisWindow
 from .ui_utils import set_app_icon
@@ -315,67 +317,61 @@ class AITeamSelector(QDialog):
             # Get aggregated team stats
             team_stats_list = self.db_handler.get_team_stats(self.collection_name)
 
-            # Helper function to safely get numeric value
-            def safe_get(data, key, default=0):
-                """Get value from dict, converting None to default."""
-                value = data.get(key, default)
-                return default if value is None else value
-
             # Find this team's stats
             for team_stat in team_stats_list:
                 if team_stat.get('team_name') == team_name:
                     # Extract ALL available stats from the database
                     result = {
                         # Basic info
-                        'games_played': safe_get(team_stat, 'total_games'),
+                        'games_played': safe_float(team_stat.get('total_games', 0)),
 
                         # Per-game stats (from basic_stats.py)
-                        'points_per_game': safe_get(team_stat, 'points_per_game'),
-                        'points_allowed_per_game': safe_get(team_stat, 'points_allowed_per_game'),
-                        'rebounds_per_game': safe_get(team_stat, 'rebounds_per_game'),
-                        'assists_per_game': safe_get(team_stat, 'assists_per_game'),
-                        'steals_per_game': safe_get(team_stat, 'steals_per_game'),
-                        'turnovers_per_game': safe_get(team_stat, 'turnovers_per_game'),
-                        'blocks_per_game': safe_get(team_stat, 'blocks_per_game'),
-                        'possessions_per_game': safe_get(team_stat, 'possessions_per_game'),
+                        'points_per_game': safe_float(team_stat.get('points_per_game', 0)),
+                        'points_allowed_per_game': safe_float(team_stat.get('points_allowed_per_game', 0)),
+                        'rebounds_per_game': safe_float(team_stat.get('rebounds_per_game', 0)),
+                        'assists_per_game': safe_float(team_stat.get('assists_per_game', 0)),
+                        'steals_per_game': safe_float(team_stat.get('steals_per_game', 0)),
+                        'turnovers_per_game': safe_float(team_stat.get('turnovers_per_game', 0)),
+                        'blocks_per_game': safe_float(team_stat.get('blocks_per_game', 0)),
+                        'possessions_per_game': safe_float(team_stat.get('possessions_per_game', 0)),
 
                         # Shooting percentages (from basic_stats.py)
-                        'fg2_percentage': safe_get(team_stat, 'fg2_percentage'),
-                        'fg3_percentage': safe_get(team_stat, 'fg3_percentage'),
-                        'ft_percentage': safe_get(team_stat, 'ft_percentage'),
+                        'fg2_percentage': safe_float(team_stat.get('fg2_percentage', 0)),
+                        'fg3_percentage': safe_float(team_stat.get('fg3_percentage', 0)),
+                        'ft_percentage': safe_float(team_stat.get('ft_percentage', 0)),
 
                         # Four Factors (from advanced_stats.py)
-                        'effective_fg_percentage': safe_get(team_stat, 'efg_percentage'),
-                        'true_shooting_percentage': safe_get(team_stat, 'true_shooting'),
-                        'turnover_rate': safe_get(team_stat, 'turnover_rate'),
-                        'offensive_rebound_rate': safe_get(team_stat, 'offensive_rebound_rate'),
-                        'free_throw_rate': safe_get(team_stat, 'free_throw_rate'),
+                        'effective_fg_percentage': safe_float(team_stat.get('efg_percentage', 0)),
+                        'true_shooting_percentage': safe_float(team_stat.get('true_shooting', 0)),
+                        'turnover_rate': safe_float(team_stat.get('turnover_rate', 0)),
+                        'offensive_rebound_rate': safe_float(team_stat.get('offensive_rebound_rate', 0)),
+                        'free_throw_rate': safe_float(team_stat.get('free_throw_rate', 0)),
 
                         # Advanced shooting metrics (from advanced_stats.py)
-                        'three_point_rate': safe_get(team_stat, 'three_point_rate'),
+                        'three_point_rate': safe_float(team_stat.get('three_point_rate', 0)),
 
                         # Playmaking metrics (from advanced_stats.py)
-                        'assist_rate': safe_get(team_stat, 'assist_rate'),
-                        'assist_fg_rate': safe_get(team_stat, 'assist_fg_rate'),
-                        'steal_rate': safe_get(team_stat, 'steal_rate'),
-                        'block_rate': safe_get(team_stat, 'block_rate'),
+                        'assist_rate': safe_float(team_stat.get('assist_rate', 0)),
+                        'assist_fg_rate': safe_float(team_stat.get('assist_fg_rate', 0)),
+                        'steal_rate': safe_float(team_stat.get('steal_rate', 0)),
+                        'block_rate': safe_float(team_stat.get('block_rate', 0)),
 
                         # Rebounding metrics (from advanced_stats.py)
-                        'defensive_rebound_rate': safe_get(team_stat, 'defensive_rebound_rate'),
+                        'defensive_rebound_rate': safe_float(team_stat.get('defensive_rebound_rate', 0)),
 
                         # Efficiency ratings (from advanced_stats.py)
-                        'offensive_rating': safe_get(team_stat, 'offensive_rating'),
-                        'defensive_rating': safe_get(team_stat, 'defensive_rating'),
-                        'net_rating': safe_get(team_stat, 'net_rating'),
+                        'offensive_rating': safe_float(team_stat.get('offensive_rating', 0)),
+                        'defensive_rating': safe_float(team_stat.get('defensive_rating', 0)),
+                        'net_rating': safe_float(team_stat.get('net_rating', 0)),
 
                         # Additional calculated stats
-                        'pace': safe_get(team_stat, 'possessions_per_game'),  # Pace is possessions per game
+                        'pace': safe_float(team_stat.get('possessions_per_game', 0)),  # Pace is possessions per game
 
                         # Raw totals (for reference)
-                        'total_points': safe_get(team_stat, 'points_scored'),
-                        'total_rebounds': safe_get(team_stat, 'total_rebounds'),
-                        'offensive_rebounds': safe_get(team_stat, 'rebounds_off'),
-                        'defensive_rebounds': safe_get(team_stat, 'rebounds_def'),
+                        'total_points': safe_float(team_stat.get('points_scored', 0)),
+                        'total_rebounds': safe_float(team_stat.get('total_rebounds', 0)),
+                        'offensive_rebounds': safe_float(team_stat.get('rebounds_off', 0)),
+                        'defensive_rebounds': safe_float(team_stat.get('rebounds_def', 0)),
                     }
 
                     return result
@@ -439,24 +435,10 @@ class AITeamSelector(QDialog):
                     values.sort()
                     n = len(values)
 
-                    # Calculate quartiles using linear interpolation (same as numpy.percentile)
-                    # Q1 = 25th percentile, Q2 = 50th percentile (median), Q3 = 75th percentile
-                    def percentile(sorted_values, p):
-                        """Calculate percentile using linear interpolation"""
-                        k = (len(sorted_values) - 1) * p
-                        f = int(k)
-                        c = f + 1
-                        if c >= len(sorted_values):
-                            return sorted_values[-1]
-                        if f < 0:
-                            return sorted_values[0]
-                        d0 = sorted_values[f] * (c - k)
-                        d1 = sorted_values[c] * (k - f)
-                        return d0 + d1
-
-                    q1_value = percentile(values, 0.25)
-                    q2_value = percentile(values, 0.50)
-                    q3_value = percentile(values, 0.75)
+                    # Calculate quartiles using numpy.percentile
+                    q1_value = np.percentile(values, 25)
+                    q2_value = np.percentile(values, 50)
+                    q3_value = np.percentile(values, 75)
 
                     quartiles[stat_field] = {
                         'min': values[0],

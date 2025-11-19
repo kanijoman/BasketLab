@@ -1,6 +1,7 @@
 """Custom table widget items for statistics display."""
 
 from PyQt6.QtWidgets import QTableWidgetItem
+from .numeric_utils import safe_float
 
 
 class NumericTableWidgetItem(QTableWidgetItem):
@@ -38,22 +39,6 @@ class NumericTableWidgetItem(QTableWidgetItem):
             return self._numeric_value > other._numeric_value
 
         return self.text() < other.text()
-
-
-def safe_float(value):
-    """
-    Safely convert a value to float.
-
-    Args:
-        value: Value to convert
-
-    Returns:
-        Float value or 0.0 if conversion fails
-    """
-    try:
-        return float(value) if value is not None else 0.0
-    except (ValueError, TypeError):
-        return 0.0
 
 
 def process_numeric_value(value, key):
