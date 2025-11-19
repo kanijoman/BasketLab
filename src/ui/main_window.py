@@ -116,11 +116,13 @@ class BasketballSeasonApp(QMainWindow):
         # View Stats Button
         self.stats_button = QPushButton("📊 Estadísticas")
         self.stats_button.clicked.connect(self.on_view_stats)
+        self.stats_button.setEnabled(False)  # Disabled by default
         layout.addWidget(self.stats_button)
 
         # Shot Chart Button
         self.shotchart_button = QPushButton("🎯 Gráficos de Tiro")
         self.shotchart_button.clicked.connect(self.on_view_shotcharts)
+        self.shotchart_button.setEnabled(False)  # Disabled by default
         self.shotchart_button.setStyleSheet("""
             QPushButton {
                 background-color: #2196F3;
@@ -131,12 +133,17 @@ class BasketballSeasonApp(QMainWindow):
             QPushButton:hover {
                 background-color: #1976D2;
             }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
         """)
         layout.addWidget(self.shotchart_button)
 
         # AI Analysis Button
         self.ai_analysis_button = QPushButton("🤖 Análisis IA")
         self.ai_analysis_button.clicked.connect(self.on_view_ai_analysis)
+        self.ai_analysis_button.setEnabled(False)  # Disabled by default
         self.ai_analysis_button.setStyleSheet("""
             QPushButton {
                 background-color: #9C27B0;
@@ -147,6 +154,10 @@ class BasketballSeasonApp(QMainWindow):
             }
             QPushButton:hover {
                 background-color: #7B1FA2;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
             }
         """)
         layout.addWidget(self.ai_analysis_button)
@@ -172,6 +183,10 @@ class BasketballSeasonApp(QMainWindow):
             QPushButton:hover {
                 background-color: #45a049;
             }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
             QProgressBar {
                 border: 1px solid #555;
                 border-radius: 5px;
@@ -193,20 +208,24 @@ class BasketballSeasonApp(QMainWindow):
             self.season_combo.addItem("")
             self.season_combo.addItems(self.seasons)  # Show all seasons
             self.update_group_options()  # This will clear the group combo
+            self._validate_selections()
             return
 
         self.competition_label.setText(f"Competición seleccionada: {competition}")
         # Reset season and group selections when competition changes
         self.season_combo.setCurrentText("")
+        self._validate_selections()
         self.update_group_options()
 
     def on_season_select(self, season: str) -> None:
         """Handle season selection event."""
         if not season:  # If empty selection
             self.season_label.setText("Temporada seleccionada: ")
+            self._validate_selections()
             return
 
         self.season_label.setText(f"Temporada seleccionada: {season}")
+        self._validate_selections()
         competition = self.competition_combo.currentText()
 
         if not competition:
@@ -227,6 +246,21 @@ class BasketballSeasonApp(QMainWindow):
     def on_group_select(self, group: str) -> None:
         """Handle group selection event."""
         self.group_label.setText(f"Grupo seleccionado: {group}")
+        self._validate_selections()
+
+    def _validate_selections(self) -> None:
+        """Validate that all required selections are made and enable/disable buttons accordingly."""
+        competition = self.competition_combo.currentText()
+        season = self.season_combo.currentText()
+        group = self.group_combo.currentText()
+
+        # Check if all fields have valid (non-empty) selections
+        all_selected = bool(competition) and bool(season) and bool(group)
+
+        # Enable or disable buttons based on selection status
+        self.stats_button.setEnabled(all_selected)
+        self.shotchart_button.setEnabled(all_selected)
+        self.ai_analysis_button.setEnabled(all_selected)
 
     def on_view_stats(self) -> None:
         """Handle stats button click - downloads latest data and shows statistics."""
@@ -598,6 +632,7 @@ class BasketballSeasonApp(QMainWindow):
 
         if not selected_competition:  # If no competition selected
             self.group_label.setText("Selected Group: ")
+            self._validate_selections()
             return
 
         groups = self.group_options.get(selected_competition, [])
@@ -608,3 +643,5 @@ class BasketballSeasonApp(QMainWindow):
             self.group_label.setText("Selected Group: ")
         else:
             self.group_label.setText("Selected Group: ")
+
+        self._validate_selections()

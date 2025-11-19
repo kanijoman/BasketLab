@@ -9,6 +9,116 @@ class AggregationPipelineBuilder:
     """Builds MongoDB aggregation pipeline for team statistics."""
 
     @staticmethod
+    def _conditional_field(team_0_field: str, team_1_field: str) -> Dict:
+        """
+        Create a conditional expression that selects between team 0 and team 1 fields.
+
+        Args:
+            team_0_field: Field name for team 0 (local)
+            team_1_field: Field name for team 1 (away)
+
+        Returns:
+            MongoDB $cond expression
+        """
+        return {
+            "$cond": {
+                "if": {"$eq": ["$teamIndex", 0]},
+                "then": f"${team_0_field}",
+                "else": f"${team_1_field}"
+            }
+        }
+
+    @staticmethod
+    def _opponent_conditional_field(team_0_field: str, team_1_field: str) -> Dict:
+        """
+        Create a conditional expression for opponent fields (inverted logic).
+        When teamIndex=0 (local), get team 1 (away) data.
+
+        Args:
+            team_0_field: Field name for team 0
+            team_1_field: Field name for team 1
+
+        Returns:
+            MongoDB $cond expression
+        """
+        return {
+            "$cond": {
+                "if": {"$eq": ["$teamIndex", 0]},
+                "then": f"${team_1_field}",
+                "else": f"${team_0_field}"
+            }
+        }
+
+    @staticmethod
+    def _calculate_possessions(fg2_att: Dict, fg3_att: Dict, ft_att: Dict, turnovers: Dict, off_reb: Dict) -> Dict:
+        """
+        Calculate possessions adjusted for game duration (including overtime).
+        Formula: (FGA2 + FGA3 + (0.45 * FTA) + TO - OREB) * (40 / total_minutes)
+
+        Args:
+            fg2_att: Field or expression for FG2 attempts
+            fg3_att: Field or expression for FG3 attempts
+            ft_att: Field or expression for FT attempts
+            turnovers: Field or expression for turnovers
+            off_reb: Field or expression for offensive rebounds
+
+        Returns:
+            MongoDB expression for possessions calculation
+        """
+        raw_possessions = {
+            "$add": [
+                fg2_att,
+                fg3_att,
+                {"$multiply": [0.45, ft_att]},
+                turnovers,
+                {"$multiply": [-1, off_reb]}
+            ]
+        }
+
+        # Calculate total minutes based on number of quarters
+        num_quarters = {"$size": "$HEADER.QUARTERS.QUARTER"}
+        total_minutes = {
+            "$add": [
+                40,
+                {"$multiply": [
+                    {"$subtract": [num_quarters, 4]},
+                    5
+                ]}
+            ]
+        }
+
+        # Adjust possessions: raw_possessions * (40 / total_minutes)
+        return {
+            "$multiply": [
+                raw_possessions,
+                {"$divide": [40, total_minutes]}
+            ]
+        }
+
+    @staticmethod
+    def _create_team_field_mappings() -> Dict[str, tuple]:
+        """
+        Create mappings for team fields that need to be extracted.
+
+        Returns:
+            Dictionary mapping field purpose to (path, team_0_name, team_1_name)
+        """
+        return {
+            "off_reb": ("$BOXSCORE.TEAM.TOTAL.ro", "team_0_off_reb", "team_1_off_reb"),
+            "def_reb": ("$BOXSCORE.TEAM.TOTAL.rd", "team_0_def_reb", "team_1_def_reb"),
+            "fg2_made": ("$BOXSCORE.TEAM.TOTAL.p2m", "team_0_fg2_made", "team_1_fg2_made"),
+            "fg2_att": ("$BOXSCORE.TEAM.TOTAL.p2a", "team_0_fg2_att", "team_1_fg2_att"),
+            "fg3_made": ("$BOXSCORE.TEAM.TOTAL.p3m", "team_0_fg3_made", "team_1_fg3_made"),
+            "fg3_att": ("$BOXSCORE.TEAM.TOTAL.p3a", "team_0_fg3_att", "team_1_fg3_att"),
+            "ft_made": ("$BOXSCORE.TEAM.TOTAL.p1m", "team_0_ft_made", "team_1_ft_made"),
+            "ft_att": ("$BOXSCORE.TEAM.TOTAL.p1a", "team_0_ft_att", "team_1_ft_att"),
+            "assists": ("$BOXSCORE.TEAM.TOTAL.assist", "team_0_assists", "team_1_assists"),
+            "steals": ("$BOXSCORE.TEAM.TOTAL.st", "team_0_steals", "team_1_steals"),
+            "turnovers": ("$BOXSCORE.TEAM.TOTAL.to", "team_0_turnovers", "team_1_turnovers"),
+            "blocks": ("$BOXSCORE.TEAM.TOTAL.bs", "team_0_blocks", "team_1_blocks")
+        }
+
+    @staticmethod
     def build_team_stats_pipeline() -> List[Dict]:
         """
         Build complete aggregation pipeline for team statistics.
@@ -42,20 +152,24 @@ class AggregationPipelineBuilder:
     def _add_match_level_fields() -> Dict:
         """
         Add match-level fields for easier access.
+        Extracts data from both teams before unwinding.
 
         Returns:
             $addFields stage
         """
-        return {
-            "$addFields": {
-                "team_0_off_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 0]}},
-                "team_1_off_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 1]}},
-                "team_0_def_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 0]}},
-                "team_1_def_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 1]}},
-                "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
-                "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}}
-            }
+        fields = {
+            "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
+            "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}}
         }
+
+        # Add all team field mappings
+        mappings = AggregationPipelineBuilder._create_team_field_mappings()
+        for field_data in mappings.values():
+            path, team_0_name, team_1_name = field_data
+            fields[team_0_name] = {"$toInt": {"$arrayElemAt": [path, 0]}}
+            fields[team_1_name] = {"$toInt": {"$arrayElemAt": [path, 1]}}
+
+        return {"$addFields": fields}
 
     @staticmethod
     def _unwind_teams() -> Dict:
@@ -80,18 +194,23 @@ class AggregationPipelineBuilder:
         Returns:
             $project stage
         """
+        builder = AggregationPipelineBuilder
+
+        # Calculate opponent possessions
+        opponent_poss = builder._calculate_possessions(
+            builder._opponent_conditional_field("team_0_fg2_att", "team_1_fg2_att"),
+            builder._opponent_conditional_field("team_0_fg3_att", "team_1_fg3_att"),
+            builder._opponent_conditional_field("team_0_ft_att", "team_1_ft_att"),
+            builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
+            builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb")
+        )
+
         return {
             "$project": {
                 "team_id": "$BOXSCORE.TEAM.id",
                 "team_name": "$BOXSCORE.TEAM.name",
                 "points": {"$toInt": "$BOXSCORE.TEAM.TOTAL.pts"},
-                "opponent_points": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$awayPoints",
-                        "else": "$localPoints"
-                    }
-                },
+                "opponent_points": builder._conditional_field("awayPoints", "localPoints"),
                 "fg2_made": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p2m"},
                 "fg2_attempts": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p2a"},
                 "fg3_made": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p3m"},
@@ -100,22 +219,11 @@ class AggregationPipelineBuilder:
                 "ft_attempts": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1a"},
                 "def_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
                 "off_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
-                "opponent_def_rebounds": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_def_reb",
-                        "else": "$team_0_def_reb"
-                    }
-                },
-                "opponent_off_rebounds": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_off_reb",
-                        "else": "$team_0_off_reb"
-                    }
-                },
+                "opponent_def_rebounds": builder._opponent_conditional_field("team_0_def_reb", "team_1_def_reb"),
+                "opponent_off_rebounds": builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb"),
                 "assists": {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
                 "possessions": get_possessions_calculation(),
+                "opponent_possessions": opponent_poss,
                 "steals": {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
                 "turnovers": {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
                 "blocks": {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
@@ -156,6 +264,7 @@ class AggregationPipelineBuilder:
                 "turnovers": {"$sum": "$turnovers"},
                 "blocks": {"$sum": "$blocks"},
                 "total_possessions": {"$sum": "$possessions"},
+                "opponent_possessions": {"$sum": "$opponent_possessions"},
                 "match_list": {"$push": "$match_id"}
             }
         }
@@ -216,50 +325,13 @@ class AggregationPipelineBuilder:
     def _add_opponent_match_level_fields() -> Dict:
         """
         Add match-level fields including all opponent statistics.
-        This must be done before $unwind to have access to both teams' data.
+        Reuses the same logic as _add_match_level_fields since we need all teams' data.
 
         Returns:
             $addFields stage
         """
-        return {
-            "$addFields": {
-                # Rebounds
-                "team_0_off_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 0]}},
-                "team_1_off_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 1]}},
-                "team_0_def_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 0]}},
-                "team_1_def_reb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 1]}},
-                # Points
-                "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
-                "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}},
-                # FG2
-                "team_0_fg2_made": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2m", 0]}},
-                "team_1_fg2_made": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2m", 1]}},
-                "team_0_fg2_att": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2a", 0]}},
-                "team_1_fg2_att": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2a", 1]}},
-                # FG3
-                "team_0_fg3_made": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3m", 0]}},
-                "team_1_fg3_made": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3m", 1]}},
-                "team_0_fg3_att": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3a", 0]}},
-                "team_1_fg3_att": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3a", 1]}},
-                # FT
-                "team_0_ft_made": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1m", 0]}},
-                "team_1_ft_made": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1m", 1]}},
-                "team_0_ft_att": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1a", 0]}},
-                "team_1_ft_att": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1a", 1]}},
-                # Assists
-                "team_0_assists": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.assist", 0]}},
-                "team_1_assists": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.assist", 1]}},
-                # Steals
-                "team_0_steals": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.st", 0]}},
-                "team_1_steals": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.st", 1]}},
-                # Turnovers
-                "team_0_turnovers": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.to", 0]}},
-                "team_1_turnovers": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.to", 1]}},
-                # Blocks
-                "team_0_blocks": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.bs", 0]}},
-                "team_1_blocks": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.bs", 1]}}
-            }
-        }
+        # Opponent stats need the same fields as team stats
+        return AggregationPipelineBuilder._add_match_level_fields()
 
     @staticmethod
     def _project_opponent_match_data() -> Dict:
@@ -270,117 +342,46 @@ class AggregationPipelineBuilder:
         Returns:
             $project stage
         """
+        builder = AggregationPipelineBuilder
+
+        # Calculate opponent's possessions
+        opponent_poss = builder._calculate_possessions(
+            builder._opponent_conditional_field("team_0_fg2_att", "team_1_fg2_att"),
+            builder._opponent_conditional_field("team_0_fg3_att", "team_1_fg3_att"),
+            builder._opponent_conditional_field("team_0_ft_att", "team_1_ft_att"),
+            builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
+            builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb")
+        )
+
         return {
             "$project": {
                 "team_id": "$BOXSCORE.TEAM.id",
                 "team_name": "$BOXSCORE.TEAM.name",
                 # Opponent's points (what they scored against this team)
-                "points": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$awayPoints",
-                        "else": "$localPoints"
-                    }
-                },
+                "points": builder._opponent_conditional_field("localPoints", "awayPoints"),
                 # This team's points (for reference)
                 "opponent_points": {"$toInt": "$BOXSCORE.TEAM.TOTAL.pts"},
-                # Opponent's FG2 stats
-                "fg2_made": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_fg2_made",
-                        "else": "$team_0_fg2_made"
-                    }
-                },
-                "fg2_attempts": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_fg2_att",
-                        "else": "$team_0_fg2_att"
-                    }
-                },
-                # Opponent's FG3 stats
-                "fg3_made": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_fg3_made",
-                        "else": "$team_0_fg3_made"
-                    }
-                },
-                "fg3_attempts": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_fg3_att",
-                        "else": "$team_0_fg3_att"
-                    }
-                },
-                # Opponent's FT stats
-                "ft_made": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_ft_made",
-                        "else": "$team_0_ft_made"
-                    }
-                },
-                "ft_attempts": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_ft_att",
-                        "else": "$team_0_ft_att"
-                    }
-                },
+                # Opponent's shooting stats
+                "fg2_made": builder._opponent_conditional_field("team_0_fg2_made", "team_1_fg2_made"),
+                "fg2_attempts": builder._opponent_conditional_field("team_0_fg2_att", "team_1_fg2_att"),
+                "fg3_made": builder._opponent_conditional_field("team_0_fg3_made", "team_1_fg3_made"),
+                "fg3_attempts": builder._opponent_conditional_field("team_0_fg3_att", "team_1_fg3_att"),
+                "ft_made": builder._opponent_conditional_field("team_0_ft_made", "team_1_ft_made"),
+                "ft_attempts": builder._opponent_conditional_field("team_0_ft_att", "team_1_ft_att"),
                 # Opponent's rebounds
-                "def_rebounds": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_def_reb",
-                        "else": "$team_0_def_reb"
-                    }
-                },
-                "off_rebounds": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_off_reb",
-                        "else": "$team_0_off_reb"
-                    }
-                },
-                # This team's rebounds (for possessions calculation)
+                "def_rebounds": builder._opponent_conditional_field("team_0_def_reb", "team_1_def_reb"),
+                "off_rebounds": builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb"),
+                # This team's rebounds (for rate calculations)
                 "opponent_def_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
                 "opponent_off_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
-                # Opponent's assists
-                "assists": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_assists",
-                        "else": "$team_0_assists"
-                    }
-                },
-                # Calculate possessions
-                "possessions": get_possessions_calculation(),
-                # Opponent's steals
-                "steals": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_steals",
-                        "else": "$team_0_steals"
-                    }
-                },
-                # Opponent's turnovers
-                "turnovers": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_turnovers",
-                        "else": "$team_0_turnovers"
-                    }
-                },
-                # Opponent's blocks
-                "blocks": {
-                    "$cond": {
-                        "if": {"$eq": ["$teamIndex", 0]},
-                        "then": "$team_1_blocks",
-                        "else": "$team_0_blocks"
-                    }
-                },
+                # Opponent's other stats
+                "assists": builder._opponent_conditional_field("team_0_assists", "team_1_assists"),
+                "possessions": opponent_poss,
+                # Team's possessions (for DER calculation)
+                "opponent_possessions": get_possessions_calculation(),
+                "steals": builder._opponent_conditional_field("team_0_steals", "team_1_steals"),
+                "turnovers": builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
+                "blocks": builder._opponent_conditional_field("team_0_blocks", "team_1_blocks"),
                 "match_id": "$_id",
                 "is_local": {"$eq": ["$teamIndex", 0]}
             }
@@ -418,6 +419,8 @@ class AggregationPipelineBuilder:
                 "turnovers": {"$sum": "$turnovers"},
                 "blocks": {"$sum": "$blocks"},
                 "total_possessions": {"$sum": "$possessions"},
+                "opponent_possessions": {"$sum": "$opponent_possessions"},
                 "match_list": {"$push": "$match_id"}
             }
         }
+
