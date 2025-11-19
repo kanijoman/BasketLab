@@ -15,24 +15,53 @@ Actualmente en la primera fase de prueba de concepto con la competición LF2 (Li
 ## Características
 
 ### Recopilación de Datos
-- Scraper para datos de competiciones de la FEB
-- Almacenamiento estructurado de datos en MongoDB
-- Actualizaciones automáticas para mantener la información actualizada
+- **Scraper Inteligente**: Recopilación automática de datos desde la FEB
+- **Almacenamiento en MongoDB**: Base de datos en la nube con estructura JSON
+- **Actualizaciones Automáticas**: Sistema de sincronización para mantener información actualizada
+- **Gestión de Tokens**: Control de acceso y rate limiting para API de la FEB
 
 ### Interfaz de Usuario (PyQt6)
-- Ventana de selección de competición, temporada y grupo
-- Botón "Actualizar y Ver Estadísticas":
-  - Actualiza la información de la competición en la base de datos
-  - Muestra una nueva ventana de estadísticas con dos pestañas: estadísticas básicas y avanzadas
+- **Selector de Competición**: Elección de competición, temporada y grupo
+- **Actualización Dinámica**: Botón "Actualizar y Ver Estadísticas" que:
+  - Sincroniza datos con la fuente (FEB)
+  - Calcula métricas básicas y avanzadas
+  - Genera estadísticas de equipos y rivales
+- **Ventanas Especializadas**:
+  - Estadísticas por Equipos (básicas y avanzadas)
+  - Análisis de Rivales
+  - Shot Charts y mapas de calor
+  - Zonas de rendimiento por área de cancha
 
 ### Ventana de Estadísticas
+
+#### Características Principales
+- **Análisis de Equipos y Rivales**: Visualización de estadísticas propias y de los oponentes con pestañas separadas
+- **Métricas Avanzadas**: Cálculo ajustado de posesiones considerando prórrogas, con normalización a partidos de 40 minutos
+- **Filtrado Temporal**: Selector de período con dos modos:
+  - **General**: Estadísticas de toda la temporada
+  - **Comparativa Mensual**: Análisis del último mes vs resto de temporada con indicadores de tendencia
+
+#### Indicadores de Tendencia (Modo Comparativo)
+- **⇈** Mejora significativa (>10%) - Verde oscuro
+- **↑** Mejora moderada (5-10%) - Verde claro
+- **≈** Sin cambios (<5%) - Gris
+- **↓** Empeoramiento moderado (5-10%) - Naranja
+- **⇊** Empeoramiento significativo (>10%) - Rojo
+
+#### Visualización
 - Información codificada por colores según cuartiles:
-  - Q1: Verde
+  - Q1: Verde (mejor rendimiento)
   - Q2: Amarillo
   - Q3: Naranja
-  - Q4: Rojo
+  - Q4: Rojo (peor rendimiento)
+- Agrupación visual de métricas por categorías (Rendimiento, Eficiencia, Defensa, Rebotes, etc.)
 - Ordenable por cualquier columna (ascendente/descendente)
-- Funcionalidad de exportación de datos: formatos CSV, PNG o PDF
+- Ajuste automático de tamaño de ventana según contenido
+
+#### Exportación de Datos
+- **CSV**: Exportación con separación por punto y coma
+- **PNG**: Captura de imagen de alta calidad
+- **PDF**: Documento en formato horizontal para mejor visualización
 
 ## Visualización de Cancha FIBA
 
@@ -122,9 +151,34 @@ fig = analyzer.plot_zone_analysis(stats, title='Análisis de Zonas del Equipo')
 plt.show()
 ```
 
+## Arquitectura Técnica
+
+### Base de Datos (MongoDB)
+- **Agregación Avanzada**: Pipelines optimizados para cálculo de métricas
+- **Filtrado Temporal**: Consultas con `$addFields` y `$dateFromString` para análisis por períodos
+- **Esquema Flexible**: Soporte para estructura JSON de múltiples fuentes
+
+### Cálculos Estadísticos
+- **Posesiones Ajustadas**: Normalización a 40 minutos para partidos con prórroga
+  - Fórmula: `possessions × (40 / minutos_totales)`
+  - Minutos totales: `(num_cuartos - 4) × 5 + 40`
+- **Métricas Avanzadas**: Efficiency Rating, True Shooting, Assist Rate, etc.
+- **Análisis Comparativo**: Cálculo de deltas porcentuales entre períodos
+
+### Interfaz Gráfica (PyQt6)
+- **Widgets Personalizados**: Items de tabla con ordenamiento numérico
+- **Renderizado HTML**: QLabel para indicadores de tendencia con colores
+- **Diseño Responsivo**: Ajuste automático de tamaño de ventana
+- **Callbacks**: Sistema de recarga dinámica con filtros temporales
+
 ## Desarrollo Futuro
 
-Agregar nuevas federaciones es un cambio complejo que se abordará en fases posteriores porque la estructura de información difiere de la FEB, requiriendo transformación de datos para usar los mismos métodos de análisis.
+- Agregar más competiciones de la FEB (Liga Femenina, LEB Oro, LEB Plata)
+- Integración con federaciones regionales (estructura de datos diferente)
+- Análisis predictivo con Machine Learning
+- Exportación a formatos adicionales (Excel, JSON)
+- Comparativas entre equipos y temporadas
+- Dashboard interactivo con gráficos temporales
 
 ## Instalación
 
