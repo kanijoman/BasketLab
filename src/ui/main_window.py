@@ -11,6 +11,7 @@ from utils import normalize_year
 from .stats_window import TeamStatsWindow
 from .shotchart_window import ShotChartWindow
 from .ai_analysis_window import AIAnalysisWindow
+from .temporal_evolution_window import TemporalEvolutionWindow
 from .ui_utils import set_app_icon
 
 
@@ -118,6 +119,28 @@ class BasketballSeasonApp(QMainWindow):
         self.stats_button.clicked.connect(self.on_view_stats)
         self.stats_button.setEnabled(False)  # Disabled by default
         layout.addWidget(self.stats_button)
+
+        # Temporal Evolution Button
+        self.temporal_button = QPushButton("📈 Evolución Temporal")
+        self.temporal_button.clicked.connect(self.on_view_temporal_evolution)
+        self.temporal_button.setEnabled(False)  # Disabled by default
+        self.temporal_button.setStyleSheet("""
+            QPushButton {
+                background-color: #FF9800;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #F57C00;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
+        layout.addWidget(self.temporal_button)
 
         # Shot Chart Button
         self.shotchart_button = QPushButton("🎯 Gráficos de Tiro")
@@ -261,6 +284,7 @@ class BasketballSeasonApp(QMainWindow):
         self.stats_button.setEnabled(all_selected)
         self.shotchart_button.setEnabled(all_selected)
         self.ai_analysis_button.setEnabled(all_selected)
+        self.temporal_button.setEnabled(all_selected)
 
     def on_view_stats(self) -> None:
         """Handle stats button click - downloads latest data and shows statistics."""
@@ -658,3 +682,53 @@ class BasketballSeasonApp(QMainWindow):
             self.group_label.setText("Selected Group: ")
 
         self._validate_selections()
+
+    def on_view_temporal_evolution(self) -> None:
+        """Handle temporal evolution button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Aviso",
+                                  "Por favor, seleccione competición, temporada y grupo antes de ver la evolución temporal.")
+                return
+
+            # Get collection name
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            # Check if collection has data
+            try:
+                collection = self.db_handler.connection.get_collection(collection_name)
+                if collection is None or collection.count_documents({}) == 0:
+                    QMessageBox.information(
+                        self,
+                        "Sin datos",
+                        f"No hay datos disponibles para {group_text}.\n\n"
+                        f"Por favor, use primero el botón '📊 Estadísticas' para descargar los datos."
+                    )
+                    return
+            except Exception as e:
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    f"Error al verificar datos: {str(e)}\n\n"
+                    f"Por favor, use primero el botón '📊 Estadísticas' para descargar los datos."
+                )
+                return
+
+            # Create and show temporal evolution window
+            self.temporal_window = TemporalEvolutionWindow(
+                collection_name=collection_name,
+                db_handler=self.db_handler,
+                parent=self
+            )
+            self.temporal_window.show()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al abrir evolución temporal: {str(e)}")
