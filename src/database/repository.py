@@ -71,7 +71,7 @@ class BasketballRepository:
             print(f"[BasketballRepository] Failed to save match {match_code} to MongoDB: {e}")
             return False
 
-    def get_team_stats(self, collection_name: str) -> List[Dict]:
+    def get_team_stats(self, collection_name: str, date_filter: Dict = None) -> List[Dict]:
         """
         Get aggregated team statistics from all matches in the collection.
 
@@ -84,6 +84,7 @@ class BasketballRepository:
 
         Args:
             collection_name: Name of the collection
+            date_filter: Optional MongoDB date filter (e.g., {"$gte": datetime(2024, 1, 1)})
 
         Returns:
             List of team statistics dictionaries
@@ -94,13 +95,13 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
-            pipeline = AggregationPipelineBuilder.build_team_stats_pipeline()
+            pipeline = AggregationPipelineBuilder.build_team_stats_pipeline(date_filter)
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting team stats: {e}")
             return []
 
-    def get_opponent_stats(self, collection_name: str) -> List[Dict]:
+    def get_opponent_stats(self, collection_name: str, date_filter: Dict = None) -> List[Dict]:
         """
         Get aggregated opponent statistics grouped by team.
 
@@ -109,6 +110,7 @@ class BasketballRepository:
 
         Args:
             collection_name: Name of the collection
+            date_filter: Optional MongoDB date filter (e.g., {"$gte": datetime(2024, 1, 1)})
 
         Returns:
             List of opponent statistics dictionaries grouped by team
@@ -119,7 +121,7 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
-            pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline()
+            pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline(date_filter)
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting opponent stats: {e}")

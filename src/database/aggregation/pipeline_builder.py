@@ -119,14 +119,36 @@ class AggregationPipelineBuilder:
         }
 
     @staticmethod
-    def build_team_stats_pipeline() -> List[Dict]:
+    def build_team_stats_pipeline(date_filter: Dict = None) -> List[Dict]:
         """
         Build complete aggregation pipeline for team statistics.
+
+        Args:
+            date_filter: Optional MongoDB date filter dict with datetime object
+                        Example: {"$gte": datetime(2024, 1, 1)}
 
         Returns:
             List of aggregation pipeline stages
         """
         pipeline = []
+
+        # Phase 0: Add date conversion and filter if provided
+        if date_filter:
+            # First, add a field that converts the string date to a date object
+            pipeline.append({
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            })
+            # Then filter using the parsed date
+            pipeline.append({"$match": {"parsedDate": date_filter}})
 
         # Phase 1: Add match-level fields
         pipeline.append(AggregationPipelineBuilder._add_match_level_fields())
@@ -291,15 +313,37 @@ class AggregationPipelineBuilder:
         return {"$addFields": stats}
 
     @staticmethod
-    def build_opponent_stats_pipeline() -> List[Dict]:
+    def build_opponent_stats_pipeline(date_filter: Dict = None) -> List[Dict]:
         """
         Build aggregation pipeline for opponent statistics grouped by team.
         This shows what each team's opponents have done against them.
+
+        Args:
+            date_filter: Optional MongoDB date filter dict with datetime object
+                        Example: {"$gte": datetime(2024, 1, 1)}
 
         Returns:
             List of aggregation pipeline stages
         """
         pipeline = []
+
+        # Phase 0: Add date conversion and filter if provided
+        if date_filter:
+            # First, add a field that converts the string date to a date object
+            pipeline.append({
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            })
+            # Then filter using the parsed date
+            pipeline.append({"$match": {"parsedDate": date_filter}})
 
         # Phase 1: Add match-level fields including opponent stats
         pipeline.append(AggregationPipelineBuilder._add_opponent_match_level_fields())
