@@ -10,26 +10,11 @@ The calculator uses safe conversion methods to handle missing or invalid data gr
 """
 
 from typing import Dict
+from .numeric_utils import safe_int, safe_float
 
 
 class StatsCalculator:
     """Calculate statistics from basketball match data."""
-
-    @staticmethod
-    def safe_int(value, default=0) -> int:
-        """Safely convert to int."""
-        try:
-            return int(value) if value else default
-        except (ValueError, TypeError):
-            return default
-
-    @staticmethod
-    def safe_float(value, default=0.0) -> float:
-        """Safely convert to float."""
-        try:
-            return float(value) if value else default
-        except (ValueError, TypeError):
-            return default
 
     def calculate_single_match_stats(self, team_data: Dict, opponent_data: Dict) -> Dict:
         """
@@ -43,32 +28,32 @@ class StatsCalculator:
             Dictionary with calculated statistics
         """
         # Extract basic stats
-        pts = self.safe_int(team_data.get("pts", 0))
-        opp_pts = self.safe_int(opponent_data.get("pts", 0))
+        pts = safe_int(team_data.get("pts", 0))
+        opp_pts = safe_int(opponent_data.get("pts", 0))
 
-        fg2_made = self.safe_int(team_data.get("p2m", 0))
-        fg2_att = self.safe_int(team_data.get("p2a", 0))
-        fg3_made = self.safe_int(team_data.get("p3m", 0))
-        fg3_att = self.safe_int(team_data.get("p3a", 0))
-        ft_made = self.safe_int(team_data.get("p1m", 0))
-        ft_att = self.safe_int(team_data.get("p1a", 0))
+        fg2_made = safe_int(team_data.get("p2m", 0))
+        fg2_att = safe_int(team_data.get("p2a", 0))
+        fg3_made = safe_int(team_data.get("p3m", 0))
+        fg3_att = safe_int(team_data.get("p3a", 0))
+        ft_made = safe_int(team_data.get("p1m", 0))
+        ft_att = safe_int(team_data.get("p1a", 0))
 
-        off_reb = self.safe_int(team_data.get("ro", 0))
-        def_reb = self.safe_int(team_data.get("rd", 0))
+        off_reb = safe_int(team_data.get("ro", 0))
+        def_reb = safe_int(team_data.get("rd", 0))
         tot_reb = off_reb + def_reb
 
-        assists = self.safe_int(team_data.get("assist", 0))
-        steals = self.safe_int(team_data.get("st", 0))
-        turnovers = self.safe_int(team_data.get("to", 0))
-        blocks = self.safe_int(team_data.get("bs", 0))
+        assists = safe_int(team_data.get("assist", 0))
+        steals = safe_int(team_data.get("st", 0))
+        turnovers = safe_int(team_data.get("to", 0))
+        blocks = safe_int(team_data.get("bs", 0))
 
         # Opponent stats for possessions
-        opp_off_reb = self.safe_int(opponent_data.get("ro", 0))
-        opp_fg2_att = self.safe_int(opponent_data.get("p2a", 0))
-        opp_fg3_att = self.safe_int(opponent_data.get("p3a", 0))
-        opp_ft_att = self.safe_int(opponent_data.get("p1a", 0))
-        opp_turnovers = self.safe_int(opponent_data.get("to", 0))
-        opp_def_reb = self.safe_int(opponent_data.get("rd", 0))
+        opp_off_reb = safe_int(opponent_data.get("ro", 0))
+        opp_fg2_att = safe_int(opponent_data.get("p2a", 0))
+        opp_fg3_att = safe_int(opponent_data.get("p3a", 0))
+        opp_ft_att = safe_int(opponent_data.get("p1a", 0))
+        opp_turnovers = safe_int(opponent_data.get("to", 0))
+        opp_def_reb = safe_int(opponent_data.get("rd", 0))
 
         # Calculate possessions
         poss = fg2_att + fg3_att + (0.45 * ft_att) + turnovers - off_reb
@@ -220,8 +205,8 @@ class StatsCalculator:
 
         # Calculate deltas with safe value extraction
         for key in numeric_fields:
-            monthly_value = self.safe_float(monthly.get(key, 0))
-            rest_value = self.safe_float(rest.get(key, 0))
+            monthly_value = safe_float(monthly.get(key, 0))
+            rest_value = safe_float(rest.get(key, 0))
 
             if rest_value != 0:
                 delta = ((monthly_value - rest_value) / abs(rest_value)) * 100
