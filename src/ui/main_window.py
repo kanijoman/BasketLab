@@ -338,9 +338,9 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_label.setVisible(False)
 
             # Create reload callback function
-            def reload_stats(coll_name: str, date_filter: dict = None):
-                team_data = self.db_handler.get_team_stats(coll_name, date_filter)
-                opponent_data = self.db_handler.get_opponent_stats(coll_name, date_filter)
+            def reload_stats(coll_name: str, date_filter: dict = None, venue_filter: bool = None):
+                team_data = self.db_handler.get_team_stats(coll_name, date_filter, venue_filter)
+                opponent_data = self.db_handler.get_opponent_stats(coll_name, date_filter, venue_filter)
                 return team_data, opponent_data
 
             # Create and show the stats window with both team and opponent stats

@@ -67,7 +67,9 @@ class TeamStatsWindow(QMainWindow):
         self._data_cache = {
             'general': None,
             'monthly': None,
-            'rest': None
+            'rest': None,
+            'home': None,
+            'away': None
         }
 
         self.setup_ui(team_stats)
@@ -89,6 +91,7 @@ class TeamStatsWindow(QMainWindow):
         self.period_combo = QComboBox()
         self.period_combo.addItem("General (toda la temporada)", "general")
         self.period_combo.addItem("Mensual (comparativa último mes)", "comparative")
+        self.period_combo.addItem("Local vs Visitante", "venue_comparative")
         self.period_combo.setToolTip("Seleccionar período de estadísticas")
         self.period_combo.currentIndexChanged.connect(self._on_period_changed)
         controls_layout.addWidget(self.period_combo)
@@ -750,7 +753,9 @@ class TeamStatsWindow(QMainWindow):
         self._data_cache = {
             'general': None,
             'monthly': None,
-            'rest': None
+            'rest': None,
+            'home': None,
+            'away': None
         }
 
     def _on_period_changed(self, index: int):
@@ -771,11 +776,15 @@ class TeamStatsWindow(QMainWindow):
                 if self._data_cache['monthly'] is None or self._data_cache['rest'] is None:
                     # Get monthly data
                     monthly_filter = {"$gte": one_month_ago}
-                    monthly_team_stats, monthly_opponent_stats = self.reload_callback(self.collection_name, monthly_filter)
+                    monthly_team_stats, monthly_opponent_stats = self.reload_callback(
+                        self.collection_name, date_filter=monthly_filter, venue_filter=None
+                    )
 
                     # Get rest of season data (before last month)
                     rest_filter = {"$lt": one_month_ago}
-                    rest_team_stats, rest_opponent_stats = self.reload_callback(self.collection_name, rest_filter)
+                    rest_team_stats, rest_opponent_stats = self.reload_callback(
+                        self.collection_name, date_filter=rest_filter, venue_filter=None
+                    )
 
                     # Cache the loaded data
                     self._data_cache['monthly'] = (monthly_team_stats, monthly_opponent_stats)
@@ -796,11 +805,46 @@ class TeamStatsWindow(QMainWindow):
                 self._show_comparative_tables(monthly_team_stats, rest_team_stats,
                                              monthly_opponent_stats, rest_opponent_stats)
 
+            elif period_type == "venue_comparative":
+                # Load both home and away data for comparison
+                # Check cache first
+                if self._data_cache['home'] is None or self._data_cache['away'] is None:
+                    # Get home data (venue_filter=True means local/home)
+                    home_team_stats, home_opponent_stats = self.reload_callback(
+                        self.collection_name, date_filter=None, venue_filter=True
+                    )
+
+                    # Get away data (venue_filter=False means visitante/away)
+                    away_team_stats, away_opponent_stats = self.reload_callback(
+                        self.collection_name, date_filter=None, venue_filter=False
+                    )
+
+                    # Cache the loaded data
+                    self._data_cache['home'] = (home_team_stats, home_opponent_stats)
+                    self._data_cache['away'] = (away_team_stats, away_opponent_stats)
+                else:
+                    # Use cached data
+                    home_team_stats, home_opponent_stats = self._data_cache['home']
+                    away_team_stats, away_opponent_stats = self._data_cache['away']
+
+                if not home_team_stats or not away_team_stats:
+                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                    return
+
+                # Update stored data with home stats
+                self.opponent_stats = home_opponent_stats or []
+
+                # Show comparative tables
+                self._show_comparative_tables(home_team_stats, away_team_stats,
+                                             home_opponent_stats, away_opponent_stats)
+
             else:
                 # General mode - all data
                 # Check cache first
                 if self._data_cache['general'] is None:
-                    team_stats, opponent_stats = self.reload_callback(self.collection_name, None)
+                    team_stats, opponent_stats = self.reload_callback(
+                        self.collection_name, date_filter=None, venue_filter=None
+                    )
                     # Cache the loaded data
                     self._data_cache['general'] = (team_stats, opponent_stats)
                 else:
