@@ -41,6 +41,14 @@ class MongoDBHandler:
         """Get opponent statistics grouped by team."""
         return self.repository.get_opponent_stats(collection_name, date_filter, venue_filter, result_filter)
 
+    def get_last_match(self, collection_name: str, team_name: str) -> dict:
+        """Get the last match document for a specific team."""
+        return self.repository.get_last_match(collection_name, team_name)
+
+    def get_all_teams(self, collection_name: str) -> list:
+        """Get list of all unique team names in the collection."""
+        return self.repository.get_all_teams(collection_name)
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""

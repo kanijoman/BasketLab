@@ -4,7 +4,7 @@ AI Team Selector - Dialog for selecting a team for AI analysis.
 
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QListWidget,
                               QPushButton, QLabel, QMessageBox, QListWidgetItem,
-                              QRadioButton, QButtonGroup, QGroupBox)
+                              QRadioButton, QButtonGroup, QGroupBox, QLineEdit)
 from PyQt6.QtCore import Qt
 from typing import List, Dict
 from shotcharts.zone_analysis import ZoneAnalyzer
@@ -95,6 +95,28 @@ class AITeamSelector(QDialog):
         """)
         layout.addWidget(type_group)
 
+        # Search box
+        search_layout = QHBoxLayout()
+        search_label = QLabel("🔍 Buscar:")
+        search_label.setStyleSheet("font-weight: bold;")
+        self.search_box = QLineEdit()
+        self.search_box.setPlaceholderText("Escriba para filtrar equipos...")
+        self.search_box.textChanged.connect(self._filter_teams)
+        self.search_box.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 2px solid #9C27B0;
+                border-radius: 5px;
+                font-size: 12px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #7B1FA2;
+            }
+        """)
+        search_layout.addWidget(search_label)
+        search_layout.addWidget(self.search_box)
+        layout.addLayout(search_layout)
+
         # Team list
         self.team_list = QListWidget()
         self.team_list.itemDoubleClicked.connect(self.on_team_selected)
@@ -167,6 +189,14 @@ class AITeamSelector(QDialog):
                 color: white;
             }
         """)
+
+    def _filter_teams(self, text: str):
+        """Filter team list based on search text."""
+        search_text = text.lower()
+        for i in range(self.team_list.count()):
+            item = self.team_list.item(i)
+            team_name = item.text().replace("🏀 ", "").lower()
+            item.setHidden(search_text not in team_name)
 
     def on_team_selected(self):
         """Handle team selection and open AI analysis."""

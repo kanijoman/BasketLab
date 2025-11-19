@@ -130,3 +130,72 @@ class BasketballRepository:
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting opponent stats: {e}")
             return []
+
+    def get_last_match(self, collection_name: str, team_name: str) -> Dict:
+        """
+        Get the last match document for a specific team.
+
+        Args:
+            collection_name: Name of the collection
+            team_name: Name of the team to find
+
+        Returns:
+            Last match document or empty dict if not found
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return {}
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+
+            # First, add parsed date field and filter by team
+            pipeline = [
+                {
+                    "$addFields": {
+                        "parsedDate": {
+                            "$dateFromString": {
+                                "dateString": "$HEADER.starttime",
+                                "format": "%d-%m-%Y - %H:%M",
+                                "onError": None,
+                                "onNull": None
+                            }
+                        }
+                    }
+                },
+                {
+                    "$match": {
+                        "HEADER.TEAM.name": team_name
+                    }
+                },
+                {"$sort": {"parsedDate": -1}},
+                {"$limit": 1}
+            ]
+
+            result = list(collection.aggregate(pipeline))
+            return result[0] if result else {}
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting last match: {e}")
+            return {}
+
+    def get_all_teams(self, collection_name: str) -> List[str]:
+        """
+        Get list of all unique team names in the collection.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            Sorted list of team names
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            teams = collection.distinct("HEADER.TEAM.name")
+            return sorted(teams)
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting teams: {e}")
+            return []

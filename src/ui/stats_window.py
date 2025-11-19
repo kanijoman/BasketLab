@@ -3,24 +3,24 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QTableWidget, QHeaderView, QTabWidget, QPushButton,
                               QFileDialog, QMessageBox, QMenu, QTableWidgetItem, QLabel,
-                              QRadioButton, QButtonGroup, QComboBox, QFrame)
+                              QRadioButton, QButtonGroup, QComboBox, QFrame, QDialog)
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPainter, QPageLayout, QPageSize, QAction, QColor
-from PyQt6.QtPrintSupport import QPrinter
-from typing import List, Dict, Callable
-import csv
+from PyQt6.QtGui import QAction, QColor
+from typing import List, Dict, Callable, Optional, Any
 from datetime import datetime, timedelta
 
-from .table_items import NumericTableWidgetItem, process_numeric_value
+from .table_items import NumericTableWidgetItem
 from .stats_config import (
     BASIC_COLUMNS, ADVANCED_COLUMNS,
-    PERCENTAGE_FIELDS, ADVANCED_PERCENTAGE_FIELDS, NON_PERCENTAGE_FIELDS,
-    get_basic_stats_config, get_advanced_stats_config,
     get_basic_numeric_data, get_advanced_numeric_data,
-    calculate_quartiles, get_quartile_color
+    calculate_quartiles
 )
 from .trend_calculator import TrendCalculator
 from .ui_utils import set_app_icon
+from .team_selector_dialog import TeamSelectorDialog
+from .stats_calculator import StatsCalculator
+from .stats_exporter import StatsExporter
+from .stats_table_manager import StatsTableManager
 
 
 class TeamStatsWindow(QMainWindow):
@@ -51,8 +51,9 @@ class TeamStatsWindow(QMainWindow):
     CACHE_WON = 'won'
     CACHE_LOST = 'lost'
 
-    def __init__(self, team_stats: List[Dict], opponent_stats: List[Dict] = None,
-                 collection_name: str = None, reload_callback: Callable = None, parent=None):
+    def __init__(self, team_stats: List[Dict], opponent_stats: Optional[List[Dict]] = None,
+                 collection_name: Optional[str] = None, reload_callback: Optional[Callable] = None,
+                 db_handler: Optional[Any] = None, parent: Optional[QWidget] = None):
         """
         Initialize the team stats window.
 
@@ -61,6 +62,7 @@ class TeamStatsWindow(QMainWindow):
             opponent_stats: List of opponent statistics dictionaries (optional)
             collection_name: Name of the collection for reloading data
             reload_callback: Callback function to reload data with date filter
+            db_handler: Database handler for accessing MongoDB (optional)
             parent: Parent widget
         """
         super().__init__(parent)
@@ -73,10 +75,14 @@ class TeamStatsWindow(QMainWindow):
 
         self.collection_name = collection_name
         self.reload_callback = reload_callback
+        self.db_handler = db_handler
         self.opponent_stats = opponent_stats or []
 
-        # Initialize trend calculator
+        # Initialize helper classes
         self.trend_calculator = TrendCalculator()
+        self.stats_calculator = StatsCalculator()
+        self.stats_exporter = StatsExporter(self)
+        self.table_manager = StatsTableManager(self.trend_calculator)
 
         # List to store references to trend legend titles
         self.trend_legend_titles = []
@@ -108,13 +114,18 @@ class TeamStatsWindow(QMainWindow):
 
         # Add period selector ComboBox
         period_label = QLabel("Período:")
+        period_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(period_label)
 
         self.period_combo = QComboBox()
         self.period_combo.addItem("General (toda la temporada)", "general")
-        self.period_combo.addItem("Mensual (comparativa último mes)", "comparative")
+        self.period_combo.addItem("Últimos 7 días vs resto", "comparative_7")
+        self.period_combo.addItem("Últimos 15 días vs resto", "comparative_15")
+        self.period_combo.addItem("Últimos 30 días vs resto", "comparative_30")
+        self.period_combo.addItem("Últimos 60 días vs resto", "comparative_60")
         self.period_combo.addItem("Local vs Visitante", "venue_comparative")
         self.period_combo.addItem("Ganados vs Perdidos", "result_comparative")
+        self.period_combo.addItem("Último Partido", "last_match")
         self.period_combo.setToolTip("Seleccionar período de estadísticas")
         self.period_combo.currentIndexChanged.connect(self._on_period_changed)
         controls_layout.addWidget(self.period_combo)
@@ -270,14 +281,20 @@ class TeamStatsWindow(QMainWindow):
 
         for row, team in enumerate(team_stats):
             # Populate basic stats table
-            self._populate_basic_stats_row(row, team, basic_numeric_data, basic_quartiles)
+            self.table_manager.populate_basic_stats_row(
+                self.basic_table, row, team, basic_numeric_data, basic_quartiles
+            )
             # Populate advanced stats table
-            self._populate_advanced_stats_row(row, team, advanced_numeric_data, advanced_quartiles)
+            self.table_manager.populate_advanced_stats_row(
+                self.advanced_table, row, team, advanced_numeric_data, advanced_quartiles
+            )
 
         # Populate opponent stats table if available
         if self.opponent_table and self.opponent_stats:
             for row, opp_team in enumerate(self.opponent_stats):
-                self._populate_advanced_stats_row(row, opp_team, opponent_numeric_data, opponent_quartiles, self.opponent_table)
+                self.table_manager.populate_advanced_stats_row(
+                    self.opponent_table, row, opp_team, opponent_numeric_data, opponent_quartiles
+                )
 
         # Configure scrollbars for all tables
         tables_to_configure = [self.basic_table, self.advanced_table]
@@ -290,79 +307,6 @@ class TeamStatsWindow(QMainWindow):
 
         # Calculate and set window size
         self._set_window_size()
-
-    def _populate_basic_stats_row(self, row: int, team: Dict, numeric_data: Dict, quartiles: Dict):
-        """Populate a row in the basic stats table."""
-        numeric_cols = []
-
-        # Get stats configuration for this team
-        basic_stats_config = get_basic_stats_config(team)
-
-        for idx, key, raw_value in basic_stats_config:
-            num_value, display_value = process_numeric_value(raw_value, key)
-            # Add percentage symbol for percentage stats
-            if key in PERCENTAGE_FIELDS:
-                display_value = f"{display_value}%"
-            numeric_cols.append((idx, key, num_value, display_value))
-
-        # Team name - no color (text sorting)
-        self.basic_table.setItem(row, 0, NumericTableWidgetItem(team["team_name"], team["team_name"], False))
-
-        # Games columns - no color (numeric sorting)
-        self.basic_table.setItem(row, 1, NumericTableWidgetItem(team["total_games"], str(team["total_games"])))
-        self.basic_table.setItem(row, 2, NumericTableWidgetItem(team["games_home"], str(team["games_home"])))
-        self.basic_table.setItem(row, 3, NumericTableWidgetItem(team["games_away"], str(team["games_away"])))
-
-        for col_idx, key, value, value_str in numeric_cols:
-            item = NumericTableWidgetItem(value, value_str)
-            color = get_quartile_color(
-                float(value),
-                quartiles[key],
-                numeric_data[key][1]  # Get reverse flag
-            )
-            item.setBackground(color)
-            item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self.basic_table.setItem(row, col_idx, item)
-
-    def _populate_advanced_stats_row(self, row: int, team: Dict, numeric_data: Dict, quartiles: Dict, table=None):
-        """Populate a row in the advanced stats table (or opponent stats table)."""
-        # Use provided table or default to advanced_table
-        target_table = table if table is not None else self.advanced_table
-
-        # Determine if we're populating the opponent table (colors should be inverted)
-        is_opponent_table = target_table is self.opponent_table
-
-        numeric_cols = []
-
-        # Get advanced stats configuration for this team
-        advanced_stats_config = get_advanced_stats_config(team)
-
-        for idx, key, raw_value in advanced_stats_config:
-            num_value, display_value = process_numeric_value(raw_value, key)
-            # Add percentage symbol for percentage stats (exclude possessions, ratings)
-            if key not in NON_PERCENTAGE_FIELDS:
-                display_value = f"{display_value}%"
-            numeric_cols.append((idx, key, num_value, display_value))
-
-        # Team name and games
-        target_table.setItem(row, 0, NumericTableWidgetItem(team["team_name"], team["team_name"], False))
-        target_table.setItem(row, 1, NumericTableWidgetItem(team["total_games"], str(team["total_games"])))
-
-        for col_idx, key, value, value_str in numeric_cols:
-            item = NumericTableWidgetItem(value, value_str)
-            # For opponent stats, invert the color logic
-            reverse_flag = numeric_data[key][1]
-            if is_opponent_table:
-                reverse_flag = not reverse_flag  # Invert for opponent stats
-
-            color = get_quartile_color(
-                float(value),
-                quartiles[key],
-                reverse_flag
-            )
-            item.setBackground(color)
-            item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            target_table.setItem(row, col_idx, item)
 
     def _apply_header_colors(self):
         """Apply background colors to column headers based on their groups."""
@@ -496,160 +440,22 @@ class TeamStatsWindow(QMainWindow):
 
     def _export_csv(self):
         """Export current table to CSV format."""
-        try:
-            table = self._get_current_table()
-            table_name = self._get_current_table_name()
-
-            # Generate default filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            default_filename = f"{table_name}_{timestamp}.csv"
-
-            # Open file dialog
-            filename, _ = QFileDialog.getSaveFileName(
-                self,
-                "Guardar CSV",
-                default_filename,
-                "CSV Files (*.csv);;All Files (*)"
-            )
-
-            if not filename:
-                return
-
-            # Write CSV file
-            with open(filename, 'w', newline='', encoding='utf-8-sig') as file:
-                writer = csv.writer(file, delimiter=';')
-
-                # Write headers
-                headers = []
-                for col in range(table.columnCount()):
-                    headers.append(table.horizontalHeaderItem(col).text())
-                writer.writerow(headers)
-
-                # Write data rows
-                for row in range(table.rowCount()):
-                    row_data = []
-                    for col in range(table.columnCount()):
-                        item = table.item(row, col)
-                        if item:
-                            row_data.append(item.text())
-                        else:
-                            row_data.append('')
-                    writer.writerow(row_data)
-
-            QMessageBox.information(
-                self,
-                "Exportación exitosa",
-                f"Tabla exportada correctamente a:\n{filename}"
-            )
-
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al exportar",
-                f"No se pudo exportar la tabla a CSV:\n{str(e)}"
-            )
+        table = self._get_current_table()
+        table_name = self._get_current_table_name()
+        self.stats_exporter.export_to_csv(table, table_name)
 
     def _export_png(self):
         """Export current table to PNG image."""
-        try:
-            table = self._get_current_table()
-            table_name = self._get_current_table_name()
-
-            # Generate default filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            default_filename = f"{table_name}_{timestamp}.png"
-
-            # Open file dialog
-            filename, _ = QFileDialog.getSaveFileName(
-                self,
-                "Guardar PNG",
-                default_filename,
-                "PNG Files (*.png);;All Files (*)"
-            )
-
-            if not filename:
-                return
-
-            # Capture table as image
-            pixmap = table.grab()
-            pixmap.save(filename, 'PNG')
-
-            QMessageBox.information(
-                self,
-                "Exportación exitosa",
-                f"Tabla exportada correctamente a:\n{filename}"
-            )
-
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al exportar",
-                f"No se pudo exportar la tabla a PNG:\n{str(e)}"
-            )
+        table = self._get_current_table()
+        table_name = self._get_current_table_name()
+        self.stats_exporter.export_to_png(table, table_name)
 
     def _export_pdf(self):
         """Export current table to PDF format."""
-        try:
-            table = self._get_current_table()
-            table_name = self._get_current_table_name()
-
-            # Generate default filename with timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            default_filename = f"{table_name}_{timestamp}.pdf"
-
-            # Open file dialog
-            filename, _ = QFileDialog.getSaveFileName(
-                self,
-                "Guardar PDF",
-                default_filename,
-                "PDF Files (*.pdf);;All Files (*)"
-            )
-
-            if not filename:
-                return
-
-            # Create printer and configure for PDF
-            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-            printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
-            printer.setOutputFileName(filename)
-
-            # Set page to landscape for better table fit
-            page_layout = QPageLayout()
-            page_layout.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
-            page_layout.setOrientation(QPageLayout.Orientation.Landscape)
-            printer.setPageLayout(page_layout)
-
-            # Create painter and render table
-            painter = QPainter()
-            painter.begin(printer)
-
-            # Calculate scaling to fit table in page
-            page_rect = printer.pageRect(QPrinter.Unit.DevicePixel)
-            table_rect = table.rect()
-
-            scale_x = page_rect.width() / table_rect.width()
-            scale_y = page_rect.height() / table_rect.height()
-            scale = min(scale_x, scale_y) * 0.95  # 95% to add margins
-
-            painter.scale(scale, scale)
-
-            # Render the table
-            table.render(painter)
-
-            painter.end()
-
-            QMessageBox.information(
-                self,
-                "Exportación exitosa",
-                f"Tabla exportada correctamente a:\n{filename}"
-            )
-
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al exportar",
-                f"No se pudo exportar la tabla a PDF:\n{str(e)}"
-            )
+        table = self._get_current_table()
+        table_name = self._get_current_table_name()
+        window_title = self.windowTitle()
+        self.stats_exporter.export_to_pdf(table, table_name, window_title)
 
     def _on_view_mode_changed(self):
         """Handle view mode change between Teams and Opponents."""
@@ -800,46 +606,60 @@ class TeamStatsWindow(QMainWindow):
         period_type = self.period_combo.itemData(index)
 
         try:
-            if period_type == "comparative":
-                # Load both monthly and rest-of-season data for comparison
+            if period_type and period_type.startswith("comparative"):
+                # Extract days from period type (e.g., "comparative_30" -> 30)
+                days = 30  # default
+                if "_" in period_type:
+                    try:
+                        days = int(period_type.split("_")[1])
+                    except (ValueError, IndexError):
+                        days = 30
+
+                # Load both recent period and rest-of-season data for comparison
                 now = datetime.now()
-                one_month_ago = now - timedelta(days=30)
+                period_start = now - timedelta(days=days)
+
+                # Use dynamic cache key based on days
+                cache_key_recent = f"{self.CACHE_MONTHLY}_{days}"
+                cache_key_rest = f"{self.CACHE_REST}_{days}"
 
                 # Check cache first
-                if self._data_cache[self.CACHE_MONTHLY] is None or self._data_cache[self.CACHE_REST] is None:
-                    # Get monthly data
-                    monthly_filter = {"$gte": one_month_ago}
-                    monthly_team_stats, monthly_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=monthly_filter, venue_filter=None, result_filter=None
+                if cache_key_recent not in self._data_cache or cache_key_rest not in self._data_cache or \
+                   self._data_cache.get(cache_key_recent) is None or self._data_cache.get(cache_key_rest) is None:
+                    # Get recent period data
+                    recent_filter = {"$gte": period_start}
+                    recent_team_stats, recent_opponent_stats = self.reload_callback(
+                        self.collection_name, date_filter=recent_filter, venue_filter=None, result_filter=None
                     )
 
-                    # Get rest of season data (before last month)
-                    rest_filter = {"$lt": one_month_ago}
+                    # Get rest of season data (before recent period)
+                    rest_filter = {"$lt": period_start}
                     rest_team_stats, rest_opponent_stats = self.reload_callback(
                         self.collection_name, date_filter=rest_filter, venue_filter=None, result_filter=None
                     )
 
                     # Cache the loaded data
-                    self._data_cache[self.CACHE_MONTHLY] = (monthly_team_stats, monthly_opponent_stats)
-                    self._data_cache[self.CACHE_REST] = (rest_team_stats, rest_opponent_stats)
+                    self._data_cache[cache_key_recent] = (recent_team_stats, recent_opponent_stats)
+                    self._data_cache[cache_key_rest] = (rest_team_stats, rest_opponent_stats)
                 else:
                     # Use cached data
-                    monthly_team_stats, monthly_opponent_stats = self._data_cache[self.CACHE_MONTHLY]
-                    rest_team_stats, rest_opponent_stats = self._data_cache[self.CACHE_REST]
+                    recent_team_stats, recent_opponent_stats = self._data_cache[cache_key_recent]
+                    rest_team_stats, rest_opponent_stats = self._data_cache[cache_key_rest]
 
-                if not monthly_team_stats or not rest_team_stats:
+                if not recent_team_stats or not rest_team_stats:
                     QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
                     return
 
-                # Update stored data with monthly stats
-                self.opponent_stats = monthly_opponent_stats or []
+                # Update stored data with recent stats
+                self.opponent_stats = recent_opponent_stats or []
 
-                # Update legend title
-                self._update_trend_legend_title("último mes vs resto temporada")
+                # Update legend title with selected period
+                period_label = f"últimos {days} días" if days != 30 else "último mes"
+                self._update_trend_legend_title(f"{period_label} vs resto temporada")
 
                 # Show comparative tables
-                self._show_comparative_tables(monthly_team_stats, rest_team_stats,
-                                             monthly_opponent_stats, rest_opponent_stats)
+                self._show_comparative_tables(recent_team_stats, rest_team_stats,
+                                             recent_opponent_stats, rest_opponent_stats)
 
             elif period_type == "venue_comparative":
                 # Load both home and away data for comparison
@@ -912,6 +732,10 @@ class TeamStatsWindow(QMainWindow):
                 # Show comparative tables
                 self._show_comparative_tables(won_team_stats, lost_team_stats,
                                              won_opponent_stats, lost_opponent_stats)
+
+            elif period_type == "last_match":
+                # Show last match comparison for selected team
+                self._show_last_match_selection()
 
             else:
                 # General mode - all data
@@ -1018,7 +842,7 @@ class TeamStatsWindow(QMainWindow):
                 rest = rest_dict[team_id]
 
                 # Create comparative entry with both monthly and rest data
-                comp_stat = self._create_comparative_stat(monthly, rest)
+                comp_stat = self.stats_calculator.create_comparative_stat(monthly, rest)
                 comparative_stats.append(comp_stat)
 
         if not comparative_stats:
@@ -1038,7 +862,9 @@ class TeamStatsWindow(QMainWindow):
         self.basic_table.setSortingEnabled(False)
 
         for row, stats in enumerate(comparative_stats):
-            self._populate_comparative_basic_row(row, stats, basic_numeric_data, basic_quartiles)
+            self.table_manager.populate_comparative_basic_row(
+                self.basic_table, row, stats, basic_numeric_data, basic_quartiles
+            )
 
         self.basic_table.setSortingEnabled(True)
 
@@ -1048,7 +874,9 @@ class TeamStatsWindow(QMainWindow):
         self.advanced_table.setSortingEnabled(False)
 
         for row, stats in enumerate(comparative_stats):
-            self._populate_comparative_advanced_row(row, stats, advanced_numeric_data, advanced_quartiles, self.advanced_table)
+            self.table_manager.populate_comparative_advanced_row(
+                self.advanced_table, row, stats, advanced_numeric_data, advanced_quartiles
+            )
 
         self.advanced_table.setSortingEnabled(True)
 
@@ -1060,7 +888,9 @@ class TeamStatsWindow(QMainWindow):
             comparative_opp_stats = []
             for team_id in all_team_ids:
                 if team_id in monthly_opp_dict and team_id in rest_opp_dict:
-                    comp_stat = self._create_comparative_stat(monthly_opp_dict[team_id], rest_opp_dict[team_id])
+                    comp_stat = self.stats_calculator.create_comparative_stat(
+                        monthly_opp_dict[team_id], rest_opp_dict[team_id]
+                    )
                     comparative_opp_stats.append(comp_stat)
 
             if comparative_opp_stats:
@@ -1072,188 +902,275 @@ class TeamStatsWindow(QMainWindow):
                 self.opponent_table.setSortingEnabled(False)
 
                 for row, stats in enumerate(comparative_opp_stats):
-                    self._populate_comparative_advanced_row(row, stats, opp_numeric_data, opp_quartiles, self.opponent_table)
+                    self.table_manager.populate_comparative_advanced_row(
+                        self.opponent_table, row, stats, opp_numeric_data, opp_quartiles
+                    )
 
                 self.opponent_table.setSortingEnabled(True)
 
-    def _create_comparative_stat(self, monthly: Dict, rest: Dict) -> Dict:
-        """Create a comparative statistic entry with monthly, rest, and delta values."""
-        comp = {
-            "_id": monthly["_id"],
-            "team_name": monthly["team_name"],
-            "monthly": monthly,
-            "rest": rest,
-            "deltas": {}
+    def _show_last_match_selection(self):
+        """Show team selector and then display last match comparison."""
+        if not self.db_handler or not self.collection_name:
+            QMessageBox.warning(self, "Error", "No hay acceso a la base de datos")
+            return
+
+        # Get all teams
+        teams = self.db_handler.get_all_teams(self.collection_name)
+        if not teams:
+            QMessageBox.information(self, "Sin datos", "No hay equipos disponibles")
+            return
+
+        # Show team selector dialog
+        dialog = TeamSelectorDialog(teams, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            # User canceled - return to general mode
+            self.period_combo.setCurrentIndex(0)
+            return
+
+        selected_team = dialog.get_selected_team()
+        if not selected_team:
+            self.period_combo.setCurrentIndex(0)
+            return
+
+        # Get last match for selected team
+        last_match = self.db_handler.get_last_match(self.collection_name, selected_team)
+        if not last_match:
+            QMessageBox.information(self, "Sin datos",
+                                   f"No se encontró ningún partido para {selected_team}")
+            self.period_combo.setCurrentIndex(0)
+            return
+
+        # Process and show last match
+        self._process_and_show_last_match(last_match, selected_team)
+
+    def _process_and_show_last_match(self, match_doc: Dict, selected_team: str):
+        """
+        Process last match document and show comparison.
+
+        Args:
+            match_doc: MongoDB document of the last match
+            selected_team: Name of the selected team
+        """
+        try:
+            # Extract match info
+            header = match_doc.get("HEADER", {})
+            boxscore = match_doc.get("BOXSCORE", {})
+            teams_data = boxscore.get("TEAM", [])
+
+            if len(teams_data) != 2:
+                QMessageBox.warning(self, "Error", "Datos del partido incompletos")
+                return
+
+            # Find which team is the selected one
+            team1_data = teams_data[0].get("TOTAL", {})
+            team2_data = teams_data[1].get("TOTAL", {})
+
+            team1_name = team1_data.get("name", "")
+            team2_name = team2_data.get("name", "")
+
+            if selected_team == team1_name:
+                selected_team_data = team1_data
+                opponent_team_data = team2_data
+                selected_is_home = True
+            elif selected_team == team2_name:
+                selected_team_data = team2_data
+                opponent_team_data = team1_data
+                selected_is_home = False
+            else:
+                QMessageBox.warning(self, "Error", "No se encontró el equipo seleccionado en el partido")
+                return
+
+            # Calculate match stats for both teams
+            selected_stats = self.stats_calculator.calculate_single_match_stats(selected_team_data, opponent_team_data)
+            opponent_stats = self.stats_calculator.calculate_single_match_stats(opponent_team_data, selected_team_data)
+
+            # Get season stats for trends (excluding this match)
+            season_team_stats, _ = self.reload_callback(
+                self.collection_name, date_filter=None, venue_filter=None, result_filter=None
+            )
+
+            # Find season stats for both teams
+            selected_season = next((t for t in season_team_stats if t["team_name"] == selected_team), None)
+            opponent_season = next((t for t in season_team_stats if t["team_name"] == opponent_team_data.get("name", "")), None)
+
+            # Show comparison
+            self._show_last_match_comparison(
+                selected_stats, opponent_stats,
+                selected_season, opponent_season,
+                header, selected_is_home
+            )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al procesar el partido: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    def _show_last_match_comparison(self, selected_stats: Dict, opponent_stats: Dict,
+                                     selected_season: Dict, opponent_season: Dict,
+                                     header: Dict, selected_is_home: bool):
+        """
+        Show last match comparison with colors and trends.
+
+        Args:
+            selected_stats: Match stats for selected team
+            opponent_stats: Match stats for opponent team
+            selected_season: Season stats for selected team
+            opponent_season: Season stats for opponent team
+            header: Match header info
+            selected_is_home: Whether selected team played at home
+        """
+        # Show trend legends in last match mode
+        if hasattr(self, 'trend_legend'):
+            self.trend_legend.setVisible(True)
+        if hasattr(self, 'basic_trend_legend'):
+            self.basic_trend_legend.setVisible(True)
+
+        # Update legend title
+        self._update_trend_legend_title("último partido vs temporada")
+
+        # Clear tables
+        for table in [self.basic_table, self.advanced_table]:
+            table.setRowCount(0)
+            table.setSortingEnabled(False)
+
+        # Set up comparison for both tables
+        self.basic_table.setRowCount(2)
+        self.advanced_table.setRowCount(2)
+
+        # Populate advanced table rows with colored comparison
+        self.table_manager.populate_last_match_row(
+            self.advanced_table, 0, selected_stats, opponent_stats, selected_season, True, is_basic=False
+        )
+        self.table_manager.populate_last_match_row(
+            self.advanced_table, 1, opponent_stats, selected_stats, opponent_season, False, is_basic=False
+        )
+
+        # Populate basic table rows with colored comparison
+        self.table_manager.populate_last_match_row(
+            self.basic_table, 0, selected_stats, opponent_stats, selected_season, True, is_basic=True
+        )
+        self.table_manager.populate_last_match_row(
+            self.basic_table, 1, opponent_stats, selected_stats, opponent_season, False, is_basic=True
+        )
+
+        # Add match info as window title update
+        match_date = header.get("starttime", "")
+        match_place = header.get("place", "")
+        venue_text = "Local" if selected_is_home else "Visitante"
+        self.setWindowTitle(f"MfA - Último Partido: {selected_stats['team_name']} ({venue_text}) - {match_date}")
+
+        self.basic_table.setSortingEnabled(True)
+        self.advanced_table.setSortingEnabled(True)
+
+    def _populate_last_match_row(self, row: int, team_stats: Dict, opponent_stats: Dict,
+                                  season_stats: Dict, is_selected_team: bool, table: QTableWidget,
+                                  is_basic: bool = False):
+        """
+        Populate a row in the table for last match comparison.
+
+        Args:
+            row: Row index
+            team_stats: Match stats for this team
+            opponent_stats: Match stats for the opponent
+            season_stats: Season stats for trend calculation
+            is_selected_team: Whether this is the selected team row
+            table: The table to populate (basic or advanced)
+            is_basic: Whether this is the basic stats table
+        """
+        # Team name
+        team_name = team_stats["team_name"]
+        table.setItem(row, 0, NumericTableWidgetItem(team_name, team_name, False))
+
+        # Get stats configuration based on table type
+        if is_basic:
+            # For basic table: team name, games, games home, games away, then stats
+            table.setItem(row, 1, NumericTableWidgetItem(1, "1"))  # Total games
+            table.setItem(row, 2, NumericTableWidgetItem(1 if is_selected_team else 0, "1" if is_selected_team else "0"))  # Games home
+            table.setItem(row, 3, NumericTableWidgetItem(0 if is_selected_team else 1, "0" if is_selected_team else "1"))  # Games away
+            stats_config = get_basic_stats_config(team_stats)
+        else:
+            # For advanced table: team name, games, then stats
+            table.setItem(row, 1, NumericTableWidgetItem(1, "1"))
+            stats_config = get_advanced_stats_config(team_stats)
+
+        # Define which stats are "higher is better"
+        higher_is_better = {
+            "points_per_game", "fg2_percentage", "fg3_percentage", "ft_percentage",
+            "fg_percentage", "efg_percentage", "true_shooting", "assists_per_game",
+            "steals_per_game", "blocks_per_game", "offensive_rating", "net_rating",
+            "rebounds_per_game", "oreb_percentage", "possessions_per_game",
+            "offensive_rebound_rate", "three_point_rate", "free_throw_rate",
+            "assist_fg_rate", "assist_rate", "steal_rate", "block_rate",
+            "points_scored", "total_rebounds", "rebounds_def", "rebounds_off",
+            "assists", "steals", "blocks"
         }
 
-        # Define numeric fields to calculate deltas for
-        numeric_fields = [
-            "total_games", "points_scored", "points_received", "points_per_game", "points_against_per_game",
-            "fg2_percentage", "fg3_percentage", "ft_percentage", "total_rebounds", "rebounds_def", "rebounds_off",
-            "assists", "assists_per_game", "steals", "steals_per_game", "turnovers", "turnovers_per_game",
-            "blocks", "blocks_per_game",
-            "possessions_per_game", "offensive_rating", "defensive_rating", "net_rating",
-            "efg_percentage", "turnover_rate", "offensive_rebound_rate", "free_throw_rate", "three_point_rate",
-            "true_shooting", "assist_fg_rate", "assist_rate", "steal_rate", "block_rate",
-            "defensive_rebound_rate"
-        ]
+        # Define which stats are "lower is better"
+        lower_is_better = {
+            "defensive_rating", "turnover_rate", "turnovers_per_game",
+            "points_against_per_game", "points_received", "turnovers"
+        }
 
-        # Use TrendCalculator to compute deltas
-        comp["deltas"] = self.trend_calculator.calculate_deltas(monthly, rest, numeric_fields)
-
-        return comp
-
-    def _populate_comparative_basic_row(self, row: int, comp_stat: Dict, numeric_data: Dict, quartiles: Dict):
-        """Populate basic stats row with comparative data showing trends."""
-        monthly = comp_stat["monthly"]
-        rest = comp_stat["rest"]
-        deltas = comp_stat["deltas"]
-
-        # Team name
-        self.basic_table.setItem(row, 0, NumericTableWidgetItem(monthly["team_name"], monthly["team_name"], False))
-
-        # Total games (show monthly + rest)
-        total_games = monthly.get("total_games", 0) + rest.get("total_games", 0)
-        games_text = f"{monthly.get('total_games', 0)} + {rest.get('total_games', 0)}"
-        self.basic_table.setItem(row, 1, NumericTableWidgetItem(total_games, games_text))
-
-        # Local games (monthly + rest)
-        local_games = monthly.get("games_home", 0) + rest.get("games_home", 0)
-        local_text = f"{monthly.get('games_home', 0)} + {rest.get('games_home', 0)}"
-        self.basic_table.setItem(row, 2, NumericTableWidgetItem(local_games, local_text))
-
-        # Away games (monthly + rest)
-        away_games = monthly.get("games_away", 0) + rest.get("games_away", 0)
-        away_text = f"{monthly.get('games_away', 0)} + {rest.get('games_away', 0)}"
-        self.basic_table.setItem(row, 3, NumericTableWidgetItem(away_games, away_text))
-
-        # For other numeric columns, show monthly value with trend indicator
-        basic_stats_config = get_basic_stats_config(monthly)
-
-        for idx, key, raw_value in basic_stats_config:
-            if idx < 2:  # Skip team_name and total_games
+        # Process each stat
+        for idx, key, raw_value in stats_config:
+            if is_basic and idx < 4:  # Skip team name and games columns in basic
+                continue
+            elif not is_basic and idx < 2:  # Skip team name and games in advanced
                 continue
 
             num_value, display_value = process_numeric_value(raw_value, key)
 
-            # Add percentage symbol first if needed
-            if key in PERCENTAGE_FIELDS:
-                display_value = f"{display_value}%"
-
-            # Add trend indicator with color
-            if key in deltas:
-                delta = deltas[key]
-                trend_symbol, trend_color = self.trend_calculator.get_trend_indicator(delta, key)
-
-                cell_label, item = self._create_trend_cell_widget(
-                    display_value, trend_symbol, trend_color, num_value,
-                    key, numeric_data, quartiles
-                )
-                self.basic_table.setCellWidget(row, idx, cell_label)
-                self.basic_table.setItem(row, idx, item)
+            # Add percentage symbol if needed
+            if is_basic:
+                if key in PERCENTAGE_FIELDS:
+                    display_value = f"{display_value}%"
             else:
-                # No trend data available - show "—" indicator
-                trend_symbol, trend_color = self.trend_calculator.get_no_data_indicator()
-                cell_label, item = self._create_trend_cell_widget(
-                    display_value, trend_symbol, trend_color, num_value,
-                    key, numeric_data, quartiles
-                )
-                cell_label.setProperty("title", "Sin datos para comparar")
-                self.basic_table.setCellWidget(row, idx, cell_label)
-                self.basic_table.setItem(row, idx, item)
+                if key not in NON_PERCENTAGE_FIELDS:
+                    display_value = f"{display_value}%"
 
-    def _create_trend_cell_widget(self, display_value: str, trend_symbol: str, trend_color: str,
-                                   num_value: float, key: str, numeric_data: Dict, quartiles: Dict,
-                                   reverse_flag: bool = None) -> tuple:
-        """
-        Create a QLabel widget with trend indicator and background color.
+            # Get opponent value for comparison
+            opponent_value = opponent_stats.get(key, 0)
 
-        Args:
-            display_value: Formatted value to display
-            trend_symbol: Trend symbol (↑, ↓, ≈, ⇈, ⇊, or —)
-            trend_color: HTML color code for the trend symbol
-            num_value: Numeric value for quartile color calculation
-            key: Field key for quartile lookup
-            numeric_data: Dictionary of numeric data
-            quartiles: Dictionary of quartiles
-            reverse_flag: Optional reverse flag override (for opponent stats)
+            # Determine comparison color
+            if abs(num_value - opponent_value) < 0.01:  # Essentially equal
+                bg_color = "#D3D3D3"  # Gray
+            elif key in higher_is_better:
+                bg_color = "#90EE90" if num_value > opponent_value else "#FFB6C1"  # Green or light red
+            elif key in lower_is_better:
+                bg_color = "#90EE90" if num_value < opponent_value else "#FFB6C1"  # Green or light red
+            else:  # Default: higher is better
+                bg_color = "#90EE90" if num_value > opponent_value else "#FFB6C1"  # Green or light red
 
-        Returns:
-            Tuple of (cell_label, table_item) ready to be set in table
-        """
-        cell_label = QLabel()
-        cell_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            # Calculate trend vs season average
+            trend_symbol = ""
+            trend_color = "gray"
 
-        # Apply quartile background color if available
-        bg_color = "transparent"
-        if key in numeric_data and key in quartiles:
-            flag = reverse_flag if reverse_flag is not None else numeric_data[key][1]
-            color = get_quartile_color(float(num_value), quartiles[key], flag)
-            bg_color = color.name()
+            if season_stats and key in season_stats:
+                season_value = season_stats.get(key, 0)
 
-        cell_label.setStyleSheet(f"background-color: {bg_color};")
-        cell_label.setText(f'{display_value} <span style="color: {trend_color}; font-weight: bold;">{trend_symbol}</span>')
+                # Calculate delta
+                if isinstance(season_value, (int, float)) and season_value != 0:
+                    delta = ((num_value - season_value) / abs(season_value)) * 100
 
-        # Create item for sorting purposes
-        item = NumericTableWidgetItem(num_value, "")
+                    # Use trend calculator to get symbol
+                    trend_symbol, trend_color = self.trend_calculator.get_trend_indicator(delta, key, is_opponent=False)
 
-        return cell_label, item
+            # Create cell widget with color and trend
+            cell_label = QLabel()
+            cell_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            cell_label.setStyleSheet(f"background-color: {bg_color}; padding: 4px;")
 
-    def _populate_comparative_advanced_row(self, row: int, comp_stat: Dict, numeric_data: Dict,
-                                          quartiles: Dict, table: QTableWidget):
-        """Populate advanced stats row with comparative data showing trends."""
-        monthly = comp_stat["monthly"]
-        deltas = comp_stat["deltas"]
-
-        # Determine if this is the opponent table
-        is_opponent_table = table is self.opponent_table
-
-        # Team name and games
-        total_games = monthly.get("total_games", 0) + comp_stat["rest"].get("total_games", 0)
-        games_text = f"{monthly.get('total_games', 0)} + {comp_stat['rest'].get('total_games', 0)}"
-
-        table.setItem(row, 0, NumericTableWidgetItem(monthly["team_name"], monthly["team_name"], False))
-        table.setItem(row, 1, NumericTableWidgetItem(total_games, games_text))
-
-        # Get advanced stats configuration
-        advanced_stats_config = get_advanced_stats_config(monthly)
-
-        for idx, key, raw_value in advanced_stats_config:
-            num_value, display_value = process_numeric_value(raw_value, key)
-
-            # Add percentage symbol first if needed
-            if key not in NON_PERCENTAGE_FIELDS:
-                display_value = f"{display_value}%"
-
-            # Add trend indicator with color
-            if key in deltas:
-                delta = deltas[key]
-                trend_symbol, trend_color = self.trend_calculator.get_trend_indicator(delta, key, is_opponent=is_opponent_table)
-
-                # Calculate reverse flag for opponent table
-                reverse_flag = numeric_data[key][1] if key in numeric_data else None
-                if is_opponent_table and reverse_flag is not None:
-                    reverse_flag = not reverse_flag
-
-                cell_label, item = self._create_trend_cell_widget(
-                    display_value, trend_symbol, trend_color, num_value,
-                    key, numeric_data, quartiles, reverse_flag
-                )
-                table.setCellWidget(row, idx, cell_label)
-                table.setItem(row, idx, item)
+            if trend_symbol:
+                cell_label.setText(f'{display_value} <span style="color: {trend_color}; font-weight: bold;">{trend_symbol}</span>')
             else:
-                # No trend data available - show "—" indicator
-                trend_symbol, trend_color = self.trend_calculator.get_no_data_indicator()
-                reverse_flag = numeric_data[key][1] if key in numeric_data else None
-                if is_opponent_table and reverse_flag is not None:
-                    reverse_flag = not reverse_flag
+                cell_label.setText(display_value)
 
-                cell_label, item = self._create_trend_cell_widget(
-                    display_value, trend_symbol, trend_color, num_value,
-                    key, numeric_data, quartiles, reverse_flag
-                )
-                cell_label.setProperty("title", "Sin datos para comparar")
-                table.setCellWidget(row, idx, cell_label)
-                table.setItem(row, idx, item)
+            # Create item for sorting
+            item = NumericTableWidgetItem(num_value, "")
+
+            table.setCellWidget(row, idx, cell_label)
+            table.setItem(row, idx, item)
+
+
 
 

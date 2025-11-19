@@ -349,6 +349,7 @@ class BasketballSeasonApp(QMainWindow):
                 opponent_stats,
                 collection_name=collection_name,
                 reload_callback=reload_stats,
+                db_handler=self.db_handler,
                 parent=self
             )
             self.stats_window.show()

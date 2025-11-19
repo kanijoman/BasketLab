@@ -1,10 +1,10 @@
 """Shot chart visualization window."""
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                              QComboBox, QLabel, QPushButton, QMessageBox,
-                              QProgressBar, QApplication, QRadioButton, QButtonGroup)
+                              QLabel, QPushButton, QMessageBox,
+                              QProgressBar, QApplication, QRadioButton, QButtonGroup, QDialog)
 from PyQt6.QtCore import Qt
-from typing import List, Dict
+from typing import List, Dict, Optional
 import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -14,6 +14,7 @@ from shotcharts import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ui_utils import set_app_icon
+from .team_selector_dialog import TeamSelectorDialog
 
 
 class ShotChartWindow(QMainWindow):
@@ -36,7 +37,7 @@ class ShotChartWindow(QMainWindow):
         self.visualizer = ShotChartVisualizer()
         self.zone_analyzer = ZoneAnalyzer(detail_level='detailed')
         self.current_shots = []
-        self.current_team = None
+        self.current_team: Optional[Dict] = None
 
         self.setWindowTitle("MfA - Gráficos de Lanzamiento")
         self.setMinimumSize(900, 700)
@@ -120,12 +121,13 @@ class ShotChartWindow(QMainWindow):
 
         # Team selection
         control_layout.addWidget(QLabel("Equipo:"))
-        self.team_combo = QComboBox()
-        self.team_combo.addItem("-- Seleccionar equipo --", None)
-        for team in self.teams:
-            self.team_combo.addItem(team['name'], team)
-        self.team_combo.currentIndexChanged.connect(self.on_team_changed)
-        control_layout.addWidget(self.team_combo)
+        self.team_label = QLabel("-- Sin seleccionar --")
+        self.team_label.setStyleSheet("font-weight: bold; padding: 5px;")
+        control_layout.addWidget(self.team_label)
+
+        self.select_team_button = QPushButton("Seleccionar Equipo")
+        self.select_team_button.clicked.connect(self.on_select_team_clicked)
+        control_layout.addWidget(self.select_team_button)
 
         control_layout.addStretch()
 
@@ -241,41 +243,40 @@ class ShotChartWindow(QMainWindow):
         try:
             self.teams = self._get_available_teams()
 
-            # Update combo box
-            current_selection = self.team_combo.currentData()
-            self.team_combo.clear()
-            self.team_combo.addItem("-- Seleccionar equipo --", None)
-
-            for team in self.teams:
-                self.team_combo.addItem(team['name'], team)
-
-            # Try to restore previous selection
-            if current_selection:
-                for i in range(self.team_combo.count()):
-                    if self.team_combo.itemData(i) == current_selection:
-                        self.team_combo.setCurrentIndex(i)
-                        break
-
+            # Clear current selection
+            self.current_team = None
+            self.team_label.setText("-- Sin seleccionar --")
             self.status_label.setText(f"Lista actualizada: {len(self.teams)} equipos encontrados")
 
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al actualizar lista de equipos: {str(e)}")
 
+    def on_select_team_clicked(self):
+        """Show team selector dialog."""
+        if not self.teams:
+            QMessageBox.warning(self, "Sin equipos", "No hay equipos disponibles en la base de datos.")
+            return
+
+        # Show team selector dialog
+        team_names = [team['name'] for team in self.teams]
+        dialog = TeamSelectorDialog(team_names, self)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected_name = dialog.get_selected_team()
+            if selected_name:
+                # Find the team data
+                selected_team = next((t for t in self.teams if t['name'] == selected_name), None)
+                if selected_team:
+                    self.current_team = selected_team
+                    self.team_label.setText(selected_name)
+                    self.status_label.setText(f"Cargando datos para {selected_name}...")
+                    QApplication.processEvents()
+                    # Generate chart automatically
+                    self.on_generate_chart()
+
     def on_team_changed(self, index: int):
-        """Handle team selection change and generate chart automatically."""
-        team = self.team_combo.currentData()
-        if team:
-            self.status_label.setText(f"Cargando datos para {team['name']}...")
-            QApplication.processEvents()
-            # Generate chart automatically
-            self.on_generate_chart()
-        else:
-            # Clear current data and chart
-            self.current_shots = []
-            self.current_team = None
-            self.figure.clear()
-            self.canvas.draw()
-            self.status_label.setText("Seleccione un equipo para comenzar")
+        """Handle team selection change - deprecated, kept for compatibility."""
+        pass
 
     def on_filter_changed(self):
         """Handle shot filter change and redraw chart if data exists."""
@@ -364,10 +365,10 @@ class ShotChartWindow(QMainWindow):
 
     def on_generate_chart(self):
         """Generate shot chart for selected team."""
-        team = self.team_combo.currentData()
-        if not team:
+        if not self.current_team:
             return
 
+        team = self.current_team
         try:
             self.status_label.setText(f"Generando gráfico de lanzamiento para {team['name']}...")
             QApplication.processEvents()
