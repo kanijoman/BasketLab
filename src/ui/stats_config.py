@@ -38,6 +38,28 @@ NON_PERCENTAGE_FIELDS = {
     'possessions_per_game', 'offensive_rating', 'defensive_rating', 'net_rating'
 }
 
+# Trend indicator configuration
+TREND_THRESHOLDS = {
+    'minimal': 5.0,      # Changes below this are considered minimal (≈)
+    'significant': 10.0   # Changes above this are considered significant (⇈/⇊)
+}
+
+# Trend indicator colors (high contrast for visibility on colored backgrounds)
+TREND_COLORS = {
+    'significant_good': '#1B5E20',    # Very dark green
+    'moderate_good': '#2E7D32',       # Dark green
+    'minimal': '#424242',             # Dark gray
+    'moderate_bad': '#E65100',        # Dark orange
+    'significant_bad': '#B71C1C',     # Very dark red
+    'no_data': '#757575'              # Medium gray
+}
+
+# Fields where lower values are better (for trend calculation)
+LOWER_IS_BETTER_FIELDS = {
+    'turnovers_per_game', 'turnovers', 'turnover_rate',
+    'defensive_rating', 'points_received', 'points_against_per_game'
+}
+
 
 def get_basic_stats_config(team: Dict) -> List[Tuple[int, str, any]]:
     """

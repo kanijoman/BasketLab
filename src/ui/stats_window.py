@@ -19,6 +19,7 @@ from .stats_config import (
     get_basic_numeric_data, get_advanced_numeric_data,
     calculate_quartiles, get_quartile_color
 )
+from .trend_calculator import TrendCalculator
 from .ui_utils import set_app_icon
 
 
@@ -58,6 +59,17 @@ class TeamStatsWindow(QMainWindow):
         self.collection_name = collection_name
         self.reload_callback = reload_callback
         self.opponent_stats = opponent_stats or []
+
+        # Initialize trend calculator
+        self.trend_calculator = TrendCalculator()
+
+        # Cache for loaded data to avoid reloading when switching tabs
+        self._data_cache = {
+            'general': None,
+            'monthly': None,
+            'rest': None
+        }
+
         self.setup_ui(team_stats)
 
     def setup_ui(self, team_stats: List[Dict]):
@@ -396,15 +408,8 @@ class TeamStatsWindow(QMainWindow):
         title_label.setStyleSheet("font-weight: bold;")
         legend_layout.addWidget(title_label)
 
-        # Trend indicators
-        trends = [
-            ("⇈", "Mejora significativa (>10%)", "#1B5E20"),
-            ("↑", "Mejora moderada (5-10%)", "#2E7D32"),
-            ("≈", "Sin cambios (<5%)", "#424242"),
-            ("↓", "Empeoramiento moderado (5-10%)", "#E65100"),
-            ("⇊", "Empeoramiento significativo (>10%)", "#B71C1C"),
-            ("—", "Sin datos para comparar", "#757575")
-        ]
+        # Get trend indicators from calculator
+        trends = self.trend_calculator.get_legend_items()
 
         for symbol, description, color in trends:
             # Create container for each legend item
@@ -740,6 +745,14 @@ class TeamStatsWindow(QMainWindow):
         # Use QTimer to ensure tables are fully rendered before resizing
         QTimer.singleShot(100, self._adjust_window_size_for_current_tab)
 
+    def invalidate_cache(self):
+        """Clear all cached data to force reload on next period change."""
+        self._data_cache = {
+            'general': None,
+            'monthly': None,
+            'rest': None
+        }
+
     def _on_period_changed(self, index: int):
         """Handle period selection change."""
         if not self.reload_callback or not self.collection_name:
@@ -754,13 +767,23 @@ class TeamStatsWindow(QMainWindow):
                 now = datetime.now()
                 one_month_ago = now - timedelta(days=30)
 
-                # Get monthly data
-                monthly_filter = {"$gte": one_month_ago}
-                monthly_team_stats, monthly_opponent_stats = self.reload_callback(self.collection_name, monthly_filter)
+                # Check cache first
+                if self._data_cache['monthly'] is None or self._data_cache['rest'] is None:
+                    # Get monthly data
+                    monthly_filter = {"$gte": one_month_ago}
+                    monthly_team_stats, monthly_opponent_stats = self.reload_callback(self.collection_name, monthly_filter)
 
-                # Get rest of season data (before last month)
-                rest_filter = {"$lt": one_month_ago}
-                rest_team_stats, rest_opponent_stats = self.reload_callback(self.collection_name, rest_filter)
+                    # Get rest of season data (before last month)
+                    rest_filter = {"$lt": one_month_ago}
+                    rest_team_stats, rest_opponent_stats = self.reload_callback(self.collection_name, rest_filter)
+
+                    # Cache the loaded data
+                    self._data_cache['monthly'] = (monthly_team_stats, monthly_opponent_stats)
+                    self._data_cache['rest'] = (rest_team_stats, rest_opponent_stats)
+                else:
+                    # Use cached data
+                    monthly_team_stats, monthly_opponent_stats = self._data_cache['monthly']
+                    rest_team_stats, rest_opponent_stats = self._data_cache['rest']
 
                 if not monthly_team_stats or not rest_team_stats:
                     QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
@@ -775,7 +798,14 @@ class TeamStatsWindow(QMainWindow):
 
             else:
                 # General mode - all data
-                team_stats, opponent_stats = self.reload_callback(self.collection_name, None)
+                # Check cache first
+                if self._data_cache['general'] is None:
+                    team_stats, opponent_stats = self.reload_callback(self.collection_name, None)
+                    # Cache the loaded data
+                    self._data_cache['general'] = (team_stats, opponent_stats)
+                else:
+                    # Use cached data
+                    team_stats, opponent_stats = self._data_cache['general']
 
                 if not team_stats:
                     QMessageBox.information(self, "Sin datos", "No hay datos para el período seleccionado")
@@ -937,7 +967,7 @@ class TeamStatsWindow(QMainWindow):
             "deltas": {}
         }
 
-        # Calculate deltas for numeric fields
+        # Define numeric fields to calculate deltas for
         numeric_fields = [
             "total_games", "points_scored", "points_received", "points_per_game", "points_against_per_game",
             "fg2_percentage", "fg3_percentage", "ft_percentage", "total_rebounds", "rebounds_def", "rebounds_off",
@@ -949,29 +979,8 @@ class TeamStatsWindow(QMainWindow):
             "defensive_rebound_rate"
         ]
 
-        for field in numeric_fields:
-            if field in monthly and field in rest:
-                monthly_val = monthly.get(field)
-                rest_val = rest.get(field)
-
-                # Skip if either value is None
-                if monthly_val is None or rest_val is None:
-                    continue
-
-                # Convert to float to ensure numeric operations
-                try:
-                    monthly_val = float(monthly_val)
-                    rest_val = float(rest_val)
-                except (ValueError, TypeError):
-                    continue
-
-                # Calculate percentage change
-                if rest_val != 0:
-                    delta = ((monthly_val - rest_val) / rest_val) * 100
-                else:
-                    delta = 0 if monthly_val == 0 else 100
-
-                comp["deltas"][field] = delta
+        # Use TrendCalculator to compute deltas
+        comp["deltas"] = self.trend_calculator.calculate_deltas(monthly, rest, numeric_fields)
 
         return comp
 
@@ -1015,54 +1024,61 @@ class TeamStatsWindow(QMainWindow):
             # Add trend indicator with color
             if key in deltas:
                 delta = deltas[key]
-                trend_symbol, trend_color = self._get_trend_indicator(delta, key)
+                trend_symbol, trend_color = self.trend_calculator.get_trend_indicator(delta, key)
 
-                # Create a QLabel widget for the cell to show colored trend
-                cell_label = QLabel()
-                cell_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-                # Apply quartile background color if available
-                bg_color = "transparent"
-                if key in numeric_data and key in quartiles:
-                    color = get_quartile_color(
-                        float(num_value),
-                        quartiles[key],
-                        numeric_data[key][1]
-                    )
-                    bg_color = color.name()
-
-                cell_label.setStyleSheet(f"background-color: {bg_color};")
-                # Apply trend color to the symbol by wrapping it in HTML
-                cell_label.setText(f'{display_value} <span style="color: {trend_color}; font-weight: bold;">{trend_symbol}</span>')
+                cell_label, item = self._create_trend_cell_widget(
+                    display_value, trend_symbol, trend_color, num_value,
+                    key, numeric_data, quartiles
+                )
                 self.basic_table.setCellWidget(row, idx, cell_label)
-
-                # Also set item for sorting purposes (but widget will display)
-                item = NumericTableWidgetItem(num_value, "")
                 self.basic_table.setItem(row, idx, item)
             else:
-                # No trend data available (field not in both periods or None values)
-                # Show indicator for "no data"
-                cell_label = QLabel()
-                cell_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-                # Apply quartile background color if available
-                bg_color = "transparent"
-                if key in numeric_data and key in quartiles:
-                    color = get_quartile_color(
-                        float(num_value),
-                        quartiles[key],
-                        numeric_data[key][1]
-                    )
-                    bg_color = color.name()
-
-                cell_label.setStyleSheet(f"background-color: {bg_color};")
-                # Show value with "no data" indicator in gray
-                cell_label.setText(f'{display_value} <span style="color: #757575; font-weight: bold;" title="Sin datos para comparar">—</span>')
+                # No trend data available - show "—" indicator
+                trend_symbol, trend_color = self.trend_calculator.get_no_data_indicator()
+                cell_label, item = self._create_trend_cell_widget(
+                    display_value, trend_symbol, trend_color, num_value,
+                    key, numeric_data, quartiles
+                )
+                cell_label.setProperty("title", "Sin datos para comparar")
                 self.basic_table.setCellWidget(row, idx, cell_label)
-
-                # Also set item for sorting purposes
-                item = NumericTableWidgetItem(num_value, "")
                 self.basic_table.setItem(row, idx, item)
+
+    def _create_trend_cell_widget(self, display_value: str, trend_symbol: str, trend_color: str,
+                                   num_value: float, key: str, numeric_data: Dict, quartiles: Dict,
+                                   reverse_flag: bool = None) -> tuple:
+        """
+        Create a QLabel widget with trend indicator and background color.
+
+        Args:
+            display_value: Formatted value to display
+            trend_symbol: Trend symbol (↑, ↓, ≈, ⇈, ⇊, or —)
+            trend_color: HTML color code for the trend symbol
+            num_value: Numeric value for quartile color calculation
+            key: Field key for quartile lookup
+            numeric_data: Dictionary of numeric data
+            quartiles: Dictionary of quartiles
+            reverse_flag: Optional reverse flag override (for opponent stats)
+
+        Returns:
+            Tuple of (cell_label, table_item) ready to be set in table
+        """
+        cell_label = QLabel()
+        cell_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Apply quartile background color if available
+        bg_color = "transparent"
+        if key in numeric_data and key in quartiles:
+            flag = reverse_flag if reverse_flag is not None else numeric_data[key][1]
+            color = get_quartile_color(float(num_value), quartiles[key], flag)
+            bg_color = color.name()
+
+        cell_label.setStyleSheet(f"background-color: {bg_color};")
+        cell_label.setText(f'{display_value} <span style="color: {trend_color}; font-weight: bold;">{trend_symbol}</span>')
+
+        # Create item for sorting purposes
+        item = NumericTableWidgetItem(num_value, "")
+
+        return cell_label, item
 
     def _populate_comparative_advanced_row(self, row: int, comp_stat: Dict, numeric_data: Dict,
                                           quartiles: Dict, table: QTableWidget):
@@ -1093,117 +1109,32 @@ class TeamStatsWindow(QMainWindow):
             # Add trend indicator with color
             if key in deltas:
                 delta = deltas[key]
-                trend_symbol, trend_color = self._get_trend_indicator(delta, key, is_opponent=is_opponent_table)
+                trend_symbol, trend_color = self.trend_calculator.get_trend_indicator(delta, key, is_opponent=is_opponent_table)
 
-                # Create a QLabel widget for the cell to show colored trend
-                cell_label = QLabel()
-                cell_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                # Calculate reverse flag for opponent table
+                reverse_flag = numeric_data[key][1] if key in numeric_data else None
+                if is_opponent_table and reverse_flag is not None:
+                    reverse_flag = not reverse_flag
 
-                # Apply quartile background color if available
-                bg_color = "transparent"
-                if key in numeric_data and key in quartiles:
-                    reverse_flag = numeric_data[key][1]
-                    if is_opponent_table:
-                        reverse_flag = not reverse_flag
-
-                    color = get_quartile_color(
-                        float(num_value),
-                        quartiles[key],
-                        reverse_flag
-                    )
-                    bg_color = color.name()
-
-                cell_label.setStyleSheet(f"background-color: {bg_color};")
-                # Apply trend color to the symbol by wrapping it in HTML
-                cell_label.setText(f'{display_value} <span style="color: {trend_color}; font-weight: bold;">{trend_symbol}</span>')
+                cell_label, item = self._create_trend_cell_widget(
+                    display_value, trend_symbol, trend_color, num_value,
+                    key, numeric_data, quartiles, reverse_flag
+                )
                 table.setCellWidget(row, idx, cell_label)
-
-                # Also set item for sorting purposes (but widget will display)
-                item = NumericTableWidgetItem(num_value, "")
                 table.setItem(row, idx, item)
             else:
-                # No trend data available (field not in both periods or None values)
-                # Show indicator for "no data"
-                cell_label = QLabel()
-                cell_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                # No trend data available - show "—" indicator
+                trend_symbol, trend_color = self.trend_calculator.get_no_data_indicator()
+                reverse_flag = numeric_data[key][1] if key in numeric_data else None
+                if is_opponent_table and reverse_flag is not None:
+                    reverse_flag = not reverse_flag
 
-                # Apply quartile background color if available
-                bg_color = "transparent"
-                if key in numeric_data and key in quartiles:
-                    reverse_flag = numeric_data[key][1]
-                    if is_opponent_table:
-                        reverse_flag = not reverse_flag
-
-                    color = get_quartile_color(
-                        float(num_value),
-                        quartiles[key],
-                        reverse_flag
-                    )
-                    bg_color = color.name()
-
-                cell_label.setStyleSheet(f"background-color: {bg_color};")
-                # Show value with "no data" indicator in gray
-                cell_label.setText(f'{display_value} <span style="color: #757575; font-weight: bold;" title="Sin datos para comparar">—</span>')
+                cell_label, item = self._create_trend_cell_widget(
+                    display_value, trend_symbol, trend_color, num_value,
+                    key, numeric_data, quartiles, reverse_flag
+                )
+                cell_label.setProperty("title", "Sin datos para comparar")
                 table.setCellWidget(row, idx, cell_label)
-
-                # Also set item for sorting purposes
-                item = NumericTableWidgetItem(num_value, "")
                 table.setItem(row, idx, item)
 
-    def _get_trend_indicator(self, delta: float, field: str, is_opponent: bool = False) -> tuple:
-        """
-        Get trend indicator and color based on delta percentage.
-
-        Args:
-            delta: Percentage change (positive = increase, negative = decrease)
-            field: Field name to determine if higher is better
-            is_opponent: Whether this is for opponent stats (inverts logic)
-
-        Returns:
-            Tuple of (symbol, color) where color is HTML color code
-        """
-        # Fields where lower is better
-        lower_is_better = ["turnovers_per_game", "turnovers", "tov_percentage", "defensive_rating", "points_received", "points_against_per_game"]
-
-        # Determine if this field benefits from increase or decrease
-        increase_is_good = field not in lower_is_better
-
-        # For opponent stats, invert the logic
-        if is_opponent:
-            increase_is_good = not increase_is_good
-
-        # Thresholds for change
-        threshold_normal = 5.0
-        threshold_significant = 10.0
-
-        if abs(delta) < threshold_normal:
-            return ("≈", "#424242")  # Minimal change - dark gray (better contrast)
-        elif abs(delta) >= threshold_significant:
-            # Significant change (>10%) - use double arrows
-            if delta > 0:
-                # Increase
-                if increase_is_good:
-                    return ("⇈", "#1B5E20")  # Good increase - very dark green
-                else:
-                    return ("⇊", "#B71C1C")  # Bad increase - very dark red
-            else:
-                # Decrease
-                if increase_is_good:
-                    return ("⇊", "#B71C1C")  # Bad decrease - very dark red
-                else:
-                    return ("⇈", "#1B5E20")  # Good decrease - very dark green
-        else:
-            # Normal change (5-10%) - use single arrows
-            if delta > 0:
-                # Increase
-                if increase_is_good:
-                    return ("↑", "#2E7D32")  # Good increase - dark green
-                else:
-                    return ("↓", "#E65100")  # Bad increase - dark orange
-            else:
-                # Decrease
-                if increase_is_good:
-                    return ("↓", "#E65100")  # Bad decrease - dark orange
-                else:
-                    return ("↑", "#2E7D32")  # Good decrease - dark green
 
