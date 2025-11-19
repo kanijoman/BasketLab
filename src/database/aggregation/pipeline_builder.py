@@ -515,3 +515,98 @@ class AggregationPipelineBuilder:
             }
         }
 
+
+    @staticmethod
+    def build_team_matches_timeline_pipeline(team_name: str) -> List[Dict]:
+        """
+        Build a pipeline to get chronological match data for a team.
+        
+        This pipeline retrieves all matches for a specific team in chronological order,
+        including opponent information and match statistics. Used for temporal evolution analysis.
+        
+        Args:
+            team_name: Name of the team to get match data for
+            
+        Returns:
+            MongoDB aggregation pipeline as a list of stages
+            
+        Example output format:
+            [
+                {
+                    "date": datetime,
+                    "opponent": "Team B",
+                    "team_data": {...},  # BOXSCORE.TEAM.TOTAL for team
+                    "opponent_data": {...},  # BOXSCORE.TEAM.TOTAL for opponent
+                    "is_local": True
+                },
+                ...
+            ]
+        """
+        return [
+            # Stage 1: Parse date field
+            {
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            },
+            # Stage 2: Filter matches where team participated
+            {
+                "$match": {
+                    "HEADER.TEAM.name": team_name
+                }
+            },
+            # Stage 3: Sort by date ascending (oldest to newest)
+            {"$sort": {"parsedDate": 1}},
+            # Stage 4: Capture both teams' data BEFORE unwinding
+            # This avoids the $arrayElemAt error after $unwind
+            {
+                "$addFields": {
+                    "team0_name": {"$arrayElemAt": ["$HEADER.TEAM.name", 0]},
+                    "team1_name": {"$arrayElemAt": ["$HEADER.TEAM.name", 1]},
+                    "team0_data": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL", 0]},
+                    "team1_data": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL", 1]}
+                }
+            },
+            # Stage 5: Unwind teams to identify which index is our team
+            {
+                "$unwind": {
+                    "path": "$BOXSCORE.TEAM",
+                    "includeArrayIndex": "teamIndex"
+                }
+            },
+            # Stage 6: Filter to keep only the selected team's row
+            {
+                "$match": {
+                    "BOXSCORE.TEAM.name": team_name
+                }
+            },
+            # Stage 7: Project final structure with opponent data
+            {
+                "$project": {
+                    "date": "$parsedDate",
+                    "opponent": {
+                        "$cond": [
+                            {"$eq": ["$teamIndex", 0]},
+                            "$team1_name",
+                            "$team0_name"
+                        ]
+                    },
+                    "team_data": "$BOXSCORE.TEAM.TOTAL",
+                    "opponent_data": {
+                        "$cond": [
+                            {"$eq": ["$teamIndex", 0]},
+                            "$team1_data",
+                            "$team0_data"
+                        ]
+                    },
+                    "is_local": {"$eq": ["$teamIndex", 0]}
+                }
+            }
+        ]

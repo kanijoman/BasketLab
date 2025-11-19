@@ -224,3 +224,39 @@ def get_quartile_color(value: float, quartiles: List[float], reverse: bool = Fal
             return QColor(255, 200, 87)   # Light orange
         else:
             return QColor(255, 153, 153)  # Light red
+
+
+# Statistics options for temporal evolution analysis
+# Each entry maps a display name to a tuple of (field_name, lower_is_better)
+TEMPORAL_STATS_OPTIONS = {
+    # Basic stats
+    "Puntos por partido": ("points_per_game", False),
+    "Puntos recibidos por partido": ("points_allowed_per_game", True),
+    "% Tiros de 2": ("fg2_percentage", False),
+    "% Tiros de 3": ("fg3_percentage", False),
+    "% Tiros libres": ("ft_percentage", False),
+    "Rebotes totales": ("rebounds_per_game", False),
+    "Rebotes defensivos": ("def_rebounds_per_game", False),
+    "Rebotes ofensivos": ("off_rebounds_per_game", False),
+    "Asistencias": ("assists_per_game", False),
+    "Robos": ("steals_per_game", False),
+    "Pérdidas": ("turnovers_per_game", True),
+    "Tapones": ("blocks_per_game", False),
+
+    # Advanced stats
+    "Ritmo (Posesiones/Partido)": ("possessions_per_game", False),
+    "Rating Ofensivo": ("offensive_rating", False),
+    "Rating Defensivo": ("defensive_rating", True),
+    "Net Rating": ("net_rating", False),
+    "eFG% (Effective FG%)": ("efg_percentage", False),
+    "TS% (True Shooting%)": ("true_shooting", False),
+    "3Pr (Tasa de triples)": ("three_point_rate", False),
+    "FTr (Tasa de TL)": ("free_throw_rate", False),
+    "AST/FG (% canastas asistidas)": ("assist_fg_rate", False),
+    "AST% (Assist Rate)": ("assist_rate", False),
+    "TOV% (Turnover Rate)": ("turnover_rate", True),
+    "ROB% (Steal Rate)": ("steal_rate", False),
+    "TAP% (Block Rate)": ("block_rate", False),
+    "ORB% (Off Rebound Rate)": ("offensive_rebound_rate", False),
+    "RD% (Def Rebound Rate)": ("defensive_rebound_rate", False),
+}
