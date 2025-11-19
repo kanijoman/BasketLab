@@ -1,6 +1,50 @@
 """Advanced statistics calculations for MongoDB aggregation pipeline."""
 
+from typing import Dict, Any
 from ..utils import safe_divide
+
+
+def _percentage_metric(numerator, denominator) -> Dict:
+    """
+    Create a percentage metric (value * 100).
+
+    Args:
+        numerator: Numerator expression
+        denominator: Denominator expression
+
+    Returns:
+        MongoDB expression for percentage calculation
+    """
+    return {
+        "$multiply": [
+            safe_divide(numerator, denominator),
+            100
+        ]
+    }
+
+
+def _rate_per_100_possessions(value: str) -> Dict:
+    """
+    Calculate a rate per 100 possessions.
+
+    Args:
+        value: Field name for the value to calculate rate for (with or without $ prefix)
+
+    Returns:
+        MongoDB expression for rate per 100 possessions
+    """
+    # Ensure the value has the $ prefix
+    field_ref = value if value.startswith("$") else f"${value}"
+
+    return {
+        "$multiply": [
+            safe_divide(
+                {"$multiply": [field_ref, 100]},
+                "$total_possessions"
+            ),
+            1
+        ]
+    }
 
 
 def get_four_factors() -> dict:
@@ -17,36 +61,16 @@ def get_four_factors() -> dict:
     total_fga = {"$add": ["$fg2_attempted", "$fg3_attempted"]}
 
     return {
-        "efg_percentage": {
-            "$multiply": [
-                safe_divide(
-                    {"$add": ["$fg2_made", {"$multiply": [1.5, "$fg3_made"]}]},
-                    total_fga
-                ),
-                100
-            ]
-        },
-        "turnover_rate": {
-            "$multiply": [
-                safe_divide("$turnovers", "$total_possessions"),
-                100
-            ]
-        },
-        "offensive_rebound_rate": {
-            "$multiply": [
-                safe_divide(
-                    "$rebounds_off",
-                    {"$add": ["$rebounds_off", "$opponent_rebounds_def"]}
-                ),
-                100
-            ]
-        },
-        "free_throw_rate": {
-            "$multiply": [
-                safe_divide("$ft_attempted", total_fga),
-                100
-            ]
-        }
+        "efg_percentage": _percentage_metric(
+            {"$add": ["$fg2_made", {"$multiply": [1.5, "$fg3_made"]}]},
+            total_fga
+        ),
+        "turnover_rate": _percentage_metric("$turnovers", "$total_possessions"),
+        "offensive_rebound_rate": _percentage_metric(
+            "$rebounds_off",
+            {"$add": ["$rebounds_off", "$opponent_rebounds_def"]}
+        ),
+        "free_throw_rate": _percentage_metric("$ft_attempted", total_fga)
     }
 
 
@@ -62,21 +86,11 @@ def get_advanced_shooting_metrics() -> dict:
     total_fga = {"$add": ["$fg2_attempted", "$fg3_attempted"]}
 
     return {
-        "three_point_rate": {
-            "$multiply": [
-                safe_divide("$fg3_attempted", total_fga),
-                100
-            ]
-        },
-        "true_shooting": {
-            "$multiply": [
-                safe_divide(
-                    "$points_scored",
-                    {"$multiply": [2, {"$add": [total_fga, {"$multiply": [0.44, "$ft_attempted"]}]}]}
-                ),
-                100
-            ]
-        }
+        "three_point_rate": _percentage_metric("$fg3_attempted", total_fga),
+        "true_shooting": _percentage_metric(
+            "$points_scored",
+            {"$multiply": [2, {"$add": [total_fga, {"$multiply": [0.44, "$ft_attempted"]}]}]}
+        )
     }
 
 
@@ -93,39 +107,10 @@ def get_playmaking_metrics() -> dict:
     total_fg_made = {"$add": ["$fg2_made", "$fg3_made"]}
 
     return {
-        "assist_fg_rate": {
-            "$multiply": [
-                safe_divide("$assists", total_fg_made),
-                100
-            ]
-        },
-        "assist_rate": {
-            "$multiply": [
-                safe_divide(
-                    {"$multiply": ["$assists", 100]},
-                    "$total_possessions"
-                ),
-                1
-            ]
-        },
-        "steal_rate": {
-            "$multiply": [
-                safe_divide(
-                    {"$multiply": ["$steals", 100]},
-                    "$total_possessions"
-                ),
-                1
-            ]
-        },
-        "block_rate": {
-            "$multiply": [
-                safe_divide(
-                    {"$multiply": ["$blocks", 100]},
-                    "$total_possessions"
-                ),
-                1
-            ]
-        }
+        "assist_fg_rate": _percentage_metric("$assists", total_fg_made),
+        "assist_rate": _rate_per_100_possessions("$assists"),
+        "steal_rate": _rate_per_100_possessions("$steals"),
+        "block_rate": _rate_per_100_possessions("$blocks")
     }
 
 
@@ -140,15 +125,10 @@ def get_rebounding_metrics() -> dict:
         Dictionary with field definitions for rebounding metrics
     """
     return {
-        "defensive_rebound_rate": {
-            "$multiply": [
-                safe_divide(
-                    "$rebounds_def",
-                    {"$add": ["$rebounds_def", "$opponent_rebounds_off"]}
-                ),
-                100
-            ]
-        }
+        "defensive_rebound_rate": _percentage_metric(
+            "$rebounds_def",
+            {"$add": ["$rebounds_def", "$opponent_rebounds_off"]}
+        )
     }
 
 
@@ -175,10 +155,10 @@ def get_efficiency_ratings() -> dict:
 
     defensive_rating = {
         "$cond": [
-            {"$eq": ["$total_possessions", 0]},
+            {"$eq": ["$opponent_possessions", 0]},
             0,
             {"$multiply": [
-                {"$divide": ["$points_received", "$total_possessions"]},
+                {"$divide": ["$points_received", "$opponent_possessions"]},
                 100
             ]}
         ]

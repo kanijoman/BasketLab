@@ -54,17 +54,45 @@ def get_per_game_stats() -> dict:
 
 def get_possessions_calculation() -> dict:
     """
-    Calculate possessions per match: FGA2 + FGA3 + (0.45 * FTA) + TO - OREB.
+    Calculate possessions per match adjusted for game duration (including overtime).
+    Formula: (FGA2 + FGA3 + (0.45 * FTA) + TO - OREB) * (40 / total_minutes)
+
+    Total minutes is calculated from the number of quarters:
+    - 4 quarters = 40 minutes (regular game)
+    - 5 quarters = 45 minutes (1 overtime)
+    - 6 quarters = 50 minutes (2 overtimes), etc.
 
     Returns:
         MongoDB expression for possessions calculation
     """
-    return {
+    raw_possessions = {
         "$add": [
             {"$toInt": "$BOXSCORE.TEAM.TOTAL.p2a"},
             {"$toInt": "$BOXSCORE.TEAM.TOTAL.p3a"},
             {"$multiply": [0.45, {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1a"}]},
             {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
             {"$multiply": [-1, {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"}]}
+        ]
+    }
+
+    # Calculate total minutes based on number of quarters
+    # Each quarter = 10 min, overtime = 5 min
+    # Total minutes = (num_quarters - 4) * 5 + 40
+    num_quarters = {"$size": "$HEADER.QUARTERS.QUARTER"}
+    total_minutes = {
+        "$add": [
+            40,
+            {"$multiply": [
+                {"$subtract": [num_quarters, 4]},
+                5
+            ]}
+        ]
+    }
+
+    # Adjust possessions: raw_possessions * (40 / total_minutes)
+    return {
+        "$multiply": [
+            raw_possessions,
+            {"$divide": [40, total_minutes]}
         ]
     }

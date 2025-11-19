@@ -2,7 +2,8 @@
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QTableWidget, QHeaderView, QTabWidget, QPushButton,
-                              QFileDialog, QMessageBox, QMenu, QTableWidgetItem, QLabel)
+                              QFileDialog, QMessageBox, QMenu, QTableWidgetItem, QLabel,
+                              QRadioButton, QButtonGroup)
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPainter, QPageLayout, QPageSize, QAction, QColor
 from PyQt6.QtPrintSupport import QPrinter
@@ -45,8 +46,8 @@ class TeamStatsWindow(QMainWindow):
         """
         super().__init__(parent)
         self.setWindowTitle("MfA - Estadísticas de Equipo")
-        # Set a reasonable minimum window size considering all columns
-        self.setMinimumSize(1200, 600)
+        # Set a reasonable minimum window size considering all columns and radio buttons
+        self.setMinimumSize(1200, 700)
 
         # Set application icon
         set_app_icon(self)
@@ -106,43 +107,47 @@ class TeamStatsWindow(QMainWindow):
         # Create advanced stats tab
         advanced_tab = QWidget()
         advanced_layout = QVBoxLayout(advanced_tab)
-        advanced_layout.setSpacing(0)
-        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        advanced_layout.setSpacing(5)
+        advanced_layout.setContentsMargins(5, 5, 5, 5)
 
+        # Add radio buttons if opponent stats are available
+        if self.opponent_stats:
+            radio_layout = QHBoxLayout()
+            radio_layout.setSpacing(20)
+
+            self.radio_group = QButtonGroup()
+
+            self.teams_radio = QRadioButton("Equipos")
+            self.teams_radio.setChecked(True)
+            self.teams_radio.toggled.connect(self._on_view_mode_changed)
+            self.radio_group.addButton(self.teams_radio)
+            radio_layout.addWidget(self.teams_radio)
+
+            self.opponents_radio = QRadioButton("Rivales")
+            self.opponents_radio.toggled.connect(self._on_view_mode_changed)
+            self.radio_group.addButton(self.opponents_radio)
+            radio_layout.addWidget(self.opponents_radio)
+
+            radio_layout.addStretch()
+            advanced_layout.addLayout(radio_layout)
+
+        # Create container for tables
         self.advanced_table = QTableWidget()
         advanced_layout.addWidget(self.advanced_table)
+
+        # Create opponent table (hidden by default)
+        if self.opponent_stats:
+            self.opponent_table = QTableWidget()
+            self.opponent_table.setVisible(False)
+            advanced_layout.addWidget(self.opponent_table)
+        else:
+            self.opponent_table = None
 
         # Add color legend
         legend_widget = self._create_color_legend()
         advanced_layout.addWidget(legend_widget)
 
         self.tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
-
-        # Create opponent stats tab if data is available
-        if self.opponent_stats:
-            opponent_tab = QWidget()
-            opponent_layout = QVBoxLayout(opponent_tab)
-            opponent_layout.setSpacing(0)
-            opponent_layout.setContentsMargins(0, 0, 0, 0)
-
-            self.opponent_table = QTableWidget()
-            opponent_layout.addWidget(self.opponent_table)
-
-            # Add color legend for opponent stats
-            opponent_legend_widget = self._create_color_legend()
-            opponent_layout.addWidget(opponent_legend_widget)
-
-            self.tab_widget.addTab(opponent_tab, "Estadísticas Rivales")
-
-            # Setup opponent table
-            self.opponent_table.setColumnCount(len(ADVANCED_COLUMNS))
-            self.opponent_table.setHorizontalHeaderLabels(ADVANCED_COLUMNS)
-            self.opponent_table.setSortingEnabled(True)
-            opponent_header = self.opponent_table.horizontalHeader()
-            for i in range(len(ADVANCED_COLUMNS)):
-                opponent_header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
-        else:
-            self.opponent_table = None
 
         # Connect tab change event to adjust window size
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
@@ -162,6 +167,15 @@ class TeamStatsWindow(QMainWindow):
         advanced_header = self.advanced_table.horizontalHeader()
         for i in range(len(ADVANCED_COLUMNS)):
             advanced_header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+        # Setup opponent table if available
+        if self.opponent_table:
+            self.opponent_table.setColumnCount(len(ADVANCED_COLUMNS))
+            self.opponent_table.setHorizontalHeaderLabels(ADVANCED_COLUMNS)
+            self.opponent_table.setSortingEnabled(True)
+            opponent_header = self.opponent_table.horizontalHeader()
+            for i in range(len(ADVANCED_COLUMNS)):
+                opponent_header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
 
         # Apply colors to header based on column groups
         self._apply_header_colors()
@@ -337,14 +351,15 @@ class TeamStatsWindow(QMainWindow):
         return legend_frame
 
     def _get_current_table(self) -> QTableWidget:
-        """Get the currently active table based on selected tab."""
+        """Get the currently active table based on selected tab and view mode."""
         current_index = self.tab_widget.currentIndex()
         if current_index == 0:
             return self.basic_table
         elif current_index == 1:
+            # In advanced tab, check which radio button is selected
+            if self.opponent_table and hasattr(self, 'opponents_radio') and self.opponents_radio.isChecked():
+                return self.opponent_table
             return self.advanced_table
-        elif current_index == 2 and self.opponent_table:
-            return self.opponent_table
         return self.advanced_table  # fallback
 
     def _get_current_table_name(self) -> str:
@@ -353,9 +368,10 @@ class TeamStatsWindow(QMainWindow):
         if current_index == 0:
             return "estadisticas_basicas"
         elif current_index == 1:
+            # In advanced tab, check which radio button is selected
+            if self.opponent_table and hasattr(self, 'opponents_radio') and self.opponents_radio.isChecked():
+                return "estadisticas_rivales"
             return "estadisticas_avanzadas"
-        elif current_index == 2 and self.opponent_table:
-            return "estadisticas_rivales"
         return "estadisticas_avanzadas"  # fallback
 
     def _export_csv(self):
@@ -515,6 +531,19 @@ class TeamStatsWindow(QMainWindow):
                 f"No se pudo exportar la tabla a PDF:\n{str(e)}"
             )
 
+    def _on_view_mode_changed(self):
+        """Handle view mode change between Teams and Opponents."""
+        if not self.opponent_table:
+            return
+
+        # Toggle visibility of tables
+        is_opponent_view = self.opponents_radio.isChecked()
+        self.advanced_table.setVisible(not is_opponent_view)
+        self.opponent_table.setVisible(is_opponent_view)
+
+        # Adjust window size for the new view
+        QTimer.singleShot(50, self._adjust_window_size_for_current_tab)
+
     def _on_tab_changed(self, index: int):
         """
         Handle tab change event to adjust window size.
@@ -526,14 +555,15 @@ class TeamStatsWindow(QMainWindow):
         QTimer.singleShot(50, self._adjust_window_size_for_current_tab)
 
     def _adjust_window_size_for_current_tab(self):
-        """Adjust window size based on the currently active tab."""
+        """Adjust window size based on the currently active tab and view mode."""
         current_index = self.tab_widget.currentIndex()
 
         # Select the appropriate table
         if current_index == 0:
             active_table = self.basic_table
         else:
-            active_table = self.advanced_table
+            # In advanced tab, use the currently visible table
+            active_table = self._get_current_table()
 
         self._resize_to_fit_table(active_table)
 
