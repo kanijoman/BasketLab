@@ -520,16 +520,16 @@ class AggregationPipelineBuilder:
     def build_team_matches_timeline_pipeline(team_name: str) -> List[Dict]:
         """
         Build a pipeline to get chronological match data for a team.
-        
+
         This pipeline retrieves all matches for a specific team in chronological order,
         including opponent information and match statistics. Used for temporal evolution analysis.
-        
+
         Args:
             team_name: Name of the team to get match data for
-            
+
         Returns:
             MongoDB aggregation pipeline as a list of stages
-            
+
         Example output format:
             [
                 {
@@ -610,3 +610,229 @@ class AggregationPipelineBuilder:
                 }
             }
         ]
+
+    @staticmethod
+    def build_player_stats_pipeline() -> List[Dict]:
+        """
+        Build aggregation pipeline for player statistics across all matches.
+
+        Returns:
+            List of aggregation pipeline stages
+        """
+        return [
+            # Stage 1: Parse date first
+            {
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            },
+            # Stage 2: Unwind teams
+            {
+                "$unwind": {
+                    "path": "$BOXSCORE.TEAM",
+                    "includeArrayIndex": "teamIndex"
+                }
+            },
+            # Stage 3: Unwind players within each team
+            {
+                "$unwind": {
+                    "path": "$BOXSCORE.TEAM.PLAYER",
+                    "preserveNullAndEmptyArrays": False
+                }
+            },
+            # Stage 4: Extract player data and filter players with minutes > 0
+            {
+                "$project": {
+                    "player_id": "$BOXSCORE.TEAM.PLAYER.id",
+                    "player_name": "$BOXSCORE.TEAM.PLAYER.name",
+                    "team_name": "$BOXSCORE.TEAM.TOTAL.name",
+                    "team_id": "$BOXSCORE.TEAM.TOTAL.id",
+                    "date": "$parsedDate",
+                    "minutes": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.min", "0"]}},
+                    "pllss": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pllss", "0"]}},
+                    "p1m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1m", "0"]}},
+                    "p1a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1a", "0"]}},
+                    "p2m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2m", "0"]}},
+                    "p2a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2a", "0"]}},
+                    "p3m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3m", "0"]}},
+                    "p3a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3a", "0"]}},
+                    "pts": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pts", "0"]}},
+                    "assist": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.assist", "0"]}},
+                    "ro": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.ro", "0"]}},
+                    "rd": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rd", "0"]}},
+                    "rt": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rt", "0"]}},
+                    "st": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.st", "0"]}},
+                    "to": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.to", "0"]}},
+                    "bs": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.bs", "0"]}},
+                    "pf": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pf", "0"]}},
+                    "rf": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rf", "0"]}},
+                    "val": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.val", "0"]}}
+                }
+            },
+            # Stage 5: Filter players who actually played (minutes > 0)
+            {
+                "$match": {
+                    "minutes": {"$gt": 0}
+                }
+            },
+            # Stage 6: Group by player
+            {
+                "$group": {
+                    "_id": {
+                        "player_id": "$player_id",
+                        "player_name": "$player_name",
+                        "team_name": "$team_name",
+                        "team_id": "$team_id"
+                    },
+                    "games_played": {"$sum": 1},
+                    "total_minutes": {"$sum": "$minutes"},
+                    "total_p1m": {"$sum": "$p1m"},
+                    "total_p1a": {"$sum": "$p1a"},
+                    "total_p2m": {"$sum": "$p2m"},
+                    "total_p2a": {"$sum": "$p2a"},
+                    "total_p3m": {"$sum": "$p3m"},
+                    "total_p3a": {"$sum": "$p3a"},
+                    "total_pts": {"$sum": "$pts"},
+                    "total_assist": {"$sum": "$assist"},
+                    "total_ro": {"$sum": "$ro"},
+                    "total_rd": {"$sum": "$rd"},
+                    "total_rt": {"$sum": "$rt"},
+                    "total_st": {"$sum": "$st"},
+                    "total_to": {"$sum": "$to"},
+                    "total_bs": {"$sum": "$bs"},
+                    "total_pf": {"$sum": "$pf"},
+                    "total_rf": {"$sum": "$rf"},
+                    "total_pllss": {"$sum": "$pllss"},
+                    "total_val": {"$sum": "$val"}
+                }
+            },
+            # Stage 7: Calculate averages and percentages
+            {
+                "$project": {
+                    "_id": 0,
+                    "player_id": "$_id.player_id",
+                    "player_name": "$_id.player_name",
+                    "team_name": "$_id.team_name",
+                    "team_id": "$_id.team_id",
+                    "games_played": "$games_played",
+                    "total_minutes": "$total_minutes",
+                    "minutes_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_minutes", {"$multiply": ["$games_played", 60]}]},
+                            0
+                        ]
+                    },
+                    "total_p1m": "$total_p1m",
+                    "total_p1a": "$total_p1a",
+                    "total_p2m": "$total_p2m",
+                    "total_p2a": "$total_p2a",
+                    "total_p3m": "$total_p3m",
+                    "total_p3a": "$total_p3a",
+                    "total_pts": "$total_pts",
+                    "total_assist": "$total_assist",
+                    "total_ro": "$total_ro",
+                    "total_rd": "$total_rd",
+                    "total_rt": "$total_rt",
+                    "total_st": "$total_st",
+                    "total_to": "$total_to",
+                    "total_bs": "$total_bs",
+                    "total_pf": "$total_pf",
+                    "total_rf": "$total_rf",
+                    "total_pllss": "$total_pllss",
+                    "total_val": "$total_val",
+                    "fg1_percentage": {
+                        "$cond": [
+                            {"$gt": ["$total_p1a", 0]},
+                            {"$multiply": [{"$divide": ["$total_p1m", "$total_p1a"]}, 100]},
+                            0
+                        ]
+                    },
+                    "fg2_percentage": {
+                        "$cond": [
+                            {"$gt": ["$total_p2a", 0]},
+                            {"$multiply": [{"$divide": ["$total_p2m", "$total_p2a"]}, 100]},
+                            0
+                        ]
+                    },
+                    "fg3_percentage": {
+                        "$cond": [
+                            {"$gt": ["$total_p3a", 0]},
+                            {"$multiply": [{"$divide": ["$total_p3m", "$total_p3a"]}, 100]},
+                            0
+                        ]
+                    },
+                    "points_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_pts", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "assists_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_assist", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "rebounds_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_rt", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "steals_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_st", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "blocks_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_bs", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "turnovers_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_to", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "valoracion_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_val", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "pllss_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_pllss", "$games_played"]},
+                            0
+                        ]
+                    }
+                }
+            },
+            # Stage 8: Sort by team and then by points descending
+            {
+                "$sort": {
+                    "team_name": 1,
+                    "total_pts": -1
+                }
+            }
+        ]
+
