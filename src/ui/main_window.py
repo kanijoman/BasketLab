@@ -114,11 +114,49 @@ class BasketballSeasonApp(QMainWindow):
         self.progress_label = QLabel("Progreso: Esperando para comenzar")
         layout.addWidget(self.progress_label)
 
-        # View Stats Button
-        self.stats_button = QPushButton("📊 Estadísticas")
+        # View Team Stats Button
+        self.stats_button = QPushButton("📊 Estadísticas de Equipo")
         self.stats_button.clicked.connect(self.on_view_stats)
         self.stats_button.setEnabled(False)  # Disabled by default
+        self.stats_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
         layout.addWidget(self.stats_button)
+
+        # View Player Stats Button
+        self.player_stats_button = QPushButton("👤 Estadísticas Individuales")
+        self.player_stats_button.clicked.connect(self.on_view_player_stats)
+        self.player_stats_button.setEnabled(False)  # Disabled by default
+        self.player_stats_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
+        layout.addWidget(self.player_stats_button)
 
         # Temporal Evolution Button
         self.temporal_button = QPushButton("📈 Evolución Temporal")
@@ -152,6 +190,7 @@ class BasketballSeasonApp(QMainWindow):
                 color: white;
                 border-radius: 5px;
                 padding: 10px;
+                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #1976D2;
@@ -187,7 +226,7 @@ class BasketballSeasonApp(QMainWindow):
 
         # Apply basic styling for a modern look
         self.setStyleSheet("""
-            QComboBox, QPushButton, QLabel {
+            QComboBox, QLabel {
                 font-size: 14px;
                 padding: 5px;
             }
@@ -196,19 +235,6 @@ class BasketballSeasonApp(QMainWindow):
                 border-radius: 5px;
                 padding: 5px;
                 background-color: #fff;
-            }
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border-radius: 5px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-            QPushButton:disabled {
-                background-color: #BDBDBD;
-                color: #757575;
             }
             QProgressBar {
                 border: 1px solid #555;
@@ -282,6 +308,7 @@ class BasketballSeasonApp(QMainWindow):
 
         # Enable or disable buttons based on selection status
         self.stats_button.setEnabled(all_selected)
+        self.player_stats_button.setEnabled(all_selected)
         self.shotchart_button.setEnabled(all_selected)
         self.ai_analysis_button.setEnabled(all_selected)
         self.temporal_button.setEnabled(all_selected)
@@ -380,6 +407,91 @@ class BasketballSeasonApp(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al cargar las estadísticas: {str(e)}")
+
+    def on_view_player_stats(self) -> None:
+        """Handle player stats button click - downloads latest data and shows player statistics."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+                return
+
+            # Update data first (same logic as on_view_stats)
+            season_value = self.season_values.get(season_text, normalize_year(season_text))
+            group_value = self.group_values.get(group_text, group_text)
+            norm_year = normalize_year(season_text)
+            session = requests.Session()
+
+            # Update progress bar visibility
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            if not matches:
+                self.progress_bar.setVisible(False)
+                self.progress_label.setVisible(False)
+                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                return
+
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            self.progress_bar.setMaximum(len(matches))
+            self.progress_bar.setValue(0)
+            self.progress_label.setText("Progreso: Actualizando datos...")
+            QApplication.processEvents()
+
+            # Update matches
+            for i, match_code in enumerate(matches, 1):
+                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
+                self.progress_bar.setValue(i)
+                QApplication.processEvents()
+
+                try:
+                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                        boxscore = self.scraper.fetch_boxscore(match_code, session)
+                        if boxscore:
+                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                except Exception as e:
+                    print(f"[App] Error processing match {match_code}: {str(e)}")
+
+            self.progress_label.setText("Progreso: Cargando estadísticas de jugadoras...")
+            self.progress_bar.setValue(len(matches))
+            QApplication.processEvents()
+
+            # Get player statistics
+            player_stats = self.db_handler.get_player_stats(collection_name)
+
+            # Hide progress bar
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            if not player_stats:
+                QMessageBox.information(self, "Sin datos", "No hay estadísticas de jugadoras disponibles para las opciones seleccionadas.")
+                return
+
+            # Import here to avoid circular imports
+            from .player_stats_window import PlayerStatsWindow
+
+            # Create and show the player stats window
+            self.player_stats_window = PlayerStatsWindow(
+                player_stats,
+                collection_name=collection_name,
+                db_handler=self.db_handler,
+                parent=self
+            )
+            self.player_stats_window.show()
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error al cargar las estadísticas de jugadoras: {str(e)}")
 
     def on_view_shotcharts(self) -> None:
         """Handle shot chart button click."""

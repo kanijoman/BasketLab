@@ -49,6 +49,10 @@ class MongoDBHandler:
         """Get list of all unique team names in the collection."""
         return self.repository.get_all_teams(collection_name)
 
+    def get_player_stats(self, collection_name: str) -> list:
+        """Get aggregated player statistics."""
+        return self.repository.get_player_stats(collection_name)
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""
