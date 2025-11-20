@@ -228,3 +228,170 @@ class BasketballRepository:
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting player stats: {e}")
             return []
+
+    def get_aggregated_team_stats(self, collection_name: str, team_name: str) -> Dict:
+        """
+        Get aggregated statistics for a specific team across all their games.
+
+        Args:
+            collection_name: Name of the collection
+            team_name: Name of the team
+
+        Returns:
+            Dictionary with aggregated team statistics
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return {}
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            team_stats = self.get_team_stats(collection_name)
+
+            for team in team_stats:
+                if team.get('team_name') == team_name:
+                    return team
+
+            return {}
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting aggregated team stats: {e}")
+            return {}
+
+    def get_aggregated_opponent_stats(self, collection_name: str, team_name: str) -> Dict:
+        """
+        Get aggregated opponent statistics for a specific team.
+
+        Args:
+            collection_name: Name of the collection
+            team_name: Name of the team
+
+        Returns:
+            Dictionary with aggregated opponent statistics
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return {}
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            opp_stats = self.get_opponent_stats(collection_name)
+
+            for opp in opp_stats:
+                if opp.get('team_name') == team_name:
+                    return opp
+
+            return {}
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting aggregated opponent stats: {e}")
+            return {}
+
+    def get_league_stats(self, collection_name: str) -> Dict:
+        """
+        Get league-wide aggregated statistics.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            Dictionary with league-wide statistics
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return {}
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+
+            # Aggregate all team statistics to get league totals
+            pipeline = [
+                {
+                    "$addFields": {
+                        "teams": [
+                            {
+                                "pts": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
+                                "fga": {"$add": [
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1a", 0]}},
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2a", 0]}},
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3a", 0]}}
+                                ]},
+                                "fgm": {"$add": [
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2m", 0]}},
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3m", 0]}}
+                                ]},
+                                "ftm": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1m", 0]}},
+                                "fta": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1a", 0]}},
+                                "orb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 0]}},
+                                "drb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 0]}},
+                                "trb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rt", 0]}},
+                                "ast": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.assist", 0]}},
+                                "tov": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.to", 0]}},
+                                "pf": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pf", 0]}},
+                                "3pa": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3a", 0]}}
+                            },
+                            {
+                                "pts": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}},
+                                "fga": {"$add": [
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1a", 1]}},
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2a", 1]}},
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3a", 1]}}
+                                ]},
+                                "fgm": {"$add": [
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p2m", 1]}},
+                                    {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3m", 1]}}
+                                ]},
+                                "ftm": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1m", 1]}},
+                                "fta": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p1a", 1]}},
+                                "orb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.ro", 1]}},
+                                "drb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rd", 1]}},
+                                "trb": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.rt", 1]}},
+                                "ast": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.assist", 1]}},
+                                "tov": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.to", 1]}},
+                                "pf": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pf", 1]}},
+                                "3pa": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.p3a", 1]}}
+                            }
+                        ]
+                    }
+                },
+                {
+                    "$unwind": "$teams"
+                },
+                {
+                    "$group": {
+                        "_id": None,
+                        "total_games": {"$sum": 1},  # Count number of games (team-games, not actual games)
+                        "total_pts": {"$sum": "$teams.pts"},
+                        "total_fga": {"$sum": "$teams.fga"},
+                        "total_fgm": {"$sum": "$teams.fgm"},
+                        "total_ftm": {"$sum": "$teams.ftm"},
+                        "total_fta": {"$sum": "$teams.fta"},
+                        "total_orb": {"$sum": "$teams.orb"},
+                        "total_drb": {"$sum": "$teams.drb"},
+                        "total_trb": {"$sum": "$teams.trb"},
+                        "total_ast": {"$sum": "$teams.ast"},
+                        "total_tov": {"$sum": "$teams.tov"},
+                        "total_pf": {"$sum": "$teams.pf"},
+                        "total_3pa": {"$sum": "$teams.3pa"}
+                    }
+                },
+                {
+                    "$addFields": {
+                        # Calculate total possessions using the formula:
+                        # Poss = FGA + 0.4*FTA - 1.07*ORB_pct*(FGA-FGM) + TOV
+                        # Simplified here as: FGA + 0.4*FTA - 0.4*ORB + TOV
+                        "total_possessions": {
+                            "$add": [
+                                "$total_fga",
+                                {"$multiply": [0.4, "$total_fta"]},
+                                {"$multiply": [-0.4, "$total_orb"]},
+                                "$total_tov"
+                            ]
+                        }
+                    }
+                }
+            ]
+
+            result = list(collection.aggregate(pipeline))
+            return result[0] if result else {}
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting league stats: {e}")
+            return {}
