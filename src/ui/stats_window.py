@@ -21,6 +21,9 @@ from .team_selector_dialog import TeamSelectorDialog
 from .stats_calculator import StatsCalculator
 from .stats_exporter import StatsExporter
 from .stats_table_manager import StatsTableManager
+from .comparative_mode_manager import ComparativeModeManager
+from .trend_legend_builder import TrendLegendBuilder
+from .stats_filter_constants import RESULT_WON, RESULT_LOST, VENUE_HOME, VENUE_AWAY
 
 
 class TeamStatsWindow(QMainWindow):
@@ -35,21 +38,6 @@ class TeamStatsWindow(QMainWindow):
         (13, 14, "Defensa", "#FFCDD2"),
         (15, 16, "Rebotes", "#C8E6C9")
     ]
-
-    # Filter constants
-    RESULT_WON = 'won'
-    RESULT_LOST = 'lost'
-    VENUE_HOME = True
-    VENUE_AWAY = False
-
-    # Cache keys
-    CACHE_GENERAL = 'general'
-    CACHE_MONTHLY = 'monthly'
-    CACHE_REST = 'rest'
-    CACHE_HOME = 'home'
-    CACHE_AWAY = 'away'
-    CACHE_WON = 'won'
-    CACHE_LOST = 'lost'
 
     def __init__(self, team_stats: List[Dict], opponent_stats: Optional[List[Dict]] = None,
                  collection_name: Optional[str] = None, reload_callback: Optional[Callable] = None,
@@ -84,21 +72,14 @@ class TeamStatsWindow(QMainWindow):
         self.stats_exporter = StatsExporter(self)
         self.table_manager = StatsTableManager(self.trend_calculator)
 
+        # Initialize comparative mode manager if callback is available
+        if self.reload_callback and self.collection_name:
+            self.comparative_manager = ComparativeModeManager(self.reload_callback, self.collection_name)
+        else:
+            self.comparative_manager = None
+
         # List to store references to trend legend titles
         self.trend_legend_titles = []
-
-        # Cache for loaded data to avoid reloading when switching tabs
-        # Keys: 'general', 'monthly', 'rest', 'home', 'away', 'won', 'lost'
-        # Values: Tuple (team_stats, opponent_stats) or None
-        self._data_cache = {
-            self.CACHE_GENERAL: None,   # All season data
-            self.CACHE_MONTHLY: None,   # Last month data
-            self.CACHE_REST: None,      # Rest of season data (excluding last month)
-            self.CACHE_HOME: None,      # Home games only
-            self.CACHE_AWAY: None,      # Away games only
-            self.CACHE_WON: None,       # Won games only
-            self.CACHE_LOST: None       # Lost games only
-        }
 
         self.setup_ui(team_stats)
 
@@ -171,7 +152,8 @@ class TeamStatsWindow(QMainWindow):
         basic_layout.addWidget(self.basic_table)
 
         # Add trend legend for basic stats (hidden by default)
-        self.basic_trend_legend = self._create_trend_legend()
+        self.basic_trend_legend, basic_title = TrendLegendBuilder.create_legend(self.trend_calculator)
+        self.trend_legend_titles.append(basic_title)
         self.basic_trend_legend.setVisible(False)
         basic_layout.addWidget(self.basic_trend_legend)
 
@@ -221,7 +203,8 @@ class TeamStatsWindow(QMainWindow):
         advanced_layout.addWidget(self.color_legend)
 
         # Add trend legend (hidden by default, shown in comparative mode)
-        self.trend_legend = self._create_trend_legend()
+        self.trend_legend, advanced_title = TrendLegendBuilder.create_legend(self.trend_calculator)
+        self.trend_legend_titles.append(advanced_title)
         self.trend_legend.setVisible(False)
         advanced_layout.addWidget(self.trend_legend)
 
@@ -360,59 +343,6 @@ class TeamStatsWindow(QMainWindow):
         legend_layout.addStretch()
 
         return legend_frame
-
-    def _create_trend_legend(self) -> QWidget:
-        """Create a trend indicator legend widget for comparative mode."""
-        from PyQt6.QtWidgets import QFrame, QLabel, QHBoxLayout
-
-        legend_frame = QFrame()
-        legend_frame.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
-        legend_frame.setMaximumHeight(40)
-
-        legend_layout = QHBoxLayout(legend_frame)
-        legend_layout.setContentsMargins(10, 5, 10, 5)
-        legend_layout.setSpacing(15)
-
-        # Add legend title (store reference for later updates)
-        title_label = QLabel("Tendencia:")
-        title_label.setStyleSheet("font-weight: bold;")
-        legend_layout.addWidget(title_label)
-
-        # Store reference to this title
-        self.trend_legend_titles.append(title_label)
-
-        # Get trend indicators from calculator
-        trends = self.trend_calculator.get_legend_items()
-
-        for symbol, description, color in trends:
-            # Create container for each legend item
-            item_widget = QWidget()
-            item_layout = QHBoxLayout(item_widget)
-            item_layout.setContentsMargins(0, 0, 0, 0)
-            item_layout.setSpacing(5)
-
-            # Create symbol label
-            symbol_label = QLabel(symbol)
-            symbol_label.setStyleSheet(f"font-size: 14pt; font-weight: bold; color: {color};")
-            symbol_label.setFixedWidth(25)
-            item_layout.addWidget(symbol_label)
-
-            # Create description label
-            text_label = QLabel(description)
-            text_label.setStyleSheet("font-size: 9pt;")
-            item_layout.addWidget(text_label)
-
-            legend_layout.addWidget(item_widget)
-
-        # Add stretch to push items to the left
-        legend_layout.addStretch()
-
-        return legend_frame
-
-    def _update_trend_legend_title(self, comparison_text: str):
-        """Update the trend legend title with the current comparison type."""
-        for title_label in self.trend_legend_titles:
-            title_label.setText(f"Tendencia ({comparison_text}):")
 
     def _get_current_table(self) -> QTableWidget:
         """Get the currently active table based on selected tab and view mode."""
@@ -587,19 +517,12 @@ class TeamStatsWindow(QMainWindow):
 
     def invalidate_cache(self):
         """Clear all cached data to force reload on next period change."""
-        self._data_cache = {
-            self.CACHE_GENERAL: None,
-            self.CACHE_MONTHLY: None,
-            self.CACHE_REST: None,
-            self.CACHE_HOME: None,
-            self.CACHE_AWAY: None,
-            self.CACHE_WON: None,
-            self.CACHE_LOST: None
-        }
+        if self.comparative_manager:
+            self.comparative_manager.invalidate_cache()
 
     def _on_period_changed(self, index: int):
         """Handle period selection change."""
-        if not self.reload_callback or not self.collection_name:
+        if not self.comparative_manager:
             QMessageBox.warning(self, "Error", "No se puede recargar datos sin callback o nombre de colección")
             return
 
@@ -607,127 +530,90 @@ class TeamStatsWindow(QMainWindow):
 
         try:
             if period_type and period_type.startswith("comparative"):
-                # Extract days from period type (e.g., "comparative_30" -> 30)
-                days = 30  # default
-                if "_" in period_type:
-                    try:
-                        days = int(period_type.split("_")[1])
-                    except (ValueError, IndexError):
-                        days = 30
+                # Extract days from period type
+                days = ComparativeModeManager.extract_days_from_period_type(period_type)
 
-                # Load both recent period and rest-of-season data for comparison
-                now = datetime.now()
-                period_start = now - timedelta(days=days)
+                # Load comparative data using manager
+                result = self.comparative_manager.load_comparative_period(period_type, days, self)
 
-                # Use dynamic cache key based on days
-                cache_key_recent = f"{self.CACHE_MONTHLY}_{days}"
-                cache_key_rest = f"{self.CACHE_REST}_{days}"
-
-                # Check cache first
-                if cache_key_recent not in self._data_cache or cache_key_rest not in self._data_cache or \
-                   self._data_cache.get(cache_key_recent) is None or self._data_cache.get(cache_key_rest) is None:
-                    # Get recent period data
-                    recent_filter = {"$gte": period_start}
-                    recent_team_stats, recent_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=recent_filter, venue_filter=None, result_filter=None
-                    )
-
-                    # Get rest of season data (before recent period)
-                    rest_filter = {"$lt": period_start}
-                    rest_team_stats, rest_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=rest_filter, venue_filter=None, result_filter=None
-                    )
-
-                    # Cache the loaded data
-                    self._data_cache[cache_key_recent] = (recent_team_stats, recent_opponent_stats)
-                    self._data_cache[cache_key_rest] = (rest_team_stats, rest_opponent_stats)
-                else:
-                    # Use cached data
-                    recent_team_stats, recent_opponent_stats = self._data_cache[cache_key_recent]
-                    rest_team_stats, rest_opponent_stats = self._data_cache[cache_key_rest]
-
-                if not recent_team_stats or not rest_team_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                if result[0] is None or result[1] is None:
                     return
+
+                # Unpack results (handles both tuples of data or tuples of (team_stats, opponent_stats))
+                if len(result[0]) == 2 and isinstance(result[0], tuple):
+                    recent_team_stats, recent_opponent_stats = result[0]
+                    rest_team_stats, rest_opponent_stats = result[1]
+                else:
+                    recent_team_stats = result[0]
+                    recent_opponent_stats = []
+                    rest_team_stats = result[1]
+                    rest_opponent_stats = []
+
+                comparison_label = result[2]
 
                 # Update stored data with recent stats
                 self.opponent_stats = recent_opponent_stats or []
 
-                # Update legend title with selected period
-                period_label = f"últimos {days} días" if days != 30 else "último mes"
-                self._update_trend_legend_title(f"{period_label} vs resto temporada")
+                # Update legend title
+                TrendLegendBuilder.update_legend_titles(self.trend_legend_titles, comparison_label)
 
                 # Show comparative tables
                 self._show_comparative_tables(recent_team_stats, rest_team_stats,
                                              recent_opponent_stats, rest_opponent_stats)
 
             elif period_type == "venue_comparative":
-                # Load both home and away data for comparison
-                # Check cache first
-                if self._data_cache[self.CACHE_HOME] is None or self._data_cache[self.CACHE_AWAY] is None:
-                    # Get home data (venue_filter=True means local/home)
-                    home_team_stats, home_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=self.VENUE_HOME, result_filter=None
-                    )
+                # Load venue comparison data using manager
+                result = self.comparative_manager.load_venue_comparison(self)
 
-                    # Get away data (venue_filter=False means visitante/away)
-                    away_team_stats, away_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=self.VENUE_AWAY, result_filter=None
-                    )
-
-                    # Cache the loaded data
-                    self._data_cache[self.CACHE_HOME] = (home_team_stats, home_opponent_stats)
-                    self._data_cache[self.CACHE_AWAY] = (away_team_stats, away_opponent_stats)
-                else:
-                    # Use cached data
-                    home_team_stats, home_opponent_stats = self._data_cache[self.CACHE_HOME]
-                    away_team_stats, away_opponent_stats = self._data_cache[self.CACHE_AWAY]
-
-                if not home_team_stats or not away_team_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                if result[0] is None or result[1] is None:
                     return
+
+                # Unpack results
+                if len(result[0]) == 2 and isinstance(result[0], tuple):
+                    home_team_stats, home_opponent_stats = result[0]
+                    away_team_stats, away_opponent_stats = result[1]
+                else:
+                    home_team_stats = result[0]
+                    home_opponent_stats = []
+                    away_team_stats = result[1]
+                    away_opponent_stats = []
+
+                comparison_label = result[2]
 
                 # Update stored data with home stats
                 self.opponent_stats = home_opponent_stats or []
 
                 # Update legend title
-                self._update_trend_legend_title("local vs visitante")
+                TrendLegendBuilder.update_legend_titles(self.trend_legend_titles, comparison_label)
 
                 # Show comparative tables
                 self._show_comparative_tables(home_team_stats, away_team_stats,
                                              home_opponent_stats, away_opponent_stats)
 
             elif period_type == "result_comparative":
-                # Load both won and lost games data for comparison
-                # Check cache first
-                if self._data_cache[self.CACHE_WON] is None or self._data_cache[self.CACHE_LOST] is None:
-                    # Get won games data (result_filter='won')
-                    won_team_stats, won_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=None, result_filter=self.RESULT_WON
-                    )
+                # Load result comparison data using manager
+                result = self.comparative_manager.load_result_comparison(self)
 
-                    # Get lost games data (result_filter='lost')
-                    lost_team_stats, lost_opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=None, result_filter=self.RESULT_LOST
-                    )
-
-                    # Cache the loaded data
-                    self._data_cache[self.CACHE_WON] = (won_team_stats, won_opponent_stats)
-                    self._data_cache[self.CACHE_LOST] = (lost_team_stats, lost_opponent_stats)
-                else:
-                    # Use cached data
-                    won_team_stats, won_opponent_stats = self._data_cache[self.CACHE_WON]
-                    lost_team_stats, lost_opponent_stats = self._data_cache[self.CACHE_LOST]
-
-                if not won_team_stats or not lost_team_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                if result[0] is None or result[1] is None:
                     return
+
+                # Unpack results
+                if len(result[0]) == 2 and isinstance(result[0], tuple):
+                    won_team_stats, won_opponent_stats = result[0]
+                    lost_team_stats, lost_opponent_stats = result[1]
+                else:
+                    won_team_stats = result[0]
+                    won_opponent_stats = []
+                    lost_team_stats = result[1]
+                    lost_opponent_stats = []
+
+                comparison_label = result[2]
 
                 # Update stored data with won stats
                 self.opponent_stats = won_opponent_stats or []
 
                 # Update legend title
-                self._update_trend_legend_title("ganados vs perdidos")
+                TrendLegendBuilder.update_legend_titles(self.trend_legend_titles, comparison_label)
 
                 # Show comparative tables
                 self._show_comparative_tables(won_team_stats, lost_team_stats,
@@ -739,20 +625,17 @@ class TeamStatsWindow(QMainWindow):
 
             else:
                 # General mode - all data
-                # Check cache first
-                if self._data_cache[self.CACHE_GENERAL] is None:
-                    team_stats, opponent_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=None, result_filter=None
-                    )
-                    # Cache the loaded data
-                    self._data_cache[self.CACHE_GENERAL] = (team_stats, opponent_stats)
-                else:
-                    # Use cached data
-                    team_stats, opponent_stats = self._data_cache[self.CACHE_GENERAL]
+                result = self.comparative_manager.load_general_data(self)
 
-                if not team_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay datos para el período seleccionado")
+                if result is None:
                     return
+
+                # Unpack results
+                if isinstance(result, tuple) and len(result) == 2:
+                    team_stats, opponent_stats = result
+                else:
+                    team_stats = result
+                    opponent_stats = []
 
                 # Update the stored data
                 self.opponent_stats = opponent_stats or []

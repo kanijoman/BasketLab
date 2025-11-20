@@ -17,6 +17,8 @@ from .player_stats_table_populator import PlayerStatsTablePopulator
 from .advanced_stats_calculator import AdvancedStatsCalculator
 from .stats_config import calculate_quartiles, get_quartile_color
 from .trend_calculator import TrendCalculator
+from .comparative_mode_manager import ComparativeModeManager
+from .trend_legend_builder import TrendLegendBuilder
 
 
 class PlayerStatsWindow(QMainWindow):
@@ -55,19 +57,6 @@ class PlayerStatsWindow(QMainWindow):
         18: ('val_pg', False),      # Val/PJ
     }
 
-    # Filter constants
-    RESULT_WON = 'won'
-    RESULT_LOST = 'lost'
-    VENUE_HOME = True
-    VENUE_AWAY = False
-
-    # Cache keys
-    CACHE_GENERAL = 'general'
-    CACHE_HOME = 'home'
-    CACHE_AWAY = 'away'
-    CACHE_WON = 'won'
-    CACHE_LOST = 'lost'
-
     def __init__(self, player_stats: List[Dict], collection_name: Optional[str] = None,
                  reload_callback: Optional[Callable] = None, db_handler: Optional[Any] = None,
                  parent: Optional[QWidget] = None):
@@ -101,18 +90,15 @@ class PlayerStatsWindow(QMainWindow):
         self.trend_calculator = TrendCalculator()
         self.stats_exporter = StatsExporter(self)
 
+        # Initialize comparative mode manager if callback is available
+        if self.reload_callback and self.collection_name:
+            self.comparative_manager = ComparativeModeManager(self.reload_callback, self.collection_name)
+        else:
+            self.comparative_manager = None
+
         # Comparative mode tracking
         self.is_comparative_mode = False
         self.comparison_data = None  # Will store the "rest" data for comparison
-
-        # Cache for loaded data to avoid reloading when switching periods
-        self._data_cache = {
-            self.CACHE_GENERAL: None,
-            self.CACHE_HOME: None,
-            self.CACHE_AWAY: None,
-            self.CACHE_WON: None,
-            self.CACHE_LOST: None
-        }
 
         # Get unique teams for filter
         self.teams = sorted(set(p['team_name'] for p in player_stats))
@@ -268,7 +254,7 @@ class PlayerStatsWindow(QMainWindow):
         main_layout.addWidget(self.table)
 
         # Add trend legend (hidden by default, shown in comparative mode)
-        self.trend_legend = self._create_trend_legend()
+        self.trend_legend, self.trend_legend_title = TrendLegendBuilder.create_legend(self.trend_calculator)
         self.trend_legend.setVisible(False)
         main_layout.addWidget(self.trend_legend)
 
@@ -874,57 +860,9 @@ class PlayerStatsWindow(QMainWindow):
 
         self.table.setSortingEnabled(True)
 
-    def _create_trend_legend(self) -> QWidget:
-        """Create a trend indicator legend widget for comparative mode."""
-        legend_frame = QFrame()
-        legend_frame.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
-        legend_frame.setMaximumHeight(40)
-
-        legend_layout = QHBoxLayout(legend_frame)
-        legend_layout.setContentsMargins(10, 5, 10, 5)
-        legend_layout.setSpacing(15)
-
-        # Add legend title
-        self.trend_legend_title = QLabel("Tendencia:")
-        self.trend_legend_title.setStyleSheet("font-weight: bold;")
-        legend_layout.addWidget(self.trend_legend_title)
-
-        # Get trend indicators from calculator
-        trends = self.trend_calculator.get_legend_items()
-
-        for symbol, description, color in trends:
-            # Create container for each legend item
-            item_widget = QWidget()
-            item_layout = QHBoxLayout(item_widget)
-            item_layout.setContentsMargins(0, 0, 0, 0)
-            item_layout.setSpacing(5)
-
-            # Create symbol label
-            symbol_label = QLabel(symbol)
-            symbol_label.setStyleSheet(f"font-size: 14pt; font-weight: bold; color: {color};")
-            symbol_label.setFixedWidth(25)
-            item_layout.addWidget(symbol_label)
-
-            # Create description label
-            text_label = QLabel(description)
-            text_label.setStyleSheet("font-size: 9pt;")
-            item_layout.addWidget(text_label)
-
-            legend_layout.addWidget(item_widget)
-
-        # Add stretch to push items to the left
-        legend_layout.addStretch()
-
-        return legend_frame
-
-    def _update_trend_legend_title(self, comparison_text: str):
-        """Update the trend legend title with the current comparison type."""
-        if hasattr(self, 'trend_legend_title'):
-            self.trend_legend_title.setText(f"Tendencia ({comparison_text}):")
-
     def _on_period_changed(self, index: int):
         """Handle period selection change."""
-        if not self.reload_callback or not self.collection_name:
+        if not self.comparative_manager:
             QMessageBox.warning(self, "Error", "No se puede recargar datos sin callback o nombre de colección")
             return
 
@@ -932,47 +870,15 @@ class PlayerStatsWindow(QMainWindow):
 
         try:
             if period_type and period_type.startswith("comparative"):
-                # Extract days from period type (e.g., "comparative_30" -> 30)
-                days = 30  # default
-                if "_" in period_type:
-                    try:
-                        days = int(period_type.split("_")[1])
-                    except (ValueError, IndexError):
-                        days = 30
+                # Extract days from period type
+                days = ComparativeModeManager.extract_days_from_period_type(period_type)
 
-                # Load both recent period and rest-of-season data for comparison
-                now = datetime.now()
-                period_start = now - timedelta(days=days)
+                # Load comparative data using manager
+                recent_stats, rest_stats, comparison_label = self.comparative_manager.load_comparative_period(
+                    period_type, days, self
+                )
 
-                # Use dynamic cache key based on days
-                cache_key_recent = f"recent_{days}"
-                cache_key_rest = f"rest_{days}"
-
-                # Check cache first
-                if cache_key_recent not in self._data_cache or cache_key_rest not in self._data_cache or \
-                   self._data_cache.get(cache_key_recent) is None or self._data_cache.get(cache_key_rest) is None:
-                    # Get recent period data
-                    recent_filter = {"$gte": period_start}
-                    recent_stats = self.reload_callback(
-                        self.collection_name, date_filter=recent_filter, venue_filter=None, result_filter=None
-                    )
-
-                    # Get rest of season data (before recent period)
-                    rest_filter = {"$lt": period_start}
-                    rest_stats = self.reload_callback(
-                        self.collection_name, date_filter=rest_filter, venue_filter=None, result_filter=None
-                    )
-
-                    # Cache the loaded data
-                    self._data_cache[cache_key_recent] = recent_stats
-                    self._data_cache[cache_key_rest] = rest_stats
-                else:
-                    # Use cached data
-                    recent_stats = self._data_cache[cache_key_recent]
-                    rest_stats = self._data_cache[cache_key_rest]
-
-                if not recent_stats or not rest_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                if recent_stats is None or rest_stats is None:
                     return
 
                 # ENABLE comparative mode
@@ -996,9 +902,8 @@ class PlayerStatsWindow(QMainWindow):
                     except Exception as e:
                         print(f"[PlayerStatsWindow] Error recalculating advanced stats: {e}")
 
-                # Update legend title with selected period
-                period_label = f"últimos {days} días" if days != 30 else "último mes"
-                self._update_trend_legend_title(f"{period_label} vs resto temporada")
+                # Update legend title
+                TrendLegendBuilder.update_legend_title(self.trend_legend_title, comparison_label)
 
                 # Show trend legend
                 self.trend_legend.setVisible(True)
@@ -1008,29 +913,10 @@ class PlayerStatsWindow(QMainWindow):
                 self.populate_table()
 
             elif period_type == "venue_comparative":
-                # Load both home and away data for comparison
-                # Check cache first
-                if self._data_cache[self.CACHE_HOME] is None or self._data_cache[self.CACHE_AWAY] is None:
-                    # Get home data
-                    home_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=self.VENUE_HOME, result_filter=None
-                    )
+                # Load venue comparison data using manager
+                home_stats, away_stats, comparison_label = self.comparative_manager.load_venue_comparison(self)
 
-                    # Get away data
-                    away_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=self.VENUE_AWAY, result_filter=None
-                    )
-
-                    # Cache the loaded data
-                    self._data_cache[self.CACHE_HOME] = home_stats
-                    self._data_cache[self.CACHE_AWAY] = away_stats
-                else:
-                    # Use cached data
-                    home_stats = self._data_cache[self.CACHE_HOME]
-                    away_stats = self._data_cache[self.CACHE_AWAY]
-
-                if not home_stats or not away_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                if home_stats is None or away_stats is None:
                     return
 
                 # ENABLE comparative mode
@@ -1055,7 +941,7 @@ class PlayerStatsWindow(QMainWindow):
                         print(f"[PlayerStatsWindow] Error recalculating advanced stats: {e}")
 
                 # Update legend title
-                self._update_trend_legend_title("local vs visitante")
+                TrendLegendBuilder.update_legend_title(self.trend_legend_title, comparison_label)
 
                 # Show trend legend
                 self.trend_legend.setVisible(True)
@@ -1065,29 +951,10 @@ class PlayerStatsWindow(QMainWindow):
                 self.populate_table()
 
             elif period_type == "result_comparative":
-                # Load both won and lost games data for comparison
-                # Check cache first
-                if self._data_cache[self.CACHE_WON] is None or self._data_cache[self.CACHE_LOST] is None:
-                    # Get won games data
-                    won_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=None, result_filter=self.RESULT_WON
-                    )
+                # Load result comparison data using manager
+                won_stats, lost_stats, comparison_label = self.comparative_manager.load_result_comparison(self)
 
-                    # Get lost games data
-                    lost_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=None, result_filter=self.RESULT_LOST
-                    )
-
-                    # Cache the loaded data
-                    self._data_cache[self.CACHE_WON] = won_stats
-                    self._data_cache[self.CACHE_LOST] = lost_stats
-                else:
-                    # Use cached data
-                    won_stats = self._data_cache[self.CACHE_WON]
-                    lost_stats = self._data_cache[self.CACHE_LOST]
-
-                if not won_stats or not lost_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay suficientes datos para comparar")
+                if won_stats is None or lost_stats is None:
                     return
 
                 # ENABLE comparative mode
@@ -1112,7 +979,7 @@ class PlayerStatsWindow(QMainWindow):
                         print(f"[PlayerStatsWindow] Error recalculating advanced stats: {e}")
 
                 # Update legend title
-                self._update_trend_legend_title("ganados vs perdidos")
+                TrendLegendBuilder.update_legend_title(self.trend_legend_title, comparison_label)
 
                 # Show trend legend
                 self.trend_legend.setVisible(True)
@@ -1127,19 +994,10 @@ class PlayerStatsWindow(QMainWindow):
                 self.is_comparative_mode = False
                 self.comparison_data = None
 
-                # Check cache first
-                if self._data_cache[self.CACHE_GENERAL] is None:
-                    player_stats = self.reload_callback(
-                        self.collection_name, date_filter=None, venue_filter=None, result_filter=None
-                    )
-                    # Cache the loaded data
-                    self._data_cache[self.CACHE_GENERAL] = player_stats
-                else:
-                    # Use cached data
-                    player_stats = self._data_cache[self.CACHE_GENERAL]
+                # Load general data using manager
+                player_stats = self.comparative_manager.load_general_data(self)
 
-                if not player_stats:
-                    QMessageBox.information(self, "Sin datos", "No hay datos para el período seleccionado")
+                if player_stats is None:
                     return
 
                 # Update the stored data
