@@ -13,6 +13,8 @@ from .table_items import NumericTableWidgetItem
 from .ui_utils import set_app_icon
 from .stats_exporter import StatsExporter
 from .player_stats_table_populator import PlayerStatsTablePopulator
+from .advanced_stats_calculator import AdvancedStatsCalculator
+from .stats_config import calculate_quartiles, get_quartile_color
 
 
 class PlayerStatsWindow(QMainWindow):
@@ -23,6 +25,33 @@ class PlayerStatsWindow(QMainWindow):
         "Jugador", "Equipo", "PJ", "Min", "Pts", "%TL", "%T2", "%T3",
         "RO", "RD", "Reb", "Ast", "Rob", "BP", "Tap", "FP", "FR", "+/-", "Val"
     ]
+
+    # Column definitions for advanced stats
+    ADVANCED_COLUMNS = [
+        "Jugador", "Equipo", "PJ", "Min/PJ", "Pts/PJ",
+        "Usg%", "ORtg", "DRtg", "FTr", "3Pr", "eFG%", "TS%",
+        "%AST", "%TO", "%ROB", "%TAP", "%RD", "%RO", "Val/PJ"
+    ]
+
+    # Field definitions for quartile calculation and coloring (advanced stats)
+    ADVANCED_STAT_FIELDS = {
+        3: ('mpg', False),          # Min/PJ
+        4: ('ppg', False),          # Pts/PJ
+        5: ('usage', False),        # Usg%
+        6: ('orating', False),      # ORtg
+        7: ('drating', True),       # DRtg (reverse - lower is better)
+        8: ('ftr', False),          # FTr
+        9: ('three_pr', False),     # 3Pr
+        10: ('efg', False),         # eFG%
+        11: ('ts', False),          # TS%
+        12: ('ast_pct', False),     # %AST
+        13: ('tov_pct', True),      # %TO (reverse)
+        14: ('stl_pct', False),     # %ROB
+        15: ('blk_pct', False),     # %TAP
+        16: ('drb_pct', False),     # %RD
+        17: ('orb_pct', False),     # %RO
+        18: ('val_pg', False),      # Val/PJ
+    }
 
     def __init__(self, player_stats: List[Dict], collection_name: Optional[str] = None,
                  db_handler: Optional[Any] = None, parent: Optional[QWidget] = None):
@@ -37,7 +66,7 @@ class PlayerStatsWindow(QMainWindow):
         """
         super().__init__(parent)
         self.setWindowTitle("MfA - Estadísticas Individuales")
-        self.setMinimumSize(1400, 700)
+        self.setMinimumSize(1600, 700)
 
         # Set application icon
         set_app_icon(self)
@@ -47,6 +76,8 @@ class PlayerStatsWindow(QMainWindow):
         self.all_player_stats = player_stats
         self.filtered_stats = player_stats.copy()
         self.view_mode = "average"  # Default view mode: average, total, or projection
+        self.show_advanced = False  # Toggle between basic and advanced stats
+        self.advanced_stats_calculated = False
 
         # Initialize stats exporter
         self.stats_exporter = StatsExporter(self)
@@ -55,6 +86,16 @@ class PlayerStatsWindow(QMainWindow):
         self.teams = sorted(set(p['team_name'] for p in player_stats))
 
         self.setup_ui()
+
+        # Pre-calculate advanced stats if database is available
+        if self.db_handler and self.collection_name:
+            try:
+                self._calculate_advanced_stats()
+                self.advanced_stats_calculated = True
+            except Exception as e:
+                print(f"[PlayerStatsWindow] Could not pre-calculate advanced stats: {e}")
+                self.advanced_stats_calculated = False
+
         self.populate_table()
 
     def setup_ui(self):
@@ -82,6 +123,7 @@ class PlayerStatsWindow(QMainWindow):
         self.view_mode_combo.addItem("Promedios por partido", "average")
         self.view_mode_combo.addItem("Totales acumulados", "total")
         self.view_mode_combo.addItem("Proyección 30 minutos", "projection")
+        self.view_mode_combo.addItem("Estadísticas Avanzadas", "advanced")
         self.view_mode_combo.currentIndexChanged.connect(self.change_view_mode)
         filters_layout.addWidget(self.view_mode_combo)
 
@@ -192,15 +234,18 @@ class PlayerStatsWindow(QMainWindow):
 
     def populate_table(self):
         """Populate the table with player statistics based on current view mode."""
-        # Calculate quartiles based on ALL players (not just filtered)
-        quartiles = PlayerStatsTablePopulator.calculate_quartiles(
-            self.all_player_stats, self.view_mode
-        )
+        if self.show_advanced:
+            self._populate_advanced_table()
+        else:
+            # Calculate quartiles based on ALL players (not just filtered)
+            quartiles = PlayerStatsTablePopulator.calculate_quartiles(
+                self.all_player_stats, self.view_mode
+            )
 
-        # Populate the table with filtered players
-        PlayerStatsTablePopulator.populate_table(
-            self.table, self.filtered_stats, self.view_mode, quartiles
-        )
+            # Populate the table with filtered players
+            PlayerStatsTablePopulator.populate_table(
+                self.table, self.filtered_stats, self.view_mode, quartiles
+            )
 
         self.update_info_label()
 
@@ -224,9 +269,89 @@ class PlayerStatsWindow(QMainWindow):
         self.populate_table()
 
     def change_view_mode(self):
-        """Change the view mode (average, total, or projection)."""
-        self.view_mode = self.view_mode_combo.currentData()
+        """Change the view mode (average, total, projection, or advanced)."""
+        new_mode = self.view_mode_combo.currentData()
+
+        # Check if switching to/from advanced mode
+        if new_mode == "advanced" and not self.show_advanced:
+            # Switching to advanced stats
+            if not self.advanced_stats_calculated:
+                # Stats should have been pre-calculated, but try again if not
+                if self.db_handler and self.collection_name:
+                    try:
+                        self._calculate_advanced_stats()
+                        self.advanced_stats_calculated = True
+                    except Exception as e:
+                        QMessageBox.warning(
+                            self,
+                            "Error",
+                            f"No se pudieron calcular las estadísticas avanzadas:\n{str(e)}"
+                        )
+                        # Revert to previous mode
+                        self.view_mode_combo.setCurrentIndex(0)
+                        return
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Error",
+                        "No hay conexión a la base de datos para calcular estadísticas avanzadas."
+                    )
+                    # Revert to previous mode
+                    self.view_mode_combo.setCurrentIndex(0)
+                    return
+
+            # Switch to advanced view
+            self.show_advanced = True
+            self.view_mode = "advanced"
+
+            # Update table structure for advanced stats
+            self.table.setColumnCount(len(self.ADVANCED_COLUMNS))
+            self.update_column_headers()
+
+            # Set column widths for advanced stats
+            self.table.horizontalHeader().resizeSection(0, 160)  # Player name (reduced from 180)
+            self.table.horizontalHeader().resizeSection(1, 130)  # Team name (reduced from 150)
+            self.table.horizontalHeader().resizeSection(2, 50)   # PJ (games played)
+            # Other columns: Min/PJ through Val/PJ
+            for i in range(3, len(self.ADVANCED_COLUMNS)):
+                self.table.horizontalHeader().resizeSection(i, 75)  # Reduced from 80
+
+        elif new_mode != "advanced" and self.show_advanced:
+            # Switching from advanced to basic mode
+            self.show_advanced = False
+            self.view_mode = new_mode
+
+            # Update table structure for basic stats
+            self.table.setColumnCount(len(self.PLAYER_COLUMNS))
+            self.update_column_headers()
+
+            # Set column widths for basic stats
+            self.table.horizontalHeader().resizeSection(0, 180)  # Player name
+            self.table.horizontalHeader().resizeSection(1, 150)  # Team name
+            for i in range(2, len(self.PLAYER_COLUMNS)):
+                self.table.horizontalHeader().resizeSection(i, 60)
+        else:
+            # Normal view mode change (within basic stats)
+            self.view_mode = new_mode
+            self.update_column_headers()
+
         self.populate_table()
+
+    def update_column_headers(self):
+        """Update column headers based on view mode."""
+        if self.show_advanced:
+            headers = self.ADVANCED_COLUMNS.copy()
+        elif self.view_mode == "total":
+            # For totals, remove % from percentage columns
+            headers = [
+                "Jugador", "Equipo", "PJ", "Min", "Pts", "TL", "T2", "T3",
+                "RO", "RD", "Reb", "Ast", "Rob", "BP", "Tap", "FP", "FR", "+/-", "Val"
+            ]
+        else:
+            # For average and projection, keep % in headers
+            headers = self.PLAYER_COLUMNS.copy()
+
+        self.table.setHorizontalHeaderLabels(headers)
 
     def clear_filters(self):
         """Clear all filters."""
@@ -405,3 +530,122 @@ class PlayerStatsWindow(QMainWindow):
         """Export current table to PDF format."""
         window_title = self.windowTitle()
         self.stats_exporter.export_to_pdf(self.table, "Estadisticas_Individuales", window_title)
+
+    def _calculate_advanced_stats(self):
+        """Calculate advanced statistics for all players."""
+        # Group players by team to get team and opponent stats
+        teams = {}
+        for player in self.all_player_stats:
+            team_name = player['team_name']
+            if team_name not in teams:
+                teams[team_name] = {
+                    'team_stats': self.db_handler.get_aggregated_team_stats(
+                        self.collection_name, team_name
+                    ),
+                    'opp_stats': self.db_handler.get_aggregated_opponent_stats(
+                        self.collection_name, team_name
+                    )
+                }
+
+        # Calculate advanced stats for each player
+        for player in self.all_player_stats:
+            team_name = player['team_name']
+            team_data = teams.get(team_name, {})
+            team_stats = team_data.get('team_stats', {})
+            opp_stats = team_data.get('opp_stats', {})
+
+            if team_stats and opp_stats:
+                advanced_stats = AdvancedStatsCalculator.calculate_all_advanced_stats(
+                    player, team_stats, opp_stats
+                )
+                player.update(advanced_stats)
+            else:
+                # Set default values if stats are not available
+                self._set_default_advanced_stats(player)
+
+    def _set_default_advanced_stats(self, player: Dict):
+        """Set default advanced stats values for a player."""
+        player.update({
+            'mpg': player.get('minutes_per_game', 0),
+            'ppg': player.get('points_per_game', 0),
+            'usage': 0.0,
+            'orating': 0.0,
+            'drating': 0.0,
+            'ftr': 0.0,
+            'three_pr': 0.0,
+            'efg': 0.0,
+            'ts': 0.0,
+            'ast_pct': 0.0,
+            'tov_pct': 0.0,
+            'stl_pct': 0.0,
+            'blk_pct': 0.0,
+            'drb_pct': 0.0,
+            'orb_pct': 0.0,
+            'val_pg': 0.0
+        })
+
+    def _calculate_advanced_quartiles(self) -> Dict:
+        """Calculate quartiles for advanced statistics fields."""
+        quartiles = {}
+
+        for col_idx, (field_name, _) in self.ADVANCED_STAT_FIELDS.items():
+            values = []
+            for player in self.all_player_stats:
+                value = player.get(field_name, 0)
+                if value != 0:  # Only include non-zero values
+                    values.append(value)
+
+            if values:
+                # Calculate quartiles using numpy percentiles
+                import numpy as np
+                quartiles[field_name] = [np.percentile(values, q) for q in [25, 50, 75]]
+
+        return quartiles
+
+    def _populate_advanced_table(self):
+        """Populate table with advanced statistics."""
+        # Calculate quartiles for advanced stats
+        quartiles = self._calculate_advanced_quartiles()
+
+        # Clear and set up table
+        self.table.setSortingEnabled(False)
+        self.table.setRowCount(len(self.filtered_stats))
+
+        for row, player in enumerate(self.filtered_stats):
+            # Column 0: Player name
+            self.table.setItem(row, 0, QTableWidgetItem(player.get('player_name', '')))
+
+            # Column 1: Team name
+            self.table.setItem(row, 1, QTableWidgetItem(player.get('team_name', '')))
+
+            # Column 2: Games played
+            games = player.get('games_played', 0)
+            self.table.setItem(row, 2, NumericTableWidgetItem(games, str(games)))
+
+            # Add advanced stats with quartile coloring
+            self._add_advanced_stat_cells(row, player, quartiles)
+
+        self.table.setSortingEnabled(True)
+
+    def _add_advanced_stat_cells(self, row: int, player: Dict, quartiles: Dict):
+        """Add advanced statistics cells with quartile-based coloring."""
+        for col_idx, (field_name, reverse) in self.ADVANCED_STAT_FIELDS.items():
+            value = player.get(field_name, 0)
+
+            # Format value
+            if field_name in ['mpg', 'ppg', 'val_pg']:
+                formatted_value = f"{value:.1f}"
+            elif field_name in ['orating', 'drating']:
+                formatted_value = f"{value:.1f}"
+            else:
+                formatted_value = f"{value:.1f}%" if value != 0 else "0.0%"
+
+            # Create item
+            item = NumericTableWidgetItem(value, formatted_value)
+
+            # Apply quartile coloring
+            if value != 0 and field_name in quartiles:
+                color = get_quartile_color(value, quartiles[field_name], reverse)
+                item.setBackground(color)
+
+            self.table.setItem(row, col_idx, item)

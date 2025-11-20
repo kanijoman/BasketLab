@@ -53,6 +53,18 @@ class MongoDBHandler:
         """Get aggregated player statistics."""
         return self.repository.get_player_stats(collection_name)
 
+    def get_aggregated_team_stats(self, collection_name: str, team_name: str) -> dict:
+        """Get aggregated team statistics for advanced calculations."""
+        return self.repository.get_aggregated_team_stats(collection_name, team_name)
+
+    def get_aggregated_opponent_stats(self, collection_name: str, team_name: str) -> dict:
+        """Get aggregated opponent statistics for advanced calculations."""
+        return self.repository.get_aggregated_opponent_stats(collection_name, team_name)
+
+    def get_league_stats(self, collection_name: str) -> dict:
+        """Get league-wide statistics for advanced calculations."""
+        return self.repository.get_league_stats(collection_name)
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""
