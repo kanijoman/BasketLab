@@ -479,10 +479,15 @@ class BasketballSeasonApp(QMainWindow):
             # Import here to avoid circular imports
             from .player_stats_window import PlayerStatsWindow
 
+            # Create reload callback function for player stats
+            def reload_player_stats(coll_name: str, date_filter: dict = None, venue_filter: bool = None, result_filter: str = None):
+                return self.db_handler.get_player_stats(coll_name, date_filter, venue_filter, result_filter)
+
             # Create and show the player stats window
             self.player_stats_window = PlayerStatsWindow(
                 player_stats,
                 collection_name=collection_name,
+                reload_callback=reload_player_stats,
                 db_handler=self.db_handler,
                 parent=self
             )

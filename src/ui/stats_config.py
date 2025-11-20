@@ -57,7 +57,8 @@ TREND_COLORS = {
 # Fields where lower values are better (for trend calculation)
 LOWER_IS_BETTER_FIELDS = {
     'turnovers_per_game', 'turnovers', 'turnover_rate',
-    'defensive_rating', 'points_received', 'points_against_per_game'
+    'defensive_rating', 'points_received', 'points_against_per_game',
+    'personal_fouls', 'to', 'pf'  # Player stats fields
 }
 
 

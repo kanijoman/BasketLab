@@ -612,15 +612,20 @@ class AggregationPipelineBuilder:
         ]
 
     @staticmethod
-    def build_player_stats_pipeline() -> List[Dict]:
+    def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: Optional[str] = None) -> List[Dict]:
         """
         Build aggregation pipeline for player statistics across all matches.
+
+        Args:
+            date_filter: Optional date filter (e.g., {"$gte": datetime, "$lt": datetime})
+            venue_filter: Optional venue filter (True=home, False=away, None=all)
+            result_filter: Optional result filter ('won' or 'lost')
 
         Returns:
             List of aggregation pipeline stages
         """
-        return [
-            # Stage 1: Parse date first
+        pipeline = [
+            # Stage 1: Parse date and add match-level fields BEFORE unwinding
             {
                 "$addFields": {
                     "parsedDate": {
@@ -630,9 +635,23 @@ class AggregationPipelineBuilder:
                             "onError": None,
                             "onNull": None
                         }
-                    }
+                    },
+                    "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
+                    "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}}
                 }
-            },
+            }
+        ]
+
+        # Add match filter if any filters are provided
+        match_stage = {}
+
+        if date_filter is not None:
+            match_stage["parsedDate"] = date_filter
+
+        if match_stage:
+            pipeline.append({"$match": match_stage})
+
+        pipeline.extend([
             # Stage 2: Unwind teams
             {
                 "$unwind": {
@@ -640,6 +659,46 @@ class AggregationPipelineBuilder:
                     "includeArrayIndex": "teamIndex"
                 }
             },
+            # Stage 2.5: Add venue and result fields (after unwind)
+            {
+                "$addFields": {
+                    "is_local": {"$eq": ["$teamIndex", 0]},
+                    "teamPoints": {
+                        "$cond": {
+                            "if": {"$eq": ["$teamIndex", 0]},
+                            "then": "$localPoints",
+                            "else": "$awayPoints"
+                        }
+                    },
+                    "opponentPoints": {
+                        "$cond": {
+                            "if": {"$eq": ["$teamIndex", 0]},
+                            "then": "$awayPoints",
+                            "else": "$localPoints"
+                        }
+                    }
+                }
+            },
+            # Stage 2.6: Add won field
+            {
+                "$addFields": {
+                    "won": {"$gt": ["$teamPoints", "$opponentPoints"]}
+                }
+            }
+        ])
+
+        # Apply venue filter if specified
+        if venue_filter is not None:
+            pipeline.append({"$match": {"is_local": venue_filter}})
+
+        # Apply result filter if specified
+        if result_filter is not None:
+            if result_filter == AggregationPipelineBuilder.RESULT_WON:
+                pipeline.append({"$match": {"won": True}})
+            elif result_filter == AggregationPipelineBuilder.RESULT_LOST:
+                pipeline.append({"$match": {"won": False}})
+
+        pipeline.extend([
             # Stage 3: Unwind players within each team
             {
                 "$unwind": {
@@ -834,5 +893,7 @@ class AggregationPipelineBuilder:
                     "total_pts": -1
                 }
             }
-        ]
+        ])
+
+        return pipeline
 

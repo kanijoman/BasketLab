@@ -200,7 +200,7 @@ class BasketballRepository:
             print(f"[BasketballRepository] Error getting teams: {e}")
             return []
 
-    def get_player_stats(self, collection_name: str) -> List[Dict]:
+    def get_player_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
         """
         Get aggregated player statistics from all matches in the collection.
 
@@ -213,6 +213,9 @@ class BasketballRepository:
 
         Args:
             collection_name: Name of the collection
+            date_filter: Optional MongoDB date filter dict with datetime object
+            venue_filter: Optional boolean to filter by venue (True=home, False=away, None=all)
+            result_filter: Optional string to filter by result ('won', 'lost', None=all)
 
         Returns:
             List of player statistics dictionaries
@@ -223,7 +226,7 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
-            pipeline = AggregationPipelineBuilder.build_player_stats_pipeline()
+            pipeline = AggregationPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter)
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting player stats: {e}")
