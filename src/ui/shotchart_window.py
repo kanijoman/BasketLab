@@ -1,7 +1,7 @@
 """Shot chart visualization window."""
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                              QLabel, QPushButton, QMessageBox,
+                              QLabel, QPushButton, QMessageBox, QComboBox,
                               QProgressBar, QApplication, QRadioButton, QButtonGroup, QDialog)
 from PyQt6.QtCore import Qt
 from typing import List, Dict, Optional
@@ -15,6 +15,7 @@ from shotcharts.zone_analysis import ZoneAnalyzer
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ui_utils import set_app_icon
 from .team_selector_dialog import TeamSelectorDialog
+from .team_utils import get_available_teams_from_collection, get_team_index_in_document, extract_player_names_from_boxscore
 
 
 class ShotChartWindow(QMainWindow):
@@ -38,6 +39,8 @@ class ShotChartWindow(QMainWindow):
         self.zone_analyzer = ZoneAnalyzer(detail_level='detailed')
         self.current_shots = []
         self.current_team: Optional[Dict] = None
+        self.current_players: List[Dict] = []  # Store player info
+        self.players_info: Dict[str, str] = {}  # Map dorsal to name
 
         self.setWindowTitle("MfA - Gráficos de Lanzamiento")
         self.setMinimumSize(900, 700)
@@ -46,7 +49,7 @@ class ShotChartWindow(QMainWindow):
         set_app_icon(self)
 
         # Get available teams
-        self.teams = self._get_available_teams()
+        self.teams = get_available_teams_from_collection(self.db_handler, self.collection_name)
 
         self.setup_ui()
 
@@ -55,59 +58,6 @@ class ShotChartWindow(QMainWindow):
             self.status_label.setText("No se encontraron equipos. Los datos se actualizarán automáticamente.")
         else:
             self.status_label.setText(f"{len(self.teams)} equipos disponibles. Seleccione uno para comenzar.")
-
-    def _get_available_teams(self) -> List[Dict]:
-        """Get list of available teams from the collection."""
-        try:
-            collection = self.db_handler.connection.get_collection(self.collection_name)
-            if collection is None:
-                return []
-
-            documents = list(collection.find({}))
-            teams_dict = {}
-
-            for doc in documents:
-                # Try BOXSCORE.TEAM first (primary source)
-                if 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
-                    teams = doc['BOXSCORE']['TEAM']
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict) and 'TOTAL' in team:
-                                team_data = team['TOTAL']
-                                team_code = team_data.get('teamCode', '')
-                                team_name = team_data.get('name', '')
-                                team_id = team_data.get('id', '')
-
-                                if team_code and team_name and team_code not in teams_dict:
-                                    teams_dict[team_code] = {
-                                        'name': team_name,
-                                        'code': team_code,
-                                        'id': team_id,
-                                        'team_index': None
-                                    }
-
-                # Fallback: Try HEADER.TEAM
-                elif 'HEADER' in doc and 'TEAM' in doc['HEADER']:
-                    teams = doc['HEADER']['TEAM']
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict):
-                                team_code = team.get('teamCode', '')
-                                team_name = team.get('name', '')
-                                team_id = team.get('id', '')
-
-                                if team_code and team_name and team_code not in teams_dict:
-                                    teams_dict[team_code] = {
-                                        'name': team_name,
-                                        'code': team_code,
-                                        'id': team_id,
-                                        'team_index': None
-                                    }
-
-            return sorted(teams_dict.values(), key=lambda x: x['name'])
-
-        except Exception as e:
-            return []
 
     def setup_ui(self):
         """Set up the UI components."""
@@ -128,6 +78,14 @@ class ShotChartWindow(QMainWindow):
         self.select_team_button = QPushButton("Seleccionar Equipo")
         self.select_team_button.clicked.connect(self.on_select_team_clicked)
         control_layout.addWidget(self.select_team_button)
+
+        # Player filter
+        control_layout.addWidget(QLabel("Jugador:"))
+        self.player_combo = QComboBox()
+        self.player_combo.addItem("Todos los jugadores")
+        self.player_combo.currentIndexChanged.connect(self.on_player_filter_changed)
+        self.player_combo.setEnabled(False)  # Disabled until team is selected
+        control_layout.addWidget(self.player_combo)
 
         control_layout.addStretch()
 
@@ -241,7 +199,7 @@ class ShotChartWindow(QMainWindow):
     def refresh_teams(self):
         """Refresh the list of available teams."""
         try:
-            self.teams = self._get_available_teams()
+            self.teams = get_available_teams_from_collection(self.db_handler, self.collection_name)
 
             # Clear current selection
             self.current_team = None
@@ -269,6 +227,10 @@ class ShotChartWindow(QMainWindow):
                 if selected_team:
                     self.current_team = selected_team
                     self.team_label.setText(selected_name)
+                    # Reset player combo when changing teams
+                    self.player_combo.clear()
+                    self.player_combo.addItem("Todos los jugadores")
+                    self.player_combo.setEnabled(False)
                     self.status_label.setText(f"Cargando datos para {selected_name}...")
                     QApplication.processEvents()
                     # Generate chart automatically
@@ -381,6 +343,9 @@ class ShotChartWindow(QMainWindow):
             all_shots = []
             documents = collection.find({})
 
+            # Extract player information from BOXSCORE for name mapping
+            players_info = {}  # {dorsal: name}
+
             for doc in documents:
                 if 'SHOTCHART' not in doc or not doc['SHOTCHART']:
                     continue
@@ -389,10 +354,14 @@ class ShotChartWindow(QMainWindow):
                     continue
 
                 shots = doc['SHOTCHART']['SHOTS']
-                team_index = self._get_team_index(doc, team['code'])
+                team_index = get_team_index_in_document(doc, team['code'])
 
                 if team_index is None:
                     continue
+
+                # Extract player names from BOXSCORE using utility function
+                doc_players = extract_player_names_from_boxscore(doc, team_index)
+                players_info.update(doc_players)
 
                 team_shots = [s for s in shots if s.get('team', '') == str(team_index)]
                 all_shots.extend(team_shots)
@@ -405,6 +374,10 @@ class ShotChartWindow(QMainWindow):
 
             self.current_shots = all_shots
             self.current_team = team
+            self.players_info = players_info
+
+            # Extract unique players from shots and populate combo
+            self._populate_player_combo(all_shots, players_info)
 
             self._draw_chart()
 
@@ -416,51 +389,67 @@ class ShotChartWindow(QMainWindow):
             self.status_label.setText("Error al generar gráfico de lanzamiento")
             QMessageBox.critical(self, "Error", f"Error al generar gráfico de lanzamiento: {str(e)}")
 
-    def _get_team_index(self, doc: Dict, team_code: str) -> int:
-        """
-        Determine team index (0 or 1) in a match document.
+    def _populate_player_combo(self, shots: List[Dict], players_info: Dict[str, str]):
+        """Populate player combo box with unique players from shots.
 
         Args:
-            doc: Match document
-            team_code: Team code to search for
-
-        Returns:
-            Team index (0 or 1) or None if not found
+            shots: List of shot dictionaries
+            players_info: Dictionary mapping dorsal number to player name
         """
-        # Check BOXSCORE.TEAM array
-        if 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
-            teams = doc['BOXSCORE']['TEAM']
-            if isinstance(teams, list):
-                for idx, team_data in enumerate(teams):
-                    if isinstance(team_data, dict) and 'TOTAL' in team_data:
-                        if team_data['TOTAL'].get('teamCode', '') == team_code:
-                            return idx
+        # Extract unique players (player field contains dorsal number)
+        players_set = set()
+        for shot in shots:
+            player_dorsal = shot.get('player', '')
+            if player_dorsal:
+                players_set.add(str(player_dorsal))
 
-        # Fallback: check HEADER.TEAM
-        if 'HEADER' in doc and 'TEAM' in doc['HEADER']:
-            teams = doc['HEADER']['TEAM']
-            if isinstance(teams, list):
-                for idx, team_data in enumerate(teams):
-                    if isinstance(team_data, dict):
-                        if team_data.get('teamCode', '') == team_code:
-                            return idx
+        # Sort players by dorsal number
+        sorted_players = sorted(players_set, key=lambda x: int(x) if x.isdigit() else 999)
 
-        return None
+        # Clear and repopulate combo
+        self.player_combo.blockSignals(True)  # Prevent triggering filter during population
+        self.player_combo.clear()
+        self.player_combo.addItem("Todos los jugadores", None)
+
+        for player_dorsal in sorted_players:
+            # Get player name if available
+            player_name = players_info.get(player_dorsal, '')
+            if player_name:
+                display_text = f"#{player_dorsal} - {player_name}"
+            else:
+                display_text = f"#{player_dorsal}"
+            self.player_combo.addItem(display_text, player_dorsal)
+
+        self.player_combo.setCurrentIndex(0)
+        self.player_combo.setEnabled(True)
+        self.player_combo.blockSignals(False)
+
+    def on_player_filter_changed(self):
+        """Handle player filter change and redraw chart."""
+        if self.current_shots:
+            self._draw_chart()
 
     def _draw_chart(self):
         """Draw or redraw the shot chart based on current filter."""
         if not self.current_shots or not self.current_team:
             return
 
-        # Filter shots based on radio button selection
+        # Filter shots based on player selection
+        selected_player = self.player_combo.currentData()
+        if selected_player is not None:
+            player_filtered_shots = [s for s in self.current_shots if str(s.get('player', '')) == selected_player]
+        else:
+            player_filtered_shots = self.current_shots
+
+        # Filter shots based on radio button selection (made/missed)
         if self.radio_made.isChecked():
-            filtered_shots = [s for s in self.current_shots if int(s.get('m', 0)) == 1]
+            filtered_shots = [s for s in player_filtered_shots if int(s.get('m', 0)) == 1]
             filter_text = "Aciertos"
         elif self.radio_missed.isChecked():
-            filtered_shots = [s for s in self.current_shots if int(s.get('m', 0)) == 0]
+            filtered_shots = [s for s in player_filtered_shots if int(s.get('m', 0)) == 0]
             filter_text = "Fallos"
         else:
-            filtered_shots = self.current_shots
+            filtered_shots = player_filtered_shots
             filter_text = "Todos"
 
         # Calculate statistics
@@ -469,7 +458,17 @@ class ShotChartWindow(QMainWindow):
         accuracy = (made_count / total_count * 100) if total_count > 0 else 0
         total_all = len(self.current_shots)
 
-        title = f"{self.current_team['name']}\n{made_count}/{total_count} ({accuracy:.1f}%)"
+        # Build title with player info if filtered
+        if selected_player is not None:
+            # Get player name from combo display text
+            current_index = self.player_combo.currentIndex()
+            if current_index > 0:  # Skip "Todos los jugadores"
+                player_display = self.player_combo.itemText(current_index)
+                title = f"{player_display}\n{made_count}/{total_count} ({accuracy:.1f}%)"
+            else:
+                title = f"{self.current_team['name']}\n{made_count}/{total_count} ({accuracy:.1f}%)"
+        else:
+            title = f"{self.current_team['name']}\n{made_count}/{total_count} ({accuracy:.1f}%)"
 
         self.figure.clear()
 

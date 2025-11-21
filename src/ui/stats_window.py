@@ -23,6 +23,7 @@ from .stats_exporter import StatsExporter
 from .stats_table_manager import StatsTableManager
 from .comparative_mode_manager import ComparativeModeManager
 from .trend_legend_builder import TrendLegendBuilder
+from .team_utils import get_team_data_by_name
 from .stats_filter_constants import RESULT_WON, RESULT_LOST, VENUE_HOME, VENUE_AWAY
 
 
@@ -844,24 +845,17 @@ class TeamStatsWindow(QMainWindow):
                 QMessageBox.warning(self, "Error", "Datos del partido incompletos")
                 return
 
-            # Find which team is the selected one
-            team1_data = teams_data[0].get("TOTAL", {})
-            team2_data = teams_data[1].get("TOTAL", {})
+            # Find which team is the selected one using utility function
+            selected_team_data, selected_idx = get_team_data_by_name(match_doc, selected_team)
 
-            team1_name = team1_data.get("name", "")
-            team2_name = team2_data.get("name", "")
-
-            if selected_team == team1_name:
-                selected_team_data = team1_data
-                opponent_team_data = team2_data
-                selected_is_home = True
-            elif selected_team == team2_name:
-                selected_team_data = team2_data
-                opponent_team_data = team1_data
-                selected_is_home = False
-            else:
+            if selected_team_data is None:
                 QMessageBox.warning(self, "Error", "No se encontró el equipo seleccionado en el partido")
                 return
+
+            # Get opponent data (the other team)
+            opponent_idx = 1 - selected_idx
+            opponent_team_data = teams_data[opponent_idx].get("TOTAL", {})
+            selected_is_home = (selected_idx == 0)
 
             # Calculate match stats for both teams
             selected_stats = self.stats_calculator.calculate_single_match_stats(selected_team_data, opponent_team_data)
