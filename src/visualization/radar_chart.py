@@ -2,7 +2,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Circle
 from matplotlib.projections import PolarAxes
 from typing import Dict, List, Tuple, Optional, Any
 import math
@@ -272,13 +271,10 @@ class RadarChart:
             else:
                 middle_angle = angles[start_idx]
 
-            # Calculate position in Cartesian coordinates
             # Place labels at radius 120 (20% outside the ylim of 100)
             radius = 120
-            x = radius * np.cos(middle_angle - np.pi/2)  # -pi/2 because polar starts at top
-            y = radius * np.sin(middle_angle - np.pi/2)
 
-            # Convert back to polar for text placement
+            # Place text at the calculated angle and radius
             ax.text(middle_angle, radius, group_name,
                    ha='center', va='center',
                    fontsize=13, fontweight='bold',
@@ -286,27 +282,6 @@ class RadarChart:
                    bbox=dict(boxstyle='round,pad=0.6', facecolor='white',
                             edgecolor=color, alpha=0.9, linewidth=2.5),
                    clip_on=False)  # Allow text outside the axes
-
-    def _add_group_legend(self, fig: plt.Figure, ax: PolarAxes):
-        """
-        Add a legend showing the metric groups.
-
-        Args:
-            fig: Figure object
-            ax: Axes object
-        """
-        from matplotlib.patches import Patch
-
-        legend_elements = []
-        for group_name, boundaries in self.group_boundaries.items():
-            patch = Patch(facecolor=boundaries['color'], alpha=0.3,
-                         label=f"{group_name}: {', '.join(boundaries['metrics'][:2])}...")
-            legend_elements.append(patch)
-
-        # Add legend below the chart
-        fig.legend(handles=legend_elements, loc='lower center',
-                  ncol=2, framealpha=0.9, fontsize=9,
-                  bbox_to_anchor=(0.5, -0.05))
 
     def calculate_metrics_from_stats(self, player_stats: Dict[str, Any]) -> Dict[str, float]:
         """
