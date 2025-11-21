@@ -198,6 +198,12 @@ class PlayerStatsWindow(QMainWindow):
 
         filters_layout.addSpacing(20)
 
+        # Add radar chart button
+        radar_btn = QPushButton("📊 Gráfico Radar")
+        radar_btn.setToolTip("Ver gráfico radar comparativo del jugador seleccionado")
+        radar_btn.clicked.connect(self._show_radar_chart)
+        filters_layout.addWidget(radar_btn)
+
         # Add export button with menu
         export_button = QPushButton("📤 Exportar")
         export_button.setToolTip("Exportar tabla actual en diferentes formatos")
@@ -583,6 +589,34 @@ class PlayerStatsWindow(QMainWindow):
         """Export current table to PDF format."""
         window_title = self.windowTitle()
         self.stats_exporter.export_to_pdf(self.table, "Estadisticas_Individuales", window_title)
+
+    def _show_radar_chart(self):
+        """Show radar chart for selected player."""
+        selected_rows = self.table.selectionModel().selectedRows()
+        if not selected_rows:
+            QMessageBox.information(self, "Información",
+                                  "Por favor, seleccione un jugador de la tabla para ver su gráfico radar.")
+            return
+
+        row = selected_rows[0].row()
+        if row >= len(self.filtered_stats):
+            return
+
+        selected_player = self.filtered_stats[row]
+
+        # Import here to avoid circular dependencies
+        from .radar_window import RadarChartWindow
+
+        # Create and show radar window
+        try:
+            radar_window = RadarChartWindow(self.all_player_stats, selected_player, self)
+            radar_window.show()
+        except Exception as e:
+            QMessageBox.critical(self, "Error",
+                               f"Error al abrir el gráfico radar: {str(e)}")
+            print(f"[PlayerStatsWindow] Error opening radar chart: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _calculate_advanced_stats(self):
         """Calculate advanced statistics for all players."""
