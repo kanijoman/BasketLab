@@ -143,7 +143,7 @@ class StatsExporter:
             )
             return False
 
-    def export_to_pdf(self, table: QTableWidget, table_name: str, window_title: str = "") -> bool:
+    def export_to_pdf(self, table: QTableWidget, table_name: str, window_title: str = "", subtitle: str = "") -> bool:
         """
         Export table to PDF document.
 
@@ -151,6 +151,7 @@ class StatsExporter:
             table: Table widget to export
             table_name: Name for the file
             window_title: Optional title for the document
+            subtitle: Optional subtitle for the document
 
         Returns:
             True if export successful, False otherwise
@@ -195,17 +196,30 @@ class StatsExporter:
                 # Apply scaling and render
                 painter.scale(scale, scale)
 
-                # Add title if provided
-                if window_title:
+                # Add title and subtitle if provided
+                y_offset = 0
+                if window_title or subtitle:
                     painter.save()
-                    painter.scale(1/scale, 1/scale)  # Reset scale for title
-                    font = painter.font()
-                    font.setPointSize(16)
-                    font.setBold(True)
-                    painter.setFont(font)
-                    painter.drawText(50, 50, window_title)
+                    painter.scale(1/scale, 1/scale)  # Reset scale for text
+
+                    if window_title:
+                        font = painter.font()
+                        font.setPointSize(16)
+                        font.setBold(True)
+                        painter.setFont(font)
+                        painter.drawText(50, 50, window_title)
+                        y_offset = 80
+
+                    if subtitle:
+                        font = painter.font()
+                        font.setPointSize(12)
+                        font.setBold(False)
+                        painter.setFont(font)
+                        painter.drawText(50, 50 + y_offset, subtitle)
+                        y_offset += 40
+
                     painter.restore()
-                    painter.translate(0, 80 / scale)  # Move down after title
+                    painter.translate(0, y_offset / scale)  # Move down after title/subtitle
 
                 table.render(painter)
 

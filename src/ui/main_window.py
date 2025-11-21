@@ -12,6 +12,7 @@ from .stats_window import TeamStatsWindow
 from .shotchart_window import ShotChartWindow
 from .ai_analysis_window import AIAnalysisWindow
 from .temporal_evolution_window import TemporalEvolutionWindow
+from .ranking_window import PlayerRankingWindow
 from .ui_utils import set_app_icon
 from .team_utils import get_available_teams_from_collection
 
@@ -225,6 +226,28 @@ class BasketballSeasonApp(QMainWindow):
         """)
         layout.addWidget(self.ai_analysis_button)
 
+        # Rankings Button
+        self.rankings_button = QPushButton("🏆 Ránkings")
+        self.rankings_button.clicked.connect(self.on_view_rankings)
+        self.rankings_button.setEnabled(False)  # Disabled by default
+        self.rankings_button.setStyleSheet("""
+            QPushButton {
+                background-color: #E91E63;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #C2185B;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
+        layout.addWidget(self.rankings_button)
+
         # Apply basic styling for a modern look
         self.setStyleSheet("""
             QComboBox, QLabel {
@@ -313,6 +336,7 @@ class BasketballSeasonApp(QMainWindow):
         self.shotchart_button.setEnabled(all_selected)
         self.ai_analysis_button.setEnabled(all_selected)
         self.temporal_button.setEnabled(all_selected)
+        self.rankings_button.setEnabled(all_selected)
 
     def on_view_stats(self) -> None:
         """Handle stats button click - downloads latest data and shows statistics."""
@@ -798,3 +822,52 @@ class BasketballSeasonApp(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al abrir evolución temporal: {str(e)}")
+
+    def on_view_rankings(self) -> None:
+        """Handle rankings button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Aviso",
+                                  "Por favor, seleccione competición, temporada y grupo antes de ver los ránkings.")
+                return
+
+            # Get collection name
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            # Get player stats
+            self.progress_label.setText("Cargando estadísticas de jugadores...")
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+            QApplication.processEvents()
+
+            player_stats = self.db_handler.get_player_stats(collection_name)
+
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            if not player_stats:
+                QMessageBox.information(self, "Sin datos",
+                                      "No hay datos de jugadores disponibles. Por favor, actualice los datos primero.")
+                return
+
+            # Create and show rankings window
+            self.rankings_window = PlayerRankingWindow(
+                player_stats=player_stats,
+                collection_name=collection_name,
+                db_handler=self.db_handler,
+                parent=self
+            )
+            self.rankings_window.show()
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error al cargar los ránkings: {str(e)}")
