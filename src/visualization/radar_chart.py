@@ -111,18 +111,24 @@ class RadarChart:
             # Get player value
             player_value = player_data.get(field_name, 0)
 
-            # Calculate league statistics
-            league_values = [p.get(field_name, 0) for p in league_data if p.get(field_name) is not None]
+            # Calculate league statistics - only filter out None, keep zeros
+            league_values = [p.get(field_name, 0) for p in league_data
+                           if p.get(field_name) is not None]
 
             if not league_values:
                 normalized_values.append(0)
                 league_averages.append(0)
+                print(f"[RadarChart] No league data for {metric} (field: {field_name})")
                 continue
 
             league_avg = np.mean(league_values)
             league_std = np.std(league_values)
             league_min = np.min(league_values)
             league_max = np.max(league_values)
+
+            # Debug: Check if values have variation
+            if league_max - league_min < 0.001:  # Very small range
+                print(f"[RadarChart] WARNING: No variation in {metric} ({field_name}) - min={league_min:.3f}, max={league_max:.3f}, avg={league_avg:.3f}")
 
             # Check if this is a reverse metric (lower is better)
             is_reverse = False
@@ -166,6 +172,13 @@ class RadarChart:
         # Normalize values
         player_values, league_averages = self.normalize_values(player_data, league_data)
 
+        # Debug: Verificar que todos los valores están calculados
+        print(f"[RadarChart] Total metrics: {len(player_values)}")
+        print(f"[RadarChart] Metrics with data:")
+        for i, (metric, p_val, l_val) in enumerate(zip(self.all_metrics, player_values, league_averages)):
+            if p_val > 0 or l_val > 0:
+                print(f"  {metric}: Player={p_val:.1f}, League={l_val:.1f}")
+
         # Number of variables
         num_vars = len(self.all_metrics)
 
@@ -180,12 +193,6 @@ class RadarChart:
 
         # Draw the group backgrounds
         self._draw_group_backgrounds(ax, angles, num_vars)
-
-        # Plot league average line (thin gray line)
-        league_avg_angles = angles + [angles[0]]
-        league_avg_values = league_averages + [league_averages[0]]
-        ax.plot(league_avg_angles, league_avg_values, linewidth=1.5, color='gray',
-                alpha=0.5, linestyle='--')
 
         # Plot player values as colored bars for each group
         bar_width = (angles[1] - angles[0]) * 0.8 if len(angles) > 1 else 0.3
@@ -202,6 +209,12 @@ class RadarChart:
             ax.bar(angles[i], value, width=bar_width, bottom=0,
                    color=color, alpha=0.7, edgecolor='white', linewidth=1)
 
+        # Plot league average line AFTER bars (más gruesa y visible)
+        league_avg_angles = angles + [angles[0]]
+        league_avg_values = league_averages + [league_averages[0]]
+        ax.plot(league_avg_angles, league_avg_values, linewidth=3, color='black',
+                alpha=0.8, linestyle='--', label='Promedio Liga', zorder=100)
+
         # Set the labels for each axis with padding to avoid overlap
         ax.set_xticks(angles)
         ax.set_xticklabels(self.all_metrics, size=10)
@@ -215,6 +228,9 @@ class RadarChart:
 
         # Add grid
         ax.grid(True, linestyle='--', alpha=0.5)
+
+        # Add legend for league average line
+        ax.legend(loc='upper right', bbox_to_anchor=(1.15, 1.1), fontsize=10)
 
         # Add group labels AFTER everything else, using axis coordinates
         self._add_group_labels(ax, angles)
@@ -313,14 +329,31 @@ class RadarChart:
         metrics['drb_pct'] = player_stats.get('drb_pct', 0)
         metrics['drating'] = player_stats.get('drating', 100)
 
-        # Ratios
-        assists = player_stats.get('total_ast', 0)
-        turnovers = player_stats.get('total_to', 1)
-        usage = player_stats.get('usage', 1)
+        # Ratios - check if already calculated, otherwise calculate from raw stats
+        if 'ast_ratio' in player_stats and 'ast_to_ratio' in player_stats and 'ast_usg' in player_stats:
+            # Use pre-calculated values
+            metrics['ast_ratio'] = player_stats.get('ast_ratio', 0)
+            metrics['ast_to_ratio'] = player_stats.get('ast_to_ratio', 0)
+            metrics['ast_usg'] = player_stats.get('ast_usg', 0)
+        else:
+            # Calculate from raw stats
+            assists = player_stats.get('total_assist', 0)
+            turnovers = player_stats.get('total_to', 0)
+            fga = player_stats.get('total_p2a', 0) + player_stats.get('total_p3a', 0)
+            fta = player_stats.get('total_p1a', 0)
+            usage = player_stats.get('usage', 0)
 
-        metrics['ast_ratio'] = (assists * 100) / max(turnovers + assists, 1)
-        metrics['ast_to_ratio'] = assists / max(turnovers, 1)
-        metrics['ast_usg'] = assists / max(usage, 1)
+            # AST Ratio = Porcentaje de posesiones que terminan en asistencia
+            possessions = fga + (0.44 * fta) + assists + turnovers
+            metrics['ast_ratio'] = (100 * assists / possessions) if possessions > 0 else 0
+
+            # AST/TO Ratio = Simple ratio de asistencias por pérdida
+            metrics['ast_to_ratio'] = assists / turnovers if turnovers > 0 else 0
+
+            # AST/USG = ratio of assist percentage to usage percentage
+            ast_pct = player_stats.get('ast_pct', 0)
+            # Scale up to make values more visible (multiply by 100)
+            metrics['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
 
         # Style metrics
         metrics['three_pr'] = player_stats.get('three_pr', 0)

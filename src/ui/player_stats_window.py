@@ -19,6 +19,7 @@ from .stats_config import calculate_quartiles, get_quartile_color
 from .trend_calculator import TrendCalculator
 from .comparative_mode_manager import ComparativeModeManager
 from .trend_legend_builder import TrendLegendBuilder
+from .scouting_report_generator import ScoutingReportGenerator
 
 
 class PlayerStatsWindow(QMainWindow):
@@ -225,6 +226,13 @@ class PlayerStatsWindow(QMainWindow):
         pdf_action.triggered.connect(self._export_pdf)
         pdf_action.setToolTip("Exportar a documento PDF")
         export_menu.addAction(pdf_action)
+
+        export_menu.addSeparator()
+
+        scouting_action = QAction("📋 Informe de Scouting (DOCX)", self)
+        scouting_action.triggered.connect(self._generate_scouting_report)
+        scouting_action.setToolTip("Generar informe de scouting detallado para un equipo")
+        export_menu.addAction(scouting_action)
 
         export_button.setMenu(export_menu)
         filters_layout.addWidget(export_button)
@@ -589,6 +597,154 @@ class PlayerStatsWindow(QMainWindow):
         """Export current table to PDF format."""
         window_title = self.windowTitle()
         self.stats_exporter.export_to_pdf(self.table, "Estadisticas_Individuales", window_title)
+
+    def _generate_scouting_report(self):
+        """Generar informe de scouting en formato DOCX para un equipo."""
+        from PyQt6.QtWidgets import QFileDialog, QInputDialog, QProgressDialog, QApplication
+        from PyQt6.QtCore import Qt
+
+        # Obtener lista de equipos disponibles
+        teams = sorted(set(p['team_name'] for p in self.all_player_stats))
+
+        if not teams:
+            QMessageBox.warning(self, "Aviso", "No hay equipos disponibles para generar informe.")
+            return
+
+        # Solicitar al usuario que seleccione un equipo
+        team_name, ok = QInputDialog.getItem(
+            self,
+            "Seleccionar Equipo",
+            "Seleccione el equipo para el informe de scouting:",
+            teams,
+            0,
+            False
+        )
+
+        if not ok or not team_name:
+            return
+
+        # Solicitar ubicación para guardar el archivo
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Guardar Informe de Scouting",
+            f"Informe_Scouting_{team_name.replace(' ', '_')}.docx",
+            "Documentos Word (*.docx)"
+        )
+
+        if not file_path:
+            return
+
+        # Asegurar extensión .docx
+        if not file_path.lower().endswith('.docx'):
+            file_path += '.docx'
+
+        try:
+            # Crear diálogo de progreso
+            progress = QProgressDialog("Inicializando generación...", "Cancelar", 0, 100, self)
+            progress.setWindowTitle("Generando Informe de Scouting")
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setMinimumDuration(0)
+            progress.setValue(0)
+
+            # Variable para controlar cancelación
+            cancelled = False
+
+            def check_cancelled():
+                nonlocal cancelled
+                cancelled = progress.wasCanceled()
+                return cancelled
+
+            # Callback para actualizar progreso
+            def update_progress(current: int, total: int, player_name: str):
+                if check_cancelled():
+                    return
+                percentage = int((current / total) * 100)
+                progress.setValue(percentage)
+                progress.setLabelText(f"Generando informe para {player_name}... ({current}/{total})")
+                QApplication.processEvents()
+
+            # Obtener datos de tiros si están disponibles
+            shots_data = None
+            if self.db_handler and self.collection_name:
+                try:
+                    progress.setLabelText("Obteniendo datos de tiros...")
+                    QApplication.processEvents()
+
+                    # Obtener datos de tiros de la base de datos
+                    collection = self.db_handler.connection.get_collection(self.collection_name)
+
+                    if collection is not None:
+                        # Buscar todos los partidos que tengan SHOTCHART
+                        matches = collection.find({
+                            "HEADER.TEAM.name": team_name,
+                            "SHOTCHART.SHOTS": {"$exists": True}
+                        })
+
+                        shots_data = []
+                        for match in matches:
+                            if 'SHOTCHART' in match and 'SHOTS' in match['SHOTCHART']:
+                                # Los datos están en SHOTCHART.SHOTS
+                                match_shots = match['SHOTCHART']['SHOTS']
+                                if isinstance(match_shots, list):
+                                    shots_data.extend(match_shots)
+
+                    print(f"[PlayerStatsWindow] Se obtuvieron {len(shots_data) if shots_data else 0} tiros para {team_name}")
+
+                except Exception as e:
+                    print(f"[PlayerStatsWindow] No se pudieron obtener datos de tiros: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            if check_cancelled():
+                return
+
+            # Crear generador de informes (pasar db_handler y collection_name)
+            generator = ScoutingReportGenerator(self.db_handler, self.collection_name)
+
+            # Generar informe
+            success = generator.generate_team_scouting_report(
+                team_name=team_name,
+                collection_name=self.collection_name,
+                output_path=file_path,
+                player_stats=self.all_player_stats,
+                all_player_stats=self.all_player_stats,
+                shots_data=shots_data,
+                progress_callback=update_progress
+            )
+
+            progress.setValue(100)
+            progress.close()
+
+            if cancelled:
+                QMessageBox.information(
+                    self,
+                    "Cancelado",
+                    "Generación de informe cancelada por el usuario."
+                )
+                return
+
+            if success:
+                QMessageBox.information(
+                    self,
+                    "Éxito",
+                    f"Informe de scouting generado correctamente:\n{file_path}"
+                )
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    "No se pudo generar el informe de scouting. Verifique los logs para más detalles."
+                )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Error al generar informe de scouting:\n{str(e)}"
+            )
+            print(f"[PlayerStatsWindow] Error generando informe: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _show_radar_chart(self):
         """Show radar chart for selected player."""
