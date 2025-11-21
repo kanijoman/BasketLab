@@ -13,6 +13,7 @@ from .shotchart_window import ShotChartWindow
 from .ai_analysis_window import AIAnalysisWindow
 from .temporal_evolution_window import TemporalEvolutionWindow
 from .ui_utils import set_app_icon
+from .team_utils import get_available_teams_from_collection
 
 
 class BasketballSeasonApp(QMainWindow):
@@ -600,7 +601,7 @@ class BasketballSeasonApp(QMainWindow):
                 return  # Error message already shown by _update_data_for_ai_analysis
 
             # Build team list from collection documents
-            teams = self._get_available_teams_for_collection(collection_name)
+            teams = get_available_teams_from_collection(self.db_handler, collection_name)
             if not teams:
                 QMessageBox.warning(self, "Sin Datos", "No hay equipos disponibles en esta selección.")
                 return
@@ -726,58 +727,6 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_label.setVisible(False)
             QMessageBox.critical(self, "Error", f"Error actualizando datos: {str(e)}")
             return False
-
-    def _get_available_teams_for_collection(self, collection_name: str) -> List[Dict]:
-        """Extract available teams from a collection (mirrors ShotChartWindow logic)."""
-        try:
-            collection = self.db_handler.connection.get_collection(collection_name)
-            if collection is None:
-                return []
-
-            documents = list(collection.find({}))
-            teams_dict = {}
-
-            for doc in documents:
-                # Primary source: BOXSCORE.TEAM list
-                if 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
-                    teams = doc['BOXSCORE']['TEAM']
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict) and 'TOTAL' in team:
-                                team_data = team['TOTAL']
-                                team_code = team_data.get('teamCode', '')
-                                team_name = team_data.get('name', '')
-                                team_id = team_data.get('id', '')
-
-                                if team_code and team_name and team_code not in teams_dict:
-                                    teams_dict[team_code] = {
-                                        'name': team_name,
-                                        'code': team_code,
-                                        'id': team_id,
-                                        'team_index': None
-                                    }
-
-                # Fallback: HEADER.TEAM
-                elif 'HEADER' in doc and 'TEAM' in doc['HEADER']:
-                    teams = doc['HEADER']['TEAM']
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict):
-                                team_code = team.get('teamCode', '')
-                                team_name = team.get('name', '')
-                                team_id = team.get('id', '')
-
-                                if team_code and team_name and team_code not in teams_dict:
-                                    teams_dict[team_code] = {
-                                        'name': team_name,
-                                        'code': team_code,
-                                        'id': team_id,
-                                        'team_index': None
-                                    }
-
-            return sorted(teams_dict.values(), key=lambda x: x['name'])
-        except Exception:
-            return []
 
     def update_group_options(self) -> None:
         """Update the group dropdown."""

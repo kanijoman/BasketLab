@@ -13,6 +13,7 @@ from .numeric_utils import safe_float
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ai_analysis_window import AIAnalysisWindow
 from .ui_utils import set_app_icon
+from .team_utils import get_team_index_in_document
 import matplotlib.pyplot as plt
 
 
@@ -225,28 +226,8 @@ class AITeamSelector(QDialog):
                 if not shots_list:
                     continue
 
-                # Find team index - check both BOXSCORE.TEAM and HEADER.TEAM
-                team_index = None
-
-                # First try BOXSCORE.TEAM
-                if 'BOXSCORE' in match and 'TEAM' in match['BOXSCORE']:
-                    teams = match['BOXSCORE']['TEAM']
-                    if isinstance(teams, list):
-                        for idx, team_data in enumerate(teams):
-                            if isinstance(team_data, dict) and 'TOTAL' in team_data:
-                                if team_data['TOTAL'].get('teamCode', '') == team_code:
-                                    team_index = idx
-                                    break
-
-                # Fallback to HEADER.TEAM
-                if team_index is None and 'HEADER' in match and 'TEAM' in match['HEADER']:
-                    teams = match['HEADER']['TEAM']
-                    if isinstance(teams, list):
-                        for idx, team_data in enumerate(teams):
-                            if isinstance(team_data, dict):
-                                if team_data.get('teamCode', '') == team_code:
-                                    team_index = idx
-                                    break
+                # Find team index using utility function
+                team_index = get_team_index_in_document(match, team_code)
 
                 if team_index is not None:
                     # Filter shots for this team
