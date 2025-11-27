@@ -118,17 +118,12 @@ class RadarChart:
             if not league_values:
                 normalized_values.append(0)
                 league_averages.append(0)
-                print(f"[RadarChart] No league data for {metric} (field: {field_name})")
                 continue
 
             league_avg = np.mean(league_values)
             league_std = np.std(league_values)
             league_min = np.min(league_values)
             league_max = np.max(league_values)
-
-            # Debug: Check if values have variation
-            if league_max - league_min < 0.001:  # Very small range
-                print(f"[RadarChart] WARNING: No variation in {metric} ({field_name}) - min={league_min:.3f}, max={league_max:.3f}, avg={league_avg:.3f}")
 
             # Check if this is a reverse metric (lower is better)
             is_reverse = False
@@ -171,13 +166,6 @@ class RadarChart:
         """
         # Normalize values
         player_values, league_averages = self.normalize_values(player_data, league_data)
-
-        # Debug: Verificar que todos los valores están calculados
-        print(f"[RadarChart] Total metrics: {len(player_values)}")
-        print(f"[RadarChart] Metrics with data:")
-        for i, (metric, p_val, l_val) in enumerate(zip(self.all_metrics, player_values, league_averages)):
-            if p_val > 0 or l_val > 0:
-                print(f"  {metric}: Player={p_val:.1f}, League={l_val:.1f}")
 
         # Number of variables
         num_vars = len(self.all_metrics)

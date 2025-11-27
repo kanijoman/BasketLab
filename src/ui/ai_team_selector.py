@@ -75,12 +75,17 @@ class AITeamSelector(QDialog):
         self.radio_opponent = QRadioButton("⚔️ Scouting Rival - Estrategia contra oponente")
         self.radio_opponent.setStyleSheet("padding: 5px;")
 
+        self.radio_individual = QRadioButton("👥 Scouting Individual - Informe DOCX con notas de IA")
+        self.radio_individual.setStyleSheet("padding: 5px;")
+
         self.type_button_group = QButtonGroup()
         self.type_button_group.addButton(self.radio_own)
         self.type_button_group.addButton(self.radio_opponent)
+        self.type_button_group.addButton(self.radio_individual)
 
         type_layout.addWidget(self.radio_own)
         type_layout.addWidget(self.radio_opponent)
+        type_layout.addWidget(self.radio_individual)
         type_group.setLayout(type_layout)
         type_group.setStyleSheet("""
             QGroupBox {
@@ -202,7 +207,7 @@ class AITeamSelector(QDialog):
             item.setHidden(search_text not in team_name)
 
     def on_team_selected(self):
-        """Handle team selection and open AI analysis."""
+        """Handle team selection and open AI analysis or generate individual scouting report."""
         current_item = self.team_list.currentItem()
 
         if not current_item:
@@ -213,6 +218,12 @@ class AITeamSelector(QDialog):
         team_name = team.get('name', 'Unknown Team')
         team_code = team.get('teamCode', '')
 
+        # Check if individual scouting was selected
+        if self.radio_individual.isChecked():
+            self._generate_individual_scouting_report(team_name, team_code)
+            return
+
+        # Otherwise, proceed with team analysis (own or opponent)
         try:
             # Get shot data for this team
             all_shots = []
@@ -436,7 +447,255 @@ class AITeamSelector(QDialog):
             import traceback
             traceback.print_exc()
             return {}
+
+    def _generate_individual_scouting_report(self, team_name: str, team_code: str):
+        """Generate individual scouting report with AI-powered notes for each player."""
+        from PyQt6.QtWidgets import QFileDialog, QProgressDialog, QApplication
+        from PyQt6.QtCore import Qt
+        from .scouting_report_generator import ScoutingReportGenerator
+        from .advanced_stats_calculator import AdvancedStatsCalculator
+        from ai import TeamAnalyzer, AnalysisConfig
+
+        try:
+            # Primero, verificar que hay API key configurada
+            if not AnalysisConfig.has_api_key('gemini') and not AnalysisConfig.has_api_key('openai'):
+                QMessageBox.warning(
+                    self,
+                    "API Key Requerida",
+                    "Para generar notas de IA, necesita configurar una API key.\n\n"
+                    "Vaya a la ventana de Análisis IA y configure su API key de Google Gemini (gratis) o OpenAI."
+                )
+                return
+
+            # Solicitar ubicación para guardar el archivo
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Guardar Informe de Scouting Individual",
+                f"Informe_Scouting_Individual_{team_name.replace(' ', '_')}.docx",
+                "Documentos Word (*.docx)"
+            )
+
+            if not file_path:
+                return
+
+            # Asegurar extensión .docx
+            if not file_path.lower().endswith('.docx'):
+                file_path += '.docx'
+
+            # Crear diálogo de progreso
+            progress = QProgressDialog("Inicializando...", "Cancelar", 0, 100, self)
+            progress.setWindowTitle("Generando Informe de Scouting Individual")
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setMinimumDuration(0)
+            progress.setValue(0)
+
+            # Obtener estadísticas de jugadores del equipo
+            progress.setLabelText("Obteniendo estadísticas de jugadores...")
+            QApplication.processEvents()
+
+            player_stats = self.db_handler.get_player_stats(self.collection_name)
+
+            if not player_stats:
+                progress.close()
+                QMessageBox.warning(self, "Sin Datos", "No se pudieron obtener estadísticas de jugadores.")
+                return
+
+            # Filtrar jugadores del equipo seleccionado
+            team_players = [p for p in player_stats if p.get('team_name') == team_name]
+
+            if not team_players:
+                progress.close()
+                QMessageBox.warning(self, "Sin Datos", f"No se encontraron jugadores para {team_name}.")
+                return
+
+            # Calcular estadísticas avanzadas
+            progress.setLabelText("Calculando estadísticas avanzadas...")
+            progress.setValue(10)
+            QApplication.processEvents()
+
+            # Group players by team to get team and opponent stats
+            teams = {}
+            for player in player_stats:
+                team = player['team_name']
+                if team not in teams:
+                    teams[team] = {
+                        'team_stats': self.db_handler.get_aggregated_team_stats(
+                            self.collection_name, team
+                        ),
+                        'opp_stats': self.db_handler.get_aggregated_opponent_stats(
+                            self.collection_name, team
+                        )
+                    }
+
+            # Calculate advanced stats for each player
+            for player in player_stats:
+                team = player['team_name']
+                team_data = teams.get(team, {})
+                team_stats = team_data.get('team_stats', {})
+                opp_stats = team_data.get('opp_stats', {})
+
+                if team_stats and opp_stats:
+                    advanced_stats = AdvancedStatsCalculator.calculate_all_advanced_stats(
+                        player, team_stats, opp_stats
+                    )
+                    player.update(advanced_stats)
+
+                    # Calculate additional metrics needed for radar chart
+                    player['trb_pct'] = player.get('orb_pct', 0) + player.get('drb_pct', 0)
+
+                    # Shooting percentages
+                    fg2_made = player.get('total_p2m', 0)
+                    fg2_attempted = player.get('total_p2a', 0)
+                    player['fg2_pct'] = (fg2_made / fg2_attempted * 100) if fg2_attempted > 0 else 0
+
+                    fg3_made = player.get('total_p3m', 0)
+                    fg3_attempted = player.get('total_p3a', 0)
+                    player['fg3_pct'] = (fg3_made / fg3_attempted * 100) if fg3_attempted > 0 else 0
+
+                    ft_made = player.get('total_p1m', 0)
+                    ft_attempted = player.get('total_p1a', 0)
+                    player['ft_pct'] = (ft_made / ft_attempted * 100) if ft_attempted > 0 else 0
+
+                    # Ratios
+                    total_ast = player.get('total_assist', 0)
+                    total_to = player.get('total_to', 0)
+                    total_fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
+                    total_fta = player.get('total_p1a', 0)
+
+                    possessions = total_fga + (0.44 * total_fta) + total_ast + total_to
+                    player['ast_ratio'] = (100 * total_ast / possessions) if possessions > 0 else 0
+                    player['ast_to_ratio'] = total_ast / total_to if total_to > 0 else 0
+
+                    ast_pct = player.get('ast_pct', 0)
+                    usage = player.get('usage', 0)
+                    player['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
+
+            # Calcular cuartiles de liga para comparación
+            progress.setLabelText("Calculando cuartiles de liga...")
+            progress.setValue(20)
+            QApplication.processEvents()
+
+            league_quartiles = self._calculate_league_quartiles()
+
+            # Generar notas de IA para cada jugador
+            progress.setLabelText("Generando notas de IA...")
+            progress.setValue(30)
+            QApplication.processEvents()
+
+            # Inicializar analizador de IA (preferir Gemini por ser gratis)
+            provider = 'gemini' if AnalysisConfig.has_api_key('gemini') else 'openai'
+            model = 'flash'  # Usar modelo rápido para múltiples llamadas
+
+            try:
+                analyzer = TeamAnalyzer(provider=provider, model=model)
+            except Exception as e:
+                progress.close()
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"No se pudo inicializar el analizador de IA:\n{str(e)}\n\n"
+                    "Verifique su API key en la ventana de Análisis IA."
+                )
+                return
+
+            # Generar notas para cada jugador del equipo
+            ai_notes = {}
+            total_players = len(team_players)
+
+            for i, player in enumerate(team_players, 1):
+                player_name = player.get('player_name', '')
+
+                if progress.wasCanceled():
+                    return
+
+                progress.setLabelText(f"Generando notas de IA para {player_name}... ({i}/{total_players})")
+                progress.setValue(30 + int((i / total_players) * 40))
+                QApplication.processEvents()
+
+                try:
+                    # Generar notas de IA para este jugador
+                    notes = analyzer.analyze_player_for_scouting(
+                        player_name=player_name,
+                        player_stats=player,
+                        league_stats=league_quartiles
+                    )
+                    ai_notes[player_name] = notes
+                except Exception as e:
+                    # Si falla para un jugador, continuar con los demás
+                    ai_notes[player_name] = f"Error generando notas: {str(e)}"
+
+            # Obtener datos de tiros
+            progress.setLabelText("Obteniendo datos de tiros...")
+            progress.setValue(75)
+            QApplication.processEvents()
+
+            shots_data = []
+            collection = self.db_handler.connection.get_collection(self.collection_name)
+
+            if collection is not None:
+                matches = collection.find({
+                    "HEADER.TEAM.name": team_name,
+                    "SHOTCHART.SHOTS": {"$exists": True}
+                })
+
+                for match in matches:
+                    if 'SHOTCHART' in match and 'SHOTS' in match['SHOTCHART']:
+                        match_shots = match['SHOTCHART']['SHOTS']
+                        if isinstance(match_shots, list):
+                            shots_data.extend(match_shots)
+
+            # Generar informe DOCX
+            progress.setLabelText("Generando documento DOCX...")
+            progress.setValue(85)
+            QApplication.processEvents()
+
+            def update_docx_progress(current: int, total: int, player_name: str):
+                if progress.wasCanceled():
+                    return
+                percentage = 85 + int((current / total) * 15)
+                progress.setValue(percentage)
+                progress.setLabelText(f"Generando página para {player_name}... ({current}/{total})")
+                QApplication.processEvents()
+
+            generator = ScoutingReportGenerator(self.db_handler, self.collection_name)
+
+            success = generator.generate_team_scouting_report(
+                team_name=team_name,
+                collection_name=self.collection_name,
+                output_path=file_path,
+                player_stats=player_stats,
+                all_player_stats=player_stats,
+                shots_data=shots_data if shots_data else None,
+                progress_callback=update_docx_progress,
+                ai_notes=ai_notes
+            )
+
+            progress.setValue(100)
+            progress.close()
+
+            if success:
+                QMessageBox.information(
+                    self,
+                    "Éxito",
+                    f"Informe de scouting individual generado correctamente:\n\n{file_path}\n\n"
+                    f"Se generaron notas de IA para {len(ai_notes)} jugadoras."
+                )
+                # Cerrar el diálogo
+                self.accept()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    "No se pudo generar el informe completo. Revise los logs para más detalles."
+                )
+
+        except Exception as e:
+            if 'progress' in locals():
+                progress.close()
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Error al generar informe de scouting individual:\n{str(e)}"
+            )
             import traceback
             traceback.print_exc()
-            return {}
-
