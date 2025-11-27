@@ -29,6 +29,8 @@ from .player_stats_table_populator import PlayerStatsTablePopulator
 from shotcharts.shot_visualizer import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
 from visualization.radar_chart import RadarChart
+from .report_document_builder import ReportDocumentBuilder
+from .player_data_fetcher import PlayerDataFetcher
 
 
 class ScoutingReportGenerator:
@@ -46,7 +48,8 @@ class ScoutingReportGenerator:
         self.collection_name = collection_name
         self.shot_visualizer = ShotChartVisualizer()
         self.zone_analyzer = ZoneAnalyzer()
-        self.photo_cache = {}  # Cache de fotos descargadas
+        self.document_builder = ReportDocumentBuilder()
+        self.data_fetcher = PlayerDataFetcher(db_handler, collection_name)
 
     def generate_team_scouting_report(
         self,
@@ -56,7 +59,8 @@ class ScoutingReportGenerator:
         player_stats: List[Dict],
         all_player_stats: List[Dict],
         shots_data: Optional[List[Dict]] = None,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        ai_notes: Optional[Dict[str, str]] = None
     ) -> bool:
         """
         Genera un informe de scouting completo para todas las jugadoras de un equipo.
@@ -69,6 +73,7 @@ class ScoutingReportGenerator:
             all_player_stats: Lista de estadísticas de todas las jugadoras (para contexto de liga)
             shots_data: Datos de tiros para mapas de calor (opcional)
             progress_callback: Callback para actualizar progreso (opcional)
+            ai_notes: Diccionario opcional con notas generadas por IA {player_name: notes_text}
 
         Returns:
             True si se generó correctamente, False en caso contrario
@@ -113,24 +118,24 @@ class ScoutingReportGenerator:
                     player,
                     all_player_stats,
                     shots_data,
-                    team_name
+                    team_name,
+                    ai_notes
                 )
 
             # Guardar documento
             doc.save(output_path)
 
             # Limpiar fotos temporales del caché
-            self._cleanup_photo_cache()
+            self.data_fetcher.cleanup_photo_cache()
 
             return True
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando informe: {e}")
             import traceback
             traceback.print_exc()
 
             # Limpiar fotos temporales incluso si hay error
-            self._cleanup_photo_cache()
+            self.data_fetcher.cleanup_photo_cache()
 
             return False
 
@@ -140,7 +145,8 @@ class ScoutingReportGenerator:
         player: Dict,
         all_player_stats: List[Dict],
         shots_data: Optional[List[Dict]],
-        team_name: str
+        team_name: str,
+        ai_notes: Optional[Dict[str, str]] = None
     ):
         """
         Añade una página completa para una jugadora.
@@ -151,6 +157,7 @@ class ScoutingReportGenerator:
             all_player_stats: Todas las estadísticas de jugadoras (contexto de liga)
             shots_data: Datos de tiros
             team_name: Nombre del equipo
+            ai_notes: Diccionario opcional con notas de IA por jugadora
         """
         # Sección de datos generales con foto
         self._add_player_header(doc, player, team_name)
@@ -167,8 +174,10 @@ class ScoutingReportGenerator:
         # Sección 4: Perfil de Juego
         self._add_game_profile_section(doc, player, all_player_stats)
 
-        # Sección 5: Notas del cuerpo técnico
-        self._add_notes_section(doc)
+        # Sección 5: Notas del cuerpo técnico (con notas de IA si están disponibles)
+        player_name = player.get('player_name', '')
+        player_ai_notes = ai_notes.get(player_name) if ai_notes else None
+        self._add_notes_section(doc, player_ai_notes)
 
     def _add_player_header(self, doc: Document, player: Dict, team_name: str):
         """
@@ -192,41 +201,41 @@ class ScoutingReportGenerator:
         player_id = player.get('player_id', '')
 
         # Obtener dorsal, URL de foto, y team_id desde el último partido
-        dorsal, photo_url, team_id = self._get_player_dorsal_and_photo(player_id)
+        dorsal, photo_url, team_id = self.data_fetcher.get_player_dorsal_and_photo(player_id)
 
         # Obtener fecha de nacimiento, edad y altura desde FEB
-        birth_date, age, height = self._get_player_birth_info(player_id, team_id)
+        birth_date, age, height = self.data_fetcher.get_player_birth_info(player_id, team_id)
 
         # Posición (no disponible, dejar en blanco)
         position = ""
 
         # Añadir información
         p = left_cell.add_paragraph()
-        self._add_formatted_text(p, f"#{dorsal}# ", bold=True, size=16)
-        self._add_formatted_text(p, player_name, bold=True, size=16)
+        self.document_builder.add_formatted_text(p, f"#{dorsal}# ", bold=True, size=16)
+        self.document_builder.add_formatted_text(p, player_name, bold=True, size=16)
 
         # Fecha de nacimiento y edad
         p = left_cell.add_paragraph()
         if birth_date or age:
             birth_str = birth_date if birth_date else ""
             age_str = f"{age} años" if age else ""
-            self._add_formatted_text(p, f"Fecha de nacimiento: {birth_str}    Edad: {age_str}", size=11)
+            self.document_builder.add_formatted_text(p, f"Fecha de nacimiento: {birth_str}    Edad: {age_str}", size=11)
         else:
-            self._add_formatted_text(p, "Fecha de nacimiento:                    Edad:", size=11)
+            self.document_builder.add_formatted_text(p, "Fecha de nacimiento:                    Edad:", size=11)
 
         # Posición
         p = left_cell.add_paragraph()
         if position:
-            self._add_formatted_text(p, f"Posición: {position}", size=11)
+            self.document_builder.add_formatted_text(p, f"Posición: {position}", size=11)
         else:
-            self._add_formatted_text(p, "Posición:", size=11)
+            self.document_builder.add_formatted_text(p, "Posición:", size=11)
 
         # Altura
         p = left_cell.add_paragraph()
         if height:
-            self._add_formatted_text(p, f"Altura: {height}", size=11)
+            self.document_builder.add_formatted_text(p, f"Altura: {height}", size=11)
         else:
-            self._add_formatted_text(p, "Altura:", size=11)
+            self.document_builder.add_formatted_text(p, "Altura:", size=11)
 
         # Columna derecha: Foto de la jugadora
         right_cell = table.rows[0].cells[1]
@@ -237,7 +246,7 @@ class ScoutingReportGenerator:
         photo_added = False
 
         if photo_url:
-            photo_path = self._download_photo_from_url(photo_url, player_id)
+            photo_path = self.data_fetcher.download_photo_from_url(photo_url, player_id)
             if photo_path and os.path.exists(photo_path):
                 try:
                     p = right_cell.add_paragraph()
@@ -245,9 +254,8 @@ class ScoutingReportGenerator:
                     run = p.add_run()
                     run.add_picture(photo_path, width=Inches(1.2))
                     photo_added = True
-                    print(f"[ScoutingReportGenerator] Foto añadida exitosamente para {player_name}")
                 except Exception as e:
-                    print(f"[ScoutingReportGenerator] Error añadiendo foto: {e}")
+                    pass
 
         # Si no se pudo añadir foto, mostrar placeholder
         if not photo_added:
@@ -259,7 +267,7 @@ class ScoutingReportGenerator:
             run.font.color.rgb = RGBColor(150, 150, 150)
 
         # Añadir borde al placeholder de foto
-        self._set_cell_border(right_cell)
+        self.document_builder.set_cell_border(right_cell)
 
     def _add_basic_stats_section(self, doc: Document, player: Dict, all_player_stats: List[Dict]):
         """
@@ -291,7 +299,7 @@ class ScoutingReportGenerator:
                 run = p.add_run()
                 run.add_picture(stats_image_avg, width=Inches(6.3))
             except Exception as e:
-                print(f"[ScoutingReportGenerator] Error añadiendo imagen de promedios: {e}")
+                pass
 
         # Subtítulo: Totales
         p = doc.add_paragraph()
@@ -309,7 +317,7 @@ class ScoutingReportGenerator:
                 run = p.add_run()
                 run.add_picture(stats_image_total, width=Inches(6.3))
             except Exception as e:
-                print(f"[ScoutingReportGenerator] Error añadiendo imagen de totales: {e}")
+                pass
 
         # Si ambas fallan, usar tabla simple como fallback
         if not (stats_image_avg and stats_image_total):
@@ -342,7 +350,7 @@ class ScoutingReportGenerator:
         for i, header in enumerate(headers):
             cell = stats_table.rows[0].cells[i]
             cell.text = header
-            self._format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Totales
         totals_row = stats_table.rows[1]
@@ -358,7 +366,7 @@ class ScoutingReportGenerator:
         ]
         for i, data in enumerate(totals_data):
             totals_row.cells[i].text = data
-            self._format_cell(totals_row.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(totals_row.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Promedios
         avg_row = stats_table.rows[2]
@@ -381,7 +389,7 @@ class ScoutingReportGenerator:
         ]
         for i, data in enumerate(avg_data):
             avg_row.cells[i].text = data
-            self._format_cell(avg_row.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(avg_row.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Segunda tabla: Más estadísticas
         doc.add_paragraph()  # Espaciado
@@ -393,7 +401,7 @@ class ScoutingReportGenerator:
         for i, header in enumerate(headers2):
             cell = stats_table2.rows[0].cells[i]
             cell.text = header
-            self._format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Totales
         totals_row2 = stats_table2.rows[1]
@@ -409,7 +417,7 @@ class ScoutingReportGenerator:
         ]
         for i, data in enumerate(totals_data2):
             totals_row2.cells[i].text = data
-            self._format_cell(totals_row2.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(totals_row2.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Promedios
         avg_row2 = stats_table2.rows[2]
@@ -432,7 +440,7 @@ class ScoutingReportGenerator:
         ]
         for i, data in enumerate(avg_data2):
             avg_row2.cells[i].text = data
-            self._format_cell(avg_row2.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(avg_row2.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
 
     def _add_advanced_stats_section(self, doc: Document, player: Dict, all_player_stats: List[Dict]):
         """
@@ -458,8 +466,8 @@ class ScoutingReportGenerator:
                 run = p.add_run()
                 run.add_picture(stats_image, width=Inches(6.3))
             except Exception as e:
-                print(f"[ScoutingReportGenerator] Error añadiendo imagen de estadísticas avanzadas: {e}")
                 # Si falla, usar tabla simple como fallback
+                pass
                 self._add_advanced_stats_table_fallback(doc, player)
         else:
             # Fallback a tabla simple
@@ -485,7 +493,7 @@ class ScoutingReportGenerator:
         for i, header in enumerate(headers):
             cell = stats_table.rows[0].cells[i]
             cell.text = header
-            self._format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Valores
         values_row = stats_table.rows[1]
@@ -502,7 +510,7 @@ class ScoutingReportGenerator:
         ]
         for i, value in enumerate(values):
             values_row.cells[i].text = value
-            self._format_cell(values_row.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(values_row.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Segunda fila de estadísticas avanzadas
         doc.add_paragraph()  # Espaciado
@@ -514,7 +522,7 @@ class ScoutingReportGenerator:
         for i, header in enumerate(headers2):
             cell = stats_table2.rows[0].cells[i]
             cell.text = header
-            self._format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(cell, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER)
 
         # Valores
         values_row2 = stats_table2.rows[1]
@@ -528,7 +536,7 @@ class ScoutingReportGenerator:
         ]
         for i, value in enumerate(values2):
             values_row2.cells[i].text = value
-            self._format_cell(values_row2.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
+            self.document_builder.format_cell(values_row2.cells[i], align=WD_ALIGN_PARAGRAPH.CENTER)
 
     def _add_shooting_profile_section(
         self,
@@ -553,30 +561,23 @@ class ScoutingReportGenerator:
         if not shots_data:
             p = doc.add_paragraph()
             p.add_run("No hay datos de tiros disponibles.").italic = True
-            print(f"[ScoutingReportGenerator] No hay shots_data para {player.get('player_name', '')}")
             return
 
         try:
             # Obtener dorsal de la jugadora
             player_id = player.get('player_id', '')
-            dorsal, _, _ = self._get_player_dorsal_and_photo(player_id)
+            dorsal, _, _ = self.data_fetcher.get_player_dorsal_and_photo(player_id)
 
             if not dorsal:
                 p = doc.add_paragraph()
                 p.add_run("No se pudo obtener el dorsal de la jugadora.").italic = True
-                print(f"[ScoutingReportGenerator] No se pudo obtener dorsal para {player.get('player_name', '')}")
                 return
-
-            print(f"[ScoutingReportGenerator] Buscando tiros para jugadora {player.get('player_name', '')} con dorsal {dorsal}")
-            print(f"[ScoutingReportGenerator] Total de tiros disponibles: {len(shots_data)}")
 
             # Filtrar tiros de esta jugadora
             player_shots = [
                 shot for shot in shots_data
                 if str(shot.get('player', '')) == str(dorsal)
             ]
-
-            print(f"[ScoutingReportGenerator] Tiros filtrados para jugadora: {len(player_shots)}")
 
             if not player_shots:
                 p = doc.add_paragraph()
@@ -625,7 +626,6 @@ class ScoutingReportGenerator:
                     pass
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando perfil de lanzamiento: {e}")
             p = doc.add_paragraph()
             p.add_run("Error al generar gráficos de lanzamiento.").italic = True
 
@@ -667,18 +667,18 @@ class ScoutingReportGenerator:
                 p.add_run("No se pudo generar el radar chart.").italic = True
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando perfil de juego: {e}")
             import traceback
             traceback.print_exc()
             p = doc.add_paragraph()
             p.add_run("Error al generar radar chart.").italic = True
 
-    def _add_notes_section(self, doc: Document):
+    def _add_notes_section(self, doc: Document, ai_notes: Optional[str] = None):
         """
         Añade la sección de notas para el cuerpo técnico.
 
         Args:
             doc: Documento DOCX
+            ai_notes: Notas generadas por IA (opcional)
         """
         # Título de sección
         heading = doc.add_heading('5. Notas del Cuerpo Técnico', level=2)
@@ -686,251 +686,47 @@ class ScoutingReportGenerator:
         # Reducir espaciado después del título
         heading.paragraph_format.space_after = Pt(6)
 
-        # Añadir texto placeholder para notas
-        p = doc.add_paragraph()
-        run = p.add_run("[Espacio para observaciones y notas del cuerpo técnico]")
-        run.italic = True
-        run.font.color.rgb = RGBColor(120, 120, 120)
-        # Sin espaciado después
-        p.paragraph_format.space_after = Pt(0)
+        # Si hay notas de IA, añadirlas
+        if ai_notes:
+            # Procesar las notas para mantener formato con bullets
+            for line in ai_notes.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Detectar si es un encabezado (FORTALEZAS, DEBILIDADES, PERFIL)
+                if line.startswith('**') and line.endswith('**'):
+                    # Es un encabezado
+                    p = doc.add_paragraph()
+                    run = p.add_run(line.replace('**', ''))
+                    run.font.bold = True
+                    run.font.size = Pt(11)
+                    p.paragraph_format.space_before = Pt(6)
+                    p.paragraph_format.space_after = Pt(3)
+                elif line.startswith('•') or line.startswith('-'):
+                    # Es un bullet point
+                    text = line.lstrip('•-').strip()
+                    p = doc.add_paragraph(text, style='List Bullet')
+                    p.paragraph_format.space_after = Pt(3)
+                    # Formatear el texto
+                    for run in p.runs:
+                        run.font.size = Pt(10)
+                else:
+                    # Es texto normal
+                    p = doc.add_paragraph(line)
+                    p.paragraph_format.space_after = Pt(3)
+                    for run in p.runs:
+                        run.font.size = Pt(10)
+        else:
+            # Añadir texto placeholder para notas manuales
+            p = doc.add_paragraph()
+            run = p.add_run("[Espacio para observaciones y notas del cuerpo técnico]")
+            run.italic = True
+            run.font.color.rgb = RGBColor(120, 120, 120)
+            # Sin espaciado después
+            p.paragraph_format.space_after = Pt(0)
 
     # Métodos auxiliares
-
-    def _get_player_dorsal_and_photo(self, player_id: str) -> tuple[str, Optional[str], Optional[str]]:
-        """
-        Obtiene el dorsal, la URL de la foto y el team_id de una jugadora desde su último partido.
-
-        Args:
-            player_id: ID de la jugadora
-
-        Returns:
-            Tupla (dorsal, photo_url, team_id). Dorsal como string, photo_url y team_id pueden ser None
-        """
-        if not self.db_handler or not player_id:
-            return "", None, None
-
-        try:
-            # Obtener la colección
-            collection = None
-            if not self.collection_name:
-                print(f"[ScoutingReportGenerator] No se especificó collection_name")
-                return "", None, None
-
-            try:
-                if hasattr(self.db_handler, 'connection'):
-                    collection = self.db_handler.connection.get_collection(self.collection_name)
-                elif hasattr(self.db_handler, 'db'):
-                    collection = self.db_handler.db[self.collection_name]
-            except Exception as e:
-                print(f"[ScoutingReportGenerator] Error accediendo a colección: {e}")
-                return "", None, None
-
-            if collection is None:
-                print(f"[ScoutingReportGenerator] No se pudo obtener la colección {self.collection_name}")
-                return "", None, None
-
-            # Buscar el último partido con esta jugadora (ordenar por fecha descendente)
-            matches = collection.find(
-                {"BOXSCORE.TEAM.PLAYER.id": player_id}
-            ).sort("_id", -1).limit(1)
-
-            match = None
-            for m in matches:
-                match = m
-                break
-
-            if not match:
-                print(f"[ScoutingReportGenerator] No se encontró partido para jugadora {player_id}")
-                return "", None, None
-
-            # Buscar los datos de la jugadora en el partido
-            for team in match.get('BOXSCORE', {}).get('TEAM', []):
-                for player in team.get('PLAYER', []):
-                    if player.get('id') == player_id:
-                        dorsal = player.get('no', '')
-                        photo_url = player.get('logo', '')
-                        team_id = team.get('id', '')
-
-                        print(f"[ScoutingReportGenerator] Encontrado dorsal={dorsal}, foto={photo_url}, team_id={team_id} para jugadora {player_id}")
-
-                        if photo_url and photo_url.startswith('http'):
-                            return dorsal, photo_url, team_id
-                        else:
-                            return dorsal, None, team_id
-
-            print(f"[ScoutingReportGenerator] Jugadora {player_id} no encontrada en datos del partido")
-            return "", None, None
-
-        except Exception as e:
-            print(f"[ScoutingReportGenerator] Error obteniendo dorsal y foto: {e}")
-            import traceback
-            traceback.print_exc()
-            return "", None, None
-
-    def _get_player_birth_info(self, player_id: str, team_id: Optional[str]) -> tuple[Optional[str], Optional[int], Optional[str]]:
-        """
-        Obtiene la fecha de nacimiento, edad y altura de una jugadora desde la página de FEB.
-
-        Args:
-            player_id: ID de la jugadora
-            team_id: ID del equipo
-
-        Returns:
-            Tupla (birth_date, age, height). birth_date como string (formato DD/MM/YYYY),
-            age como int (años), height como string (formato "XXX cm")
-        """
-        if not player_id or not team_id:
-            return None, None, None
-
-        try:
-            url = f"https://baloncestoenvivo.feb.es/jugador/{team_id}/{player_id}"
-            print(f"[ScoutingReportGenerator] Obteniendo info de nacimiento desde: {url}")
-
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.content, 'html.parser')
-
-            # Buscar la fecha de nacimiento y altura en la página
-            # La estructura puede variar, buscar varios patrones comunes
-            birth_date = None
-            age = None
-            height = None
-
-            # Buscar en divs o spans con clase relacionada a datos del jugador
-            info_sections = soup.find_all(['div', 'span', 'p'], class_=lambda x: x and ('dato' in x.lower() or 'info' in x.lower() or 'fecha' in x.lower()))
-
-            for section in info_sections:
-                text = section.get_text(strip=True)
-
-                # Buscar patrón de fecha DD/MM/YYYY o DD-MM-YYYY
-                import re
-                date_match = re.search(r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})', text)
-                if date_match and not birth_date:
-                    day, month, year = date_match.groups()
-                    birth_date = f"{day.zfill(2)}/{month.zfill(2)}/{year}"
-
-                    # Calcular edad
-                    try:
-                        birth_datetime = datetime.strptime(birth_date, "%d/%m/%Y")
-                        today = datetime.now()
-                        age = today.year - birth_datetime.year - ((today.month, today.day) < (birth_datetime.month, birth_datetime.day))
-                    except:
-                        pass
-
-                # Buscar patrón de altura XXX cm
-                height_match = re.search(r'(\d{2,3})\s*cm', text, re.IGNORECASE)
-                if height_match and not height:
-                    height = f"{height_match.group(1)} cm"
-
-            # Si no encontramos en secciones específicas, buscar en todo el texto
-            if not birth_date or not height:
-                page_text = soup.get_text()
-                import re
-
-                if not birth_date:
-                    # Buscar patrón con texto "nacimiento" o "fecha" cerca de una fecha
-                    date_pattern = re.search(r'(?:nacimiento|fecha)[:\s]*(\d{1,2})[/-](\d{1,2})[/-](\d{4})', page_text, re.IGNORECASE)
-                    if date_pattern:
-                        day, month, year = date_pattern.groups()
-                        birth_date = f"{day.zfill(2)}/{month.zfill(2)}/{year}"
-
-                        try:
-                            birth_datetime = datetime.strptime(birth_date, "%d/%m/%Y")
-                            today = datetime.now()
-                            age = today.year - birth_datetime.year - ((today.month, today.day) < (birth_datetime.month, birth_datetime.day))
-                        except:
-                            pass
-
-                if not height:
-                    # Buscar patrón de altura en el texto completo
-                    height_pattern = re.search(r'(?:altura|height)[:\s]*(\d{2,3})\s*cm', page_text, re.IGNORECASE)
-                    if height_pattern:
-                        height = f"{height_pattern.group(1)} cm"
-
-            if birth_date or age or height:
-                print(f"[ScoutingReportGenerator] Encontrado: fecha={birth_date}, edad={age}, altura={height}")
-            else:
-                print(f"[ScoutingReportGenerator] No se encontró información del jugador en {url}")
-
-            return birth_date, age, height
-
-        except requests.exceptions.RequestException as e:
-            print(f"[ScoutingReportGenerator] Error de red obteniendo info del jugador: {e}")
-            return None, None, None
-        except Exception as e:
-            print(f"[ScoutingReportGenerator] Error obteniendo info del jugador: {e}")
-            import traceback
-            traceback.print_exc()
-            return None, None, None
-
-    def _download_photo_from_url(self, photo_url: str, player_id: str) -> Optional[str]:
-        """
-        Descarga una foto desde una URL.
-
-        Args:
-            photo_url: URL de la foto
-            player_id: ID de la jugadora (para caché)
-
-        Returns:
-            Ruta al archivo temporal con la foto, o None si no se pudo descargar
-        """
-        # Verificar si ya está en caché
-        if player_id in self.photo_cache:
-            cached_path = self.photo_cache[player_id]
-            if os.path.exists(cached_path):
-                return cached_path
-
-        try:
-            print(f"[ScoutingReportGenerator] Descargando foto desde: {photo_url}")
-
-            # Descargar la imagen
-            response = requests.get(photo_url, timeout=10)
-            if response.status_code != 200:
-                print(f"[ScoutingReportGenerator] Error HTTP {response.status_code} al descargar foto")
-                return None
-
-            # Guardar en archivo temporal
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-            temp_file.write(response.content)
-            temp_file.close()
-
-            # Procesar la imagen para optimizar tamaño
-            try:
-                with Image.open(temp_file.name) as img:
-                    # Convertir a RGB si es necesario
-                    if img.mode in ('RGBA', 'LA', 'P'):
-                        img = img.convert('RGB')
-
-                    # Redimensionar si es muy grande
-                    max_size = (400, 400)
-                    img.thumbnail(max_size, Image.Resampling.LANCZOS)
-
-                    # Guardar optimizada
-                    img.save(temp_file.name, 'JPEG', quality=85)
-
-                print(f"[ScoutingReportGenerator] Foto procesada correctamente: {temp_file.name}")
-            except Exception as e:
-                print(f"[ScoutingReportGenerator] Error procesando imagen: {e}")
-                # Continuar de todos modos, puede que la imagen original funcione
-
-            # Guardar en caché
-            self.photo_cache[player_id] = temp_file.name
-
-            return temp_file.name
-
-        except requests.RequestException as e:
-            print(f"[ScoutingReportGenerator] Error descargando foto: {e}")
-            return None
-        except Exception as e:
-            print(f"[ScoutingReportGenerator] Error inesperado descargando foto: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
 
     def _calculate_advanced_stats_for_all_players(self, player_stats: List[Dict], collection_name: str):
         """
@@ -1031,71 +827,6 @@ class ScoutingReportGenerator:
                     'ast_usg': 0.0
                 })
 
-    def _cleanup_photo_cache(self):
-        """
-        Limpia las fotos temporales descargadas.
-        """
-        for player_id, photo_path in self.photo_cache.items():
-            try:
-                if photo_path and os.path.exists(photo_path):
-                    os.unlink(photo_path)
-            except Exception as e:
-                print(f"[ScoutingReportGenerator] Error eliminando foto temporal {photo_path}: {e}")
-
-        self.photo_cache.clear()
-
-    def _add_formatted_text(self, paragraph, text: str, bold: bool = False, size: int = 11):
-        """
-        Añade texto formateado a un párrafo.
-
-        Args:
-            paragraph: Párrafo de docx
-            text: Texto a añadir
-            bold: Si debe estar en negrita
-            size: Tamaño de la fuente
-        """
-        run = paragraph.add_run(text)
-        run.font.bold = bold
-        run.font.size = Pt(size)
-
-    def _format_cell(self, cell, bold: bool = False, align = WD_ALIGN_PARAGRAPH.LEFT):
-        """
-        Formatea una celda de tabla.
-
-        Args:
-            cell: Celda a formatear
-            bold: Si el texto debe estar en negrita
-            align: Alineación del texto
-        """
-        for paragraph in cell.paragraphs:
-            paragraph.alignment = align
-            for run in paragraph.runs:
-                run.font.bold = bold
-                run.font.size = Pt(10)
-
-    def _set_cell_border(self, cell, **kwargs):
-        """
-        Establece bordes en una celda.
-
-        Args:
-            cell: Celda a la que añadir bordes
-            **kwargs: Argumentos adicionales para personalizar bordes
-        """
-        tc = cell._element
-        tcPr = tc.get_or_add_tcPr()
-
-        # Create border elements
-        tcBorders = OxmlElement('w:tcBorders')
-        for border_name in ['top', 'left', 'bottom', 'right']:
-            border = OxmlElement(f'w:{border_name}')
-            border.set(qn('w:val'), 'single')
-            border.set(qn('w:sz'), '12')
-            border.set(qn('w:space'), '0')
-            border.set(qn('w:color'), '999999')
-            tcBorders.append(border)
-
-        tcPr.append(tcBorders)
-
     def _generate_stats_image_single_row(self, player: Dict, all_player_stats: List[Dict], view_mode: str) -> Optional[str]:
         """
         Genera una imagen PNG de una fila de estadísticas básicas con coloreado por cuartiles.
@@ -1181,14 +912,11 @@ class ScoutingReportGenerator:
             temp_file.close()
 
             if pixmap.save(temp_file.name, "PNG", quality=100):
-                print(f"[ScoutingReportGenerator] Imagen de estadísticas ({view_mode}) generada: {temp_file.name}")
                 return temp_file.name
             else:
-                print(f"[ScoutingReportGenerator] Error al guardar imagen")
                 return None
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando imagen de estadísticas: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1334,13 +1062,11 @@ class ScoutingReportGenerator:
             temp_file.close()
 
             if pixmap.save(temp_file.name, "PNG", quality=100):
-                print(f"[ScoutingReportGenerator] Imagen de estadísticas avanzadas generada: {temp_file.name}")
                 return temp_file.name
             else:
                 return None
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando imagen de estadísticas avanzadas: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1367,7 +1093,6 @@ class ScoutingReportGenerator:
 
             # Verificar que hay suficientes tiros para generar heatmap (mínimo 3 puntos)
             if made_count < 3:
-                print(f"[ScoutingReportGenerator] Insuficientes aciertos ({made_count}) para generar mapa de calor")
                 return None  # No generar gráfico si hay muy pocos aciertos
 
             # Generar heatmap solo con tiros anotados
@@ -1386,7 +1111,6 @@ class ScoutingReportGenerator:
             return temp_file.name
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando heatmap: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1430,7 +1154,6 @@ class ScoutingReportGenerator:
             return temp_file.name
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando gráfico de zonas: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1483,11 +1206,10 @@ class ScoutingReportGenerator:
 
                 return temp_file.name
             else:
-                print(f"[ScoutingReportGenerator] No se pudo generar canvas para radar chart")
                 return None
 
         except Exception as e:
-            print(f"[ScoutingReportGenerator] Error generando radar chart: {e}")
             import traceback
             traceback.print_exc()
             return None
+
