@@ -639,10 +639,45 @@ class AITeamSelector(QDialog):
                 })
 
                 for match in matches:
-                    if 'SHOTCHART' in match and 'SHOTS' in match['SHOTCHART']:
-                        match_shots = match['SHOTCHART']['SHOTS']
-                        if isinstance(match_shots, list):
-                            shots_data.extend(match_shots)
+                    if 'SHOTCHART' not in match or not match['SHOTCHART']:
+                        continue
+
+                    shotchart = match['SHOTCHART']
+
+                    if 'SHOTS' not in shotchart:
+                        continue
+
+                    # Crear mapeo de (team_idx, dorsal) -> player_id
+                    player_id_map = {}
+                    if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
+                        for team_idx, team_data in enumerate(shotchart['TEAM']):
+                            if 'PLAYER' in team_data and isinstance(team_data['PLAYER'], list):
+                                for player in team_data['PLAYER']:
+                                    dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
+                                    player_id = player.get('id', '')
+                                    player_name = player.get('name', '')
+
+                                    if dorsal and player_id:
+                                        key = (team_idx, str(dorsal))
+                                        player_id_map[key] = {
+                                            'id': player_id,
+                                            'name': player_name
+                                        }
+
+                    # Agregar player_id a cada tiro
+                    match_shots = shotchart['SHOTS']
+                    if isinstance(match_shots, list):
+                        for shot in match_shots:
+                            shot_copy = shot.copy()
+                            team_idx = int(shot.get('team', -1))
+                            dorsal = str(shot.get('player', ''))
+                            key = (team_idx, dorsal)
+
+                            if key in player_id_map:
+                                shot_copy['player_id'] = player_id_map[key]['id']
+                                shot_copy['player_name'] = player_id_map[key]['name']
+
+                            shots_data.append(shot_copy)
 
             # Generar informe DOCX
             progress.setLabelText("Generando documento DOCX...")

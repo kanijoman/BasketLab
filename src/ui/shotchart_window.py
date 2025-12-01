@@ -41,6 +41,7 @@ class ShotChartWindow(QMainWindow):
         self.current_team: Optional[Dict] = None
         self.current_players: List[Dict] = []  # Store player info
         self.players_info: Dict[str, str] = {}  # Map dorsal to name
+        self.player_id_map: Dict[tuple, Dict] = {}  # Map (team_idx, dorsal) -> {id, name}
 
         self.setWindowTitle("MfA - Gráficos de Lanzamiento")
         self.setMinimumSize(900, 700)
@@ -343,8 +344,9 @@ class ShotChartWindow(QMainWindow):
             all_shots = []
             documents = collection.find({})
 
-            # Extract player information from BOXSCORE for name mapping
+            # Extract player information from SHOTCHART.TEAM.PLAYER for ID mapping
             players_info = {}  # {dorsal: name}
+            player_id_map = {}  # {(team_idx, dorsal): {id, name}}
 
             for doc in documents:
                 if 'SHOTCHART' not in doc or not doc['SHOTCHART']:
@@ -359,11 +361,41 @@ class ShotChartWindow(QMainWindow):
                 if team_index is None:
                     continue
 
-                # Extract player names from BOXSCORE using utility function
-                doc_players = extract_player_names_from_boxscore(doc, team_index)
-                players_info.update(doc_players)
+                # Extract player names and IDs from SHOTCHART.TEAM.PLAYER
+                shotchart = doc['SHOTCHART']
+                if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
+                    if team_index < len(shotchart['TEAM']):
+                        team_data = shotchart['TEAM'][team_index]
+                        if 'PLAYER' in team_data and isinstance(team_data['PLAYER'], list):
+                            for player in team_data['PLAYER']:
+                                dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
+                                player_id = player.get('id', '')
+                                player_name = player.get('name', '')
 
-                team_shots = [s for s in shots if s.get('team', '') == str(team_index)]
+                                if dorsal and player_id:
+                                    # Map (team_index, dorsal) to player info
+                                    key = (team_index, str(dorsal))
+                                    player_id_map[key] = {
+                                        'id': player_id,
+                                        'name': player_name,
+                                        'dorsal': str(dorsal)
+                                    }
+                                    # Also keep simple dorsal->name mapping for display
+                                    if dorsal:
+                                        players_info[str(dorsal)] = player_name
+
+                # Add player_id to each shot for proper filtering
+                team_shots = []
+                for shot in shots:
+                    if shot.get('team', '') == str(team_index):
+                        shot_copy = shot.copy()
+                        dorsal = str(shot.get('player', ''))
+                        key = (team_index, dorsal)
+                        if key in player_id_map:
+                            shot_copy['player_id'] = player_id_map[key]['id']
+                            shot_copy['player_name'] = player_id_map[key]['name']
+                        team_shots.append(shot_copy)
+
                 all_shots.extend(team_shots)
 
             if not all_shots:
@@ -375,6 +407,7 @@ class ShotChartWindow(QMainWindow):
             self.current_shots = all_shots
             self.current_team = team
             self.players_info = players_info
+            self.player_id_map = player_id_map
 
             # Extract unique players from shots and populate combo
             self._populate_player_combo(all_shots, players_info)
@@ -396,29 +429,40 @@ class ShotChartWindow(QMainWindow):
             shots: List of shot dictionaries
             players_info: Dictionary mapping dorsal number to player name
         """
-        # Extract unique players (player field contains dorsal number)
-        players_set = set()
+        # Extract unique players by player_id (not just dorsal)
+        players_dict = {}  # {player_id: {dorsal, name}}
         for shot in shots:
+            player_id = shot.get('player_id', '')
             player_dorsal = shot.get('player', '')
-            if player_dorsal:
-                players_set.add(str(player_dorsal))
+            player_name = shot.get('player_name', '')
+
+            if player_id:
+                if player_id not in players_dict:
+                    players_dict[player_id] = {
+                        'dorsal': str(player_dorsal),
+                        'name': player_name or players_info.get(str(player_dorsal), '')
+                    }
 
         # Sort players by dorsal number
-        sorted_players = sorted(players_set, key=lambda x: int(x) if x.isdigit() else 999)
+        sorted_players = sorted(
+            players_dict.items(),
+            key=lambda x: int(x[1]['dorsal']) if x[1]['dorsal'].isdigit() else 999
+        )
 
         # Clear and repopulate combo
         self.player_combo.blockSignals(True)  # Prevent triggering filter during population
         self.player_combo.clear()
         self.player_combo.addItem("Todos los jugadores", None)
 
-        for player_dorsal in sorted_players:
-            # Get player name if available
-            player_name = players_info.get(player_dorsal, '')
-            if player_name:
-                display_text = f"#{player_dorsal} - {player_name}"
+        for player_id, player_info in sorted_players:
+            dorsal = player_info['dorsal']
+            name = player_info['name']
+            if name:
+                display_text = f"#{dorsal} - {name}"
             else:
-                display_text = f"#{player_dorsal}"
-            self.player_combo.addItem(display_text, player_dorsal)
+                display_text = f"#{dorsal}"
+            # Store player_id as data, not dorsal
+            self.player_combo.addItem(display_text, player_id)
 
         self.player_combo.setCurrentIndex(0)
         self.player_combo.setEnabled(True)
@@ -434,10 +478,11 @@ class ShotChartWindow(QMainWindow):
         if not self.current_shots or not self.current_team:
             return
 
-        # Filter shots based on player selection
-        selected_player = self.player_combo.currentData()
-        if selected_player is not None:
-            player_filtered_shots = [s for s in self.current_shots if str(s.get('player', '')) == selected_player]
+        # Filter shots based on player selection (by player_id, not dorsal)
+        selected_player_id = self.player_combo.currentData()
+        if selected_player_id is not None:
+            # Filter by player_id to avoid mixing shots from different players with same dorsal
+            player_filtered_shots = [s for s in self.current_shots if s.get('player_id', '') == selected_player_id]
         else:
             player_filtered_shots = self.current_shots
 
