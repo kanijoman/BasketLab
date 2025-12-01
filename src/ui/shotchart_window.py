@@ -371,7 +371,7 @@ class ShotChartWindow(QMainWindow):
                                 dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
                                 player_id = player.get('id', '')
                                 player_name = player.get('name', '')
-                                
+
                                 if dorsal and player_id:
                                     # Map (team_index, dorsal) to player info
                                     key = (team_index, str(dorsal))
@@ -395,7 +395,7 @@ class ShotChartWindow(QMainWindow):
                             shot_copy['player_id'] = player_id_map[key]['id']
                             shot_copy['player_name'] = player_id_map[key]['name']
                         team_shots.append(shot_copy)
-                
+
                 all_shots.extend(team_shots)
 
             if not all_shots:
@@ -435,7 +435,7 @@ class ShotChartWindow(QMainWindow):
             player_id = shot.get('player_id', '')
             player_dorsal = shot.get('player', '')
             player_name = shot.get('player_name', '')
-            
+
             if player_id:
                 if player_id not in players_dict:
                     players_dict[player_id] = {

@@ -641,12 +641,12 @@ class AITeamSelector(QDialog):
                 for match in matches:
                     if 'SHOTCHART' not in match or not match['SHOTCHART']:
                         continue
-                    
+
                     shotchart = match['SHOTCHART']
-                    
+
                     if 'SHOTS' not in shotchart:
                         continue
-                    
+
                     # Crear mapeo de (team_idx, dorsal) -> player_id
                     player_id_map = {}
                     if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
@@ -656,14 +656,14 @@ class AITeamSelector(QDialog):
                                     dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
                                     player_id = player.get('id', '')
                                     player_name = player.get('name', '')
-                                    
+
                                     if dorsal and player_id:
                                         key = (team_idx, str(dorsal))
                                         player_id_map[key] = {
                                             'id': player_id,
                                             'name': player_name
                                         }
-                    
+
                     # Agregar player_id a cada tiro
                     match_shots = shotchart['SHOTS']
                     if isinstance(match_shots, list):
@@ -672,11 +672,11 @@ class AITeamSelector(QDialog):
                             team_idx = int(shot.get('team', -1))
                             dorsal = str(shot.get('player', ''))
                             key = (team_idx, dorsal)
-                            
+
                             if key in player_id_map:
                                 shot_copy['player_id'] = player_id_map[key]['id']
                                 shot_copy['player_name'] = player_id_map[key]['name']
-                            
+
                             shots_data.append(shot_copy)
 
             # Generar informe DOCX
