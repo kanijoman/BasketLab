@@ -65,6 +65,11 @@ class MongoDBHandler:
         """Get league-wide statistics for advanced calculations."""
         return self.repository.get_league_stats(collection_name)
 
+    def get_player_in_out_stats(self, collection_name: str, player_id: str,
+                                 date_filter: dict = None, debug: bool = False) -> dict:
+        """Get IN/OUT statistics for a specific player. Pass `debug=True` to save per-game raw outputs."""
+        return self.repository.get_player_in_out_stats(collection_name, player_id, date_filter, debug=debug)
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""

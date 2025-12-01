@@ -99,6 +99,8 @@ class PlayerStatsWindow(QMainWindow):
         # Comparative mode tracking
         self.is_comparative_mode = False
         self.comparison_data = None  # Will store the "rest" data for comparison
+        self.original_player_stats = None  # Store original stats when entering comparative mode
+        self.original_teams = None  # Store original teams list
 
         # Get unique teams for filter
         self.teams = sorted(set(p['team_name'] for p in player_stats))
@@ -328,8 +330,10 @@ class PlayerStatsWindow(QMainWindow):
         self.populate_table()
 
     def change_view_mode(self):
-        """Change the view mode (average, total, projection, or advanced)."""
+        """Change the view mode (average, total, projection, advanced, or in_out)."""
         new_mode = self.view_mode_combo.currentData()
+
+        # Normal view mode handling (advanced/basic/projection)
 
         # Check if switching to/from advanced mode
         if new_mode == "advanced" and not self.show_advanced:
@@ -380,6 +384,17 @@ class PlayerStatsWindow(QMainWindow):
             self.show_advanced = False
             self.view_mode = new_mode
 
+            # Restore original data if we were in comparative mode
+            if self.is_comparative_mode and self.original_player_stats:
+                self.all_player_stats = self.original_player_stats
+                self.filtered_stats = self.original_player_stats.copy()
+                self.teams = self.original_teams
+                self.original_player_stats = None
+                self.original_teams = None
+
+            self.is_comparative_mode = False
+            self.comparison_data = None
+
             # Update table structure for basic stats
             self.table.setColumnCount(len(self.PLAYER_COLUMNS))
             self.update_column_headers()
@@ -392,6 +407,17 @@ class PlayerStatsWindow(QMainWindow):
         else:
             # Normal view mode change (within basic stats)
             self.view_mode = new_mode
+
+            # Restore original data if we were in comparative mode
+            if self.is_comparative_mode and self.original_player_stats:
+                self.all_player_stats = self.original_player_stats
+                self.filtered_stats = self.original_player_stats.copy()
+                self.teams = self.original_teams
+                self.original_player_stats = None
+                self.original_teams = None
+
+            self.is_comparative_mode = False
+            self.comparison_data = None
             self.update_column_headers()
 
         self.populate_table()
@@ -1069,4 +1095,188 @@ class PlayerStatsWindow(QMainWindow):
         index = self.team_combo.findText(current_team)
         if index >= 0:
             self.team_combo.setCurrentIndex(index)
+
+    def _load_in_out_comparison(self):
+        """
+        Load IN/OUT comparison data for filtered players.
+
+        This analyzes play-by-play data to calculate team statistics when each player
+        is on the court (IN) versus when they're off the court (OUT).
+
+        Note: This analysis requires games with PLAYBYPLAY data. Games without this
+        data will be excluded from the analysis. Only processes currently filtered players.
+
+        Returns:
+            Tuple of (in_stats, out_stats, comparison_label)
+        """
+        if not self.db_handler or not self.collection_name:
+            QMessageBox.warning(self, "Error",
+                              "Se requiere conexión a la base de datos para análisis IN/OUT")
+            return None, None, None
+
+        # Use filtered stats instead of all stats
+        players_to_process = self.filtered_stats if self.filtered_stats else self.all_player_stats
+
+        try:
+            from PyQt6.QtWidgets import QProgressDialog
+            from PyQt6.QtCore import Qt
+
+            # Show progress dialog
+            progress = QProgressDialog("Iniciando análisis play-by-play...", "Cancelar",
+                                      0, len(players_to_process), self)
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setWindowTitle("Calculando estadísticas IN/OUT")
+            progress.setMinimumDuration(0)  # Show immediately
+            progress.setAutoClose(True)
+            progress.setAutoReset(True)
+
+            in_stats_list = []
+            out_stats_list = []
+            processed_count = 0
+            skipped_count = 0
+
+            for i, player in enumerate(players_to_process):
+                if progress.wasCanceled():
+                    return None, None, None
+
+                player_name = player.get('player_name', 'Jugador')
+                progress.setValue(i)
+                progress.setLabelText(
+                    f"Analizando {player_name}...\n"
+                    f"Procesados: {processed_count}/{len(players_to_process)}\n"
+                    f"Sin datos PBP: {skipped_count}"
+                )
+
+                # Force update the dialog
+                progress.forceShow()
+
+                # Get player's ID (idPlayer from JSON)
+                player_id = player.get('player_id')
+                if not player_id:
+                    skipped_count += 1
+                    continue
+
+                # Get IN/OUT stats from repository
+                in_out_data = self.db_handler.get_player_in_out_stats(
+                    self.collection_name,
+                    player_id
+                )
+
+                if not in_out_data or 'in' not in in_out_data or 'out' not in in_out_data:
+                    skipped_count += 1
+                    continue
+
+                stats_in = in_out_data['in']
+                stats_out = in_out_data['out']
+
+                # Convert to player stats format for IN
+                in_player = self._convert_in_out_to_player_stats(player, stats_in, 'IN')
+                out_player = self._convert_in_out_to_player_stats(player, stats_out, 'OUT')
+
+                if in_player and out_player:
+                    in_stats_list.append(in_player)
+                    out_stats_list.append(out_player)
+                    processed_count += 1
+                else:
+                    skipped_count += 1
+
+            progress.setValue(len(players_to_process))
+
+            if not in_stats_list or not out_stats_list:
+                QMessageBox.warning(self, "Sin datos",
+                                  "No se encontraron datos de play-by-play para calcular estadísticas IN/OUT\n\n"
+                                  f"Jugadores procesados: {processed_count}\n"
+                                  f"Jugadores sin datos: {skipped_count}")
+                return None, None, None
+
+            # Show success message
+            progress.setLabelText(f"✓ Análisis completado\nProcesados: {processed_count} jugadores")
+
+            comparison_label = "Comparación: Jugador EN PISTA vs FUERA"
+            return in_stats_list, out_stats_list, comparison_label
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al calcular estadísticas IN/OUT: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None, None, None
+
+    def _convert_in_out_to_player_stats(self, original_player: Dict, stats: Dict, context: str) -> Dict:
+        """
+        Convert IN/OUT statistics to player stats format.
+
+        Args:
+            original_player: Original player data
+            stats: IN or OUT statistics dictionary
+            context: 'IN' or 'OUT'
+
+        Returns:
+            Player stats dictionary in standard format
+        """
+        try:
+            minutes = stats.get('minutes', 0)
+            games = stats.get('games', 1)
+
+            # Calculate totals
+            points = stats.get('points_for', 0)
+            fgm_2 = stats.get('fgm_2', 0)
+            fga_2 = stats.get('fga_2', 0)
+            fgm_3 = stats.get('fgm_3', 0)
+            fga_3 = stats.get('fga_3', 0)
+            ftm = stats.get('ftm', 0)
+            fta = stats.get('fta', 0)
+            orb = stats.get('orb', 0)
+            drb = stats.get('drb', 0)
+            ast = stats.get('ast', 0)
+            stl = stats.get('stl', 0)
+            blk = stats.get('blk', 0)
+            tov = stats.get('tov', 0)
+            pf = stats.get('pf', 0)
+
+            # Calculate +/-
+            plus_minus = stats.get('points_for', 0) - stats.get('points_against', 0)
+
+            # Calculate percentages
+            ft_pct = (ftm / fta * 100) if fta > 0 else 0
+            fg2_pct = (fgm_2 / fga_2 * 100) if fga_2 > 0 else 0
+            fg3_pct = (fgm_3 / fga_3 * 100) if fga_3 > 0 else 0
+
+            # Calculate valoración (simplified)
+            val = points + (orb + drb) + ast + stl + blk - (fga_2 - fgm_2) - (fga_3 - fgm_3) - (fta - ftm) - tov - pf
+
+            player_stats = {
+                'player_name': original_player.get('player_name'),
+                'player_id': original_player.get('player_id'),
+                'team_name': original_player.get('team_name'),
+                'games_played': games,
+                'total_minutes': minutes,
+                'total_points': points,
+                'total_fta': fta,
+                'total_ftm': ftm,
+                'total_fga_2': fga_2,
+                'total_fgm_2': fgm_2,
+                'total_fga_3': fga_3,
+                'total_fgm_3': fgm_3,
+                'total_orb': orb,
+                'total_drb': drb,
+                'total_reb': orb + drb,
+                'total_ast': ast,
+                'total_stl': stl,
+                'total_tov': tov,
+                'total_blk': blk,
+                'total_pf': pf,
+                'total_fr': 0,  # Not available in play-by-play
+                'total_plus_minus': plus_minus,
+                'total_val': val,
+                'ft_pct': ft_pct,
+                'fg2_pct': fg2_pct,
+                'fg3_pct': fg3_pct,
+            }
+
+            return player_stats
+
+        except Exception as e:
+            print(f"[PlayerStatsWindow] Error converting IN/OUT stats: {e}")
+            return None
+
 

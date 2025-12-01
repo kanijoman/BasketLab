@@ -151,6 +151,64 @@ fig = analyzer.plot_zone_analysis(stats, title='Análisis de Zonas del Equipo')
 plt.show()
 ```
 
+## 🆕 Análisis IN/OUT - Impacto de Jugador
+
+**Nueva funcionalidad** que permite evaluar el impacto real de cada jugador en el rendimiento del equipo utilizando datos de play-by-play.
+
+### ¿Qué es el Análisis IN/OUT?
+
+El análisis IN/OUT compara el rendimiento del equipo cuando un jugador específico está **en la cancha (IN)** versus cuando **no está (OUT)**. Esto permite identificar el verdadero impacto de cada jugador más allá de sus estadísticas individuales.
+
+### Características Principales
+
+- **Análisis Automático**: Procesa datos de play-by-play para rastrear sustituciones
+- **Estadísticas Completas**: Puntos a favor/contra, +/-, tiros, rebotes, asistencias
+- **Visualización Comparativa**: Tabla con tendencias visuales (↑↓→) y colores
+- **Integración Total**: Compatible con exportación y filtros existentes
+
+### Estadísticas Calculadas
+
+#### Cuando el Jugador está IN
+- Puntos del equipo a favor y en contra
+- Plus/Minus (+/-)
+- Tiros de campo (2pt, 3pt, TL) del equipo
+- Rebotes, asistencias, robos, tapones del equipo
+- Pérdidas y faltas del equipo
+- Tiempo en pista
+
+#### Cuando el Jugador está OUT
+- Las mismas métricas del equipo
+- Permite comparación directa
+
+### Uso
+
+1. Abrir **Estadísticas Individuales** desde el menú principal
+2. Seleccionar **"IN/OUT (Jugador en pista vs fuera)"** en el selector de período
+3. El sistema procesará automáticamente los datos play-by-play
+4. Ver tabla comparativa con indicadores de tendencia:
+   - **Flecha Verde (↑)**: Mejor rendimiento cuando está IN
+   - **Flecha Roja (↓)**: Peor rendimiento cuando está IN
+   - **Flecha Gris (→)**: Rendimiento similar
+
+### Casos de Uso
+
+- **Identificar jugadores clave**: ¿Quién realmente hace que el equipo juegue mejor?
+- **Evaluar defensores**: ¿Quién mejora la defensa del equipo?
+- **Optimizar rotaciones**: ¿Qué jugadores deberían tener más minutos?
+- **Detectar especialistas**: ¿Cuándo usar a cada jugador?
+
+### Documentación Completa
+
+- **Guía de Usuario**: [`docs/USER_GUIDE_IN_OUT.md`](docs/USER_GUIDE_IN_OUT.md)
+- **Documentación Técnica**: [`docs/IN_OUT_ANALYSIS.md`](docs/IN_OUT_ANALYSIS.md)
+- **Resumen de Implementación**: [`IMPLEMENTATION_SUMMARY.md`](IMPLEMENTATION_SUMMARY.md)
+- **Ejemplos**: [`src/example_in_out_analysis.py`](src/example_in_out_analysis.py)
+
+### Requisitos
+
+- Partidos con datos de play-by-play (nodo `PLAYBYPLAY.LINES` en JSON)
+- Conexión a MongoDB con colección cargada
+
 ## Arquitectura Técnica
 
 ### Base de Datos (MongoDB)

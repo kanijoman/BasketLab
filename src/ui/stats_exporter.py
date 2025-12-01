@@ -11,7 +11,7 @@ and error reporting through dialogs.
 """
 
 from PyQt6.QtWidgets import QTableWidget, QFileDialog, QMessageBox
-from PyQt6.QtGui import QPainter, QPageLayout, QPageSize
+from PyQt6.QtGui import QPainter, QPageLayout, QPageSize, QPixmap, QFont, QFontMetrics, QColor
 from PyQt6.QtPrintSupport import QPrinter
 from PyQt6.QtCore import Qt
 import csv
@@ -30,7 +30,7 @@ class StatsExporter:
         """
         self.parent = parent_window
 
-    def export_to_csv(self, table: QTableWidget, table_name: str) -> bool:
+    def export_to_csv(self, table: QTableWidget, table_name: str, subtitle: str = "") -> bool:
         """
         Export table to CSV format.
 
@@ -55,6 +55,14 @@ class StatsExporter:
         try:
             with open(file_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
                 writer = csv.writer(csvfile, delimiter=';')
+
+                # If subtitle (e.g., selected player names) provided, write it as first line
+                if subtitle:
+                    # Write subtitle in a single cell, leave others blank
+                    subtitle_row = [subtitle] + [""] * (table.columnCount() - 1)
+                    writer.writerow(subtitle_row)
+                    # Blank separator line
+                    writer.writerow([""] * table.columnCount())
 
                 # Write headers
                 headers = []
@@ -99,7 +107,7 @@ class StatsExporter:
             )
             return False
 
-    def export_to_png(self, table: QTableWidget, table_name: str) -> bool:
+    def export_to_png(self, table: QTableWidget, table_name: str, subtitle: str = "") -> bool:
         """
         Export table to PNG image.
 
@@ -110,10 +118,17 @@ class StatsExporter:
         Returns:
             True if export successful, False otherwise
         """
+        # Include subtitle (player names) in default filename if provided
+        default_name = f"{table_name}"
+        if subtitle:
+            # sanitize subtitle for filename: replace spaces with underscore and truncate
+            safe_sub = subtitle.replace(' ', '_')[:50]
+            default_name = f"{table_name}_{safe_sub}"
+
         file_path, _ = QFileDialog.getSaveFileName(
             self.parent,
             "Exportar PNG",
-            f"{table_name}.png",
+            f"{default_name}.png",
             "PNG Files (*.png)"
         )
 
@@ -124,8 +139,80 @@ class StatsExporter:
             # Create pixmap with table size
             pixmap = table.grab()
 
+            # If subtitle provided, create a larger pixmap and draw subtitle above the table
+            if subtitle:
+                # Prepare font and metrics
+                font = QFont()
+                font.setPointSize(12)
+                metrics = QFontMetrics(font)
+                padding = 12
+
+                # Wrap subtitle into multiple lines to fit the table width (or a minimum width)
+                max_text_width = max(pixmap.width() - 20, 200)
+
+                words = subtitle.split()
+                lines = []
+                cur_line = ""
+                for w in words:
+                    test_line = (cur_line + " " + w).strip() if cur_line else w
+                    if metrics.horizontalAdvance(test_line) <= max_text_width:
+                        cur_line = test_line
+                    else:
+                        if cur_line:
+                            lines.append(cur_line)
+                        # If single word is longer than max, break it forcibly
+                        if metrics.horizontalAdvance(w) > max_text_width:
+                            # break word into chunks
+                            chunk = ""
+                            for ch in w:
+                                if metrics.horizontalAdvance(chunk + ch) <= max_text_width:
+                                    chunk += ch
+                                else:
+                                    if chunk:
+                                        lines.append(chunk)
+                                    chunk = ch
+                            if chunk:
+                                cur_line = chunk
+                            else:
+                                cur_line = ""
+                        else:
+                            cur_line = w
+
+                if cur_line:
+                    lines.append(cur_line)
+
+                # Calculate text block height
+                line_height = metrics.lineSpacing()
+                text_block_height = line_height * len(lines) + padding
+
+                # Determine new image dimensions
+                max_line_width = max((metrics.horizontalAdvance(l) for l in lines), default=0)
+                new_width = max(pixmap.width(), max_line_width + 20)
+                new_height = pixmap.height() + text_block_height + padding
+
+                new_pix = QPixmap(new_width, new_height)
+                new_pix.fill(QColor(255, 255, 255))
+
+                painter = QPainter(new_pix)
+                painter.setFont(font)
+                painter.setPen(QColor(0, 0, 0))
+
+                # Draw each line
+                text_x = 10
+                text_y = padding + metrics.ascent()
+                for i, line in enumerate(lines):
+                    painter.drawText(text_x, text_y + i * line_height, line)
+
+                # Draw table pixmap below subtitle block
+                painter.drawPixmap(0, text_block_height + padding // 2, pixmap)
+                painter.end()
+
+                final_pix = new_pix
+            else:
+                final_pix = pixmap
+
             # Save to file
-            if pixmap.save(file_path, "PNG"):
+            if final_pix.save(file_path, "PNG"):
                 QMessageBox.information(
                     self.parent,
                     "Exportación exitosa",

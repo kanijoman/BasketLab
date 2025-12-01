@@ -211,6 +211,73 @@ class TeamStatsWindow(QMainWindow):
 
         self.tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
 
+        # Create IN/OUT team impact tab
+        inout_tab = QWidget()
+        inout_layout = QVBoxLayout(inout_tab)
+        inout_layout.setSpacing(8)
+        inout_layout.setContentsMargins(6, 6, 6, 6)
+
+        # Controls: team selector and player selector
+        selector_layout = QHBoxLayout()
+        selector_layout.setSpacing(12)
+
+        team_label = QLabel("Equipo:")
+        team_label.setStyleSheet("font-weight: bold;")
+        selector_layout.addWidget(team_label)
+
+        self.inout_team_combo = QComboBox()
+        # populate with teams from provided team_stats
+        teams_list = [t.get('team_name') or t.get('name') for t in team_stats]
+        seen = set()
+        for name in teams_list:
+            if name and name not in seen:
+                seen.add(name)
+                self.inout_team_combo.addItem(name)
+        self.inout_team_combo.currentIndexChanged.connect(self._on_inout_team_changed)
+        selector_layout.addWidget(self.inout_team_combo)
+
+        player_label = QLabel("Jugador:")
+        player_label.setStyleSheet("font-weight: bold;")
+        selector_layout.addWidget(player_label)
+
+        self.inout_player_combo = QComboBox()
+        self.inout_player_combo.setToolTip("Seleccione jugador para análisis IN/OUT de equipo")
+        selector_layout.addWidget(self.inout_player_combo)
+
+        # Second player selector for IN vs IN comparison
+        player2_label = QLabel("Jugador 2:")
+        player2_label.setStyleSheet("font-weight: bold;")
+        selector_layout.addWidget(player2_label)
+
+        self.inout_player2_combo = QComboBox()
+        self.inout_player2_combo.setToolTip("Seleccione segundo jugador para comparar IN vs IN")
+        selector_layout.addWidget(self.inout_player2_combo)
+
+        self.inout_calc_button = QPushButton("Calcular IN/OUT")
+        self.inout_calc_button.clicked.connect(self._on_inout_calculate)
+        selector_layout.addWidget(self.inout_calc_button)
+
+        self.inout_compare_button = QPushButton("Comparar IN vs IN")
+        self.inout_compare_button.setToolTip("Comparar rendimiento del equipo cuando cada jugador está EN PISTA")
+        self.inout_compare_button.clicked.connect(self._on_inout_compare_in)
+        selector_layout.addWidget(self.inout_compare_button)
+
+        selector_layout.addStretch()
+        inout_layout.addLayout(selector_layout)
+
+        # Result table: stat name | IN | OUT | Δ% (Min/J shown as a calculated row)
+        self.inout_table = QTableWidget()
+        self.inout_table.setColumnCount(4)
+        self.inout_table.setHorizontalHeaderLabels(["Estadística", "IN (Equipo)", "OUT (Equipo)", "Δ %"])
+        self.inout_table.setSortingEnabled(False)
+        inout_layout.addWidget(self.inout_table)
+
+        # Info label
+        self.inout_info_label = QLabel("")
+        inout_layout.addWidget(self.inout_info_label)
+
+        self.tab_widget.addTab(inout_tab, "IN/OUT (Impacto en Equipo)")
+
         # Connect tab change event to adjust window size
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
@@ -292,6 +359,10 @@ class TeamStatsWindow(QMainWindow):
         # Calculate and set window size
         self._set_window_size()
 
+        # Initialize IN/OUT players list for first team (if any)
+        if hasattr(self, 'inout_team_combo') and self.inout_team_combo.count() > 0:
+            self._on_inout_team_changed()
+
     def _apply_header_colors(self):
         """Apply background colors to column headers based on their groups."""
         # Apply colors to header sections using class constant
@@ -355,6 +426,9 @@ class TeamStatsWindow(QMainWindow):
             if self.opponent_table and hasattr(self, 'opponents_radio') and self.opponents_radio.isChecked():
                 return self.opponent_table
             return self.advanced_table
+        # If IN/OUT tab (added as third tab) is selected, return the inout table
+        if hasattr(self, 'inout_table') and current_index == 2:
+            return self.inout_table
         return self.advanced_table  # fallback
 
     def _get_current_table_name(self) -> str:
@@ -367,26 +441,111 @@ class TeamStatsWindow(QMainWindow):
             if self.opponent_table and hasattr(self, 'opponents_radio') and self.opponents_radio.isChecked():
                 return "estadisticas_rivales"
             return "estadisticas_avanzadas"
+        # If IN/OUT tab is active, use a distinct name
+        if current_index == 2 and hasattr(self, 'inout_table'):
+            return "inout_comparison"
         return "estadisticas_avanzadas"  # fallback
 
     def _export_csv(self):
         """Export current table to CSV format."""
         table = self._get_current_table()
         table_name = self._get_current_table_name()
-        self.stats_exporter.export_to_csv(table, table_name)
+        subtitle = ""
+        # If exporting IN/OUT tab, include selected team and player(s) names in subtitle
+        if self.tab_widget.currentIndex() == 2 and hasattr(self, 'inout_table'):
+            try:
+                team_name = self.inout_team_combo.currentText() if hasattr(self, 'inout_team_combo') else ''
+            except Exception:
+                team_name = ''
+            names = []
+            try:
+                p1 = self.inout_player_combo.currentText() if hasattr(self, 'inout_player_combo') else ''
+                p2 = self.inout_player2_combo.currentText() if hasattr(self, 'inout_player2_combo') else ''
+                if p1:
+                    names.append(p1)
+                if p2 and p2 != p1:
+                    names.append(p2)
+            except Exception:
+                pass
+
+            if team_name and names:
+                subtitle = f"{team_name} - {', '.join(names)}"
+            elif team_name:
+                subtitle = team_name
+            else:
+                subtitle = ", ".join(names)
+
+            if subtitle:
+                table_name = f"{table_name}_{subtitle.replace(' ', '_')[:40]}"
+
+        self.stats_exporter.export_to_csv(table, table_name, subtitle)
 
     def _export_png(self):
         """Export current table to PNG image."""
         table = self._get_current_table()
         table_name = self._get_current_table_name()
-        self.stats_exporter.export_to_png(table, table_name)
+        subtitle = ""
+        if self.tab_widget.currentIndex() == 2 and hasattr(self, 'inout_table'):
+            try:
+                team_name = self.inout_team_combo.currentText() if hasattr(self, 'inout_team_combo') else ''
+            except Exception:
+                team_name = ''
+            names = []
+            try:
+                p1 = self.inout_player_combo.currentText() if hasattr(self, 'inout_player_combo') else ''
+                p2 = self.inout_player2_combo.currentText() if hasattr(self, 'inout_player2_combo') else ''
+                if p1:
+                    names.append(p1)
+                if p2 and p2 != p1:
+                    names.append(p2)
+            except Exception:
+                pass
+
+            if team_name and names:
+                subtitle = f"{team_name} - {', '.join(names)}"
+            elif team_name:
+                subtitle = team_name
+            else:
+                subtitle = ", ".join(names)
+
+            if subtitle:
+                table_name = f"{table_name}_{subtitle.replace(' ', '_')[:40]}"
+
+        self.stats_exporter.export_to_png(table, table_name, subtitle)
 
     def _export_pdf(self):
         """Export current table to PDF format."""
         table = self._get_current_table()
         table_name = self._get_current_table_name()
         window_title = self.windowTitle()
-        self.stats_exporter.export_to_pdf(table, table_name, window_title)
+        subtitle = ""
+        if self.tab_widget.currentIndex() == 2 and hasattr(self, 'inout_table'):
+            try:
+                team_name = self.inout_team_combo.currentText() if hasattr(self, 'inout_team_combo') else ''
+            except Exception:
+                team_name = ''
+            names = []
+            try:
+                p1 = self.inout_player_combo.currentText() if hasattr(self, 'inout_player_combo') else ''
+                p2 = self.inout_player2_combo.currentText() if hasattr(self, 'inout_player2_combo') else ''
+                if p1:
+                    names.append(p1)
+                if p2 and p2 != p1:
+                    names.append(p2)
+            except Exception:
+                pass
+
+            if team_name and names:
+                subtitle = f"{team_name} - {', '.join(names)}"
+            elif team_name:
+                subtitle = team_name
+            else:
+                subtitle = ", ".join(names)
+
+            if subtitle:
+                table_name = f"{table_name}_{subtitle.replace(' ', '_')[:40]}"
+
+        self.stats_exporter.export_to_pdf(table, table_name, window_title, subtitle)
 
     def _on_view_mode_changed(self):
         """Handle view mode change between Teams and Opponents."""
@@ -398,8 +557,535 @@ class TeamStatsWindow(QMainWindow):
         self.advanced_table.setVisible(not is_opponent_view)
         self.opponent_table.setVisible(is_opponent_view)
 
+    def _on_inout_team_changed(self):
+        """Load player list for selected team into player combo."""
+        team_name = self.inout_team_combo.currentText()
+        self.inout_player_combo.clear()
+        if hasattr(self, 'inout_player2_combo'):
+            self.inout_player2_combo.clear()
+
+        if not self.db_handler or not self.collection_name or not team_name:
+            return
+
+        try:
+            # Find a recent match where this team appears and extract players
+            collection = None
+            if hasattr(self.db_handler, 'connection'):
+                collection = self.db_handler.connection.get_collection(self.collection_name)
+            elif hasattr(self.db_handler, 'db'):
+                collection = self.db_handler.db[self.collection_name]
+
+            if collection is None:
+                return
+
+            # Search for a document containing this team
+            doc = collection.find_one({
+                "$or": [
+                    {"BOXSCORE.TEAM.TOTAL.name": team_name},
+                    {"HEADER.TEAM.name": team_name}
+                ]
+            })
+
+            players = []
+            if doc and 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
+                for team in doc['BOXSCORE']['TEAM']:
+                    total = team.get('TOTAL') if isinstance(team.get('TOTAL'), dict) else team
+                    if total.get('name') == team_name and 'PLAYER' in team:
+                        for p in team.get('PLAYER', []):
+                            name = p.get('name')
+                            pid = p.get('id')
+                            if name and pid:
+                                players.append((name, pid))
+                        break
+
+            # Populate combo
+            for name, pid in players:
+                self.inout_player_combo.addItem(name, pid)
+                if hasattr(self, 'inout_player2_combo'):
+                    self.inout_player2_combo.addItem(name, pid)
+
+        except Exception:
+            return
+
+    def _on_inout_calculate(self):
+        """Calculate IN/OUT team advanced stats for selected player."""
+        team_name = self.inout_team_combo.currentText()
+        player_index = self.inout_player_combo.currentIndex()
+        if player_index < 0:
+            QMessageBox.warning(self, "Selecciona jugador", "Seleccione un jugador válido para calcular IN/OUT")
+            return
+
+        player_id = self.inout_player_combo.currentData()
+        if not player_id:
+            QMessageBox.warning(self, "Selecciona jugador", "Jugador sin id disponible")
+            return
+
+        if not self.db_handler or not self.collection_name:
+            QMessageBox.warning(self, "Error", "Se requiere conexión a la base de datos para calcular IN/OUT")
+            return
+
+        # Fetch IN/OUT aggregated stats from repository
+        try:
+            inout = self.db_handler.get_player_in_out_stats(self.collection_name, player_id)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al obtener datos IN/OUT: {e}")
+            return
+
+        if not inout or 'in' not in inout or 'out' not in inout:
+            QMessageBox.warning(self, "Sin datos", "No hay datos IN/OUT para este jugador/equipo")
+            return
+
+        # Delegate display to helper
+        try:
+            self._display_inout_stats(inout, team_name)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al mostrar datos IN/OUT: {e}")
+        return
+
+    def _display_inout_stats(self, inout: Dict, team_name: str):
+        """Display IN/OUT aggregated stats (shared by DB and file-based reports)."""
+        stats_in = inout['in']
+        stats_out = inout['out']
+
+        # Reset table headers for IN/OUT view
+        self.inout_table.setHorizontalHeaderLabels(["Estadística", "IN (Equipo)", "OUT (Equipo)", "Δ %"])
+
+        # Convert aggregated stats to team_data/opponent_data structures expected by StatsCalculator
+        def build_team_dict(s):
+            return {
+                'name': team_name,
+                'pts': int(s.get('points_for', 0)),
+                'p2m': int(s.get('fgm_2', 0)),
+                'p2a': int(s.get('fga_2', 0)),
+                'p3m': int(s.get('fgm_3', 0)),
+                'p3a': int(s.get('fga_3', 0)),
+                'p1m': int(s.get('ftm', 0)),
+                'p1a': int(s.get('fta', 0)),
+                'ro': int(s.get('orb', 0)),
+                'rd': int(s.get('drb', 0)),
+                'assist': int(s.get('ast', 0)),
+                'st': int(s.get('stl', 0)),
+                'to': int(s.get('tov', 0)),
+                'bs': int(s.get('blk', 0))
+            }
+
+        def build_opp_dict(s):
+            return {
+                'name': 'OPP',
+                'pts': int(s.get('points_against', 0)),
+                'p2m': int(s.get('opp_fgm_2', 0)),
+                'p2a': int(s.get('opp_fga_2', 0)),
+                'p3m': int(s.get('opp_fgm_3', 0)),
+                'p3a': int(s.get('opp_fga_3', 0)),
+                'p1m': int(s.get('opp_ftm', 0)),
+                'p1a': int(s.get('opp_fta', 0)),
+                'ro': int(s.get('opp_orb', 0)),
+                'rd': int(s.get('opp_drb', 0)),
+                'assist': int(s.get('opp_ast', 0)),
+                'st': int(s.get('opp_stl', 0)),
+                'to': int(s.get('opp_tov', 0)),
+                'bs': int(s.get('opp_blk', 0))
+            }
+
+        team_in = build_team_dict(stats_in)
+        opp_in = build_opp_dict(stats_in)
+        team_out = build_team_dict(stats_out)
+        opp_out = build_opp_dict(stats_out)
+
+        # Minutes totals (aggregated across games) for normalization
+        minutes_in = float(stats_in.get('minutes', 0))
+        minutes_out = float(stats_out.get('minutes', 0))
+
+        # Calculate advanced metrics
+        adv_in = self.stats_calculator.calculate_single_match_stats(team_in, opp_in)
+        adv_out = self.stats_calculator.calculate_single_match_stats(team_out, opp_out)
+
+        # Normalize possessions to 40 minutes (if minutes available)
+        try:
+            poss_in = float(adv_in.get('possessions_per_game', 0))
+        except Exception:
+            poss_in = 0.0
+        try:
+            poss_out = float(adv_out.get('possessions_per_game', 0))
+        except Exception:
+            poss_out = 0.0
+
+        if minutes_in > 0:
+            adv_in['possessions_per_40'] = poss_in * (40.0 / minutes_in)
+        else:
+            # Fallback to per-game poss if no minutes info
+            adv_in['possessions_per_40'] = poss_in
+
+        if minutes_out > 0:
+            adv_out['possessions_per_40'] = poss_out * (40.0 / minutes_out)
+        else:
+            adv_out['possessions_per_40'] = poss_out
+
+        # Define display fields
+        # Show Possessions normalized to 40 minutes first, remove raw points
+        display_fields = [
+            ("possessions_per_40", "Poss/40"),
+            ("offensive_rating", "ORtg"),
+            ("defensive_rating", "DRtg"),
+            ("net_rating", "Net"),
+            ("efg_percentage", "eFG%"),
+            ("true_shooting", "TS%"),
+            ("three_point_rate", "3Pr"),
+            ("free_throw_rate", "FTr"),
+            ("assist_rate", "%AST"),
+            ("turnover_rate", "%TO"),
+            ("offensive_rebound_rate", "OR%"),
+            ("defensive_rebound_rate", "DR%")
+        ]
+
+        # We'll show minutes per game as the first calculated row
+        display_rows = [("minutes", "Min/J")] + display_fields
+
+        # Populate table
+        self.inout_table.setRowCount(len(display_rows))
+        # Fields where lower values are better (so improvement is a decrease)
+        lower_is_better = {"defensive_rating", "turnover_rate", "points_against_per_game"}
+
+        # Minutes per game for IN / OUT
+        games_in = int(stats_in.get('games', inout.get('games_analyzed', 1)))
+        games_out = int(stats_out.get('games', inout.get('games_analyzed', 1)))
+        minutes_total_in = float(stats_in.get('minutes', 0))
+        minutes_total_out = float(stats_out.get('minutes', 0))
+        minutes_per_game_in = minutes_total_in / games_in if games_in > 0 else 0.0
+        minutes_per_game_out = minutes_total_out / games_out if games_out > 0 else 0.0
+
+        for row, (key, label) in enumerate(display_rows):
+            self.inout_table.setItem(row, 0, QTableWidgetItem(label))
+
+            # Minutes row is handled specially
+            if key == "minutes":
+                in_text = f"{minutes_per_game_in:.1f}"
+                out_text = f"{minutes_per_game_out:.1f}"
+                in_item = QTableWidgetItem(in_text)
+                out_item = QTableWidgetItem(out_text)
+                self.inout_table.setItem(row, 1, in_item)
+                self.inout_table.setItem(row, 2, out_item)
+
+                # Delta percent relative to OUT for minutes
+                try:
+                    base = float(minutes_per_game_out)
+                    if base != 0:
+                        delta = ((float(minutes_per_game_in) - base) / abs(base)) * 100
+                        delta_text = f"{delta:.1f}%"
+                    else:
+                        delta_text = "N/A"
+                except Exception:
+                    delta_text = "N/A"
+
+                delta_item = QTableWidgetItem(delta_text)
+                self.inout_table.setItem(row, 3, delta_item)
+                # Color the minutes row: higher minutes considered better
+                try:
+                    num_in_m = float(minutes_per_game_in)
+                    num_out_m = float(minutes_per_game_out)
+                    green = QColor(200, 255, 200)
+                    red = QColor(255, 200, 200)
+                    if num_in_m == num_out_m:
+                        pass
+                    elif num_in_m > num_out_m:
+                        in_item.setBackground(green)
+                        out_item.setBackground(QColor(240, 255, 240))
+                        delta_item.setBackground(QColor(200, 255, 200))
+                    else:
+                        in_item.setBackground(red)
+                        out_item.setBackground(QColor(255, 240, 240))
+                        delta_item.setBackground(QColor(255, 200, 200))
+                except Exception:
+                    pass
+
+                continue
+
+            val_in = adv_in.get(key, 0)
+            val_out = adv_out.get(key, 0)
+
+            # Format as percentage for pct fields
+            in_text = f"{val_in:.2f}" if isinstance(val_in, float) else str(val_in)
+            out_text = f"{val_out:.2f}" if isinstance(val_out, float) else str(val_out)
+
+            in_item = QTableWidgetItem(in_text)
+            out_item = QTableWidgetItem(out_text)
+
+            self.inout_table.setItem(row, 1, in_item)
+            self.inout_table.setItem(row, 2, out_item)
+
+            # Delta percent relative to OUT
+            try:
+                base = float(val_out) if val_out is not None else 0
+                if base != 0:
+                    delta = ((float(val_in) - base) / abs(base)) * 100
+                    delta_text = f"{delta:.1f}%"
+                else:
+                    delta_text = "N/A"
+            except Exception:
+                delta_text = "N/A"
+
+            delta_item = QTableWidgetItem(delta_text)
+            self.inout_table.setItem(row, 3, delta_item)
+
+            # Apply coloring: green if IN is better than OUT, red otherwise
+            try:
+                num_in = float(val_in)
+                num_out = float(val_out)
+                improved = False
+                if key in lower_is_better:
+                    # lower is better -> improvement when IN < OUT
+                    improved = num_in < num_out
+                else:
+                    improved = num_in > num_out
+
+                green = QColor(200, 255, 200)
+                red = QColor(255, 200, 200)
+                if num_in == num_out:
+                    # no color when equal
+                    pass
+                elif improved:
+                    in_item.setBackground(green)
+                    out_item.setBackground(QColor(240, 255, 240))
+                    # color delta cell as improvement (green)
+                    delta_item.setBackground(QColor(200, 255, 200))
+                else:
+                    in_item.setBackground(red)
+                    out_item.setBackground(QColor(255, 240, 240))
+                    # color delta cell as worsening (red)
+                    delta_item.setBackground(QColor(255, 200, 200))
+            except Exception:
+                pass
+
+        self.inout_info_label.setText(f"Jugadores analizados (partidos): {inout.get('games_analyzed', 0)}")
+
         # Adjust window size for the new view
         QTimer.singleShot(50, self._adjust_window_size_for_current_tab)
+
+    def _on_inout_compare_in(self):
+        """Compare IN stats for two selected players (IN vs IN)."""
+        team_name = self.inout_team_combo.currentText()
+        idx1 = self.inout_player_combo.currentIndex()
+        idx2 = self.inout_player2_combo.currentIndex() if hasattr(self, 'inout_player2_combo') else -1
+        if idx1 < 0 or idx2 < 0:
+            QMessageBox.warning(self, "Selecciona jugadores", "Seleccione dos jugadores válidos para comparar")
+            return
+
+        player1_id = self.inout_player_combo.currentData()
+        player2_id = self.inout_player2_combo.currentData()
+        player1_name = self.inout_player_combo.currentText()
+        player2_name = self.inout_player2_combo.currentText()
+
+        if not player1_id or not player2_id:
+            QMessageBox.warning(self, "Selecciona jugadores", "Uno de los jugadores no tiene id disponible")
+            return
+
+        if not self.db_handler or not self.collection_name:
+            QMessageBox.warning(self, "Error", "Se requiere conexión a la base de datos para calcular IN/IN")
+            return
+
+        try:
+            inout1 = self.db_handler.get_player_in_out_stats(self.collection_name, player1_id)
+            inout2 = self.db_handler.get_player_in_out_stats(self.collection_name, player2_id)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al obtener datos IN/OUT: {e}")
+            return
+
+        if not inout1 or 'in' not in inout1 or not inout2 or 'in' not in inout2:
+            QMessageBox.warning(self, "Sin datos", "No hay datos IN para uno o ambos jugadores")
+            return
+
+        stats1 = inout1['in']
+        stats2 = inout2['in']
+
+        def build_team_dict_from_in(s, name):
+            return {
+                'name': name,
+                'pts': int(s.get('points_for', 0)),
+                'p2m': int(s.get('fgm_2', 0)),
+                'p2a': int(s.get('fga_2', 0)),
+                'p3m': int(s.get('fgm_3', 0)),
+                'p3a': int(s.get('fga_3', 0)),
+                'p1m': int(s.get('ftm', 0)),
+                'p1a': int(s.get('fta', 0)),
+                'ro': int(s.get('orb', 0)),
+                'rd': int(s.get('drb', 0)),
+                'assist': int(s.get('ast', 0)),
+                'st': int(s.get('stl', 0)),
+                'to': int(s.get('tov', 0)),
+                'bs': int(s.get('blk', 0))
+            }
+
+        def build_opp_from_in(s):
+            return {
+                'name': 'OPP',
+                'pts': int(s.get('points_against', 0)),
+                'p2m': int(s.get('opp_fgm_2', 0)),
+                'p2a': int(s.get('opp_fga_2', 0)),
+                'p3m': int(s.get('opp_fgm_3', 0)),
+                'p3a': int(s.get('opp_fga_3', 0)),
+                'p1m': int(s.get('opp_ftm', 0)),
+                'p1a': int(s.get('opp_fta', 0)),
+                'ro': int(s.get('opp_orb', 0)),
+                'rd': int(s.get('opp_drb', 0)),
+                'assist': int(s.get('opp_ast', 0)),
+                'st': int(s.get('opp_stl', 0)),
+                'to': int(s.get('opp_tov', 0)),
+                'bs': int(s.get('opp_blk', 0))
+            }
+
+        team1 = build_team_dict_from_in(stats1, player1_name)
+        opp1 = build_opp_from_in(stats1)
+        team2 = build_team_dict_from_in(stats2, player2_name)
+        opp2 = build_opp_from_in(stats2)
+
+        minutes1 = float(stats1.get('minutes', 0))
+        minutes2 = float(stats2.get('minutes', 0))
+
+        adv1 = self.stats_calculator.calculate_single_match_stats(team1, opp1)
+        adv2 = self.stats_calculator.calculate_single_match_stats(team2, opp2)
+
+        # Normalize possessions to Poss/40
+        poss1 = float(adv1.get('possessions_per_game', 0))
+        poss2 = float(adv2.get('possessions_per_game', 0))
+        adv1['possessions_per_40'] = poss1 * (40.0 / minutes1) if minutes1 > 0 else poss1
+        adv2['possessions_per_40'] = poss2 * (40.0 / minutes2) if minutes2 > 0 else poss2
+
+        # Display fields (same as IN/OUT view)
+        display_fields = [
+            ("possessions_per_40", "Poss/40"),
+            ("offensive_rating", "ORtg"),
+            ("defensive_rating", "DRtg"),
+            ("net_rating", "Net"),
+            ("efg_percentage", "eFG%"),
+            ("true_shooting", "TS%"),
+            ("three_point_rate", "3Pr"),
+            ("free_throw_rate", "FTr"),
+            ("assist_rate", "%AST"),
+            ("turnover_rate", "%TO"),
+            ("offensive_rebound_rate", "OR%"),
+            ("defensive_rebound_rate", "DR%")
+        ]
+
+        # Include minutes per game as a top row
+        display_rows = [("minutes", "Min/J")] + display_fields
+        self.inout_table.setRowCount(len(display_rows))
+        # Update headers to identify each player
+        self.inout_table.setHorizontalHeaderLabels(["Estadística", f"{player1_name} IN", f"{player2_name} IN", "Δ %"])
+
+        lower_is_better = {"defensive_rating", "turnover_rate", "points_against_per_game"}
+
+        # Compute minutes per game for each player's IN minutes
+        games1 = int(stats1.get('games', inout1.get('games_analyzed', 1)))
+        games2 = int(stats2.get('games', inout2.get('games_analyzed', 1)))
+        minutes_total1 = float(stats1.get('minutes', 0))
+        minutes_total2 = float(stats2.get('minutes', 0))
+        minutes_per_game1 = minutes_total1 / games1 if games1 > 0 else 0.0
+        minutes_per_game2 = minutes_total2 / games2 if games2 > 0 else 0.0
+
+        for row, (key, label) in enumerate(display_rows):
+            self.inout_table.setItem(row, 0, QTableWidgetItem(label))
+
+            # Minutes row
+            if key == "minutes":
+                t1 = f"{minutes_per_game1:.1f}"
+                t2 = f"{minutes_per_game2:.1f}"
+                item1 = QTableWidgetItem(t1)
+                item2 = QTableWidgetItem(t2)
+                self.inout_table.setItem(row, 1, item1)
+                self.inout_table.setItem(row, 2, item2)
+
+                try:
+                    base = float(minutes_per_game2)
+                    if base != 0:
+                        delta = ((float(minutes_per_game1) - base) / abs(base)) * 100
+                        delta_text = f"{delta:.1f}%"
+                    else:
+                        delta_text = "N/A"
+                except Exception:
+                    delta_text = "N/A"
+
+                delta_item = QTableWidgetItem(delta_text)
+                self.inout_table.setItem(row, 3, delta_item)
+                # Color the minutes row: more minutes is considered better
+                try:
+                    num1_m = float(minutes_per_game1)
+                    num2_m = float(minutes_per_game2)
+                    green = QColor(200, 255, 200)
+                    red = QColor(255, 200, 200)
+                    if num1_m == num2_m:
+                        pass
+                    elif num1_m > num2_m:
+                        item1.setBackground(green)
+                        item2.setBackground(QColor(240, 255, 240))
+                        delta_item.setBackground(QColor(200, 255, 200))
+                    else:
+                        item1.setBackground(red)
+                        item2.setBackground(QColor(255, 240, 240))
+                        delta_item.setBackground(QColor(255, 200, 200))
+                except Exception:
+                    pass
+
+                continue
+
+            v1 = adv1.get(key, 0)
+            v2 = adv2.get(key, 0)
+
+            t1 = f"{v1:.2f}" if isinstance(v1, float) else str(v1)
+            t2 = f"{v2:.2f}" if isinstance(v2, float) else str(v2)
+
+            item1 = QTableWidgetItem(t1)
+            item2 = QTableWidgetItem(t2)
+            self.inout_table.setItem(row, 1, item1)
+            self.inout_table.setItem(row, 2, item2)
+
+            try:
+                base = float(v2) if v2 is not None else 0
+                if base != 0:
+                    delta = ((float(v1) - base) / abs(base)) * 100
+                    delta_text = f"{delta:.1f}%"
+                else:
+                    delta_text = "N/A"
+            except Exception:
+                delta_text = "N/A"
+
+            delta_item = QTableWidgetItem(delta_text)
+            self.inout_table.setItem(row, 3, delta_item)
+
+            try:
+                num1 = float(v1)
+                num2 = float(v2)
+                if key in lower_is_better:
+                    improved = num1 < num2
+                else:
+                    improved = num1 > num2
+
+                green = QColor(200, 255, 200)
+                red = QColor(255, 200, 200)
+                if num1 == num2:
+                    pass
+                elif improved:
+                    item1.setBackground(green)
+                    item2.setBackground(QColor(240, 255, 240))
+                    delta_item.setBackground(QColor(200, 255, 200))
+                else:
+                    item1.setBackground(red)
+                    item2.setBackground(QColor(255, 240, 240))
+                    delta_item.setBackground(QColor(255, 200, 200))
+            except Exception:
+                pass
+
+        # Info label: show games analyzed for both players
+        games1 = inout1.get('games_analyzed', 0)
+        games2 = inout2.get('games_analyzed', 0)
+        self.inout_info_label.setText(f"Partidos analizados: {player1_name}={games1}, {player2_name}={games2}")
+
+        QTimer.singleShot(50, self._adjust_window_size_for_current_tab)
+
+        # Ensure headers show player labels are reset after calculation
+        self.inout_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.inout_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.inout_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.inout_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
 
     def _on_tab_changed(self, index: int):
         """

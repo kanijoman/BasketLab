@@ -398,3 +398,269 @@ class BasketballRepository:
         except PyMongoError as e:
             print(f"[BasketballRepository] Error getting league stats: {e}")
             return {}
+
+    def get_games_with_playbyplay(self, collection_name: str, date_filter: Dict = None) -> List[Dict]:
+        """
+        Get all game documents that contain PLAYBYPLAY data.
+
+        Args:
+            collection_name: Name of the collection
+            date_filter: Optional MongoDB date filter dict with datetime object
+
+        Returns:
+            List of game documents with PLAYBYPLAY data
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+
+            # Build match filter
+            match_filter = {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}
+
+            if date_filter:
+                # Add date parsing to the pipeline
+                pipeline = [
+                    {
+                        "$addFields": {
+                            "parsedDate": {
+                                "$dateFromString": {
+                                    "dateString": "$HEADER.starttime",
+                                    "format": "%d-%m-%Y - %H:%M",
+                                    "onError": None,
+                                    "onNull": None
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$match": {
+                            "parsedDate": date_filter,
+                            "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}
+                        }
+                    }
+                ]
+                return list(collection.aggregate(pipeline))
+            else:
+                return list(collection.find(match_filter))
+
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting games with playbyplay: {e}")
+            return []
+
+    def get_player_in_out_stats(self, collection_name: str, player_id: str,
+                                 date_filter: Dict = None, debug: bool = False) -> Dict:
+        """
+        Get IN/OUT statistics for a specific player using play-by-play data.
+
+        Args:
+            collection_name: Name of the collection
+            player_id: Player's ID (idPlayer from JSON)
+            date_filter: Optional MongoDB date filter dict with datetime object
+
+        Returns:
+            Dictionary with 'in' and 'out' statistics and metadata
+        """
+        if not self.connection.is_connected():
+            print("[BasketballRepository] No connection to MongoDB")
+            return {}
+
+        try:
+            from .playbyplay_analyzer import PlayByPlayAnalyzer, InOutStatsCalculator
+
+            # Get all games with play-by-play data
+            games = self.get_games_with_playbyplay(collection_name, date_filter)
+
+            # Find player's team ID from first appearance
+            player_team_id = None
+            for game in games:
+                boxscore = game.get('BOXSCORE', {})
+                teams = boxscore.get('TEAM', [])
+
+                for team in teams:
+                    players = team.get('PLAYER', [])
+                    for player in players:
+                        if player.get('id') == player_id:
+                            player_team_id = team.get('id')
+                            break
+                    if player_team_id:
+                        break
+                if player_team_id:
+                    break
+
+            if not player_team_id:
+                print(f"[BasketballRepository] Could not find team for player {player_id}")
+                return {}
+
+            # Aggregate stats across all games
+            total_stats_in = {
+                'points_for': 0, 'points_against': 0,
+                'fgm_2': 0, 'fga_2': 0, 'fgm_3': 0, 'fga_3': 0,
+                'ftm': 0, 'fta': 0, 'orb': 0, 'drb': 0,
+                'ast': 0, 'stl': 0, 'blk': 0, 'tov': 0, 'pf': 0,
+                'minutes': 0, 'games': 0,
+                # opponent aggregated keys (if provided by analyzer)
+                'opp_fgm_2': 0, 'opp_fga_2': 0, 'opp_fgm_3': 0, 'opp_fga_3': 0,
+                'opp_ftm': 0, 'opp_fta': 0, 'opp_orb': 0, 'opp_drb': 0,
+                'opp_ast': 0, 'opp_stl': 0, 'opp_blk': 0, 'opp_tov': 0, 'opp_pf': 0
+            }
+
+            total_stats_out = {
+                'points_for': 0, 'points_against': 0,
+                'fgm_2': 0, 'fga_2': 0, 'fgm_3': 0, 'fga_3': 0,
+                'ftm': 0, 'fta': 0, 'orb': 0, 'drb': 0,
+                'ast': 0, 'stl': 0, 'blk': 0, 'tov': 0, 'pf': 0,
+                'minutes': 0, 'games': 0,
+                # opponent aggregated keys (if provided by analyzer)
+                'opp_fgm_2': 0, 'opp_fga_2': 0, 'opp_fgm_3': 0, 'opp_fga_3': 0,
+                'opp_ftm': 0, 'opp_fta': 0, 'opp_orb': 0, 'opp_drb': 0,
+                'opp_ast': 0, 'opp_stl': 0, 'opp_blk': 0, 'opp_tov': 0, 'opp_pf': 0
+            }
+
+            games_analyzed = 0
+            debug_outputs = []
+            games_participated = 0
+
+            for game in games:
+                # Default per-game container (to avoid UnboundLocalError in finally)
+                game_stats = {}
+                game_was_skipped = False
+
+                # Determine if player actually played in this game using BOXSCORE minutes
+                def _player_minutes_played(g, pid) -> float:
+                    box = g.get('BOXSCORE', {})
+                    for team in box.get('TEAM', []):
+                        for p in team.get('PLAYER', []):
+                            if p.get('id') == pid:
+                                m = p.get('min')
+                                if m is None:
+                                    return 0.0
+                                if isinstance(m, (int, float)):
+                                    return float(m)
+                                s = str(m).strip()
+                                if s in ('0', '0:00', ''):
+                                    return 0.0
+                                if ':' in s:
+                                    try:
+                                        parts = s.split(':')
+                                        mm = int(parts[0])
+                                        ss = int(parts[1]) if len(parts) > 1 else 0
+                                        return mm + ss / 60.0
+                                    except Exception:
+                                        return 0.0
+                                try:
+                                    return float(s)
+                                except Exception:
+                                    return 0.0
+                    return 0.0
+
+                minutes_played = _player_minutes_played(game, player_id)
+
+                # Determine if the player's team participated in this game
+                def _team_participated(g, team_id) -> bool:
+                    box = g.get('BOXSCORE', {})
+                    for team in box.get('TEAM', []):
+                        if team.get('id') == team_id:
+                            # If there are players listed, consider the team participated
+                            players = team.get('PLAYER', [])
+                            if not players:
+                                return False
+                            # If any player has minutes > 0, the team participated
+                            for p in players:
+                                m = p.get('min')
+                                if m is None:
+                                    continue
+                                if isinstance(m, (int, float)) and m > 0:
+                                    return True
+                                s = str(m).strip()
+                                if s and s not in ('0', '0:00'):
+                                    # treat presence of a non-zero string minute as participation
+                                    return True
+                            # If no player has minutes but players exist, assume team participated
+                            return True
+                    return False
+
+                team_played = _team_participated(game, player_team_id)
+
+                # Count games where the player actually participated (min > 0)
+                if minutes_played > 0.0:
+                    games_participated += 1
+
+                try:
+                    # Skip games where the player's team did not participate
+                    if not team_played:
+                        game_was_skipped = True
+                        if debug:
+                            debug_outputs.append({
+                                'game_id': game.get('_id'),
+                                'skipped': True,
+                                'reason': 'team_not_participating',
+                                'in': None,
+                                'out': None,
+                                'minutes_played': minutes_played,
+                                'player_id': player_id
+                            })
+                        continue
+                    analyzer = PlayByPlayAnalyzer(game)
+                    calculator = InOutStatsCalculator(analyzer)
+
+                    game_stats = calculator.calculate_in_out_stats(player_id, player_team_id)
+
+                    # Accumulate IN stats
+                    for key in list(total_stats_in.keys()):
+                        if key in game_stats.get('in', {}):
+                            total_stats_in[key] += game_stats['in'][key]
+
+                    # Accumulate OUT stats
+                    for key in list(total_stats_out.keys()):
+                        if key in game_stats.get('out', {}):
+                            total_stats_out[key] += game_stats['out'][key]
+
+                    games_analyzed += 1
+
+                except Exception as e:
+                    print(f"[BasketballRepository] Error analyzing game {game.get('_id')}: {e}")
+                    if debug:
+                        import traceback
+                        traceback.print_exc()
+                    continue
+
+                finally:
+                    if debug and not game_was_skipped:
+                        debug_outputs.append({
+                            'game_id': game.get('_id'),
+                            'skipped': False,
+                            'in': game_stats.get('in') if isinstance(game_stats, dict) else None,
+                            'out': game_stats.get('out') if isinstance(game_stats, dict) else None,
+                            'minutes_played': minutes_played,
+                            'player_id': player_id
+                        })
+
+            # Use games_participated as the denominator for per-game minutes (Min/J)
+            total_stats_in['games'] = games_participated
+            total_stats_out['games'] = games_participated
+
+            if debug:
+                # Save debug outputs to a JSON file in repository root
+                try:
+                    import json, os
+                    debug_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"debug_inout_{player_id}.json")
+                    with open(debug_file, 'w', encoding='utf-8') as f:
+                        json.dump(debug_outputs, f, ensure_ascii=False, indent=2)
+                    print(f"[BasketballRepository] Debug IN/OUT written to {debug_file}")
+                except Exception as e:
+                    print(f"[BasketballRepository] Error saving debug file: {e}")
+
+            return {
+                'in': total_stats_in,
+                'out': total_stats_out,
+                'player_id': player_id,
+                'player_team_id': player_team_id,
+                'games_analyzed': games_analyzed
+            }
+
+        except PyMongoError as e:
+            print(f"[BasketballRepository] Error getting player IN/OUT stats: {e}")
+            return {}
