@@ -574,10 +574,16 @@ class ScoutingReportGenerator:
                 return
 
             # Filtrar tiros de esta jugadora
-            player_shots = [
-                shot for shot in shots_data
-                if str(shot.get('player', '')) == str(dorsal)
-            ]
+            # Usar player_id si está disponible, sino usar dorsal
+            player_shots = []
+            for shot in shots_data:
+                # Primero intentar filtrar por player_id para evitar mezclar jugadores con mismo dorsal
+                if shot.get('player_id'):
+                    if str(shot.get('player_id', '')) == str(player_id):
+                        player_shots.append(shot)
+                # Si no hay player_id, usar dorsal (método anterior)
+                elif str(shot.get('player', '')) == str(dorsal):
+                    player_shots.append(shot)
 
             if not player_shots:
                 p = doc.add_paragraph()
