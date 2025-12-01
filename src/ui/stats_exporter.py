@@ -107,37 +107,131 @@ class StatsExporter:
             )
             return False
 
-    def export_to_png(self, table: QTableWidget, table_name: str, subtitle: str = "") -> bool:
+    def export_to_png(self, table: QTableWidget, table_name: str, subtitle: str = "", file_path: Optional[str] = None) -> bool:
         """
         Export table to PNG image.
 
         Args:
             table: Table widget to export
             table_name: Name for the file
+            subtitle: Optional subtitle text
+            file_path: Optional direct file path (skips dialog if provided)
 
         Returns:
             True if export successful, False otherwise
         """
-        # Include subtitle (player names) in default filename if provided
-        default_name = f"{table_name}"
-        if subtitle:
-            # sanitize subtitle for filename: replace spaces with underscore and truncate
-            safe_sub = subtitle.replace(' ', '_')[:50]
-            default_name = f"{table_name}_{safe_sub}"
-
-        file_path, _ = QFileDialog.getSaveFileName(
-            self.parent,
-            "Exportar PNG",
-            f"{default_name}.png",
-            "PNG Files (*.png)"
-        )
-
+        # Track if user selected file manually (to show confirmation dialog)
+        user_selected_file = False
+        
+        # If no file path provided, open dialog
         if not file_path:
-            return False
+            user_selected_file = True
+            # Include subtitle (player names) in default filename if provided
+            default_name = f"{table_name}"
+            if subtitle:
+                # sanitize subtitle for filename: replace spaces with underscore and truncate
+                safe_sub = subtitle.replace(' ', '_')[:50]
+                default_name = f"{table_name}_{safe_sub}"
+
+            file_path, _ = QFileDialog.getSaveFileName(
+                self.parent,
+                "Exportar PNG",
+                f"{default_name}.png",
+                "PNG Files (*.png)"
+            )
+
+            if not file_path:
+                return False
 
         try:
-            # Create pixmap with table size
-            pixmap = table.grab()
+            # For large tables, apply proper resizing before grab
+            from PyQt6.QtWidgets import QHeaderView, QApplication
+            from PyQt6.QtCore import QSize
+            
+            needs_resizing = table.rowCount() > 5 or table.columnCount() > 10
+            
+            if needs_resizing:
+                # Save original state
+                original_size = table.size()
+                original_sorting = table.isSortingEnabled()
+                original_h_scrollbar = table.horizontalScrollBarPolicy()
+                original_v_scrollbar = table.verticalScrollBarPolicy()
+                
+                # Save original resize modes
+                header = table.horizontalHeader()
+                original_modes = []
+                for i in range(table.columnCount()):
+                    original_modes.append(header.sectionResizeMode(i))
+                
+                table.setSortingEnabled(False)
+                
+                # Hide scrollbars
+                table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                
+                # Apply ResizeToContents to all columns (same as stats_window)
+                for i in range(table.columnCount()):
+                    header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+                
+                # Force update
+                table.updateGeometry()
+                QApplication.processEvents()
+                
+                # Calculate total width needed
+                total_width = 0
+                if not table.verticalHeader().isHidden():
+                    total_width += table.verticalHeader().width()
+                
+                for i in range(table.columnCount()):
+                    total_width += table.columnWidth(i)
+                
+                # Add minimal padding for borders and margins
+                total_width += 40  # Reduced from 100
+                
+                # Calculate total height
+                total_height = table.horizontalHeader().height()
+                for i in range(table.rowCount()):
+                    total_height += table.rowHeight(i)
+                
+                # Add minimal margin
+                total_height += 40  # Reduced from 100
+                
+                # Only use minimum sizes if calculated size is unreasonably small
+                # This handles edge cases where table hasn't fully rendered
+                total_width = max(total_width, 800)  # Reasonable minimum, not excessive
+                total_height = max(total_height, 300)  # Reasonable minimum, not excessive
+                
+                # Resize table to exact calculated size
+                table.resize(QSize(total_width, total_height))
+                
+                # Force final update
+                table.updateGeometry()
+                QApplication.processEvents()
+                
+                # Small delay for complete rendering
+                from PyQt6.QtCore import QThread
+                QThread.msleep(100)
+                
+                # Create pixmap with exact size and render table into it
+                pixmap = QPixmap(total_width, total_height)
+                pixmap.fill(Qt.GlobalColor.white)
+                
+                painter = QPainter(pixmap)
+                table.render(painter)
+                painter.end()
+                
+                # Restore original state
+                table.resize(original_size)
+                table.setSortingEnabled(original_sorting)
+                table.setHorizontalScrollBarPolicy(original_h_scrollbar)
+                table.setVerticalScrollBarPolicy(original_v_scrollbar)
+                
+                # Restore original resize modes
+                for i in range(min(len(original_modes), table.columnCount())):
+                    header.setSectionResizeMode(i, original_modes[i])
+            else:
+                # Small table - just grab as is
+                pixmap = table.grab()
 
             # If subtitle provided, create a larger pixmap and draw subtitle above the table
             if subtitle:
@@ -213,11 +307,13 @@ class StatsExporter:
 
             # Save to file
             if final_pix.save(file_path, "PNG"):
-                QMessageBox.information(
-                    self.parent,
-                    "Exportación exitosa",
-                    f"Imagen exportada correctamente a:\n{file_path}"
-                )
+                # Only show confirmation dialog if user selected file manually
+                if user_selected_file:
+                    QMessageBox.information(
+                        self.parent,
+                        "Exportación exitosa",
+                        f"Imagen exportada correctamente a:\n{file_path}"
+                    )
                 return True
             else:
                 raise Exception("No se pudo guardar la imagen")

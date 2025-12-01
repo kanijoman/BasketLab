@@ -2,7 +2,8 @@
 
 import requests
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QComboBox, QLabel,
-                              QProgressBar, QPushButton, QMessageBox, QApplication)
+                              QProgressBar, QPushButton, QMessageBox, QApplication, QDialog)
+from PyQt6.QtCore import QThread
 from typing import List, Dict
 
 from scraper import FEBWebScraper
@@ -13,6 +14,8 @@ from .shotchart_window import ShotChartWindow
 from .ai_analysis_window import AIAnalysisWindow
 from .temporal_evolution_window import TemporalEvolutionWindow
 from .ranking_window import PlayerRankingWindow
+from .weekly_report_dialog import WeeklyReportDialog
+from .weekly_report_generator import WeeklyReportGenerator
 from .ui_utils import set_app_icon
 from .team_utils import get_available_teams_from_collection
 
@@ -248,6 +251,28 @@ class BasketballSeasonApp(QMainWindow):
         """)
         layout.addWidget(self.rankings_button)
 
+        # Weekly Report Button
+        self.weekly_report_button = QPushButton("📋 Informe Semanal")
+        self.weekly_report_button.clicked.connect(self.on_generate_weekly_report)
+        self.weekly_report_button.setEnabled(False)  # Disabled by default
+        self.weekly_report_button.setStyleSheet("""
+            QPushButton {
+                background-color: #FF5722;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #E64A19;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
+        layout.addWidget(self.weekly_report_button)
+
         # Apply basic styling for a modern look
         self.setStyleSheet("""
             QComboBox, QLabel {
@@ -337,6 +362,7 @@ class BasketballSeasonApp(QMainWindow):
         self.ai_analysis_button.setEnabled(all_selected)
         self.temporal_button.setEnabled(all_selected)
         self.rankings_button.setEnabled(all_selected)
+        self.weekly_report_button.setEnabled(all_selected)
 
     def on_view_stats(self) -> None:
         """Handle stats button click - downloads latest data and shows statistics."""
@@ -866,6 +892,137 @@ class BasketballSeasonApp(QMainWindow):
                 parent=self
             )
             self.rankings_window.show()
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error al cargar los ránkings: {str(e)}")
+
+    def on_generate_weekly_report(self) -> None:
+        """Handle weekly report button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+            group_text = self.group_combo.currentText()
+
+            if not all([competition, season_text, group_text]):
+                QMessageBox.warning(self, "Aviso",
+                                  "Por favor, seleccione competición, temporada y grupo antes de generar el informe.")
+                return
+
+            # Get collection name
+            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            # Update data first to ensure we have the latest information
+            season_value = self.season_values.get(season_text, normalize_year(season_text))
+            group_value = self.group_values.get(group_text, group_text)
+            norm_year = normalize_year(season_text)
+            session = requests.Session()
+
+            # Update progress bar visibility
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+
+            self.progress_label.setText("Actualizando datos desde FEB...")
+            QApplication.processEvents()
+
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            if not matches:
+                self.progress_bar.setVisible(False)
+                self.progress_label.setVisible(False)
+                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                return
+
+            self.progress_bar.setMaximum(len(matches))
+            self.progress_bar.setValue(0)
+            QApplication.processEvents()
+
+            # Update matches
+            for i, match_code in enumerate(matches, 1):
+                self.progress_label.setText(f"Actualizando partido {i}/{len(matches)}...")
+                self.progress_bar.setValue(i)
+                QApplication.processEvents()
+
+                try:
+                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                        boxscore = self.scraper.fetch_boxscore(match_code, session)
+                        if boxscore:
+                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                except Exception as e:
+                    print(f"[App] Error processing match {match_code}: {str(e)}")
+
+            # Get available teams
+            self.progress_label.setText("Cargando equipos disponibles...")
+            self.progress_bar.setValue(0)
+            QApplication.processEvents()
+
+            teams = get_available_teams_from_collection(self.db_handler, collection_name)
+            team_names = [team['name'] for team in teams]
+
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            if not team_names:
+                QMessageBox.information(self, "Sin equipos",
+                                      "No hay equipos disponibles en la base de datos.")
+                return
+
+            # Show dialog to select teams and output folder
+            dialog = WeeklyReportDialog(team_names, self)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return
+
+            config = dialog.get_configuration()
+            if not config:
+                return
+
+            # Create progress dialog
+            progress_dialog = QMessageBox(self)
+            progress_dialog.setIcon(QMessageBox.Icon.Information)
+            progress_dialog.setWindowTitle("Generando Informe Semanal")
+            progress_dialog.setText("Generando informes, por favor espere...")
+            progress_dialog.setStandardButtons(QMessageBox.StandardButton.NoButton)
+            progress_dialog.show()
+            QApplication.processEvents()
+
+            # Generate report (pass scraper instance)
+            generator = WeeklyReportGenerator(self.db_handler, collection_name, self.scraper, self)
+            
+            # Connect signals
+            def on_progress(message: str, percentage: int):
+                progress_dialog.setText(f"{message}\n\nProgreso: {percentage}%")
+                QApplication.processEvents()
+            
+            def on_completed(success: bool, message: str):
+                # Close progress dialog first
+                progress_dialog.close()
+                progress_dialog.deleteLater()
+                QApplication.processEvents()
+                
+                # Then show result message
+                if success:
+                    QMessageBox.information(self, "Informe Completado", message)
+                else:
+                    QMessageBox.critical(self, "Error", message)
+            
+            generator.progress_updated.connect(on_progress)
+            generator.report_completed.connect(on_completed)
+            
+            # Start generation
+            generator.generate_report(
+                config['team_a'],
+                config['team_b'],
+                config['output_folder']
+            )
+            
+            # Ensure dialog is closed after generation completes
+            if progress_dialog.isVisible():
+                progress_dialog.close()
+                progress_dialog.deleteLater()
 
         except Exception as e:
             self.progress_bar.setVisible(False)
