@@ -36,7 +36,10 @@ class BasketballSeasonApp(QMainWindow):
         self.db_handler = db_handler
         self.seasons = []
         self.season_values = {}
-        self.competitions = ["L.F. 2", "Primera Nacional"]
+        self.scopes = ["FEB"]
+        self.current_scope = ""
+        self.competitions = []  # Will be loaded from selected scope
+        self.competition_urls = {}  # Map competition names to their results URLs
         self.group_options = {}
         self.group_values = {}
         self.setWindowTitle("MfA - Metrics for All")
@@ -49,7 +52,7 @@ class BasketballSeasonApp(QMainWindow):
         self.setup_ui()
 
     def initialize_data(self) -> None:
-        """Initialize seasons and group options."""
+        """Initialize seasons."""
         try:
             initial_year = "2024"
             soup, _ = self.scraper.get_page_content(initial_year)
@@ -60,20 +63,10 @@ class BasketballSeasonApp(QMainWindow):
             else:
                 self.seasons = [f"{y}/{str(y+1)[-2:]}" for y in range(2015, 2026)]
                 self.season_values = {text: normalize_year(text) for text in self.seasons}
-
-            lf2_groups = self.scraper.get_groups(soup)
-            self.group_options = {
-                "L.F. 2": lf2_groups,
-                "Primera Nacional": [("Grupo 1", "Grupo 1"), ("Grupo 2", "Grupo 2")]
-            }
         except Exception as e:
             print(f"[App] Failed to initialize data: {str(e)}")
             self.seasons = [f"{y}/{str(y+1)[-2:]}" for y in range(2015, 2026)]
             self.season_values = {text: normalize_year(text) for text in self.seasons}
-            self.group_options = {
-                "L.F. 2": [],
-                "Primera Nacional": [("Grupo 1", "Grupo 1"), ("Grupo 2", "Grupo 2")]
-            }
 
     def setup_ui(self):
         """Set up the PyQt6 UI components."""
@@ -81,10 +74,20 @@ class BasketballSeasonApp(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
+        # Scope ComboBox
+        self.scope_combo = QComboBox()
+        self.scope_combo.addItem("")  # Add empty item by default
+        self.scope_combo.addItems(self.scopes)
+        self.scope_combo.currentTextChanged.connect(self.on_scope_select)
+        layout.addWidget(self.scope_combo)
+
+        self.scope_label = QLabel("Ámbito seleccionado: ")
+        layout.addWidget(self.scope_label)
+
         # Competition ComboBox
         self.competition_combo = QComboBox()
         self.competition_combo.addItem("")  # Add empty item
-        self.competition_combo.addItems(self.competitions)
+        # Competitions will be loaded when a scope is selected
         self.competition_combo.currentTextChanged.connect(self.on_competition_select)
         layout.addWidget(self.competition_combo)
 
@@ -298,6 +301,41 @@ class BasketballSeasonApp(QMainWindow):
 
         self.update_group_options()
 
+    def on_scope_select(self, scope: str) -> None:
+        """Handle scope selection event."""
+        if not scope:  # If empty selection
+            self.scope_label.setText("Ámbito seleccionado: ")
+            self.current_scope = ""
+            # Clear competitions
+            self.competition_combo.clear()
+            self.competition_combo.addItem("")
+            self.competitions = []
+            self._validate_selections()
+            return
+
+        self.scope_label.setText(f"Ámbito seleccionado: {scope}")
+        self.current_scope = scope
+
+        if scope == "FEB":
+            # Load FEB competitions dynamically
+            try:
+                feb_competitions = self.scraper.get_feb_competitions()
+                self.competitions = [comp["name"] for comp in feb_competitions]
+                # Store the mapping of competition names to their URLs
+                self.competition_urls = {comp["name"]: comp["results_url"] for comp in feb_competitions}
+                self.competition_combo.clear()
+                self.competition_combo.addItem("")  # Add empty item
+                self.competition_combo.addItems(self.competitions)
+            except Exception as e:
+                print(f"[App] Failed to load FEB competitions: {str(e)}")
+                QMessageBox.warning(self, "Error", f"No se pudieron cargar las competiciones de FEB: {str(e)}")
+                self.competitions = []
+                self.competition_urls = {}
+
+        # Reset other selections
+        self.competition_combo.setCurrentText("")
+        self._validate_selections()
+
     def on_competition_select(self, competition: str) -> None:
         """Handle competition selection event."""
         if not competition:  # If empty selection
@@ -312,6 +350,9 @@ class BasketballSeasonApp(QMainWindow):
         self.competition_label.setText(f"Competición seleccionada: {competition}")
         # Reset season and group selections when competition changes
         self.season_combo.setCurrentText("")
+        # Clear groups for this competition
+        if competition in self.group_options:
+            del self.group_options[competition]
         self._validate_selections()
         self.update_group_options()
 
@@ -326,17 +367,36 @@ class BasketballSeasonApp(QMainWindow):
         self._validate_selections()
         competition = self.competition_combo.currentText()
 
-        if not competition:
+        if not competition or not self.current_scope:
             return
 
-        if competition == "L.F. 2":
+        # Load groups dynamically for FEB competitions
+        if self.current_scope == "FEB":
             try:
-                start_year = normalize_year(season)
-                soup, session = self.scraper.get_page_content(start_year)
-                hidden_fields = self.scraper.get_hidden_fields(soup)
-                season_value = self.season_values.get(season, normalize_year(season))
-                soup, _ = self.scraper.select_season(session, self.scraper.BASE_URL.format(year=start_year), season_value, hidden_fields)
-                self.group_options["L.F. 2"] = self.scraper.get_groups(soup)
+                # Clear existing groups for this competition before loading new ones
+                if competition in self.group_options:
+                    del self.group_options[competition]
+
+                # Get the specific URL for this competition
+                if competition not in self.competition_urls:
+                    print(f"[App] No URL found for competition: {competition}")
+                    return
+
+                competition_url = self.competition_urls[competition]
+
+                # Fetch the competition page directly
+                response = self.scraper.web_client.get(competition_url)
+                if not response:
+                    raise Exception(f"Failed to fetch competition page: {competition_url}")
+
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(response.text, "html.parser")
+
+                # Get groups from the competition page
+                groups = self.scraper.get_groups(soup)
+
+                # Store groups using the actual competition name selected
+                self.group_options[competition] = groups
                 self.update_group_options()
             except Exception as e:
                 print(f"[App] Failed to update groups: {str(e)}")
@@ -389,7 +449,13 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            # Get the URL for this competition
+            competition_url = self.competition_urls.get(competition)
+            if not competition_url:
+                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                return
+
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
             if not matches:
                 QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
                 return
@@ -480,11 +546,17 @@ class BasketballSeasonApp(QMainWindow):
             norm_year = normalize_year(season_text)
             session = requests.Session()
 
+            # Get competition URL
+            competition_url = self.competition_urls.get(competition)
+            if not competition_url:
+                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                return
+
             # Update progress bar visibility
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
             if not matches:
                 self.progress_bar.setVisible(False)
                 self.progress_label.setVisible(False)
@@ -571,11 +643,17 @@ class BasketballSeasonApp(QMainWindow):
             norm_year = normalize_year(season_text)
             session = requests.Session()
 
+            # Get competition URL
+            competition_url = self.competition_urls.get(competition)
+            if not competition_url:
+                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                return
+
             # Update progress bar visibility
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
             if not matches:
                 QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
                 self.progress_bar.setVisible(False)
@@ -686,6 +764,12 @@ class BasketballSeasonApp(QMainWindow):
             norm_year = normalize_year(season_text)
             session = requests.Session()
 
+            # Get competition URL
+            competition_url = self.competition_urls.get(competition)
+            if not competition_url:
+                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                return False
+
             # Show progress bar
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
@@ -694,7 +778,7 @@ class BasketballSeasonApp(QMainWindow):
             QApplication.processEvents()
 
             # Get matches
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
             if not matches:
                 self.progress_bar.setVisible(False)
                 self.progress_label.setVisible(False)
@@ -923,6 +1007,12 @@ class BasketballSeasonApp(QMainWindow):
             norm_year = normalize_year(season_text)
             session = requests.Session()
 
+            # Get competition URL
+            competition_url = self.competition_urls.get(competition)
+            if not competition_url:
+                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                return
+
             # Update progress bar visibility
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
@@ -930,7 +1020,7 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_label.setText("Actualizando datos desde FEB...")
             QApplication.processEvents()
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session)
+            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
             if not matches:
                 self.progress_bar.setVisible(False)
                 self.progress_label.setVisible(False)
@@ -991,34 +1081,34 @@ class BasketballSeasonApp(QMainWindow):
 
             # Generate report (pass scraper instance)
             generator = WeeklyReportGenerator(self.db_handler, collection_name, self.scraper, self)
-            
+
             # Connect signals
             def on_progress(message: str, percentage: int):
                 progress_dialog.setText(f"{message}\n\nProgreso: {percentage}%")
                 QApplication.processEvents()
-            
+
             def on_completed(success: bool, message: str):
                 # Close progress dialog first
                 progress_dialog.close()
                 progress_dialog.deleteLater()
                 QApplication.processEvents()
-                
+
                 # Then show result message
                 if success:
                     QMessageBox.information(self, "Informe Completado", message)
                 else:
                     QMessageBox.critical(self, "Error", message)
-            
+
             generator.progress_updated.connect(on_progress)
             generator.report_completed.connect(on_completed)
-            
+
             # Start generation
             generator.generate_report(
                 config['team_a'],
                 config['team_b'],
                 config['output_folder']
             )
-            
+
             # Ensure dialog is closed after generation completes
             if progress_dialog.isVisible():
                 progress_dialog.close()

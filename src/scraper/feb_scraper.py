@@ -177,7 +177,7 @@ class FEBWebScraper:
         return fields
 
     def get_matches(self, season_value: str, group_value: str, year: str,
-                   session: requests.Session) -> List[str]:
+                   session: requests.Session, url: Optional[str] = None) -> List[str]:
         """
         Fetch match codes for the given season and group.
 
@@ -186,15 +186,22 @@ class FEBWebScraper:
             group_value: Group value
             year: Season year
             session: Requests session
+            url: Optional URL for the competition (if not provided, uses BASE_URL)
 
         Returns:
             List of match codes
         """
-        norm_year = normalize_year(year)
-        url = BASE_URL.format(year=norm_year)
+        # Use provided URL or fall back to hardcoded BASE_URL
+        if url is None:
+            norm_year = normalize_year(year)
+            url = BASE_URL.format(year=norm_year)
 
         # Get initial page
-        soup, _ = self.get_page_content(norm_year)
+        response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
+        if not response:
+            return []
+
+        soup = BeautifulSoup(response.text, "html.parser")
 
         # Check if the initial page already has the correct season and group selected
         season_dropdown = soup.find("select", {"id": SEASON_DROPDOWN_ID})
@@ -299,3 +306,44 @@ class FEBWebScraper:
             return match.group(1)
 
         return None
+
+    def get_feb_competitions(self) -> List[Dict[str, str]]:
+        """
+        Scrape FEB competitions page to get available competitions.
+
+        Returns:
+            List of dicts with 'name' and 'calendar_url' keys
+        """
+        url = "https://competiciones.feb.es/estadisticas/"
+        response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
+        if not response:
+            print("[FEBWebScraper] Failed to fetch FEB competitions page")
+            return []
+
+        soup = BeautifulSoup(response.text, "html.parser")
+        competitions = []
+        seen_names = set()  # To avoid duplicates
+
+        # Find all menu-item divs
+        for menu_item in soup.find_all("div", class_="menu-item"):
+            # Get competition name from menu-item-liga span
+            name_span = menu_item.find("span", class_="menu-item-liga")
+            if not name_span:
+                continue
+
+            comp_name = name_span.get_text(strip=True)
+            if not comp_name or comp_name in seen_names:
+                continue
+
+            # Find the "Calendario" link in menu-item-links
+            links_div = menu_item.find("div", class_="menu-item-links")
+            if links_div:
+                calendar_link = links_div.find("a", string="Calendario")
+                if calendar_link and calendar_link.get("href"):
+                    competitions.append({
+                        "name": comp_name,
+                        "results_url": calendar_link["href"]  # Keep same key name for backwards compatibility
+                    })
+                    seen_names.add(comp_name)
+
+        return competitions
