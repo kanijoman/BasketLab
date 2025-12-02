@@ -79,9 +79,18 @@ class FEBWebScraper:
         return self.api_client.fetch_boxscore(match_code, session)
 
     def get_matches(self, season_value: str, group_value: str, year: str,
-                   session: requests.Session) -> List[str]:
+                   session: requests.Session, url: Optional[str] = None) -> List[str]:
         """Fetch match codes for the given season and group."""
-        return self.web_scraper.get_matches(season_value, group_value, year, session)
+        return self.web_scraper.get_matches(season_value, group_value, year, session, url)
+
+    def get_feb_competitions(self) -> List[Dict[str, str]]:
+        """
+        Scrape FEB competitions page to get available competitions.
+
+        Returns:
+            List of dicts with 'name' and 'results_url' keys
+        """
+        return self.web_scraper.get_feb_competitions()
 
 
 # Re-export for easier imports
