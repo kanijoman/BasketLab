@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QComboBox, QLabe
 from PyQt6.QtCore import QThread
 from typing import List, Dict
 
-from scraper import FEBWebScraper
+from scraper import FEBWebScraper, FBCYLWebScraper
 from database import MongoDBHandler
 from utils import normalize_year
 from .stats_window import TeamStatsWindow
@@ -36,14 +36,29 @@ class BasketballSeasonApp(QMainWindow):
         self.db_handler = db_handler
         self.seasons = []
         self.season_values = {}
-        self.scopes = ["FEB"]
+        self.scopes = ["FEB", "FBCYL"]
         self.current_scope = ""
         self.competitions = []  # Will be loaded from selected scope
         self.competition_urls = {}  # Map competition names to their results URLs
         self.group_options = {}
         self.group_values = {}
+
+        # Initialize FBCYL scraper
+        from scraper import WebClient
+        self.fbcyl_scraper = FBCYLWebScraper(WebClient())
+
+        # FBCYL specific variables
+        self.fbcyl_genders = []
+        self.fbcyl_gender_values = {}
+        self.fbcyl_territories = []
+        self.fbcyl_territory_values = {}
+        self.fbcyl_categories = []
+        self.fbcyl_category_values = {}
+        self.fbcyl_competitions = []
+        self.fbcyl_competition_values = {}
+
         self.setWindowTitle("MfA - Metrics for All")
-        self.setMinimumSize(400, 400)
+        self.setMinimumSize(450, 600)
 
         # Set application icon
         set_app_icon(self)
@@ -84,32 +99,68 @@ class BasketballSeasonApp(QMainWindow):
         self.scope_label = QLabel("Ámbito seleccionado: ")
         layout.addWidget(self.scope_label)
 
-        # Competition ComboBox
-        self.competition_combo = QComboBox()
-        self.competition_combo.addItem("")  # Add empty item
-        # Competitions will be loaded when a scope is selected
-        self.competition_combo.currentTextChanged.connect(self.on_competition_select)
-        layout.addWidget(self.competition_combo)
-
-        self.competition_label = QLabel("Competición seleccionada: ")
-        layout.addWidget(self.competition_label)
-
         # Season ComboBox
         self.season_combo = QComboBox()
         self.season_combo.addItem("")  # Add empty item
         self.season_combo.addItems(self.seasons)
         self.season_combo.currentTextChanged.connect(self.on_season_select)
+        self.season_combo.setVisible(False)  # Hidden until scope is selected
         layout.addWidget(self.season_combo)
 
         self.season_label = QLabel("Temporada seleccionada: ")
+        self.season_label.setVisible(False)
         layout.addWidget(self.season_label)
 
-        # Group ComboBox
+        # FBCYL-specific dropdowns (initially hidden)
+        # Gender ComboBox
+        self.gender_combo = QComboBox()
+        self.gender_combo.currentTextChanged.connect(self.on_gender_select)
+        self.gender_combo.setVisible(False)
+        layout.addWidget(self.gender_combo)
+
+        self.gender_label = QLabel("Género seleccionado: ")
+        self.gender_label.setVisible(False)
+        layout.addWidget(self.gender_label)
+
+        # Territory ComboBox
+        self.territory_combo = QComboBox()
+        self.territory_combo.currentTextChanged.connect(self.on_territory_select)
+        self.territory_combo.setVisible(False)
+        layout.addWidget(self.territory_combo)
+
+        self.territory_label = QLabel("Territorio seleccionado: ")
+        self.territory_label.setVisible(False)
+        layout.addWidget(self.territory_label)
+
+        # Category ComboBox
+        self.category_combo = QComboBox()
+        self.category_combo.currentTextChanged.connect(self.on_category_select)
+        self.category_combo.setVisible(False)
+        layout.addWidget(self.category_combo)
+
+        self.category_label = QLabel("Categoría seleccionada: ")
+        self.category_label.setVisible(False)
+        layout.addWidget(self.category_label)
+
+        # Competition ComboBox (for FEB appears early, for FBCYL appears after category)
+        self.competition_combo = QComboBox()
+        self.competition_combo.addItem("")  # Add empty item
+        self.competition_combo.currentTextChanged.connect(self.on_competition_select)
+        self.competition_combo.setVisible(False)  # Hidden until scope is selected
+        layout.addWidget(self.competition_combo)
+
+        self.competition_label = QLabel("Competición seleccionada: ")
+        self.competition_label.setVisible(False)
+        layout.addWidget(self.competition_label)
+
+        # Group ComboBox (only for FEB)
         self.group_combo = QComboBox()
         self.group_combo.currentTextChanged.connect(self.on_group_select)
+        self.group_combo.setVisible(False)  # Hidden until needed
         layout.addWidget(self.group_combo)
 
         self.group_label = QLabel("Grupo seleccionado: ")
+        self.group_label.setVisible(False)
         layout.addWidget(self.group_label)
 
         # Progress Bar
@@ -306,10 +357,30 @@ class BasketballSeasonApp(QMainWindow):
         if not scope:  # If empty selection
             self.scope_label.setText("Ámbito seleccionado: ")
             self.current_scope = ""
+            # Hide all dropdowns
+            self.season_combo.setVisible(False)
+            self.season_label.setVisible(False)
+            self.competition_combo.setVisible(False)
+            self.competition_label.setVisible(False)
+            self.group_combo.setVisible(False)
+            self.group_label.setVisible(False)
             # Clear competitions
             self.competition_combo.clear()
             self.competition_combo.addItem("")
             self.competitions = []
+            # Hide FBCYL-specific dropdowns
+            self.gender_combo.setVisible(False)
+            self.gender_label.setVisible(False)
+            self.territory_combo.setVisible(False)
+            self.territory_label.setVisible(False)
+            self.category_combo.setVisible(False)
+            self.category_label.setVisible(False)
+            # Clear FBCYL dropdowns
+            self.gender_combo.clear()
+            self.territory_combo.clear()
+            self.category_combo.clear()
+            # Reset window size
+            self.setMinimumSize(450, 600)
             self._validate_selections()
             return
 
@@ -317,6 +388,30 @@ class BasketballSeasonApp(QMainWindow):
         self.current_scope = scope
 
         if scope == "FEB":
+            # Show FEB dropdowns
+            self.season_combo.setVisible(True)
+            self.season_label.setVisible(True)
+            self.competition_combo.setVisible(True)
+            self.competition_label.setVisible(True)
+            self.group_combo.setVisible(True)
+            self.group_label.setVisible(True)
+
+            # Hide FBCYL-specific dropdowns
+            self.gender_combo.setVisible(False)
+            self.gender_label.setVisible(False)
+            self.territory_combo.setVisible(False)
+            self.territory_label.setVisible(False)
+            self.category_combo.setVisible(False)
+            self.category_label.setVisible(False)
+
+            # Clear FBCYL dropdowns
+            self.gender_combo.clear()
+            self.territory_combo.clear()
+            self.category_combo.clear()
+
+            # Reset window size for FEB
+            self.setMinimumSize(450, 650)
+
             # Load FEB competitions dynamically
             try:
                 feb_competitions = self.scraper.get_feb_competitions()
@@ -331,6 +426,59 @@ class BasketballSeasonApp(QMainWindow):
                 QMessageBox.warning(self, "Error", f"No se pudieron cargar las competiciones de FEB: {str(e)}")
                 self.competitions = []
                 self.competition_urls = {}
+
+        elif scope == "FBCYL":
+            # Show season dropdown
+            self.season_combo.setVisible(True)
+            self.season_label.setVisible(True)
+
+            # Show FBCYL-specific dropdowns
+            self.gender_combo.setVisible(True)
+            self.gender_label.setVisible(True)
+            self.territory_combo.setVisible(True)
+            self.territory_label.setVisible(True)
+            self.category_combo.setVisible(True)
+            self.category_label.setVisible(True)
+
+            # Show competition dropdown (will be filled later)
+            self.competition_combo.setVisible(True)
+            self.competition_label.setVisible(True)
+
+            # Hide group dropdown (FBCYL uses competition/grupo combined)
+            self.group_combo.setVisible(False)
+            self.group_label.setVisible(False)
+
+            # Clear FBCYL dropdowns
+            self.gender_combo.clear()
+            self.gender_combo.addItem("")
+            self.territory_combo.clear()
+            self.territory_combo.addItem("")
+            self.category_combo.clear()
+            self.category_combo.addItem("")
+
+            # Adjust window size for FBCYL (more dropdowns)
+            self.setMinimumSize(450, 800)
+
+            # Load FBCYL initial data (seasons)
+            try:
+                soup, session = self.fbcyl_scraper.get_page_content()
+
+                # Get seasons
+                seasons = self.fbcyl_scraper.get_seasons(soup)
+                if seasons:
+                    self.seasons = [text for text, _ in seasons]
+                    self.season_values = {text: value for text, value in seasons}
+                    self.season_combo.clear()
+                    self.season_combo.addItem("")
+                    self.season_combo.addItems(self.seasons)
+
+                # Clear competition combo for FBCYL (will be filled after other selections)
+                self.competition_combo.clear()
+                self.competition_combo.addItem("")
+
+            except Exception as e:
+                print(f"[App] Failed to load FBCYL data: {str(e)}")
+                QMessageBox.warning(self, "Error", f"No se pudieron cargar los datos de FBCYL: {str(e)}")
 
         # Reset other selections
         self.competition_combo.setCurrentText("")
@@ -348,13 +496,17 @@ class BasketballSeasonApp(QMainWindow):
             return
 
         self.competition_label.setText(f"Competición seleccionada: {competition}")
-        # Reset season and group selections when competition changes
-        self.season_combo.setCurrentText("")
-        # Clear groups for this competition
-        if competition in self.group_options:
-            del self.group_options[competition]
+
+        # For FEB: Reset season and group selections when competition changes
+        # For FBCYL: Keep season and other selections (competition is last in the chain)
+        if self.current_scope == "FEB":
+            self.season_combo.setCurrentText("")
+            # Clear groups for this competition
+            if competition in self.group_options:
+                del self.group_options[competition]
+            self.update_group_options()
+
         self._validate_selections()
-        self.update_group_options()
 
     def on_season_select(self, season: str) -> None:
         """Handle season selection event."""
@@ -368,6 +520,9 @@ class BasketballSeasonApp(QMainWindow):
         competition = self.competition_combo.currentText()
 
         if not competition or not self.current_scope:
+            # For FBCYL, load genders when season is selected
+            if self.current_scope == "FBCYL":
+                self._load_fbcyl_genders()
             return
 
         # Load groups dynamically for FEB competitions
@@ -400,20 +555,259 @@ class BasketballSeasonApp(QMainWindow):
                 self.update_group_options()
             except Exception as e:
                 print(f"[App] Failed to update groups: {str(e)}")
+        elif self.current_scope == "FBCYL":
+            # Load genders for FBCYL
+            self._load_fbcyl_genders()
 
     def on_group_select(self, group: str) -> None:
         """Handle group selection event."""
         self.group_label.setText(f"Grupo seleccionado: {group}")
         self._validate_selections()
 
+    def on_gender_select(self, gender: str) -> None:
+        """Handle gender selection event (FBCYL specific)."""
+        if not gender:
+            self.gender_label.setText("Género seleccionado: ")
+            self._validate_selections()
+            return
+
+        self.gender_label.setText(f"Género seleccionado: {gender}")
+        self._validate_selections()
+
+        # Load territories based on season and gender selection
+        season = self.season_combo.currentText()
+        if season and self.current_scope == "FBCYL":
+            self._load_fbcyl_territories()
+
+    def on_territory_select(self, territory: str) -> None:
+        """Handle territory selection event (FBCYL specific)."""
+        if not territory:
+            self.territory_label.setText("Territorio seleccionado: ")
+            self._validate_selections()
+            return
+
+        self.territory_label.setText(f"Territorio seleccionado: {territory}")
+        self._validate_selections()
+
+        # Load categories based on previous selections
+        if self.current_scope == "FBCYL":
+            self._load_fbcyl_categories()
+
+    def on_category_select(self, category: str) -> None:
+        """Handle category selection event (FBCYL specific)."""
+        if not category:
+            self.category_label.setText("Categoría seleccionada: ")
+            self._validate_selections()
+            return
+
+        self.category_label.setText(f"Categoría seleccionada: {category}")
+        self._validate_selections()
+
+        # Load competitions based on previous selections
+        if self.current_scope == "FBCYL":
+            self._load_fbcyl_competitions()
+
+    def _hide_fbcyl_dropdowns(self) -> None:
+        """Hide FBCYL-specific dropdown widgets and reset window size."""
+        self.gender_combo.setVisible(False)
+        self.gender_label.setVisible(False)
+        self.territory_combo.setVisible(False)
+        self.territory_label.setVisible(False)
+        self.category_combo.setVisible(False)
+        self.category_label.setVisible(False)
+        # Reset window size
+        self.setMinimumSize(450, 650)
+
+    def _show_fbcyl_dropdowns(self) -> None:
+        """Show FBCYL-specific dropdown widgets and adjust window size."""
+        self.gender_combo.setVisible(True)
+        self.gender_label.setVisible(True)
+        self.territory_combo.setVisible(True)
+        self.territory_label.setVisible(True)
+        self.category_combo.setVisible(True)
+        self.category_label.setVisible(True)
+        # Adjust window size for more dropdowns
+        self.setMinimumSize(450, 800)
+
+    def _load_fbcyl_genders(self) -> None:
+        """Load gender options for FBCYL based on season selection."""
+        try:
+            season = self.season_combo.currentText()
+            if not season:
+                return
+
+            # TODO: Implement actual logic to fetch genders from FBCYL
+            # For now, using placeholder
+            soup, session = self.fbcyl_scraper.get_page_content()
+            genders = self.fbcyl_scraper.get_genders(soup)
+
+            if genders:
+                self.fbcyl_genders = [text for text, _ in genders]
+                self.fbcyl_gender_values = {text: value for text, value in genders}
+                self.gender_combo.clear()
+                self.gender_combo.addItem("")
+                self.gender_combo.addItems(self.fbcyl_genders)
+            self._validate_selections()
+        except Exception as e:
+            print(f"[App] Failed to load FBCYL genders: {str(e)}")
+
+    def _load_fbcyl_territories(self) -> None:
+        """Load territory options for FBCYL based on season and gender selection."""
+        try:
+            # TODO: Implement actual logic to fetch territories from FBCYL
+            soup, session = self.fbcyl_scraper.get_page_content()
+            territories = self.fbcyl_scraper.get_territories(soup)
+
+            if territories:
+                self.fbcyl_territories = [text for text, _ in territories]
+                self.fbcyl_territory_values = {text: value for text, value in territories}
+                self.territory_combo.clear()
+                self.territory_combo.addItem("")
+                self.territory_combo.addItems(self.fbcyl_territories)
+            self._validate_selections()
+        except Exception as e:
+            print(f"[App] Failed to load FBCYL territories: {str(e)}")
+
+    def _load_fbcyl_categories(self) -> None:
+        """Load category options for FBCYL based on previous selections."""
+        try:
+            # Get current selections
+            season = self.season_combo.currentText()
+            gender = self.gender_combo.currentText()
+            territory = self.territory_combo.currentText()
+
+            if not season or not gender or not territory:
+                print("[App] Cannot load categories - missing season, gender, or territory")
+                return
+
+            # Get season value from mapping
+            season_value = self.season_values.get(season, "")
+            if not season_value:
+                print(f"[App] No season value found for: {season}")
+                return
+
+            # Get gender and territory values
+            gender_value = self.fbcyl_gender_values.get(gender, "")
+            territory_value = self.fbcyl_territory_values.get(territory, "0")
+
+            print(f"[App] Loading categories for: season={season_value}, gender={gender_value}, territory={territory_value}")
+
+            # Fetch categories via AJAX
+            categories = self.fbcyl_scraper.fetch_categories_ajax(
+                temporada=season_value,
+                genere=gender_value,
+                territorial=territory_value
+            )
+
+            self.category_combo.clear()
+            self.category_combo.addItem("")
+
+            if categories:
+                self.fbcyl_categories = [text for text, _ in categories]
+                self.fbcyl_category_values = {text: value for text, value in categories}
+                self.category_combo.addItems(self.fbcyl_categories)
+                print(f"[App] Loaded {len(categories)} categories")
+            else:
+                # Add informative placeholder when no data available
+                self.category_combo.addItem("(No hay categorías disponibles)")
+                print("[App] No categories found for the selected filters")
+
+            # Validate selections to enable buttons if all required fields are selected
+            self._validate_selections()
+        except Exception as e:
+            print(f"[App] Failed to load FBCYL categories: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    def _load_fbcyl_competitions(self) -> None:
+        """Load competition options for FBCYL based on previous selections."""
+        try:
+            # Get current selections
+            season = self.season_combo.currentText()
+            gender = self.gender_combo.currentText()
+            territory = self.territory_combo.currentText()
+            category = self.category_combo.currentText()
+
+            if not season or not gender or not territory or not category:
+                print("[App] Cannot load competitions - missing required selections")
+                return
+
+            # Get values from mappings
+            gender_value = self.fbcyl_gender_values.get(gender, "")
+            territory_value = self.fbcyl_territory_values.get(territory, "0")
+            category_value = self.fbcyl_category_values.get(category, "")
+
+            if not category_value:
+                print(f"[App] No category value found for: {category}")
+                return
+
+            print(f"[App] Loading competitions for: category={category_value}, gender={gender_value}, territory={territory_value}")
+
+            # Fetch competitions via AJAX
+            competitions = self.fbcyl_scraper.fetch_competitions_ajax(
+                categoria=category_value,
+                genere=gender_value,
+                territorial=territory_value
+            )
+
+            self.competition_combo.clear()
+            self.competition_combo.addItem("")
+
+            if competitions:
+                self.fbcyl_competitions = [text for text, _ in competitions]
+                self.fbcyl_competition_values = {text: value for text, value in competitions}
+                self.competition_combo.addItems(self.fbcyl_competitions)
+                print(f"[App] Loaded {len(competitions)} competitions")
+            else:
+                # Add informative placeholder when no data available
+                self.competition_combo.addItem("(No hay competiciones disponibles)")
+                print("[App] No competitions found for the selected filters")
+
+            # Validate selections to enable buttons if all required fields are selected
+            self._validate_selections()
+        except Exception as e:
+            print(f"[App] Failed to load FBCYL competitions: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
     def _validate_selections(self) -> None:
         """Validate that all required selections are made and enable/disable buttons accordingly."""
-        competition = self.competition_combo.currentText()
         season = self.season_combo.currentText()
-        group = self.group_combo.currentText()
 
-        # Check if all fields have valid (non-empty) selections
-        all_selected = bool(competition) and bool(season) and bool(group)
+        # Helper function to check if a selection is valid (not empty and not a placeholder)
+        def is_valid_selection(text: str) -> bool:
+            if not text:
+                return False
+            # Exclude placeholder texts
+            if text.startswith("(") and text.endswith(")"):
+                return False
+            return True
+
+        if self.current_scope == "FEB":
+            # FEB requires: competition, season, group
+            competition = self.competition_combo.currentText()
+            group = self.group_combo.currentText()
+            all_selected = is_valid_selection(competition) and is_valid_selection(season) and is_valid_selection(group)
+        elif self.current_scope == "FBCYL":
+            # FBCYL requires: season, gender, territory, category, competition
+            gender = self.gender_combo.currentText()
+            territory = self.territory_combo.currentText()
+            category = self.category_combo.currentText()
+            competition = self.competition_combo.currentText()
+            all_selected = (is_valid_selection(season) and
+                          is_valid_selection(gender) and
+                          is_valid_selection(territory) and
+                          is_valid_selection(category) and
+                          is_valid_selection(competition))
+
+            # Debug: print validation status
+            print(f"[App] FBCYL Validation - Season: {is_valid_selection(season)}, "
+                  f"Gender: {is_valid_selection(gender)}, Territory: {is_valid_selection(territory)}, "
+                  f"Category: {is_valid_selection(category)}, Competition: {is_valid_selection(competition)} "
+                  f"=> All selected: {all_selected}")
+        else:
+            # No scope selected
+            all_selected = False
 
         # Enable or disable buttons based on selection status
         self.stats_button.setEnabled(all_selected)
@@ -433,34 +827,86 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+                    return
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+                    return
+                # For FBCYL, group is not used, set a default value
+                group_text = "default"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
 
             # Update data first
-            season_value = self.season_values.get(season_text, normalize_year(season_text))
-            group_value = self.group_values.get(group_text, group_text)
-            norm_year = normalize_year(season_text)
-            session = requests.Session()
+            if self.current_scope == "FEB":
+                season_value = self.season_values.get(season_text, normalize_year(season_text))
+                group_value = self.group_values.get(group_text, group_text)
+                norm_year = normalize_year(season_text)
+                session = requests.Session()
 
-            # Update progress bar visibility
-            self.progress_bar.setVisible(True)
-            self.progress_label.setVisible(True)
+                # Update progress bar visibility
+                self.progress_bar.setVisible(True)
+                self.progress_label.setVisible(True)
 
-            # Get the URL for this competition
-            competition_url = self.competition_urls.get(competition)
-            if not competition_url:
-                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                # Get the URL for this competition
+                competition_url = self.competition_urls.get(competition)
+                if not competition_url:
+                    QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                    return
+
+                matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
+                if not matches:
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                    return
+
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            elif self.current_scope == "FBCYL":
+                # Get competition ID from mapping
+                competition_id = self.fbcyl_competition_values.get(competition)
+                if not competition_id:
+                    QMessageBox.warning(self, "Error", f"No se encontró ID para la competición: {competition}")
+                    return
+
+                # Update progress bar visibility
+                self.progress_bar.setVisible(True)
+                self.progress_label.setVisible(True)
+                self.progress_label.setText("Progreso: Obteniendo lista de partidos...")
+                QApplication.processEvents()
+
+                # Get match UUIDs from FBCYL
+                matches = self.fbcyl_scraper.get_matches(competition_id, round_number=0)
+                if not matches:
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta competición.")
+                    return
+
+                # For FBCYL, create a descriptive collection name format:
+                # FBCYL_{Gender}_{Territory}_{Category}_{Season}
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+
+                # Sanitize names for MongoDB collection naming (remove special chars, spaces)
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+                print(f"[App] Using collection name: {collection_name}")
+            else:
                 return
-
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
-            if not matches:
-                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
-                return
-
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
 
             self.progress_bar.setMaximum(len(matches))
             self.progress_bar.setValue(0)
@@ -469,21 +915,47 @@ class BasketballSeasonApp(QMainWindow):
 
             successful_matches = []
             failed_matches = []
+
             for i, match_code in enumerate(matches, 1):
-                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
+                self.progress_label.setText(f"Progreso: Procesando partido {i}/{len(matches)}")
                 self.progress_bar.setValue(i)
                 QApplication.processEvents()
 
                 try:
-                    # Only download if it doesn't exist or if it's the last match (for possible updates)
-                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
-                        boxscore = self.scraper.fetch_boxscore(match_code, session)
-                        if boxscore and self.db_handler.insert_boxscore(collection_name, match_code, boxscore):
-                            successful_matches.append(match_code)
+                    if self.current_scope == "FEB":
+                        # FEB: match_code is a string number, check with int
+                        if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                            boxscore = self.scraper.fetch_boxscore(match_code, session)
+                            if boxscore and self.db_handler.insert_boxscore(collection_name, match_code, boxscore):
+                                successful_matches.append(match_code)
+                            else:
+                                failed_matches.append(match_code)
                         else:
-                            failed_matches.append(match_code)
-                    else:
-                        successful_matches.append(match_code)
+                            successful_matches.append(match_code)
+
+                    elif self.current_scope == "FBCYL":
+                        # FBCYL: match_code is a UUID string
+                        # Check if document already exists in the collection
+                        if not self.db_handler.document_exists(collection_name, match_code) or i == len(matches):
+                            # Fetch complete match data (both moves and stats)
+                            match_complete_data = self.fbcyl_scraper.get_match_complete_data(match_code)
+
+                            if match_complete_data:
+                                # Insert FBCYL match data into database
+                                # The document will have: {uuid, moves: {...}, stats: {...}}
+                                if self.db_handler.insert_fbcyl_match(collection_name, match_code, match_complete_data):
+                                    successful_matches.append(match_code)
+                                    print(f"[App] FBCYL match data stored for {match_code}")
+                                else:
+                                    failed_matches.append(match_code)
+                                    print(f"[App] Failed to store FBCYL match data for {match_code}")
+                            else:
+                                failed_matches.append(match_code)
+                                print(f"[App] Failed to retrieve FBCYL match data for {match_code}")
+                        else:
+                            successful_matches.append(match_code)
+                            print(f"[App] FBCYL match {match_code} already exists in database")
+
                 except Exception as e:
                     print(f"[App] Error processing match {match_code}: {str(e)}")
                     failed_matches.append(match_code)

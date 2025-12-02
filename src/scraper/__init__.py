@@ -8,6 +8,7 @@ from .web_client import WebClient
 from .token_manager import TokenManager
 from .api_client import FEBApiClient
 from .feb_scraper import FEBWebScraper as _FEBWebScraper
+from .fbcyl_scraper import FBCYLWebScraper
 from .data_processor import DataProcessor
 
 
@@ -96,6 +97,7 @@ class FEBWebScraper:
 # Re-export for easier imports
 __all__ = [
     'FEBWebScraper',
+    'FBCYLWebScraper',
     'WebClient',
     'TokenManager',
     'FEBApiClient',

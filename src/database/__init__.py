@@ -33,6 +33,10 @@ class MongoDBHandler:
         """Insert a boxscore document."""
         return self.repository.insert_boxscore(collection_name, match_code, boxscore)
 
+    def insert_fbcyl_match(self, collection_name: str, match_uuid: str, match_data: dict) -> bool:
+        """Insert a FBCYL match document with complete data (moves + stats)."""
+        return self.repository.insert_fbcyl_match(collection_name, match_uuid, match_data)
+
     def get_team_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None, result_filter: str = None) -> list:
         """Get aggregated team statistics."""
         return self.repository.get_team_stats(collection_name, date_filter, venue_filter, result_filter)
