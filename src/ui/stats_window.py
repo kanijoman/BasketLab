@@ -1375,7 +1375,7 @@ class TeamStatsWindow(QMainWindow):
             self.opponent_table.setSortingEnabled(False)
 
         for row, stats in enumerate(team_stats):
-            self._populate_basic_stats_row(row, stats, basic_numeric_data, basic_quartiles)
+            self.table_manager.populate_basic_stats_row(self.basic_table, row, stats, basic_numeric_data, basic_quartiles)
             self._populate_advanced_stats_row(row, stats, advanced_numeric_data, advanced_quartiles, self.advanced_table)
 
         if self.opponent_table:
