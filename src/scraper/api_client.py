@@ -37,7 +37,6 @@ class FEBApiClient:
         """
         token = self.token_manager.get_token(match_code, session)
         if not token:
-            print(f"[FEBApiClient] No valid token for match {match_code}")
             return None
 
         # Fetch boxscore data with retry logic
@@ -56,7 +55,6 @@ class FEBApiClient:
         try:
             data = response.json()
         except ValueError as e:
-            print(f"[FEBApiClient] Invalid JSON for match {match_code}: {e}")
             return None
 
         # Process boxscore data
@@ -142,7 +140,6 @@ class FEBApiClient:
             json_data = response.json()
             return json_data.get(key, [])
         except ValueError as e:
-            print(f"[FEBApiClient] Invalid JSON for {key.lower()} {match_code}: {e}")
             return None
 
     def _refresh_token(self, match_code: str, session: requests.Session) -> Optional[str]:

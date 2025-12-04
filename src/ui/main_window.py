@@ -79,7 +79,6 @@ class BasketballSeasonApp(QMainWindow):
                 self.seasons = [f"{y}/{str(y+1)[-2:]}" for y in range(2015, 2026)]
                 self.season_values = {text: normalize_year(text) for text in self.seasons}
         except Exception as e:
-            print(f"[App] Failed to initialize data: {str(e)}")
             self.seasons = [f"{y}/{str(y+1)[-2:]}" for y in range(2015, 2026)]
             self.season_values = {text: normalize_year(text) for text in self.seasons}
 
@@ -422,7 +421,6 @@ class BasketballSeasonApp(QMainWindow):
                 self.competition_combo.addItem("")  # Add empty item
                 self.competition_combo.addItems(self.competitions)
             except Exception as e:
-                print(f"[App] Failed to load FEB competitions: {str(e)}")
                 QMessageBox.warning(self, "Error", f"No se pudieron cargar las competiciones de FEB: {str(e)}")
                 self.competitions = []
                 self.competition_urls = {}
@@ -477,7 +475,6 @@ class BasketballSeasonApp(QMainWindow):
                 self.competition_combo.addItem("")
 
             except Exception as e:
-                print(f"[App] Failed to load FBCYL data: {str(e)}")
                 QMessageBox.warning(self, "Error", f"No se pudieron cargar los datos de FBCYL: {str(e)}")
 
         # Reset other selections
@@ -488,25 +485,55 @@ class BasketballSeasonApp(QMainWindow):
         """Handle competition selection event."""
         if not competition:  # If empty selection
             self.competition_label.setText("Competición seleccionada: ")
-            self.season_combo.clear()
-            self.season_combo.addItem("")
-            self.season_combo.addItems(self.seasons)  # Show all seasons
             self.update_group_options()  # This will clear the group combo
             self._validate_selections()
             return
 
         self.competition_label.setText(f"Competición seleccionada: {competition}")
 
-        # For FEB: Reset season and group selections when competition changes
-        # For FBCYL: Keep season and other selections (competition is last in the chain)
+        # For FEB: Load groups if season is already selected
         if self.current_scope == "FEB":
-            self.season_combo.setCurrentText("")
-            # Clear groups for this competition
-            if competition in self.group_options:
-                del self.group_options[competition]
-            self.update_group_options()
+            season = self.season_combo.currentText()
+            if season:
+                # Load groups for this competition
+                self._load_feb_groups(competition)
+            else:
+                # Clear groups until season is selected
+                if competition in self.group_options:
+                    del self.group_options[competition]
+                self.update_group_options()
 
         self._validate_selections()
+
+    def _load_feb_groups(self, competition: str) -> None:
+        """Load groups for a FEB competition."""
+        try:
+            # Clear existing groups for this competition before loading new ones
+            if competition in self.group_options:
+                del self.group_options[competition]
+
+            # Get the specific URL for this competition
+            if competition not in self.competition_urls:
+                return
+
+            competition_url = self.competition_urls[competition]
+
+            # Fetch the competition page directly
+            response = self.scraper.web_client.get(competition_url)
+            if not response:
+                raise Exception(f"Failed to fetch competition page: {competition_url}")
+
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # Get groups from the competition page
+            groups = self.scraper.get_groups(soup)
+
+            # Store groups using the actual competition name selected
+            self.group_options[competition] = groups
+            self.update_group_options()
+        except Exception as e:
+            pass
 
     def on_season_select(self, season: str) -> None:
         """Handle season selection event."""
@@ -527,34 +554,7 @@ class BasketballSeasonApp(QMainWindow):
 
         # Load groups dynamically for FEB competitions
         if self.current_scope == "FEB":
-            try:
-                # Clear existing groups for this competition before loading new ones
-                if competition in self.group_options:
-                    del self.group_options[competition]
-
-                # Get the specific URL for this competition
-                if competition not in self.competition_urls:
-                    print(f"[App] No URL found for competition: {competition}")
-                    return
-
-                competition_url = self.competition_urls[competition]
-
-                # Fetch the competition page directly
-                response = self.scraper.web_client.get(competition_url)
-                if not response:
-                    raise Exception(f"Failed to fetch competition page: {competition_url}")
-
-                from bs4 import BeautifulSoup
-                soup = BeautifulSoup(response.text, "html.parser")
-
-                # Get groups from the competition page
-                groups = self.scraper.get_groups(soup)
-
-                # Store groups using the actual competition name selected
-                self.group_options[competition] = groups
-                self.update_group_options()
-            except Exception as e:
-                print(f"[App] Failed to update groups: {str(e)}")
+            self._load_feb_groups(competition)
         elif self.current_scope == "FBCYL":
             # Load genders for FBCYL
             self._load_fbcyl_genders()
@@ -649,7 +649,7 @@ class BasketballSeasonApp(QMainWindow):
                 self.gender_combo.addItems(self.fbcyl_genders)
             self._validate_selections()
         except Exception as e:
-            print(f"[App] Failed to load FBCYL genders: {str(e)}")
+            pass
 
     def _load_fbcyl_territories(self) -> None:
         """Load territory options for FBCYL based on season and gender selection."""
@@ -666,7 +666,7 @@ class BasketballSeasonApp(QMainWindow):
                 self.territory_combo.addItems(self.fbcyl_territories)
             self._validate_selections()
         except Exception as e:
-            print(f"[App] Failed to load FBCYL territories: {str(e)}")
+            pass
 
     def _load_fbcyl_categories(self) -> None:
         """Load category options for FBCYL based on previous selections."""
@@ -676,21 +676,15 @@ class BasketballSeasonApp(QMainWindow):
             gender = self.gender_combo.currentText()
             territory = self.territory_combo.currentText()
 
-            if not season or not gender or not territory:
-                print("[App] Cannot load categories - missing season, gender, or territory")
-                return
-
-            # Get season value from mapping
+        if not season or not gender or not territory:
+            return            # Get season value from mapping
             season_value = self.season_values.get(season, "")
             if not season_value:
-                print(f"[App] No season value found for: {season}")
                 return
 
             # Get gender and territory values
             gender_value = self.fbcyl_gender_values.get(gender, "")
             territory_value = self.fbcyl_territory_values.get(territory, "0")
-
-            print(f"[App] Loading categories for: season={season_value}, gender={gender_value}, territory={territory_value}")
 
             # Fetch categories via AJAX
             categories = self.fbcyl_scraper.fetch_categories_ajax(
@@ -706,16 +700,14 @@ class BasketballSeasonApp(QMainWindow):
                 self.fbcyl_categories = [text for text, _ in categories]
                 self.fbcyl_category_values = {text: value for text, value in categories}
                 self.category_combo.addItems(self.fbcyl_categories)
-                print(f"[App] Loaded {len(categories)} categories")
             else:
                 # Add informative placeholder when no data available
                 self.category_combo.addItem("(No hay categorías disponibles)")
-                print("[App] No categories found for the selected filters")
 
             # Validate selections to enable buttons if all required fields are selected
             self._validate_selections()
         except Exception as e:
-            print(f"[App] Failed to load FBCYL categories: {str(e)}")
+            pass
             import traceback
             traceback.print_exc()
 
@@ -728,20 +720,14 @@ class BasketballSeasonApp(QMainWindow):
             territory = self.territory_combo.currentText()
             category = self.category_combo.currentText()
 
-            if not season or not gender or not territory or not category:
-                print("[App] Cannot load competitions - missing required selections")
-                return
-
-            # Get values from mappings
+        if not season or not gender or not territory or not category:
+            return            # Get values from mappings
             gender_value = self.fbcyl_gender_values.get(gender, "")
             territory_value = self.fbcyl_territory_values.get(territory, "0")
             category_value = self.fbcyl_category_values.get(category, "")
 
             if not category_value:
-                print(f"[App] No category value found for: {category}")
                 return
-
-            print(f"[App] Loading competitions for: category={category_value}, gender={gender_value}, territory={territory_value}")
 
             # Fetch competitions via AJAX
             competitions = self.fbcyl_scraper.fetch_competitions_ajax(
@@ -757,16 +743,14 @@ class BasketballSeasonApp(QMainWindow):
                 self.fbcyl_competitions = [text for text, _ in competitions]
                 self.fbcyl_competition_values = {text: value for text, value in competitions}
                 self.competition_combo.addItems(self.fbcyl_competitions)
-                print(f"[App] Loaded {len(competitions)} competitions")
             else:
                 # Add informative placeholder when no data available
                 self.competition_combo.addItem("(No hay competiciones disponibles)")
-                print("[App] No competitions found for the selected filters")
 
             # Validate selections to enable buttons if all required fields are selected
             self._validate_selections()
         except Exception as e:
-            print(f"[App] Failed to load FBCYL competitions: {str(e)}")
+            pass
             import traceback
             traceback.print_exc()
 
@@ -800,11 +784,6 @@ class BasketballSeasonApp(QMainWindow):
                           is_valid_selection(category) and
                           is_valid_selection(competition))
 
-            # Debug: print validation status
-            print(f"[App] FBCYL Validation - Season: {is_valid_selection(season)}, "
-                  f"Gender: {is_valid_selection(gender)}, Territory: {is_valid_selection(territory)}, "
-                  f"Category: {is_valid_selection(category)}, Competition: {is_valid_selection(competition)} "
-                  f"=> All selected: {all_selected}")
         else:
             # No scope selected
             all_selected = False
@@ -904,7 +883,6 @@ class BasketballSeasonApp(QMainWindow):
                 safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
 
                 collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
-                print(f"[App] Using collection name: {collection_name}")
             else:
                 return
 
@@ -945,19 +923,14 @@ class BasketballSeasonApp(QMainWindow):
                                 # The document will have: {uuid, moves: {...}, stats: {...}}
                                 if self.db_handler.insert_fbcyl_match(collection_name, match_code, match_complete_data):
                                     successful_matches.append(match_code)
-                                    print(f"[App] FBCYL match data stored for {match_code}")
                                 else:
                                     failed_matches.append(match_code)
-                                    print(f"[App] Failed to store FBCYL match data for {match_code}")
                             else:
                                 failed_matches.append(match_code)
-                                print(f"[App] Failed to retrieve FBCYL match data for {match_code}")
                         else:
                             successful_matches.append(match_code)
-                            print(f"[App] FBCYL match {match_code} already exists in database")
 
                 except Exception as e:
-                    print(f"[App] Error processing match {match_code}: {str(e)}")
                     failed_matches.append(match_code)
 
             self.progress_label.setText("Progreso: Cargando estadísticas...")
@@ -1054,7 +1027,7 @@ class BasketballSeasonApp(QMainWindow):
                         if boxscore:
                             self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
                 except Exception as e:
-                    print(f"[App] Error processing match {match_code}: {str(e)}")
+                    pass
 
             self.progress_label.setText("Progreso: Cargando estadísticas de jugadoras...")
             self.progress_bar.setValue(len(matches))
@@ -1151,7 +1124,7 @@ class BasketballSeasonApp(QMainWindow):
                         if boxscore:
                             self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
                 except Exception as e:
-                    print(f"[App] Error processing match {match_code}: {str(e)}")
+                    pass
 
             self.progress_label.setText("Progreso: Cargando gráficos de lanzamiento...")
             self.progress_bar.setValue(len(matches))
@@ -1515,7 +1488,7 @@ class BasketballSeasonApp(QMainWindow):
                         if boxscore:
                             self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
                 except Exception as e:
-                    print(f"[App] Error processing match {match_code}: {str(e)}")
+                    pass
 
             # Get available teams
             self.progress_label.setText("Cargando equipos disponibles...")
