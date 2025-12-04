@@ -32,7 +32,6 @@ class BasketballRepository:
             True if document exists, False otherwise
         """
         if not self.connection.is_connected():
-            print(f"[BasketballRepository] No connection to MongoDB")
             return False
 
         try:
@@ -41,7 +40,6 @@ class BasketballRepository:
             doc_id = int(match_code) if isinstance(match_code, str) and match_code.isdigit() else match_code
             return collection.find_one({"_id": doc_id}) is not None
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error checking document existence for match {match_code}: {e}")
             return False
 
     def insert_boxscore(self, collection_name: str, match_code: str, boxscore: Dict) -> bool:
@@ -57,7 +55,6 @@ class BasketballRepository:
             True if successful, False otherwise
         """
         if not self.connection.is_connected():
-            print(f"[BasketballRepository] No connection to MongoDB")
             return False
 
         # Check if document already exists
@@ -71,7 +68,6 @@ class BasketballRepository:
             collection.insert_one(boxscore)
             return True
         except PyMongoError as e:
-            print(f"[BasketballRepository] Failed to save match {match_code} to MongoDB: {e}")
             return False
 
     def insert_fbcyl_match(self, collection_name: str, match_uuid: str, match_data: Dict) -> bool:
@@ -87,12 +83,10 @@ class BasketballRepository:
             True if successful, False otherwise
         """
         if not self.connection.is_connected():
-            print(f"[BasketballRepository] No connection to MongoDB")
             return False
 
         # Check if document already exists
         if self.document_exists(collection_name, match_uuid):
-            print(f"[BasketballRepository] FBCYL match {match_uuid} already exists, skipping")
             return True
 
         try:
@@ -100,10 +94,8 @@ class BasketballRepository:
             # Use UUID as the document _id
             match_data["_id"] = match_uuid
             collection.insert_one(match_data)
-            print(f"[BasketballRepository] Successfully inserted FBCYL match {match_uuid}")
             return True
         except PyMongoError as e:
-            print(f"[BasketballRepository] Failed to save FBCYL match {match_uuid} to MongoDB: {e}")
             return False
 
     def get_team_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
@@ -127,7 +119,6 @@ class BasketballRepository:
             List of team statistics dictionaries
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return []
 
         try:
@@ -137,15 +128,12 @@ class BasketballRepository:
             is_fbcyl = collection_name.startswith('FBCYL_')
 
             if is_fbcyl:
-                print(f"[BasketballRepository] Using FBCYL pipeline for collection: {collection_name}")
                 pipeline = FBCYLPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
             else:
-                print(f"[BasketballRepository] Using FEB pipeline for collection: {collection_name}")
                 pipeline = AggregationPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
 
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting team stats: {e}")
             return []
 
     def get_opponent_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
@@ -165,7 +153,6 @@ class BasketballRepository:
             List of opponent statistics dictionaries grouped by team
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return []
 
         try:
@@ -175,20 +162,16 @@ class BasketballRepository:
             is_fbcyl = collection_name.startswith('FBCYL_')
 
             if is_fbcyl:
-                print(f"[BasketballRepository] Using FBCYL pipeline for opponent stats: {collection_name}")
                 pipeline = FBCYLPipelineBuilder.build_opponent_stats_pipeline(date_filter, venue_filter, result_filter)
             else:
-                print(f"[BasketballRepository] Using FEB pipeline for opponent stats: {collection_name}")
                 pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline(date_filter, venue_filter, result_filter)
 
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting opponent stats: {e}")
             return []
 
     def get_last_match(self, collection_name: str, team_name: str) -> Dict:
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return []
 
         try:
@@ -196,7 +179,6 @@ class BasketballRepository:
             pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline(date_filter, venue_filter, result_filter)
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting opponent stats: {e}")
             return []
 
     def get_last_match(self, collection_name: str, team_name: str) -> Dict:
@@ -211,7 +193,6 @@ class BasketballRepository:
             Last match document or empty dict if not found
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return {}
 
         try:
@@ -243,7 +224,6 @@ class BasketballRepository:
             result = list(collection.aggregate(pipeline))
             return result[0] if result else {}
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting last match: {e}")
             return {}
 
     def get_all_teams(self, collection_name: str) -> List[str]:
@@ -257,7 +237,6 @@ class BasketballRepository:
             Sorted list of team names
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return []
 
         try:
@@ -265,7 +244,6 @@ class BasketballRepository:
             teams = collection.distinct("HEADER.TEAM.name")
             return sorted(teams)
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting teams: {e}")
             return []
 
     def get_player_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
@@ -289,7 +267,6 @@ class BasketballRepository:
             List of player statistics dictionaries
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return []
 
         try:
@@ -297,7 +274,6 @@ class BasketballRepository:
             pipeline = AggregationPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter)
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting player stats: {e}")
             return []
 
     def get_aggregated_team_stats(self, collection_name: str, team_name: str) -> Dict:
@@ -312,7 +288,6 @@ class BasketballRepository:
             Dictionary with aggregated team statistics
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return {}
 
         try:
@@ -325,7 +300,6 @@ class BasketballRepository:
 
             return {}
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting aggregated team stats: {e}")
             return {}
 
     def get_aggregated_opponent_stats(self, collection_name: str, team_name: str) -> Dict:
@@ -340,7 +314,6 @@ class BasketballRepository:
             Dictionary with aggregated opponent statistics
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return {}
 
         try:
@@ -353,7 +326,6 @@ class BasketballRepository:
 
             return {}
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting aggregated opponent stats: {e}")
             return {}
 
     def get_league_stats(self, collection_name: str) -> Dict:
@@ -367,7 +339,6 @@ class BasketballRepository:
             Dictionary with league-wide statistics
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return {}
 
         try:
@@ -464,7 +435,6 @@ class BasketballRepository:
             result = list(collection.aggregate(pipeline))
             return result[0] if result else {}
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting league stats: {e}")
             return {}
 
     def get_games_with_playbyplay(self, collection_name: str, date_filter: Dict = None) -> List[Dict]:
@@ -479,7 +449,6 @@ class BasketballRepository:
             List of game documents with PLAYBYPLAY data
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return []
 
         try:
@@ -515,7 +484,6 @@ class BasketballRepository:
                 return list(collection.find(match_filter))
 
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting games with playbyplay: {e}")
             return []
 
     def get_player_in_out_stats(self, collection_name: str, player_id: str,
@@ -532,7 +500,6 @@ class BasketballRepository:
             Dictionary with 'in' and 'out' statistics and metadata
         """
         if not self.connection.is_connected():
-            print("[BasketballRepository] No connection to MongoDB")
             return {}
 
         try:
@@ -559,7 +526,6 @@ class BasketballRepository:
                     break
 
             if not player_team_id:
-                print(f"[BasketballRepository] Could not find team for player {player_id}")
                 return {}
 
             # Aggregate stats across all games
@@ -689,7 +655,6 @@ class BasketballRepository:
                     games_analyzed += 1
 
                 except Exception as e:
-                    print(f"[BasketballRepository] Error analyzing game {game.get('_id')}: {e}")
                     if debug:
                         import traceback
                         traceback.print_exc()
@@ -717,9 +682,8 @@ class BasketballRepository:
                     debug_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"debug_inout_{player_id}.json")
                     with open(debug_file, 'w', encoding='utf-8') as f:
                         json.dump(debug_outputs, f, ensure_ascii=False, indent=2)
-                    print(f"[BasketballRepository] Debug IN/OUT written to {debug_file}")
                 except Exception as e:
-                    print(f"[BasketballRepository] Error saving debug file: {e}")
+                    pass
 
             return {
                 'in': total_stats_in,
@@ -730,5 +694,4 @@ class BasketballRepository:
             }
 
         except PyMongoError as e:
-            print(f"[BasketballRepository] Error getting player IN/OUT stats: {e}")
             return {}

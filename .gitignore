@@ -21,6 +21,14 @@ wheels/
 *.egg
 MANIFEST
 
+# PyInstaller
+*.spec.backup
+
+# Distribution archives
+*.zip
+*.dmg
+*.tar.gz
+
 # AI Configuration (contains API keys - DO NOT COMMIT)
 .metricsforall/
 *.key

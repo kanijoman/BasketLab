@@ -317,7 +317,6 @@ class FEBWebScraper:
         url = "https://competiciones.feb.es/estadisticas/"
         response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
         if not response:
-            print("[FEBWebScraper] Failed to fetch FEB competitions page")
             return []
 
         soup = BeautifulSoup(response.text, "html.parser")

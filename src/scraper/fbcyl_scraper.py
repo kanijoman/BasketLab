@@ -220,7 +220,6 @@ class FBCYLWebScraper:
         try:
             response = self.web_client.get(url, timeout=FBCYL_EXTENDED_TIMEOUT)
             if not response:
-                print(f"[FBCYLScraper] Failed to fetch categories from: {url}")
                 return []
 
             # Parse HTML response
@@ -235,11 +234,9 @@ class FBCYLWebScraper:
                 if text and text.lower() not in ["categoría", "categoria", "seleccionar", "selecciona"] and value:
                     categories.append((text, value))
 
-            print(f"[FBCYLScraper] Found {len(categories)} categories for temporada={temporada}, genere={genere}, territorial={territorial}")
             return categories
 
         except Exception as e:
-            print(f"[FBCYLScraper] Error fetching categories: {e}")
             return []
 
     def fetch_competitions_ajax(self, categoria: str, genere: str = "", territorial: str = "0") -> List[Tuple[str, str]]:
@@ -267,7 +264,6 @@ class FBCYLWebScraper:
         try:
             response = self.web_client.get(url, timeout=FBCYL_EXTENDED_TIMEOUT)
             if not response:
-                print(f"[FBCYLScraper] Failed to fetch competitions from: {url}")
                 return []
 
             # Parse HTML response
@@ -282,11 +278,9 @@ class FBCYLWebScraper:
                 if text and text.lower() not in ["competición / grupo", "competicion", "seleccionar", "selecciona"] and value:
                     competitions.append((text, value))
 
-            print(f"[FBCYLScraper] Found {len(competitions)} competitions for categoria={categoria}, genere={genere}, territorial={territorial}")
             return competitions
 
         except Exception as e:
-            print(f"[FBCYLScraper] Error fetching competitions: {e}")
             return []
 
     def get_hidden_fields(self, soup: BeautifulSoup) -> Dict[str, str]:
@@ -402,16 +396,12 @@ class FBCYLWebScraper:
         Returns:
             List of match UUIDs (24-character hex strings)
         """
-        print(f"[FBCYLScraper] Fetching matches for competition_id={competition_id}, round={round_number}")
-
         # Use getAllGamesByGrupWithMatchRecords endpoint to get ALL played matches
         # The /0 at the end means "all rounds"
         esb_url = f"{FBCYL_API_BASE_URL}/FCBQWeb/getAllGamesByGrupWithMatchRecords/{competition_id}/0"
-        print(f"[FBCYLScraper] Calling ESB API: {esb_url}")
 
         response = self.web_client.get(esb_url)
         if not response:
-            print(f"[FBCYLScraper] Failed to call ESB API")
             return []
 
         try:
@@ -419,17 +409,14 @@ class FBCYLWebScraper:
             json_data = json.loads(base64.b64decode(response.text).decode('utf-8'))
 
             if json_data.get('result') != 'OK':
-                print(f"[FBCYLScraper] ESB API error: {json_data.get('message', 'Unknown error')}")
                 return []
 
             # Extract match UUIDs from JSON structure
             match_uuids = self._extract_match_uuids_from_json(json_data, round_number)
-            print(f"[FBCYLScraper] Found {len(match_uuids)} matches")
 
             return match_uuids
 
         except Exception as e:
-            print(f"[FBCYLScraper] Error processing ESB response: {str(e)}")
             return []
 
     def _extract_match_uuids_from_json(self, json_data: Dict[str, Any], round_filter: int = 0) -> List[str]:
@@ -461,7 +448,7 @@ class FBCYLWebScraper:
                         match_uuids.append(uuid)
 
         except Exception as e:
-            print(f"[FBCYLScraper] Error extracting UUIDs from JSON: {str(e)}")
+            pass
 
         return match_uuids
 
@@ -476,17 +463,14 @@ class FBCYLWebScraper:
             Dictionary with match data including moves, or None if error
         """
         match_url = f"https://msstats.optimalwayconsulting.com/v1/fbcyl/getJsonWithMatchMoves/{match_uuid}"
-        print(f"[FBCYLScraper] Fetching match JSON (moves): {match_url}")
 
         response = self.web_client.get(match_url)
         if not response:
-            print(f"[FBCYLScraper] Failed to fetch match JSON (moves)")
             return None
 
         try:
             return response.json()
         except Exception as e:
-            print(f"[FBCYLScraper] Error parsing match JSON (moves): {e}")
             return None
 
     def get_match_json_stats(self, match_uuid: str) -> Optional[Dict]:
@@ -501,17 +485,14 @@ class FBCYLWebScraper:
         """
         # IMPORTANT: currentSeason=true parameter is required to get the stats data
         match_url = f"https://msstats.optimalwayconsulting.com/v1/fbcyl/getJsonWithMatchStats/{match_uuid}?currentSeason=true"
-        print(f"[FBCYLScraper] Fetching match JSON (stats): {match_url}")
 
         response = self.web_client.get(match_url)
         if not response:
-            print(f"[FBCYLScraper] Failed to fetch match JSON (stats)")
             return None
 
         try:
             return response.json()
         except Exception as e:
-            print(f"[FBCYLScraper] Error parsing match JSON (stats): {e}")
             return None
 
     def get_match_complete_data(self, match_uuid: str) -> Optional[Dict]:
@@ -524,13 +505,10 @@ class FBCYLWebScraper:
         Returns:
             Dictionary with combined data: {'moves': {...}, 'stats': {...}}, or None if both fail
         """
-        print(f"[FBCYLScraper] Fetching complete data for match: {match_uuid}")
-
         moves_data = self.get_match_json_moves(match_uuid)
         stats_data = self.get_match_json_stats(match_uuid)
 
         if not moves_data and not stats_data:
-            print(f"[FBCYLScraper] Failed to fetch any data for match {match_uuid}")
             return None
 
         return {

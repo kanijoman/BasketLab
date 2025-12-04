@@ -1,0 +1,85 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller MetricsForAll.spec
+
+    - name: Create DMG (macOS)
+      run: |
+        # Create a temporary directory for the DMG contents
+        mkdir -p dmg_contents
+        cp -r dist/MetricsForAll.app dmg_contents/
+
+        # Create DMG
+        hdiutil create -volname "MetricsForAll" -srcfolder dmg_contents -ov -format UDZO MetricsForAll-macOS.dmg
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MetricsForAll-macOS
+        path: MetricsForAll-macOS.dmg
+
+  create-release:
+    needs: [build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download macOS artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: MetricsForAll-macOS
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          MetricsForAll-macOS.dmg
+        body: |
+          ## 📦 Descargas
+
+          - **macOS**: Descarga `MetricsForAll-macOS.dmg`, abre y arrastra la app a Aplicaciones
+          - **Windows**: Descarga `MetricsForAll.exe` adjunto manualmente al release
+
+          ## ⚙️ Requisitos
+
+          - **MongoDB** debe estar instalado y corriendo en tu sistema
+          - Conexión a internet para scraping de datos
+
+          ## 📝 Notas
+
+          - Primera ejecución puede tardar unos segundos (el archivo se descomprime en memoria)
+          - En macOS, es posible que necesites permitir la app en Preferencias del Sistema > Seguridad
+          - El ejecutable de Windows se genera y sube manualmente
+
+          ---
+
+          macOS build generado automáticamente por GitHub Actions
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

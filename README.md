@@ -240,17 +240,77 @@ El análisis IN/OUT compara el rendimiento del equipo cuando un jugador específ
 
 ## Instalación
 
+### 📥 Opción 1: Descargar Ejecutable (Recomendado)
+
+**La forma más fácil de usar MetricsForAll es descargar el ejecutable pre-compilado:**
+
+1. Ve a la página de [Releases](https://github.com/kanijoman/MetricsForAll/releases)
+2. Descarga el archivo según tu sistema operativo:
+   - **Windows**: `MetricsForAll-Windows.zip`
+   - **macOS**: `MetricsForAll-macOS.dmg`
+3. Extrae/Instala y ejecuta:
+   - **Windows**: Extrae el ZIP y ejecuta `MetricsForAll.exe`
+   - **macOS**: Abre el DMG y arrastra la app a Aplicaciones
+
+**Requisitos:**
+- MongoDB instalado y corriendo en tu sistema
+- Conexión a internet para scraping de datos
+
+> **Nota para macOS**: La primera vez puede aparecer un aviso de seguridad. Ve a Preferencias del Sistema > Seguridad y Privacidad para permitir la aplicación.
+
+---
+
+### 💻 Opción 2: Ejecutar desde Código Fuente
+
 ```bash
-# Instalar paquetes requeridos
-pip install numpy matplotlib pymongo PyQt6
+# Clonar el repositorio
+git clone https://github.com/kanijoman/MetricsForAll.git
+cd MetricsForAll
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Ejecutar la aplicación
+python src/main.py
+```
+
+---
+
+### 🔨 Opción 3: Compilar Localmente
+
+Si quieres crear tu propio ejecutable:
+
+**Windows:**
+```powershell
+# Ejecutar el script de build
+.\build_windows.ps1
+```
+
+**macOS/Linux:**
+```bash
+# Instalar PyInstaller
+pip install pyinstaller
+
+# Compilar
+pyinstaller MetricsForAll.spec
+
+# El ejecutable estará en dist/MetricsForAll/
 ```
 
 ## Uso
 
-Ejecutar la aplicación principal:
+### Ejecutar la Aplicación
+
+**Si descargaste el ejecutable:**
+- Windows: Doble clic en `MetricsForAll.exe`
+- macOS: Abrir `MetricsForAll.app` desde Aplicaciones
+
+**Si ejecutas desde código fuente:**
 ```bash
 python src/main.py
 ```
+
+### Ejemplos de Visualización
 
 Generar visualizaciones de cancha FIBA:
 ```bash
