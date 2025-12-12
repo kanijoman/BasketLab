@@ -2,18 +2,22 @@
 
 import pymongo
 from pymongo.errors import ConnectionFailure
+from .db_config import get_mongodb_connection_string
 
 
 class MongoDBConnection:
     """Manages MongoDB connection."""
 
-    def __init__(self, connection_string: str = "mongodb+srv://kanijoman:S0p0rt3s@mycluster.g3slkjv.mongodb.net/"):
+    def __init__(self, connection_string: str = None):
         """
         Initialize MongoDB client.
 
         Args:
-            connection_string: MongoDB connection URI
+            connection_string: MongoDB connection URI (optional, uses config if not provided)
         """
+        if connection_string is None:
+            connection_string = get_mongodb_connection_string()
+
         try:
             self.client = pymongo.MongoClient(connection_string)
             self.client.server_info()  # Test connection

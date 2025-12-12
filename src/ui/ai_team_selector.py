@@ -1,20 +1,20 @@
 """
-AI Team Selector - Dialog for selecting a team for AI analysis.
+AI Team Selector - Dialog for selecting a team for AI analysis and generating PDF reports.
 """
 
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QListWidget,
                               QPushButton, QLabel, QMessageBox, QListWidgetItem,
-                              QRadioButton, QButtonGroup, QGroupBox, QLineEdit)
+                              QRadioButton, QButtonGroup, QGroupBox, QLineEdit,
+                              QFileDialog, QProgressDialog, QApplication)
 from PyQt6.QtCore import Qt
 from typing import List, Dict
 import numpy as np
+import matplotlib.pyplot as plt
 from shotcharts.zone_analysis import ZoneAnalyzer
-from .numeric_utils import safe_float
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
-from .ai_analysis_window import AIAnalysisWindow
+from .numeric_utils import safe_float
 from .ui_utils import set_app_icon
 from .team_utils import get_team_index_in_document
-import matplotlib.pyplot as plt
 
 
 class AITeamSelector(QDialog):
@@ -276,22 +276,22 @@ class AITeamSelector(QDialog):
             # Determine analysis type
             analysis_type = 'opponent' if self.radio_opponent.isChecked() else 'own'
 
-            # Create shot chart visualization
-            fig = self.zone_analyzer.plot_zone_analysis(
-                zone_stats,
-                title=f"{team_name} - Análisis por Zonas",
-                figsize=(10, 10)
+            # Ask where to save the PDF report
+            analysis_type_text = "Rival" if analysis_type == 'opponent' else "Propio"
+            default_filename = f"Informe_Scouting_{analysis_type_text}_{team_name.replace(' ', '_')}.pdf"
+
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                f"Guardar Informe de Scouting {analysis_type_text}",
+                default_filename,
+                "PDF Files (*.pdf)"
             )
 
-            # Open AI analysis window
-            ai_window = AIAnalysisWindow(
-                team_name=team_name,
-                stats=combined_stats,
-                shot_chart_figure=fig,
-                analysis_type=analysis_type,
-                parent=self.parent()
-            )
-            ai_window.show()
+            if not file_path:
+                return  # User cancelled
+
+            # Generate report directly
+            self._generate_team_pdf_report(team_name, combined_stats, zone_stats, analysis_type, file_path)
 
             # Close this dialog
             self.accept()
@@ -448,22 +448,123 @@ class AITeamSelector(QDialog):
             traceback.print_exc()
             return {}
 
+    def _generate_team_pdf_report(self, team_name: str, stats: dict, zone_stats: dict,
+                                   analysis_type: str, file_path: str):
+        """Generate PDF report for team analysis with AI insights."""
+        from ai import TeamAnalyzer, AnalysisConfig
+        from io import BytesIO
+
+        try:
+            # Check API key
+            if not AnalysisConfig.has_api_key('gemini'):
+                QMessageBox.warning(
+                    self,
+                    "API Key Requerida",
+                    "No se ha configurado una API key de Google Gemini.\n\n"
+                    "Vaya a la ventana de Análisis IA y configure su API key de Google Gemini (gratis)."
+                )
+                return
+
+            # Create progress dialog
+            progress = QProgressDialog("Generando informe...", "Cancelar", 0, 100, self)
+            progress.setWindowTitle("Generando Informe PDF")
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setValue(0)
+            QApplication.processEvents()
+
+            # Create shot chart image
+            progress.setLabelText("Generando gráfico de lanzamientos...")
+            progress.setValue(20)
+            QApplication.processEvents()
+
+            fig = self.zone_analyzer.plot_zone_analysis(
+                zone_stats,
+                title=f"{team_name} - Análisis por Zonas",
+                figsize=(10, 10)
+            )
+
+            # Convert figure to bytes
+            buf = BytesIO()
+            fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+            shot_chart_bytes = buf.getvalue()
+            buf.close()
+            plt.close(fig)
+
+            if progress.wasCanceled():
+                return
+
+            # Generate AI analysis
+            progress.setLabelText("Generando análisis con IA...")
+            progress.setValue(40)
+            QApplication.processEvents()
+
+            analyzer = TeamAnalyzer(provider='gemini', model='flash')
+            analysis_text = analyzer.analyze_team_performance(
+                team_name=team_name,
+                stats=stats,
+                shot_chart_image=shot_chart_bytes,
+                include_recommendations=True,
+                analysis_type=analysis_type
+            )
+
+            if progress.wasCanceled():
+                return
+
+            # Clean up HTML if AI wrapped it in markdown code blocks
+            if '```html' in analysis_text:
+                analysis_text = analysis_text.replace('```html', '').replace('```', '').strip()
+            elif analysis_text.startswith('```'):
+                lines = analysis_text.split('\n')
+                if lines[0].startswith('```'):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith('```'):
+                    lines = lines[:-1]
+                analysis_text = '\n'.join(lines).strip()
+
+            # Generate PDF
+            progress.setLabelText("Creando documento PDF...")
+            progress.setValue(70)
+            QApplication.processEvents()
+
+            from .pdf_generator import PDFGenerator
+
+            PDFGenerator.generate_from_html(
+                file_path=file_path,
+                html_content=analysis_text,
+                team_name=team_name,
+                shot_chart_figure=fig
+            )
+
+            progress.setValue(100)
+            progress.close()
+
+            QMessageBox.information(
+                self,
+                "Informe Generado",
+                f"Informe PDF guardado exitosamente en:\n{file_path}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"Error al generar informe PDF:\n{str(e)}"
+            )
+
     def _generate_individual_scouting_report(self, team_name: str, team_code: str):
         """Generate individual scouting report with AI-powered notes for each player."""
-        from PyQt6.QtWidgets import QFileDialog, QProgressDialog, QApplication
-        from PyQt6.QtCore import Qt
         from .scouting_report_generator import ScoutingReportGenerator
         from .advanced_stats_calculator import AdvancedStatsCalculator
         from ai import TeamAnalyzer, AnalysisConfig
 
         try:
             # Primero, verificar que hay API key configurada
-            if not AnalysisConfig.has_api_key('gemini') and not AnalysisConfig.has_api_key('openai'):
+            if not AnalysisConfig.has_api_key('gemini'):
                 QMessageBox.warning(
                     self,
                     "API Key Requerida",
-                    "Para generar notas de IA, necesita configurar una API key.\n\n"
-                    "Vaya a la ventana de Análisis IA y configure su API key de Google Gemini (gratis) o OpenAI."
+                    "Para generar notas de IA, necesita configurar una API key de Google Gemini.\n\n"
+                    "Vaya a la ventana de Análisis IA y configure su API key (gratis)."
                 )
                 return
 
@@ -582,12 +683,9 @@ class AITeamSelector(QDialog):
             progress.setValue(30)
             QApplication.processEvents()
 
-            # Inicializar analizador de IA (preferir Gemini por ser gratis)
-            provider = 'gemini' if AnalysisConfig.has_api_key('gemini') else 'openai'
-            model = 'flash'  # Usar modelo rápido para múltiples llamadas
-
+            # Inicializar analizador de IA con Gemini Flash
             try:
-                analyzer = TeamAnalyzer(provider=provider, model=model)
+                analyzer = TeamAnalyzer(provider='gemini', model='flash')
             except Exception as e:
                 progress.close()
                 QMessageBox.critical(
@@ -601,6 +699,8 @@ class AITeamSelector(QDialog):
             # Generar notas para cada jugador del equipo
             ai_notes = {}
             total_players = len(team_players)
+
+            import time
 
             for i, player in enumerate(team_players, 1):
                 player_name = player.get('player_name', '')
@@ -620,6 +720,11 @@ class AITeamSelector(QDialog):
                         league_stats=league_quartiles
                     )
                     ai_notes[player_name] = notes
+
+                    # Pequeño delay para evitar rate limits (solo entre jugadores, no después del último)
+                    if i < total_players:
+                        time.sleep(0.5)
+
                 except Exception as e:
                     # Si falla para un jugador, continuar con los demás
                     ai_notes[player_name] = f"Error generando notas: {str(e)}"

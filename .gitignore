@@ -34,6 +34,9 @@ MANIFEST
 *.key
 *.env
 
+# Database credentials (DO NOT COMMIT)
+src/database/db_credentials.txt
+
 # IDEs
 .vscode/
 .idea/

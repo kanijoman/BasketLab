@@ -11,7 +11,6 @@ from database import MongoDBHandler
 from utils import normalize_year
 from .stats_window import TeamStatsWindow
 from .shotchart_window import ShotChartWindow
-from .ai_analysis_window import AIAnalysisWindow
 from .temporal_evolution_window import TemporalEvolutionWindow
 from .ranking_window import PlayerRankingWindow
 from .weekly_report_dialog import WeeklyReportDialog
@@ -676,8 +675,10 @@ class BasketballSeasonApp(QMainWindow):
             gender = self.gender_combo.currentText()
             territory = self.territory_combo.currentText()
 
-        if not season or not gender or not territory:
-            return            # Get season value from mapping
+            if not season or not gender or not territory:
+                return
+
+            # Get season value from mapping
             season_value = self.season_values.get(season, "")
             if not season_value:
                 return
@@ -720,8 +721,10 @@ class BasketballSeasonApp(QMainWindow):
             territory = self.territory_combo.currentText()
             category = self.category_combo.currentText()
 
-        if not season or not gender or not territory or not category:
-            return            # Get values from mappings
+            if not season or not gender or not territory or not category:
+                return
+
+            # Get values from mappings
             gender_value = self.fbcyl_gender_values.get(gender, "")
             territory_value = self.fbcyl_territory_values.get(territory, "0")
             category_value = self.fbcyl_category_values.get(category, "")
