@@ -209,19 +209,26 @@ class ScoutingReportGenerator:
         # Posición (no disponible, dejar en blanco)
         position = ""
 
-        # Añadir información
-        p = left_cell.add_paragraph()
+        # Añadir información - usar el párrafo existente de la celda
+        p = left_cell.paragraphs[0]
+        p.paragraph_format.space_before = Pt(0)
+        p.paragraph_format.space_after = Pt(0)
         self.document_builder.add_formatted_text(p, f"#{dorsal}# ", bold=True, size=16)
         self.document_builder.add_formatted_text(p, player_name, bold=True, size=16)
 
-        # Fecha de nacimiento y edad
+        # Fecha de nacimiento
         p = left_cell.add_paragraph()
-        if birth_date or age:
-            birth_str = birth_date if birth_date else ""
-            age_str = f"{age} años" if age else ""
-            self.document_builder.add_formatted_text(p, f"Fecha de nacimiento: {birth_str}    Edad: {age_str}", size=11)
+        if birth_date:
+            self.document_builder.add_formatted_text(p, f"Fecha de nacimiento: {birth_date}", size=11)
         else:
-            self.document_builder.add_formatted_text(p, "Fecha de nacimiento:                    Edad:", size=11)
+            self.document_builder.add_formatted_text(p, "Fecha de nacimiento:", size=11)
+
+        # Edad
+        p = left_cell.add_paragraph()
+        if age:
+            self.document_builder.add_formatted_text(p, f"Edad: {age} años", size=11)
+        else:
+            self.document_builder.add_formatted_text(p, "Edad:", size=11)
 
         # Posición
         p = left_cell.add_paragraph()

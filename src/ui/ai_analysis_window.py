@@ -183,29 +183,20 @@ class AIAnalysisWindow(QMainWindow):
         header_label.setFont(header_font)
         layout.addWidget(header_label)
 
-        # Provider selection
-        provider_layout = QHBoxLayout()
-        provider_layout.addWidget(QLabel("AI Provider:"))
+        # API Key configuration
+        api_layout = QHBoxLayout()
+        api_label = QLabel("🤖 Google Gemini 2.0 Flash (Free)")
+        api_label.setStyleSheet("font-weight: bold; color: #9C27B0;")
+        api_layout.addWidget(api_label)
 
-        self.provider_combo = QComboBox()
-        self.provider_combo.addItems(["Google Gemini (Free)", "OpenAI GPT-4o"])
-        self.provider_combo.currentTextChanged.connect(self.on_provider_changed)
-        provider_layout.addWidget(self.provider_combo)
-
-        # Model selection
-        provider_layout.addWidget(QLabel("Model:"))
-        self.model_combo = QComboBox()
-        self.model_combo.addItems(["Flash (Fast)", "Pro (Better Quality)"])
-        provider_layout.addWidget(self.model_combo)
-
-        provider_layout.addStretch()
+        api_layout.addStretch()
 
         # Configure API key button
         self.config_btn = QPushButton("⚙️ Configure API Key")
         self.config_btn.clicked.connect(self.configure_api_key)
-        provider_layout.addWidget(self.config_btn)
+        api_layout.addWidget(self.config_btn)
 
-        layout.addLayout(provider_layout)
+        layout.addLayout(api_layout)
 
         # Options
         options_layout = QHBoxLayout()
@@ -314,33 +305,9 @@ class AIAnalysisWindow(QMainWindow):
             }
         """)
 
-    def on_provider_changed(self, text: str):
-        """Handle provider change."""
-        if "Gemini" in text:
-            self.model_combo.clear()
-            self.model_combo.addItems(["Flash (Fast)", "Pro (Better Quality)"])
-        else:
-            self.model_combo.clear()
-            self.model_combo.addItems(["Mini (Cheaper)", "Standard (Best Quality)"])
-
-        self.check_api_key_status()
-
-    def get_current_provider(self) -> str:
-        """Get currently selected provider."""
-        text = self.provider_combo.currentText()
-        return 'gemini' if 'Gemini' in text else 'openai'
-
-    def get_current_model(self) -> str:
-        """Get currently selected model."""
-        text = self.model_combo.currentText()
-        if 'Flash' in text or 'Mini' in text:
-            return 'flash' if 'Flash' in text else 'mini'
-        else:
-            return 'pro' if 'Pro' in text else 'standard'
-
     def check_api_key_status(self):
         """Check if API key is configured and update UI."""
-        provider = self.get_current_provider()
+        provider = 'gemini'
         has_key = AnalysisConfig.has_api_key(provider)
 
         if has_key:
@@ -354,7 +321,7 @@ class AIAnalysisWindow(QMainWindow):
 
     def configure_api_key(self):
         """Show dialog to configure API key."""
-        provider = self.get_current_provider()
+        provider = 'gemini'
         dialog = ApiKeyDialog(provider, self)
 
         if dialog.exec():
@@ -380,9 +347,9 @@ class AIAnalysisWindow(QMainWindow):
     def generate_analysis(self):
         """Generate AI analysis report."""
         try:
-            # Initialize analyzer
-            provider = self.get_current_provider()
-            model = self.get_current_model()
+            # Initialize analyzer - always use Gemini Flash
+            provider = 'gemini'
+            model = 'flash'
 
             self.analyzer = TeamAnalyzer(provider=provider, model=model)
 

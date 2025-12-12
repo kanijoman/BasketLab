@@ -46,6 +46,7 @@ datas = [
     ('resources/MfA.ico', 'resources'),
     ('resources/MfA.png', 'resources'),
     ('src/JSON_samples', 'JSON_samples'),
+    ('src/database/db_credentials.txt', 'database'),  # Include DB credentials in distribution
 ]
 
 # Add collected data files

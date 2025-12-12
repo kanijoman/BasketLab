@@ -11,12 +11,12 @@ class MongoDBHandler:
     Delegates operations to MongoDBConnection and BasketballRepository.
     """
 
-    def __init__(self, connection_string: str = "mongodb+srv://kanijoman:S0p0rt3s@mycluster.g3slkjv.mongodb.net/"):
+    def __init__(self, connection_string: str = None):
         """
         Initialize MongoDB handler.
 
         Args:
-            connection_string: MongoDB connection URI
+            connection_string: MongoDB connection URI (optional, uses config if not provided)
         """
         self.connection = MongoDBConnection(connection_string)
         self.repository = BasketballRepository(self.connection)

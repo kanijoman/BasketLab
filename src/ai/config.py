@@ -20,7 +20,7 @@ class AnalysisConfig:
 
     # Model configurations
     GEMINI_MODELS = {
-        'flash': 'gemini-flash-latest',  # Use the stable -latest tag
+        'flash': 'gemini-2.0-flash-exp',  # Gemini 2.0 Flash (experimental, high RPM)
         'pro': 'gemini-pro-latest'        # Use the stable -latest tag
     }
 

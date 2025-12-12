@@ -141,7 +141,13 @@ class TeamAnalyzer:
             return response_text
 
         except Exception as e:
-            return f"Error generating analysis: {str(e)}\n\nPlease check your API key and internet connection."
+            error_msg = str(e).lower()
+            if 'quota' in error_msg or 'resource_exhausted' in error_msg:
+                return "⚠️ **Cuota de API agotada**\n\nHa alcanzado el límite de su API key de Gemini. Por favor:\n- Espere unos minutos e intente nuevamente\n- O configure una nueva API key en Settings"
+            elif 'rate' in error_msg or 'limit' in error_msg:
+                return "⚠️ **Límite de velocidad alcanzado**\n\nHa realizado demasiadas solicitudes. Espere 1-2 minutos e intente nuevamente."
+            else:
+                return f"Error generating analysis: {str(e)}\n\nPlease check your API key and internet connection."
 
     def _analyze_with_openai(self, context: str, image: Optional[bytes] = None, analysis_type: str = 'own') -> str:
         """Generate analysis using OpenAI."""
@@ -245,7 +251,13 @@ class TeamAnalyzer:
             return response.text.strip()
 
         except Exception as e:
-            return f"Error generando análisis: {str(e)}"
+            error_msg = str(e).lower()
+            if 'quota' in error_msg or 'resource_exhausted' in error_msg:
+                return "⚠️ Cuota de API agotada. Intente de nuevo en unos minutos o use otra API key."
+            elif 'rate' in error_msg or 'limit' in error_msg:
+                return "⚠️ Límite de velocidad alcanzado. Espere unos segundos e intente nuevamente."
+            else:
+                return f"Error generando análisis: {str(e)}"
 
     def _analyze_player_with_openai(self, context: str) -> str:
         """Generate player scouting notes using OpenAI."""
