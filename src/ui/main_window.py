@@ -410,6 +410,28 @@ class BasketballSeasonApp(QMainWindow):
             # Reset window size for FEB
             self.setMinimumSize(450, 650)
 
+            # Load FEB seasons
+            try:
+                initial_year = "2024"
+                soup, _ = self.scraper.get_page_content(initial_year)
+                seasons = self.scraper.get_seasons(soup)
+                if seasons:
+                    self.seasons = [text for text, _ in seasons]
+                    self.season_values = {text: value for text, value in seasons}
+                else:
+                    self.seasons = [f"{y}/{str(y+1)[-2:]}" for y in range(2015, 2026)]
+                    self.season_values = {text: normalize_year(text) for text in self.seasons}
+
+                self.season_combo.clear()
+                self.season_combo.addItem("")
+                self.season_combo.addItems(self.seasons)
+            except Exception as e:
+                self.seasons = [f"{y}/{str(y+1)[-2:]}" for y in range(2015, 2026)]
+                self.season_values = {text: normalize_year(text) for text in self.seasons}
+                self.season_combo.clear()
+                self.season_combo.addItem("")
+                self.season_combo.addItems(self.seasons)
+
             # Load FEB competitions dynamically
             try:
                 feb_competitions = self.scraper.get_feb_competitions()
@@ -423,6 +445,10 @@ class BasketballSeasonApp(QMainWindow):
                 QMessageBox.warning(self, "Error", f"No se pudieron cargar las competiciones de FEB: {str(e)}")
                 self.competitions = []
                 self.competition_urls = {}
+
+            # Clear group combo
+            self.group_combo.clear()
+            self.group_combo.addItem("")
 
         elif scope == "FBCYL":
             # Show season dropdown
@@ -982,53 +1008,107 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+                    return
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso", "Por favor, seleccione todas las opciones antes de continuar.")
+                    return
+                group_text = "default"  # FBCYL doesn't use groups
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
 
-            # Update data first (same logic as on_view_stats)
-            season_value = self.season_values.get(season_text, normalize_year(season_text))
-            group_value = self.group_values.get(group_text, group_text)
-            norm_year = normalize_year(season_text)
+            # Update data first
             session = requests.Session()
-
-            # Get competition URL
-            competition_url = self.competition_urls.get(competition)
-            if not competition_url:
-                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
-                return
 
             # Update progress bar visibility
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
-            if not matches:
-                self.progress_bar.setVisible(False)
-                self.progress_label.setVisible(False)
-                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
-                return
+            if self.current_scope == "FEB":
+                season_value = self.season_values.get(season_text, normalize_year(season_text))
+                group_value = self.group_values.get(group_text, group_text)
+                norm_year = normalize_year(season_text)
 
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+                # Get competition URL
+                competition_url = self.competition_urls.get(competition)
+                if not competition_url:
+                    QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                    return
+
+                matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
+                if not matches:
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                    return
+
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            elif self.current_scope == "FBCYL":
+                # Get competition ID from mapping
+                competition_id = self.fbcyl_competition_values.get(competition)
+                if not competition_id:
+                    QMessageBox.warning(self, "Error", f"No se encontró ID para la competición: {competition}")
+                    return
+
+                self.progress_label.setText("Progreso: Obteniendo lista de partidos...")
+                QApplication.processEvents()
+
+                # Get match UUIDs from FBCYL
+                matches = self.fbcyl_scraper.get_matches(competition_id, round_number=0)
+                if not matches:
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta competición.")
+                    return
+
+                # Create collection name for FBCYL
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+            else:
+                return
 
             self.progress_bar.setMaximum(len(matches))
             self.progress_bar.setValue(0)
             self.progress_label.setText("Progreso: Actualizando datos...")
             QApplication.processEvents()
 
-            # Update matches
+            # Update matches based on scope
             for i, match_code in enumerate(matches, 1):
-                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
+                self.progress_label.setText(f"Progreso: Procesando partido {i}/{len(matches)}")
                 self.progress_bar.setValue(i)
                 QApplication.processEvents()
 
                 try:
-                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
-                        boxscore = self.scraper.fetch_boxscore(match_code, session)
-                        if boxscore:
-                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    if self.current_scope == "FEB":
+                        if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                            boxscore = self.scraper.fetch_boxscore(match_code, session)
+                            if boxscore:
+                                self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    elif self.current_scope == "FBCYL":
+                        if not self.db_handler.document_exists(collection_name, match_code) or i == len(matches):
+                            match_complete_data = self.fbcyl_scraper.get_match_complete_data(match_code)
+                            if match_complete_data:
+                                self.db_handler.insert_fbcyl_match(collection_name, match_code, match_complete_data)
                 except Exception as e:
                     pass
 
@@ -1044,7 +1124,16 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_label.setVisible(False)
 
             if not player_stats:
-                QMessageBox.information(self, "Sin datos", "No hay estadísticas de jugadoras disponibles para las opciones seleccionadas.")
+                QMessageBox.information(
+                    self,
+                    "Sin datos",
+                    "No hay estadísticas de jugadoras disponibles para las opciones seleccionadas.\n\n"
+                    "Esto puede ocurrir si:\n"
+                    "• No se han descargado datos para esta competición aún\n"
+                    "• Los partidos no tienen jugadoras con tiempo de juego registrado\n"
+                    "• La descarga de datos no se completó correctamente\n\n"
+                    f"Colección: {collection_name}"
+                )
                 return
 
             # Import here to avoid circular imports
@@ -1078,37 +1167,80 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso",
-                                  "Por favor, seleccione competición, temporada y grupo antes de ver los gráficos de lanzamiento.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver los gráficos de lanzamiento.")
+                    return
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver los gráficos de lanzamiento.")
+                    return
+                group_text = "default"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
 
-            # Update data first (same as on_view_stats)
-            season_value = self.season_values.get(season_text, normalize_year(season_text))
-            group_value = self.group_values.get(group_text, group_text)
-            norm_year = normalize_year(season_text)
+            # Update data first
             session = requests.Session()
-
-            # Get competition URL
-            competition_url = self.competition_urls.get(competition)
-            if not competition_url:
-                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
-                return
 
             # Update progress bar visibility
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
-            if not matches:
-                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
-                self.progress_bar.setVisible(False)
-                self.progress_label.setVisible(False)
-                return
+            if self.current_scope == "FEB":
+                season_value = self.season_values.get(season_text, normalize_year(season_text))
+                group_value = self.group_values.get(group_text, group_text)
+                norm_year = normalize_year(season_text)
 
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+                competition_url = self.competition_urls.get(competition)
+                if not competition_url:
+                    QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                    return
+
+                matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
+                if not matches:
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    return
+
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+
+            elif self.current_scope == "FBCYL":
+                competition_id = self.fbcyl_competition_values.get(competition)
+                if not competition_id:
+                    QMessageBox.warning(self, "Error", f"No se encontró ID para la competición: {competition}")
+                    return
+
+                matches = self.fbcyl_scraper.get_matches(competition_id, round_number=0)
+                if not matches:
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta competición.")
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    return
+
+                # Create collection name for FBCYL
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+            else:
+                return
 
             self.progress_bar.setMaximum(len(matches))
             self.progress_bar.setValue(0)
@@ -1116,16 +1248,21 @@ class BasketballSeasonApp(QMainWindow):
             QApplication.processEvents()
 
             for i, match_code in enumerate(matches, 1):
-                self.progress_label.setText(f"Progreso: Procesando partido {match_code}")
+                self.progress_label.setText(f"Progreso: Procesando partido {i}/{len(matches)}")
                 self.progress_bar.setValue(i)
                 QApplication.processEvents()
 
                 try:
-                    # Only download if it doesn't exist or if it's the last match (for possible updates)
-                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
-                        boxscore = self.scraper.fetch_boxscore(match_code, session)
-                        if boxscore:
-                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    if self.current_scope == "FEB":
+                        if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                            boxscore = self.scraper.fetch_boxscore(match_code, session)
+                            if boxscore:
+                                self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    elif self.current_scope == "FBCYL":
+                        if not self.db_handler.document_exists(collection_name, match_code) or i == len(matches):
+                            match_complete_data = self.fbcyl_scraper.get_match_complete_data(match_code)
+                            if match_complete_data:
+                                self.db_handler.insert_fbcyl_match(collection_name, match_code, match_complete_data)
                 except Exception as e:
                     pass
 
@@ -1160,15 +1297,35 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso",
-                                  "Por favor, seleccione competición, temporada y grupo antes de realizar el análisis IA.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de realizar el análisis IA.")
+                    return
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de realizar el análisis IA.")
+                    return
+                group_text = "default"
+
+                # Create collection name for FBCYL
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
-
-            # Get collection name
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
 
             # Update all data first (boxscores + shotcharts)
             success = self._update_data_for_ai_analysis(competition, season_text, group_text, collection_name)
@@ -1206,17 +1363,7 @@ class BasketballSeasonApp(QMainWindow):
         Returns True if successful, False otherwise.
         """
         try:
-            # Prepare session and parameters
-            season_value = self.season_values.get(season_text, normalize_year(season_text))
-            group_value = self.group_values.get(group_text, group_text)
-            norm_year = normalize_year(season_text)
             session = requests.Session()
-
-            # Get competition URL
-            competition_url = self.competition_urls.get(competition)
-            if not competition_url:
-                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
-                return False
 
             # Show progress bar
             self.progress_bar.setVisible(True)
@@ -1225,20 +1372,45 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_bar.setMaximum(0)  # Indeterminate
             QApplication.processEvents()
 
-            # Get matches
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
-            if not matches:
-                self.progress_bar.setVisible(False)
-                self.progress_label.setVisible(False)
-                QMessageBox.information(
-                    self,
-                    "Sin datos",
-                    f"No se encontraron partidos para {group_text}.\n\n"
-                    f"Esto puede ocurrir si:\n"
-                    f"• Los partidos aún no se han jugado\n"
-                    f"• Los resultados no están publicados en la web de la FEB\n"
-                    f"• El grupo seleccionado no tiene calendario disponible"
-                )
+            # Get matches based on scope
+            if self.current_scope == "FEB":
+                season_value = self.season_values.get(season_text, normalize_year(season_text))
+                group_value = self.group_values.get(group_text, group_text)
+                norm_year = normalize_year(season_text)
+
+                competition_url = self.competition_urls.get(competition)
+                if not competition_url:
+                    QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                    return False
+
+                matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
+                if not matches:
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    QMessageBox.information(
+                        self,
+                        "Sin datos",
+                        f"No se encontraron partidos para {group_text}.\n\n"
+                        f"Esto puede ocurrir si:\n"
+                        f"• Los partidos aún no se han jugado\n"
+                        f"• Los resultados no están publicados en la web de la FEB\n"
+                        f"• El grupo seleccionado no tiene calendario disponible"
+                    )
+                    return False
+
+            elif self.current_scope == "FBCYL":
+                competition_id = self.fbcyl_competition_values.get(competition)
+                if not competition_id:
+                    QMessageBox.warning(self, "Error", f"No se encontró ID para la competición: {competition}")
+                    return False
+
+                matches = self.fbcyl_scraper.get_matches(competition_id, round_number=0)
+                if not matches:
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta competición.")
+                    return False
+            else:
                 return False
 
             # Step 2: Update boxscores
@@ -1252,11 +1424,16 @@ class BasketballSeasonApp(QMainWindow):
                 QApplication.processEvents()
 
                 try:
-                    # Only download if it doesn't exist or if it's the last match
-                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
-                        boxscore = self.scraper.fetch_boxscore(match_code, session)
-                        if boxscore:
-                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    if self.current_scope == "FEB":
+                        if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                            boxscore = self.scraper.fetch_boxscore(match_code, session)
+                            if boxscore:
+                                self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    elif self.current_scope == "FBCYL":
+                        if not self.db_handler.document_exists(collection_name, match_code) or i == len(matches):
+                            match_complete_data = self.fbcyl_scraper.get_match_complete_data(match_code)
+                            if match_complete_data:
+                                self.db_handler.insert_fbcyl_match(collection_name, match_code, match_complete_data)
                 except Exception as e:
                     pass  # Silently continue with other matches
 
@@ -1340,15 +1517,35 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso",
-                                  "Por favor, seleccione competición, temporada y grupo antes de ver la evolución temporal.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver la evolución temporal.")
+                    return
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver la evolución temporal.")
+                    return
+
+                # Create collection name for FBCYL
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+                group_text = "default"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
-
-            # Get collection name
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
 
             # Check if collection has data
             try:
@@ -1390,15 +1587,35 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso",
-                                  "Por favor, seleccione competición, temporada y grupo antes de ver los ránkings.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver los ránkings.")
+                    return
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver los ránkings.")
+                    return
+
+                # Create collection name for FBCYL
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+                group_text = "default"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
-
-            # Get collection name
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
 
             # Get player stats
             self.progress_label.setText("Cargando estadísticas de jugadores...")
@@ -1439,57 +1656,102 @@ class BasketballSeasonApp(QMainWindow):
 
             competition = self.competition_combo.currentText()
             season_text = self.season_combo.currentText()
-            group_text = self.group_combo.currentText()
 
-            if not all([competition, season_text, group_text]):
-                QMessageBox.warning(self, "Aviso",
-                                  "Por favor, seleccione competición, temporada y grupo antes de generar el informe.")
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de generar el informe.")
+                    return
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de generar el informe.")
+                    return
+
+                # Create collection name for FBCYL
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+                group_text = "default"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
                 return
-
-            # Get collection name
-            collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
 
             # Update data first to ensure we have the latest information
-            season_value = self.season_values.get(season_text, normalize_year(season_text))
-            group_value = self.group_values.get(group_text, group_text)
-            norm_year = normalize_year(season_text)
             session = requests.Session()
-
-            # Get competition URL
-            competition_url = self.competition_urls.get(competition)
-            if not competition_url:
-                QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
-                return
 
             # Update progress bar visibility
             self.progress_bar.setVisible(True)
             self.progress_label.setVisible(True)
 
-            self.progress_label.setText("Actualizando datos desde FEB...")
-            QApplication.processEvents()
+            if self.current_scope == "FEB":
+                season_value = self.season_values.get(season_text, normalize_year(season_text))
+                group_value = self.group_values.get(group_text, group_text)
+                norm_year = normalize_year(season_text)
 
-            matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
-            if not matches:
-                self.progress_bar.setVisible(False)
-                self.progress_label.setVisible(False)
-                QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                competition_url = self.competition_urls.get(competition)
+                if not competition_url:
+                    QMessageBox.warning(self, "Error", f"No se encontró URL para la competición: {competition}")
+                    return
+
+                self.progress_label.setText("Actualizando datos desde FEB...")
+                QApplication.processEvents()
+
+                matches = self.scraper.get_matches(season_value, group_value, norm_year, session, competition_url)
+                if not matches:
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para actualizar.")
+                    return
+
+            elif self.current_scope == "FBCYL":
+                competition_id = self.fbcyl_competition_values.get(competition)
+                if not competition_id:
+                    QMessageBox.warning(self, "Error", f"No se encontró ID para la competición: {competition}")
+                    return
+
+                self.progress_label.setText("Actualizando datos desde FBCYL...")
+                QApplication.processEvents()
+
+                matches = self.fbcyl_scraper.get_matches(competition_id, round_number=0)
+                if not matches:
+                    self.progress_bar.setVisible(False)
+                    self.progress_label.setVisible(False)
+                    QMessageBox.information(self, "Sin datos", "No se encontraron partidos para esta competición.")
+                    return
+            else:
                 return
 
             self.progress_bar.setMaximum(len(matches))
             self.progress_bar.setValue(0)
             QApplication.processEvents()
 
-            # Update matches
+            # Update matches based on scope
             for i, match_code in enumerate(matches, 1):
                 self.progress_label.setText(f"Actualizando partido {i}/{len(matches)}...")
                 self.progress_bar.setValue(i)
                 QApplication.processEvents()
 
                 try:
-                    if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
-                        boxscore = self.scraper.fetch_boxscore(match_code, session)
-                        if boxscore:
-                            self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    if self.current_scope == "FEB":
+                        if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                            boxscore = self.scraper.fetch_boxscore(match_code, session)
+                            if boxscore:
+                                self.db_handler.insert_boxscore(collection_name, match_code, boxscore)
+                    elif self.current_scope == "FBCYL":
+                        if not self.db_handler.document_exists(collection_name, match_code) or i == len(matches):
+                            match_complete_data = self.fbcyl_scraper.get_match_complete_data(match_code)
+                            if match_complete_data:
+                                self.db_handler.insert_fbcyl_match(collection_name, match_code, match_complete_data)
                 except Exception as e:
                     pass
 

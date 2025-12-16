@@ -3,7 +3,8 @@
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QTableWidget, QHeaderView, QTabWidget, QPushButton,
                               QFileDialog, QMessageBox, QMenu, QTableWidgetItem, QLabel,
-                              QRadioButton, QButtonGroup, QComboBox, QFrame, QDialog)
+                              QRadioButton, QButtonGroup, QComboBox, QFrame, QDialog,
+                              QProgressDialog, QApplication)
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QColor
 from typing import List, Dict, Callable, Optional, Any
@@ -242,6 +243,7 @@ class TeamStatsWindow(QMainWindow):
 
         self.inout_player_combo = QComboBox()
         self.inout_player_combo.setToolTip("Seleccione jugador para análisis IN/OUT de equipo")
+        self.inout_player_combo.setMaxVisibleItems(20)  # Enable scroll for long lists
         selector_layout.addWidget(self.inout_player_combo)
 
         # Second player selector for IN vs IN comparison
@@ -251,6 +253,7 @@ class TeamStatsWindow(QMainWindow):
 
         self.inout_player2_combo = QComboBox()
         self.inout_player2_combo.setToolTip("Seleccione segundo jugador para comparar IN vs IN")
+        self.inout_player2_combo.setMaxVisibleItems(20)  # Enable scroll for long lists
         selector_layout.addWidget(self.inout_player2_combo)
 
         self.inout_calc_button = QPushButton("Calcular IN/OUT")
@@ -578,25 +581,90 @@ class TeamStatsWindow(QMainWindow):
             if collection is None:
                 return
 
-            # Search for a document containing this team
-            doc = collection.find_one({
-                "$or": [
-                    {"BOXSCORE.TEAM.TOTAL.name": team_name},
-                    {"HEADER.TEAM.name": team_name}
-                ]
-            })
+            # Detect if this is a FBCYL collection
+            is_fbcyl = self.collection_name.startswith('FBCYL_')
 
             players = []
-            if doc and 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
-                for team in doc['BOXSCORE']['TEAM']:
-                    total = team.get('TOTAL') if isinstance(team.get('TOTAL'), dict) else team
-                    if total.get('name') == team_name and 'PLAYER' in team:
-                        for p in team.get('PLAYER', []):
-                            name = p.get('name')
-                            pid = p.get('id')
-                            if name and pid:
-                                players.append((name, pid))
-                        break
+            # Use dict to track unique players
+            # For FBCYL: actorId changes per game, so group by NAME and use most recent ID
+            players_dict = {}
+
+            if is_fbcyl:
+                # FBCYL structure: stats.teams[].players[]
+                # Find ALL games with this team to get complete roster
+                docs = collection.find({
+                    "stats.teams.name": team_name
+                })
+
+                for doc in docs:
+                    if doc and 'stats' in doc and 'teams' in doc['stats']:
+                        for team in doc['stats']['teams']:
+                            if team.get('name') == team_name and 'players' in team:
+                                for p in team.get('players', []):
+                                    name = p.get('name')
+                                    # FBCYL: Use UUID (stable) not actorId (changes per game)
+                                    uuid = p.get('uuid')
+                                    if name:
+                                        # Normalize name by extracting first initial + surnames
+                                        words = name.split()
+                                        if len(words) >= 3:
+                                            # First initial + two surnames
+                                            normalized_name = f"{words[0][0]} {words[-2]} {words[-1]}"
+                                        elif len(words) >= 2:
+                                            # First initial + one surname
+                                            normalized_name = f"{words[0][0]} {words[-1]}"
+                                        else:
+                                            normalized_name = name
+
+                                        # Use normalized name as key, prefer UUID if available
+                                        if normalized_name not in players_dict:
+                                            # Use UUID if available, otherwise use normalized surnames as ID
+                                            identifier = uuid if uuid else normalized_name
+                                            players_dict[normalized_name] = {
+                                                'display_name': name,  # Keep full name for display
+                                                'uuid': identifier
+                                            }
+                                        else:
+                                            # If we already have this player and now find a UUID, update it
+                                            existing_id = players_dict[normalized_name]['uuid']
+                                            # Prefer UUID over normalized name
+                                            if uuid and (existing_id == normalized_name or not existing_id):
+                                                players_dict[normalized_name]['uuid'] = uuid
+                                        # Always use the longest/most complete name for display
+                                        if len(name) > len(players_dict[normalized_name]['display_name']):
+                                            players_dict[normalized_name]['display_name'] = name
+                                break
+
+                # Convert dict to list (display name is shown, uuid is stored)
+                players = [(data['display_name'], data['uuid']) for data in players_dict.values()]
+            else:
+                # FEB structure: BOXSCORE.TEAM[].PLAYER[]
+                # Find ALL games with this team to get complete roster
+                docs = collection.find({
+                    "$or": [
+                        {"BOXSCORE.TEAM.TOTAL.name": team_name},
+                        {"HEADER.TEAM.name": team_name}
+                    ]
+                })
+
+                for doc in docs:
+                    if doc and 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
+                        for team in doc['BOXSCORE']['TEAM']:
+                            total = team.get('TOTAL') if isinstance(team.get('TOTAL'), dict) else team
+                            if total.get('name') == team_name and 'PLAYER' in team:
+                                for p in team.get('PLAYER', []):
+                                    name = p.get('name')
+                                    pid = p.get('id')
+                                    if name and pid:
+                                        # Store unique players by ID
+                                        players_dict[pid] = name
+                                break
+
+                # Convert dict to list
+                players = [(name, pid) for pid, name in players_dict.items()]
+
+            # Sort alphabetically by player name
+            players.sort(key=lambda x: x[0])
 
             # Populate combo
             for name, pid in players:
@@ -626,7 +694,33 @@ class TeamStatsWindow(QMainWindow):
 
         # Fetch IN/OUT aggregated stats from repository
         try:
-            inout = self.db_handler.get_player_in_out_stats(self.collection_name, player_id)
+            # Create progress dialog with indeterminate progress for loading
+            progress = QProgressDialog("Cargando partidos desde base de datos...", None, 0, 0, self)
+            progress.setWindowTitle("Calculando IN/OUT")
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setMinimumDuration(0)
+            progress.setCancelButton(None)  # No cancel button during loading
+            progress.show()
+            QApplication.processEvents()
+
+            def update_progress(current, total):
+                if current == 1 and total > 1:
+                    # Just finished loading, switch to determinate progress
+                    progress.setMaximum(100)
+                    progress.setLabelText(f"Analizando partidos... (0/{total})")
+                    progress.setValue(0)
+                elif total > 1:
+                    # Processing games
+                    percent = int(current * 100 / total)
+                    progress.setValue(percent)
+                    progress.setLabelText(f"Analizando partidos... ({current}/{total})")
+                QApplication.processEvents()
+
+            inout = self.db_handler.get_player_in_out_stats(
+                self.collection_name, player_id, date_filter=None,
+                debug=False, progress_callback=update_progress
+            )
+            progress.close()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al obtener datos IN/OUT: {e}")
             return
@@ -884,8 +978,60 @@ class TeamStatsWindow(QMainWindow):
             return
 
         try:
-            inout1 = self.db_handler.get_player_in_out_stats(self.collection_name, player1_id)
-            inout2 = self.db_handler.get_player_in_out_stats(self.collection_name, player2_id)
+            # Create progress dialog with indeterminate progress for loading
+            progress = QProgressDialog("Cargando partidos desde base de datos...", None, 0, 0, self)
+            progress.setWindowTitle("Calculando IN/IN")
+            progress.setWindowModality(Qt.WindowModality.WindowModal)
+            progress.setMinimumDuration(0)
+            progress.setCancelButton(None)
+            progress.show()
+            QApplication.processEvents()
+
+            player1_loaded = False
+
+            def update_progress_p1(current, total):
+                nonlocal player1_loaded
+                if current == 1 and total > 1 and not player1_loaded:
+                    # Just finished loading player 1, switch to determinate
+                    progress.setMaximum(100)
+                    progress.setLabelText(f"Analizando {player1_name}... (0/{total})")
+                    progress.setValue(0)
+                    player1_loaded = True
+                elif total > 1:
+                    # Processing games for player 1 (0-50%)
+                    percent = int(current * 50 / total)
+                    progress.setValue(percent)
+                    progress.setLabelText(f"Analizando {player1_name}... ({current}/{total})")
+                QApplication.processEvents()
+
+            inout1 = self.db_handler.get_player_in_out_stats(
+                self.collection_name, player1_id, date_filter=None,
+                debug=False, progress_callback=update_progress_p1
+            )
+
+            # Switch to loading player 2
+            progress.setMaximum(0)  # Indeterminate again
+            progress.setLabelText(f"Cargando partidos de {player2_name}...")
+            QApplication.processEvents()
+
+            def update_progress_p2(current, total):
+                if current == 1 and total > 1:
+                    # Just finished loading player 2
+                    progress.setMaximum(100)
+                    progress.setLabelText(f"Analizando {player2_name}... (0/{total})")
+                    progress.setValue(50)
+                elif total > 1:
+                    # Processing games for player 2 (50-100%)
+                    percent = 50 + int(current * 50 / total)
+                    progress.setValue(percent)
+                    progress.setLabelText(f"Analizando {player2_name}... ({current}/{total})")
+                QApplication.processEvents()
+
+            inout2 = self.db_handler.get_player_in_out_stats(
+                self.collection_name, player2_id, date_filter=None,
+                debug=False, progress_callback=update_progress_p2
+            )
+            progress.close()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al obtener datos IN/OUT: {e}")
             return
