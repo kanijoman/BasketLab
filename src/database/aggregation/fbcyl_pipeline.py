@@ -1,4 +1,21 @@
-"""MongoDB aggregation pipeline builder for FBCYL statistics."""
+"""MongoDB aggregation pipeline builder for FBCYL statistics.
+
+IMPORTANT: FBCYL Team ID Usage
+-------------------------------
+FBCYL has TWO team ID fields with different purposes:
+
+1. teamIdExtern: CONSISTENT across all games for the same team
+   - Use for: Aggregation, grouping teams, statistics
+   - Example: "C.B. SANTA MARTA" always has teamIdExtern=34588
+
+2. teamIdIntern: CHANGES per game for the same team
+   - Use for: Play-by-play moves (moves[].idTeam uses this)
+   - Example: "C.B. SANTA MARTA" has teamIdIntern=33865 in one game, 34138 in another
+
+Summary:
+- Aggregation pipelines → use teamIdExtern (consistent)
+- Play-by-play analysis → use teamIdIntern (matches moves[].idTeam)
+"""
 
 from typing import List, Dict, Optional
 from datetime import datetime, time
@@ -138,6 +155,8 @@ class FBCYLPipelineBuilder:
         })
 
         # Stage 4: Add team info and opponent data
+        # Note: Use teamIdExtern for aggregation (consistent across games)
+        # teamIdIntern changes per game and is only used in moves[]
         pipeline.append({
             "$addFields": {
                 "team_name": "$stats.teams.name",
@@ -514,3 +533,527 @@ class FBCYLPipelineBuilder:
         """
         # For now, return same as team stats - can be customized later
         return FBCYLPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
+
+    @staticmethod
+    def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
+        """
+        Build aggregation pipeline for FBCYL player statistics.
+
+        FBCYL player data structure:
+        stats.teams[].players[] = {
+            "actorId": 607322,
+            "uuid": "b1f5826b-1af3-4ff7-aefc-d0ba877c8fbc",
+            "name": "PLAYER NAME",
+            "dorsal": "4",
+            "timePlayed": 32,
+            "data": {
+                "score": 24,
+                "valoration": 12,
+                "shotsOfOneAttempted": 2,
+                "shotsOfOneSuccessful": 2,
+                "shotsOfTwoAttempted": 21,
+                "shotsOfTwoSuccessful": 8,
+                "shotsOfThreeAttempted": 11,
+                "shotsOfThreeSuccessful": 2,
+                "rebounds": 10,
+                "assists": 0,
+                "lost": 4,
+                "block": 0,
+                "steals": 0,
+                "faults": 1,
+                "offensiveRebound": 7,
+                "defensiveRebound": 3,
+                ...
+            }
+        }
+
+        Args:
+            date_filter: Optional date filter
+            venue_filter: Optional venue filter (True=home, False=away, None=all)
+            result_filter: Optional result filter ('won', 'lost', None=all)
+
+        Returns:
+            List of pipeline stages
+        """
+        pipeline = []
+
+        # Phase 0: Add date conversion and filter if provided
+        if date_filter:
+            # Normalize the date_filter to start of day (remove time component)
+            normalized_filter = {}
+            for operator, dt_value in date_filter.items():
+                if isinstance(dt_value, datetime):
+                    # Convert to start of day (00:00:00)
+                    normalized_filter[operator] = datetime.combine(dt_value.date(), time.min)
+                else:
+                    normalized_filter[operator] = dt_value
+
+            # First, add a field that converts the string date to a date object
+            # FBCYL uses "stats.time" field with format "Oct 4, 2025 7:00:00 PM"
+            # Extract just the date part "Oct 4, 2025" and parse it
+            pipeline.append({
+                "$addFields": {
+                    "timeParts": {"$split": ["$stats.time", " "]}
+                }
+            })
+
+            # Build the date string from parts: month, day, year
+            pipeline.append({
+                "$addFields": {
+                    "dateString": {
+                        "$concat": [
+                            {"$arrayElemAt": ["$timeParts", 0]},  # Month (Oct)
+                            " ",
+                            {"$arrayElemAt": ["$timeParts", 1]},  # Day (4,)
+                            " ",
+                            {"$arrayElemAt": ["$timeParts", 2]}   # Year (2025)
+                        ]
+                    }
+                }
+            })
+
+            # Parse the date string to date object
+            pipeline.append({
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$dateString",
+                            "format": "%b %d, %Y",
+                            "timezone": "UTC",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            })
+
+            # Apply the normalized date filter
+            pipeline.append({"$match": {"parsedDate": normalized_filter}})
+
+        # Stage 1: Filter out documents without stats
+        pipeline.append({
+            "$match": {
+                "stats.teams": {"$exists": True, "$ne": None}
+            }
+        })
+
+        # Stage 2: Unwind teams array but keep original array for opponent lookup
+        pipeline.append({
+            "$addFields": {
+                "all_teams": "$stats.teams"  # Save reference to full array before unwind
+            }
+        })
+
+        pipeline.append({
+            "$unwind": {
+                "path": "$stats.teams",
+                "includeArrayIndex": "teamIndex"
+            }
+        })
+
+        # Stage 3: Add team context, venue info, and result
+        pipeline.append({
+            "$addFields": {
+                "team_name": "$stats.teams.name",
+                "team_id": "$stats.teams.teamIdExtern",
+                # Determine if this is home team (index 0 = home/local, index 1 = away/visitor)
+                "is_home": {"$eq": ["$teamIndex", 0]},
+                # Get team score
+                "team_score": "$stats.teams.data.score",
+                # Get opponent info (other team in the saved array)
+                "opponent_score": {
+                    "$arrayElemAt": [
+                        "$all_teams",
+                        {"$cond": [{"$eq": ["$teamIndex", 0]}, 1, 0]}
+                    ]
+                }
+            }
+        })
+
+        # Stage 3b: Calculate result (won/lost)
+        pipeline.append({
+            "$addFields": {
+                "result": {
+                    "$cond": {
+                        "if": {"$gt": ["$team_score", "$opponent_score.data.score"]},
+                        "then": "won",
+                        "else": {
+                            "$cond": {
+                                "if": {"$lt": ["$team_score", "$opponent_score.data.score"]},
+                                "then": "lost",
+                                "else": "tied"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        # Stage 3c: Apply venue and result filters if provided
+        match_conditions = []
+        if venue_filter is not None:
+            match_conditions.append({"is_home": venue_filter})
+        if result_filter:
+            match_conditions.append({"result": result_filter})
+
+        if match_conditions:
+            pipeline.append({"$match": {"$and": match_conditions}})
+
+        # Stage 4: Unwind players
+        pipeline.append({
+            "$unwind": {
+                "path": "$stats.teams.players",
+                "preserveNullAndEmptyArrays": False
+            }
+        })
+
+        # Stage 5: Filter players with playing time > 0
+        pipeline.append({
+            "$match": {
+                "stats.teams.players.timePlayed": {"$gt": 0}
+            }
+        })
+
+        # Stage 6: Project player data and create normalized name for matching
+        pipeline.append({
+            "$project": {
+                "player_uuid": "$stats.teams.players.uuid",
+                "player_id": "$stats.teams.players.actorId",
+                "player_name": "$stats.teams.players.name",
+                "team_name": "$team_name",
+                "team_id": "$team_id",
+                # Create normalized name for matching (initial + surnames)
+                "normalized_name": {
+                    "$let": {
+                        "vars": {
+                            "words": {"$split": ["$stats.teams.players.name", " "]}
+                        },
+                        "in": {
+                            "$concat": [
+                                {"$substrCP": [{"$arrayElemAt": ["$$words", 0]}, 0, 1]},
+                                " ",
+                                {"$arrayElemAt": [
+                                    "$$words",
+                                    {"$subtract": [{"$size": "$$words"}, 2]}
+                                ]},
+                                " ",
+                                {"$arrayElemAt": [
+                                    "$$words",
+                                    {"$subtract": [{"$size": "$$words"}, 1]}
+                                ]}
+                            ]
+                        }
+                    }
+                },
+                "minutes": {"$ifNull": ["$stats.teams.players.timePlayed", 0]},
+                "pts": {"$ifNull": ["$stats.teams.players.data.score", 0]},
+                "val": {"$ifNull": ["$stats.teams.players.data.valoration", 0]},
+                "p1a": {"$ifNull": ["$stats.teams.players.data.shotsOfOneAttempted", 0]},
+                "p1m": {"$ifNull": ["$stats.teams.players.data.shotsOfOneSuccessful", 0]},
+                "p2a": {"$ifNull": ["$stats.teams.players.data.shotsOfTwoAttempted", 0]},
+                "p2m": {"$ifNull": ["$stats.teams.players.data.shotsOfTwoSuccessful", 0]},
+                "p3a": {"$ifNull": ["$stats.teams.players.data.shotsOfThreeAttempted", 0]},
+                "p3m": {"$ifNull": ["$stats.teams.players.data.shotsOfThreeSuccessful", 0]},
+                "rt": {"$ifNull": ["$stats.teams.players.data.rebounds", 0]},
+                "ro": {"$ifNull": ["$stats.teams.players.data.offensiveRebound", 0]},
+                "rd": {"$ifNull": ["$stats.teams.players.data.defensiveRebound", 0]},
+                "assist": {"$ifNull": ["$stats.teams.players.data.assists", 0]},
+                "to": {"$ifNull": ["$stats.teams.players.data.lost", 0]},
+                "bs": {"$ifNull": ["$stats.teams.players.data.block", 0]},
+                "st": {"$ifNull": ["$stats.teams.players.data.steals", 0]},
+                "pf": {"$ifNull": ["$stats.teams.players.data.faults", 0]},
+                "rf": {"$ifNull": ["$stats.teams.players.data.faultReceived", 0]},
+                # Calculate plus/minus from inOutsList
+                "pllss": {
+                    "$let": {
+                        "vars": {
+                            "inOuts": {"$ifNull": ["$stats.teams.players.inOutsList", []]}
+                        },
+                        "in": {
+                            "$reduce": {
+                                "input": {"$range": [0, {"$floor": {"$divide": [{"$size": "$$inOuts"}, 2]}}]},
+                                "initialValue": 0,
+                                "in": {
+                                    "$let": {
+                                        "vars": {
+                                            "inIndex": {"$multiply": ["$$this", 2]},
+                                            "outIndex": {"$add": [{"$multiply": ["$$this", 2]}, 1]}
+                                        },
+                                        "in": {
+                                            "$add": [
+                                                "$$value",
+                                                {
+                                                    "$cond": [
+                                                        {"$lt": ["$$outIndex", {"$size": "$$inOuts"}]},
+                                                        {
+                                                            "$subtract": [
+                                                                {"$getField": {
+                                                                    "field": "pointDiff",
+                                                                    "input": {"$arrayElemAt": ["$$inOuts", "$$outIndex"]}
+                                                                }},
+                                                                {"$getField": {
+                                                                    "field": "pointDiff",
+                                                                    "input": {"$arrayElemAt": ["$$inOuts", "$$inIndex"]}
+                                                                }}
+                                                            ]
+                                                        },
+                                                        0
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        # Stage 7: Pre-group by team + normalized name to find valid UUID for each player
+        pipeline.append({
+            "$group": {
+                "_id": {
+                    "team_id": "$team_id",
+                    "normalized_name": "$normalized_name"
+                },
+                # Collect all data for this player identity
+                "player_appearances": {
+                    "$push": {
+                        "uuid": "$player_uuid",
+                        "actor_id": "$player_id",
+                        "name": "$player_name",
+                        "minutes": "$minutes",
+                        "pts": "$pts",
+                        "val": "$val",
+                        "p1a": "$p1a",
+                        "p1m": "$p1m",
+                        "p2a": "$p2a",
+                        "p2m": "$p2m",
+                        "p3a": "$p3a",
+                        "p3m": "$p3m",
+                        "rt": "$rt",
+                        "ro": "$ro",
+                        "rd": "$rd",
+                        "assist": "$assist",
+                        "to": "$to",
+                        "bs": "$bs",
+                        "st": "$st",
+                        "pf": "$pf",
+                        "rf": "$rf",
+                        "pllss": "$pllss"
+                    }
+                },
+                "team_name": {"$first": "$team_name"},
+                # Find first non-null UUID
+                "valid_uuid": {
+                    "$first": {
+                        "$cond": [
+                            {"$ne": ["$player_uuid", None]},
+                            "$player_uuid",
+                            "$$REMOVE"
+                        ]
+                    }
+                }
+            }
+        })
+
+        # Stage 8: Unwind appearances to process individually with completed UUID
+        pipeline.append({
+            "$unwind": "$player_appearances"
+        })
+
+        # Stage 9: Project with completed UUID (use valid_uuid if original was null)
+        pipeline.append({
+            "$project": {
+                "team_id": "$_id.team_id",
+                "team_name": 1,
+                "normalized_name": "$_id.normalized_name",
+                "completed_uuid": {
+                    "$ifNull": [
+                        "$player_appearances.uuid",
+                        {"$ifNull": ["$valid_uuid", "$_id.normalized_name"]}
+                    ]
+                },
+                "player_id": "$player_appearances.actor_id",
+                "player_name": "$player_appearances.name",
+                "minutes": "$player_appearances.minutes",
+                "pts": "$player_appearances.pts",
+                "val": "$player_appearances.val",
+                "p1a": "$player_appearances.p1a",
+                "p1m": "$player_appearances.p1m",
+                "p2a": "$player_appearances.p2a",
+                "p2m": "$player_appearances.p2m",
+                "p3a": "$player_appearances.p3a",
+                "p3m": "$player_appearances.p3m",
+                "rt": "$player_appearances.rt",
+                "ro": "$player_appearances.ro",
+                "rd": "$player_appearances.rd",
+                "assist": "$player_appearances.assist",
+                "to": "$player_appearances.to",
+                "bs": "$player_appearances.bs",
+                "st": "$player_appearances.st",
+                "pf": "$player_appearances.pf",
+                "rf": "$player_appearances.rf",
+                "pllss": "$player_appearances.pllss"
+            }
+        })
+
+        # Stage 10: Final grouping by completed UUID and team
+        pipeline.append({
+            "$group": {
+                "_id": {
+                    "uuid": "$completed_uuid",
+                    "team_id": "$team_id"
+                },
+                "player_id": {"$first": "$player_id"},
+                "player_name": {"$first": "$player_name"},
+                "team_name": {"$first": "$team_name"},
+                "team_id": {"$first": "$team_id"},
+                "games_played": {"$sum": 1},
+                "total_minutes": {"$sum": "$minutes"},
+                "total_p1m": {"$sum": "$p1m"},
+                "total_p1a": {"$sum": "$p1a"},
+                "total_p2m": {"$sum": "$p2m"},
+                "total_p2a": {"$sum": "$p2a"},
+                "total_p3m": {"$sum": "$p3m"},
+                "total_p3a": {"$sum": "$p3a"},
+                "total_pts": {"$sum": "$pts"},
+                "total_assist": {"$sum": "$assist"},
+                "total_ro": {"$sum": "$ro"},
+                "total_rd": {"$sum": "$rd"},
+                "total_rt": {"$sum": "$rt"},
+                "total_st": {"$sum": "$st"},
+                "total_to": {"$sum": "$to"},
+                "total_bs": {"$sum": "$bs"},
+                "total_pf": {"$sum": "$pf"},
+                "total_rf": {"$sum": "$rf"},
+                "total_pllss": {"$sum": "$pllss"},
+                "total_val": {"$sum": "$val"}
+            }
+        })
+
+        # Stage 8: Calculate percentages and averages
+        pipeline.append({
+            "$project": {
+                "player_id": 1,
+                "player_name": 1,
+                "team_name": 1,
+                "team_id": 1,
+                "games_played": 1,
+                "total_minutes": 1,
+                "minutes_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_minutes", "$games_played"]},
+                        0
+                    ]
+                },
+                "total_p1m": 1,
+                "total_p1a": 1,
+                "total_p2m": 1,
+                "total_p2a": 1,
+                "total_p3m": 1,
+                "total_p3a": 1,
+                "total_pts": 1,
+                "total_assist": 1,
+                "total_ro": 1,
+                "total_rd": 1,
+                "total_rt": 1,
+                "total_st": 1,
+                "total_to": 1,
+                "total_bs": 1,
+                "total_pf": 1,
+                "total_rf": 1,
+                "total_pllss": 1,
+                "total_val": 1,
+                "fg1_percentage": {
+                    "$cond": [
+                        {"$gt": ["$total_p1a", 0]},
+                        {"$multiply": [{"$divide": ["$total_p1m", "$total_p1a"]}, 100]},
+                        0
+                    ]
+                },
+                "fg2_percentage": {
+                    "$cond": [
+                        {"$gt": ["$total_p2a", 0]},
+                        {"$multiply": [{"$divide": ["$total_p2m", "$total_p2a"]}, 100]},
+                        0
+                    ]
+                },
+                "fg3_percentage": {
+                    "$cond": [
+                        {"$gt": ["$total_p3a", 0]},
+                        {"$multiply": [{"$divide": ["$total_p3m", "$total_p3a"]}, 100]},
+                        0
+                    ]
+                },
+                "points_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_pts", "$games_played"]},
+                        0
+                    ]
+                },
+                "assists_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_assist", "$games_played"]},
+                        0
+                    ]
+                },
+                "rebounds_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_rt", "$games_played"]},
+                        0
+                    ]
+                },
+                "steals_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_st", "$games_played"]},
+                        0
+                    ]
+                },
+                "blocks_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_bs", "$games_played"]},
+                        0
+                    ]
+                },
+                "turnovers_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_to", "$games_played"]},
+                        0
+                    ]
+                },
+                "valoracion_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_val", "$games_played"]},
+                        0
+                    ]
+                },
+                "pllss_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_pllss", "$games_played"]},
+                        0
+                    ]
+                }
+            }
+        })
+
+        # Stage 12: Sort by team and total points
+        pipeline.append({
+            "$sort": {
+                "team_name": 1,
+                "total_pts": -1
+            }
+        })
+
+        return pipeline

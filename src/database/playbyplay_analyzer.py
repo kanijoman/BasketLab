@@ -8,16 +8,24 @@ import re
 class PlayByPlayAnalyzer:
     """Analyzes play-by-play data to determine when players are on/off court."""
 
-    def __init__(self, game_data: Dict):
+    def __init__(self, game_data: Dict, is_fbcyl: bool = False):
         """
         Initialize the play-by-play analyzer.
 
         Args:
-            game_data: The complete game JSON data including PLAYBYPLAY
+            game_data: The complete game JSON data including PLAYBYPLAY (FEB) or moves (FBCYL)
+            is_fbcyl: Whether this is FBCYL data format
         """
         self.game_data = game_data
-        self.playbyplay = game_data.get('PLAYBYPLAY', {})
-        self.lines = self.playbyplay.get('LINES', [])
+        self.is_fbcyl = is_fbcyl
+
+        if is_fbcyl:
+            # FBCYL: moves are directly in 'moves' key (list)
+            self.lines = game_data.get('moves', [])
+        else:
+            # FEB: play-by-play in PLAYBYPLAY.LINES
+            self.playbyplay = game_data.get('PLAYBYPLAY', {})
+            self.lines = self.playbyplay.get('LINES', [])
 
         # Track players on court for each team throughout the game
         self.court_state = {
@@ -30,12 +38,26 @@ class PlayByPlayAnalyzer:
 
     def _get_team_mapping(self) -> Dict[str, str]:
         """Get mapping of team IDs to team1/team2."""
-        teams = self.game_data.get('HEADER', {}).get('TEAM', [])
-        if len(teams) >= 2:
-            return {
-                teams[0].get('id'): 'team1',
-                teams[1].get('id'): 'team2'
-            }
+        if self.is_fbcyl:
+            # FBCYL: Use teamIdIntern (matches moves[].idTeam for play-by-play)
+            # Note: teamIdIntern changes per game, teamIdExtern is consistent
+            stats = self.game_data.get('stats', {})
+            teams = stats.get('teams', [])
+            if len(teams) >= 2:
+                team1_id = teams[0].get('teamIdIntern') or teams[0].get('teamIdExtern')
+                team2_id = teams[1].get('teamIdIntern') or teams[1].get('teamIdExtern')
+                return {
+                    team1_id: 'team1',
+                    team2_id: 'team2'
+                }
+        else:
+            # FEB: teams are in HEADER.TEAM[]
+            teams = self.game_data.get('HEADER', {}).get('TEAM', [])
+            if len(teams) >= 2:
+                return {
+                    teams[0].get('id'): 'team1',
+                    teams[1].get('id'): 'team2'
+                }
         return {}
 
     def _time_to_seconds(self, quarter: str, time_str: str) -> int:
@@ -69,44 +91,91 @@ class PlayByPlayAnalyzer:
             return None
         return self.team_mapping.get(id_team)
 
+    def _fbcyl_time_to_seconds(self, period: int, min: int, sec: int) -> int:
+        """
+        Convert FBCYL time to absolute seconds from game start.
+
+        Args:
+            period: Period number (1-4)
+            min: Minutes elapsed in period
+            sec: Seconds elapsed in minute
+
+        Returns:
+            Absolute seconds from game start
+        """
+        try:
+            # Each period is 10 minutes (600 seconds)
+            # Time is elapsed in period
+            elapsed_in_period = min * 60 + sec
+            total_seconds = (period - 1) * 600 + elapsed_in_period
+            return total_seconds
+        except (ValueError, TypeError):
+            pass
+        return 0
+
     def parse_substitutions(self) -> Dict[str, List[Tuple[int, bool]]]:
         """
         Parse all substitutions to create timeline of when each player is on court.
 
         Returns:
-            Dict mapping player ID (idPlayer) to list of (timestamp, is_on_court) tuples
+            Dict mapping player ID (idPlayer/actorId) to list of (timestamp, is_on_court) tuples
         """
         player_timeline = defaultdict(list)
 
-        # Lines are in reverse chronological order, so process them forward
-        # to go from start to end of game
-        for line in reversed(self.lines):
-            # Check the text field for substitution indicators (case-insensitive)
-            text = line.get('text', '')
-            upper_text = text.upper() if isinstance(text, str) else ''
-            quarter = line.get('quarter', '1')
-            time_str = line.get('time', '10:00')
-            timestamp = self._time_to_seconds(quarter, time_str)
-            id_team = line.get('idTeam')
-            team_key = self._get_team_key(id_team)
+        if self.is_fbcyl:
+            # FBCYL: Use inOutsList from players
+            stats = self.game_data.get('stats', {})
+            teams = stats.get('teams', [])
 
-            # Check if it's a substitution based on text field
-            # Handle various casing/formatting of substitution messages
-            if 'ENTRA A PISTA' in upper_text or ('ENTRA' in upper_text and 'PISTA' in upper_text):
-                # Player entering court
-                id_player = line.get('idPlayer')
-                if id_player:
-                    player_timeline[id_player].append((timestamp, True))
-                    if team_key:
-                        self.court_state[team_key].add(id_player)
+            for team in teams:
+                players = team.get('players', [])
+                for player in players:
+                    player_id = player.get('actorId')
+                    if not player_id:
+                        continue
 
-            elif 'SALE DE PISTA' in upper_text or ('SALE' in upper_text and 'PISTA' in upper_text):
-                # Player leaving court
-                id_player = line.get('idPlayer')
-                if id_player:
-                    player_timeline[id_player].append((timestamp, False))
-                    if team_key:
-                        self.court_state[team_key].discard(id_player)
+                    in_outs_list = player.get('inOutsList', [])
+                    for event in in_outs_list:
+                        event_type = event.get('type')
+                        minute_absolut = event.get('minuteAbsolut', 0)
+                        # Convert minutes to seconds
+                        timestamp = minute_absolut * 60
+
+                        if event_type == 'IN_TYPE':
+                            player_timeline[player_id].append((timestamp, True))
+                        elif event_type == 'OUT_TYPE':
+                            player_timeline[player_id].append((timestamp, False))
+        else:
+            # FEB: Parse PLAYBYPLAY.LINES for substitutions
+            # Lines are in reverse chronological order, so process them forward
+            # to go from start to end of game
+            for line in reversed(self.lines):
+                # Check the text field for substitution indicators (case-insensitive)
+                text = line.get('text', '')
+                upper_text = text.upper() if isinstance(text, str) else ''
+                quarter = line.get('quarter', '1')
+                time_str = line.get('time', '10:00')
+                timestamp = self._time_to_seconds(quarter, time_str)
+                id_team = line.get('idTeam')
+                team_key = self._get_team_key(id_team)
+
+                # Check if it's a substitution based on text field
+                # Handle various casing/formatting of substitution messages
+                if 'ENTRA A PISTA' in upper_text or ('ENTRA' in upper_text and 'PISTA' in upper_text):
+                    # Player entering court
+                    id_player = line.get('idPlayer')
+                    if id_player:
+                        player_timeline[id_player].append((timestamp, True))
+                        if team_key:
+                            self.court_state[team_key].add(id_player)
+
+                elif 'SALE DE PISTA' in upper_text or ('SALE' in upper_text and 'PISTA' in upper_text):
+                    # Player leaving court
+                    id_player = line.get('idPlayer')
+                    if id_player:
+                        player_timeline[id_player].append((timestamp, False))
+                        if team_key:
+                            self.court_state[team_key].discard(id_player)
 
         # Sort timelines by timestamp
         for player_id in player_timeline:
@@ -114,18 +183,32 @@ class PlayByPlayAnalyzer:
 
         return dict(player_timeline)
 
-    def get_player_court_segments(self, player_id: str) -> List[Tuple[int, int]]:
+    def get_player_court_segments(self, player_id) -> List[Tuple[int, int]]:
         """
         Get time segments when a specific player was on court.
 
         Args:
-            player_id: Player's ID (idPlayer from JSON)
+            player_id: Player's ID (idPlayer from JSON) - can be str or int
 
         Returns:
             List of (start_time, end_time) tuples in seconds from game start
         """
         timeline = self.parse_substitutions()
+
+        # Try to find player with both str and int formats
         player_events = timeline.get(player_id, [])
+        if not player_events:
+            # Try converting to int if it's a string
+            try:
+                player_events = timeline.get(int(player_id), [])
+            except (ValueError, TypeError):
+                pass
+        if not player_events:
+            # Try converting to str if it's an int
+            try:
+                player_events = timeline.get(str(player_id), [])
+            except (ValueError, TypeError):
+                pass
 
         segments = []
         current_start = None
@@ -169,7 +252,7 @@ class PlayByPlayAnalyzer:
         Get all actions that occurred while a specific player was on court.
 
         Args:
-            player_id: Player's ID (idPlayer from JSON)
+            player_id: Player's ID (idPlayer for FEB, actorId for FBCYL)
 
         Returns:
             List of action dictionaries (all teams)
@@ -177,21 +260,39 @@ class PlayByPlayAnalyzer:
         segments = self.get_player_court_segments(player_id)
         actions_on_court = []
 
-        # Ensure chronological order: PLAYBYPLAY.LINES is reverse-chronological, so iterate reversed
-        for line in reversed(self.lines):
-            quarter = line.get('quarter')
-            time_str = line.get('time')
+        if self.is_fbcyl:
+            # FBCYL: moves are already in chronological order
+            for move in self.lines:
+                period = move.get('period')
+                min_val = move.get('min')
+                sec_val = move.get('sec')
 
-            if not quarter or not time_str:
-                continue
+                if period is None or min_val is None or sec_val is None:
+                    continue
 
-            timestamp = self._time_to_seconds(quarter, time_str)
+                timestamp = self._fbcyl_time_to_seconds(period, min_val, sec_val)
 
-            # Check if this action occurred while player was on court
-            for start, end in segments:
-                if start <= timestamp <= end:
-                    actions_on_court.append(line)
-                    break
+                # Check if this action occurred while player was on court
+                for start, end in segments:
+                    if start <= timestamp <= end:
+                        actions_on_court.append(move)
+                        break
+        else:
+            # FEB: PLAYBYPLAY.LINES is reverse-chronological, so iterate reversed
+            for line in reversed(self.lines):
+                quarter = line.get('quarter')
+                time_str = line.get('time')
+
+                if not quarter or not time_str:
+                    continue
+
+                timestamp = self._time_to_seconds(quarter, time_str)
+
+                # Check if this action occurred while player was on court
+                for start, end in segments:
+                    if start <= timestamp <= end:
+                        actions_on_court.append(line)
+                        break
 
         return actions_on_court
 
@@ -200,7 +301,7 @@ class PlayByPlayAnalyzer:
         Get all actions that occurred while a specific player was off court.
 
         Args:
-            player_id: Player's ID (idPlayer from JSON)
+            player_id: Player's ID (idPlayer for FEB, actorId for FBCYL)
             id_team: Team ID (not used for filtering, kept for compatibility)
 
         Returns:
@@ -209,25 +310,47 @@ class PlayByPlayAnalyzer:
         segments = self.get_player_court_segments(player_id)
         actions_off_court = []
 
-        # Ensure chronological order for consistent analysis
-        for line in reversed(self.lines):
-            quarter = line.get('quarter')
-            time_str = line.get('time')
+        if self.is_fbcyl:
+            # FBCYL: moves are already in chronological order
+            for move in self.lines:
+                period = move.get('period')
+                min_val = move.get('min')
+                sec_val = move.get('sec')
 
-            if not quarter or not time_str:
-                continue
+                if period is None or min_val is None or sec_val is None:
+                    continue
 
-            timestamp = self._time_to_seconds(quarter, time_str)
+                timestamp = self._fbcyl_time_to_seconds(period, min_val, sec_val)
 
-            # Check if this action occurred while player was off court
-            is_on_court = False
-            for start, end in segments:
-                if start <= timestamp <= end:
-                    is_on_court = True
-                    break
+                # Check if this action occurred while player was off court
+                is_on_court = False
+                for start, end in segments:
+                    if start <= timestamp <= end:
+                        is_on_court = True
+                        break
 
-            if not is_on_court:
-                actions_off_court.append(line)
+                if not is_on_court:
+                    actions_off_court.append(move)
+        else:
+            # FEB: Ensure chronological order for consistent analysis
+            for line in reversed(self.lines):
+                quarter = line.get('quarter')
+                time_str = line.get('time')
+
+                if not quarter or not time_str:
+                    continue
+
+                timestamp = self._time_to_seconds(quarter, time_str)
+
+                # Check if this action occurred while player was off court
+                is_on_court = False
+                for start, end in segments:
+                    if start <= timestamp <= end:
+                        is_on_court = True
+                        break
+
+                if not is_on_court:
+                    actions_off_court.append(line)
 
         return actions_off_court
 
@@ -268,8 +391,22 @@ class InOutStatsCalculator:
         Returns:
             Tuple of (points, team_id)
         """
-        text = action.get('text', '').upper()  # Convert to uppercase
         team_id = action.get('idTeam')
+
+        # Check if this is FBCYL format (uses 'move' field)
+        if 'move' in action:
+            move = action.get('move', '')
+            # FBCYL uses Spanish text like "Canasta de 2", "Canasta de 3", etc.
+            if 'Canasta de 2' in move or 'canasta de 2' in move:
+                return 2, team_id
+            elif 'Canasta de 3' in move or 'canasta de 3' in move:
+                return 3, team_id
+            elif 'Canasta de 1' in move or 'canasta de 1' in move or 'Tiro libre anotado' in move:
+                return 1, team_id
+            return 0, None
+
+        # FEB format processing
+        text = action.get('text', '').upper()  # Convert to uppercase
 
         # Check for successful shots in text
         if 'TIRO DE 2' in text or 'CANASTA DE 2' in text:
@@ -299,6 +436,227 @@ class InOutStatsCalculator:
                 return 1, team_id
 
         return 0, None
+
+    def _process_fbcyl_move(self, line: Dict, move_text: str, action_team: str,
+                           id_team: str, target: Dict, idx: int, lines: List[Dict]) -> None:
+        """
+        Process a FBCYL move and update statistics.
+
+        Note: FBCYL does NOT include rebounds in play-by-play data (moves list).
+        Rebounds are only in pre-calculated stats, so we cannot determine when they
+        occurred relative to player substitutions. Therefore, ORB/DRB remain 0 for FBCYL.
+        """
+        # Points
+        points, scoring_team = self._extract_points_from_action(line)
+        if points > 0 and scoring_team:
+            scoring_team = str(scoring_team)
+            if scoring_team == id_team:
+                target['points_for'] += points
+            elif scoring_team != id_team:
+                target['points_against'] += points
+
+        # Determine whether we write to team or opponent keys
+        is_team_action = (action_team == id_team)
+
+        # Shooting stats - based on move text
+        if 'Canasta de 2' in move_text or 'canasta de 2' in move_text:
+            if is_team_action:
+                target['fga_2'] += 1
+                target['fgm_2'] += 1
+            else:
+                target['opp_fga_2'] += 1
+                target['opp_fgm_2'] += 1
+        elif 'Intento fallado de 2' in move_text or 'intento fallado de 2' in move_text:
+            if is_team_action:
+                target['fga_2'] += 1
+            else:
+                target['opp_fga_2'] += 1
+        elif 'Canasta de 3' in move_text or 'canasta de 3' in move_text:
+            if is_team_action:
+                target['fga_3'] += 1
+                target['fgm_3'] += 1
+            else:
+                target['opp_fga_3'] += 1
+                target['opp_fgm_3'] += 1
+        elif 'Intento fallado de 3' in move_text or 'intento fallado de 3' in move_text:
+            if is_team_action:
+                target['fga_3'] += 1
+            else:
+                target['opp_fga_3'] += 1
+        elif 'Canasta de 1' in move_text or 'canasta de 1' in move_text or 'Tiro libre anotado' in move_text:
+            if is_team_action:
+                target['fta'] += 1
+                target['ftm'] += 1
+            else:
+                target['opp_fta'] += 1
+                target['opp_ftm'] += 1
+        elif 'Intento fallado de 1' in move_text or 'intento fallado de 1' in move_text:
+            if is_team_action:
+                target['fta'] += 1
+            else:
+                target['opp_fta'] += 1
+
+        # Turnovers
+        if 'Pérdida' in move_text or 'pérdida' in move_text:
+            if is_team_action:
+                target['tov'] += 1
+            else:
+                target['opp_tov'] += 1
+
+        # Personal fouls
+        if 'Personal' in move_text or 'personal' in move_text or 'Falta' in move_text:
+            if is_team_action:
+                target['pf'] += 1
+            else:
+                target['opp_pf'] += 1
+
+    def _process_feb_action(self, line: Dict, upper_text: str, action_type: str,
+                           action_team: str, id_team: str, target: Dict,
+                           orig_idx: int, lines: List[Dict], last_shot_team: Optional[str]) -> Optional[str]:
+        """Process a FEB action and update statistics. Returns updated last_shot_team."""
+        # Track shots for rebound classification
+        if action_type in ('shoot', 'fthrow'):
+            is_miss = False
+            if isinstance(line.get('logParam4'), str):
+                is_miss = line.get('logParam4') == '0'
+            if 'FALLADO' in upper_text or 'FALLA' in upper_text or is_miss:
+                last_shot_team = action_team
+            else:
+                last_shot_team = None
+
+        # Points
+        points, scoring_team = self._extract_points_from_action(line)
+        if points > 0 and scoring_team:
+            scoring_team = str(scoring_team)
+            if scoring_team == id_team:
+                target['points_for'] += points
+            elif scoring_team != id_team:
+                target['points_against'] += points
+
+        # Determine whether we write to team or opponent keys
+        is_team_action = (action_team == id_team)
+
+        # Shooting stats - use text first
+        if 'TIRO DE 2' in upper_text or 'CANASTA DE 2' in upper_text:
+            if is_team_action:
+                target['fga_2'] += 1
+                if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
+                    target['fgm_2'] += 1
+            else:
+                target['opp_fga_2'] += 1
+                if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
+                    target['opp_fgm_2'] += 1
+        elif 'TIRO DE 3' in upper_text or 'TRIPLE' in upper_text or 'CANASTA DE 3' in upper_text:
+            if is_team_action:
+                target['fga_3'] += 1
+                if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
+                    target['fgm_3'] += 1
+            else:
+                target['opp_fga_3'] += 1
+                if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
+                    target['opp_fgm_3'] += 1
+        elif 'TIRO DE 1' in upper_text or 'TIRO LIBRE' in upper_text:
+            if is_team_action:
+                target['fta'] += 1
+                if 'ANOTADO' in upper_text or 'ANOTA' in upper_text:
+                    target['ftm'] += 1
+            else:
+                target['opp_fta'] += 1
+                if 'ANOTADO' in upper_text or 'ANOTA' in upper_text:
+                    target['opp_ftm'] += 1
+        # fallback to action_type
+        elif action_type == 'shoot':
+            point_value = int(line.get('logParam6', 0)) if line.get('logParam6') else 0
+            made = line.get('logParam4') == '1'
+            if point_value == 2:
+                if is_team_action:
+                    target['fga_2'] += 1
+                    if made:
+                        target['fgm_2'] += 1
+                else:
+                    target['opp_fga_2'] += 1
+                    if made:
+                        target['opp_fgm_2'] += 1
+            elif point_value == 3:
+                if is_team_action:
+                    target['fga_3'] += 1
+                    if made:
+                        target['fgm_3'] += 1
+                else:
+                    target['opp_fga_3'] += 1
+                    if made:
+                        target['opp_fgm_3'] += 1
+        elif action_type == 'fthrow':
+            if is_team_action:
+                target['fta'] += 1
+                if line.get('logParam4') == '1':
+                    target['ftm'] += 1
+            else:
+                target['opp_fta'] += 1
+                if line.get('logParam4') == '1':
+                    target['opp_ftm'] += 1
+
+        # Rebounds
+        if action_type == 'rebound':
+            prev_idx = orig_idx + 1
+            shot_team = None
+            if prev_idx < len(lines):
+                prev = lines[prev_idx]
+                p_action = (prev.get('action') or '').lower()
+                p_text = (prev.get('text') or '').upper()
+                if p_action in ('shoot', 'fthrow') or ('TIRO' in p_text or 'CANASTA' in p_text or 'TRIPLE' in p_text or 'FALLADO' in p_text):
+                    shot_team = prev.get('idTeam')
+
+            if shot_team is not None and shot_team == action_team:
+                # offensive rebound
+                if is_team_action:
+                    target['orb'] += 1
+                else:
+                    target['opp_orb'] += 1
+            else:
+                # defensive rebound (default if no previous shot found)
+                if is_team_action:
+                    target['drb'] += 1
+                else:
+                    target['opp_drb'] += 1
+            last_shot_team = None
+
+        # Assists
+        if 'ASISTENCIA' in upper_text or action_type == 'assist':
+            if is_team_action:
+                target['ast'] += 1
+            else:
+                target['opp_ast'] += 1
+
+        # Steals
+        if 'ROBO' in upper_text or 'RECUPERA' in upper_text or action_type == 'steal' or action_type == 'recovery':
+            if is_team_action:
+                target['stl'] += 1
+            else:
+                target['opp_stl'] += 1
+
+        # Blocks
+        if 'TAPÓN' in upper_text or 'TAPON' in upper_text or action_type == 'block':
+            if is_team_action:
+                target['blk'] += 1
+            else:
+                target['opp_blk'] += 1
+
+        # Turnovers
+        if 'PÉRDIDA' in upper_text or 'PERDIDA' in upper_text or action_type == 'turnover' or action_type == 'lose':
+            if is_team_action:
+                target['tov'] += 1
+            else:
+                target['opp_tov'] += 1
+
+        # Personal fouls
+        if 'FALTA' in upper_text or action_type == 'foul':
+            if is_team_action:
+                target['pf'] += 1
+            else:
+                target['opp_pf'] += 1
+
+        return last_shot_team
 
     def calculate_in_out_stats(self, player_id: str, id_team: str) -> Dict[str, Dict]:
         """
@@ -369,185 +727,69 @@ class InOutStatsCalculator:
                     return True
             return False
 
-        # Iterate chronological (PLAYBYPLAY.LINES stored reverse-chronological)
-        # We'll iterate by original index from last->first so we can inspect the "previous"
-        # element in the original list (original ordering is newest->oldest), therefore
-        # the previous event in time for index i is at i+1 in the original list.
+        # Iterate chronological
+        # For FEB: PLAYBYPLAY.LINES stored reverse-chronological, iterate reversed
+        # For FBCYL: moves are already chronological
         lines = self.analyzer.lines or []
-        for orig_idx in range(len(lines) - 1, -1, -1):
-            line = lines[orig_idx]
-            quarter = line.get('quarter')
-            time_str = line.get('time')
-            if not quarter or not time_str:
-                # keep history but skip lines without timing
+        is_fbcyl = self.analyzer.is_fbcyl
+
+        if is_fbcyl:
+            # FBCYL: iterate forwards (already chronological)
+            for idx, line in enumerate(lines):
+                period = line.get('period')
+                min_val = line.get('min')
+                sec_val = line.get('sec')
+
+                if period is None or min_val is None or sec_val is None:
+                    prev_actions.append(line)
+                    if len(prev_actions) > 40:
+                        prev_actions.pop(0)
+                    continue
+
+                timestamp = self.analyzer._fbcyl_time_to_seconds(period, min_val, sec_val)
+                action_team = str(line.get('idTeam', ''))
+                move_text = line.get('move', '')
+
+                # Determine which bucket this action affects
+                on_court = _is_on_court(timestamp)
+                target = stats_in if on_court else stats_out
+
+                # Process FBCYL move
+                self._process_fbcyl_move(line, move_text, action_team, str(id_team), target, idx, lines)
+
+                # Append to history
                 prev_actions.append(line)
-                if len(prev_actions) > 40:
+                if len(prev_actions) > 80:
                     prev_actions.pop(0)
-                continue
-            timestamp = self.analyzer._time_to_seconds(quarter, time_str)
-            action_team = line.get('idTeam')
-            text = line.get('text', '')
-            upper_text = text.upper() if isinstance(text, str) else ''
-            action_type = line.get('action', '')
+        else:
+            # FEB: iterate reverse-chronologically
+            for orig_idx in range(len(lines) - 1, -1, -1):
+                line = lines[orig_idx]
+                quarter = line.get('quarter')
+                time_str = line.get('time')
+                if not quarter or not time_str:
+                    # keep history but skip lines without timing
+                    prev_actions.append(line)
+                    if len(prev_actions) > 40:
+                        prev_actions.pop(0)
+                    continue
+                timestamp = self.analyzer._time_to_seconds(quarter, time_str)
+                action_team = str(line.get('idTeam', ''))
+                text = line.get('text', '')
+                upper_text = text.upper() if isinstance(text, str) else ''
+                action_type = line.get('action', '')
 
-            # Determine which bucket this action affects
-            on_court = _is_on_court(timestamp)
-            target = stats_in if on_court else stats_out
+                # Determine which bucket this action affects
+                on_court = _is_on_court(timestamp)
+                target = stats_in if on_court else stats_out
 
-            # --- Begin same processing logic as in _calculate_stats_from_actions ---
-            # Track shots for rebound classification
-            if action_type in ('shoot', 'fthrow'):
-                is_miss = False
-                if isinstance(line.get('logParam4'), str):
-                    is_miss = line.get('logParam4') == '0'
-                if 'FALLADO' in upper_text or 'FALLA' in upper_text or is_miss:
-                    last_shot_team = action_team
-                else:
-                    last_shot_team = None
+                # Process FEB action
+                last_shot_team = self._process_feb_action(line, upper_text, action_type, action_team, str(id_team), target, orig_idx, lines, last_shot_team)
 
-            # Points
-            points, scoring_team = self._extract_points_from_action(line)
-            if points > 0 and scoring_team:
-                if scoring_team == id_team:
-                    target['points_for'] += points
-                elif scoring_team != id_team:
-                    target['points_against'] += points
-
-            # Determine whether we write to team or opponent keys
-            is_team_action = (action_team == id_team)
-
-            # Shooting stats - use text first
-            if 'TIRO DE 2' in upper_text or 'CANASTA DE 2' in upper_text:
-                if is_team_action:
-                    target['fga_2'] += 1
-                    if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
-                        target['fgm_2'] += 1
-                else:
-                    target['opp_fga_2'] += 1
-                    if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
-                        target['opp_fgm_2'] += 1
-            elif 'TIRO DE 3' in upper_text or 'TRIPLE' in upper_text or 'CANASTA DE 3' in upper_text:
-                if is_team_action:
-                    target['fga_3'] += 1
-                    if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
-                        target['fgm_3'] += 1
-                else:
-                    target['opp_fga_3'] += 1
-                    if 'FALLADO' not in upper_text and 'FALLA' not in upper_text:
-                        target['opp_fgm_3'] += 1
-            elif 'TIRO DE 1' in upper_text or 'TIRO LIBRE' in upper_text:
-                if is_team_action:
-                    target['fta'] += 1
-                    if 'ANOTADO' in upper_text or 'ANOTA' in upper_text:
-                        target['ftm'] += 1
-                else:
-                    target['opp_fta'] += 1
-                    if 'ANOTADO' in upper_text or 'ANOTA' in upper_text:
-                        target['opp_ftm'] += 1
-            # fallback to action_type
-            elif action_type == 'shoot':
-                point_value = int(line.get('logParam6', 0)) if line.get('logParam6') else 0
-                made = line.get('logParam4') == '1'
-                if point_value == 2:
-                    if is_team_action:
-                        target['fga_2'] += 1
-                        if made:
-                            target['fgm_2'] += 1
-                    else:
-                        target['opp_fga_2'] += 1
-                        if made:
-                            target['opp_fgm_2'] += 1
-                elif point_value == 3:
-                    if is_team_action:
-                        target['fga_3'] += 1
-                        if made:
-                            target['fgm_3'] += 1
-                    else:
-                        target['opp_fga_3'] += 1
-                        if made:
-                            target['opp_fgm_3'] += 1
-            elif action_type == 'fthrow':
-                if is_team_action:
-                    target['fta'] += 1
-                    if line.get('logParam4') == '1':
-                        target['ftm'] += 1
-                else:
-                    target['opp_fta'] += 1
-                    if line.get('logParam4') == '1':
-                        target['opp_ftm'] += 1
-
-            # Rebounds - follow strict rule: only consider actions with action == 'rebound'
-            # and determine offensive/defensive by inspecting the previous element in the
-            # original `LINES` array (previous in time is at orig_idx+1 because original
-            # ordering is newest->oldest). If the previous element is a shot attempt,
-            # attribute offensive if that shot team == rebound team; otherwise treat as defensive.
-            if action_type == 'rebound':
-                # look for the previous element in the original lines list
-                prev_idx = orig_idx + 1
-                shot_team = None
-                if prev_idx < len(lines):
-                    prev = lines[prev_idx]
-                    p_action = (prev.get('action') or '').lower()
-                    p_text = (prev.get('text') or '').upper()
-                    if p_action in ('shoot', 'fthrow') or ('TIRO' in p_text or 'CANASTA' in p_text or 'TRIPLE' in p_text or 'FALLADO' in p_text):
-                        shot_team = prev.get('idTeam')
-
-                if shot_team is not None and shot_team == action_team:
-                    # offensive rebound
-                    if is_team_action:
-                        target['orb'] += 1
-                    else:
-                        target['opp_orb'] += 1
-                else:
-                    # defensive rebound (default if no previous shot found)
-                    if is_team_action:
-                        target['drb'] += 1
-                    else:
-                        target['opp_drb'] += 1
-                # do not carry forward last_shot_team using back-scan logic; reset
-                last_shot_team = None
-
-            # Assists
-            if 'ASISTENCIA' in upper_text or action_type == 'assist':
-                if is_team_action:
-                    target['ast'] += 1
-                else:
-                    target['opp_ast'] += 1
-
-            # Steals
-            if 'ROBO' in upper_text or 'RECUPERA' in upper_text or action_type == 'steal' or action_type == 'recovery':
-                if is_team_action:
-                    target['stl'] += 1
-                else:
-                    target['opp_stl'] += 1
-
-            # Blocks
-            if 'TAPÓN' in upper_text or 'TAPON' in upper_text or action_type == 'block':
-                if is_team_action:
-                    target['blk'] += 1
-                else:
-                    target['opp_blk'] += 1
-
-            # Turnovers
-            if 'PÉRDIDA' in upper_text or 'PERDIDA' in upper_text or action_type == 'turnover' or action_type == 'lose':
-                if is_team_action:
-                    target['tov'] += 1
-                else:
-                    target['opp_tov'] += 1
-
-            # Personal fouls
-            if 'FALTA' in upper_text or action_type == 'foul':
-                if is_team_action:
-                    target['pf'] += 1
-                else:
-                    target['opp_pf'] += 1
-
-            # --- End processing for this action ---
-
-            # Append to history (keep reasonable length)
-            prev_actions.append(line)
-            if len(prev_actions) > 80:
-                prev_actions.pop(0)
+                # Append to history
+                prev_actions.append(line)
+                if len(prev_actions) > 80:
+                    prev_actions.pop(0)
 
         # Add minutes info
         time_in = self.analyzer.calculate_time_played(player_id)
