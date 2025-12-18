@@ -571,26 +571,35 @@ class ScoutingReportGenerator:
             return
 
         try:
-            # Obtener dorsal de la jugadora
-            player_id = player.get('player_id', '')
-            dorsal, _, _ = self.data_fetcher.get_player_dorsal_and_photo(player_id)
+            # Obtener datos de la jugadora
+            player_uuid = player.get('player_uuid', '')
+            player_name = player.get('player_name', '')
 
-            if not dorsal:
-                p = doc.add_paragraph()
-                p.add_run("No se pudo obtener el dorsal de la jugadora.").italic = True
-                return
+            # Calcular normalized_name para fallback (igual que en el pipeline)
+            normalized_name = ""
+            if player_name:
+                words = player_name.strip().split()
+                if len(words) >= 2:
+                    initial = words[0][0] if words[0] else ""
+                    surnames = words[-2:] if len(words) >= 2 else words[-1:]
+                    normalized_name = f"{initial} {' '.join(surnames)}"
+                else:
+                    normalized_name = player_name
 
-            # Filtrar tiros de esta jugadora
-            # Usar player_id si está disponible, sino usar dorsal
+            # Filtrar tiros de esta jugadora usando UUID (preferido) o normalized_name (fallback)
             player_shots = []
             for shot in shots_data:
-                # Primero intentar filtrar por player_id para evitar mezclar jugadores con mismo dorsal
-                if shot.get('player_id'):
-                    if str(shot.get('player_id', '')) == str(player_id):
+                # Intentar match por UUID (más preciso)
+                if player_uuid and shot.get('player_uuid'):
+                    if shot.get('player_uuid') == player_uuid:
                         player_shots.append(shot)
-                # Si no hay player_id, usar dorsal (método anterior)
-                elif str(shot.get('player', '')) == str(dorsal):
-                    player_shots.append(shot)
+                        continue
+
+                # Fallback: normalized_name (cuando UUID no disponible)
+                if normalized_name and shot.get('normalized_name'):
+                    if shot.get('normalized_name') == normalized_name:
+                        player_shots.append(shot)
+                        continue
 
             if not player_shots:
                 p = doc.add_paragraph()
@@ -764,83 +773,84 @@ class ScoutingReportGenerator:
                 }
 
         # Calculate advanced stats for each player
+        calculator = AdvancedStatsCalculator()
         for player in player_stats:
             team_name = player['team_name']
             team_data = teams.get(team_name, {})
             team_stats = team_data.get('team_stats', {})
             opp_stats = team_data.get('opp_stats', {})
 
+            # Calculate shooting percentages first
+            fg2_made = player.get('total_p2m', 0)
+            fg2_attempted = player.get('total_p2a', 0)
+            fg3_made = player.get('total_p3m', 0)
+            fg3_attempted = player.get('total_p3a', 0)
+            ft_made = player.get('total_p1m', 0)
+            ft_attempted = player.get('total_p1a', 0)
+            games = player.get('games_played', 0)
+
+            player['fg2_pct'] = (fg2_made / fg2_attempted * 100) if fg2_attempted > 0 else 0
+            player['fg3_pct'] = (fg3_made / fg3_attempted * 100) if fg3_attempted > 0 else 0
+            player['ft_pct'] = (ft_made / ft_attempted * 100) if ft_attempted > 0 else 0
+
+            # Calculate per-game stats
+            player['mpg'] = (player.get('total_minutes', 0) / 60 / games) if games > 0 else 0
+            player['ppg'] = player.get('total_pts', 0) / games if games > 0 else 0
+            player['val_pg'] = player.get('total_val', 0) / games if games > 0 else 0
+
+            # Calculate advanced stats that don't need team data
+            fga = fg2_attempted + fg3_attempted
+            player['efg'] = calculator.calculate_effective_fg_percentage(player)
+            player['ts'] = calculator.calculate_true_shooting_percentage(player)
+            player['ftr'] = calculator.calculate_ftr(player)
+            player['three_pr'] = calculator.calculate_3pr(player)
+
+            # Calculate rebound percentages (simple version without team data)
+            total_reb = player.get('total_ro', 0) + player.get('total_rd', 0)
+            player['orb_pct'] = (player.get('total_ro', 0) / total_reb * 100) if total_reb > 0 else 0.0
+            player['drb_pct'] = (player.get('total_rd', 0) / total_reb * 100) if total_reb > 0 else 0.0
+            player['trb_pct'] = player['orb_pct'] + player['drb_pct']
+
+            # Calculate other percentages based on possessions estimate
+            possessions_est = fga + 0.44 * ft_attempted + player.get('total_to', 0)
+            player['ast_pct'] = (player.get('total_as', player.get('total_assist', 0)) / possessions_est * 100) if possessions_est > 0 else 0.0
+            player['tov_pct'] = (player.get('total_to', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+            player['stl_pct'] = (player.get('total_st', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+            player['blk_pct'] = (player.get('total_bl', player.get('total_bs', 0)) / possessions_est * 100) if possessions_est > 0 else 0.0
+
+            # Calculate team-dependent stats if data is available
             if team_stats and opp_stats:
-                advanced_stats = AdvancedStatsCalculator.calculate_all_advanced_stats(
-                    player, team_stats, opp_stats
-                )
-                player.update(advanced_stats)
-
-                # Calculate TRB% (total rebound percentage)
-                player['trb_pct'] = player.get('orb_pct', 0) + player.get('drb_pct', 0)
-
-                # Calculate additional metrics for radar chart
-                # Shooting percentages - calcular desde totales
-                fg2_made = player.get('total_p2m', 0)
-                fg2_attempted = player.get('total_p2a', 0)
-                player['fg2_pct'] = (fg2_made / fg2_attempted * 100) if fg2_attempted > 0 else 0
-
-                fg3_made = player.get('total_p3m', 0)
-                fg3_attempted = player.get('total_p3a', 0)
-                player['fg3_pct'] = (fg3_made / fg3_attempted * 100) if fg3_attempted > 0 else 0
-
-                ft_made = player.get('total_p1m', 0)
-                ft_attempted = player.get('total_p1a', 0)
-                player['ft_pct'] = (ft_made / ft_attempted * 100) if ft_attempted > 0 else 0
-
-                # AST Ratio = Porcentaje de posesiones que terminan en asistencia
-                # Formula: 100 × AST / (FGA + 0.44 × FTA + AST + TOV)
-                total_ast = player.get('total_assist', 0)
-                total_to = player.get('total_to', 0)
-                total_fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
-                total_fta = player.get('total_p1a', 0)
-
-                possessions = total_fga + (0.44 * total_fta) + total_ast + total_to
-                player['ast_ratio'] = (100 * total_ast / possessions) if possessions > 0 else 0
-
-                # AST/TO ratio = Simple ratio de asistencias por pérdida
-                player['ast_to_ratio'] = total_ast / total_to if total_to > 0 else 0
-
-                # AST/USG = ratio of assist percentage to usage percentage
-                # This shows efficiency: high AST% with low USG% is good
-                ast_pct = player.get('ast_pct', 0)
-                usage = player.get('usage', 0)
-                # Scale up to make values more visible (multiply by 100)
-                player['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
+                # Override with more accurate calculations using team data
+                full_advanced_stats = calculator.calculate_all_advanced_stats(player, team_stats, opp_stats)
+                player.update(full_advanced_stats)
             else:
-                # Set default values if stats are not available
-                player.update({
-                    'mpg': player.get('minutes_per_game', 0),
-                    'ppg': player.get('points_per_game', 0),
-                    'usage': 0.0,
-                    'orating': 0.0,
-                    'drating': 0.0,
-                    'ftr': 0.0,
-                    'three_pr': 0.0,
-                    'efg': 0.0,
-                    'ts': 0.0,
-                    'ast_pct': 0.0,
-                    'tov_pct': 0.0,
-                    'stl_pct': 0.0,
-                    'blk_pct': 0.0,
-                    'drb_pct': 0.0,
-                    'orb_pct': 0.0,
-                    'trb_pct': 0.0,
-                    'val_pg': 0.0,
-                    'fg2_pct': player.get('fg2_pct', 0),
-                    'fg3_pct': player.get('fg3_pct', 0),
-                    'ft_pct': player.get('ft_pct', 0),
-                    'ast_ratio': 0.0,
-                    'ast_to_ratio': 0.0,
-                    'ast_usg': 0.0
-                })
+                # Approximations for team-dependent stats
+                player['usage'] = (possessions_est / games) if games > 0 else 0.0
+                player['orating'] = (player.get('total_pts', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                # Defensive rating approximation (lower is better, league average ~110)
+                defensive_contrib = player.get('total_st', 0) + player.get('total_bl', player.get('total_bs', 0)) + player.get('total_rd', 0)
+                player['drating'] = max(80, 120 - (defensive_contrib / games * 2)) if games > 0 else 110.0
 
-    def _generate_stats_image_single_row(self, player: Dict, all_player_stats: List[Dict], view_mode: str) -> Optional[str]:
+            # Calculate additional ratios
+            total_ast = player.get('total_assist', player.get('total_as', 0))
+            total_to = player.get('total_to', 0)
+            total_fga = fga
+            total_fta = ft_attempted
+
+            possessions = total_fga + (0.44 * total_fta) + total_ast + total_to
+            player['ast_ratio'] = (100 * total_ast / possessions) if possessions > 0 else 0
+            player['ast_to_ratio'] = total_ast / total_to if total_to > 0 else 0
+
+            ast_pct = player.get('ast_pct', 0)
+            usage = player.get('usage', 0)
+            player['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
+
+    def _generate_stats_image_single_row(
+        self,
+        player: Dict,
+        all_player_stats: List[Dict],
+        view_mode: str
+    ) -> Optional[str]:
         """
         Genera una imagen PNG de una fila de estadísticas básicas con coloreado por cuartiles.
 
@@ -994,7 +1004,7 @@ class ScoutingReportGenerator:
             # Definición de campos avanzados con sus configuraciones
             # NOTA: Los nombres deben coincidir con los que devuelve AdvancedStatsCalculator
             ADVANCED_STAT_FIELDS = {
-                3: ('mpg', False),
+                3: ('minutes_per_game', False),  # Min/PJ - usar minutes_per_game, no mpg
                 4: ('ppg', False),
                 5: ('ts', False),           # TS% - returned as 'ts' not 'ts_pct'
                 6: ('efg', False),          # eFG% - returned as 'efg' not 'efg_pct'
@@ -1032,11 +1042,11 @@ class ScoutingReportGenerator:
                 value = player.get(field_name, 0)
 
                 # Formatear valor
-                if field_name in ['mpg', 'ppg', 'val_pg']:
+                if field_name in ['minutes_per_game', 'ppg', 'val_pg']:
                     formatted_value = f"{value:.1f}" if value else "0.0"
-                elif field_name in ['ortg', 'drtg']:
+                elif field_name in ['orating', 'drating']:  # Changed from 'ortg', 'drtg'
                     formatted_value = f"{value:.1f}" if value else "0.0"
-                elif field_name in ['three_par', 'ftr']:
+                elif field_name in ['three_pr', 'ftr']:  # Changed from 'three_par'
                     formatted_value = f"{value:.3f}" if value else "0.000"
                 else:
                     formatted_value = f"{value:.1f}%" if value else "0.0%"

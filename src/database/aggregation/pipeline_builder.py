@@ -897,3 +897,119 @@ class AggregationPipelineBuilder:
 
         return pipeline
 
+    @staticmethod
+    def build_team_matches_timeline_pipeline_fbcyl(team_name: str) -> List[Dict]:
+        """
+        Build a pipeline to get chronological match data for a team (FBCYL format).
+
+        This pipeline retrieves all matches for a specific team in chronological order,
+        including opponent information and match statistics. Used for temporal evolution analysis.
+        Works with FBCYL data structure which uses 'teams' instead of 'BOXSCORE.TEAM'.
+
+        Args:
+            team_name: Name of the team to get match data for
+
+        Returns:
+            MongoDB aggregation pipeline as a list of stages
+
+        Example output format:
+            [
+                {
+                    "date": datetime,
+                    "opponent": "Team B",
+                    "team_data": {...},  # teams[x].data for team
+                    "opponent_data": {...},  # teams[x].data for opponent
+                    "is_local": True
+                },
+                ...
+            ]
+        """
+        return [
+            # Stage 1: Parse date field (FBCYL uses 'time' field at root level)
+            # Format: "Oct 4, 2025 7:00:00 PM" - extract just the date part
+            {
+                "$addFields": {
+                    "timeParts": {"$split": ["$time", " "]}
+                }
+            },
+            # Stage 2: Build the date string from parts: month, day, year
+            {
+                "$addFields": {
+                    "dateString": {
+                        "$concat": [
+                            {"$arrayElemAt": ["$timeParts", 0]},  # Month (Oct)
+                            " ",
+                            {"$arrayElemAt": ["$timeParts", 1]},  # Day (4,)
+                            " ",
+                            {"$arrayElemAt": ["$timeParts", 2]}   # Year (2025)
+                        ]
+                    }
+                }
+            },
+            # Stage 3: Parse the date string to date object
+            {
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$dateString",
+                            "format": "%b %d, %Y",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            },
+            # Stage 4: Filter matches where team participated
+            {
+                "$match": {
+                    "teams.name": team_name
+                }
+            },
+            # Stage 5: Sort by date ascending (oldest to newest)
+            {"$sort": {"parsedDate": 1}},
+            # Stage 6: Capture both teams' data BEFORE unwinding
+            {
+                "$addFields": {
+                    "team0_name": {"$arrayElemAt": ["$teams.name", 0]},
+                    "team1_name": {"$arrayElemAt": ["$teams.name", 1]},
+                    "team0_data": {"$arrayElemAt": ["$teams.data", 0]},
+                    "team1_data": {"$arrayElemAt": ["$teams.data", 1]}
+                }
+            },
+            # Stage 7: Unwind teams to identify which index is our team
+            {
+                "$unwind": {
+                    "path": "$teams",
+                    "includeArrayIndex": "teamIndex"
+                }
+            },
+            # Stage 8: Filter to keep only the selected team's row
+            {
+                "$match": {
+                    "teams.name": team_name
+                }
+            },
+            # Stage 9: Project final structure with opponent data
+            {
+                "$project": {
+                    "date": "$parsedDate",
+                    "opponent": {
+                        "$cond": [
+                            {"$eq": ["$teamIndex", 0]},
+                            "$team1_name",
+                            "$team0_name"
+                        ]
+                    },
+                    "team_data": "$teams.data",
+                    "opponent_data": {
+                        "$cond": [
+                            {"$eq": ["$teamIndex", 0]},
+                            "$team1_data",
+                            "$team0_data"
+                        ]
+                    },
+                    "is_local": {"$eq": ["$teamIndex", 0]}
+                }
+            }
+        ]
+

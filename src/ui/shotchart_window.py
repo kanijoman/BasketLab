@@ -2,7 +2,7 @@
 
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QLabel, QPushButton, QMessageBox, QComboBox,
-                              QProgressBar, QApplication, QRadioButton, QButtonGroup, QDialog)
+                              QProgressBar, QApplication, QRadioButton, QButtonGroup)
 from PyQt6.QtCore import Qt
 from typing import List, Dict, Optional
 import matplotlib
@@ -14,8 +14,20 @@ from shotcharts import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ui_utils import set_app_icon
-from .team_selector_dialog import TeamSelectorDialog
 from .team_utils import get_available_teams_from_collection, get_team_index_in_document, extract_player_names_from_boxscore
+
+
+def normalize_player_name(full_name: str) -> str:
+    """Normalize player name to initial + surnames (e.g., 'MARIA GONZALEZ GARCIA' -> 'M GONZALEZ GARCIA')."""
+    if not full_name:
+        return ""
+    words = full_name.strip().split()
+    if len(words) < 2:
+        return full_name
+    # First letter of first word + last two words (surnames)
+    initial = words[0][0] if words[0] else ""
+    surnames = words[-2:] if len(words) >= 2 else words[-1:]
+    return f"{initial} {' '.join(surnames)}"
 
 
 class ShotChartWindow(QMainWindow):
@@ -27,7 +39,7 @@ class ShotChartWindow(QMainWindow):
 
         Args:
             db_handler: MongoDBHandler instance
-            scraper: FEBWebScraper instance
+            scraper: FEBWebScraper instance (or None for FBCYL)
             collection_name: Name of the MongoDB collection
             parent: Parent widget
         """
@@ -35,6 +47,7 @@ class ShotChartWindow(QMainWindow):
         self.db_handler = db_handler
         self.scraper = scraper
         self.collection_name = collection_name
+        self.is_fbcyl = collection_name.startswith('FBCYL_')
         self.visualizer = ShotChartVisualizer()
         self.zone_analyzer = ZoneAnalyzer(detail_level='detailed')
         self.current_shots = []
@@ -58,7 +71,7 @@ class ShotChartWindow(QMainWindow):
         if not self.teams:
             self.status_label.setText("No se encontraron equipos. Los datos se actualizarán automáticamente.")
         else:
-            self.status_label.setText(f"{len(self.teams)} equipos disponibles. Seleccione uno para comenzar.")
+            self.status_label.setText(f"{len(self.teams)} equipos disponibles. Seleccione uno del desplegable.")
 
     def setup_ui(self):
         """Set up the UI components."""
@@ -72,13 +85,13 @@ class ShotChartWindow(QMainWindow):
 
         # Team selection
         control_layout.addWidget(QLabel("Equipo:"))
-        self.team_label = QLabel("-- Sin seleccionar --")
-        self.team_label.setStyleSheet("font-weight: bold; padding: 5px;")
-        control_layout.addWidget(self.team_label)
-
-        self.select_team_button = QPushButton("Seleccionar Equipo")
-        self.select_team_button.clicked.connect(self.on_select_team_clicked)
-        control_layout.addWidget(self.select_team_button)
+        self.team_combo = QComboBox()
+        self.team_combo.addItem("-- Seleccione un equipo --")
+        for team in self.teams:
+            self.team_combo.addItem(team['name'], team)
+        self.team_combo.currentIndexChanged.connect(self.on_team_changed)
+        self.team_combo.setMinimumWidth(250)
+        control_layout.addWidget(self.team_combo)
 
         # Player filter
         control_layout.addWidget(QLabel("Jugador:"))
@@ -210,36 +223,29 @@ class ShotChartWindow(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al actualizar lista de equipos: {str(e)}")
 
-    def on_select_team_clicked(self):
-        """Show team selector dialog."""
-        if not self.teams:
-            QMessageBox.warning(self, "Sin equipos", "No hay equipos disponibles en la base de datos.")
+    def on_team_changed(self, index: int):
+        """Handle team selection change."""
+        if index <= 0:  # First item is placeholder
+            self.current_team = None
+            self.player_combo.clear()
+            self.player_combo.addItem("Todos los jugadores")
+            self.player_combo.setEnabled(False)
+            self.status_label.setText("Seleccione un equipo para comenzar")
+            self.figure.clear()
+            self.canvas.draw()
             return
 
-        # Show team selector dialog
-        team_names = [team['name'] for team in self.teams]
-        dialog = TeamSelectorDialog(team_names, self)
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            selected_name = dialog.get_selected_team()
-            if selected_name:
-                # Find the team data
-                selected_team = next((t for t in self.teams if t['name'] == selected_name), None)
-                if selected_team:
-                    self.current_team = selected_team
-                    self.team_label.setText(selected_name)
-                    # Reset player combo when changing teams
-                    self.player_combo.clear()
-                    self.player_combo.addItem("Todos los jugadores")
-                    self.player_combo.setEnabled(False)
-                    self.status_label.setText(f"Cargando datos para {selected_name}...")
-                    QApplication.processEvents()
-                    # Generate chart automatically
-                    self.on_generate_chart()
-
-    def on_team_changed(self, index: int):
-        """Handle team selection change - deprecated, kept for compatibility."""
-        pass
+        selected_team = self.team_combo.currentData()
+        if selected_team:
+            self.current_team = selected_team
+            # Reset player combo when changing teams
+            self.player_combo.clear()
+            self.player_combo.addItem("Todos los jugadores")
+            self.player_combo.setEnabled(False)
+            self.status_label.setText(f"Cargando datos para {selected_team['name']}...")
+            QApplication.processEvents()
+            # Generate chart automatically
+            self.on_generate_chart()
 
     def on_filter_changed(self):
         """Handle shot filter change and redraw chart if data exists."""
@@ -259,6 +265,11 @@ class ShotChartWindow(QMainWindow):
 
     def on_update_data(self):
         """Update shot chart data from FEB."""
+        # FBCYL data is already complete, no separate update needed
+        if self.is_fbcyl:
+            QMessageBox.information(self, "Info", "Los datos FBCYL ya están completos, no requieren actualización adicional.")
+            return
+
         try:
             self.progress_bar.setVisible(True)
             self.status_label.setText("Actualizando datos de gráficos de lanzamiento...")
@@ -344,83 +355,102 @@ class ShotChartWindow(QMainWindow):
             all_shots = []
             documents = collection.find({})
 
-            # Extract player information from SHOTCHART.TEAM.PLAYER for ID mapping
-            players_info = {}  # {dorsal: name}
-            player_id_map = {}  # {(team_idx, dorsal): {id, name}}
-
-            for doc in documents:
-                if 'SHOTCHART' not in doc or not doc['SHOTCHART']:
-                    continue
-
-                if 'SHOTS' not in doc['SHOTCHART']:
-                    continue
-
-                shots = doc['SHOTCHART']['SHOTS']
-                team_index = get_team_index_in_document(doc, team['code'])
-
-                if team_index is None:
-                    continue
-
-                # Extract player names and IDs from SHOTCHART.TEAM.PLAYER
-                shotchart = doc['SHOTCHART']
-                if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
-                    if team_index < len(shotchart['TEAM']):
-                        team_data = shotchart['TEAM'][team_index]
-                        if 'PLAYER' in team_data and isinstance(team_data['PLAYER'], list):
-                            for player in team_data['PLAYER']:
-                                dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
-                                player_id = player.get('id', '')
-                                player_name = player.get('name', '')
-
-                                if dorsal and player_id:
-                                    # Map (team_index, dorsal) to player info
-                                    key = (team_index, str(dorsal))
-                                    player_id_map[key] = {
-                                        'id': player_id,
-                                        'name': player_name,
-                                        'dorsal': str(dorsal)
-                                    }
-                                    # Also keep simple dorsal->name mapping for display
-                                    if dorsal:
-                                        players_info[str(dorsal)] = player_name
-
-                # Add player_id to each shot for proper filtering
-                team_shots = []
-                for shot in shots:
-                    if shot.get('team', '') == str(team_index):
-                        shot_copy = shot.copy()
-                        dorsal = str(shot.get('player', ''))
-                        key = (team_index, dorsal)
-                        if key in player_id_map:
-                            shot_copy['player_id'] = player_id_map[key]['id']
-                            shot_copy['player_name'] = player_id_map[key]['name']
-                        team_shots.append(shot_copy)
-
-                all_shots.extend(team_shots)
+            # Branch based on data format
+            if self.is_fbcyl:
+                all_shots = self._extract_shots_fbcyl(documents, team)
+            else:
+                all_shots = self._extract_shots_feb(documents, team)
 
             if not all_shots:
-                QMessageBox.information(self, "Sin datos",
-                                      f"No se encontraron datos de lanzamientos para {team['name']}")
-                self.status_label.setText("Sin datos de lanzamientos")
+                self.status_label.setText(f"No se encontraron tiros para {team['name']}")
+                QMessageBox.information(self, "Sin datos", f"No se encontraron datos de tiros para {team['name']}")
                 return
 
-            self.current_shots = all_shots
-            self.current_team = team
-            self.players_info = players_info
-            self.player_id_map = player_id_map
-
-            # Extract unique players from shots and populate combo
-            self._populate_player_combo(all_shots, players_info)
-
-            self._draw_chart()
-
-            # Adjust window size to fit the chart properly
-            # Account for controls, filters, viz type selector, status, progress bar, and margins
-            self.resize(1050, 1100)
+            self._generate_chart_from_shots(all_shots, team)
 
         except Exception as e:
-            self.status_label.setText("Error al generar gráfico de lanzamiento")
-            QMessageBox.critical(self, "Error", f"Error al generar gráfico de lanzamiento: {str(e)}")
+            self.status_label.setText(f"Error: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Error al generar gráfico: {str(e)}")
+
+    def _extract_shots_feb(self, documents, team: Dict) -> List[Dict]:
+        """Extract shots from FEB format documents."""
+        all_shots = []
+        players_info = {}  # {dorsal: name}
+        player_id_map = {}  # {(team_idx, dorsal): {id, name}}
+
+        for doc in documents:
+            if 'SHOTCHART' not in doc or not doc['SHOTCHART']:
+                continue
+
+            if 'SHOTS' not in doc['SHOTCHART']:
+                continue
+
+            shots = doc['SHOTCHART']['SHOTS']
+            team_index = get_team_index_in_document(doc, team['code'])
+
+            if team_index is None:
+                continue
+
+            # Extract player names and IDs from SHOTCHART.TEAM.PLAYER
+            shotchart = doc['SHOTCHART']
+            if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
+                if team_index < len(shotchart['TEAM']):
+                    team_data = shotchart['TEAM'][team_index]
+                    if 'PLAYER' in team_data and isinstance(team_data['PLAYER'], list):
+                        for player in team_data['PLAYER']:
+                            dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
+                            player_id = player.get('id', '')
+                            player_name = player.get('name', '')
+
+                            if dorsal and player_id:
+                                # Map (team_index, dorsal) to player info
+                                key = (team_index, str(dorsal))
+                                player_id_map[key] = {
+                                    'id': player_id,
+                                    'name': player_name,
+                                    'dorsal': str(dorsal)
+                                }
+                                # Also keep simple dorsal->name mapping for display
+                                if dorsal:
+                                    players_info[str(dorsal)] = player_name
+
+            # Add player_id to each shot for proper filtering
+            team_shots = []
+            for shot in shots:
+                if shot.get('team', '') == str(team_index):
+                    shot_copy = shot.copy()
+                    dorsal = str(shot.get('player', ''))
+                    key = (team_index, dorsal)
+                    if key in player_id_map:
+                        shot_copy['player_id'] = player_id_map[key]['id']
+                        shot_copy['player_name'] = player_id_map[key]['name']
+                    team_shots.append(shot_copy)
+
+            all_shots.extend(team_shots)
+
+        # Store for player combo
+        self.players_info = players_info
+        self.player_id_map = player_id_map
+
+        # Populate player combo
+        if all_shots:
+            self._populate_player_combo(all_shots, players_info)
+
+        return all_shots
+
+    def _generate_chart_from_shots(self, all_shots: List[Dict], team: Dict):
+        """Generate chart visualization from extracted shots."""
+        if not all_shots:
+            return
+
+        self.current_shots = all_shots
+        self.current_team = team
+
+        self._draw_chart()
+
+        # Adjust window size to fit the chart properly
+        self.resize(1050, 1100)
+        self.status_label.setText(f"Gráfico generado: {len(all_shots)} lanzamientos de {team['name']}")
 
     def _populate_player_combo(self, shots: List[Dict], players_info: Dict[str, str]):
         """Populate player combo box with unique players from shots.
@@ -478,11 +508,19 @@ class ShotChartWindow(QMainWindow):
         if not self.current_shots or not self.current_team:
             return
 
-        # Filter shots based on player selection (by player_id, not dorsal)
-        selected_player_id = self.player_combo.currentData()
-        if selected_player_id is not None:
-            # Filter by player_id to avoid mixing shots from different players with same dorsal
-            player_filtered_shots = [s for s in self.current_shots if s.get('player_id', '') == selected_player_id]
+        # Filter shots based on player selection
+        selected_player_data = self.player_combo.currentData()
+        if selected_player_data is not None:
+            # For FBCYL, filter by UUID or normalized name to group shots across games
+            if self.is_fbcyl:
+                player_filtered_shots = [
+                    s for s in self.current_shots
+                    if (s.get('player_uuid', '') == selected_player_data or
+                        s.get('normalized_name', '') == selected_player_data)
+                ]
+            else:
+                # For FEB, filter by player_id to avoid mixing shots from different players with same dorsal
+                player_filtered_shots = [s for s in self.current_shots if s.get('player_id', '') == selected_player_data]
         else:
             player_filtered_shots = self.current_shots
 
@@ -504,7 +542,7 @@ class ShotChartWindow(QMainWindow):
         total_all = len(self.current_shots)
 
         # Build title with player info if filtered
-        if selected_player is not None:
+        if selected_player_data is not None:
             # Get player name from combo display text
             current_index = self.player_combo.currentIndex()
             if current_index > 0:  # Skip "Todos los jugadores"
@@ -561,3 +599,141 @@ class ShotChartWindow(QMainWindow):
             f"{viz_type} - {filter_text}: {total_count} lanzamientos "
             f"({made_count} anotados, {total_count - made_count} fallados) | Total: {total_all}"
         )
+    def _extract_shots_fbcyl(self, documents, team: Dict) -> List[Dict]:
+        """
+        Extract shots from FBCYL format documents.
+
+        FBCYL structure: stats.teams[].players[].data.shootingOfTwoSuccessfulPoint, etc.
+        """
+        all_shots = []
+
+        for doc in documents:
+            if 'stats' not in doc or 'teams' not in doc['stats']:
+                continue
+
+            teams = doc['stats']['teams']
+            if not isinstance(teams, list):
+                continue
+
+            # Find the team by name
+            team_index = None
+            for idx, t in enumerate(teams):
+                if t.get('name') == team['name']:
+                    team_index = idx
+                    break
+
+            if team_index is None:
+                continue
+
+            team_data = teams[team_index]
+            players = team_data.get('players', [])
+
+            for player in players:
+                if not isinstance(player, dict):
+                    continue
+
+                player_name = player.get('name', '')
+                player_id = player.get('actorId', '')
+                player_uuid = player.get('uuid', '')
+                # Normalize name for consistent grouping (initial + surnames)
+                normalized_name = normalize_player_name(player_name)
+
+                # Get player data section
+                player_data = player.get('data', {})
+                if not isinstance(player_data, dict):
+                    continue
+
+                # Extract 2-point successful shots
+                for shot in player_data.get('shootingOfTwoSuccessfulPoint', []):
+                    all_shots.append({
+                        'x': shot.get('xnormalize', 0),
+                        'y': shot.get('ynormalize', 0),
+                        'm': 1,  # made = 1 (consistent with FEB format)
+                        'points': 2,
+                        'team': str(team_index),  # Required by visualizer
+                        'player': player_name,
+                        'player_id': player_id,
+                        'player_uuid': player_uuid,
+                        'player_name': player_name,
+                        'normalized_name': normalized_name
+                    })
+
+                # Extract 2-point failed shots
+                for shot in player_data.get('shootingOfTwoFailedPoint', []):
+                    all_shots.append({
+                        'x': shot.get('xnormalize', 0),
+                        'y': shot.get('ynormalize', 0),
+                        'm': 0,  # missed = 0 (consistent with FEB format)
+                        'points': 2,
+                        'team': str(team_index),  # Required by visualizer
+                        'player': player_name,
+                        'player_id': player_id,
+                        'player_uuid': player_uuid,
+                        'player_name': player_name,
+                        'normalized_name': normalized_name
+                    })
+
+                # Extract 3-point successful shots
+                for shot in player_data.get('shootingOfThreeSuccessfulPoint', []):
+                    all_shots.append({
+                        'x': shot.get('xnormalize', 0),
+                        'y': shot.get('ynormalize', 0),
+                        'm': 1,  # made = 1 (consistent with FEB format)
+                        'points': 3,
+                        'team': str(team_index),  # Required by visualizer
+                        'player': player_name,
+                        'player_id': player_id,
+                        'player_uuid': player_uuid,
+                        'player_name': player_name,
+                        'normalized_name': normalized_name
+                    })
+
+                # Extract 3-point failed shots
+                for shot in player_data.get('shootingOfThreeFailedPoint', []):
+                    all_shots.append({
+                        'x': shot.get('xnormalize', 0),
+                        'y': shot.get('ynormalize', 0),
+                        'm': 0,  # missed = 0 (consistent with FEB format)
+                        'points': 3,
+                        'team': str(team_index),  # Required by visualizer
+                        'player': player_name,
+                        'player_id': player_id,
+                        'player_uuid': player_uuid,
+                        'player_name': player_name,
+                        'normalized_name': normalized_name
+                    })
+
+        # Group players by UUID or normalized name
+        if all_shots:
+            # Group by UUID first, then by normalized name
+            unique_players = {}  # {player_key: display_name}
+            player_uuids = {}  # {normalized_name: first_valid_uuid}
+
+            # First pass: find valid UUIDs for each normalized name
+            for shot in all_shots:
+                normalized = shot.get('normalized_name', '')
+                uuid = shot.get('player_uuid', '')
+                if normalized and uuid and normalized not in player_uuids:
+                    player_uuids[normalized] = uuid
+
+            # Second pass: build unique player list
+            for shot in all_shots:
+                normalized = shot.get('normalized_name', '')
+                display_name = shot.get('player_name', '')
+                uuid = shot.get('player_uuid', '')
+
+                if normalized:
+                    # Use UUID if available, otherwise use normalized name as key
+                    player_key = player_uuids.get(normalized) or uuid or normalized
+                    if player_key not in unique_players:
+                        unique_players[player_key] = display_name
+
+            # Update player combo
+            self.player_combo.clear()
+            self.player_combo.addItem("Todos los jugadores", None)
+            for player_key, display_name in sorted(unique_players.items(), key=lambda x: x[1]):
+                # Store player key (UUID or normalized name) as data for filtering
+                self.player_combo.addItem(display_name, player_key)
+            self.player_combo.setEnabled(True)
+
+        return all_shots

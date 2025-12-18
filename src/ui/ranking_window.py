@@ -26,8 +26,8 @@ class PlayerRankingWindow(QMainWindow):
         "Min/PJ": ("mpg", "Minutos por partido", False),
         "RO": ("total_ro", "Rebotes ofensivos", False),
         "RD": ("total_rd", "Rebotes defensivos", False),
-        "Reb": ("total_rb", "Rebotes totales", False),
-        "Reb/PJ": ("reb_pg", "Rebotes por partido", False),
+        "Reb": ("total_rt", "Rebotes totales", False),
+        "Reb/PJ": ("rebounds_per_game", "Rebotes por partido", False),
         "Ast": ("total_as", "Asistencias", False),
         "Ast/PJ": ("ast_pg", "Asistencias por partido", False),
         "Rob": ("total_st", "Robos", False),
@@ -268,11 +268,23 @@ class PlayerRankingWindow(QMainWindow):
                 team_data = team_stats_dict.get(team_name, {})
                 opp_data = opp_stats_dict.get(team_name, {})
 
+                # Debug: Print first player data
+                if not hasattr(self, '_debug_printed'):
+                    print(f"[RankingWindow] First player data sample:")
+                    print(f"  Player: {player.get('player_name')}")
+                    print(f"  Team: {team_name}")
+                    print(f"  Games: {player.get('games_played')}")
+                    print(f"  P2A: {player.get('total_p2a')}, P2M: {player.get('total_p2m')}")
+                    print(f"  P3A: {player.get('total_p3a')}, P3M: {player.get('total_p3m')}")
+                    print(f"  Team data available: {bool(team_data)}")
+                    print(f"  Opp data available: {bool(opp_data)}")
+                    self._debug_printed = True
+
                 # Calculate minutes per game and other per-game stats
                 games = player.get('games_played', 0)
                 player['mpg'] = (player.get('total_minutes', 0) / 60 / games) if games > 0 else 0
                 player['ppg'] = player.get('total_pts', 0) / games if games > 0 else 0
-                player['reb_pg'] = player.get('total_rb', 0) / games if games > 0 else 0
+                player['reb_pg'] = player.get('total_rt', 0) / games if games > 0 else 0
                 player['ast_pg'] = player.get('total_as', 0) / games if games > 0 else 0
                 player['stl_pg'] = player.get('total_st', 0) / games if games > 0 else 0
                 player['tov_pg'] = player.get('total_to', 0) / games if games > 0 else 0
@@ -291,27 +303,37 @@ class PlayerRankingWindow(QMainWindow):
                 player['fg3_percentage'] = (fg3m / fg3a * 100) if fg3a > 0 else 0
                 player['ft_percentage'] = (ftm / fta * 100) if fta > 0 else 0
 
-                # Calculate all advanced stats at once
+                # Calculate advanced stats that don't need team data
+                fga = fg2a + fg3a
+                player['efg'] = calculator.calculate_effective_fg_percentage(player)
+                player['ts'] = calculator.calculate_true_shooting_percentage(player)
+                player['ftr'] = calculator.calculate_ftr(player)
+                player['three_pr'] = calculator.calculate_3pr(player)
+
+                # Calculate rebound percentages (simple version without team data)
+                total_reb = player.get('total_ro', 0) + player.get('total_rd', 0)
+                player['orb_pct'] = (player.get('total_ro', 0) / total_reb * 100) if total_reb > 0 else 0.0
+                player['drb_pct'] = (player.get('total_rd', 0) / total_reb * 100) if total_reb > 0 else 0.0
+
+                # Calculate other percentages based on possessions estimate
+                possessions_est = fga + 0.44 * fta + player.get('total_to', 0)
+                player['ast_pct'] = (player.get('total_as', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                player['tov_pct'] = (player.get('total_to', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                player['stl_pct'] = (player.get('total_st', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                player['blk_pct'] = (player.get('total_bl', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+
+                # Calculate team-dependent stats if data is available
                 if team_data and opp_data:
-                    advanced_stats = calculator.calculate_all_advanced_stats(player, team_data, opp_data)
-                    player.update(advanced_stats)
+                    # Override with more accurate calculations using team data
+                    full_advanced_stats = calculator.calculate_all_advanced_stats(player, team_data, opp_data)
+                    player.update(full_advanced_stats)
                 else:
-                    # Set default values if stats are not available
-                    player.update({
-                        'usage': 0.0,
-                        'orating': 0.0,
-                        'drating': 0.0,
-                        'ftr': 0.0,
-                        'three_pr': 0.0,
-                        'efg': 0.0,
-                        'ts': 0.0,
-                        'ast_pct': 0.0,
-                        'tov_pct': 0.0,
-                        'stl_pct': 0.0,
-                        'blk_pct': 0.0,
-                        'drb_pct': 0.0,
-                        'orb_pct': 0.0
-                    })
+                    # Approximations for team-dependent stats
+                    player['usage'] = (possessions_est / games) if games > 0 else 0.0
+                    player['orating'] = (player.get('total_pts', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                    # Defensive rating approximation (lower is better, league average ~110)
+                    defensive_contrib = player.get('total_st', 0) + player.get('total_bl', 0) + player.get('total_rd', 0)
+                    player['drating'] = max(80, 120 - (defensive_contrib / games * 2)) if games > 0 else 110.0
 
             self.advanced_stats_calculated = True
 

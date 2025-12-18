@@ -12,11 +12,12 @@ class AnalysisConfig:
     """Configuration for AI analysis providers."""
 
     # Default provider
-    DEFAULT_PROVIDER = 'gemini'
+    DEFAULT_PROVIDER = 'groq'
 
     # API keys (load from environment or config file)
-    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = 'AIzaSyBfPMeN3hUN4XOct4D5VpClgnCa-JW45X8'
     OPENAI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = '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'
 
     # Model configurations
     GEMINI_MODELS = {
@@ -29,6 +30,11 @@ class AnalysisConfig:
         'standard': 'gpt-4o'
     }
 
+    GROQ_MODELS = {
+        'fast': 'llama-3.3-70b-versatile',  # Llama 3.3 70B (rápido y potente)
+        'specdec': 'llama-3.3-70b-specdec'  # Con speculative decoding (más rápido)
+    }
+
     # Analysis settings
     MAX_TOKENS = 8000  # Increased for complete HTML reports (was 2000)
     TEMPERATURE = 0.7
@@ -39,6 +45,7 @@ class AnalysisConfig:
         # Try environment variables first
         cls.GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
         cls.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+        cls.GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
         # Try config file if env vars not set
         config_file = Path.home() / '.metricsforall' / 'config.txt'
@@ -50,6 +57,8 @@ class AnalysisConfig:
                         cls.GEMINI_API_KEY = line.split('=', 1)[1]
                     elif line.startswith('OPENAI_API_KEY='):
                         cls.OPENAI_API_KEY = line.split('=', 1)[1]
+                    elif line.startswith('GROQ_API_KEY='):
+                        cls.GROQ_API_KEY = line.split('=', 1)[1]
 
     @classmethod
     def save_api_key(cls, provider: str, api_key: str):
@@ -77,6 +86,8 @@ class AnalysisConfig:
             cls.GEMINI_API_KEY = api_key
         elif provider.lower() == 'openai':
             cls.OPENAI_API_KEY = api_key
+        elif provider.lower() == 'groq':
+            cls.GROQ_API_KEY = api_key
 
     @classmethod
     def has_api_key(cls, provider: str) -> bool:
@@ -87,6 +98,8 @@ class AnalysisConfig:
             return bool(cls.GEMINI_API_KEY)
         elif provider.lower() == 'openai':
             return bool(cls.OPENAI_API_KEY)
+        elif provider.lower() == 'groq':
+            return bool(cls.GROQ_API_KEY)
 
         return False
 

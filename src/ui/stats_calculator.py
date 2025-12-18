@@ -16,17 +16,57 @@ from .numeric_utils import safe_int, safe_float
 class StatsCalculator:
     """Calculate statistics from basketball match data."""
 
+    @staticmethod
+    def normalize_team_data(data: Dict) -> Dict:
+        """
+        Normalize team data to a common format, supporting both FEB and FBCYL formats.
+
+        FEB format uses: pts, p2m, p2a, p3m, p3a, p1m, p1a, ro, rd, assist, st, to, bs
+        FBCYL format uses: score, shotsOfTwoSuccessful, shotsOfTwoAttempted, etc.
+
+        Args:
+            data: Raw team data dictionary (FEB or FBCYL format)
+
+        Returns:
+            Normalized dictionary with FEB field names
+        """
+        # If already in FEB format (has 'pts' field), return as-is
+        if 'pts' in data:
+            return data
+
+        # Convert FBCYL format to FEB format
+        normalized = {
+            'pts': data.get('score', 0),
+            'p2m': data.get('shotsOfTwoSuccessful', 0),
+            'p2a': data.get('shotsOfTwoAttempted', 0),
+            'p3m': data.get('shotsOfThreeSuccessful', 0),
+            'p3a': data.get('shotsOfThreeAttempted', 0),
+            'p1m': data.get('shotsOfOneSuccessful', 0),
+            'p1a': data.get('shotsOfOneAttempted', 0),
+            'ro': data.get('offensiveRebound', 0),
+            'rd': data.get('defensiveRebound', 0),
+            'assist': data.get('assists', 0),
+            'st': data.get('steals', 0),
+            'to': data.get('lost', 0),  # FBCYL uses 'lost' for turnovers
+            'bs': data.get('block', 0)
+        }
+        return normalized
+
     def calculate_single_match_stats(self, team_data: Dict, opponent_data: Dict) -> Dict:
         """
         Calculate statistics from a single match boxscore.
 
         Args:
-            team_data: BOXSCORE.TEAM.TOTAL data for the team
-            opponent_data: BOXSCORE.TEAM.TOTAL data for the opponent
+            team_data: Team data (FEB or FBCYL format)
+            opponent_data: Opponent data (FEB or FBCYL format)
 
         Returns:
             Dictionary with calculated statistics
         """
+        # Normalize data to support both FEB and FBCYL formats
+        team_data = self.normalize_team_data(team_data)
+        opponent_data = self.normalize_team_data(opponent_data)
+
         # Extract basic stats
         pts = safe_int(team_data.get("pts", 0))
         opp_pts = safe_int(opponent_data.get("pts", 0))
@@ -224,8 +264,8 @@ class StatsCalculator:
         from match data. Useful for temporal analysis and custom reports.
 
         Args:
-            team_data: BOXSCORE.TEAM.TOTAL data for the team
-            opponent_data: BOXSCORE.TEAM.TOTAL data for the opponent
+            team_data: Team data (FEB or FBCYL format)
+            opponent_data: Opponent data (FEB or FBCYL format)
             stat_field: The statistic field to calculate (e.g., 'points_per_game', 'offensive_rating')
 
         Returns:
@@ -236,6 +276,10 @@ class StatsCalculator:
             >>> value = calculator.calculate_stat_value(team_data, opp_data, 'offensive_rating')
             >>> print(f"Offensive Rating: {value:.2f}")
         """
+        # Normalize data to support both FEB and FBCYL formats
+        team_data = self.normalize_team_data(team_data)
+        opponent_data = self.normalize_team_data(opponent_data)
+
         # Extract basic stats
         pts = safe_int(team_data.get('pts', 0))
         opp_pts = safe_int(opponent_data.get('pts', 0))
