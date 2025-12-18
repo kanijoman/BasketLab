@@ -1,6 +1,6 @@
 """
 Team Analyzer - AI-powered basketball team analysis.
-Supports multiple providers: Google Gemini, OpenAI.
+Supports multiple providers: Google Gemini, OpenAI, Groq.
 """
 
 import json
@@ -22,8 +22,8 @@ class TeamAnalyzer:
         Initialize team analyzer.
 
         Args:
-            provider: 'gemini' or 'openai'
-            model: Model variant ('flash'/'pro' for Gemini, 'mini'/'standard' for OpenAI)
+            provider: 'gemini', 'openai', or 'groq'
+            model: Model variant ('flash'/'pro' for Gemini, 'mini'/'standard' for OpenAI, 'fast'/'specdec' for Groq)
         """
         self.provider = provider.lower()
         self.model = model
@@ -41,6 +41,8 @@ class TeamAnalyzer:
             self._init_gemini()
         elif self.provider == 'openai':
             self._init_openai()
+        elif self.provider == 'groq':
+            self._init_groq()
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
@@ -74,6 +76,18 @@ class TeamAnalyzer:
         except ImportError:
             raise ImportError("openai not installed. Run: pip install openai")
 
+    def _init_groq(self):
+        """Initialize Groq client (uses OpenAI-compatible API)."""
+        try:
+            import openai
+            self.client = openai.OpenAI(
+                api_key=AnalysisConfig.GROQ_API_KEY,
+                base_url="https://api.groq.com/openai/v1"
+            )
+            self.model_name = AnalysisConfig.GROQ_MODELS.get(self.model, AnalysisConfig.GROQ_MODELS['fast'])
+        except ImportError:
+            raise ImportError("openai not installed. Run: pip install openai")
+
     def analyze_team_performance(self,
                                  team_name: str,
                                  stats: Dict[str, Any],
@@ -101,7 +115,7 @@ class TeamAnalyzer:
         # Generate analysis based on provider
         if self.provider == 'gemini':
             return self._analyze_with_gemini(context, shot_chart_image, analysis_type)
-        elif self.provider == 'openai':
+        elif self.provider in ['openai', 'groq']:
             return self._analyze_with_openai(context, shot_chart_image, analysis_type)
 
     def _analyze_with_gemini(self, context: str, image: Optional[bytes] = None, analysis_type: str = 'own') -> str:
@@ -150,7 +164,7 @@ class TeamAnalyzer:
                 return f"Error generating analysis: {str(e)}\n\nPlease check your API key and internet connection."
 
     def _analyze_with_openai(self, context: str, image: Optional[bytes] = None, analysis_type: str = 'own') -> str:
-        """Generate analysis using OpenAI."""
+        """Generate analysis using OpenAI or Groq."""
         try:
             # Get appropriate system prompt
             system_content = get_system_prompt('openai', analysis_type)
@@ -162,7 +176,8 @@ class TeamAnalyzer:
                 }
             ]
 
-            if image:
+            if image and self.provider != 'groq':
+                # Only OpenAI supports vision API with images
                 # Encode image to base64
                 img_b64 = base64.b64encode(image).decode('utf-8')
 
@@ -179,6 +194,9 @@ class TeamAnalyzer:
                     ]
                 })
             else:
+                # Groq doesn't support vision, use text-only
+                if image and self.provider == 'groq':
+                    context += "\n\n(Nota: Gráfico de tiros disponible pero no se puede analizar visualmente con este proveedor)"
                 messages.append({
                     "role": "user",
                     "content": context
@@ -228,7 +246,7 @@ class TeamAnalyzer:
         # Generate analysis based on provider
         if self.provider == 'gemini':
             return self._analyze_player_with_gemini(context)
-        elif self.provider == 'openai':
+        elif self.provider in ['openai', 'groq']:
             return self._analyze_player_with_openai(context)
 
     def _analyze_player_with_gemini(self, context: str) -> str:

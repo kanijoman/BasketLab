@@ -132,8 +132,40 @@ class BasketballRepository:
             else:
                 pipeline = AggregationPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
 
-            return list(collection.aggregate(pipeline))
+            result = list(collection.aggregate(pipeline))
+
+            if not result and is_fbcyl:
+                # Debug: Check if collection has data
+                doc_count = collection.count_documents({})
+                print(f"[Repository] FBCYL collection {collection_name} has {doc_count} documents")
+                if doc_count > 0:
+                    sample = collection.find_one()
+                    print(f"[Repository] Sample document keys: {list(sample.keys()) if sample else 'None'}")
+                    if sample and 'stats' in sample:
+                        print(f"[Repository] Sample stats keys: {list(sample['stats'].keys())}")
+                        if 'teams' in sample['stats']:
+                            print(f"[Repository] Number of teams in sample: {len(sample['stats']['teams'])}")
+                            if sample['stats']['teams']:
+                                print(f"[Repository] First team keys: {list(sample['stats']['teams'][0].keys())}")
+
+                    # Try a simple aggregation to see what's happening
+                    print(f"[Repository] Testing simple aggregation...")
+                    simple_result = list(collection.aggregate([
+                        {"$limit": 1},
+                        {"$project": {"teams": "$stats.teams"}}
+                    ]))
+                    print(f"[Repository] Simple aggregation result: {len(simple_result)} docs")
+
+            return result
         except PyMongoError as e:
+            print(f"[Repository] Error in get_team_stats: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+        except Exception as e:
+            print(f"[Repository] Unexpected error in get_team_stats: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
     def get_opponent_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
@@ -197,29 +229,54 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
+            is_fbcyl = collection_name.startswith('FBCYL_')
 
-            # First, add parsed date field and filter by team
-            pipeline = [
-                {
-                    "$addFields": {
-                        "parsedDate": {
-                            "$dateFromString": {
-                                "dateString": "$HEADER.starttime",
-                                "format": "%d-%m-%Y - %H:%M",
-                                "onError": None,
-                                "onNull": None
+            if is_fbcyl:
+                # FBCYL format: stats.teams[].name and stats.startDate
+                pipeline = [
+                    {
+                        "$addFields": {
+                            "parsedDate": {
+                                "$dateFromString": {
+                                    "dateString": "$stats.startDate",
+                                    "format": "%Y-%m-%dT%H:%M:%S.%LZ",
+                                    "onError": None,
+                                    "onNull": None
+                                }
                             }
                         }
-                    }
-                },
-                {
-                    "$match": {
-                        "HEADER.TEAM.name": team_name
-                    }
-                },
-                {"$sort": {"parsedDate": -1}},
-                {"$limit": 1}
-            ]
+                    },
+                    {
+                        "$match": {
+                            "stats.teams.name": team_name
+                        }
+                    },
+                    {"$sort": {"parsedDate": -1}},
+                    {"$limit": 1}
+                ]
+            else:
+                # FEB format: HEADER.TEAM.name and HEADER.starttime
+                pipeline = [
+                    {
+                        "$addFields": {
+                            "parsedDate": {
+                                "$dateFromString": {
+                                    "dateString": "$HEADER.starttime",
+                                    "format": "%d-%m-%Y - %H:%M",
+                                    "onError": None,
+                                    "onNull": None
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "$match": {
+                            "HEADER.TEAM.name": team_name
+                        }
+                    },
+                    {"$sort": {"parsedDate": -1}},
+                    {"$limit": 1}
+                ]
 
             result = list(collection.aggregate(pipeline))
             return result[0] if result else {}
@@ -229,6 +286,7 @@ class BasketballRepository:
     def get_all_teams(self, collection_name: str) -> List[str]:
         """
         Get list of all unique team names in the collection.
+        Supports both FEB and FBCYL data formats.
 
         Args:
             collection_name: Name of the collection
@@ -241,7 +299,17 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
-            teams = collection.distinct("HEADER.TEAM.name")
+
+            # Detect if this is a FBCYL collection
+            is_fbcyl = collection_name.startswith('FBCYL_')
+
+            if is_fbcyl:
+                # FBCYL format: teams.name
+                teams = collection.distinct("teams.name")
+            else:
+                # FEB format: HEADER.TEAM.name
+                teams = collection.distinct("HEADER.TEAM.name")
+
             return sorted(teams)
         except PyMongoError as e:
             return []

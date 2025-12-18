@@ -20,18 +20,20 @@ from ui.stats_config import TEMPORAL_STATS_OPTIONS
 class TemporalEvolutionWindow(QMainWindow):
     """Window for analyzing temporal evolution of team statistics."""
 
-    def __init__(self, collection_name: str, db_handler: MongoDBHandler, parent=None):
+    def __init__(self, collection_name: str, db_handler: MongoDBHandler, is_fbcyl: bool = False, parent=None):
         """
         Initialize temporal evolution window.
 
         Args:
             collection_name: Name of the collection to query
             db_handler: Database handler instance
+            is_fbcyl: Whether this is FBCYL data format (True) or FEB format (False)
             parent: Parent widget
         """
         super().__init__(parent)
         self.collection_name = collection_name
         self.db_handler = db_handler
+        self.is_fbcyl = is_fbcyl
         self.stats_calculator = StatsCalculator()
         self.all_teams = []
         self.match_data = []
@@ -167,8 +169,11 @@ class TemporalEvolutionWindow(QMainWindow):
     def load_team_matches(self, team_name: str):
         """Load all matches for the selected team."""
         try:
-            # Get pipeline from builder
-            pipeline = AggregationPipelineBuilder.build_team_matches_timeline_pipeline(team_name)
+            # Get pipeline from builder based on data format
+            if self.is_fbcyl:
+                pipeline = AggregationPipelineBuilder.build_team_matches_timeline_pipeline_fbcyl(team_name)
+            else:
+                pipeline = AggregationPipelineBuilder.build_team_matches_timeline_pipeline(team_name)
 
             # Execute aggregation
             collection = self.db_handler.repository.connection.get_collection(self.collection_name)
@@ -329,8 +334,11 @@ class TemporalEvolutionWindow(QMainWindow):
 
                 # For each team, get their stats up to this date
                 for team_name in all_teams:
-                    # Get pipeline for this team
-                    pipeline = AggregationPipelineBuilder.build_team_matches_timeline_pipeline(team_name)
+                    # Get pipeline for this team based on data format
+                    if self.is_fbcyl:
+                        pipeline = AggregationPipelineBuilder.build_team_matches_timeline_pipeline_fbcyl(team_name)
+                    else:
+                        pipeline = AggregationPipelineBuilder.build_team_matches_timeline_pipeline(team_name)
 
                     # Add a filter to only include matches up to target_date
                     pipeline.append({

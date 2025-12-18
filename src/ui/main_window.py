@@ -1571,6 +1571,7 @@ class BasketballSeasonApp(QMainWindow):
             self.temporal_window = TemporalEvolutionWindow(
                 collection_name=collection_name,
                 db_handler=self.db_handler,
+                is_fbcyl=(self.current_scope == "FBCYL"),
                 parent=self
             )
             self.temporal_window.show()

@@ -17,6 +17,19 @@ from .ui_utils import set_app_icon
 from .team_utils import get_team_index_in_document
 
 
+def normalize_player_name(full_name: str) -> str:
+    """Normalize player name to initial + surnames (e.g., 'MARIA GONZALEZ GARCIA' -> 'M GONZALEZ GARCIA')."""
+    if not full_name:
+        return ""
+    words = full_name.strip().split()
+    if len(words) < 2:
+        return full_name
+    # First letter of first word + last two words (surnames)
+    initial = words[0][0] if words[0] else ""
+    surnames = words[-2:] if len(words) >= 2 else words[-1:]
+    return f"{initial} {' '.join(surnames)}"
+
+
 class AITeamSelector(QDialog):
     """Dialog for selecting a team to analyze with AI."""
 
@@ -228,29 +241,131 @@ class AITeamSelector(QDialog):
             # Get shot data for this team
             all_shots = []
             collection = self.db_handler.connection.get_collection(self.collection_name)
-            matches = list(collection.find({})) if collection is not None else []
 
-            for match in matches:
-                shotchart = match.get('SHOTCHART', {})
-                shots_list = shotchart.get('SHOTS', [])
+            # Detect if FBCYL or FEB
+            is_fbcyl = self.collection_name.startswith('FBCYL_')
 
-                if not shots_list:
-                    continue
+            if collection is not None:
+                if is_fbcyl:
+                    # FBCYL: Extract shots from player metadata (same as individual scouting)
+                    matches = collection.find({})
 
-                # Find team index using utility function
-                team_index = get_team_index_in_document(match, team_code)
+                    for doc in matches:
+                        if 'stats' not in doc or 'teams' not in doc['stats']:
+                            continue
 
-                if team_index is not None:
-                    # Filter shots for this team
-                    team_shots = [s for s in shots_list if int(s.get('team', -1)) == team_index]
-                    all_shots.extend(team_shots)
+                        teams = doc['stats']['teams']
+                        if not isinstance(teams, list):
+                            continue
+
+                        # Find the team by name
+                        team_data = None
+                        for t in teams:
+                            if t.get('name') == team_name:
+                                team_data = t
+                                break
+
+                        if not team_data:
+                            continue
+
+                        players = team_data.get('players', [])
+
+                        for player in players:
+                            if not isinstance(player, dict):
+                                continue
+
+                            player_name = player.get('name', '')
+                            player_id = str(player.get('actorId', ''))
+                            player_uuid = player.get('uuid', '')
+                            player_dorsal = str(player.get('shirtNumber', ''))
+                            normalized_name = normalize_player_name(player_name)
+
+                            # Get player data section
+                            player_data = player.get('data', {})
+                            if not isinstance(player_data, dict):
+                                continue
+
+                            # Extract all shots for this player
+                            for shot in player_data.get('shootingOfTwoSuccessfulPoint', []):
+                                all_shots.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 1,
+                                    'points': 2,
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'team': 0
+                                })
+
+                            for shot in player_data.get('shootingOfTwoFailedPoint', []):
+                                all_shots.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 0,
+                                    'points': 2,
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'team': 0
+                                })
+
+                            for shot in player_data.get('shootingOfThreeSuccessfulPoint', []):
+                                all_shots.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 1,
+                                    'points': 3,
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'team': 0
+                                })
+
+                            for shot in player_data.get('shootingOfThreeFailedPoint', []):
+                                all_shots.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 0,
+                                    'points': 3,
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'team': 0
+                                })
+
+                else:
+                    # FEB: Extract shots from SHOTCHART
+                    matches = list(collection.find({}))
+
+                    for match in matches:
+                        shotchart = match.get('SHOTCHART', {})
+                        shots_list = shotchart.get('SHOTS', [])
+
+                        if not shots_list:
+                            continue
+
+                        # Find team index using utility function
+                        team_index = get_team_index_in_document(match, team_code)
+
+                        if team_index is not None:
+                            # Filter shots for this team
+                            team_shots = [s for s in shots_list if int(s.get('team', -1)) == team_index]
+                            all_shots.extend(team_shots)
 
             if not all_shots:
                 QMessageBox.information(
                     self,
                     "Sin Datos",
-                    f"No se encontraron datos de lanzamientos para {team_name}.\n"
-                    f"Se revisaron {len(matches)} partidos."
+                    f"No se encontraron datos de lanzamientos para {team_name}."
                 )
                 return
 
@@ -498,7 +613,7 @@ class AITeamSelector(QDialog):
             progress.setValue(40)
             QApplication.processEvents()
 
-            analyzer = TeamAnalyzer(provider='gemini', model='flash')
+            analyzer = TeamAnalyzer(provider='groq', model='fast')
             analysis_text = analyzer.analyze_team_performance(
                 team_name=team_name,
                 stats=stats,
@@ -629,47 +744,73 @@ class AITeamSelector(QDialog):
                     }
 
             # Calculate advanced stats for each player
+            calculator = AdvancedStatsCalculator()
             for player in player_stats:
                 team = player['team_name']
                 team_data = teams.get(team, {})
                 team_stats = team_data.get('team_stats', {})
                 opp_stats = team_data.get('opp_stats', {})
 
+                # Calculate shooting percentages first
+                fg2_made = player.get('total_p2m', 0)
+                fg2_attempted = player.get('total_p2a', 0)
+                fg3_made = player.get('total_p3m', 0)
+                fg3_attempted = player.get('total_p3a', 0)
+                ft_made = player.get('total_p1m', 0)
+                ft_attempted = player.get('total_p1a', 0)
+                games = player.get('games_played', 0)
+
+                player['fg2_pct'] = (fg2_made / fg2_attempted * 100) if fg2_attempted > 0 else 0
+                player['fg3_pct'] = (fg3_made / fg3_attempted * 100) if fg3_attempted > 0 else 0
+                player['ft_pct'] = (ft_made / ft_attempted * 100) if ft_attempted > 0 else 0
+
+                # Calculate per-game stats
+                player['mpg'] = (player.get('total_minutes', 0) / 60 / games) if games > 0 else 0
+                player['ppg'] = player.get('total_pts', 0) / games if games > 0 else 0
+                player['val_pg'] = player.get('total_val', 0) / games if games > 0 else 0
+
+                # Calculate advanced stats that don't need team data
+                fga = fg2_attempted + fg3_attempted
+                player['efg'] = calculator.calculate_effective_fg_percentage(player)
+                player['ts'] = calculator.calculate_true_shooting_percentage(player)
+                player['ftr'] = calculator.calculate_ftr(player)
+                player['three_pr'] = calculator.calculate_3pr(player)
+
+                # Calculate rebound percentages (simple version without team data)
+                total_reb = player.get('total_ro', 0) + player.get('total_rd', 0)
+                player['orb_pct'] = (player.get('total_ro', 0) / total_reb * 100) if total_reb > 0 else 0.0
+                player['drb_pct'] = (player.get('total_rd', 0) / total_reb * 100) if total_reb > 0 else 0.0
+                player['trb_pct'] = player['orb_pct'] + player['drb_pct']
+
+                # Calculate other percentages based on possessions estimate
+                possessions_est = fga + 0.44 * ft_attempted + player.get('total_to', 0)
+                player['ast_pct'] = (player.get('total_as', player.get('total_assist', 0)) / possessions_est * 100) if possessions_est > 0 else 0.0
+                player['tov_pct'] = (player.get('total_to', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                player['stl_pct'] = (player.get('total_st', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                player['blk_pct'] = (player.get('total_bl', player.get('total_bs', 0)) / possessions_est * 100) if possessions_est > 0 else 0.0
+
+                # Calculate team-dependent stats if data is available
                 if team_stats and opp_stats:
-                    advanced_stats = AdvancedStatsCalculator.calculate_all_advanced_stats(
-                        player, team_stats, opp_stats
-                    )
-                    player.update(advanced_stats)
+                    # Override with more accurate calculations using team data
+                    full_advanced_stats = calculator.calculate_all_advanced_stats(player, team_stats, opp_stats)
+                    player.update(full_advanced_stats)
+                else:
+                    # Approximations for team-dependent stats
+                    player['usage'] = (possessions_est / games) if games > 0 else 0.0
+                    player['orating'] = (player.get('total_pts', 0) / possessions_est * 100) if possessions_est > 0 else 0.0
+                    # Defensive rating approximation (lower is better, league average ~110)
+                    defensive_contrib = player.get('total_st', 0) + player.get('total_bl', player.get('total_bs', 0)) + player.get('total_rd', 0)
+                    player['drating'] = max(80, 120 - (defensive_contrib / games * 2)) if games > 0 else 110.0
 
-                    # Calculate additional metrics needed for radar chart
-                    player['trb_pct'] = player.get('orb_pct', 0) + player.get('drb_pct', 0)
+                # Calculate additional ratios
+                total_ast = player.get('total_assist', player.get('total_as', 0))
+                total_to = player.get('total_to', 0)
+                player['ast_to_ratio'] = total_ast / total_to if total_to > 0 else 0
 
-                    # Shooting percentages
-                    fg2_made = player.get('total_p2m', 0)
-                    fg2_attempted = player.get('total_p2a', 0)
-                    player['fg2_pct'] = (fg2_made / fg2_attempted * 100) if fg2_attempted > 0 else 0
-
-                    fg3_made = player.get('total_p3m', 0)
-                    fg3_attempted = player.get('total_p3a', 0)
-                    player['fg3_pct'] = (fg3_made / fg3_attempted * 100) if fg3_attempted > 0 else 0
-
-                    ft_made = player.get('total_p1m', 0)
-                    ft_attempted = player.get('total_p1a', 0)
-                    player['ft_pct'] = (ft_made / ft_attempted * 100) if ft_attempted > 0 else 0
-
-                    # Ratios
-                    total_ast = player.get('total_assist', 0)
-                    total_to = player.get('total_to', 0)
-                    total_fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
-                    total_fta = player.get('total_p1a', 0)
-
-                    possessions = total_fga + (0.44 * total_fta) + total_ast + total_to
-                    player['ast_ratio'] = (100 * total_ast / possessions) if possessions > 0 else 0
-                    player['ast_to_ratio'] = total_ast / total_to if total_to > 0 else 0
-
-                    ast_pct = player.get('ast_pct', 0)
-                    usage = player.get('usage', 0)
-                    player['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
+                ast_pct = player.get('ast_pct', 0)
+                usage = player.get('usage', 0)
+                player['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
+                player['ast_ratio'] = ast_pct  # Already calculated above
 
             # Calcular cuartiles de liga para comparación
             progress.setLabelText("Calculando cuartiles de liga...")
@@ -683,9 +824,9 @@ class AITeamSelector(QDialog):
             progress.setValue(30)
             QApplication.processEvents()
 
-            # Inicializar analizador de IA con Gemini Flash
+            # Inicializar analizador de IA con Groq
             try:
-                analyzer = TeamAnalyzer(provider='gemini', model='flash')
+                analyzer = TeamAnalyzer(provider='groq', model='fast')
             except Exception as e:
                 progress.close()
                 QMessageBox.critical(
@@ -737,52 +878,173 @@ class AITeamSelector(QDialog):
             shots_data = []
             collection = self.db_handler.connection.get_collection(self.collection_name)
 
+            # Detect if FBCYL or FEB
+            is_fbcyl = self.collection_name.startswith('FBCYL_')
+
             if collection is not None:
-                matches = collection.find({
-                    "HEADER.TEAM.name": team_name,
-                    "SHOTCHART.SHOTS": {"$exists": True}
-                })
+                if is_fbcyl:
+                    # FBCYL: Extract shots from player metadata (not from moves!)
+                    # Get all documents (FBCYL doesn't index by team in moves)
+                    matches = collection.find({})
 
-                for match in matches:
-                    if 'SHOTCHART' not in match or not match['SHOTCHART']:
-                        continue
+                    doc_idx = 0
+                    matches_found = 0
+                    for doc in matches:
+                        doc_idx += 1
+                        if 'stats' not in doc:
+                            continue
+                        if 'teams' not in doc['stats']:
+                            continue
 
-                    shotchart = match['SHOTCHART']
+                        teams = doc['stats']['teams']
+                        if not isinstance(teams, list):
+                            continue
 
-                    if 'SHOTS' not in shotchart:
-                        continue
+                        # Find the team by name (same as shotchart_window)
+                        team_data = None
+                        for t in teams:
+                            if t.get('name') == team_name:
+                                team_data = t
+                                matches_found += 1
+                                break
 
-                    # Crear mapeo de (team_idx, dorsal) -> player_id
-                    player_id_map = {}
-                    if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
-                        for team_idx, team_data in enumerate(shotchart['TEAM']):
-                            if 'PLAYER' in team_data and isinstance(team_data['PLAYER'], list):
-                                for player in team_data['PLAYER']:
-                                    dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
-                                    player_id = player.get('id', '')
-                                    player_name = player.get('name', '')
+                        if not team_data:
+                            continue
 
-                                    if dorsal and player_id:
-                                        key = (team_idx, str(dorsal))
-                                        player_id_map[key] = {
-                                            'id': player_id,
-                                            'name': player_name
-                                        }
+                        players = team_data.get('players', [])
 
-                    # Agregar player_id a cada tiro
-                    match_shots = shotchart['SHOTS']
-                    if isinstance(match_shots, list):
-                        for shot in match_shots:
-                            shot_copy = shot.copy()
-                            team_idx = int(shot.get('team', -1))
-                            dorsal = str(shot.get('player', ''))
-                            key = (team_idx, dorsal)
+                        doc_shot_count = 0
+                        for player_idx, player in enumerate(players):
+                            if not isinstance(player, dict):
+                                continue
 
-                            if key in player_id_map:
-                                shot_copy['player_id'] = player_id_map[key]['id']
-                                shot_copy['player_name'] = player_id_map[key]['name']
+                            player_name = player.get('name', '')
+                            player_id = str(player.get('actorId', ''))
+                            player_uuid = player.get('uuid', '')
+                            player_dorsal = str(player.get('shirtNumber', ''))
+                            normalized_name = normalize_player_name(player_name)
 
-                            shots_data.append(shot_copy)
+                            # Get player data section
+                            player_data = player.get('data', {})
+                            if not isinstance(player_data, dict):
+                                continue
+
+                            # Check available shot arrays
+                            two_made = player_data.get('shootingOfTwoSuccessfulPoint', [])
+                            two_missed = player_data.get('shootingOfTwoFailedPoint', [])
+                            three_made = player_data.get('shootingOfThreeSuccessfulPoint', [])
+                            three_missed = player_data.get('shootingOfThreeFailedPoint', [])
+
+                            player_shots_count = len(two_made) + len(two_missed) + len(three_made) + len(three_missed)
+                            doc_shot_count += player_shots_count
+
+                            # Extract 2-point successful shots
+                            for shot in two_made:
+                                shots_data.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 1,  # made
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'quarter': shot.get('period', 1),
+                                    'team': 0
+                                })
+
+                            # Extract 2-point failed shots
+                            for shot in two_missed:
+                                shots_data.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 0,  # missed
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'quarter': shot.get('period', 1),
+                                    'team': 0
+                                })
+
+                            # Extract 3-point successful shots
+                            for shot in three_made:
+                                shots_data.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 1,  # made
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'quarter': shot.get('period', 1),
+                                    'team': 0
+                                })
+
+                            # Extract 3-point failed shots
+                            for shot in three_missed:
+                                shots_data.append({
+                                    'x': shot.get('xnormalize', 0),
+                                    'y': shot.get('ynormalize', 0),
+                                    'm': 0,  # missed
+                                    'player': player_dorsal,
+                                    'player_id': player_id,
+                                    'player_uuid': player_uuid,
+                                    'player_name': player_name,
+                                    'normalized_name': normalized_name,
+                                    'quarter': shot.get('period', 1),
+                                    'team': 0
+                                })
+
+                else:
+                    # FEB: Extract shots from SHOTCHART
+                    matches = collection.find({
+                        "HEADER.TEAM.name": team_name,
+                        "SHOTCHART.SHOTS": {"$exists": True}
+                    })
+
+                    for match in matches:
+                        if 'SHOTCHART' not in match or not match['SHOTCHART']:
+                            continue
+
+                        shotchart = match['SHOTCHART']
+
+                        if 'SHOTS' not in shotchart:
+                            continue
+
+                        # Crear mapeo de (team_idx, dorsal) -> player_id
+                        player_id_map = {}
+                        if 'TEAM' in shotchart and isinstance(shotchart['TEAM'], list):
+                            for team_idx, team_data in enumerate(shotchart['TEAM']):
+                                if 'PLAYER' in team_data and isinstance(team_data['PLAYER'], list):
+                                    for player in team_data['PLAYER']:
+                                        dorsal = str(player.get('no', '')).lstrip('0') or player.get('no', '')
+                                        player_id = player.get('id', '')
+                                        player_name = player.get('name', '')
+
+                                        if dorsal and player_id:
+                                            key = (team_idx, str(dorsal))
+                                            player_id_map[key] = {
+                                                'id': player_id,
+                                                'name': player_name
+                                            }
+
+                        # Agregar player_id a cada tiro
+                        match_shots = shotchart['SHOTS']
+                        if isinstance(match_shots, list):
+                            for shot in match_shots:
+                                shot_copy = shot.copy()
+                                team_idx = int(shot.get('team', -1))
+                                dorsal = str(shot.get('player', ''))
+                                key = (team_idx, dorsal)
+
+                                if key in player_id_map:
+                                    shot_copy['player_id'] = player_id_map[key]['id']
+                                    shot_copy['player_name'] = player_id_map[key]['name']
+
+                                shots_data.append(shot_copy)
 
             # Generar informe DOCX
             progress.setLabelText("Generando documento DOCX...")

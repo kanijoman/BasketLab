@@ -127,8 +127,14 @@ class RadarChartWindow(QMainWindow):
             fig = self.radar_chart.create_chart(player_metrics, league_metrics,
                                                 player_name, title)
 
-            # Clear previous chart if exists
+            # Clear previous chart if exists and close old figure
             if self.canvas:
+                # Close the old figure to free memory
+                old_fig = self.canvas.figure
+                if old_fig:
+                    import matplotlib.pyplot as plt
+                    plt.close(old_fig)
+
                 self.chart_layout.removeWidget(self.canvas)
                 self.canvas.deleteLater()
 

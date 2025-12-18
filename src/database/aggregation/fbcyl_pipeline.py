@@ -142,6 +142,7 @@ class FBCYLPipelineBuilder:
         # Stage 2: Preserve original teams array before unwinding
         pipeline.append({
             "$addFields": {
+                "teams": "$stats.teams",  # Extract teams from stats
                 "original_teams": "$stats.teams"
             }
         })
@@ -149,7 +150,7 @@ class FBCYLPipelineBuilder:
         # Stage 3: Unwind teams array to create one document per team
         pipeline.append({
             "$unwind": {
-                "path": "$stats.teams",
+                "path": "$teams",
                 "includeArrayIndex": "teamIndex"
             }
         })
@@ -159,10 +160,10 @@ class FBCYLPipelineBuilder:
         # teamIdIntern changes per game and is only used in moves[]
         pipeline.append({
             "$addFields": {
-                "team_name": "$stats.teams.name",
-                "team_id": "$stats.teams.teamIdExtern",
+                "team_name": "$teams.name",
+                "team_id": "$teams.teamIdExtern",
                 "is_home": {"$eq": ["$teamIndex", 0]},
-                "team_score": "$stats.teams.data.score",
+                "team_score": "$teams.data.score",
                 # Get opponent score by checking the other team in the original array
                 "opponent_score": {
                     "$cond": {
@@ -230,28 +231,28 @@ class FBCYLPipelineBuilder:
                 },
 
                 # Scoring
-                "points_scored": {"$sum": "$stats.teams.data.score"},
+                "points_scored": {"$sum": "$teams.data.score"},
                 "points_received": {"$sum": "$opponent_score_value"},
 
                 # Field Goals
-                "fg2_made": {"$sum": "$stats.teams.data.shotsOfTwoSuccessful"},
-                "fg2_attempted": {"$sum": "$stats.teams.data.shotsOfTwoAttempted"},
-                "fg3_made": {"$sum": "$stats.teams.data.shotsOfThreeSuccessful"},
-                "fg3_attempted": {"$sum": "$stats.teams.data.shotsOfThreeAttempted"},
-                "ft_made": {"$sum": "$stats.teams.data.shotsOfOneSuccessful"},
-                "ft_attempted": {"$sum": "$stats.teams.data.shotsOfOneAttempted"},
+                "fg2_made": {"$sum": "$teams.data.shotsOfTwoSuccessful"},
+                "fg2_attempted": {"$sum": "$teams.data.shotsOfTwoAttempted"},
+                "fg3_made": {"$sum": "$teams.data.shotsOfThreeSuccessful"},
+                "fg3_attempted": {"$sum": "$teams.data.shotsOfThreeAttempted"},
+                "ft_made": {"$sum": "$teams.data.shotsOfOneSuccessful"},
+                "ft_attempted": {"$sum": "$teams.data.shotsOfOneAttempted"},
 
                 # Rebounds
-                "total_rebounds": {"$sum": "$stats.teams.data.rebounds"},
-                "rebounds_off": {"$sum": "$stats.teams.data.offensiveRebound"},
-                "rebounds_def": {"$sum": "$stats.teams.data.defensiveRebound"},
+                "total_rebounds": {"$sum": "$teams.data.rebounds"},
+                "rebounds_off": {"$sum": "$teams.data.offensiveRebound"},
+                "rebounds_def": {"$sum": "$teams.data.defensiveRebound"},
 
                 # Other stats
-                "assists": {"$sum": "$stats.teams.data.assists"},
-                "steals": {"$sum": "$stats.teams.data.steals"},
-                "turnovers": {"$sum": "$stats.teams.data.lost"},
-                "blocks": {"$sum": "$stats.teams.data.block"},
-                "fouls": {"$sum": "$stats.teams.data.faults"},
+                "assists": {"$sum": "$teams.data.assists"},
+                "steals": {"$sum": "$teams.data.steals"},
+                "turnovers": {"$sum": "$teams.data.lost"},
+                "blocks": {"$sum": "$teams.data.block"},
+                "fouls": {"$sum": "$teams.data.faults"},
 
                 # Opponent stats for advanced metrics
                 "opp_fg2_made": {"$sum": "$opponent_score.data.shotsOfTwoSuccessful"},
@@ -267,11 +268,11 @@ class FBCYLPipelineBuilder:
                 "total_possessions": {
                     "$sum": {
                         "$add": [
-                            "$stats.teams.data.shotsOfTwoAttempted",
-                            "$stats.teams.data.shotsOfThreeAttempted",
-                            {"$multiply": [0.44, "$stats.teams.data.shotsOfOneAttempted"]},
-                            "$stats.teams.data.lost",
-                            {"$multiply": [-1, "$stats.teams.data.offensiveRebound"]}
+                            "$teams.data.shotsOfTwoAttempted",
+                            "$teams.data.shotsOfThreeAttempted",
+                            {"$multiply": [0.44, "$teams.data.shotsOfOneAttempted"]},
+                            "$teams.data.lost",
+                            {"$multiply": [-1, "$teams.data.offensiveRebound"]}
                         ]
                     }
                 },
@@ -754,9 +755,15 @@ class FBCYLPipelineBuilder:
                 "p2m": {"$ifNull": ["$stats.teams.players.data.shotsOfTwoSuccessful", 0]},
                 "p3a": {"$ifNull": ["$stats.teams.players.data.shotsOfThreeAttempted", 0]},
                 "p3m": {"$ifNull": ["$stats.teams.players.data.shotsOfThreeSuccessful", 0]},
-                "rt": {"$ifNull": ["$stats.teams.players.data.rebounds", 0]},
+                # Calculate total rebounds as sum of offensive + defensive rebounds
                 "ro": {"$ifNull": ["$stats.teams.players.data.offensiveRebound", 0]},
                 "rd": {"$ifNull": ["$stats.teams.players.data.defensiveRebound", 0]},
+                "rt": {
+                    "$add": [
+                        {"$ifNull": ["$stats.teams.players.data.offensiveRebound", 0]},
+                        {"$ifNull": ["$stats.teams.players.data.defensiveRebound", 0]}
+                    ]
+                },
                 "assist": {"$ifNull": ["$stats.teams.players.data.assists", 0]},
                 "to": {"$ifNull": ["$stats.teams.players.data.lost", 0]},
                 "bs": {"$ifNull": ["$stats.teams.players.data.block", 0]},
@@ -846,15 +853,9 @@ class FBCYLPipelineBuilder:
                     }
                 },
                 "team_name": {"$first": "$team_name"},
-                # Find first non-null UUID
+                # Find first non-null UUID using $max (null values are ignored)
                 "valid_uuid": {
-                    "$first": {
-                        "$cond": [
-                            {"$ne": ["$player_uuid", None]},
-                            "$player_uuid",
-                            "$$REMOVE"
-                        ]
-                    }
+                    "$max": "$player_uuid"
                 }
             }
         })
@@ -927,6 +928,7 @@ class FBCYLPipelineBuilder:
                 "total_st": {"$sum": "$st"},
                 "total_to": {"$sum": "$to"},
                 "total_bs": {"$sum": "$bs"},
+                "total_taps": {"$sum": "$bs"},  # Alias for blocks used in advanced stats
                 "total_pf": {"$sum": "$pf"},
                 "total_rf": {"$sum": "$rf"},
                 "total_pllss": {"$sum": "$pllss"},
@@ -937,6 +939,7 @@ class FBCYLPipelineBuilder:
         # Stage 8: Calculate percentages and averages
         pipeline.append({
             "$project": {
+                "player_uuid": "$_id.uuid",  # Extract UUID from _id
                 "player_id": 1,
                 "player_name": 1,
                 "team_name": 1,
@@ -958,17 +961,26 @@ class FBCYLPipelineBuilder:
                 "total_p3a": 1,
                 "total_pts": 1,
                 "total_assist": 1,
+                "total_as": "$total_assist",  # Alias for ranking window
                 "total_ro": 1,
                 "total_rd": 1,
                 "total_rt": 1,
                 "total_st": 1,
                 "total_to": 1,
                 "total_bs": 1,
+                "total_bl": "$total_bs",  # Alias for ranking window (tapones/blocks)
                 "total_pf": 1,
                 "total_rf": 1,
                 "total_pllss": 1,
                 "total_val": 1,
                 "fg1_percentage": {
+                    "$cond": [
+                        {"$gt": ["$total_p1a", 0]},
+                        {"$multiply": [{"$divide": ["$total_p1m", "$total_p1a"]}, 100]},
+                        0
+                    ]
+                },
+                "ft_percentage": {  # Alias for ranking window (free throw percentage)
                     "$cond": [
                         {"$gt": ["$total_p1a", 0]},
                         {"$multiply": [{"$divide": ["$total_p1m", "$total_p1a"]}, 100]},
@@ -996,7 +1008,28 @@ class FBCYLPipelineBuilder:
                         0
                     ]
                 },
+                "ppg": {  # Alias for ranking window
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_pts", "$games_played"]},
+                        0
+                    ]
+                },
+                "mpg": {  # Alias for ranking window (minutes per game)
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_minutes", "$games_played"]},
+                        0
+                    ]
+                },
                 "assists_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_assist", "$games_played"]},
+                        0
+                    ]
+                },
+                "ast_pg": {  # Alias for ranking window
                     "$cond": [
                         {"$gt": ["$games_played", 0]},
                         {"$divide": ["$total_assist", "$games_played"]},
@@ -1017,7 +1050,21 @@ class FBCYLPipelineBuilder:
                         0
                     ]
                 },
+                "stl_pg": {  # Alias for ranking window
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_st", "$games_played"]},
+                        0
+                    ]
+                },
                 "blocks_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_bs", "$games_played"]},
+                        0
+                    ]
+                },
+                "blk_pg": {  # Alias for ranking window
                     "$cond": [
                         {"$gt": ["$games_played", 0]},
                         {"$divide": ["$total_bs", "$games_played"]},
@@ -1031,7 +1078,21 @@ class FBCYLPipelineBuilder:
                         0
                     ]
                 },
+                "tov_pg": {  # Alias for ranking window
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_to", "$games_played"]},
+                        0
+                    ]
+                },
                 "valoracion_per_game": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$divide": ["$total_val", "$games_played"]},
+                        0
+                    ]
+                },
+                "val_pg": {  # Alias for ranking window
                     "$cond": [
                         {"$gt": ["$games_played", 0]},
                         {"$divide": ["$total_val", "$games_played"]},
@@ -1043,6 +1104,173 @@ class FBCYLPipelineBuilder:
                         {"$gt": ["$games_played", 0]},
                         {"$divide": ["$total_pllss", "$games_played"]},
                         0
+                    ]
+                },
+
+                # Advanced statistics
+                # True Shooting Percentage
+                "ts": {
+                    "$cond": [
+                        {"$gt": [{"$add": [{"$add": ["$total_p2a", "$total_p3a"]}, {"$multiply": [0.44, "$total_p1a"]}]}, 0]},
+                        {"$multiply": [
+                            {"$divide": [
+                                "$total_pts",
+                                {"$multiply": [2, {"$add": [{"$add": ["$total_p2a", "$total_p3a"]}, {"$multiply": [0.44, "$total_p1a"]}]}]}
+                            ]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Effective Field Goal Percentage
+                "efg": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": [
+                                {"$add": [{"$add": ["$total_p2m", "$total_p3m"]}, {"$multiply": [0.5, "$total_p3m"]}]},
+                                {"$add": ["$total_p2a", "$total_p3a"]}
+                            ]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Three Point Rate (3PA / FGA)
+                "three_pr": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_p3a", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Free Throw Rate (FTA / FGA)
+                "ftr": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_p1a", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Assist Percentage (AST% = AST / possessions approximation)
+                "ast_pct": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_assist", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Turnover Percentage (TO% = TO / possessions approximation)
+                "tov_pct": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_to", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Steal Percentage (STL% = STL / possessions approximation)
+                "stl_pct": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_st", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Block Percentage (BLK% = BLK / possessions approximation)
+                "blk_pct": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_taps", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Offensive Rebound Percentage (approximation without team totals)
+                "orb_pct": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_ro", "$total_rd"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_ro", {"$add": ["$total_ro", "$total_rd"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Defensive Rebound Percentage (approximation without team totals)
+                "drb_pct": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_ro", "$total_rd"]}, 0]},
+                        {"$multiply": [
+                            {"$divide": ["$total_rd", {"$add": ["$total_ro", "$total_rd"]}]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Usage Percentage (approximation: FGA + FTA*0.44 + TO + AST)
+                "usage": {
+                    "$cond": [
+                        {"$gt": ["$games_played", 0]},
+                        {"$multiply": [
+                            {"$divide": [
+                                {"$add": [
+                                    {"$add": ["$total_p2a", "$total_p3a"]},
+                                    {"$multiply": [0.44, "$total_p1a"]},
+                                    "$total_to"
+                                ]},
+                                {"$multiply": ["$games_played", 100]}
+                            ]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Offensive Rating (approximation: points per 100 possessions)
+                "orating": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_p2a", {"$add": ["$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}]}, 0]},
+                        {"$multiply": [
+                            {"$divide": [
+                                "$total_pts",
+                                {"$add": ["$total_p2a", {"$add": ["$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}]}
+                            ]},
+                            100
+                        ]},
+                        0
+                    ]
+                },
+                # Defensive Rating (approximation: inverse of steal+block rate)
+                "drating": {
+                    "$cond": [
+                        {"$gt": [{"$add": ["$total_st", "$total_taps"]}, 0]},
+                        {"$subtract": [
+                            120,
+                            {"$multiply": [
+                                {"$divide": [
+                                    {"$add": ["$total_st", "$total_taps"]},
+                                    "$games_played"
+                                ]},
+                                5
+                            ]}
+                        ]},
+                        120
                     ]
                 }
             }
