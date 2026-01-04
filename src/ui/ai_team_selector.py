@@ -571,12 +571,12 @@ class AITeamSelector(QDialog):
 
         try:
             # Check API key
-            if not AnalysisConfig.has_api_key('gemini'):
+            if not AnalysisConfig.has_api_key('groq'):
                 QMessageBox.warning(
                     self,
                     "API Key Requerida",
-                    "No se ha configurado una API key de Google Gemini.\n\n"
-                    "Vaya a la ventana de Análisis IA y configure su API key de Google Gemini (gratis)."
+                    "No se ha configurado una API key de Groq.\n\n"
+                    "Vaya a la ventana de Análisis IA y configure su API key de Groq (gratis)."
                 )
                 return
 
@@ -674,11 +674,11 @@ class AITeamSelector(QDialog):
 
         try:
             # Primero, verificar que hay API key configurada
-            if not AnalysisConfig.has_api_key('gemini'):
+            if not AnalysisConfig.has_api_key('groq'):
                 QMessageBox.warning(
                     self,
                     "API Key Requerida",
-                    "Para generar notas de IA, necesita configurar una API key de Google Gemini.\n\n"
+                    "Para generar notas de IA, necesita configurar una API key de Groq.\n\n"
                     "Vaya a la ventana de Análisis IA y configure su API key (gratis)."
                 )
                 return
@@ -1031,7 +1031,7 @@ class AITeamSelector(QDialog):
                                                 'name': player_name
                                             }
 
-                        # Agregar player_id a cada tiro
+                        # Agregar player_id a cada tiro (FEB: suficiente con player_id)
                         match_shots = shotchart['SHOTS']
                         if isinstance(match_shots, list):
                             for shot in match_shots:

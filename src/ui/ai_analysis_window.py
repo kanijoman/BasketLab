@@ -53,7 +53,7 @@ class AnalysisWorker(QThread):
 class ApiKeyDialog(QDialog):
     """Dialog for configuring API keys."""
 
-    def __init__(self, provider: str = 'gemini', parent=None):
+    def __init__(self, provider: str = 'groq', parent=None):
         super().__init__(parent)
         self.provider = provider
         self.setup_ui()
@@ -69,7 +69,16 @@ class ApiKeyDialog(QDialog):
         layout = QVBoxLayout()
 
         # Instructions
-        if self.provider == 'gemini':
+        if self.provider == 'groq':
+            instructions = (
+                "Para obtener una API key gratuita de Groq:\n"
+                "1. Visita: https://console.groq.com/keys\n"
+                "2. Crea una cuenta o inicia sesión\n"
+                "3. Haz clic en 'Create API Key'\n"
+                "4. Copia y pega la clave abajo\n\n"
+                "Tier gratuito: Muy generoso con límites altos"
+            )
+        elif self.provider == 'gemini':
             instructions = (
                 "To get a free Google Gemini API key:\n"
                 "1. Visit: https://makersuite.google.com/app/apikey\n"
@@ -185,7 +194,7 @@ class AIAnalysisWindow(QMainWindow):
 
         # API Key configuration
         api_layout = QHBoxLayout()
-        api_label = QLabel("🤖 Google Gemini 2.0 Flash (Free)")
+        api_label = QLabel("🤖 Groq Llama 3.3 70B (Free & Fast)")
         api_label.setStyleSheet("font-weight: bold; color: #9C27B0;")
         api_layout.addWidget(api_label)
 
@@ -307,7 +316,7 @@ class AIAnalysisWindow(QMainWindow):
 
     def check_api_key_status(self):
         """Check if API key is configured and update UI."""
-        provider = 'gemini'
+        provider = 'groq'
         has_key = AnalysisConfig.has_api_key(provider)
 
         if has_key:
@@ -321,7 +330,7 @@ class AIAnalysisWindow(QMainWindow):
 
     def configure_api_key(self):
         """Show dialog to configure API key."""
-        provider = 'gemini'
+        provider = 'groq'
         dialog = ApiKeyDialog(provider, self)
 
         if dialog.exec():
@@ -347,9 +356,9 @@ class AIAnalysisWindow(QMainWindow):
     def generate_analysis(self):
         """Generate AI analysis report."""
         try:
-            # Initialize analyzer - always use Gemini Flash
-            provider = 'gemini'
-            model = 'flash'
+            # Initialize analyzer - use Groq (fast and free)
+            provider = 'groq'
+            model = 'fast'
 
             self.analyzer = TeamAnalyzer(provider=provider, model=model)
 
