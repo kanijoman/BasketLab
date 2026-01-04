@@ -785,7 +785,7 @@ class AggregationPipelineBuilder:
                     "minutes_per_game": {
                         "$cond": [
                             {"$gt": ["$games_played", 0]},
-                            {"$divide": ["$total_minutes", {"$multiply": ["$games_played", 60]}]},
+                            {"$divide": ["$total_minutes", "$games_played"]},
                             0
                         ]
                     },

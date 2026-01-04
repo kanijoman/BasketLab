@@ -304,7 +304,7 @@ class ScoutingReportGenerator:
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run()
-                run.add_picture(stats_image_avg, width=Inches(6.3))
+                run.add_picture(stats_image_avg, width=Inches(6.0))
             except Exception as e:
                 pass
 
@@ -322,7 +322,7 @@ class ScoutingReportGenerator:
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run()
-                run.add_picture(stats_image_total, width=Inches(6.3))
+                run.add_picture(stats_image_total, width=Inches(6.0))
             except Exception as e:
                 pass
 
@@ -471,7 +471,7 @@ class ScoutingReportGenerator:
                 p = doc.add_paragraph()
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 run = p.add_run()
-                run.add_picture(stats_image, width=Inches(6.3))
+                run.add_picture(stats_image, width=Inches(6.0))
             except Exception as e:
                 # Si falla, usar tabla simple como fallback
                 pass
@@ -572,34 +572,47 @@ class ScoutingReportGenerator:
 
         try:
             # Obtener datos de la jugadora
+            player_id = player.get('player_id', '')
             player_uuid = player.get('player_uuid', '')
             player_name = player.get('player_name', '')
 
-            # Calcular normalized_name para fallback (igual que en el pipeline)
-            normalized_name = ""
-            if player_name:
-                words = player_name.strip().split()
-                if len(words) >= 2:
-                    initial = words[0][0] if words[0] else ""
-                    surnames = words[-2:] if len(words) >= 2 else words[-1:]
-                    normalized_name = f"{initial} {' '.join(surnames)}"
-                else:
-                    normalized_name = player_name
+            # Detectar si es FEB o FBCYL basándonos en el collection_name
+            is_fbcyl = self.collection_name and self.collection_name.startswith('FBCYL_')
 
-            # Filtrar tiros de esta jugadora usando UUID (preferido) o normalized_name (fallback)
+            # Filtrar tiros según la competición
             player_shots = []
-            for shot in shots_data:
-                # Intentar match por UUID (más preciso)
-                if player_uuid and shot.get('player_uuid'):
-                    if shot.get('player_uuid') == player_uuid:
-                        player_shots.append(shot)
-                        continue
 
-                # Fallback: normalized_name (cuando UUID no disponible)
-                if normalized_name and shot.get('normalized_name'):
-                    if shot.get('normalized_name') == normalized_name:
-                        player_shots.append(shot)
-                        continue
+            if is_fbcyl:
+                # FBCYL: Usar UUID (preferido) o normalized_name (fallback para casos sin UUID)
+                # Calcular normalized_name para fallback
+                normalized_name = ""
+                if player_name:
+                    words = player_name.strip().split()
+                    if len(words) >= 2:
+                        initial = words[0][0] if words[0] else ""
+                        surnames = words[-2:] if len(words) >= 2 else words[-1:]
+                        normalized_name = f"{initial} {' '.join(surnames)}"
+                    else:
+                        normalized_name = player_name
+
+                for shot in shots_data:
+                    # Intentar match por UUID (más preciso)
+                    if player_uuid and shot.get('player_uuid'):
+                        if shot.get('player_uuid') == player_uuid:
+                            player_shots.append(shot)
+                            continue
+
+                    # Fallback: normalized_name (cuando UUID no disponible)
+                    if normalized_name and shot.get('normalized_name'):
+                        if shot.get('normalized_name') == normalized_name:
+                            player_shots.append(shot)
+                            continue
+            else:
+                # FEB: Usar player_id (suficiente y más preciso)
+                for shot in shots_data:
+                    if player_id and shot.get('player_id'):
+                        if shot.get('player_id') == player_id:
+                            player_shots.append(shot)
 
             if not player_shots:
                 p = doc.add_paragraph()
@@ -868,9 +881,9 @@ class ScoutingReportGenerator:
             if app is None:
                 app = QApplication([])
 
-            # Definir columnas de estadísticas (igual que en PlayerStatsWindow)
+            # Definir columnas de estadísticas (sin Jugadora ni Equipo para informe individual)
             PLAYER_COLUMNS = [
-                "Jugadora", "Equipo", "PJ", "Min", "Pts", "TL%", "T2%", "T3%",
+                "PJ", "Min", "Pts", "TL%", "T2%", "T3%",
                 "RO", "RD", "RT", "Ast", "Rec", "BP", "Tap", "FP", "FR",
                 "+/-", "Val"
             ]
@@ -888,33 +901,176 @@ class ScoutingReportGenerator:
             table.setAlternatingRowColors(True)
             table.setSortingEnabled(False)
 
-            # Ajustar anchos de columna para mejor visualización
-            table.horizontalHeader().resizeSection(0, 150)  # Jugadora
-            table.horizontalHeader().resizeSection(1, 150)  # Equipo
-            for i in range(2, len(PLAYER_COLUMNS)):
-                table.horizontalHeader().resizeSection(i, 60)
+            # Ajustar anchos de columna para caber en página (reducidos agresivamente)
+            for i in range(len(PLAYER_COLUMNS)):
+                table.horizontalHeader().resizeSection(i, 42)  # Ancho uniforme compacto
 
             # Crear lista con un solo jugador
             player_stats = [player]
 
-            # Calcular cuartiles usando TODOS los jugadores para contexto correcto
-            populator = PlayerStatsTablePopulator()
-            quartiles = populator.calculate_quartiles(all_player_stats, view_mode)
+            # Calcular cuartiles manualmente usando nombres de campos
+            from .stats_config import get_quartile_color, calculate_quartiles as calc_quartiles
+            from .table_items import NumericTableWidgetItem
+            from .player_stats_calculator import PlayerStatsCalculator
+            
+            quartiles = {}
+            
+            # Definir los campos para los que necesitamos cuartiles
+            if view_mode == 'average':
+                stat_fields = {
+                    'pts': 'total_pts',
+                    'tl_pct': 'tl_pct', 
+                    't2_pct': 't2_pct',
+                    't3_pct': 't3_pct',
+                    'ro': 'total_ro',
+                    'rd': 'total_rd',
+                    'rt': 'total_rt',
+                    'assist': 'total_assist',
+                    'st': 'total_st',
+                    'to': 'total_to',
+                    'bs': 'total_bs',
+                    'pf': 'total_pf',
+                    'rf': 'total_rf',
+                    'pllss': 'total_pllss',
+                    'val': 'total_val'
+                }
+            else:  # total
+                stat_fields = {
+                    'pts': 'total_pts',
+                    'tl_pct': 'tl_pct',
+                    't2_pct': 't2_pct',
+                    't3_pct': 't3_pct',
+                    'ro': 'total_ro',
+                    'rd': 'total_rd',
+                    'rt': 'total_rt',
+                    'assist': 'total_assist',
+                    'st': 'total_st',
+                    'to': 'total_to',
+                    'bs': 'total_bs',
+                    'pf': 'total_pf',
+                    'rf': 'total_rf',
+                    'pllss': 'total_pllss',
+                    'val': 'total_val'
+                }
+            
+            # Calcular cuartiles para cada campo
+            for field_key, total_key in stat_fields.items():
+                values = []
+                for p in all_player_stats:
+                    games = p.get('games_played', 0)
+                    if games == 0:
+                        continue
+                    
+                    # Calcular el valor según el campo
+                    if field_key == 'tl_pct':
+                        val = p.get('total_p1m', 0) / p.get('total_p1a', 1) * 100 if p.get('total_p1a', 0) > 0 else 0
+                    elif field_key == 't2_pct':
+                        val = p.get('total_p2m', 0) / p.get('total_p2a', 1) * 100 if p.get('total_p2a', 0) > 0 else 0
+                    elif field_key == 't3_pct':
+                        val = p.get('total_p3m', 0) / p.get('total_p3a', 1) * 100 if p.get('total_p3a', 0) > 0 else 0
+                    else:
+                        val = p.get(total_key, 0)
+                        if view_mode == 'average':
+                            val = val / games if games > 0 else 0
+                    
+                    if val > 0 or field_key in ['pllss']:  # +/- puede ser negativo
+                        values.append(val)
+                
+                if len(values) >= 4:
+                    quartiles[field_key] = calc_quartiles(values)
 
-            # Poblar la tabla
-            populator.populate_table(table, player_stats, view_mode, quartiles)
+            row = 0
+            games = player.get('games_played', 0)
 
-            # Ajustar tamaños de columna al contenido
-            table.resizeColumnsToContents()
+            if view_mode == 'average':
+                # Columna 0: PJ
+                table.setItem(row, 0, NumericTableWidgetItem(games, str(games)))
+
+                # Columna 1: Min - convertir de segundos a minutos
+                mins_per_game_seconds = player.get('minutes_per_game', 0)
+                mins_per_game = mins_per_game_seconds / 60.0 if mins_per_game_seconds else 0
+                item = NumericTableWidgetItem(mins_per_game, f"{mins_per_game:.1f}")
+                table.setItem(row, 1, item)
+
+                # Columna 2: Pts
+                ppg = player.get('total_pts', 0) / games if games > 0 else 0
+                item = NumericTableWidgetItem(ppg, f"{ppg:.1f}")
+                if 'pts' in quartiles:
+                    item.setBackground(get_quartile_color(ppg, quartiles['pts'], False))
+                table.setItem(row, 2, item)
+
+                # Columnas 3-5: Porcentajes de tiro
+                ft_pct = player.get('total_p1m', 0) / player.get('total_p1a', 1) * 100 if player.get('total_p1a', 0) > 0 else 0
+                fg2_pct = player.get('total_p2m', 0) / player.get('total_p2a', 1) * 100 if player.get('total_p2a', 0) > 0 else 0
+                fg3_pct = player.get('total_p3m', 0) / player.get('total_p3a', 1) * 100 if player.get('total_p3a', 0) > 0 else 0
+
+                for idx, (val, key) in enumerate([(ft_pct, 'tl_pct'), (fg2_pct, 't2_pct'), (fg3_pct, 't3_pct')], start=3):
+                    item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                    if key in quartiles:
+                        item.setBackground(get_quartile_color(val, quartiles[key], False))
+                    table.setItem(row, idx, item)
+
+                # Resto de estadísticas por juego
+                stat_keys = ['ro', 'rd', 'rt', 'assist', 'st', 'to', 'bs', 'pf', 'rf', 'pllss', 'val']
+                stat_totals = ['total_ro', 'total_rd', 'total_rt', 'total_assist', 'total_st', 'total_to', 
+                              'total_bs', 'total_pf', 'total_rf', 'total_pllss', 'total_val']
+
+                for col_idx, (key, total_key) in enumerate(zip(stat_keys, stat_totals), start=6):
+                    val = player.get(total_key, 0) / games if games > 0 else 0
+                    item = NumericTableWidgetItem(val, f"{val:.1f}")
+                    if key in quartiles:
+                        reverse = key in ['to', 'pf']  # Menos es mejor
+                        item.setBackground(get_quartile_color(val, quartiles[key], reverse))
+                    table.setItem(row, col_idx, item)
+
+            else:  # total
+                # Similar pero con totales
+                table.setItem(row, 0, NumericTableWidgetItem(games, str(games)))
+
+                # Columna 1: Min - convertir segundos a formato MM:SS
+                total_seconds = player.get('total_minutes', 0)
+                total_mins = int(total_seconds // 60)
+                secs = int(total_seconds % 60)
+                mins_display = f"{total_mins}:{secs:02d}"
+                table.setItem(row, 1, NumericTableWidgetItem(total_seconds, mins_display))
+
+                # Totales directos
+                stat_keys = ['pts', 'tl_pct', 't2_pct', 't3_pct', 'ro', 'rd', 'rt', 'assist', 'st', 'to', 'bs', 'pf', 'rf', 'pllss', 'val']
+                stat_totals = ['total_pts', 'total_p1m', 'total_p2m', 'total_p3m', 'total_ro', 'total_rd', 'total_rt',
+                              'total_assist', 'total_st', 'total_to', 'total_bs', 'total_pf', 'total_rf', 'total_pllss', 'total_val']
+
+                for col_idx, (key, total_key) in enumerate(zip(stat_keys, stat_totals), start=2):
+                    val = player.get(total_key, 0)
+                    
+                    # Porcentajes de tiro
+                    if key == 'tl_pct':
+                        val = player.get('total_p1m', 0) / player.get('total_p1a', 1) * 100 if player.get('total_p1a', 0) > 0 else 0
+                        item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                    elif key == 't2_pct':
+                        val = player.get('total_p2m', 0) / player.get('total_p2a', 1) * 100 if player.get('total_p2a', 0) > 0 else 0
+                        item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                    elif key == 't3_pct':
+                        val = player.get('total_p3m', 0) / player.get('total_p3a', 1) * 100 if player.get('total_p3a', 0) > 0 else 0
+                        item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                    else:
+                        item = NumericTableWidgetItem(val, str(int(val)))
+                    
+                    if key in quartiles:
+                        reverse = key in ['to', 'pf']
+                        item.setBackground(get_quartile_color(val, quartiles[key], reverse))
+                    table.setItem(row, col_idx, item)
+
+            # Solo ajustar altura de filas, mantener anchos fijos
             table.resizeRowsToContents()
 
-            # Calcular tamaño total necesario
-            total_width = sum(table.columnWidth(i) for i in range(table.columnCount())) + 2
+            # Calcular tamaño total necesario con margen de seguridad
+            total_width = sum(table.columnWidth(i) for i in range(table.columnCount())) + 4
             total_height = (sum(table.rowHeight(i) for i in range(table.rowCount())) +
-                          table.horizontalHeader().height() + 2)
+                          table.horizontalHeader().height() + 4)
 
-            # Establecer tamaño de la tabla
-            table.setFixedSize(total_width, total_height)
+            # Establecer tamaño mínimo (no fijo) para permitir expansión si es necesario
+            table.setMinimumSize(total_width, total_height)
+            table.resize(total_width, total_height)
 
             # Evitar que la ventana se muestre en pantalla (prevenir parpadeo)
             table.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
@@ -923,8 +1079,11 @@ class ScoutingReportGenerator:
             table.show()
             app.processEvents()
 
-            # Capturar la tabla como imagen
-            pixmap = table.grab()
+            # Forzar otro ajuste de tamaño después de mostrar
+            app.processEvents()
+
+            # Capturar la tabla como imagen usando el rect completo
+            pixmap = table.grab(table.rect())
 
             # Ocultar la tabla
             table.hide()
@@ -961,9 +1120,9 @@ class ScoutingReportGenerator:
             if app is None:
                 app = QApplication([])
 
-            # Columnas de estadísticas avanzadas (igual que en PlayerStatsWindow modo 'advanced')
+            # Columnas de estadísticas avanzadas (sin Jugadora ni Equipo para informe individual)
             ADVANCED_COLUMNS = [
-                "Jugadora", "Equipo", "PJ", "Min/PJ", "Pts/PJ", "TS%", "eFG%",
+                "PJ", "Min/PJ", "Pts/PJ", "TS%", "eFG%",
                 "3PAr", "FTr", "ORB%", "DRB%", "TRB%", "AST%", "TO%",
                 "STL%", "BLK%", "USG%", "ORtg", "DRtg", "Val/PJ"
             ]
@@ -980,11 +1139,9 @@ class ScoutingReportGenerator:
             table.setAlternatingRowColors(True)
             table.setSortingEnabled(False)
 
-            # Ajustar anchos de columna
-            table.horizontalHeader().resizeSection(0, 150)  # Jugadora
-            table.horizontalHeader().resizeSection(1, 150)  # Equipo
-            for i in range(2, len(ADVANCED_COLUMNS)):
-                table.horizontalHeader().resizeSection(i, 70)
+            # Ajustar anchos de columna (compactos para caber en página)
+            for i in range(len(ADVANCED_COLUMNS)):
+                table.horizontalHeader().resizeSection(i, 42)  # Ancho uniforme compacto
 
             # Crear lista con un jugador
             player_stats = [player]
@@ -993,34 +1150,30 @@ class ScoutingReportGenerator:
             table.setRowCount(1)
             row = 0
 
-            # Columnas básicas
-            table.setItem(row, 0, QTableWidgetItem(player.get('player_name', '')))
-            table.setItem(row, 1, QTableWidgetItem(player.get('team_name', '')))
-            table.setItem(row, 2, QTableWidgetItem(str(player.get('games_played', 0))))
-
             # Calcular cuartiles para estadísticas avanzadas
             from .stats_config import get_quartile_color, calculate_quartiles
 
-            # Definición de campos avanzados con sus configuraciones
+            # Definición de campos avanzados con sus configuraciones (sin columnas 0 y 1)
             # NOTA: Los nombres deben coincidir con los que devuelve AdvancedStatsCalculator
             ADVANCED_STAT_FIELDS = {
-                3: ('minutes_per_game', False),  # Min/PJ - usar minutes_per_game, no mpg
-                4: ('ppg', False),
-                5: ('ts', False),           # TS% - returned as 'ts' not 'ts_pct'
-                6: ('efg', False),          # eFG% - returned as 'efg' not 'efg_pct'
-                7: ('three_pr', False),     # 3PAr - returned as 'three_pr' not 'three_par'
-                8: ('ftr', False),
-                9: ('orb_pct', False),
-                10: ('drb_pct', False),
-                11: ('trb_pct', False),
-                12: ('ast_pct', False),
-                13: ('tov_pct', True),      # reverse - menos es mejor
-                14: ('stl_pct', False),
-                15: ('blk_pct', False),
-                16: ('usage', False),       # USG% - returned as 'usage' not 'usg_pct'
-                17: ('orating', False),     # ORtg - returned as 'orating' not 'ortg'
-                18: ('drating', True),      # DRtg - returned as 'drating' not 'drtg' (reverse)
-                19: ('val_pg', False)
+                0: ('games_played', False),  # PJ
+                1: ('minutes_per_game', False),  # Min/PJ
+                2: ('ppg', False),
+                3: ('ts', False),           # TS%
+                4: ('efg', False),          # eFG%
+                5: ('three_pr', False),     # 3PAr
+                6: ('ftr', False),
+                7: ('orb_pct', False),
+                8: ('drb_pct', False),
+                9: ('trb_pct', False),
+                10: ('ast_pct', False),
+                11: ('tov_pct', True),      # reverse - menos es mejor
+                12: ('stl_pct', False),
+                13: ('blk_pct', False),
+                14: ('usage', False),       # USG%
+                15: ('orating', False),     # ORtg
+                16: ('drating', True),      # DRtg (reverse)
+                17: ('val_pg', False)
             }
 
             # Calcular cuartiles para cada campo
@@ -1042,11 +1195,13 @@ class ScoutingReportGenerator:
                 value = player.get(field_name, 0)
 
                 # Formatear valor
-                if field_name in ['minutes_per_game', 'ppg', 'val_pg']:
+                if field_name == 'games_played':
+                    formatted_value = str(int(value)) if value else "0"
+                elif field_name in ['minutes_per_game', 'ppg', 'val_pg']:
                     formatted_value = f"{value:.1f}" if value else "0.0"
-                elif field_name in ['orating', 'drating']:  # Changed from 'ortg', 'drtg'
+                elif field_name in ['orating', 'drating']:
                     formatted_value = f"{value:.1f}" if value else "0.0"
-                elif field_name in ['three_pr', 'ftr']:  # Changed from 'three_par'
+                elif field_name in ['three_pr', 'ftr']:
                     formatted_value = f"{value:.3f}" if value else "0.000"
                 else:
                     formatted_value = f"{value:.1f}%" if value else "0.0%"
@@ -1061,15 +1216,17 @@ class ScoutingReportGenerator:
 
                 table.setItem(row, col_idx, item)
 
-            # Ajustar tamaños
-            table.resizeColumnsToContents()
+            # Solo ajustar altura de filas, mantener anchos fijos
             table.resizeRowsToContents()
 
-            total_width = sum(table.columnWidth(i) for i in range(table.columnCount())) + 2
+            # Calcular tamaño total necesario con margen de seguridad
+            total_width = sum(table.columnWidth(i) for i in range(table.columnCount())) + 4
             total_height = (sum(table.rowHeight(i) for i in range(table.rowCount())) +
-                          table.horizontalHeader().height() + 2)
+                          table.horizontalHeader().height() + 4)
 
-            table.setFixedSize(total_width, total_height)
+            # Establecer tamaño mínimo (no fijo) para permitir expansión si es necesario
+            table.setMinimumSize(total_width, total_height)
+            table.resize(total_width, total_height)
 
             # Evitar que la ventana se muestre en pantalla (prevenir parpadeo)
             table.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen, True)
@@ -1077,7 +1234,12 @@ class ScoutingReportGenerator:
             # Renderizar y capturar
             table.show()
             app.processEvents()
-            pixmap = table.grab()
+            
+            # Forzar otro ajuste después de mostrar
+            app.processEvents()
+            
+            # Capturar usando el rect completo
+            pixmap = table.grab(table.rect())
             table.hide()
 
             # Guardar
