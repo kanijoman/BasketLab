@@ -353,12 +353,15 @@ class ShotChartWindow(QMainWindow):
                 return
 
             all_shots = []
-            documents = collection.find({})
-
-            # Branch based on data format
+            # Filter by team directly in MongoDB (OPTIMIZED)
             if self.is_fbcyl:
+                documents = collection.find({"stats.teams.name": team['name']})
                 all_shots = self._extract_shots_fbcyl(documents, team)
             else:
+                documents = collection.find({
+                    "HEADER.TEAM.id": team['code'],
+                    "SHOTCHART.SHOTS": {"$exists": True, "$ne": []}
+                })
                 all_shots = self._extract_shots_feb(documents, team)
 
             if not all_shots:

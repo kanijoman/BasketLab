@@ -325,6 +325,28 @@ class BasketballSeasonApp(QMainWindow):
         """)
         layout.addWidget(self.weekly_report_button)
 
+        # Possession Analysis Button
+        self.possession_analysis_button = QPushButton("⏱️ Análisis de Posesiones")
+        self.possession_analysis_button.clicked.connect(self.on_view_possession_analysis)
+        self.possession_analysis_button.setEnabled(False)  # Disabled by default
+        self.possession_analysis_button.setStyleSheet("""
+            QPushButton {
+                background-color: #00BCD4;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #0097A7;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
+        layout.addWidget(self.possession_analysis_button)
+
         # Apply basic styling for a modern look
         self.setStyleSheet("""
             QComboBox, QLabel {
@@ -825,6 +847,7 @@ class BasketballSeasonApp(QMainWindow):
         self.temporal_button.setEnabled(all_selected)
         self.rankings_button.setEnabled(all_selected)
         self.weekly_report_button.setEnabled(all_selected)
+        self.possession_analysis_button.setEnabled(all_selected)
 
     def on_view_stats(self) -> None:
         """Handle stats button click - downloads latest data and shows statistics."""
@@ -931,7 +954,7 @@ class BasketballSeasonApp(QMainWindow):
                 try:
                     if self.current_scope == "FEB":
                         # FEB: match_code is a string number, check with int
-                        if not self.db_handler.document_exists(collection_name, int(match_code)) or i == len(matches):
+                        if not self.db_handler.document_exists(collection_name, int(match_code)):
                             boxscore = self.scraper.fetch_boxscore(match_code, session)
                             if boxscore and self.db_handler.insert_boxscore(collection_name, match_code, boxscore):
                                 successful_matches.append(match_code)
@@ -943,7 +966,7 @@ class BasketballSeasonApp(QMainWindow):
                     elif self.current_scope == "FBCYL":
                         # FBCYL: match_code is a UUID string
                         # Check if document already exists in the collection
-                        if not self.db_handler.document_exists(collection_name, match_code) or i == len(matches):
+                        if not self.db_handler.document_exists(collection_name, match_code):
                             # Fetch complete match data (both moves and stats)
                             match_complete_data = self.fbcyl_scraper.get_match_complete_data(match_code)
 
@@ -1647,6 +1670,56 @@ class BasketballSeasonApp(QMainWindow):
             self.progress_bar.setVisible(False)
             self.progress_label.setVisible(False)
             QMessageBox.critical(self, "Error", f"Error al cargar los ránkings: {str(e)}")
+
+    def on_view_possession_analysis(self) -> None:
+        """Handle possession analysis button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver el análisis de posesiones.")
+                    return
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver el análisis de posesiones.")
+                    return
+
+                # Create collection name for FBCYL
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
+                return
+
+            # Create and show possession analysis window
+            from .possession_analysis_window import PossessionAnalysisWindow
+            self.possession_window = PossessionAnalysisWindow(
+                collection_name=collection_name,
+                db_handler=self.db_handler,
+                parent=self
+            )
+            self.possession_window.show()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al abrir análisis de posesiones: {str(e)}")
 
     def on_generate_weekly_report(self) -> None:
         """Handle weekly report button click."""
