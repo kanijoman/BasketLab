@@ -6,6 +6,7 @@ from .shotchart_window import ShotChartWindow
 from .temporal_evolution_window import TemporalEvolutionWindow
 from .player_stats_window import PlayerStatsWindow
 from .ranking_window import PlayerRankingWindow
+from .possession_analysis_window import PossessionAnalysisWindow
 from .table_items import NumericTableWidgetItem
 from .pdf_generator import PDFGenerator
 
@@ -16,6 +17,7 @@ __all__ = [
     'TemporalEvolutionWindow',
     'PlayerStatsWindow',
     'PlayerRankingWindow',
+    'PossessionAnalysisWindow',
     'NumericTableWidgetItem',
     'PDFGenerator'
 ]

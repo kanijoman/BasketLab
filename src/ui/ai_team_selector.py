@@ -248,7 +248,8 @@ class AITeamSelector(QDialog):
             if collection is not None:
                 if is_fbcyl:
                     # FBCYL: Extract shots from player metadata (same as individual scouting)
-                    matches = collection.find({})
+                    # Filter by team name directly in MongoDB (OPTIMIZED)
+                    matches = collection.find({"stats.teams.name": team_name})
 
                     for doc in matches:
                         if 'stats' not in doc or 'teams' not in doc['stats']:
@@ -344,7 +345,11 @@ class AITeamSelector(QDialog):
 
                 else:
                     # FEB: Extract shots from SHOTCHART
-                    matches = list(collection.find({}))
+                    # Filter by team ID directly in MongoDB (OPTIMIZED)
+                    matches = list(collection.find({
+                        "HEADER.TEAM.id": team_code,
+                        "SHOTCHART.SHOTS": {"$exists": True, "$ne": []}
+                    }))
 
                     for match in matches:
                         shotchart = match.get('SHOTCHART', {})
@@ -884,8 +889,8 @@ class AITeamSelector(QDialog):
             if collection is not None:
                 if is_fbcyl:
                     # FBCYL: Extract shots from player metadata (not from moves!)
-                    # Get all documents (FBCYL doesn't index by team in moves)
-                    matches = collection.find({})
+                    # Filter by team name directly in MongoDB (OPTIMIZED)
+                    matches = collection.find({"stats.teams.name": team_name})
 
                     doc_idx = 0
                     matches_found = 0

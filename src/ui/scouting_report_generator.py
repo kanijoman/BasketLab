@@ -807,7 +807,10 @@ class ScoutingReportGenerator:
             player['ft_pct'] = (ft_made / ft_attempted * 100) if ft_attempted > 0 else 0
 
             # Calculate per-game stats
-            player['mpg'] = (player.get('total_minutes', 0) / 60 / games) if games > 0 else 0
+            # Guardar minutes_per_game en segundos primero para cálculos
+            player['minutes_per_game'] = (player.get('total_minutes', 0) / games) if games > 0 else 0
+            # mpg es la versión en minutos (dividido por 60) para las estadísticas avanzadas
+            player['mpg'] = (player['minutes_per_game'] / 60) if player['minutes_per_game'] > 0 else 0
             player['ppg'] = player.get('total_pts', 0) / games if games > 0 else 0
             player['val_pg'] = player.get('total_val', 0) / games if games > 0 else 0
 
@@ -819,10 +822,11 @@ class ScoutingReportGenerator:
             player['three_pr'] = calculator.calculate_3pr(player)
 
             # Calculate rebound percentages (simple version without team data)
-            total_reb = player.get('total_ro', 0) + player.get('total_rd', 0)
-            player['orb_pct'] = (player.get('total_ro', 0) / total_reb * 100) if total_reb > 0 else 0.0
-            player['drb_pct'] = (player.get('total_rd', 0) / total_reb * 100) if total_reb > 0 else 0.0
-            player['trb_pct'] = player['orb_pct'] + player['drb_pct']
+            # Nota: Estos porcentajes son estimaciones sin datos de equipo/oponente
+            # Estimación de rebotes disponibles: asumimos ~80 rebotes por partido (40 por equipo)
+            estimated_team_rebounds = games * 40 if games > 0 else 1
+            player['orb_pct'] = (player.get('total_ro', 0) / estimated_team_rebounds * 100) if estimated_team_rebounds > 0 else 0.0
+            player['drb_pct'] = (player.get('total_rd', 0) / estimated_team_rebounds * 100) if estimated_team_rebounds > 0 else 0.0
 
             # Calculate other percentages based on possessions estimate
             possessions_est = fga + 0.44 * ft_attempted + player.get('total_to', 0)
@@ -918,6 +922,7 @@ class ScoutingReportGenerator:
             # Definir los campos para los que necesitamos cuartiles
             if view_mode == 'average':
                 stat_fields = {
+                    'minutes_per_game': 'total_minutes',
                     'pts': 'total_pts',
                     'tl_pct': 'tl_pct', 
                     't2_pct': 't2_pct',
@@ -968,6 +973,9 @@ class ScoutingReportGenerator:
                         val = p.get('total_p2m', 0) / p.get('total_p2a', 1) * 100 if p.get('total_p2a', 0) > 0 else 0
                     elif field_key == 't3_pct':
                         val = p.get('total_p3m', 0) / p.get('total_p3a', 1) * 100 if p.get('total_p3a', 0) > 0 else 0
+                    elif field_key == 'minutes_per_game':
+                        # Convertir de segundos a minutos
+                        val = p.get(total_key, 0) / 60.0 / games if games > 0 else 0
                     else:
                         val = p.get(total_key, 0)
                         if view_mode == 'average':
@@ -990,6 +998,9 @@ class ScoutingReportGenerator:
                 mins_per_game_seconds = player.get('minutes_per_game', 0)
                 mins_per_game = mins_per_game_seconds / 60.0 if mins_per_game_seconds else 0
                 item = NumericTableWidgetItem(mins_per_game, f"{mins_per_game:.1f}")
+                # Aplicar coloreado por cuartiles para minutos
+                if 'minutes_per_game' in quartiles:
+                    item.setBackground(get_quartile_color(mins_per_game, quartiles['minutes_per_game'], False))
                 table.setItem(row, 1, item)
 
                 # Columna 2: Pts
@@ -1042,16 +1053,19 @@ class ScoutingReportGenerator:
                 for col_idx, (key, total_key) in enumerate(zip(stat_keys, stat_totals), start=2):
                     val = player.get(total_key, 0)
                     
-                    # Porcentajes de tiro
+                    # Lanzamientos: mostrar formato acierto-fallo en totales
                     if key == 'tl_pct':
-                        val = player.get('total_p1m', 0) / player.get('total_p1a', 1) * 100 if player.get('total_p1a', 0) > 0 else 0
-                        item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                        made = int(player.get('total_p1m', 0))
+                        attempted = int(player.get('total_p1a', 0))
+                        item = NumericTableWidgetItem(made, f"{made}-{attempted}")
                     elif key == 't2_pct':
-                        val = player.get('total_p2m', 0) / player.get('total_p2a', 1) * 100 if player.get('total_p2a', 0) > 0 else 0
-                        item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                        made = int(player.get('total_p2m', 0))
+                        attempted = int(player.get('total_p2a', 0))
+                        item = NumericTableWidgetItem(made, f"{made}-{attempted}")
                     elif key == 't3_pct':
-                        val = player.get('total_p3m', 0) / player.get('total_p3a', 1) * 100 if player.get('total_p3a', 0) > 0 else 0
-                        item = NumericTableWidgetItem(val, f"{val:.1f}%")
+                        made = int(player.get('total_p3m', 0))
+                        attempted = int(player.get('total_p3a', 0))
+                        item = NumericTableWidgetItem(made, f"{made}-{attempted}")
                     else:
                         item = NumericTableWidgetItem(val, str(int(val)))
                     
@@ -1123,7 +1137,7 @@ class ScoutingReportGenerator:
             # Columnas de estadísticas avanzadas (sin Jugadora ni Equipo para informe individual)
             ADVANCED_COLUMNS = [
                 "PJ", "Min/PJ", "Pts/PJ", "TS%", "eFG%",
-                "3PAr", "FTr", "ORB%", "DRB%", "TRB%", "AST%", "TO%",
+                "3PAr", "FTr", "ORB%", "DRB%", "AST%", "TO%",
                 "STL%", "BLK%", "USG%", "ORtg", "DRtg", "Val/PJ"
             ]
 
@@ -1165,15 +1179,14 @@ class ScoutingReportGenerator:
                 6: ('ftr', False),
                 7: ('orb_pct', False),
                 8: ('drb_pct', False),
-                9: ('trb_pct', False),
-                10: ('ast_pct', False),
-                11: ('tov_pct', True),      # reverse - menos es mejor
-                12: ('stl_pct', False),
-                13: ('blk_pct', False),
-                14: ('usage', False),       # USG%
-                15: ('orating', False),     # ORtg
-                16: ('drating', True),      # DRtg (reverse)
-                17: ('val_pg', False)
+                9: ('ast_pct', False),
+                10: ('tov_pct', True),      # reverse - menos es mejor
+                11: ('stl_pct', False),
+                12: ('blk_pct', False),
+                13: ('usage', False),       # USG%
+                14: ('orating', False),     # ORtg
+                15: ('drating', True),      # DRtg (reverse)
+                16: ('val_pg', False)
             }
 
             # Calcular cuartiles para cada campo
@@ -1182,6 +1195,9 @@ class ScoutingReportGenerator:
                 values = []
                 for p in all_player_stats:
                     val = p.get(field_key, 0)
+                    # Convertir minutes_per_game de segundos a minutos para cuartiles
+                    if field_key == 'minutes_per_game' and val:
+                        val = val / 60
                     if val and val != 0:
                         values.append(val)
 
@@ -1194,15 +1210,23 @@ class ScoutingReportGenerator:
             for col_idx, (field_name, reverse) in ADVANCED_STAT_FIELDS.items():
                 value = player.get(field_name, 0)
 
-                # Formatear valor
+            # Formatear valor
                 if field_name == 'games_played':
                     formatted_value = str(int(value)) if value else "0"
-                elif field_name in ['minutes_per_game', 'ppg', 'val_pg']:
+                elif field_name == 'minutes_per_game':
+                    # Convertir de segundos a minutos para mostrar
+                    value_in_minutes = value / 60 if value else 0
+                    formatted_value = f"{value_in_minutes:.1f}"
+                    value = value_in_minutes  # Actualizar para coloreado
+                elif field_name in ['ppg', 'val_pg']:
                     formatted_value = f"{value:.1f}" if value else "0.0"
                 elif field_name in ['orating', 'drating']:
                     formatted_value = f"{value:.1f}" if value else "0.0"
                 elif field_name in ['three_pr', 'ftr']:
-                    formatted_value = f"{value:.3f}" if value else "0.000"
+                    # Convertir a porcentaje (value ya está en decimal, multiplicar por 100)
+                    pct_value = value * 100 if value else 0
+                    formatted_value = f"{pct_value:.1f}%"
+                    value = pct_value  # Actualizar para coloreado
                 else:
                     formatted_value = f"{value:.1f}%" if value else "0.0%"
 

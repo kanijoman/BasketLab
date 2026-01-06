@@ -203,17 +203,6 @@ class BasketballRepository:
             return []
 
     def get_last_match(self, collection_name: str, team_name: str) -> Dict:
-        if not self.connection.is_connected():
-            return []
-
-        try:
-            collection = self.connection.get_collection(collection_name)
-            pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline(date_filter, venue_filter, result_filter)
-            return list(collection.aggregate(pipeline))
-        except PyMongoError as e:
-            return []
-
-    def get_last_match(self, collection_name: str, team_name: str) -> Dict:
         """
         Get the last match document for a specific team.
 
@@ -529,6 +518,9 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
+            
+            # Ensure indexes exist for optimal performance
+            self.connection.ensure_indexes(collection_name)
 
             # Detect if this is a FBCYL collection
             is_fbcyl = collection_name.startswith('FBCYL_')
@@ -591,6 +583,59 @@ class BasketballRepository:
                     return list(collection.aggregate(pipeline))
                 else:
                     return list(collection.find(match_filter))
+
+        except PyMongoError as e:
+            return []
+
+    def get_games_for_team(self, collection_name: str, team_id: str, 
+                           only_with_playbyplay: bool = False) -> List[Dict]:
+        """
+        Get all games for a specific team.
+
+        Args:
+            collection_name: Name of the collection
+            team_id: Team ID
+            only_with_playbyplay: If True, only return games with play-by-play data
+
+        Returns:
+            List of game documents where the team participated
+        """
+        if not self.connection.is_connected():
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            
+            # Ensure indexes exist for optimal performance
+            self.connection.ensure_indexes(collection_name)
+            
+            is_fbcyl = collection_name.startswith('FBCYL_')
+
+            if is_fbcyl:
+                # FBCYL: Check in stats.teams array
+                match_filter = {
+                    "$or": [
+                        {"stats.teams.teamIdIntern": team_id},
+                        {"stats.teams.teamIdIntern": int(team_id) if team_id.isdigit() else team_id},
+                        {"stats.teams.teamIdExtern": team_id},
+                        {"stats.teams.teamIdExtern": int(team_id) if team_id.isdigit() else team_id}
+                    ]
+                }
+                
+                # Add play-by-play filter if requested
+                if only_with_playbyplay:
+                    match_filter["moves"] = {"$exists": True, "$ne": None}
+            else:
+                # FEB: Check in HEADER.TEAM array
+                match_filter = {
+                    "HEADER.TEAM.id": team_id
+                }
+                
+                # Add play-by-play filter if requested
+                if only_with_playbyplay:
+                    match_filter["PLAYBYPLAY.LINES"] = {"$exists": True, "$ne": None}
+
+            return list(collection.find(match_filter))
 
         except PyMongoError as e:
             return []
@@ -925,6 +970,116 @@ class BasketballRepository:
                 'out': total_stats_out,
                 'player_id': player_id,
                 'player_team_id': player_team_id,
+                'games_analyzed': games_analyzed
+            }
+
+        except PyMongoError as e:
+            return {}
+
+    def get_team_possession_stats(self, collection_name: str, team_id: str,
+                                   date_filter: Dict = None) -> Dict:
+        """
+        Get possession statistics for a team using play-by-play data.
+
+        Args:
+            collection_name: Name of the collection
+            team_id: Team's ID
+            date_filter: Optional MongoDB date filter dict with datetime object
+
+        Returns:
+            Dictionary with possession statistics:
+            - total_possessions: Total number of possessions across all games
+            - avg_duration: Average possession duration in seconds
+            - possessions_by_duration: Stats for <=8s, 8-16s, >16s with count, points, and OER
+            - games_analyzed: Number of games included in analysis
+        """
+        if not self.connection.is_connected():
+            return {}
+
+        try:
+            from .playbyplay_analyzer import PossessionAnalyzer
+
+            # Get games for this specific team WITH play-by-play data only (optimized)
+            games = self.get_games_for_team(collection_name, team_id, only_with_playbyplay=True)
+            
+            if not games:
+                return {
+                    'total_possessions': 0,
+                    'avg_duration': 0.0,
+                    'possessions_by_duration': {
+                        '<=8s': {'count': 0, 'total_points': 0, 'oer': 0.0},
+                        '8-16s': {'count': 0, 'total_points': 0, 'oer': 0.0},
+                        '>16s': {'count': 0, 'total_points': 0, 'oer': 0.0}
+                    },
+                    'games_analyzed': 0
+                }
+            
+            # Detect if this is a FBCYL collection
+            is_fbcyl = collection_name.startswith('FBCYL_')
+
+            # Aggregate stats across all games
+            all_possessions = []
+            short_poss = {'count': 0, 'total_points': 0}  # <=8s
+            medium_poss = {'count': 0, 'total_points': 0}  # 8-16s
+            long_poss = {'count': 0, 'total_points': 0}  # >16s
+            games_analyzed = 0
+
+            for game in games:
+                try:
+                    analyzer = PossessionAnalyzer(game, is_fbcyl=is_fbcyl)
+                    game_stats = analyzer.calculate_possessions(team_id)
+
+                    # Aggregate totals
+                    all_possessions.extend([game_stats['avg_duration']] * game_stats['total_possessions'])
+                    
+                    # Aggregate by duration
+                    for duration_key in ['<=8s', '8-16s', '>16s']:
+                        duration_stats = game_stats['possessions_by_duration'][duration_key]
+                        if duration_key == '<=8s':
+                            short_poss['count'] += duration_stats['count']
+                            short_poss['total_points'] += duration_stats['total_points']
+                        elif duration_key == '8-16s':
+                            medium_poss['count'] += duration_stats['count']
+                            medium_poss['total_points'] += duration_stats['total_points']
+                        else:  # '>16s'
+                            long_poss['count'] += duration_stats['count']
+                            long_poss['total_points'] += duration_stats['total_points']
+
+                    games_analyzed += 1
+
+                except Exception as e:
+                    continue
+
+            # Calculate overall statistics
+            total_possessions = short_poss['count'] + medium_poss['count'] + long_poss['count']
+            avg_duration = sum(all_possessions) / len(all_possessions) if all_possessions else 0.0
+
+            # Calculate OER for each duration range
+            def calculate_oer(poss_count: int, total_points: int) -> float:
+                if poss_count == 0:
+                    return 0.0
+                return (total_points / poss_count) * 100
+
+            return {
+                'total_possessions': total_possessions,
+                'avg_duration': round(avg_duration, 2),
+                'possessions_by_duration': {
+                    '<=8s': {
+                        'count': short_poss['count'],
+                        'total_points': short_poss['total_points'],
+                        'oer': round(calculate_oer(short_poss['count'], short_poss['total_points']), 2)
+                    },
+                    '8-16s': {
+                        'count': medium_poss['count'],
+                        'total_points': medium_poss['total_points'],
+                        'oer': round(calculate_oer(medium_poss['count'], medium_poss['total_points']), 2)
+                    },
+                    '>16s': {
+                        'count': long_poss['count'],
+                        'total_points': long_poss['total_points'],
+                        'oer': round(calculate_oer(long_poss['count'], long_poss['total_points']), 2)
+                    }
+                },
                 'games_analyzed': games_analyzed
             }
 

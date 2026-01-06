@@ -99,18 +99,24 @@ def get_team_index_in_document(doc: Dict, team_code: str) -> Optional[int]:
 
     Args:
         doc: Match document from MongoDB
-        team_code: Team code to search for
+        team_code: Team code or ID to search for
 
     Returns:
         Team index (0 or 1) or None if not found
     """
+    # Normalize team_code to string for comparison
+    team_code_str = str(team_code)
+    
     # Check BOXSCORE.TEAM array
     if 'BOXSCORE' in doc and 'TEAM' in doc['BOXSCORE']:
         teams = doc['BOXSCORE']['TEAM']
         if isinstance(teams, list):
             for idx, team_data in enumerate(teams):
                 if isinstance(team_data, dict) and 'TOTAL' in team_data:
-                    if team_data['TOTAL'].get('teamCode', '') == team_code:
+                    total = team_data['TOTAL']
+                    # Check both teamCode and id
+                    if (str(total.get('teamCode', '')) == team_code_str or 
+                        str(total.get('id', '')) == team_code_str):
                         return idx
 
     # Fallback: check HEADER.TEAM
@@ -119,7 +125,9 @@ def get_team_index_in_document(doc: Dict, team_code: str) -> Optional[int]:
         if isinstance(teams, list):
             for idx, team_data in enumerate(teams):
                 if isinstance(team_data, dict):
-                    if team_data.get('teamCode', '') == team_code:
+                    # Check both teamCode and id
+                    if (str(team_data.get('teamCode', '')) == team_code_str or
+                        str(team_data.get('id', '')) == team_code_str):
                         return idx
 
     return None
