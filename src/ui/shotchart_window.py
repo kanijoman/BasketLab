@@ -358,8 +358,10 @@ class ShotChartWindow(QMainWindow):
                 documents = collection.find({"stats.teams.name": team['name']})
                 all_shots = self._extract_shots_fbcyl(documents, team)
             else:
+                # Use team ID (not teamCode) for querying
+                team_id = team.get('id', team.get('code'))
                 documents = collection.find({
-                    "HEADER.TEAM.id": team['code'],
+                    "HEADER.TEAM.id": team_id,
                     "SHOTCHART.SHOTS": {"$exists": True, "$ne": []}
                 })
                 all_shots = self._extract_shots_feb(documents, team)
@@ -381,6 +383,9 @@ class ShotChartWindow(QMainWindow):
         players_info = {}  # {dorsal: name}
         player_id_map = {}  # {(team_idx, dorsal): {id, name}}
 
+        # Use team ID (not teamCode) for finding team index
+        team_identifier = team.get('id', team.get('code'))
+
         for doc in documents:
             if 'SHOTCHART' not in doc or not doc['SHOTCHART']:
                 continue
@@ -389,7 +394,7 @@ class ShotChartWindow(QMainWindow):
                 continue
 
             shots = doc['SHOTCHART']['SHOTS']
-            team_index = get_team_index_in_document(doc, team['code'])
+            team_index = get_team_index_in_document(doc, team_identifier)
 
             if team_index is None:
                 continue
