@@ -45,4 +45,4 @@ def get_mongodb_connection_string() -> str:
                     return connection_string
 
     # Default fallback (should not be reached in production)
-    return "mongodb+srv://kanijoman:S0p0rt3s@mycluster.g3slkjv.mongodb.net/"
+    return "mongodb://localhost:27017/"

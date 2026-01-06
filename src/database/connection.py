@@ -22,7 +22,7 @@ class MongoDBConnection:
         try:
             self.client = pymongo.MongoClient(connection_string)
             self.client.server_info()  # Test connection
-            self.db = self.client["FEB"]
+            self.db = self.client["BASKETBALL"]
             self._connected = True
         except ConnectionFailure as e:
             print(f"[MongoDBConnection] Failed to connect to MongoDB: {e}")

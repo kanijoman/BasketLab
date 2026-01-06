@@ -47,46 +47,15 @@ class PossessionAnalysisWindow(QMainWindow):
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
-        # Title and Load button container
-        title_container = QHBoxLayout()
-        
+        # Title
         title_label = QLabel("Análisis de Posesiones por Equipo")
         title_label.setStyleSheet("font-size: 16pt; font-weight: bold; margin: 10px;")
-        title_container.addWidget(title_label)
-        
-        # Load data button
-        self.load_button = QPushButton("Cargar Datos")
-        self.load_button.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                font-weight: bold;
-                padding: 10px 20px;
-                border-radius: 5px;
-                font-size: 12pt;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-            QPushButton:pressed {
-                background-color: #3d8b40;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #666666;
-            }
-        """)
-        self.load_button.clicked.connect(self.load_data)
-        title_container.addWidget(self.load_button)
-        
-        title_container.addStretch()
-        layout.addLayout(title_container)
+        layout.addWidget(title_label)
 
         # Info label
         info_label = QLabel(
             "Esta tabla muestra estadísticas sobre la duración y eficiencia de las posesiones de cada equipo.\n"
-            "Las celdas están coloreadas por cuartiles: verde (mejor), amarillo, naranja, rojo (peor).\n"
-            "⚠️ El análisis procesa todos los eventos del play-by-play, lo cual puede tardar unos segundos."
+            "Las celdas están coloreadas por cuartiles: verde (mejor), amarillo, naranja, rojo (peor)."
         )
         info_label.setStyleSheet("font-size: 10pt; margin: 5px; color: #555;")
         info_label.setWordWrap(True)
@@ -182,16 +151,16 @@ class PossessionAnalysisWindow(QMainWindow):
         layout.addWidget(self.table)
 
         # Status bar
-        self.status_label = QLabel("Presiona 'Cargar Datos' para comenzar el análisis")
+        self.status_label = QLabel("Cargando datos...")
         self.status_label.setStyleSheet("font-size: 9pt; color: #666; margin: 5px;")
         layout.addWidget(self.status_label)
+        
+        # Load data automatically after UI setup
+        QTimer.singleShot(100, self.load_data)
 
     def load_data(self):
         """Load possession data from database."""
         try:
-            # Disable button during loading
-            self.load_button.setEnabled(False)
-            self.load_button.setText("Cargando...")
             self.status_label.setText("Cargando datos de posesiones...")
             QApplication.processEvents()
 
@@ -230,8 +199,10 @@ class PossessionAnalysisWindow(QMainWindow):
                     team_stats = self.get_team_possession_stats(team['id'])
 
                     if team_stats and team_stats.get('total_possessions', 0) > 0:
-                        # Calculate opponent average pace for comparison
-                        opponent_avg_pace = self.calculate_opponent_average_pace(team['id'])
+                        # Calculate opponent pace comparison:
+                        # - opponent_avg_pace: how opponents play in their other games
+                        # - opponent_pace_vs_team: how opponents play against this team
+                        opponent_avg_pace, opponent_pace_vs_team = self.calculate_opponent_pace_comparison(team['id'])
 
                         team_data = {
                             'team_name': team['name'],
@@ -253,7 +224,7 @@ class PossessionAnalysisWindow(QMainWindow):
                             'oer_fast': team_stats['possessions_by_duration']['<=8s']['oer'],
                             'oer_medium': team_stats['possessions_by_duration']['8-16s']['oer'],
                             'oer_slow': team_stats['possessions_by_duration']['>16s']['oer'],
-                            'pace_diff': opponent_avg_pace - team_stats['avg_duration'] if opponent_avg_pace else None,
+                            'pace_diff': opponent_avg_pace - opponent_pace_vs_team if (opponent_avg_pace and opponent_pace_vs_team) else None,
                             'estimated_possessions_40min': self.estimate_possessions_per_game(team_stats['avg_duration'])
                         }
                         self.possession_data.append(team_data)
@@ -275,17 +246,10 @@ class PossessionAnalysisWindow(QMainWindow):
                     self, "Sin Datos",
                     "No se encontraron datos de play-by-play para calcular posesiones."
                 )
-            
-            # Re-enable button
-            self.load_button.setText("Recargar Datos")
-            self.load_button.setEnabled(True)
 
         except Exception as e:
             self.status_label.setText(f"Error al cargar datos: {str(e)}")
             QMessageBox.critical(self, "Error", f"Error al cargar datos de posesiones:\n{str(e)}")
-            # Re-enable button on error
-            self.load_button.setText("Cargar Datos")
-            self.load_button.setEnabled(True)
 
     def get_teams_from_collection(self) -> List[Dict]:
         """Get list of teams from the collection."""
@@ -307,22 +271,24 @@ class PossessionAnalysisWindow(QMainWindow):
             print(f"Error getting possession stats for team {team_id}: {e}")
             return None
 
-    def calculate_opponent_average_pace(self, team_id: str) -> Optional[float]:
+    def calculate_opponent_pace_comparison(self, team_id: str) -> tuple[Optional[float], Optional[float]]:
         """
-        Calculate the average pace (possession duration) of opponents when NOT playing against this team.
+        Calculate opponent pace comparison:
+        - Average pace of opponents in their other games (NOT against this team)
+        - Average pace of opponents when playing against this team
 
         Args:
             team_id: ID of the team
 
         Returns:
-            Average possession duration of opponents in their other games, or None if not available
+            Tuple of (opponent_avg_pace, opponent_pace_vs_team)
         """
         try:
             # Get all games where this team played
             team_games = self.db_handler.repository.get_games_for_team(self.collection_name, team_id)
 
             if not team_games:
-                return None
+                return None, None
 
             # Get opponent IDs
             opponent_ids = set()
@@ -343,28 +309,62 @@ class PossessionAnalysisWindow(QMainWindow):
                             opponent_ids.add(str(opp_id))
 
             if not opponent_ids:
-                return None
+                return None, None
 
-            # Calculate average pace for each opponent in games NOT against this team
-            opponent_paces = []
+            # Calculate average pace for opponents in their other games
+            opponent_paces_other = []
+            # Calculate average pace for opponents when playing against this team
+            opponent_paces_vs_team = []
+            
             for opp_id in opponent_ids:
                 # Get games for this opponent NOT against our team
-                opp_games = self.get_opponent_games_excluding_team(opp_id, team_id)
+                opp_games_other = self.get_opponent_games_excluding_team(opp_id, team_id)
+                if opp_games_other:
+                    opp_stats_other = self.calculate_possession_stats_for_games(opp_id, opp_games_other)
+                    if opp_stats_other and opp_stats_other.get('avg_duration'):
+                        opponent_paces_other.append(opp_stats_other['avg_duration'])
+                
+                # Get games for this opponent AGAINST our team
+                opp_games_vs_team = self.get_opponent_games_against_team(opp_id, team_id)
+                if opp_games_vs_team:
+                    opp_stats_vs_team = self.calculate_possession_stats_for_games(opp_id, opp_games_vs_team)
+                    if opp_stats_vs_team and opp_stats_vs_team.get('avg_duration'):
+                        opponent_paces_vs_team.append(opp_stats_vs_team['avg_duration'])
 
-                if opp_games:
-                    # Calculate possession stats for these games
-                    opp_stats = self.calculate_possession_stats_for_games(opp_id, opp_games)
-                    if opp_stats and opp_stats.get('avg_duration'):
-                        opponent_paces.append(opp_stats['avg_duration'])
+            opponent_avg_pace = sum(opponent_paces_other) / len(opponent_paces_other) if opponent_paces_other else None
+            opponent_pace_vs_team = sum(opponent_paces_vs_team) / len(opponent_paces_vs_team) if opponent_paces_vs_team else None
 
-            if opponent_paces:
-                return sum(opponent_paces) / len(opponent_paces)
-
-            return None
+            return opponent_avg_pace, opponent_pace_vs_team
 
         except Exception as e:
-            print(f"Error calculating opponent average pace: {e}")
-            return None
+            print(f"Error calculating opponent pace comparison: {e}")
+            return None, None
+
+    def get_opponent_games_against_team(self, opponent_id: str, team_id: str) -> List[Dict]:
+        """Get games for an opponent specifically against a given team."""
+        try:
+            all_games = self.db_handler.repository.get_games_for_team(self.collection_name, opponent_id)
+
+            # Filter games that include the specified team
+            filtered_games = []
+            for game in all_games:
+                if self.is_fbcyl:
+                    stats = game.get('stats', {})
+                    teams = stats.get('teams', [])
+                    team_ids = [str(t.get('teamIdIntern') or t.get('teamIdExtern')) for t in teams]
+                else:
+                    header = game.get('HEADER', {})
+                    teams = header.get('TEAM', [])
+                    team_ids = [str(t.get('id')) for t in teams]
+
+                if str(team_id) in team_ids:
+                    filtered_games.append(game)
+
+            return filtered_games
+
+        except Exception as e:
+            print(f"Error getting opponent games against team: {e}")
+            return []
 
     def get_opponent_games_excluding_team(self, opponent_id: str, exclude_team_id: str) -> List[Dict]:
         """Get games for an opponent excluding games against a specific team."""

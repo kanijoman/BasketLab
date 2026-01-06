@@ -138,7 +138,6 @@ class IndexManager:
                 background=True
             )
 
-            print(f"[IndexManager] Successfully ensured FEB indexes")
             return True
 
         except Exception as e:

@@ -57,7 +57,7 @@ class BasketballSeasonApp(QMainWindow):
         self.fbcyl_competition_values = {}
 
         self.setWindowTitle("MfA - Metrics for All")
-        self.setMinimumSize(450, 600)
+        self.setMinimumSize(450, 700)
 
         # Set application icon
         set_app_icon(self)
@@ -400,7 +400,7 @@ class BasketballSeasonApp(QMainWindow):
             self.territory_combo.clear()
             self.category_combo.clear()
             # Reset window size
-            self.setMinimumSize(450, 600)
+            self.setMinimumSize(450, 700)
             self._validate_selections()
             return
 
@@ -430,7 +430,7 @@ class BasketballSeasonApp(QMainWindow):
             self.category_combo.clear()
 
             # Reset window size for FEB
-            self.setMinimumSize(450, 650)
+            self.setMinimumSize(450, 750)
 
             # Load FEB seasons
             try:
@@ -502,7 +502,7 @@ class BasketballSeasonApp(QMainWindow):
             self.category_combo.addItem("")
 
             # Adjust window size for FBCYL (more dropdowns)
-            self.setMinimumSize(450, 800)
+            self.setMinimumSize(450, 900)
 
             # Load FBCYL initial data (seasons)
             try:
@@ -663,7 +663,7 @@ class BasketballSeasonApp(QMainWindow):
         self.category_combo.setVisible(False)
         self.category_label.setVisible(False)
         # Reset window size
-        self.setMinimumSize(450, 650)
+        self.setMinimumSize(450, 750)
 
     def _show_fbcyl_dropdowns(self) -> None:
         """Show FBCYL-specific dropdown widgets and adjust window size."""
@@ -674,7 +674,7 @@ class BasketballSeasonApp(QMainWindow):
         self.category_combo.setVisible(True)
         self.category_label.setVisible(True)
         # Adjust window size for more dropdowns
-        self.setMinimumSize(450, 800)
+        self.setMinimumSize(450, 900)
 
     def _load_fbcyl_genders(self) -> None:
         """Load gender options for FBCYL based on season selection."""
