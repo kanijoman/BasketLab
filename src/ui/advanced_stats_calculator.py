@@ -119,7 +119,7 @@ class AdvancedStatsCalculator:
             player: Player statistics dictionary
 
         Returns:
-            Free throw rate
+            Free throw rate (as percentage, e.g., 25.0 for 25%)
         """
         fta = player.get('total_p1a', 0)
         fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)  # FGA = 2PA + 3PA (no FTA)
@@ -142,7 +142,7 @@ class AdvancedStatsCalculator:
             player: Player statistics dictionary
 
         Returns:
-            3-point rate
+            3-point rate (as percentage, e.g., 35.0 for 35%)
         """
         three_pa = player.get('total_p3a', 0)
         fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)  # FGA = 2PA + 3PA (no FTA)
