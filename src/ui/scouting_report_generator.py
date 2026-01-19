@@ -507,8 +507,8 @@ class ScoutingReportGenerator:
         values = [
             f"{player.get('ts', 0):.1f}%",
             f"{player.get('efg', 0):.1f}%",
-            f"{player.get('ftr', 0):.2f}",
-            f"{player.get('three_pr', 0):.2f}",
+            f"{player.get('ftr', 0):.1f}%",
+            f"{player.get('three_pr', 0):.1f}%",
             f"{player.get('orating', 0):.1f}",
             f"{player.get('drating', 0):.1f}",
             f"{player.get('usage', 0):.1f}%",
@@ -1223,10 +1223,8 @@ class ScoutingReportGenerator:
                 elif field_name in ['orating', 'drating']:
                     formatted_value = f"{value:.1f}" if value else "0.0"
                 elif field_name in ['three_pr', 'ftr']:
-                    # Convertir a porcentaje (value ya está en decimal, multiplicar por 100)
-                    pct_value = value * 100 if value else 0
-                    formatted_value = f"{pct_value:.1f}%"
-                    value = pct_value  # Actualizar para coloreado
+                    # Ya vienen como porcentajes desde el calculador
+                    formatted_value = f"{value:.1f}%" if value else "0.0%"
                 else:
                     formatted_value = f"{value:.1f}%" if value else "0.0%"
 
