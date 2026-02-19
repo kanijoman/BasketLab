@@ -675,6 +675,33 @@ class TeamStatsWindow(QMainWindow):
         except Exception:
             return
 
+    def _get_current_date_filter(self):
+        """
+        Get the current date filter based on selected period.
+        
+        Returns:
+            MongoDB date filter dict or None
+        """
+        period_type = self.period_combo.currentData()
+        
+        if not period_type or period_type == "general":
+            # No filter - all season
+            return None
+        
+        if period_type.startswith("comparative"):
+            # Extract days for temporal filter (últimos N días)
+            days = ComparativeModeManager.extract_days_from_period_type(period_type)
+            now = datetime.now()
+            period_start = now - timedelta(days=days)
+            # For IN/OUT analysis, apply the temporal filter to match the selected period
+            return {"$gte": period_start}
+        
+        # Note: venue_comparative, result_comparative, and last_match filters
+        # are not currently supported for IN/OUT analysis as they require
+        # additional filtering logic beyond date filtering.
+        # For these cases, return None (all games will be analyzed)
+        return None
+
     def _on_inout_calculate(self):
         """Calculate IN/OUT team advanced stats for selected player."""
         team_name = self.inout_team_combo.currentText()
@@ -716,8 +743,11 @@ class TeamStatsWindow(QMainWindow):
                     progress.setLabelText(f"Analizando partidos... ({current}/{total})")
                 QApplication.processEvents()
 
+            # Get current date filter based on period selection
+            date_filter = self._get_current_date_filter()
+
             inout = self.db_handler.get_player_in_out_stats(
-                self.collection_name, player_id, date_filter=None,
+                self.collection_name, player_id, date_filter=date_filter,
                 debug=False, progress_callback=update_progress
             )
             progress.close()
@@ -1004,8 +1034,11 @@ class TeamStatsWindow(QMainWindow):
                     progress.setLabelText(f"Analizando {player1_name}... ({current}/{total})")
                 QApplication.processEvents()
 
+            # Get current date filter based on period selection
+            date_filter = self._get_current_date_filter()
+
             inout1 = self.db_handler.get_player_in_out_stats(
-                self.collection_name, player1_id, date_filter=None,
+                self.collection_name, player1_id, date_filter=date_filter,
                 debug=False, progress_callback=update_progress_p1
             )
 
@@ -1028,7 +1061,7 @@ class TeamStatsWindow(QMainWindow):
                 QApplication.processEvents()
 
             inout2 = self.db_handler.get_player_in_out_stats(
-                self.collection_name, player2_id, date_filter=None,
+                self.collection_name, player2_id, date_filter=date_filter,
                 debug=False, progress_callback=update_progress_p2
             )
             progress.close()
