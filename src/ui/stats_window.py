@@ -212,75 +212,6 @@ class TeamStatsWindow(QMainWindow):
 
         self.tab_widget.addTab(advanced_tab, "Estadísticas Avanzadas")
 
-        # Create IN/OUT team impact tab
-        inout_tab = QWidget()
-        inout_layout = QVBoxLayout(inout_tab)
-        inout_layout.setSpacing(8)
-        inout_layout.setContentsMargins(6, 6, 6, 6)
-
-        # Controls: team selector and player selector
-        selector_layout = QHBoxLayout()
-        selector_layout.setSpacing(12)
-
-        team_label = QLabel("Equipo:")
-        team_label.setStyleSheet("font-weight: bold;")
-        selector_layout.addWidget(team_label)
-
-        self.inout_team_combo = QComboBox()
-        # populate with teams from provided team_stats
-        teams_list = [t.get('team_name') or t.get('name') for t in team_stats]
-        seen = set()
-        for name in teams_list:
-            if name and name not in seen:
-                seen.add(name)
-                self.inout_team_combo.addItem(name)
-        self.inout_team_combo.currentIndexChanged.connect(self._on_inout_team_changed)
-        selector_layout.addWidget(self.inout_team_combo)
-
-        player_label = QLabel("Jugador:")
-        player_label.setStyleSheet("font-weight: bold;")
-        selector_layout.addWidget(player_label)
-
-        self.inout_player_combo = QComboBox()
-        self.inout_player_combo.setToolTip("Seleccione jugador para análisis IN/OUT de equipo")
-        self.inout_player_combo.setMaxVisibleItems(20)  # Enable scroll for long lists
-        selector_layout.addWidget(self.inout_player_combo)
-
-        # Second player selector for IN vs IN comparison
-        player2_label = QLabel("Jugador 2:")
-        player2_label.setStyleSheet("font-weight: bold;")
-        selector_layout.addWidget(player2_label)
-
-        self.inout_player2_combo = QComboBox()
-        self.inout_player2_combo.setToolTip("Seleccione segundo jugador para comparar IN vs IN")
-        self.inout_player2_combo.setMaxVisibleItems(20)  # Enable scroll for long lists
-        selector_layout.addWidget(self.inout_player2_combo)
-
-        self.inout_calc_button = QPushButton("Calcular IN/OUT")
-        self.inout_calc_button.clicked.connect(self._on_inout_calculate)
-        selector_layout.addWidget(self.inout_calc_button)
-
-        self.inout_compare_button = QPushButton("Comparar IN vs IN")
-        self.inout_compare_button.setToolTip("Comparar rendimiento del equipo cuando cada jugador está EN PISTA")
-        self.inout_compare_button.clicked.connect(self._on_inout_compare_in)
-        selector_layout.addWidget(self.inout_compare_button)
-
-        selector_layout.addStretch()
-        inout_layout.addLayout(selector_layout)
-
-        # Result table: stat name | IN | OUT | Δ% (Min/J shown as a calculated row)
-        self.inout_table = QTableWidget()
-        self.inout_table.setColumnCount(4)
-        self.inout_table.setHorizontalHeaderLabels(["Estadística", "IN (Equipo)", "OUT (Equipo)", "Δ %"])
-        self.inout_table.setSortingEnabled(False)
-        inout_layout.addWidget(self.inout_table)
-
-        # Info label
-        self.inout_info_label = QLabel("")
-        inout_layout.addWidget(self.inout_info_label)
-
-        self.tab_widget.addTab(inout_tab, "IN/OUT (Impacto en Equipo)")
-
         # Connect tab change event to adjust window size
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
@@ -362,10 +293,6 @@ class TeamStatsWindow(QMainWindow):
         # Calculate and set window size
         self._set_window_size()
 
-        # Initialize IN/OUT players list for first team (if any)
-        if hasattr(self, 'inout_team_combo') and self.inout_team_combo.count() > 0:
-            self._on_inout_team_changed()
-
     def _apply_header_colors(self):
         """Apply background colors to column headers based on their groups."""
         # Apply colors to header sections using class constant
@@ -429,9 +356,7 @@ class TeamStatsWindow(QMainWindow):
             if self.opponent_table and hasattr(self, 'opponents_radio') and self.opponents_radio.isChecked():
                 return self.opponent_table
             return self.advanced_table
-        # If IN/OUT tab (added as third tab) is selected, return the inout table
-        if hasattr(self, 'inout_table') and current_index == 2:
-            return self.inout_table
+        # No special table for index 2 (removed IN/OUT tab)
         return self.advanced_table  # fallback
 
     def _get_current_table_name(self) -> str:
@@ -560,7 +485,7 @@ class TeamStatsWindow(QMainWindow):
         self.advanced_table.setVisible(not is_opponent_view)
         self.opponent_table.setVisible(is_opponent_view)
 
-    def _on_inout_team_changed(self):
+    def _on_tab_changed(self, index: int):
         """Load player list for selected team into player combo."""
         team_name = self.inout_team_combo.currentText()
         self.inout_player_combo.clear()

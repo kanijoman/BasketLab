@@ -13,6 +13,13 @@
 - **Code English, UI Spanish**: All code/comments in English; UI strings in Spanish
 - **Search tools**: `grep_search` for patterns, `semantic_search` for similar code, parallel file reads
 
+**Pre-completion check (MANDATORY every 100 lines written):**
+1. **File size check**: Current lines >300? → Extract module/helper NOW (don't wait for 500)
+2. **Function length**: Any function >40 lines? → Split immediately before continuing
+3. **Duplication scan**: `grep_search` for similar patterns → Reuse/extend existing code
+4. **Complexity audit**: Nesting >3 levels or >5 conditionals? → Refactor before proceeding
+5. **Pattern compliance**: Using StatsCalculator/Repository/helpers? Check imports match project patterns
+
 **Ask clarification only for:**
 - Missing business logic thresholds
 - Ambiguous feature scope

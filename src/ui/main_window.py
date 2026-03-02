@@ -15,6 +15,7 @@ from .temporal_evolution_window import TemporalEvolutionWindow
 from .ranking_window import PlayerRankingWindow
 from .weekly_report_dialog import WeeklyReportDialog
 from .weekly_report_generator import WeeklyReportGenerator
+from .inout_analysis_window import InOutAnalysisWindow
 from .ui_utils import set_app_icon
 from .team_utils import get_available_teams_from_collection
 
@@ -346,6 +347,28 @@ class BasketballSeasonApp(QMainWindow):
             }
         """)
         layout.addWidget(self.possession_analysis_button)
+
+        # IN/OUT Analysis Button
+        self.inout_analysis_button = QPushButton("↔️ Análisis IN/OUT")
+        self.inout_analysis_button.clicked.connect(self.on_view_inout_analysis)
+        self.inout_analysis_button.setEnabled(False)  # Disabled by default
+        self.inout_analysis_button.setStyleSheet("""
+            QPushButton {
+                background-color: #607D8B;
+                color: white;
+                border-radius: 5px;
+                padding: 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #455A64;
+            }
+            QPushButton:disabled {
+                background-color: #BDBDBD;
+                color: #757575;
+            }
+        """)
+        layout.addWidget(self.inout_analysis_button)
 
         # Apply basic styling for a modern look
         self.setStyleSheet("""
@@ -848,6 +871,7 @@ class BasketballSeasonApp(QMainWindow):
         self.rankings_button.setEnabled(all_selected)
         self.weekly_report_button.setEnabled(all_selected)
         self.possession_analysis_button.setEnabled(all_selected)
+        self.inout_analysis_button.setEnabled(all_selected)
 
     def on_view_stats(self) -> None:
         """Handle stats button click - downloads latest data and shows statistics."""
@@ -1720,6 +1744,78 @@ class BasketballSeasonApp(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al abrir análisis de posesiones: {str(e)}")
+
+    def on_view_inout_analysis(self) -> None:
+        """Handle IN/OUT analysis button click."""
+        try:
+            if not self.db_handler.is_connected():
+                QMessageBox.critical(self, "Error", "No hay conexión con MongoDB. Por favor, verifique el servidor.")
+                return
+
+            competition = self.competition_combo.currentText()
+            season_text = self.season_combo.currentText()
+
+            # Validate selections based on scope
+            if self.current_scope == "FEB":
+                group_text = self.group_combo.currentText()
+                if not all([competition, season_text, group_text]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver el análisis IN/OUT.")
+                    return
+                collection_name = self.db_handler.get_collection_name(competition, season_text, group_text)
+            elif self.current_scope == "FBCYL":
+                gender = self.gender_combo.currentText()
+                territory = self.territory_combo.currentText()
+                category = self.category_combo.currentText()
+                if not all([competition, season_text, gender, territory, category]):
+                    QMessageBox.warning(self, "Aviso",
+                                      "Por favor, seleccione todas las opciones antes de ver el análisis IN/OUT.")
+                    return
+
+                # Create collection name for FBCYL
+                import re
+                safe_gender = re.sub(r'[^\w]', '', gender.replace(' ', '_'))
+                safe_territory = re.sub(r'[^\w]', '', territory.replace(' ', '_'))
+                safe_category = re.sub(r'[^\w]', '', category.replace(' ', '_'))
+                safe_season = re.sub(r'[^\w]', '', season_text.replace(' ', '_').replace('/', '_'))
+                collection_name = f"FBCYL_{safe_gender}_{safe_territory}_{safe_category}_{safe_season}"
+                group_text = "default"
+            else:
+                QMessageBox.warning(self, "Aviso", "Por favor, seleccione un ámbito (FEB o FBCYL).")
+                return
+
+            # Get team stats to pass to the window
+            self.progress_label.setText("Cargando estadísticas de equipos...")
+            self.progress_bar.setVisible(True)
+            self.progress_label.setVisible(True)
+            QApplication.processEvents()
+
+            team_stats = self.db_handler.get_team_stats(collection_name)
+
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+
+            if not team_stats:
+                QMessageBox.information(self, "Sin datos",
+                                      "No hay datos de equipos disponibles. Por favor, actualice los datos primero.")
+                return
+
+            # Create and show IN/OUT analysis window
+            self.inout_window = InOutAnalysisWindow(
+                db_handler=self.db_handler,
+                collection_name=collection_name,
+                scope=self.current_scope,
+                season=season_text,
+                group=group_text if self.current_scope == "FEB" else f"{gender}_{territory}_{category}",
+                competition=competition,
+                team_stats=team_stats
+            )
+            self.inout_window.show()
+
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            self.progress_label.setVisible(False)
+            QMessageBox.critical(self, "Error", f"Error al abrir análisis IN/OUT: {str(e)}")
 
     def on_generate_weekly_report(self) -> None:
         """Handle weekly report button click."""

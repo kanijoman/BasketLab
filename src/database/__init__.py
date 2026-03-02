@@ -76,6 +76,24 @@ class MongoDBHandler:
         return self.repository.get_player_in_out_stats(collection_name, player_id, date_filter,
                                                        debug=debug, progress_callback=progress_callback)
 
+    def get_two_players_together_stats(self, collection_name: str, player1_id: str, 
+                                       player2_id: str, date_filter: dict = None,
+                                       debug: bool = False, progress_callback=None) -> dict:
+        """Get statistics when two specific players are on court together."""
+        return self.repository.get_two_players_together_stats(collection_name, player1_id, 
+                                                              player2_id, date_filter,
+                                                              debug=debug, progress_callback=progress_callback)
+    
+    def get_player_individual_stats_with_teammate(self, collection_name: str,
+                                                  main_player_id: str, teammate_id: str,
+                                                  date_filter: dict = None, debug: bool = False,
+                                                  progress_callback=None) -> dict:
+        """Get individual statistics of main player when playing with teammate."""
+        return self.repository.get_player_individual_stats_with_teammate(
+            collection_name, main_player_id, teammate_id, date_filter,
+            debug=debug, progress_callback=progress_callback
+        )
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""
