@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QCo
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
 from typing import Dict, Optional, List
+from datetime import datetime, timedelta
 
 from .stats_calculator import StatsCalculator
 from .stats_exporter import StatsExporter
@@ -13,6 +14,8 @@ from .table_items import NumericTableWidgetItem
 from .ui_utils import set_app_icon
 from .inout_stats_helper import InOutStatsHelper
 from .inout_ui_builder import InOutUIBuilder
+from .export_menu_helper import ExportMenuHelper
+from .analysis_progress_helper import AnalysisProgressHelper
 
 
 class InOutAnalysisWindow(QMainWindow):
@@ -68,11 +71,12 @@ class InOutAnalysisWindow(QMainWindow):
         layout.setSpacing(10)
         layout.setContentsMargins(10, 10, 10, 10)
         
-        # Team selector
-        team_selector_layout = QHBoxLayout()
+        # Team selector and period filter
+        controls_layout = QHBoxLayout()
+        
         team_label = QLabel("Equipo:")
         team_label.setStyleSheet("font-weight: bold; font-size: 14px;")
-        team_selector_layout.addWidget(team_label)
+        controls_layout.addWidget(team_label)
         
         self.team_combo = QComboBox()
         teams_list = [t.get('team_name') or t.get('name') for t in self.team_stats]
@@ -82,9 +86,26 @@ class InOutAnalysisWindow(QMainWindow):
                 seen.add(name)
                 self.team_combo.addItem(name)
         self.team_combo.currentIndexChanged.connect(self._on_team_changed)
-        team_selector_layout.addWidget(self.team_combo)
-        team_selector_layout.addStretch()
-        layout.addLayout(team_selector_layout)
+        controls_layout.addWidget(self.team_combo)
+        
+        controls_layout.addSpacing(20)
+        
+        # Add period selector ComboBox (reusing from TeamStatsWindow)
+        period_label = QLabel("Período:")
+        period_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        controls_layout.addWidget(period_label)
+        
+        self.period_combo = QComboBox()
+        self.period_combo.addItem("General (toda la temporada)", "general")
+        self.period_combo.addItem("Últimos 7 días", "comparative_7")
+        self.period_combo.addItem("Últimos 15 días", "comparative_15")
+        self.period_combo.addItem("Últimos 30 días", "comparative_30")
+        self.period_combo.addItem("Últimos 60 días", "comparative_60")
+        self.period_combo.setToolTip("Seleccionar período de análisis IN/OUT")
+        controls_layout.addWidget(self.period_combo)
+        
+        controls_layout.addStretch()
+        layout.addLayout(controls_layout)
         
         # Tab widget for different analyses
         self.tab_widget = QTabWidget()
@@ -181,6 +202,48 @@ class InOutAnalysisWindow(QMainWindow):
             self.main_player_combo.addItem(player_name, player_id)
             self.teammate_a_combo.addItem(player_name, player_id)
             self.teammate_b_combo.addItem(player_name, player_id)
+    
+    def _get_current_date_filter(self):
+        """
+        Get the current date filter based on selected period.
+        
+        Returns:
+            MongoDB date filter dict or None
+        """
+        period_type = self.period_combo.currentData()
+        
+        if not period_type or period_type == "general":
+            # No filter - all season
+            return None
+        
+        if period_type.startswith("comparative"):
+            # Extract days for temporal filter (últimos N días)
+            days = self._extract_days_from_period_type(period_type)
+            now = datetime.now()
+            period_start = now - timedelta(days=days)
+            # For IN/OUT analysis, apply the temporal filter to match the selected period
+            return {"$gte": period_start}
+        
+        return None
+    
+    @staticmethod
+    def _extract_days_from_period_type(period_type: str) -> int:
+        """
+        Extract number of days from period type string.
+        
+        Args:
+            period_type: Period type (e.g., "comparative_30")
+        
+        Returns:
+            Number of days (defaults to 30 if not parseable)
+        """
+        days = 30  # default
+        if "_" in period_type:
+            try:
+                days = int(period_type.split("_")[1])
+            except (ValueError, IndexError):
+                days = 30
+        return days
             
     def _on_inout_calculate(self):
         """Calculate traditional IN/OUT stats for selected player."""
@@ -206,27 +269,19 @@ class InOutAnalysisWindow(QMainWindow):
             
         # Fetch IN/OUT stats
         try:
-            progress = QProgressDialog("Cargando partidos desde base de datos...", None, 0, 0, self)
-            progress.setWindowTitle("Calculando IN/OUT")
-            progress.setWindowModality(Qt.WindowModality.WindowModal)
-            progress.setMinimumDuration(0)
-            progress.setCancelButton(None)
-            progress.show()
-            QApplication.processEvents()
+            # Create progress dialog
+            progress = AnalysisProgressHelper.create_single_analysis_progress(
+                self, "Calculando IN/OUT"
+            )
             
-            def update_progress(current, total):
-                if current == 1 and total > 1:
-                    progress.setMaximum(100)
-                    progress.setLabelText(f"Analizando partidos... (0/{total})")
-                    progress.setValue(0)
-                elif total > 1:
-                    percent = int(current * 100 / total)
-                    progress.setValue(percent)
-                    progress.setLabelText(f"Analizando partidos... ({current}/{total})")
-                QApplication.processEvents()
+            # Create progress callback
+            update_progress = AnalysisProgressHelper.create_single_progress_callback(progress)
+            
+            # Get current date filter based on period selection
+            date_filter = self._get_current_date_filter()
                 
             inout = self.db_handler.get_player_in_out_stats(
-                self.collection_name, player_id, date_filter=None,
+                self.collection_name, player_id, date_filter=date_filter,
                 debug=False, progress_callback=update_progress
             )
             progress.close()
@@ -319,43 +374,30 @@ class InOutAnalysisWindow(QMainWindow):
             
         # Calculate IN stats for both players
         try:
-            progress = QProgressDialog("Cargando partidos...", None, 0, 100, self)
-            progress.setWindowTitle("Comparando IN vs IN")
-            progress.setWindowModality(Qt.WindowModality.WindowModal)
-            progress.setMinimumDuration(0)
-            progress.setCancelButton(None)
-            progress.show()
+            # Create progress dialog
+            progress = AnalysisProgressHelper.create_dual_analysis_progress(
+                self, "Comparando IN vs IN", player1_name, player2_name
+            )
+            
+            # Get current date filter based on period selection
+            date_filter = self._get_current_date_filter()
             
             # Player 1
-            progress.setLabelText(f"Analizando {player1_name}...")
-            progress.setValue(10)
-            QApplication.processEvents()
-            
-            def update_progress_p1(current, total):
-                if total > 1:
-                    percent = 10 + int(current * 40 / total)
-                    progress.setValue(percent)
-                QApplication.processEvents()
+            AnalysisProgressHelper.update_progress_for_entity(progress, player1_name, 10)
+            update_progress_p1 = AnalysisProgressHelper.create_progress_callback(progress, 10, 40)
                 
             inout1 = self.db_handler.get_player_in_out_stats(
                 self.collection_name, player1_id,
-                date_filter=None, debug=False, progress_callback=update_progress_p1
+                date_filter=date_filter, debug=False, progress_callback=update_progress_p1
             )
             
             # Player 2
-            progress.setLabelText(f"Analizando {player2_name}...")
-            progress.setValue(50)
-            QApplication.processEvents()
-            
-            def update_progress_p2(current, total):
-                if total > 1:
-                    percent = 50 + int(current * 40 / total)
-                    progress.setValue(percent)
-                QApplication.processEvents()
+            AnalysisProgressHelper.update_progress_for_entity(progress, player2_name, 50)
+            update_progress_p2 = AnalysisProgressHelper.create_progress_callback(progress, 50, 40)
                 
             inout2 = self.db_handler.get_player_in_out_stats(
                 self.collection_name, player2_id,
-                date_filter=None, debug=False, progress_callback=update_progress_p2
+                date_filter=date_filter, debug=False, progress_callback=update_progress_p2
             )
             
             progress.setValue(100)
@@ -466,43 +508,30 @@ class InOutAnalysisWindow(QMainWindow):
             
         # Calculate stats with each teammate
         try:
-            progress = QProgressDialog("Calculando estadísticas...", None, 0, 100, self)
-            progress.setWindowTitle("Comparando Compañeros")
-            progress.setWindowModality(Qt.WindowModality.WindowModal)
-            progress.setMinimumDuration(0)
-            progress.setCancelButton(None)
-            progress.show()
+            # Create progress dialog
+            progress = AnalysisProgressHelper.create_dual_analysis_progress(
+                self, "Comparando Compañeros", teammate_a_name, teammate_b_name
+            )
+            
+            # Get current date filter based on period selection
+            date_filter = self._get_current_date_filter()
             
             # Stats with teammate A
-            progress.setLabelText(f"Analizando con {teammate_a_name}...")
-            progress.setValue(10)
-            QApplication.processEvents()
-            
-            def update_progress_a(current, total):
-                if total > 1:
-                    percent = 10 + int(current * 40 / total)
-                    progress.setValue(percent)
-                QApplication.processEvents()
+            AnalysisProgressHelper.update_progress_for_entity(progress, teammate_a_name, 10)
+            update_progress_a = AnalysisProgressHelper.create_progress_callback(progress, 10, 40)
                 
             stats_with_a = self.db_handler.get_player_individual_stats_with_teammate(
                 self.collection_name, main_player_id, teammate_a_id,
-                date_filter=None, debug=False, progress_callback=update_progress_a
+                date_filter=date_filter, debug=False, progress_callback=update_progress_a
             )
             
             # Stats with teammate B
-            progress.setLabelText(f"Analizando con {teammate_b_name}...")
-            progress.setValue(50)
-            QApplication.processEvents()
-            
-            def update_progress_b(current, total):
-                if total > 1:
-                    percent = 50 + int(current * 40 / total)
-                    progress.setValue(percent)
-                QApplication.processEvents()
+            AnalysisProgressHelper.update_progress_for_entity(progress, teammate_b_name, 50)
+            update_progress_b = AnalysisProgressHelper.create_progress_callback(progress, 50, 40)
                 
             stats_with_b = self.db_handler.get_player_individual_stats_with_teammate(
                 self.collection_name, main_player_id, teammate_b_id,
-                date_filter=None, debug=False, progress_callback=update_progress_b
+                date_filter=date_filter, debug=False, progress_callback=update_progress_b
             )
             
             progress.setValue(100)
@@ -537,6 +566,7 @@ class InOutAnalysisWindow(QMainWindow):
         norm_a = full_data_a.get('per_100_poss', {})
         norm_b = full_data_b.get('per_100_poss', {})
         
+        # Extract metadata
         minutes_a = float(stats_a.get('minutes', 0))
         minutes_b = float(stats_b.get('minutes', 0))
         games_a = int(stats_a.get('games', 0))
@@ -544,85 +574,20 @@ class InOutAnalysisWindow(QMainWindow):
         possessions_a = full_data_a.get('possessions', 0)
         possessions_b = full_data_b.get('possessions', 0)
         
-        # Display fields: individual player stats normalized per 100 possessions
-        display_fields = [
-            ("Puntos/100", "points", False),
-            ("T2/100", "fga_2", False),
-            ("T3/100", "fga_3", False),
-            ("TL/100", "fta", False),
-            ("eFG%", "efg_pct", False),
-            ("TS%", "ts_pct", False),
-            ("REB-O/100", "orb", False),
-            ("REB-D/100", "drb", False),
-            ("Asist./100", "ast", False),
-            ("Robos/100", "stl", False),
-            ("Tapones/100", "blk", False),
-            ("Pérdidas/100", "tov", True),  # reverse=True, less is better
-            ("Faltas/100", "pf", True)
-        ]
+        # Populate table using helper
+        InOutStatsHelper.populate_teammate_comparison_table(
+            self.comparison_table, norm_a, norm_b, teammate_a, teammate_b
+        )
         
-        # Update headers
-        self.comparison_table.setHorizontalHeaderLabels([
-            "Estadística", f"Con {teammate_a}", f"Con {teammate_b}", "Δ %"
-        ])
-        
-        # Populate table
-        self.comparison_table.setRowCount(len(display_fields))
-        
-        for row, (label, key, reverse) in enumerate(display_fields):
-            # Stat name
-            self.comparison_table.setItem(row, 0, QTableWidgetItem(label))
-            
-            # Value A (normalized per 100 possessions)
-            val_a = norm_a.get(key, 0)
-            self.comparison_table.setItem(row, 1, NumericTableWidgetItem(val_a, f"{val_a:.2f}"))
-            
-            # Value B (normalized per 100 possessions)
-            val_b = norm_b.get(key, 0)
-            self.comparison_table.setItem(row, 2, NumericTableWidgetItem(val_b, f"{val_b:.2f}"))
-            
-            # Delta %
-            if val_b != 0:
-                delta_pct = ((val_a - val_b) / abs(val_b)) * 100
-            else:
-                delta_pct = 0.0
-            
-            delta_item = NumericTableWidgetItem(delta_pct, f"{delta_pct:.1f}%")
-            
-            # Color coding (green = A better, red = B better)
-            DELTA_THRESHOLD = 0.5
-            if abs(delta_pct) > DELTA_THRESHOLD:
-                if (delta_pct > 0 and not reverse) or (delta_pct < 0 and reverse):
-                    delta_item.setBackground(QColor("#c8e6c9"))  # Green
-                else:
-                    delta_item.setBackground(QColor("#ffcdd2"))  # Red
-            
-            self.comparison_table.setItem(row, 3, delta_item)
-        
-        # Add summary rows
-        last_row = len(display_fields)
-        self.comparison_table.setRowCount(last_row + 3)
-        
-        # Minutes row
-        self.comparison_table.setItem(last_row, 0, QTableWidgetItem("Min Juntos"))
-        self.comparison_table.setItem(last_row, 1, NumericTableWidgetItem(minutes_a, f"{minutes_a:.1f}"))
-        self.comparison_table.setItem(last_row, 2, NumericTableWidgetItem(minutes_b, f"{minutes_b:.1f}"))
-        diff = minutes_a - minutes_b
-        self.comparison_table.setItem(last_row, 3, NumericTableWidgetItem(diff, f"{diff:.1f}"))
-        
-        # Possessions row
-        self.comparison_table.setItem(last_row + 1, 0, QTableWidgetItem("Posesiones"))
-        self.comparison_table.setItem(last_row + 1, 1, NumericTableWidgetItem(possessions_a, f"{possessions_a:.1f}"))
-        self.comparison_table.setItem(last_row + 1, 2, NumericTableWidgetItem(possessions_b, f"{possessions_b:.1f}"))
-        poss_diff = possessions_a - possessions_b
-        self.comparison_table.setItem(last_row + 1, 3, NumericTableWidgetItem(poss_diff, f"{poss_diff:.1f}"))
-        
-        # Games row
-        self.comparison_table.setItem(last_row + 2, 0, QTableWidgetItem("Partidos"))
-        self.comparison_table.setItem(last_row + 2, 1, NumericTableWidgetItem(games_a, f"{games_a}"))
-        self.comparison_table.setItem(last_row + 2, 2, NumericTableWidgetItem(games_b, f"{games_b}"))
-        games_diff = games_a - games_b
-        self.comparison_table.setItem(last_row + 2, 3, NumericTableWidgetItem(games_diff, f"{games_diff}"))
+        # Add summary rows using helper
+        display_fields = InOutStatsHelper.get_teammate_comparison_fields()
+        InOutStatsHelper.add_summary_rows_to_comparison(
+            self.comparison_table,
+            minutes_a, minutes_b,
+            possessions_a, possessions_b,
+            games_a, games_b,
+            len(display_fields)
+        )
         
         # Update info label
         games_a_total = full_data_a.get('games_analyzed', 0)
@@ -640,81 +605,36 @@ class InOutAnalysisWindow(QMainWindow):
     
     def _export_inout_stats(self):
         """Export IN/OUT statistics table."""
-        if not self.inout_exporter:
-            QMessageBox.warning(self, "Sin datos", "No hay datos para exportar. Ejecuta el cálculo primero.")
-            return
-        
         player_name = getattr(self, 'inout_current_player_name', 'Jugador')
         table_name = f"InOut_{player_name.replace(' ', '_')}"
         subtitle = f"Análisis IN/OUT - {player_name}"
         
-        # Show export menu
-        from PyQt6.QtWidgets import QMenu
-        menu = QMenu(self)
-        csv_action = menu.addAction("💾 Exportar a CSV")
-        png_action = menu.addAction("🖼️ Exportar a PNG")
-        pdf_action = menu.addAction("📄 Exportar a PDF")
-        
-        action = menu.exec(self.inout_export_button.mapToGlobal(self.inout_export_button.rect().bottomLeft()))
-        
-        if action == csv_action:
-            self.inout_exporter.export_to_csv(self.inout_table, table_name, subtitle)
-        elif action == png_action:
-            self.inout_exporter.export_to_png(self.inout_table, table_name, subtitle)
-        elif action == pdf_action:
-            self.inout_exporter.export_to_pdf(self.inout_table, table_name, subtitle)
+        ExportMenuHelper.show_export_menu(
+            self, self.inout_export_button, self.inout_exporter,
+            self.inout_table, table_name, subtitle
+        )
     
     def _export_invin_stats(self):
         """Export IN vs IN comparison table."""
-        if not self.invin_exporter:
-            QMessageBox.warning(self, "Sin datos", "No hay datos para exportar. Ejecuta el cálculo primero.")
-            return
-        
         player1 = getattr(self, 'invin_player1_name', 'Jugador1')
         player2 = getattr(self, 'invin_player2_name', 'Jugador2')
         table_name = f"InVsIn_{player1.replace(' ', '_')}_vs_{player2.replace(' ', '_')}"
         subtitle = f"Comparación IN - {player1} vs {player2}"
         
-        # Show export menu
-        from PyQt6.QtWidgets import QMenu
-        menu = QMenu(self)
-        csv_action = menu.addAction("💾 Exportar a CSV")
-        png_action = menu.addAction("🖼️ Exportar a PNG")
-        pdf_action = menu.addAction("📄 Exportar a PDF")
-        
-        action = menu.exec(self.invin_export_button.mapToGlobal(self.invin_export_button.rect().bottomLeft()))
-        
-        if action == csv_action:
-            self.invin_exporter.export_to_csv(self.invin_table, table_name, subtitle)
-        elif action == png_action:
-            self.invin_exporter.export_to_png(self.invin_table, table_name, subtitle)
-        elif action == pdf_action:
-            self.invin_exporter.export_to_pdf(self.invin_table, table_name, subtitle)
+        ExportMenuHelper.show_export_menu(
+            self, self.invin_export_button, self.invin_exporter,
+            self.invin_table, table_name, subtitle
+        )
     
     def _export_comparison_stats(self):
         """Export teammate comparison table."""
-        if not self.comparison_exporter:
-            QMessageBox.warning(self, "Sin datos", "No hay datos para exportar. Ejecuta el cálculo primero.")
-            return
-        
         player = getattr(self, 'comparison_current_player_name', 'Jugador')
         teammate_a = getattr(self, 'comparison_teammate_a_name', 'CompañeroA')
         teammate_b = getattr(self, 'comparison_teammate_b_name', 'CompañeroB')
         table_name = f"Comparacion_{player.replace(' ', '_')}"
         subtitle = f"Comparación - {player} con {teammate_a} vs {teammate_b}"
         
-        # Show export menu
-        from PyQt6.QtWidgets import QMenu
-        menu = QMenu(self)
-        csv_action = menu.addAction("💾 Exportar a CSV")
-        png_action = menu.addAction("🖼️ Exportar a PNG")
-        pdf_action = menu.addAction("📄 Exportar a PDF")
-        
-        action = menu.exec(self.comparison_export_button.mapToGlobal(self.comparison_export_button.rect().bottomLeft()))
-        
-        if action == csv_action:
-            self.comparison_exporter.export_to_csv(self.comparison_table, table_name, subtitle)
-        elif action == png_action:
-            self.comparison_exporter.export_to_png(self.comparison_table, table_name, subtitle)
-        elif action == pdf_action:
-            self.comparison_exporter.export_to_pdf(self.comparison_table, table_name, subtitle)
+        ExportMenuHelper.show_export_menu(
+            self, self.comparison_export_button, self.comparison_exporter,
+            self.comparison_table, table_name, subtitle
+        )

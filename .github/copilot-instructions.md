@@ -1,5 +1,23 @@
 # Claude AI Development Context - MetricsForAll
 
+## 🚨 READ THIS FIRST - MANDATORY PROCESS
+
+**BEFORE modifying ANY file, you MUST:**
+
+1. **Check file size**: `Get-Content file.py | Measure-Object -Line`
+   - **>500 lines?** → ❌ **ABORT**. Propose refactor FIRST, implement SECOND
+   - **>300 lines?** → ⚠️ Flag to user before proceeding
+   
+2. **Check function length**: `grep -E "^\s{4}def "`
+   - **Any function >40 lines?** → ❌ **ABORT**. Split function FIRST, then continue
+   
+3. **Scan for duplication**: `grep_search` for similar patterns
+   - **Found duplicates?** → ❌ **ABORT**. Create helper FIRST, then implement
+
+**See [MANDATORY_CHECKS.md](.github/MANDATORY_CHECKS.md) for detailed checklist**
+
+---
+
 ## Project Identity
 **MetricsForAll** - PyQt6 basketball statistics analyzer (Spanish leagues: FEB/FBCYL). MongoDB + matplotlib + multi-provider AI. PoC phase (LF2).
 **Stack:** Python 3.8+ | PyQt6 | MongoDB | matplotlib | fpdf2 | python-docx | Gemini/OpenAI/Groq
@@ -13,12 +31,23 @@
 - **Code English, UI Spanish**: All code/comments in English; UI strings in Spanish
 - **Search tools**: `grep_search` for patterns, `semantic_search` for similar code, parallel file reads
 
-**Pre-completion check (MANDATORY every 100 lines written):**
-1. **File size check**: Current lines >300? → Extract module/helper NOW (don't wait for 500)
-2. **Function length**: Any function >40 lines? → Split immediately before continuing
-3. **Duplication scan**: `grep_search` for similar patterns → Reuse/extend existing code
-4. **Complexity audit**: Nesting >3 levels or >5 conditionals? → Refactor before proceeding
-5. **Pattern compliance**: Using StatsCalculator/Repository/helpers? Check imports match project patterns
+**Pre-implementation check (MANDATORY before ANY modification):**
+1. **File size check**: `grep -c "" file.py` → Lines >300? → **STOP and propose refactor**
+2. **Function scan**: Search for functions >40 lines → **STOP and split them FIRST**
+3. **Duplication check**: `grep_search` existing patterns → Reuse, don't duplicate
+4. **Verify:** File to modify has NO quality issues before adding code
+
+**During implementation (PAUSE every 100 lines written):**
+1. **File size**: Still <500 lines? If not → **STOP, extract module NOW**
+2. **Function length**: New function <40 lines? If not → **STOP, split NOW**
+3. **Duplication**: No repeated code? If found → **STOP, create helper NOW**
+4. **Complexity**: Nesting <3 levels, conditionals <5? If not → **STOP, refactor NOW**
+5. **Patterns**: Using project helpers (StatsCalculator/Repository/etc.)?
+
+**Post-implementation (MANDATORY before completing):**
+1. Run tests → `pytest -v`
+2. Check errors → `get_errors()`
+3. Verify: [ ] No exceptions [ ] Edge cases covered [ ] FEB+FBCYL tested [ ] No regressions
 
 **Ask clarification only for:**
 - Missing business logic thresholds

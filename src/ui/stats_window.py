@@ -26,6 +26,7 @@ from .comparative_mode_manager import ComparativeModeManager
 from .trend_legend_builder import TrendLegendBuilder
 from .team_utils import get_team_data_by_name
 from .stats_filter_constants import RESULT_WON, RESULT_LOST, VENUE_HOME, VENUE_AWAY
+from .analysis_progress_helper import AnalysisProgressHelper
 
 
 class TeamStatsWindow(QMainWindow):
@@ -646,27 +647,13 @@ class TeamStatsWindow(QMainWindow):
 
         # Fetch IN/OUT aggregated stats from repository
         try:
-            # Create progress dialog with indeterminate progress for loading
-            progress = QProgressDialog("Cargando partidos desde base de datos...", None, 0, 0, self)
-            progress.setWindowTitle("Calculando IN/OUT")
-            progress.setWindowModality(Qt.WindowModality.WindowModal)
-            progress.setMinimumDuration(0)
-            progress.setCancelButton(None)  # No cancel button during loading
-            progress.show()
-            QApplication.processEvents()
-
-            def update_progress(current, total):
-                if current == 1 and total > 1:
-                    # Just finished loading, switch to determinate progress
-                    progress.setMaximum(100)
-                    progress.setLabelText(f"Analizando partidos... (0/{total})")
-                    progress.setValue(0)
-                elif total > 1:
-                    # Processing games
-                    percent = int(current * 100 / total)
-                    progress.setValue(percent)
-                    progress.setLabelText(f"Analizando partidos... ({current}/{total})")
-                QApplication.processEvents()
+            # Create progress dialog using helper
+            progress = AnalysisProgressHelper.create_single_analysis_progress(
+                self, "Calculando IN/OUT"
+            )
+            
+            # Create progress callback
+            update_progress = AnalysisProgressHelper.create_single_progress_callback(progress)
 
             # Get current date filter based on period selection
             date_filter = self._get_current_date_filter()
@@ -933,62 +920,33 @@ class TeamStatsWindow(QMainWindow):
             return
 
         try:
-            # Create progress dialog with indeterminate progress for loading
-            progress = QProgressDialog("Cargando partidos desde base de datos...", None, 0, 0, self)
-            progress.setWindowTitle("Calculando IN/IN")
-            progress.setWindowModality(Qt.WindowModality.WindowModal)
-            progress.setMinimumDuration(0)
-            progress.setCancelButton(None)
-            progress.show()
-            QApplication.processEvents()
-
-            player1_loaded = False
-
-            def update_progress_p1(current, total):
-                nonlocal player1_loaded
-                if current == 1 and total > 1 and not player1_loaded:
-                    # Just finished loading player 1, switch to determinate
-                    progress.setMaximum(100)
-                    progress.setLabelText(f"Analizando {player1_name}... (0/{total})")
-                    progress.setValue(0)
-                    player1_loaded = True
-                elif total > 1:
-                    # Processing games for player 1 (0-50%)
-                    percent = int(current * 50 / total)
-                    progress.setValue(percent)
-                    progress.setLabelText(f"Analizando {player1_name}... ({current}/{total})")
-                QApplication.processEvents()
+            # Create progress dialog using helper
+            progress = AnalysisProgressHelper.create_dual_analysis_progress(
+                self, "Calculando IN/IN", player1_name, player2_name
+            )
 
             # Get current date filter based on period selection
             date_filter = self._get_current_date_filter()
+            
+            # Player 1
+            AnalysisProgressHelper.update_progress_for_entity(progress, player1_name, 10)
+            update_progress_p1 = AnalysisProgressHelper.create_progress_callback(progress, 10, 40)
 
             inout1 = self.db_handler.get_player_in_out_stats(
                 self.collection_name, player1_id, date_filter=date_filter,
                 debug=False, progress_callback=update_progress_p1
             )
 
-            # Switch to loading player 2
-            progress.setMaximum(0)  # Indeterminate again
-            progress.setLabelText(f"Cargando partidos de {player2_name}...")
-            QApplication.processEvents()
-
-            def update_progress_p2(current, total):
-                if current == 1 and total > 1:
-                    # Just finished loading player 2
-                    progress.setMaximum(100)
-                    progress.setLabelText(f"Analizando {player2_name}... (0/{total})")
-                    progress.setValue(50)
-                elif total > 1:
-                    # Processing games for player 2 (50-100%)
-                    percent = 50 + int(current * 50 / total)
-                    progress.setValue(percent)
-                    progress.setLabelText(f"Analizando {player2_name}... ({current}/{total})")
-                QApplication.processEvents()
+            # Player 2
+            AnalysisProgressHelper.update_progress_for_entity(progress, player2_name, 50)
+            update_progress_p2 = AnalysisProgressHelper.create_progress_callback(progress, 50, 40)
 
             inout2 = self.db_handler.get_player_in_out_stats(
                 self.collection_name, player2_id, date_filter=date_filter,
                 debug=False, progress_callback=update_progress_p2
             )
+            
+            progress.setValue(100)
             progress.close()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error al obtener datos IN/OUT: {e}")
