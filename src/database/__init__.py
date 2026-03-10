@@ -94,6 +94,15 @@ class MongoDBHandler:
             debug=debug, progress_callback=progress_callback
         )
 
+    def get_lineup_analysis(self, collection_name: str, team_id: str, team_name: str,
+                           combination_size: int = 5, date_filter: dict = None,
+                           is_fbcyl: bool = False, progress_callback=None) -> list:
+        """Get lineup analysis showing best and worst player combinations."""
+        return self.repository.get_lineup_analysis(
+            collection_name, team_id, team_name, combination_size,
+            date_filter, is_fbcyl, progress_callback
+        )
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""

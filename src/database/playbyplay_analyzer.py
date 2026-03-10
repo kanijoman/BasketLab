@@ -35,6 +35,9 @@ class PlayByPlayAnalyzer:
 
         # Map team IDs to team1/team2
         self.team_mapping = self._get_team_mapping()
+        
+        # Cache for parse_substitutions (expensive operation)
+        self._substitutions_cache = None
 
     def _get_team_mapping(self) -> Dict[str, str]:
         """Get mapping of team IDs to team1/team2."""
@@ -120,6 +123,10 @@ class PlayByPlayAnalyzer:
         Returns:
             Dict mapping player ID (idPlayer/actorId) to list of (timestamp, is_on_court) tuples
         """
+        # Return cached result if available
+        if self._substitutions_cache is not None:
+            return self._substitutions_cache
+        
         player_timeline = defaultdict(list)
 
         if self.is_fbcyl:
@@ -135,6 +142,8 @@ class PlayByPlayAnalyzer:
                         continue
 
                     in_outs_list = player.get('inOutsList', [])
+                    
+                    # First pass: collect all events
                     for event in in_outs_list:
                         event_type = event.get('type')
                         minute_absolut = event.get('minuteAbsolut', 0)
@@ -145,6 +154,11 @@ class PlayByPlayAnalyzer:
                             player_timeline[player_id].append((timestamp, True))
                         elif event_type == 'OUT_TYPE':
                             player_timeline[player_id].append((timestamp, False))
+                    
+                    # Second pass: detect starters (first event is OUT without prior IN)
+                    if player_timeline[player_id] and player_timeline[player_id][0][1] == False:
+                        # Player's first event is OUT, so they started the game
+                        player_timeline[player_id].insert(0, (0, True))
         else:
             # FEB: Parse PLAYBYPLAY.LINES for substitutions
             # Lines are in reverse chronological order, so process them forward
@@ -177,11 +191,20 @@ class PlayByPlayAnalyzer:
                         if team_key:
                             self.court_state[team_key].discard(id_player)
 
+            # FEB: Detect starting lineup (players who exit without prior entry)
+            # These are players with OUT events but no IN events before them
+            for player_id, events in list(player_timeline.items()):
+                if events and events[0][1] == False:  # First event is OUT (False)
+                    # This player was on court at start
+                    player_timeline[player_id].insert(0, (0, True))
+
         # Sort timelines by timestamp
         for player_id in player_timeline:
             player_timeline[player_id].sort(key=lambda x: x[0])
 
-        return dict(player_timeline)
+        # Cache the result for future calls
+        self._substitutions_cache = dict(player_timeline)
+        return self._substitutions_cache
 
     def get_player_court_segments(self, player_id) -> List[Tuple[int, int]]:
         """

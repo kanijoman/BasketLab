@@ -423,3 +423,285 @@ class StatsExporter:
                 f"Error al exportar PDF: {str(e)}"
             )
             return False
+
+    def export_multiple_to_csv(self, tables_with_titles: list, file_name: str, subtitle: str = "") -> bool:
+        """
+        Export multiple tables to a single CSV file.
+
+        Args:
+            tables_with_titles: List of tuples (table_title, QTableWidget)
+            file_name: Base name for the file
+            subtitle: Optional subtitle
+
+        Returns:
+            True if export successful, False otherwise
+        """
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.parent,
+            "Exportar CSV",
+            f"{file_name}.csv",
+            "CSV Files (*.csv)"
+        )
+
+        if not file_path:
+            return False
+
+        try:
+            with open(file_path, 'w', newline='', encoding='utf-8-sig') as csvfile:
+                writer = csv.writer(csvfile, delimiter=';')
+
+                # Write subtitle if provided
+                if subtitle:
+                    writer.writerow([subtitle] + [""] * 10)
+                    writer.writerow([""] * 10)
+
+                # Export each table
+                for idx, (table_title, table) in enumerate(tables_with_titles):
+                    # Write table title
+                    writer.writerow([table_title])
+                    writer.writerow([""] * table.columnCount())
+
+                    # Write headers
+                    headers = [table.horizontalHeaderItem(col).text() for col in range(table.columnCount())]
+                    writer.writerow(headers)
+
+                    # Write data rows
+                    for row in range(table.rowCount()):
+                        row_data = []
+                        for col in range(table.columnCount()):
+                            cell_widget = table.cellWidget(row, col)
+                            if cell_widget:
+                                import re
+                                text = re.sub('<.*?>', '', cell_widget.text())
+                                row_data.append(text.strip())
+                            else:
+                                item = table.item(row, col)
+                                row_data.append(item.text() if item else "")
+                        writer.writerow(row_data)
+
+                    # Add separator between tables
+                    if idx < len(tables_with_titles) - 1:
+                        writer.writerow([""] * table.columnCount())
+                        writer.writerow(["=" * 50])
+                        writer.writerow([""] * table.columnCount())
+
+            QMessageBox.information(
+                self.parent,
+                "Exportación exitosa",
+                f"Tablas exportadas correctamente a:\n{file_path}"
+            )
+            return True
+
+        except Exception as e:
+            QMessageBox.critical(
+                self.parent,
+                "Error de exportación",
+                f"Error al exportar CSV: {str(e)}"
+            )
+            return False
+
+    def export_multiple_to_png(self, tables_with_titles: list, file_name: str, subtitle: str = "") -> bool:
+        """
+        Export multiple tables to a single PNG image (stacked vertically).
+
+        Args:
+            tables_with_titles: List of tuples (table_title, QTableWidget)
+            file_name: Base name for the file
+            subtitle: Optional subtitle
+
+        Returns:
+            True if export successful, False otherwise
+        """
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.parent,
+            "Exportar PNG",
+            f"{file_name}.png",
+            "PNG Files (*.png)"
+        )
+
+        if not file_path:
+            return False
+
+        try:
+            from PyQt6.QtWidgets import QHeaderView, QApplication
+            from PyQt6.QtCore import QRect
+
+            # Calculate total height and max width
+            total_height = 0
+            max_width = 0
+            title_height = 60  # Height for each title
+
+            for table_title, table in tables_with_titles:
+                # Prepare table
+                table.setSortingEnabled(False)
+                table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+                header = table.horizontalHeader()
+                for i in range(table.columnCount()):
+                    header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+
+                table.updateGeometry()
+                QApplication.processEvents()
+
+                # Calculate dimensions
+                width = sum(table.columnWidth(i) for i in range(table.columnCount())) + 40
+                height = table.horizontalHeader().height() + sum(table.rowHeight(i) for i in range(table.rowCount())) + 40
+
+                max_width = max(max_width, width)
+                total_height += title_height + height + 20  # 20px spacing
+
+            # Create pixmap
+            pixmap = QPixmap(max_width, total_height)
+            pixmap.fill(Qt.GlobalColor.white)
+
+            painter = QPainter(pixmap)
+            y_offset = 10
+
+            # Draw each table
+            for table_title, table in tables_with_titles:
+                # Draw title
+                font = QFont()
+                font.setPointSize(14)
+                font.setBold(True)
+                painter.setFont(font)
+                painter.drawText(20, y_offset + 30, table_title)
+                y_offset += title_height
+
+                # Draw table
+                painter.translate(0, y_offset)
+                table.render(painter)
+                painter.translate(0, -y_offset)
+
+                # Calculate table height
+                table_height = table.horizontalHeader().height() + sum(table.rowHeight(i) for i in range(table.rowCount())) + 40
+                y_offset += table_height + 20
+
+            painter.end()
+
+            # Save
+            pixmap.save(file_path, "PNG")
+
+            QMessageBox.information(
+                self.parent,
+                "Exportación exitosa",
+                f"Imagen exportada correctamente a:\n{file_path}"
+            )
+            return True
+
+        except Exception as e:
+            QMessageBox.critical(
+                self.parent,
+                "Error de exportación",
+                f"Error al exportar PNG: {str(e)}"
+            )
+            return False
+
+    def export_multiple_to_pdf(self, tables_with_titles: list, file_name: str, window_title: str = "", subtitle: str = "") -> bool:
+        """
+        Export multiple tables to a single PDF document.
+
+        Args:
+            tables_with_titles: List of tuples (table_title, QTableWidget)
+            file_name: Base name for the file
+            window_title: Optional document title
+            subtitle: Optional subtitle
+
+        Returns:
+            True if export successful, False otherwise
+        """
+        file_path, _ = QFileDialog.getSaveFileName(
+            self.parent,
+            "Exportar PDF",
+            f"{file_name}.pdf",
+            "PDF Files (*.pdf)"
+        )
+
+        if not file_path:
+            return False
+
+        try:
+            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+            printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
+            printer.setOutputFileName(file_path)
+
+            page_layout = QPageLayout()
+            page_layout.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            page_layout.setOrientation(QPageLayout.Orientation.Landscape)
+            printer.setPageLayout(page_layout)
+
+            painter = QPainter()
+            if not painter.begin(printer):
+                raise Exception("No se pudo inicializar el painter")
+
+            try:
+                page_rect = printer.pageRect(QPrinter.Unit.DevicePixel)
+                y_position = 50
+
+                # Draw main title and subtitle
+                if window_title:
+                    font = QFont()
+                    font.setPointSize(16)
+                    font.setBold(True)
+                    painter.setFont(font)
+                    painter.drawText(50, y_position, window_title)
+                    y_position += 50
+
+                if subtitle:
+                    font = QFont()
+                    font.setPointSize(12)
+                    painter.setFont(font)
+                    painter.drawText(50, y_position, subtitle)
+                    y_position += 40
+
+                # Draw each table
+                for idx, (table_title, table) in enumerate(tables_with_titles):
+                    # Check if we need a new page
+                    table_height = table.height()
+                    if y_position + table_height > page_rect.height() and idx > 0:
+                        printer.newPage()
+                        y_position = 50
+
+                    # Draw table title
+                    font = QFont()
+                    font.setPointSize(14)
+                    font.setBold(True)
+                    painter.setFont(font)
+                    painter.drawText(50, y_position, table_title)
+                    y_position += 40
+
+                    # Calculate scaling for this table
+                    table_width = table.width()
+                    available_width = page_rect.width() - 100
+                    available_height = page_rect.height() - y_position - 50
+
+                    scale_x = available_width / table_width
+                    scale_y = available_height / table_height
+                    scale = min(scale_x, scale_y, 1.0) * 0.95
+
+                    # Render table
+                    painter.save()
+                    painter.translate(50, y_position)
+                    painter.scale(scale, scale)
+                    table.render(painter)
+                    painter.restore()
+
+                    y_position += table_height * scale + 40
+
+            finally:
+                painter.end()
+
+            QMessageBox.information(
+                self.parent,
+                "Exportación exitosa",
+                f"PDF exportado correctamente a:\n{file_path}"
+            )
+            return True
+
+        except Exception as e:
+            QMessageBox.critical(
+                self.parent,
+                "Error de exportación",
+                f"Error al exportar PDF: {str(e)}"
+            )
+            return False
