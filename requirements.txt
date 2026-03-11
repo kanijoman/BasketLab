@@ -16,12 +16,27 @@ pandas>=2.0.0
 fpdf2>=2.7.0
 python-docx>=1.0.0
 
-# Web Scraping (if needed)
+# Web Scraping
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 
+# Scraper utilities (Phase 2 DRY cleanup)
+cachetools>=5.3.0
+tenacity>=8.2.0
+
+# Template engine — AI report generation + FastAPI (Phase 3/6)
+jinja2>=3.1.0
+
+# Web backend (Phase 6 — FastAPI + HTMX)
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
+# Desktop web wrapper (Phase 7 — optional PyWebView)
+pywebview>=5.0.0
+
 # Other utilities
 Pillow>=10.0.0
+shapely>=2.0.0
 
 # AI Analysis
 openai>=1.0.0
@@ -29,3 +44,9 @@ google-generativeai>=0.3.0
 
 # Build Tools (optional - for creating executables)
 pyinstaller>=6.0.0
+
+# --- Development / Testing ---
+pytest>=7.4.0
+pytest-cov>=4.1.0
+mongomock>=4.1.0
+httpx>=0.27.0

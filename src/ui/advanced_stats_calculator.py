@@ -203,7 +203,8 @@ class AdvancedStatsCalculator:
             Turnover percentage (0-100)
         """
         tov = player.get('total_to', 0)
-        fga = player.get('total_p1a', 0) + player.get('total_p2a', 0) + player.get('total_p3a', 0)
+        # FGA = 2PT attempts + 3PT attempts (NOT free throw attempts)
+        fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
         fta = player.get('total_p1a', 0)
 
         denominator = fga + 0.44 * fta + tov
@@ -331,7 +332,7 @@ class AdvancedStatsCalculator:
 
         return 100 * (reb * (team_mp / 5)) / denominator
 
-
+    @staticmethod
     def calculate_offensive_rating(player: Dict[str, Any], team_stats: Dict[str, Any],
                                    opp_stats: Dict[str, Any]) -> float:
         """
