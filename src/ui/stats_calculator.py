@@ -52,6 +52,45 @@ class StatsCalculator:
         }
         return normalized
 
+    @staticmethod
+    def _extract_boxscore_values(team_data: Dict, opponent_data: Dict) -> Dict:
+        """Extract and normalize raw integer values from both team boxscore dicts.
+
+        Centralises the repeated ``safe_int(team_data.get(...))`` block used by
+        ``calculate_single_match_stats`` and ``calculate_stat_value``.
+
+        Args:
+            team_data: Already-normalised team data dict.
+            opponent_data: Already-normalised opponent data dict.
+
+        Returns:
+            Dict with keys: pts, opp_pts, fg2_made, fg2_att, fg3_made, fg3_att,
+            ft_made, ft_att, off_reb, def_reb, assists, steals, turnovers, blocks,
+            opp_off_reb, opp_def_reb, opp_fg2_att, opp_fg3_att, opp_ft_att, opp_turnovers.
+        """
+        return {
+            'pts':          safe_int(team_data.get('pts', 0)),
+            'opp_pts':      safe_int(opponent_data.get('pts', 0)),
+            'fg2_made':     safe_int(team_data.get('p2m', 0)),
+            'fg2_att':      safe_int(team_data.get('p2a', 0)),
+            'fg3_made':     safe_int(team_data.get('p3m', 0)),
+            'fg3_att':      safe_int(team_data.get('p3a', 0)),
+            'ft_made':      safe_int(team_data.get('p1m', 0)),
+            'ft_att':       safe_int(team_data.get('p1a', 0)),
+            'off_reb':      safe_int(team_data.get('ro', 0)),
+            'def_reb':      safe_int(team_data.get('rd', 0)),
+            'assists':      safe_int(team_data.get('assist', 0)),
+            'steals':       safe_int(team_data.get('st', 0)),
+            'turnovers':    safe_int(team_data.get('to', 0)),
+            'blocks':       safe_int(team_data.get('bs', 0)),
+            'opp_off_reb':  safe_int(opponent_data.get('ro', 0)),
+            'opp_def_reb':  safe_int(opponent_data.get('rd', 0)),
+            'opp_fg2_att':  safe_int(opponent_data.get('p2a', 0)),
+            'opp_fg3_att':  safe_int(opponent_data.get('p3a', 0)),
+            'opp_ft_att':   safe_int(opponent_data.get('p1a', 0)),
+            'opp_turnovers': safe_int(opponent_data.get('to', 0)),
+        }
+
     def calculate_single_match_stats(self, team_data: Dict, opponent_data: Dict) -> Dict:
         """
         Calculate statistics from a single match boxscore.
@@ -67,33 +106,19 @@ class StatsCalculator:
         team_data = self.normalize_team_data(team_data)
         opponent_data = self.normalize_team_data(opponent_data)
 
-        # Extract basic stats
-        pts = safe_int(team_data.get("pts", 0))
-        opp_pts = safe_int(opponent_data.get("pts", 0))
-
-        fg2_made = safe_int(team_data.get("p2m", 0))
-        fg2_att = safe_int(team_data.get("p2a", 0))
-        fg3_made = safe_int(team_data.get("p3m", 0))
-        fg3_att = safe_int(team_data.get("p3a", 0))
-        ft_made = safe_int(team_data.get("p1m", 0))
-        ft_att = safe_int(team_data.get("p1a", 0))
-
-        off_reb = safe_int(team_data.get("ro", 0))
-        def_reb = safe_int(team_data.get("rd", 0))
+        # Extract raw values from both boxscores
+        v = self._extract_boxscore_values(team_data, opponent_data)
+        pts       = v['pts'];      opp_pts   = v['opp_pts']
+        fg2_made  = v['fg2_made']; fg2_att   = v['fg2_att']
+        fg3_made  = v['fg3_made']; fg3_att   = v['fg3_att']
+        ft_made   = v['ft_made'];  ft_att    = v['ft_att']
+        off_reb   = v['off_reb'];  def_reb   = v['def_reb']
+        assists   = v['assists'];  steals    = v['steals']
+        turnovers = v['turnovers']; blocks   = v['blocks']
+        opp_off_reb  = v['opp_off_reb'];  opp_def_reb = v['opp_def_reb']
+        opp_fg2_att  = v['opp_fg2_att'];  opp_fg3_att = v['opp_fg3_att']
+        opp_ft_att   = v['opp_ft_att'];   opp_turnovers = v['opp_turnovers']
         tot_reb = off_reb + def_reb
-
-        assists = safe_int(team_data.get("assist", 0))
-        steals = safe_int(team_data.get("st", 0))
-        turnovers = safe_int(team_data.get("to", 0))
-        blocks = safe_int(team_data.get("bs", 0))
-
-        # Opponent stats for possessions
-        opp_off_reb = safe_int(opponent_data.get("ro", 0))
-        opp_fg2_att = safe_int(opponent_data.get("p2a", 0))
-        opp_fg3_att = safe_int(opponent_data.get("p3a", 0))
-        opp_ft_att = safe_int(opponent_data.get("p1a", 0))
-        opp_turnovers = safe_int(opponent_data.get("to", 0))
-        opp_def_reb = safe_int(opponent_data.get("rd", 0))
 
         # Calculate possessions
         poss = fg2_att + fg3_att + (0.45 * ft_att) + turnovers - off_reb
@@ -280,29 +305,18 @@ class StatsCalculator:
         team_data = self.normalize_team_data(team_data)
         opponent_data = self.normalize_team_data(opponent_data)
 
-        # Extract basic stats
-        pts = safe_int(team_data.get('pts', 0))
-        opp_pts = safe_int(opponent_data.get('pts', 0))
-        fg2_made = safe_int(team_data.get('p2m', 0))
-        fg2_att = safe_int(team_data.get('p2a', 0))
-        fg3_made = safe_int(team_data.get('p3m', 0))
-        fg3_att = safe_int(team_data.get('p3a', 0))
-        ft_made = safe_int(team_data.get('p1m', 0))
-        ft_att = safe_int(team_data.get('p1a', 0))
-        off_reb = safe_int(team_data.get('ro', 0))
-        def_reb = safe_int(team_data.get('rd', 0))
-        assists = safe_int(team_data.get('assist', 0))
-        steals = safe_int(team_data.get('st', 0))
-        turnovers = safe_int(team_data.get('to', 0))
-        blocks = safe_int(team_data.get('bs', 0))
-
-        # Opponent stats for calculations
-        opp_off_reb = safe_int(opponent_data.get('ro', 0))
-        opp_def_reb = safe_int(opponent_data.get('rd', 0))
-        opp_fg2_att = safe_int(opponent_data.get('p2a', 0))
-        opp_fg3_att = safe_int(opponent_data.get('p3a', 0))
-        opp_ft_att = safe_int(opponent_data.get('p1a', 0))
-        opp_turnovers = safe_int(opponent_data.get('to', 0))
+        # Extract raw values from both boxscores
+        v = self._extract_boxscore_values(team_data, opponent_data)
+        pts       = v['pts'];      opp_pts   = v['opp_pts']
+        fg2_made  = v['fg2_made']; fg2_att   = v['fg2_att']
+        fg3_made  = v['fg3_made']; fg3_att   = v['fg3_att']
+        ft_made   = v['ft_made'];  ft_att    = v['ft_att']
+        off_reb   = v['off_reb'];  def_reb   = v['def_reb']
+        assists   = v['assists'];  steals    = v['steals']
+        turnovers = v['turnovers']; blocks   = v['blocks']
+        opp_off_reb  = v['opp_off_reb'];  opp_def_reb = v['opp_def_reb']
+        opp_fg2_att  = v['opp_fg2_att'];  opp_fg3_att = v['opp_fg3_att']
+        opp_ft_att   = v['opp_ft_att'];   opp_turnovers = v['opp_turnovers']
 
         # Calculate possessions
         poss = fg2_att + fg3_att + (0.45 * ft_att) + turnovers - off_reb

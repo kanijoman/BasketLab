@@ -56,35 +56,21 @@ class PlayerStatsCalculator:
     @staticmethod
     def _get_projection_value(player: Dict[str, Any], field_key: str,
                              games_played: int, minutes_per_game: float) -> float:
-        """Get 30-minute projection value."""
+        """Get 30-minute projection value.
+
+        Percentages are not scaled (same as average); all counting stats are
+        multiplied by ``(30 / minutes_per_game)`` to project to 30-minute pace.
+        """
         if field_key == 'minutes':
             return 30.0
 
         if field_key in ('fg1_pct', 'fg2_pct', 'fg3_pct'):
-            pct_map = {
-                'fg1_pct': 'fg1_percentage',
-                'fg2_pct': 'fg2_percentage',
-                'fg3_pct': 'fg3_percentage'
-            }
-            return player.get(pct_map[field_key], 0)
+            # Percentages don't scale linearly — return average directly
+            return PlayerStatsCalculator._get_average_value(player, field_key, games_played, minutes_per_game)
 
         multiplier = (30.0 / minutes_per_game) if minutes_per_game > 0 else 0
-
-        value_map = {
-            'points': player.get('points_per_game', 0) * multiplier,
-            'ro': (player.get('total_ro', 0) / games_played if games_played > 0 else 0) * multiplier,
-            'rd': (player.get('total_rd', 0) / games_played if games_played > 0 else 0) * multiplier,
-            'reb': player.get('rebounds_per_game', 0) * multiplier,
-            'ast': player.get('assists_per_game', 0) * multiplier,
-            'st': player.get('steals_per_game', 0) * multiplier,
-            'to': player.get('turnovers_per_game', 0) * multiplier,
-            'bs': player.get('blocks_per_game', 0) * multiplier,
-            'pf': (player.get('total_pf', 0) / games_played if games_played > 0 else 0) * multiplier,
-            'rf': (player.get('total_rf', 0) / games_played if games_played > 0 else 0) * multiplier,
-            'pllss': player.get('pllss_per_game', 0) * multiplier,
-            'val': player.get('valoracion_per_game', 0) * multiplier
-        }
-        return value_map.get(field_key, 0)
+        avg = PlayerStatsCalculator._get_average_value(player, field_key, games_played, minutes_per_game)
+        return avg * multiplier
 
     @staticmethod
     def _get_average_value(player: Dict[str, Any], field_key: str,

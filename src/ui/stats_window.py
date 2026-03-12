@@ -28,6 +28,8 @@ from .team_utils import get_team_data_by_name
 from .stats_filter_constants import RESULT_WON, RESULT_LOST, VENUE_HOME, VENUE_AWAY
 from .analysis_progress_helper import AnalysisProgressHelper
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 class TeamStatsWindow(QMainWindow):
     """Window to display team statistics."""
@@ -508,7 +510,7 @@ class TeamStatsWindow(QMainWindow):
                 return
 
             # Detect if this is a FBCYL collection
-            is_fbcyl = self.collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(self.collection_name)
 
             players = []
             # Use dict to track unique players

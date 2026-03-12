@@ -2,7 +2,17 @@
 
 import requests
 from typing import Optional, Dict, Callable
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 from .constants import DEFAULT_TIMEOUT, DEFAULT_HEADERS
+
+# Retry decorator for transient network failures: 3 attempts with 1s/2s/4s back-off
+_retry_on_connection_error = retry(
+    retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=4),
+    reraise=False,
+)
 
 
 class WebClient:
@@ -23,6 +33,8 @@ class WebClient:
         """
         Perform GET request with error handling.
 
+        Retries up to 3 times on ``ConnectionError`` / ``Timeout`` (1-4 s back-off).
+
         Args:
             url: URL to fetch
             headers: Optional headers to override defaults
@@ -36,9 +48,7 @@ class WebClient:
             request_headers.update(headers)
 
         try:
-            response = self.session.get(url, headers=request_headers, timeout=timeout)
-            response.raise_for_status()
-            return response
+            return self._execute_get(url, request_headers, timeout)
         except requests.RequestException as e:
             print(f"[WebClient] GET request failed for {url}: {e}")
             return None
@@ -47,6 +57,8 @@ class WebClient:
              timeout: int = DEFAULT_TIMEOUT) -> Optional[requests.Response]:
         """
         Perform POST request with error handling.
+
+        Retries up to 3 times on ``ConnectionError`` / ``Timeout`` (1-4 s back-off).
 
         Args:
             url: URL to post to
@@ -62,12 +74,24 @@ class WebClient:
             request_headers.update(headers)
 
         try:
-            response = self.session.post(url, data=data, headers=request_headers, timeout=timeout)
-            response.raise_for_status()
-            return response
+            return self._execute_post(url, data, request_headers, timeout)
         except requests.RequestException as e:
             print(f"[WebClient] POST request failed for {url}: {e}")
             return None
+
+    @_retry_on_connection_error
+    def _execute_get(self, url: str, headers: Dict, timeout: int) -> requests.Response:
+        """Execute a GET request; retried on ConnectionError/Timeout."""
+        response = self.session.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        return response
+
+    @_retry_on_connection_error
+    def _execute_post(self, url: str, data: Dict, headers: Dict, timeout: int) -> requests.Response:
+        """Execute a POST request; retried on ConnectionError/Timeout."""
+        response = self.session.post(url, data=data, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        return response
 
     def get_with_retry(self, url: str, headers: Optional[Dict[str, str]] = None,
                        on_401: Optional[Callable[[], Optional[str]]] = None,
@@ -89,9 +113,7 @@ class WebClient:
             request_headers.update(headers)
 
         try:
-            response = self.session.get(url, headers=request_headers, timeout=timeout)
-            response.raise_for_status()
-            return response
+            return self._execute_get(url, request_headers, timeout)
         except requests.HTTPError as e:
             if e.response.status_code == 401 and on_401:
                 print(f"[WebClient] Unauthorized (401), attempting to refresh token")
@@ -99,9 +121,7 @@ class WebClient:
                 if new_token:
                     request_headers["Authorization"] = f"Bearer {new_token}"
                     try:
-                        response = self.session.get(url, headers=request_headers, timeout=timeout)
-                        response.raise_for_status()
-                        return response
+                        return self._execute_get(url, request_headers, timeout)
                     except requests.RequestException as retry_e:
                         print(f"[WebClient] Retry failed: {retry_e}")
                         return None

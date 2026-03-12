@@ -8,13 +8,7 @@ and calculating league-wide quartiles for comparative analysis.
 import numpy as np
 from typing import Dict, List, Any, Optional
 
-
-def safe_float(value: Any, default: float = 0.0) -> float:
-    """Safely convert value to float."""
-    try:
-        return float(value) if value is not None else default
-    except (ValueError, TypeError):
-        return default
+from src.utils.numeric_utils import safe_float
 
 
 class TeamStatsAggregator:

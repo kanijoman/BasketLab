@@ -3,18 +3,18 @@
 import re
 import requests
 from bs4 import BeautifulSoup
-from typing import Optional, Dict
-from datetime import datetime, timedelta
+from typing import Optional
+from cachetools import TTLCache
 
 from .constants import MATCH_PAGE_URL, HTML_HEADERS, DEFAULT_TIMEOUT, TOKEN_CACHE_HOURS
 
 
 class TokenManager:
-    """Manages authentication tokens with caching."""
+    """Manages authentication tokens with a TTL-based cache."""
 
     def __init__(self):
-        """Initialize token manager with empty cache."""
-        self.token_cache: Dict[str, tuple[str, datetime]] = {}
+        """Initialize token manager with a TTL cache (auto-expires stale tokens)."""
+        self.token_cache: TTLCache = TTLCache(maxsize=256, ttl=TOKEN_CACHE_HOURS * 3600)
 
     def get_token(self, match_code: str, session: requests.Session) -> Optional[str]:
         """
@@ -27,20 +27,14 @@ class TokenManager:
         Returns:
             Token string or None if not found
         """
-        # Check cache first
-        if match_code in self.token_cache:
-            token, expiry = self.token_cache[match_code]
-            if expiry > datetime.now():
-                return token
-            # Token expired, remove from cache
-            del self.token_cache[match_code]
+        cached = self.token_cache.get(match_code)
+        if cached:
+            return cached
 
-        # Fetch new token
+        # Fetch and cache a new token
         token = self._fetch_token_from_page(match_code, session)
         if token:
-            # Cache the token
-            expiry = datetime.now() + timedelta(hours=TOKEN_CACHE_HOURS)
-            self.token_cache[match_code] = (token, expiry)
+            self.token_cache[match_code] = token
 
         return token
 
@@ -51,8 +45,7 @@ class TokenManager:
         Args:
             match_code: Match identifier
         """
-        if match_code in self.token_cache:
-            del self.token_cache[match_code]
+        self.token_cache.pop(match_code, None)
 
     def _fetch_token_from_page(self, match_code: str, session: requests.Session) -> Optional[str]:
         """

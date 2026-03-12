@@ -7,6 +7,8 @@ from .connection import MongoDBConnection
 from .aggregation import AggregationPipelineBuilder
 from .aggregation.fbcyl_pipeline import FBCYLPipelineBuilder
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 class BasketballRepository:
     """Repository for basketball data CRUD operations."""
@@ -125,7 +127,7 @@ class BasketballRepository:
             collection = self.connection.get_collection(collection_name)
 
             # Detect if this is a FBCYL collection by checking collection name or document structure
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 pipeline = FBCYLPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
@@ -191,7 +193,7 @@ class BasketballRepository:
             collection = self.connection.get_collection(collection_name)
 
             # Detect if this is a FBCYL collection
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 pipeline = FBCYLPipelineBuilder.build_opponent_stats_pipeline(date_filter, venue_filter, result_filter)
@@ -218,7 +220,7 @@ class BasketballRepository:
 
         try:
             collection = self.connection.get_collection(collection_name)
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 # FBCYL format: stats.teams[].name and stats.startDate
@@ -290,7 +292,7 @@ class BasketballRepository:
             collection = self.connection.get_collection(collection_name)
 
             # Detect if this is a FBCYL collection
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 # FBCYL format: teams.name
@@ -330,7 +332,7 @@ class BasketballRepository:
             collection = self.connection.get_collection(collection_name)
 
             # Detect if this is a FBCYL collection
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 pipeline = FBCYLPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter)
@@ -523,7 +525,7 @@ class BasketballRepository:
             self.connection.ensure_indexes(collection_name)
 
             # Detect if this is a FBCYL collection
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 # FBCYL: Check for 'moves' field
@@ -609,7 +611,7 @@ class BasketballRepository:
             # Ensure indexes exist for optimal performance
             self.connection.ensure_indexes(collection_name)
             
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 # FBCYL: Check in stats.teams array
@@ -673,7 +675,7 @@ class BasketballRepository:
                 progress_callback(1, len(games))  # Signal that we have the data and starting analysis
 
             # Detect if this is a FBCYL collection
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             # Convert player_id to appropriate type for comparison
             if is_fbcyl:
@@ -1000,7 +1002,7 @@ class BasketballRepository:
             from .inout_repository_helper import InOutRepositoryHelper
 
             games = self._fetch_games_with_progress(collection_name, date_filter, progress_callback)
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
             
             total_stats = self._initialize_together_stats()
             games_analyzed = 0
@@ -1162,7 +1164,7 @@ class BasketballRepository:
 
         try:
             games = self._fetch_games_with_progress(collection_name, date_filter, progress_callback)
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
             
             total_stats = self._initialize_player_individual_stats()
             team_stats = self._initialize_together_stats()
@@ -1669,7 +1671,7 @@ class BasketballRepository:
                 }
             
             # Detect if this is a FBCYL collection
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             # Aggregate stats across all games
             all_possessions = []

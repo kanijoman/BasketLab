@@ -3,6 +3,8 @@
 from typing import Dict, List
 import pymongo
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 class IndexManager:
     """Manages MongoDB indexes for optimal query performance."""
@@ -35,7 +37,7 @@ class IndexManager:
 
         try:
             collection = self.connection.get_collection(collection_name)
-            is_fbcyl = collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
                 return self._ensure_fbcyl_indexes(collection)
