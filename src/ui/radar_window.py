@@ -52,7 +52,7 @@ class RadarChartWindow(QMainWindow):
 
         # Title
         title_label = QLabel("Análisis Radar - Comparación con Competición")
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold; padding: 10px;")
+        title_label.setStyleSheet("font-size: 14pt; font-weight: bold; padding: 10px;")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(title_label)
 

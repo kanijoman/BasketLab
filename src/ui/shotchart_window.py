@@ -177,7 +177,7 @@ class ShotChartWindow(QMainWindow):
         # Apply styling
         self.setStyleSheet("""
             QComboBox, QPushButton, QLabel {
-                font-size: 12px;
+                font-size: 9pt;
                 padding: 5px;
             }
             QComboBox {

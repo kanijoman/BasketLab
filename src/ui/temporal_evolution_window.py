@@ -73,7 +73,7 @@ class TemporalEvolutionWindow(QMainWindow):
             QPushButton {
                 background-color: #2196F3;
                 color: white;
-                font-size: 14px;
+                font-size: 11pt;
                 font-weight: bold;
                 padding: 10px 20px;
                 border-radius: 5px;
@@ -96,7 +96,7 @@ class TemporalEvolutionWindow(QMainWindow):
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
-                font-size: 12px;
+                font-size: 9pt;
                 padding: 8px 15px;
                 border-radius: 5px;
             }
@@ -117,7 +117,7 @@ class TemporalEvolutionWindow(QMainWindow):
             QPushButton {
                 background-color: #FF5722;
                 color: white;
-                font-size: 12px;
+                font-size: 9pt;
                 padding: 8px 15px;
                 border-radius: 5px;
             }

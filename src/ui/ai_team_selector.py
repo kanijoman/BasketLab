@@ -66,7 +66,7 @@ class AITeamSelector(QDialog):
 
         # Header
         header = QLabel("🤖 Análisis IA - Seleccione un Equipo")
-        header.setStyleSheet("font-size: 16px; font-weight: bold; padding: 10px;")
+        header.setStyleSheet("font-size: 12pt; font-weight: bold; padding: 10px;")
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(header)
 
@@ -130,7 +130,7 @@ class AITeamSelector(QDialog):
                 padding: 8px;
                 border: 2px solid #9C27B0;
                 border-radius: 5px;
-                font-size: 12px;
+                font-size: 9pt;
             }
             QLineEdit:focus {
                 border: 2px solid #7B1FA2;

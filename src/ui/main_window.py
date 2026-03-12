@@ -396,7 +396,7 @@ class BasketballSeasonApp(QMainWindow):
         # Apply basic styling for a modern look
         self.setStyleSheet("""
             QComboBox, QLabel {
-                font-size: 14px;
+                font-size: 11pt;
                 padding: 5px;
             }
             QComboBox {
