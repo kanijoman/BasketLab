@@ -7,6 +7,14 @@ _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+# Tell Qt to use 96 DPI as the reference before it initialises its font
+# subsystem.  On Windows with certain display scaling configurations Qt reads
+# the system font as a *pixel-based* font (pointSize == -1).  Fixing the DPI
+# hint here prevents the warning that would otherwise fire inside the
+# QApplication constructor itself, before any Python-level fix can run:
+#   QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
+os.environ.setdefault("QT_FONT_DPI", "96")
+
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication
 from scraper import FEBWebScraper
@@ -17,17 +25,16 @@ from ui import BasketballSeasonApp
 def _fix_app_font(app: QApplication) -> None:
     """Ensure the application font has a valid point size.
 
-    On Windows with certain DPI configurations the default system font is
-    defined in pixels, making QFont.pointSize() return -1.  Qt's stylesheet
-    engine later tries to propagate that -1 value and emits the warning:
-        QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
-    Setting an explicit point size on the QApplication font at startup
-    prevents the warning without changing the visual appearance.
+    Secondary safety net after the env-var fix above.  Calling
+    setPointSize() on a QFont that was built with pixelSize does NOT clear
+    the internal pixel flag – Qt keeps treating it as pixel-based.  We
+    therefore create a *new* QFont using the family name + an explicit point
+    size instead of mutating the existing object.
     """
     font = app.font()
     if font.pointSize() <= 0:
-        font.setPointSize(10)
-        app.setFont(font)
+        family = font.family() or "Segoe UI"
+        app.setFont(QFont(family, 10))
 
 
 if __name__ == "__main__":
