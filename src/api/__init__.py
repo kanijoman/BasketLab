@@ -1,0 +1,1 @@
+"""MetricsForAll FastAPI application package."""
