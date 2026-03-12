@@ -16,6 +16,8 @@ from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 from .ui_utils import set_app_icon
 from .team_utils import get_available_teams_from_collection, get_team_index_in_document, extract_player_names_from_boxscore
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 def normalize_player_name(full_name: str) -> str:
     """Normalize player name to initial + surnames (e.g., 'MARIA GONZALEZ GARCIA' -> 'M GONZALEZ GARCIA')."""
@@ -47,7 +49,7 @@ class ShotChartWindow(QMainWindow):
         self.db_handler = db_handler
         self.scraper = scraper
         self.collection_name = collection_name
-        self.is_fbcyl = collection_name.startswith('FBCYL_')
+        self.is_fbcyl = _is_fbcyl(collection_name)
         self.visualizer = ShotChartVisualizer()
         self.zone_analyzer = ZoneAnalyzer(detail_level='detailed')
         self.current_shots = []
@@ -175,7 +177,7 @@ class ShotChartWindow(QMainWindow):
         # Apply styling
         self.setStyleSheet("""
             QComboBox, QPushButton, QLabel {
-                font-size: 12px;
+                font-size: 9pt;
                 padding: 5px;
             }
             QComboBox {

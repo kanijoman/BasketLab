@@ -310,6 +310,30 @@ pyinstaller MetricsForAll.spec
 python src/main.py
 ```
 
+### 🌐 Interfaz Web (FastAPI + React)
+
+La rama `refactor/arch-web-migration` incluye una REST API y un frontend React como alternativa moderna a la UI PyQt6.
+
+**API (FastAPI):**
+```bash
+python run_api.py
+# Docs interactivos → http://localhost:8000/docs
+# OpenAPI JSON  → http://localhost:8000/openapi.json
+```
+
+**Frontend React (requiere Node.js ≥ 18):**
+```bash
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
+```
+
+El frontend llama a la API a través del proxy de Vite (`/api → localhost:8000`).
+Páginas disponibles: Inicio, Estadísticas de equipo, Estadísticas de jugadores, Análisis de quintetos.
+
+---
+
 ### Ejemplos de Visualización
 
 Generar visualizaciones de cancha FIBA:

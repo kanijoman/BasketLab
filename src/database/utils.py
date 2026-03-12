@@ -2,6 +2,25 @@
 
 import re
 
+_WHITESPACE_RE = re.compile(r'\s+')
+_INVALID_CHARS_RE = re.compile(r'[\\/:*?"<>|.$\x00-\x1F\x7F]')
+_MULTI_UNDERSCORE_RE = re.compile(r'_+')
+
+
+def _sanitize_component(value: str) -> str:
+    """Sanitize a single collection-name component.
+
+    Steps applied in order:
+    1. Strip surrounding whitespace and replace internal whitespace with ``_``.
+    2. Remove MongoDB-invalid characters (replace with ``_``).
+    3. Collapse runs of underscores into a single one.
+    4. Strip leading/trailing underscores.
+    """
+    result = _WHITESPACE_RE.sub('_', value.strip())
+    result = _INVALID_CHARS_RE.sub('_', result)
+    result = _MULTI_UNDERSCORE_RE.sub('_', result)
+    return result.strip('_')
+
 
 def get_collection_name(competition: str, season: str, group: str) -> str:
     """
@@ -20,28 +39,8 @@ def get_collection_name(competition: str, season: str, group: str) -> str:
     Returns:
         Safe collection name for MongoDB
     """
-    # First, replace all whitespace characters with underscore
-    safe_competition = re.sub(r'\s+', '_', competition.strip())
-    safe_season = re.sub(r'\s+', '_', season.strip())
-    safe_group = re.sub(r'\s+', '_', group.strip())
-
-    # Replace invalid MongoDB characters and common problematic characters
-    pattern = r'[\\/:*?"<>|.$\x00-\x1F\x7F]'
-    safe_competition = re.sub(pattern, '_', safe_competition)
-    safe_season = re.sub(pattern, '_', safe_season)
-    safe_group = re.sub(pattern, '_', safe_group)
-
-    # Collapse multiple underscores into one
-    safe_competition = re.sub(r'_+', '_', safe_competition)
-    safe_season = re.sub(r'_+', '_', safe_season)
-    safe_group = re.sub(r'_+', '_', safe_group)
-
-    # Remove leading/trailing underscores
-    safe_competition = safe_competition.strip('_')
-    safe_season = safe_season.strip('_')
-    safe_group = safe_group.strip('_')
-
-    collection_name = f"{safe_competition}_{safe_season}_{safe_group}"
+    safe_parts = [_sanitize_component(p) for p in (competition, season, group)]
+    collection_name = "_".join(safe_parts)
 
     # Ensure the name doesn't start with 'system.'
     if collection_name.lower().startswith('system.'):

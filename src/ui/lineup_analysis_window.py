@@ -108,7 +108,7 @@ class LineupAnalysisWindow(QMainWindow):
         
         # Team selector
         team_label = QLabel("Equipo:")
-        team_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        team_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(team_label)
         
         self.team_combo = QComboBox()
@@ -124,7 +124,7 @@ class LineupAnalysisWindow(QMainWindow):
         
         # Combination size selector
         size_label = QLabel("Tamaño:")
-        size_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        size_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(size_label)
         
         self.size_combo = QComboBox()
@@ -137,7 +137,7 @@ class LineupAnalysisWindow(QMainWindow):
         
         # Period selector
         period_label = QLabel("Período:")
-        period_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        period_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(period_label)
         
         self.period_combo = QComboBox()
@@ -152,7 +152,7 @@ class LineupAnalysisWindow(QMainWindow):
         
         # Statistic selector
         stat_label = QLabel("Estadística:")
-        stat_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        stat_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(stat_label)
         
         self.stat_combo = QComboBox()
@@ -230,7 +230,7 @@ class LineupAnalysisWindow(QMainWindow):
         lineups_layout.setContentsMargins(0, 0, 0, 0)
         
         lineups_header = QLabel("Mejores y Peores Quintetos")
-        lineups_header.setStyleSheet("font-weight: bold; font-size: 16px;")
+        lineups_header.setStyleSheet("font-weight: bold; font-size: 12pt;")
         lineups_layout.addWidget(lineups_header)
         
         self.lineups_table = QTableWidget()
@@ -264,7 +264,7 @@ class LineupAnalysisWindow(QMainWindow):
         frequency_layout.setContentsMargins(0, 0, 0, 0)
         
         frequency_header = QLabel("Frecuencia de Aparición por Jugadora")
-        frequency_header.setStyleSheet("font-weight: bold; font-size: 16px;")
+        frequency_header.setStyleSheet("font-weight: bold; font-size: 12pt;")
         frequency_layout.addWidget(frequency_header)
         
         self.frequency_table = QTableWidget()

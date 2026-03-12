@@ -23,6 +23,8 @@ from .team_utils import get_team_data_by_name, get_team_index_in_document
 from .stats_calculator import StatsCalculator
 from .stats_exporter import StatsExporter
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 class WeeklyReportGenerator(QObject):
     """Generate comprehensive weekly reports using existing UI components."""
@@ -419,7 +421,7 @@ class WeeklyReportGenerator(QObject):
                 return
 
             # Detect format
-            is_fbcyl = self.collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(self.collection_name)
 
             # Find team data
             team_data = None

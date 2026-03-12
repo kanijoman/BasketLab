@@ -2,6 +2,8 @@
 
 from typing import List, Dict, Optional
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 def get_available_teams_from_collection(db_handler, collection_name: str) -> List[Dict]:
     """
@@ -24,7 +26,7 @@ def get_available_teams_from_collection(db_handler, collection_name: str) -> Lis
             return []
 
         # Detect if this is FBCYL format
-        is_fbcyl = collection_name.startswith('FBCYL_')
+        is_fbcyl = _is_fbcyl(collection_name)
 
         documents = list(collection.find({}))
         teams_dict = {}

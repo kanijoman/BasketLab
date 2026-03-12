@@ -27,6 +27,8 @@ from datetime import datetime
 from .advanced_stats_calculator import AdvancedStatsCalculator
 from .player_stats_table_populator import PlayerStatsTablePopulator
 from shotcharts.shot_visualizer import ShotChartVisualizer
+
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
 from shotcharts.zone_analysis import ZoneAnalyzer
 from visualization.radar_chart import RadarChart
 from .report_document_builder import ReportDocumentBuilder
@@ -577,7 +579,7 @@ class ScoutingReportGenerator:
             player_name = player.get('player_name', '')
 
             # Detectar si es FEB o FBCYL basándonos en el collection_name
-            is_fbcyl = self.collection_name and self.collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(self.collection_name)
 
             # Filtrar tiros según la competición
             player_shots = []

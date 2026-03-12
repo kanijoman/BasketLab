@@ -75,7 +75,7 @@ class InOutAnalysisWindow(QMainWindow):
         controls_layout = QHBoxLayout()
         
         team_label = QLabel("Equipo:")
-        team_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        team_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(team_label)
         
         self.team_combo = QComboBox()
@@ -92,7 +92,7 @@ class InOutAnalysisWindow(QMainWindow):
         
         # Add period selector ComboBox (reusing from TeamStatsWindow)
         period_label = QLabel("Período:")
-        period_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        period_label.setStyleSheet("font-weight: bold; font-size: 11pt;")
         controls_layout.addWidget(period_label)
         
         self.period_combo = QComboBox()

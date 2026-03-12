@@ -228,7 +228,7 @@ class AIAnalysisWindow(QMainWindow):
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
-                font-size: 14px;
+                font-size: 11pt;
                 font-weight: bold;
                 padding: 10px;
                 border-radius: 5px;
@@ -275,7 +275,7 @@ class AIAnalysisWindow(QMainWindow):
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
-                font-size: 14px;
+                font-size: 11pt;
                 font-weight: bold;
                 padding: 10px;
                 border-radius: 5px;

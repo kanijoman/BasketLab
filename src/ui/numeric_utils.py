@@ -1,59 +1,10 @@
 """Numeric utility functions for safe type conversions.
 
-This module provides consolidated utility functions for safely converting
-values to numeric types (int, float) with fallback defaults.
+Re-exports the canonical implementations from src.utils.numeric_utils.
+Kept here for backward compatibility with existing ``from .numeric_utils import``
+calls throughout src/ui/.
 """
 
+from src.utils.numeric_utils import safe_int, safe_float  # noqa: F401
 
-def safe_int(value, default=0) -> int:
-    """
-    Safely convert a value to int.
-
-    Args:
-        value: Value to convert (can be int, float, str, or None)
-        default: Default value to return if conversion fails
-
-    Returns:
-        Integer value or default if conversion fails
-
-    Examples:
-        >>> safe_int("123")
-        123
-        >>> safe_int(None)
-        0
-        >>> safe_int("abc", -1)
-        -1
-        >>> safe_int(45.7)
-        45
-    """
-    try:
-        return int(value) if value else default
-    except (ValueError, TypeError):
-        return default
-
-
-def safe_float(value, default=0.0) -> float:
-    """
-    Safely convert a value to float.
-
-    Args:
-        value: Value to convert (can be int, float, str, or None)
-        default: Default value to return if conversion fails
-
-    Returns:
-        Float value or default if conversion fails
-
-    Examples:
-        >>> safe_float("123.45")
-        123.45
-        >>> safe_float(None)
-        0.0
-        >>> safe_float("abc", -1.0)
-        -1.0
-        >>> safe_float(45)
-        45.0
-    """
-    try:
-        return float(value) if value is not None else default
-    except (ValueError, TypeError):
-        return default
+__all__ = ["safe_int", "safe_float"]

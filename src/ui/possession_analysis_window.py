@@ -14,6 +14,8 @@ from .ui_utils import set_app_icon
 from .stats_config import calculate_quartiles
 from .stats_exporter import StatsExporter
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 class PossessionAnalysisWindow(QMainWindow):
     """Window to display possession analysis statistics."""
@@ -36,7 +38,7 @@ class PossessionAnalysisWindow(QMainWindow):
         self.collection_name = collection_name
         self.db_handler = db_handler
         self.possession_data = []
-        self.is_fbcyl = collection_name.startswith('FBCYL_')
+        self.is_fbcyl = _is_fbcyl(collection_name)
         self.stats_exporter = StatsExporter(self)
 
         self.setup_ui()

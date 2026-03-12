@@ -16,6 +16,8 @@ from .numeric_utils import safe_float
 from .ui_utils import set_app_icon
 from .team_utils import get_team_index_in_document
 
+from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
 
 def normalize_player_name(full_name: str) -> str:
     """Normalize player name to initial + surnames (e.g., 'MARIA GONZALEZ GARCIA' -> 'M GONZALEZ GARCIA')."""
@@ -64,7 +66,7 @@ class AITeamSelector(QDialog):
 
         # Header
         header = QLabel("🤖 Análisis IA - Seleccione un Equipo")
-        header.setStyleSheet("font-size: 16px; font-weight: bold; padding: 10px;")
+        header.setStyleSheet("font-size: 12pt; font-weight: bold; padding: 10px;")
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(header)
 
@@ -128,7 +130,7 @@ class AITeamSelector(QDialog):
                 padding: 8px;
                 border: 2px solid #9C27B0;
                 border-radius: 5px;
-                font-size: 12px;
+                font-size: 9pt;
             }
             QLineEdit:focus {
                 border: 2px solid #7B1FA2;
@@ -243,7 +245,7 @@ class AITeamSelector(QDialog):
             collection = self.db_handler.connection.get_collection(self.collection_name)
 
             # Detect if FBCYL or FEB
-            is_fbcyl = self.collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(self.collection_name)
 
             if collection is not None:
                 if is_fbcyl:
@@ -884,7 +886,7 @@ class AITeamSelector(QDialog):
             collection = self.db_handler.connection.get_collection(self.collection_name)
 
             # Detect if FBCYL or FEB
-            is_fbcyl = self.collection_name.startswith('FBCYL_')
+            is_fbcyl = _is_fbcyl(self.collection_name)
 
             if collection is not None:
                 if is_fbcyl:
