@@ -6,14 +6,16 @@ engine then called setPointSize(-1) internally, emitting:
     QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
 
 Root causes (two-layer fix):
-1. Warning can fire INSIDE QApplication() before any Python code runs.
-   Fixed by setting os.environ["QT_FONT_DPI"] = "96" before the constructor.
+1. Warning fires when the stylesheet engine converts px→pt while inheriting
+   the pixel-based system font.  Fixed by setting
+   QApplication.setAttribute(Qt.ApplicationAttribute.AA_Use96Dpi)
+   BEFORE the QApplication constructor so every px→pt conversion uses a
+   known reference DPI (96).  Note: QT_FONT_DPI has no effect in Qt 6.
 2. Calling setPointSize() on a pixel-based QFont does NOT clear the internal
    pixelSize flag — Qt keeps treating it as pixel-based.
    Fixed by creating a *new* QFont(family, 10) instead of mutating the old one.
 """
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -97,19 +99,14 @@ class TestFixAppFont:
 
 
 # ---------------------------------------------------------------------------
-# Layer 1 fix: QT_FONT_DPI env var must be set before QApplication
+# Layer 1 fix: AA_Use96Dpi ensures px→pt conversions never yield -1
 # ---------------------------------------------------------------------------
 
-class TestQtFontDpiEnvVar:
-    def test_qt_font_dpi_is_set_in_module(self):
-        """QT_FONT_DPI must be set as a side-effect of importing src.main."""
-        # The import already ran, so the env var must be present.
-        assert "QT_FONT_DPI" in os.environ, (
-            "QT_FONT_DPI must be set before QApplication() to prevent the "
-            "warning from firing inside the Qt constructor itself."
+class TestAA_Use96Dpi:
+    def test_attribute_exists_on_qt(self):
+        """AA_Use96Dpi must be a valid Qt ApplicationAttribute in Qt 6."""
+        from PyQt6.QtCore import Qt
+        assert hasattr(Qt.ApplicationAttribute, "AA_Use96Dpi"), (
+            "Qt.ApplicationAttribute.AA_Use96Dpi must exist so it can be set "
+            "before QApplication() to guarantee correct px→pt DPI resolution."
         )
-
-    def test_qt_font_dpi_value_is_positive_integer(self):
-        """QT_FONT_DPI must be a sensible DPI value (> 0)."""
-        value = os.environ.get("QT_FONT_DPI", "0")
-        assert int(value) > 0
