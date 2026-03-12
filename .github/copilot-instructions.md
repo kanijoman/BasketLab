@@ -60,6 +60,13 @@
 3. Run full test suite if available (prevent regressions)
 4. Checklist: [ ] No exceptions [ ] Edge cases (empty/None/zero) [ ] FEB+FBCYL tested [ ] UI responsive (QThread) [ ] No regressions
 
+**Bug fixes → regression test (mandatory):**
+Every bug fix must be accompanied by a test that:
+- Reproduces the exact failure condition (name it `test_<symptom>_regression` or document the bug in the docstring)
+- Passes only after the fix is applied
+- Lives in `tests/` and is included in the same commit as the fix
+No fix is complete without its regression test.
+
 **Code reuse (check before writing):**
 - **Use libraries**: scipy/numpy/pandas for stats, requests for HTTP (don't reinvent)
 - **Scan codebase**: Use `grep_search`/`semantic_search` before creating functions
