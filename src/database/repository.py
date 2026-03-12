@@ -7,7 +7,7 @@ from .connection import MongoDBConnection
 from .aggregation import AggregationPipelineBuilder
 from .aggregation.fbcyl_pipeline import FBCYLPipelineBuilder
 
-from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 from .repository_inout import InOutRepositoryMixin
 from .repository_possession import PossessionRepositoryMixin

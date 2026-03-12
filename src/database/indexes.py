@@ -3,7 +3,7 @@
 from typing import Dict, List
 import pymongo
 
-from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 
 class IndexManager:

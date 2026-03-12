@@ -3,7 +3,7 @@
 from typing import Dict
 from pymongo.errors import PyMongoError
 
-from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 
 class PossessionRepositoryMixin:

@@ -8,7 +8,7 @@ and calculating league-wide quartiles for comparative analysis.
 import numpy as np
 from typing import Dict, List, Any, Optional
 
-from src.utils.numeric_utils import safe_float
+from utils.numeric_utils import safe_float
 
 
 class TeamStatsAggregator:
