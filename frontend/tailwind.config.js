@@ -4,22 +4,80 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // MetricsForAll brand colors (basketball orange + dark court)
+        // ── Surface palette ─────────────────────────────────────────────
+        surface: {
+          base:   '#0D1117',   // page background
+          raised: '#161B22',   // cards, panels
+          border: '#30363D',   // borders, dividers
+          hover:  '#1C2128',   // hover state
+        },
+        // ── Brand accent — court green ───────────────────────────────────
+        brand: {
+          50:   '#f0fdf4',
+          100:  '#dcfce7',
+          200:  '#bbf7d0',
+          400:  '#4ade80',
+          500:  '#22C55E',
+          600:  '#16a34a',
+          700:  '#15803d',
+          800:  '#166534',
+          900:  '#14532d',
+        },
+        // ── Secondary accent — analytics blue ───────────────────────────
+        accent: {
+          400:  '#60a5fa',
+          500:  '#3B82F6',
+          600:  '#2563eb',
+          700:  '#1d4ed8',
+        },
+        // ── Semantic feedback ────────────────────────────────────────────
+        up:     '#22C55E',   // trend up / positive
+        down:   '#EF4444',   // trend down / negative
+        warn:   '#F59E0B',   // warning / neutral trend
+        // ── Text hierarchy ───────────────────────────────────────────────
+        ink: {
+          primary:   '#E6EDF3',
+          secondary: '#8B949E',
+          muted:     '#484F58',
+        },
+        // ── Quartile coloring ────────────────────────────────────────────
+        q1: { bg: '#0d2818', text: '#4ade80' },  // best (green)
+        q2: { bg: '#132008', text: '#86efac' },
+        q3: { bg: '#271a08', text: '#fcd34d' },
+        q4: { bg: '#2e0f0f', text: '#f87171' },  // worst (red)
+        // ── Legacy aliases (keep existing pages compiling) ───────────────
         primary: {
-          50:  '#fff7ed',
-          100: '#ffedd5',
-          500: '#f97316',
-          600: '#ea580c',
-          700: '#c2410c',
+          50:  '#f0fdf4',
+          500: '#22C55E',
+          600: '#16a34a',
+          700: '#15803d',
         },
         court: {
-          950: '#0c1a0e',
-          900: '#14271a',
-          800: '#1c3524',
+          950: '#0D1117',
+          900: '#161B22',
+          800: '#1C2128',
         },
+      },
+      fontFamily: {
+        sans: ['Inter var', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
+      borderRadius: {
+        DEFAULT: '0.5rem',
+        card:    '0.75rem',
+        pill:    '9999px',
+      },
+      boxShadow: {
+        card:  '0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3)',
+        panel: '0 4px 24px rgba(0,0,0,.5)',
+        glow:  '0 0 12px rgba(34,197,94,.25)',
+      },
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(0.34,1.56,0.64,1)',
       },
     },
   },

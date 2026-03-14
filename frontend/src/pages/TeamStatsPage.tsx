@@ -1,156 +1,241 @@
-import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-} from '@tanstack/react-table'
-import { getTeamStats, type TeamStat } from '@/api/client'
+/**
+ * TeamStatsPage � season statistics for all teams in a collection.
+ *
+ * Tabs: B�sico | Avanzado | Rivales
+ * Filters: venue (home/away), result (won/lost)
+ * Quartile colouring via DataTable
+ * Export: CSV / PNG / PDF via DataTable > ExportButton
+ */
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { type ColumnDef } from '@tanstack/react-table'
+import { BarChart2, Shield, Zap } from 'lucide-react'
 
-const col = createColumnHelper<TeamStat>()
+import { useCollection } from '@/context/CollectionContext'
+import { getTeamStats, getTeamQuartiles, type TeamStat, type TeamFilters } from '@/api/client'
+import { fmt, fmtPct } from '@/lib/utils'
+import PageTransition from '@/components/ui/PageTransition'
+import FilterBar, { useFilters } from '@/components/ui/FilterBar'
+import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
+import StatCard from '@/components/ui/StatCard'
 
-const columns = [
-  col.accessor('team_name', { header: 'Equipo', size: 180 }),
-  col.accessor('games_played', { header: 'PJ', size: 55 }),
-  col.accessor('points_per_game', {
-    header: 'PPP',
-    size: 65,
-    cell: info => info.getValue()?.toFixed(1),
-  }),
-  col.accessor('field_goals_2_pct', {
-    header: 'T2%',
-    size: 65,
-    cell: info => `${(((info.getValue() as number) ?? 0) * 100).toFixed(1)}%`,
-  }),
-  col.accessor('field_goals_3_pct', {
-    header: 'T3%',
-    size: 65,
-    cell: info => `${(((info.getValue() as number) ?? 0) * 100).toFixed(1)}%`,
-  }),
-  col.accessor('free_throw_pct', {
-    header: 'TL%',
-    size: 65,
-    cell: info => `${(((info.getValue() as number) ?? 0) * 100).toFixed(1)}%`,
-  }),
-  col.accessor('rebounds_per_game', {
-    header: 'RPP',
-    size: 60,
-    cell: info => info.getValue()?.toFixed(1),
-  }),
-  col.accessor('assists_per_game', {
-    header: 'APP',
-    size: 60,
-    cell: info => info.getValue()?.toFixed(1),
-  }),
-  col.accessor('steals_per_game', {
-    header: 'ROBPP',
-    size: 70,
-    cell: info => info.getValue()?.toFixed(1),
-  }),
-  col.accessor('turnovers_per_game', {
-    header: 'PERPP',
-    size: 70,
-    cell: info => info.getValue()?.toFixed(1),
-  }),
+// -- Column factory helpers ----------------------------------------------------
+
+function numCol(
+  key: string,
+  header: string,
+  opts: { decimals?: number; pct?: boolean } = {},
+): ColumnDef<TeamStat, unknown> {
+  const { decimals = 1, pct = false } = opts
+  return {
+    id: key,
+    accessorKey: key,
+    header,
+    cell: ({ getValue }) => {
+      const v = getValue() as number | null | undefined
+      return pct ? fmtPct(v) : fmt(v, decimals)
+    },
+  }
+}
+
+function nameCol(): ColumnDef<TeamStat, unknown> {
+  return {
+    id: 'team_name',
+    accessorKey: 'team_name',
+    header: 'Equipo',
+    cell: ({ getValue }) => (
+      <span className="font-medium text-ink-primary whitespace-nowrap">
+        {getValue() as string}
+      </span>
+    ),
+    enableSorting: true,
+  }
+}
+
+// -- Column sets ---------------------------------------------------------------
+
+const BASIC_COLS: ColumnDef<TeamStat, unknown>[] = [
+  nameCol(),
+  numCol('total_games', 'PJ', { decimals: 0 }),
+  numCol('games_home', 'L', { decimals: 0 }),
+  numCol('games_away', 'V', { decimals: 0 }),
+  numCol('points_per_game', 'PPP'),
+  numCol('points_against_per_game', 'PPC'),
+  numCol('fg2_percentage', '%T2', { pct: true }),
+  numCol('fg3_percentage', '%T3', { pct: true }),
+  numCol('ft_percentage', '%TL', { pct: true }),
+  numCol('rebounds_per_game', 'Reb'),
+  numCol('assists_per_game', 'Ast'),
+  numCol('steals_per_game', 'Rob'),
+  numCol('turnovers_per_game', 'Perd'),
+  numCol('blocks_per_game', 'Tap'),
+  numCol('possessions_per_game', 'Pos'),
 ]
 
-/**
- * Team statistics table for one collection (season + group).
- * Supports column-click sorting via TanStack Table.
- */
+const ADVANCED_COLS: ColumnDef<TeamStat, unknown>[] = [
+  nameCol(),
+  numCol('total_games', 'PJ', { decimals: 0 }),
+  numCol('offensive_rating', 'OER'),
+  numCol('defensive_rating', 'DER'),
+  numCol('net_rating', 'Net'),
+  numCol('efg_percentage', 'eFG%', { pct: true }),
+  numCol('true_shooting', 'TS%', { pct: true }),
+  numCol('three_point_rate', '3Pr%', { pct: true }),
+  numCol('free_throw_rate', 'FTr%', { pct: true }),
+  numCol('turnover_rate', 'TOV%', { pct: true }),
+  numCol('offensive_rebound_rate', 'ROB%', { pct: true }),
+  numCol('defensive_rebound_rate', 'RD%', { pct: true }),
+  numCol('assist_fg_rate', 'AST/FG', { pct: true }),
+]
+
+/** Columns where lower is better (reversed Q colouring) */
+const REVERSE_BASIC = ['points_against_per_game', 'turnovers_per_game']
+const REVERSE_ADV   = ['defensive_rating', 'turnover_rate']
+
+// -- Helpers -------------------------------------------------------------------
+
+function buildQuartileMap(raw: Record<string, Record<string, number>>): QuartileMap {
+  const map: QuartileMap = {}
+  for (const [key, vals] of Object.entries(raw)) {
+    if (vals?.q1 != null && vals?.q2 != null && vals?.q3 != null) {
+      map[key] = [vals.q1, vals.q2, vals.q3]
+    }
+  }
+  return map
+}
+
+function mean(rows: TeamStat[], key: keyof TeamStat): number {
+  if (!rows.length) return 0
+  const sum = rows.reduce((s, r) => s + ((r[key] as number) ?? 0), 0)
+  return sum / rows.length
+}
+
+// -- Tabs config ---------------------------------------------------------------
+
+const TABS = [
+  { id: 'basic',    label: 'B�sico',   Icon: BarChart2 },
+  { id: 'advanced', label: 'Avanzado', Icon: Zap       },
+  { id: 'rivals',   label: 'Rivales',  Icon: Shield    },
+] as const
+type TabId = (typeof TABS)[number]['id']
+
+// -- Component -----------------------------------------------------------------
+
 export default function TeamStatsPage() {
-  const { collection } = useParams<{ collection: string }>()
-  const [stats, setStats] = useState<TeamStat[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [sorting, setSorting] = useState<SortingState>([])
+  const { collection } = useCollection()
+  const filters = useFilters()
+  const [tab, setTab] = useState<TabId>('basic')
 
-  useEffect(() => {
-    if (!collection) return
-    setLoading(true)
-    getTeamStats(collection)
-      .then(data => setStats(data.team_stats))
-      .catch(err => setError(err instanceof Error ? err.message : 'Error'))
-      .finally(() => setLoading(false))
-  }, [collection])
+  const apiFilters: TeamFilters = useMemo(() => ({
+    venue:  filters.venue  || undefined,
+    result: filters.result || undefined,
+    from:   filters.dateFrom || undefined,
+    to:     filters.dateTo   || undefined,
+  }), [filters])
 
-  const table = useReactTable({
-    data: stats,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+  const { data: statsData, isLoading: loadingStats } = useQuery({
+    queryKey: ['team-stats', collection?.name, apiFilters],
+    queryFn:  () => getTeamStats(collection!.name, apiFilters),
+    enabled:  Boolean(collection),
+    staleTime: 5 * 60_000,
   })
 
-  if (loading) return <p className="text-gray-500 mt-8 text-center">Cargando estadísticas…</p>
-  if (error) return <p className="text-red-600 mt-8 text-center">{error}</p>
+  const { data: quartilesRaw } = useQuery({
+    queryKey: ['team-quartiles', collection?.name],
+    queryFn:  () => getTeamQuartiles(collection!.name),
+    enabled:  Boolean(collection),
+    staleTime: 10 * 60_000,
+  })
+
+  const teamRows    = statsData?.team_stats ?? []
+  const rivalRows   = statsData?.opponent_stats ?? []
+  const quartileMap = useMemo(
+    () => (quartilesRaw ? buildQuartileMap(quartilesRaw) : {}),
+    [quartilesRaw],
+  )
+
+  const highlights = useMemo(() => ({
+    oer: mean(teamRows, 'offensive_rating'),
+    der: mean(teamRows, 'defensive_rating'),
+    net: mean(teamRows, 'net_rating'),
+    ppg: mean(teamRows, 'points_per_game'),
+  }), [teamRows])
+
+  const activeData = tab === 'rivals' ? rivalRows : teamRows
+  const activeCols = tab === 'advanced' ? ADVANCED_COLS : BASIC_COLS
+  const activeRev  = tab === 'advanced' ? REVERSE_ADV   : REVERSE_BASIC
+
+  if (!collection) {
+    return (
+      <PageTransition>
+        <p className="text-center text-ink-muted mt-16">
+          Selecciona una colecci�n para continuar.
+        </p>
+      </PageTransition>
+    )
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-court-950">Estadísticas de Equipo</h1>
-          <p className="text-gray-500 text-sm mt-1">{collection}</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            to={`/players/${collection}`}
-            className="bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors"
-          >
-            Jugadores →
-          </Link>
-          <Link
-            to={`/lineups/${collection}`}
-            className="bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors"
-          >
-            Quintetos →
-          </Link>
-        </div>
-      </div>
+    <PageTransition>
+      <div className="space-y-4">
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-court-950 text-white">
-            {table.getHeaderGroups().map(hg => (
-              <tr key={hg.id}>
-                {hg.headers.map(header => (
-                  <th
-                    key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    className="px-3 py-2 text-left font-semibold cursor-pointer select-none whitespace-nowrap hover:bg-court-800 transition-colors"
-                    style={{ width: header.getSize() }}
-                  >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getIsSorted() === 'asc' && ' ↑'}
-                    {header.column.getIsSorted() === 'desc' && ' ↓'}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {table.getRowModel().rows.map((row, i) => (
-              <tr
-                key={row.id}
-                className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50 hover:bg-orange-50 transition-colors'}
-              >
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="px-3 py-2 whitespace-nowrap">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Page header */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-ink-primary">Estad�sticas de Equipo</h1>
+            <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
+          </div>
+          <FilterBar showDate={false} />
+        </div>
+
+        {/* Highlight stat cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="OER Medio" value={fmt(highlights.oer)} accent="green" />
+          <StatCard label="DER Medio" value={fmt(highlights.der)} accent="blue"  />
+          <StatCard label="Net Medio" value={fmt(highlights.net)} accent={highlights.net >= 0 ? 'green' : 'red'} />
+          <StatCard label="PPP Medio" value={fmt(highlights.ppg)} />
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-surface-border">
+          {TABS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={[
+                'flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
+                tab === id
+                  ? 'border-brand-500 text-brand-400'
+                  : 'border-transparent text-ink-muted hover:text-ink-primary',
+              ].join(' ')}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Data table */}
+        <DataTable
+          columns={activeCols}
+          data={activeData}
+          quartiles={quartileMap}
+          reverseColumns={activeRev}
+          loading={loadingStats}
+          searchable
+          searchPlaceholder="Buscar equipo�"
+          exportOptions={{
+            filename:   `equipos_${tab}_${collection.name}`,
+            pdfTitle:   `Estad�sticas de Equipo � ${tab}`,
+            csvHeaders: activeCols.map(c => ({
+              key:   String((c as { accessorKey?: string }).accessorKey ?? c.id ?? ''),
+              label: String(c.header ?? ''),
+            })),
+            csvData: activeData,
+          }}
+        />
+
       </div>
-      <p className="text-gray-400 text-xs mt-2">
-        {stats.length} equipos · Haz clic en las columnas para ordenar
-      </p>
-    </div>
+    </PageTransition>
   )
 }

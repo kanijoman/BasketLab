@@ -2,8 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Inter variable font from Google Fonts (loaded in index.html) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    @apply h-full;
+  }
+
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply h-full bg-surface-base text-ink-primary antialiased;
+    font-feature-settings: "cv02","cv03","cv04","cv11";
+  }
+
+  #root {
+    @apply h-full;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar        { @apply w-1.5 h-1.5; }
+  ::-webkit-scrollbar-track  { @apply bg-surface-base; }
+  ::-webkit-scrollbar-thumb  { @apply bg-surface-border rounded-pill; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-muted; }
+
+  /* Focus ring */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-1 ring-offset-surface-base;
+  }
+}
+
+@layer components {
+  /* ── Card ──────────────────────────────────────────────────────── */
+  .card {
+    @apply bg-surface-raised border border-surface-border rounded-card shadow-card;
+  }
+
+  /* ── Table cells ────────────────────────────────────────────────── */
+  .table-cell-q1 { @apply bg-q1-bg text-q1-text; }
+  .table-cell-q2 { @apply bg-q2-bg text-q2-text; }
+  .table-cell-q3 { @apply bg-q3-bg text-q3-text; }
+  .table-cell-q4 { @apply bg-q4-bg text-q4-text; }
+
+  /* ── Trend badges ───────────────────────────────────────────────── */
+  .trend-great  { @apply text-brand-400 font-bold; }
+  .trend-good   { @apply text-brand-500; }
+  .trend-flat   { @apply text-ink-secondary; }
+  .trend-bad    { @apply text-warn; }
+  .trend-poor   { @apply text-down; }
+
+  /* ── Button variants ─────────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-brand-600 hover:bg-brand-500
+           text-white text-sm font-medium transition-colors shadow-sm;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-surface-hover hover:bg-surface-border
+           text-ink-primary text-sm font-medium transition-colors border border-surface-border;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded hover:bg-surface-hover
+           text-ink-secondary hover:text-ink-primary text-sm transition-colors;
+  }
+
+  /* ── Input ──────────────────────────────────────────────────────── */
+  .input {
+    @apply w-full bg-surface-base border border-surface-border rounded px-3 py-2 text-sm
+           text-ink-primary placeholder-ink-muted focus:border-brand-500 transition-colors;
+  }
+
+  /* ── Select ─────────────────────────────────────────────────────── */
+  .select {
+    @apply input appearance-none cursor-pointer;
   }
 }

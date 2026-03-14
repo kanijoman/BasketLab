@@ -16,6 +16,9 @@ from fastapi.testclient import TestClient
 from src.api.app import app
 from src.api.deps import get_db
 
+# All routes live under /api/v1/ after the versioning migration.
+V1 = "/api/v1"
+
 
 def _mock_db(
     team_stats=None,
@@ -88,37 +91,37 @@ class TestHealthCheck:
 
 class TestCollectionsRouter:
     def test_list_teams_returns_200(self, client):
-        r = client.get("/api/collections/?collection=FEB_LF2_2025_A")
+        r = client.get(f"{V1}/collections/?collection=FEB_LF2_2025_A")
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
     def test_list_teams_contains_expected_teams(self, client):
-        r = client.get("/api/collections/?collection=FEB_LF2_2025_A")
+        r = client.get(f"{V1}/collections/?collection=FEB_LF2_2025_A")
         assert "TeamA" in r.json()
 
     def test_list_teams_returns_404_when_empty(self):
         mock = _mock_db(all_teams=[], connected=True)
-        # Make count_documents return 0 to trigger 404
+        # Make count_documents return 0 to trigger 404 (collection not found)
         mock.connection.get_collection.return_value.count_documents.return_value = 0
         app.dependency_overrides[get_db] = lambda: mock
         c = TestClient(app)
         try:
-            r = c.get("/api/collections/?collection=NONEXISTENT")
+            r = c.get(f"{V1}/collections/?collection=NONEXISTENT")
             assert r.status_code == 404
         finally:
             app.dependency_overrides.clear()
 
     def test_detect_format_fbcyl(self, client):
-        r = client.get("/api/collections/format?collection=FBCYL_SE_2025_A")
+        r = client.get(f"{V1}/collections/format?collection=FBCYL_SE_2025_A")
         assert r.status_code == 200
         assert r.json()["is_fbcyl"] is True
 
     def test_detect_format_feb(self, client):
-        r = client.get("/api/collections/format?collection=FEB_LF2_2025_A")
+        r = client.get(f"{V1}/collections/format?collection=FEB_LF2_2025_A")
         assert r.json()["is_fbcyl"] is False
 
     def test_resolve_name_returns_collection_name(self, client):
-        r = client.get("/api/collections/resolve?competition=FEB&season=LF2_2025&group=A")
+        r = client.get(f"{V1}/collections/resolve?competition=FEB&season=LF2_2025&group=A")
         assert r.status_code == 200
         assert "collection_name" in r.json()
         assert "FEB" in r.json()["collection_name"]
@@ -130,28 +133,28 @@ class TestCollectionsRouter:
 
 class TestTeamsRouter:
     def test_get_team_stats_returns_200(self, client):
-        r = client.get("/api/teams/FEB_LF2_2025_A")
+        r = client.get(f"{V1}/teams/FEB_LF2_2025_A")
         assert r.status_code == 200
         data = r.json()
         assert "team_stats" in data
         assert "opponent_stats" in data
 
     def test_get_team_stats_with_venue_filter(self, client):
-        r = client.get("/api/teams/FEB_LF2_2025_A?venue=home")
+        r = client.get(f"{V1}/teams/FEB_LF2_2025_A?venue=home")
         assert r.status_code == 200
 
     def test_get_team_stats_with_result_filter(self, client):
-        r = client.get("/api/teams/FEB_LF2_2025_A?result=won")
+        r = client.get(f"{V1}/teams/FEB_LF2_2025_A?result=won")
         assert r.status_code == 200
 
     def test_quartiles_returns_200(self, client):
         with patch("src.services.team_stats_service.TeamStatsAggregator") as MockAgg:
             MockAgg.return_value.calculate_league_quartiles.return_value = {}
-            r = client.get("/api/teams/FEB_LF2_2025_A/quartiles")
+            r = client.get(f"{V1}/teams/FEB_LF2_2025_A/quartiles")
         assert r.status_code == 200
 
     def test_list_teams_endpoint_returns_list(self, client):
-        r = client.get("/api/teams/FEB_LF2_2025_A/teams")
+        r = client.get(f"{V1}/teams/FEB_LF2_2025_A/teams")
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
@@ -162,16 +165,16 @@ class TestTeamsRouter:
 
 class TestPlayersRouter:
     def test_get_player_stats_returns_200(self, client):
-        r = client.get("/api/players/FEB_LF2_2025_A")
+        r = client.get(f"{V1}/players/FEB_LF2_2025_A")
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
     def test_inout_analysis_returns_200(self, client):
-        r = client.get("/api/players/FEB_LF2_2025_A/inout/12345")
+        r = client.get(f"{V1}/players/FEB_LF2_2025_A/inout/12345")
         assert r.status_code == 200
 
     def test_together_analysis_returns_200(self, client):
-        r = client.get("/api/players/FEB_LF2_2025_A/together/12/34")
+        r = client.get(f"{V1}/players/FEB_LF2_2025_A/together/12/34")
         assert r.status_code == 200
 
 
@@ -181,18 +184,18 @@ class TestPlayersRouter:
 
 class TestLineupsRouter:
     def test_lineup_analysis_returns_200(self, client):
-        r = client.get("/api/lineups/FEB_LF2_2025_A/123?team_name=Alpha")
+        r = client.get(f"{V1}/lineups/FEB_LF2_2025_A/123?team_name=Alpha")
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
     def test_lineup_size_validation(self, client):
         # size=1 is below minimum (2), should fail with 422
-        r = client.get("/api/lineups/FEB_LF2_2025_A/123?team_name=Alpha&size=1")
+        r = client.get(f"{V1}/lineups/FEB_LF2_2025_A/123?team_name=Alpha&size=1")
         assert r.status_code == 422
 
     def test_lineup_size_too_large(self, client):
         # size=6 is above maximum (5), should fail with 422
-        r = client.get("/api/lineups/FEB_LF2_2025_A/123?team_name=Alpha&size=6")
+        r = client.get(f"{V1}/lineups/FEB_LF2_2025_A/123?team_name=Alpha&size=6")
         assert r.status_code == 422
 
 
@@ -202,13 +205,13 @@ class TestLineupsRouter:
 
 class TestDbDisconnected:
     def test_teams_returns_503_when_disconnected(self, disconnected_client):
-        r = disconnected_client.get("/api/teams/FEB_LF2_2025_A")
+        r = disconnected_client.get(f"{V1}/teams/FEB_LF2_2025_A")
         assert r.status_code == 503
 
     def test_players_returns_503_when_disconnected(self, disconnected_client):
-        r = disconnected_client.get("/api/players/FEB_LF2_2025_A")
+        r = disconnected_client.get(f"{V1}/players/FEB_LF2_2025_A")
         assert r.status_code == 503
 
     def test_lineups_returns_503_when_disconnected(self, disconnected_client):
-        r = disconnected_client.get("/api/lineups/FEB_LF2_2025_A/123?team_name=T")
+        r = disconnected_client.get(f"{V1}/lineups/FEB_LF2_2025_A/123?team_name=T")
         assert r.status_code == 503
