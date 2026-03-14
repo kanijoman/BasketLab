@@ -1,4 +1,4 @@
-"""Development entry point for the MetricsForAll FastAPI server.
+"""Development entry point for the BasketLab FastAPI server.
 
 Usage::
 

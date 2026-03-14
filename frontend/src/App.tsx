@@ -1,5 +1,5 @@
 /**
- * Router config for MetricsForAll.
+ * Router config for BasketLab.
  *
  * Route structure:
  *   /                         → HomePage (collection selector)

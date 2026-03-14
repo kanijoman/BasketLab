@@ -1,10 +1,10 @@
-# MetricsForAll
+# BasketLab
 
 Aplicación de análisis de baloncesto para análisis estadístico avanzado utilizando datos de la Federación Española de Baloncesto (FEB) y federaciones regionales.
 
 ## Descripción General
 
-MetricsForAll es una aplicación para el análisis estadístico avanzado de baloncesto utilizando información proporcionada por la FEB (Federación Española de Baloncesto) y varias federaciones regionales en España. La funcionalidad básica incluye:
+BasketLab es una aplicación para el análisis estadístico avanzado de baloncesto utilizando información proporcionada por la FEB (Federación Española de Baloncesto) y varias federaciones regionales en España. La funcionalidad básica incluye:
 
 - **Scraper de datos** desde fuentes configuradas donde se alojan las competiciones (actualmente solo FEB)
 - **Recuperación de información estructurada** y almacenamiento en una base de datos en la nube (MongoDB, orientada a JSON)
@@ -242,14 +242,16 @@ El análisis IN/OUT compara el rendimiento del equipo cuando un jugador específ
 
 ### 📥 Opción 1: Descargar Ejecutable (Recomendado)
 
-**La forma más fácil de usar MetricsForAll es descargar el ejecutable pre-compilado:**
+**La forma más fácil de usar BasketLab es descargar el ejecutable pre-compilado:**
 
-1. Ve a la página de [Releases](https://github.com/kanijoman/MetricsForAll/releases)
+> ⚠️ **Cliente de escritorio (deprecado)** — La UI PyQt6 sigue operativa pero BasketLab está evolucionando hacia una aplicación web. El despliegue web se documentará próximamente.
+
+1. Ve a la página de [Releases](https://github.com/kanijoman/BasketLab/releases)
 2. Descarga el archivo según tu sistema operativo:
-   - **Windows**: `MetricsForAll-Windows.zip`
-   - **macOS**: `MetricsForAll-macOS.dmg`
+   - **Windows**: `BasketLab-Windows.zip`
+   - **macOS**: `BasketLab-macOS.dmg`
 3. Extrae/Instala y ejecuta:
-   - **Windows**: Extrae el ZIP y ejecuta `MetricsForAll.exe`
+   - **Windows**: Extrae el ZIP y ejecuta `BasketLab.exe`
    - **macOS**: Abre el DMG y arrastra la app a Aplicaciones
 
 **Requisitos:**
@@ -264,8 +266,8 @@ El análisis IN/OUT compara el rendimiento del equipo cuando un jugador específ
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/kanijoman/MetricsForAll.git
-cd MetricsForAll
+git clone https://github.com/kanijoman/BasketLab.git
+cd BasketLab
 
 # Instalar dependencias
 pip install -r requirements.txt
@@ -292,9 +294,9 @@ Si quieres crear tu propio ejecutable:
 pip install pyinstaller
 
 # Compilar
-pyinstaller MetricsForAll.spec
+pyinstaller BasketLab.spec
 
-# El ejecutable estará en dist/MetricsForAll/
+# El ejecutable estará en dist/BasketLab/
 ```
 
 ## Uso
@@ -302,8 +304,8 @@ pyinstaller MetricsForAll.spec
 ### Ejecutar la Aplicación
 
 **Si descargaste el ejecutable:**
-- Windows: Doble clic en `MetricsForAll.exe`
-- macOS: Abrir `MetricsForAll.app` desde Aplicaciones
+- Windows: Doble clic en `BasketLab.exe`
+- macOS: Abrir `BasketLab.app` desde Aplicaciones
 
 **Si ejecutas desde código fuente:**
 ```bash

@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec file for MetricsForAll
+PyInstaller spec file for BasketLab
 Builds a standalone executable for Windows and macOS
 """
 
@@ -43,8 +43,8 @@ certifi_datas = collect_data_files('certifi')
 
 # Define data files to include
 datas = [
-    ('resources/MfA.ico', 'resources'),
-    ('resources/MfA.png', 'resources'),
+    ('resources/BasketLab.ico', 'resources'),
+    ('resources/BasketLab.png', 'resources'),
     ('src/JSON_samples', 'JSON_samples'),
     ('src/database/db_credentials.txt', 'database'),  # Include DB credentials in distribution
 ]
@@ -107,7 +107,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='MetricsForAll',
+    name='BasketLab',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -120,16 +120,16 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='resources/MfA.ico' if sys.platform == 'win32' else 'resources/MfA.png',
+    icon='resources/BasketLab.ico' if sys.platform == 'win32' else 'resources/BasketLab.png',
 )
 
 # For macOS: Create .app bundle
 if sys.platform == 'darwin':
     app = BUNDLE(
         exe,
-        name='MetricsForAll.app',
-        icon='resources/MfA.png',
-        bundle_identifier='com.metricsforall.app',
+        name='BasketLab.app',
+        icon='resources/BasketLab.png',
+        bundle_identifier='com.basketlab.app',
         info_plist={
             'NSPrincipalClass': 'NSApplication',
             'NSHighResolutionCapable': 'True',

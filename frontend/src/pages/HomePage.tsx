@@ -11,7 +11,7 @@ import { Clock, ChevronRight, AlertCircle } from 'lucide-react'
 import { resolveCollectionName } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 
-const RECENTS_KEY = 'mfa-recent-collections'
+const RECENTS_KEY = 'basketlab-recent-collections'
 const MAX_RECENTS = 5
 
 interface RecentCollection {
@@ -114,12 +114,12 @@ export default function HomePage() {
             <div className="flex items-center justify-center gap-3 mb-4">
               <img
                 src="/logo.png"
-                alt="MetricsForAll"
+                alt="BasketLab"
                 className="h-12 w-12 rounded-xl shadow-card"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
               <h1 className="text-3xl font-bold text-ink-primary tracking-tight">
-                MetricsForAll
+                BasketLab
               </h1>
             </div>
             <p className="text-ink-secondary text-sm">

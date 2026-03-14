@@ -1,7 +1,7 @@
-# Claude AI Development Context - MetricsForAll
+# Claude AI Development Context - BasketLab
 
 ## Project Identity
-**MetricsForAll** - PyQt6 basketball statistics analyzer (Spanish leagues: FEB/FBCYL). MongoDB + matplotlib + multi-provider AI. PoC phase (LF2).
+**BasketLab** - PyQt6 basketball statistics analyzer (Spanish leagues: FEB/FBCYL). MongoDB + matplotlib + multi-provider AI. PoC phase (LF2).
 **Stack:** Python 3.8+ | PyQt6 | MongoDB | matplotlib | fpdf2 | python-docx | Gemini/OpenAI/Groq
 
 ## Your Role as Claude
@@ -183,7 +183,7 @@ analysis = analyzer.analyze_team("Team", formatted, "own", provider="groq")
 .\build_windows.ps1               # Build EXE
 python src/main.py                # Run dev
 # DB creds: src/database/db_credentials.txt (format: mongodb+srv://user:pass@cluster/db)
-# AI keys: ~/.metricsforall/config.txt
+# AI keys: ~/.basketlab/config.txt
 ```
 
 ---

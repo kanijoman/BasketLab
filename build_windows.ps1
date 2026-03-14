@@ -1,8 +1,9 @@
-# Build script for Windows - MetricsForAll
+# Build script for Windows - BasketLab
+# DEPRECATED: Desktop build only. Web deployment to be configured separately.
 # Run this script to test the build locally before creating a release
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  MetricsForAll - Windows Build Script" -ForegroundColor Cyan
+Write-Host "  BasketLab - Windows Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -17,8 +18,8 @@ try {
 }
 
 # Check if in correct directory
-if (-not (Test-Path "MetricsForAll.spec")) {
-    Write-Host "✗ Error: MetricsForAll.spec not found." -ForegroundColor Red
+if (-not (Test-Path "BasketLab.spec")) {
+    Write-Host "✗ Error: BasketLab.spec not found." -ForegroundColor Red
     Write-Host "  Please run this script from the project root directory." -ForegroundColor Red
     exit 1
 }
@@ -56,23 +57,23 @@ if (Test-Path "dist") {
 Write-Host ""
 Write-Host "Building executable with PyInstaller..." -ForegroundColor Yellow
 Write-Host "This may take several minutes..." -ForegroundColor Gray
-pyinstaller MetricsForAll.spec
+pyinstaller BasketLab.spec
 
 # Check if build was successful
-if (Test-Path "dist\MetricsForAll\MetricsForAll.exe") {
+if (Test-Path "dist\BasketLab\BasketLab.exe") {
     Write-Host ""
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "  ✓ Build completed successfully!" -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Executable location: dist\MetricsForAll\MetricsForAll.exe" -ForegroundColor Cyan
+    Write-Host "Executable location: dist\BasketLab\BasketLab.exe" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "To test the executable:" -ForegroundColor Yellow
-    Write-Host "  cd dist\MetricsForAll" -ForegroundColor Gray
-    Write-Host "  .\MetricsForAll.exe" -ForegroundColor Gray
+    Write-Host "  cd dist\BasketLab" -ForegroundColor Gray
+    Write-Host "  .\BasketLab.exe" -ForegroundColor Gray
     Write-Host ""
     Write-Host "To create a distribution archive:" -ForegroundColor Yellow
-    Write-Host "  Compress-Archive -Path dist\MetricsForAll\* -DestinationPath MetricsForAll-Windows.zip" -ForegroundColor Gray
+    Write-Host "  Compress-Archive -Path dist\BasketLab\* -DestinationPath BasketLab-Windows.zip" -ForegroundColor Gray
     Write-Host ""
 } else {
     Write-Host ""

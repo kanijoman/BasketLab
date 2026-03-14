@@ -1,1 +1,1 @@
-"""MetricsForAll FastAPI application package."""
+"""BasketLab FastAPI application package."""

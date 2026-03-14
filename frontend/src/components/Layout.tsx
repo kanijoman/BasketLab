@@ -27,8 +27,8 @@ function Header() {
         to="/"
         className="flex items-center gap-2 font-bold text-brand-500 hover:text-brand-400 transition-colors shrink-0"
       >
-        <img src="/logo.png" alt="MetricsForAll" className="h-7 w-7 rounded" onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
-        <span className="text-sm tracking-tight hidden sm:block">MetricsForAll</span>
+        <img src="/logo.png" alt="BasketLab" className="h-7 w-7 rounded" onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+        <span className="text-sm tracking-tight hidden sm:block">BasketLab</span>
       </Link>
 
       {/* Breadcrumb */}

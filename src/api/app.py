@@ -1,4 +1,4 @@
-"""FastAPI application for MetricsForAll basketball analytics.
+"""FastAPI application for BasketLab basketball analytics.
 
 Exposes the existing service layer (`src/services/`) over HTTP, allowing a
 React front-end (or any HTTP client) to consume basketball statistics without
@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.routers import collections, teams, players, lineups
 
 app = FastAPI(
-    title="MetricsForAll API",
+    title="BasketLab API",
     description="Basketball statistics API — FEB / FBCYL Spanish leagues",
     version="1.0.0",
     docs_url="/docs",
@@ -57,4 +57,4 @@ app.include_router(lineups.router,     prefix="/api/v1/lineups",     tags=["line
 @app.get("/", tags=["health"])
 def root():
     """Health-check endpoint."""
-    return {"status": "ok", "app": "MetricsForAll API"}
+    return {"status": "ok", "app": "BasketLab API"}

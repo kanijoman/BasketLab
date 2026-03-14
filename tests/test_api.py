@@ -82,7 +82,7 @@ class TestHealthCheck:
 
     def test_root_returns_app_name(self, client):
         r = client.get("/")
-        assert "MetricsForAll" in r.json()["app"]
+        assert "BasketLab" in r.json()["app"]
 
 
 # ---------------------------------------------------------------------------

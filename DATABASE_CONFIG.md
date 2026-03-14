@@ -1,4 +1,4 @@
-# MetricsForAll - Configuración de Base de Datos
+# BasketLab - Configuración de Base de Datos
 
 Este archivo contiene instrucciones para desarrolladores sobre la configuración de la base de datos.
 
@@ -35,7 +35,7 @@ export MONGODB_CONNECTION_STRING="mongodb+srv://usuario:contraseña@cluster.mong
 
 ### Construcción del Ejecutable
 
-El archivo `db_credentials.txt` se incluye automáticamente en el ejecutable durante el proceso de build con PyInstaller (ver `MetricsForAll.spec`).
+El archivo `db_credentials.txt` se incluye automáticamente en el ejecutable durante el proceso de build con PyInstaller (ver `BasketLab.spec`).
 
 ### Prioridad de Configuración
 

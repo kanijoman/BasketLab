@@ -1,5 +1,7 @@
 # 🚀 Guía de Distribución de Ejecutables
 
+> ⚠️ **Nota**: Esta guía describe el proceso de distribución del **cliente de escritorio (deprecado)**. BasketLab está migrando a una aplicación web; la documentación de despliegue web se añadirá próximamente.
+
 Esta guía explica cómo crear releases con ejecutables automáticos para Windows y macOS.
 
 ## 📦 Sistema de Build Automático
@@ -15,7 +17,7 @@ Este proyecto usa **GitHub Actions** para compilar automáticamente ejecutables 
 3. Click en **"Create a new release"** o **"Draft a new release"**
 4. En **"Choose a tag"**, escribe un nuevo tag (ej: `v1.0.0`, `v1.1.0`)
 5. Click en **"Create new tag: v1.0.0 on publish"**
-6. Escribe un título para el release (ej: "MetricsForAll v1.0.0")
+6. Escribe un título para el release (ej: "BasketLab v1.0.0")
 7. Agrega notas del release (opcional pero recomendado)
 8. Click en **"Publish release"**
 
@@ -42,12 +44,12 @@ Cuando publicas un release:
    - Instala Python 3.11
    - Instala dependencias
    - Ejecuta PyInstaller
-   - Crea `MetricsForAll-Windows.zip`
+   - Crea `BasketLab-Windows.zip`
 3. **Compila en macOS**:
    - Instala Python 3.11
    - Instala dependencias
    - Ejecuta PyInstaller
-   - Crea `MetricsForAll-macOS.dmg`
+   - Crea `BasketLab-macOS.dmg`
 4. **Sube los ejecutables al release automáticamente**
 
 **Tiempo estimado**: 10-15 minutos
@@ -68,11 +70,11 @@ Cuando publicas un release:
 .\build_windows.ps1
 
 # El ejecutable estará en:
-# dist\MetricsForAll\MetricsForAll.exe
+# dist\BasketLab\BasketLab.exe
 
 # Probar
-cd dist\MetricsForAll
-.\MetricsForAll.exe
+cd dist\BasketLab
+.\BasketLab.exe
 ```
 
 ### macOS
@@ -83,10 +85,10 @@ pip install -r requirements.txt
 pip install pyinstaller
 
 # Compilar
-pyinstaller MetricsForAll.spec
+pyinstaller BasketLab.spec
 
 # Probar
-open dist/MetricsForAll.app
+open dist/BasketLab.app
 ```
 
 ## 📋 Checklist Pre-Release
@@ -111,17 +113,17 @@ Antes de crear un release, asegúrate de:
 3. Revisa los logs para ver el error
 4. Errores comunes:
    - **Dependencia faltante**: Agregar a `requirements.txt`
-   - **Archivo no encontrado**: Verificar rutas en `MetricsForAll.spec`
+   - **Archivo no encontrado**: Verificar rutas en `BasketLab.spec`
    - **Importación fallida**: Agregar módulo a `hiddenimports` en spec
 
 ### El ejecutable no inicia
 
 1. Verificar que MongoDB esté instalado y corriendo
 2. En Windows: Ejecutar desde CMD/PowerShell para ver mensajes de error
-3. En macOS: Abrir desde Terminal: `open dist/MetricsForAll.app`
+3. En macOS: Abrir desde Terminal: `open dist/BasketLab.app`
 4. Revisar logs en:
-   - Windows: `%TEMP%\MetricsForAll\`
-   - macOS: `~/Library/Logs/MetricsForAll/`
+   - Windows: `%TEMP%\BasketLab\`
+   - macOS: `~/Library/Logs/BasketLab/`
 
 ## 📝 Notas Importantes
 

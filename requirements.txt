@@ -1,4 +1,4 @@
-# MetricsForAll - Dependencies
+# BasketLab - Dependencies
 
 # GUI Framework
 PyQt6>=6.4.0

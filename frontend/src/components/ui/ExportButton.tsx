@@ -101,7 +101,7 @@ async function downloadPdf(
   pdf.text(title, 14, 16)
   pdf.setFontSize(9)
   pdf.setTextColor(139, 148, 158)
-  pdf.text(`MetricsForAll · ${new Date().toLocaleDateString('es-ES')}`, 14, 22)
+  pdf.text(`BasketLab · ${new Date().toLocaleDateString('es-ES')}`, 14, 22)
 
   if (ref?.current) {
     const el = ref.current
@@ -141,7 +141,7 @@ async function downloadPdf(
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function ExportButton({
-  filename = 'metricsforall-export',
+  filename = 'basketlab-export',
   csvData,
   csvHeaders,
   captureRef,

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120">
+  <!-- Basketball icon background -->
+  <rect x="10" y="10" width="100" height="100" rx="20.0" fill="#1A2744"/>
+  <circle cx="60.0" cy="60.0" r="35.0" fill="#E8651A"/>
+  <circle cx="60.0" cy="60.0" r="35.0" fill="none" stroke="#B5441A" stroke-width="3"/>
+  <path d="M 25.0 60.0 Q 60.0 50.2 95.0 60.0" fill="none" stroke="#B5441A" stroke-width="3"/>
+  <path d="M 60.0 25.0 Q 45.3 60.0 60.0 95.0" fill="none" stroke="#B5441A" stroke-width="3"/>
+  <path d="M 60.0 25.0 Q 74.7 60.0 60.0 95.0" fill="none" stroke="#B5441A" stroke-width="3"/>
+  <!-- Wordmark -->
+  <text x="130" y="70"
+        font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif"
+        font-size="52" font-weight="700" fill="#FFFFFF">BasketLab</text>
+  <!-- Tagline -->
+  <text x="132" y="96"
+        font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif"
+        font-size="17" fill="#8BA0BB">Análisis estadístico · FEB / FBCYL</text>
+</svg>

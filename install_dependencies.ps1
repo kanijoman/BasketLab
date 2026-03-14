@@ -1,7 +1,7 @@
-# Script de instalación de dependencias para MetricsForAll
+# Script de instalación de dependencias para BasketLab
 # Incluye la nueva librería python-docx para generación de informes DOCX
 
-Write-Host "Instalando dependencias de MetricsForAll..." -ForegroundColor Green
+Write-Host "Instalando dependencias de BasketLab..." -ForegroundColor Green
 Write-Host ""
 
 # Actualizar pip

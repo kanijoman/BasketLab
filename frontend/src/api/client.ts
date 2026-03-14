@@ -1,5 +1,5 @@
 /**
- * MetricsForAll API client — v1
+ * BasketLab API client — v1
  *
  * All requests target /api/v1/ (versioned for future auth middleware).
  * In development the Vite proxy forwards /api/* → localhost:8000.

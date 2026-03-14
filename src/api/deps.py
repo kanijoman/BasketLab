@@ -1,4 +1,4 @@
-"""FastAPI dependency providers for MetricsForAll.
+"""FastAPI dependency providers for BasketLab.
 
 All route handlers that need a database connection should declare a
 parameter ``db: MongoDBHandler = Depends(get_db)`` so the handler is

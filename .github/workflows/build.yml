@@ -1,3 +1,5 @@
+# DEPRECATED: This workflow builds the desktop (PyQt6) executables.
+# Web CI/CD will be configured separately once the deployment target is decided.
 name: Build Executables
 
 on:
@@ -26,22 +28,22 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller MetricsForAll.spec
+        pyinstaller BasketLab.spec
 
     - name: Create DMG (macOS)
       run: |
         # Create a temporary directory for the DMG contents
         mkdir -p dmg_contents
-        cp -r dist/MetricsForAll.app dmg_contents/
+        cp -r dist/BasketLab.app dmg_contents/
 
         # Create DMG
-        hdiutil create -volname "MetricsForAll" -srcfolder dmg_contents -ov -format UDZO MetricsForAll-macOS.dmg
+        hdiutil create -volname "BasketLab" -srcfolder dmg_contents -ov -format UDZO BasketLab-macOS.dmg
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: MetricsForAll-macOS
-        path: MetricsForAll-macOS.dmg
+        name: BasketLab-macOS
+        path: BasketLab-macOS.dmg
 
   create-release:
     needs: [build-macos]
@@ -53,18 +55,18 @@ jobs:
     - name: Download macOS artifact
       uses: actions/download-artifact@v4
       with:
-        name: MetricsForAll-macOS
+        name: BasketLab-macOS
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          MetricsForAll-macOS.dmg
+          BasketLab-macOS.dmg
         body: |
           ## 📦 Descargas
 
-          - **macOS**: Descarga `MetricsForAll-macOS.dmg`, abre y arrastra la app a Aplicaciones
-          - **Windows**: Descarga `MetricsForAll.exe` adjunto manualmente al release
+          - **macOS**: Descarga `BasketLab-macOS.dmg`, abre y arrastra la app a Aplicaciones
+          - **Windows**: Descarga `BasketLab.exe` adjunto manualmente al release
 
           ## ⚙️ Requisitos
 
@@ -79,6 +81,6 @@ jobs:
 
           ---
 
-          macOS build generado automáticamente por GitHub Actions
+          macOS build generado automáticamente por GitHub Actions (cliente de escritorio — deprecado)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

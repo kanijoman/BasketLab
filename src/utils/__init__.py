@@ -1,4 +1,4 @@
-"""Shared utility functions for the MetricsForAll project.
+"""Shared utility functions for the BasketLab project.
 
 This package supersedes the top-level ``src/utils.py`` module (which is now
 shadowed by this package directory).  Legacy functions previously defined in

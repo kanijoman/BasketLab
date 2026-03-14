@@ -1,4 +1,4 @@
-"""Pytest configuration for MetricsForAll tests."""
+"""Pytest configuration for BasketLab tests."""
 
 import json
 import sys
@@ -45,7 +45,7 @@ def fbcyl_game_doc():
 def mock_feb_db(feb_game_doc):
     """In-memory MongoDB client with one FEB game inserted."""
     client = mongomock.MongoClient()
-    db = client["metricsforall_test"]
+    db = client["basketlab_test"]
     db["FEB_LF2_2025_A"].insert_one(dict(feb_game_doc))
     return db
 
@@ -54,7 +54,7 @@ def mock_feb_db(feb_game_doc):
 def mock_fbcyl_db(fbcyl_game_doc):
     """In-memory MongoDB client with one FBCYL game inserted."""
     client = mongomock.MongoClient()
-    db = client["metricsforall_test"]
+    db = client["basketlab_test"]
     db["FBCYL_SE_2025_A"].insert_one(dict(fbcyl_game_doc))
     return db
 

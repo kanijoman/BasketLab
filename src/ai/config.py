@@ -40,15 +40,35 @@ class AnalysisConfig:
     TEMPERATURE = 0.7
 
     @classmethod
+    def _migrate_config_if_needed(cls):
+        """One-time migration: copy ~/.metricsforall → ~/.basketlab on first run."""
+        import shutil
+        import logging
+        old_dir = Path.home() / '.metricsforall'
+        new_dir = Path.home() / '.basketlab'
+        if old_dir.exists() and not new_dir.exists():
+            try:
+                shutil.copytree(str(old_dir), str(new_dir))
+                logging.getLogger(__name__).warning(
+                    "BasketLab: migrated config from %s to %s", old_dir, new_dir
+                )
+            except Exception as exc:  # noqa: BLE001
+                logging.getLogger(__name__).error(
+                    "BasketLab: config migration failed: %s", exc
+                )
+
+    @classmethod
     def load_api_keys(cls):
         """Load API keys from environment variables or config file."""
+        cls._migrate_config_if_needed()
+
         # Try environment variables first
         cls.GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
         cls.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
         cls.GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
         # Try config file if env vars not set
-        config_file = Path.home() / '.metricsforall' / 'config.txt'
+        config_file = Path.home() / '.basketlab' / 'config.txt'
         if config_file.exists():
             with open(config_file, 'r') as f:
                 for line in f:
@@ -63,7 +83,7 @@ class AnalysisConfig:
     @classmethod
     def save_api_key(cls, provider: str, api_key: str):
         """Save API key to config file."""
-        config_dir = Path.home() / '.metricsforall'
+        config_dir = Path.home() / '.basketlab'
         config_dir.mkdir(exist_ok=True)
 
         config_file = config_dir / 'config.txt'
