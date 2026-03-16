@@ -45,7 +45,7 @@ class FEBWebScraper:
         if not response:
             raise Exception(f"Failed to fetch page for year {year}")
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
         return soup, self.web_client.get_session()
 
     def get_seasons(self, soup: BeautifulSoup) -> List[Tuple[str, str]]:
@@ -121,7 +121,7 @@ class FEBWebScraper:
         if not response:
             raise Exception("Failed to select season")
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
         updated_hidden_fields = self.get_hidden_fields(soup)
 
         return soup, updated_hidden_fields
@@ -157,7 +157,7 @@ class FEBWebScraper:
         if not response:
             raise Exception("Failed to select group")
 
-        return BeautifulSoup(response.text, "html.parser")
+        return BeautifulSoup(response.content, "html.parser")
 
     def get_hidden_fields(self, soup: BeautifulSoup) -> Dict[str, str]:
         """
@@ -201,7 +201,7 @@ class FEBWebScraper:
         if not response:
             return []
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
 
         # Check if the initial page already has the correct season and group selected
         season_dropdown = soup.find("select", {"id": SEASON_DROPDOWN_ID})
@@ -319,7 +319,7 @@ class FEBWebScraper:
         if not response:
             return []
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
         competitions = []
         seen_names = set()  # To avoid duplicates
 

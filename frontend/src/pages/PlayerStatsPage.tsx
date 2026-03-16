@@ -1,5 +1,5 @@
 /**
- * PlayerStatsPage — season statistics for all players in a collection.
+ * PlayerStatsPage â€” season statistics for all players in a collection.
  *
  * Features:
  * - Team filter dropdown (derived from data)
@@ -143,9 +143,9 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
           <StatRow label="Rebotes / partido" value={fmt(player.rebounds_per_game)} />
           <StatRow label="Asistencias / partido" value={fmt(player.assists_per_game)} />
           <StatRow label="Robos / partido"   value={fmt(player.steals_per_game)} />
-          <StatRow label="Pérdidas / partido" value={fmt(player.turnovers_per_game)} />
+          <StatRow label="PÃ©rdidas / partido" value={fmt(player.turnovers_per_game)} />
           <StatRow label="Tapones / partido" value={fmt(player.blocks_per_game)} />
-          <StatRow label="Valoración / partido" value={fmt(player.valoracion_per_game)} />
+          <StatRow label="ValoraciÃ³n / partido" value={fmt(player.valoracion_per_game)} />
           <StatRow label="+/- por partido"   value={fmt(player.pllss_per_game)} />
         </div>
 
@@ -214,7 +214,7 @@ export default function PlayerStatsPage() {
   if (!collection) {
     return (
       <PageTransition>
-        <p className="text-center text-ink-muted mt-16">Selecciona una colección para continuar.</p>
+        <p className="text-center text-ink-muted mt-16">Selecciona una colecciÃ³n para continuar.</p>
       </PageTransition>
     )
   }
@@ -226,7 +226,7 @@ export default function PlayerStatsPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Estadísticas de Jugadores</h1>
+            <h1 className="text-xl font-bold text-ink-primary">EstadÃ­sticas de Jugadores</h1>
             <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
           </div>
           <FilterBar showDate={false} />
@@ -271,7 +271,7 @@ export default function PlayerStatsPage() {
           ))}
         </div>
 
-        {/* Table — clicking a row opens the player drawer */}
+        {/* Table â€” clicking a row opens the player drawer */}
         <DataTable
           columns={activeCols}
           data={players}
@@ -279,10 +279,10 @@ export default function PlayerStatsPage() {
           reverseColumns={tab === 'stats' ? REVERSE_STATS : []}
           loading={isLoading}
           searchable
-          searchPlaceholder="Buscar jugador…"
+          searchPlaceholder="Buscar jugadorâ€¦"
           exportOptions={{
             filename:   `jugadores_${tab}_${collection.name}`,
-            pdfTitle:   `Estadísticas de Jugadores — ${tab}`,
+            pdfTitle:   `EstadÃ­sticas de Jugadores â€” ${tab}`,
             csvHeaders: activeCols.map(c => ({
               key:   String((c as { accessorKey?: string }).accessorKey ?? c.id ?? ''),
               label: String(c.header ?? ''),
@@ -300,4 +300,4 @@ export default function PlayerStatsPage() {
       </div>
     </PageTransition>
   )
-}
+}

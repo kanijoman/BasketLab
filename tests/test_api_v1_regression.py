@@ -307,3 +307,135 @@ class TestTeamQuartilesShape:
         assert "offensive_rating" in data, (
             "offensive_rating must be in quartiles for DataTable quartile colouring"
         )
+
+
+# ---------------------------------------------------------------------------
+# Test 5: GET /collections/list — regression for admin panel "no collections"
+# ---------------------------------------------------------------------------
+
+def _make_db_with_collections(names: list) -> MagicMock:
+    """Return a mock whose connection simulates the given collection names."""
+    handler = MagicMock()
+    handler.is_connected.return_value = True
+
+    mock_db = MagicMock()
+    mock_db.list_collection_names.return_value = names
+    handler.connection.get_database.return_value = mock_db
+    handler.connection.is_connected.return_value = True
+
+    mock_col = MagicMock()
+    mock_col.count_documents.return_value = 5
+    handler.connection.get_collection.return_value = mock_col
+    return handler
+
+
+class TestCollectionsListEndpoint:
+    """Regression tests for GET /api/v1/collections/list.
+
+    Bugs fixed:
+    1. ``MongoDBHandler`` has no ``.connect()`` method — ``deps._create_handler``
+       was calling it, causing HTTP 500 on every request to this endpoint.
+    2. ``CollectionService.list_available()`` used ``^(FEB|FBCYL)_`` regex that
+       excluded real FEB collections like ``L_F_-2_2025_2026_Liga_Regular_A``.
+    """
+
+    @pytest.fixture
+    def collections_client(self):
+        db = _make_db_with_collections([
+            "L_F_-2_2025_2026_Liga_Regular_A",
+            "L_F_-2_2025_2026_Liga_Regular_B",
+            "FBCYL_Femenino_1a_Division_2026",
+            "test",
+        ])
+        app.dependency_overrides[get_db] = lambda: db
+        yield TestClient(app)
+        app.dependency_overrides.clear()
+
+    def test_endpoint_returns_200_regression(self, collections_client):
+        """Regression: was 500 due to deps.py calling handler.connect()."""
+        r = collections_client.get(f"{V1}/collections/list")
+        assert r.status_code == 200, (
+            f"GET /collections/list returned {r.status_code}: {r.text}"
+        )
+
+    def test_response_is_list(self, collections_client):
+        r = collections_client.get(f"{V1}/collections/list")
+        assert isinstance(r.json(), list)
+
+    def test_feb_slug_collections_are_included_regression(self, collections_client):
+        """Regression: L_F_-2_... collections were excluded by the old ^(FEB|FBCYL)_ filter."""
+        r = collections_client.get(f"{V1}/collections/list")
+        names = [item["name"] for item in r.json()]
+        assert "L_F_-2_2025_2026_Liga_Regular_A" in names, (
+            "FEB collection without FEB_ prefix was excluded from list"
+        )
+        assert "L_F_-2_2025_2026_Liga_Regular_B" in names
+
+    def test_test_collection_excluded_from_list(self, collections_client):
+        """The 'test' collection must never appear in the admin panel list."""
+        r = collections_client.get(f"{V1}/collections/list")
+        names = [item["name"] for item in r.json()]
+        assert "test" not in names
+
+    def test_each_item_has_required_keys(self, collections_client):
+        r = collections_client.get(f"{V1}/collections/list")
+        for item in r.json():
+            for key in ("name", "league", "competition", "season", "group", "game_count"):
+                assert key in item, f"Missing key '{key}' in collection item: {item}"
+
+    def test_feb_slug_collection_league_is_feb(self, collections_client):
+        """Regression: L_F_-2_... must be tagged league='FEB', not excluded."""
+        r = collections_client.get(f"{V1}/collections/list")
+        by_name = {item["name"]: item for item in r.json()}
+        assert by_name["L_F_-2_2025_2026_Liga_Regular_A"]["league"] == "FEB"
+
+    def test_fbcyl_collection_league_is_fbcyl(self, collections_client):
+        r = collections_client.get(f"{V1}/collections/list")
+        by_name = {item["name"]: item for item in r.json()}
+        assert by_name["FBCYL_Femenino_1a_Division_2026"]["league"] == "FBCYL"
+
+
+# ---------------------------------------------------------------------------
+# Test 6: MongoDBHandler must not expose a .connect() method
+# ---------------------------------------------------------------------------
+
+class TestMongoDBHandlerNoConnectMethod:
+    """Regression: deps._create_handler() called handler.connect() which does
+    not exist on MongoDBHandler (it connects in __init__), causing AttributeError
+    and HTTP 500 on every API request.
+    """
+
+    def test_mongodb_handler_has_no_connect_method_regression(self):
+        """MongoDBHandler must not have a .connect() method — it connects in __init__."""
+        from unittest.mock import patch
+        # Patch MongoDBConnection so no real DB connection is attempted
+        with patch("src.database.connection.MongoDBConnection.__init__", return_value=None), \
+             patch("src.database.connection.MongoDBConnection.is_connected", return_value=False):
+            from src.database import MongoDBHandler
+            handler = MongoDBHandler.__new__(MongoDBHandler)
+            assert not hasattr(handler, "connect"), (
+                "MongoDBHandler must not have a .connect() method. "
+                "deps.py was broken because it called handler.connect() which "
+                "caused AttributeError → HTTP 500 on all API endpoints."
+            )
+
+    def test_deps_create_handler_does_not_call_connect(self):
+        """Regression: _create_handler() must not call .connect() on the handler."""
+        from unittest.mock import patch, MagicMock
+
+        mock_handler = MagicMock()  # no spec — lets us track any attribute access
+        mock_handler.is_connected.return_value = True
+
+        with patch("src.database.MongoDBHandler", return_value=mock_handler):
+            import src.api.deps as deps_module
+            # Clear the lru_cache so the factory runs fresh with our mock
+            deps_module._create_handler.cache_clear()
+            try:
+                deps_module._create_handler()
+            finally:
+                deps_module._create_handler.cache_clear()
+
+        assert not mock_handler.connect.called, (
+            "_create_handler() must not call handler.connect() — "
+            "MongoDBHandler connects automatically in __init__"
+        )

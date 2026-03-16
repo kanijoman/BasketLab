@@ -70,7 +70,7 @@ class TokenManager:
                 return token
 
             # Parse HTML to find token
-            soup = BeautifulSoup(response.text, "html.parser")
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Try to find token in script tags
             token = self._extract_token_from_scripts(soup)

@@ -274,3 +274,187 @@ class TestCollectionServiceHasData:
         handler.connection.get_collection.side_effect = RuntimeError("err")
         svc = CollectionService(handler)
         assert svc.collection_has_data("COL") is False
+
+
+# ---------------------------------------------------------------------------
+# Helpers for list_available / drop_collection tests
+# ---------------------------------------------------------------------------
+
+def _make_db_handler_with_collections(names: list) -> MagicMock:
+    """Return a mock whose connection returns the given collection names."""
+    handler = MagicMock()
+    handler.is_connected.return_value = True
+
+    mock_db = MagicMock()
+    mock_db.list_collection_names.return_value = names
+    handler.connection.get_database.return_value = mock_db
+    handler.connection.is_connected.return_value = True
+
+    mock_col = MagicMock()
+    mock_col.count_documents.return_value = 10
+    handler.connection.get_collection.return_value = mock_col
+    return handler
+
+
+# ---------------------------------------------------------------------------
+# CollectionService.list_available — regression for FEB name filter bug
+# ---------------------------------------------------------------------------
+
+class TestCollectionServiceListAvailable:
+    """Regression tests for the list_available() filtering bug.
+
+    Bug: ``_COLLECTION_PATTERN = re.compile(r'^(FEB|FBCYL)_')`` silently
+    excluded every FEB collection whose sanitised name does NOT start with
+    ``FEB_`` (e.g. ``L_F_-2_2025_2026_Liga_Regular_A`` from the real DB).
+    """
+
+    def test_feb_collection_without_feb_prefix_is_included_regression(self):
+        """Regression: L_F_-2_2025_2026_Liga_Regular_A must appear in results."""
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["L_F_-2_2025_2026_Liga_Regular_A"])
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        names = [r["name"] for r in results]
+        assert "L_F_-2_2025_2026_Liga_Regular_A" in names, (
+            "FEB collection without FEB_ prefix was incorrectly excluded"
+        )
+
+    def test_feb_collection_tagged_as_feb_regression(self):
+        """Regression: collections not starting with FBCYL_ must be tagged FEB."""
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["L_F_-2_2025_2026_Liga_Regular_A"])
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        assert results[0]["league"] == "FEB"
+
+    def test_group_parsed_from_feb_collection_name(self):
+        """Group suffix (last token matching [A-Z0-9]{1,2}) is extracted."""
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["L_F_-2_2025_2026_Liga_Regular_A"])
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        assert results[0]["group"] == "A"
+
+    def test_fbcyl_collection_tagged_as_fbcyl(self):
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(
+            ["FBCYL_Femenino_FBCYL_1a_DIVISION_FEMENINA_Temporada_20252026"]
+        )
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        assert results[0]["league"] == "FBCYL"
+
+    def test_test_collection_is_excluded(self):
+        """The literal 'test' collection must never appear in results."""
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["test"])
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        assert results == []
+
+    def test_system_collection_is_excluded(self):
+        """'system.*' collections are MongoDB internals and must be skipped."""
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["system.version", "system.users"])
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        assert results == []
+
+    def test_returns_empty_when_disconnected(self):
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections([])
+        handler.is_connected.return_value = False
+        svc = CollectionService(handler)
+        assert svc.list_available() == []
+
+    def test_game_count_populated_from_db(self):
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["L_F_-2_2025_2026_Liga_Regular_B"])
+        handler.connection.get_collection.return_value.count_documents.return_value = 42
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        assert results[0]["game_count"] == 42
+
+    def test_multiple_collections_all_returned(self):
+        """Both FEB groups and the FBCYL collection must all be present."""
+        from src.services import CollectionService
+        real_names = [
+            "L_F_-2_2025_2026_Liga_Regular_A",
+            "L_F_-2_2025_2026_Liga_Regular_B",
+            "FBCYL_Femenino_FBCYL_1a_DIVISION_2026",
+            "test",
+        ]
+        handler = _make_db_handler_with_collections(real_names)
+        svc = CollectionService(handler)
+        results = svc.list_available()
+        result_names = {r["name"] for r in results}
+        assert "L_F_-2_2025_2026_Liga_Regular_A" in result_names
+        assert "L_F_-2_2025_2026_Liga_Regular_B" in result_names
+        assert "FBCYL_Femenino_FBCYL_1a_DIVISION_2026" in result_names
+        assert "test" not in result_names
+
+    def test_returns_empty_list_on_db_exception(self):
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections([])
+        handler.connection.get_database.side_effect = RuntimeError("db error")
+        svc = CollectionService(handler)
+        assert svc.list_available() == []
+
+
+# ---------------------------------------------------------------------------
+# CollectionService.drop_collection — regression for updated guard
+# ---------------------------------------------------------------------------
+
+class TestCollectionServiceDropCollection:
+    """Regression tests for the drop_collection() guard.
+
+    The old guard required ``^(FEB|FBCYL)_`` and therefore would refuse to
+    drop legitimate FEB collections like ``L_F_-2_2025_2026_Liga_Regular_A``.
+    The new guard blocks ``system.*`` and reserved names instead.
+    """
+
+    def _make_connected_handler(self):
+        handler = MagicMock()
+        handler.is_connected.return_value = True
+        mock_db = MagicMock()
+        handler.connection.get_database.return_value = mock_db
+        return handler
+
+    def test_drops_feb_slug_collection_regression(self):
+        """Regression: L_F_-2_... style names must be droppable."""
+        from src.services import CollectionService
+        handler = self._make_connected_handler()
+        svc = CollectionService(handler)
+        svc.drop_collection("L_F_-2_2025_2026_Liga_Regular_A")  # must not raise
+        handler.connection.get_database().drop_collection.assert_called_once_with(
+            "L_F_-2_2025_2026_Liga_Regular_A"
+        )
+
+    def test_drops_fbcyl_collection(self):
+        from src.services import CollectionService
+        handler = self._make_connected_handler()
+        svc = CollectionService(handler)
+        svc.drop_collection("FBCYL_Femenino_2026")  # must not raise
+        handler.connection.get_database().drop_collection.assert_called_once()
+
+    def test_refuses_to_drop_test_collection(self):
+        from src.services import CollectionService
+        handler = self._make_connected_handler()
+        svc = CollectionService(handler)
+        with pytest.raises(ValueError, match="reserved or system"):
+            svc.drop_collection("test")
+
+    def test_refuses_to_drop_system_collection(self):
+        from src.services import CollectionService
+        handler = self._make_connected_handler()
+        svc = CollectionService(handler)
+        with pytest.raises(ValueError):
+            svc.drop_collection("system.version")
+
+    def test_raises_runtime_error_when_disconnected(self):
+        from src.services import CollectionService
+        handler = self._make_connected_handler()
+        handler.is_connected.return_value = False
+        svc = CollectionService(handler)
+        with pytest.raises(RuntimeError, match="not connected"):
+            svc.drop_collection("L_F_-2_2025_2026_Liga_Regular_A")

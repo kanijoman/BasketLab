@@ -1,6 +1,7 @@
 """FEB API client for fetching match data."""
 
 import requests
+from datetime import datetime
 from typing import Optional, Dict, List
 
 from .constants import BOXSCORE_API_URL, SHOTCHART_API_URL, KEYFACTS_API_URL, DEFAULT_HEADERS
@@ -67,6 +68,9 @@ class FEBApiClient:
         if token:
             self._add_shotchart_data(data, match_code, session, token)
             self._add_playbyplay_data(data, match_code, session, token)
+
+        # Inject league metadata derived from the document itself
+        self._inject_feb_metadata(data)
 
         return data
 
@@ -167,3 +171,48 @@ class FEBApiClient:
         playbyplay_data = self.fetch_playbyplay(match_code, session, token)
         if playbyplay_data is not None:
             data["PLAYBYPLAY"] = playbyplay_data
+
+    @staticmethod
+    def _derive_season(starttime: str) -> str:
+        """Derive the season start year from a FEB starttime string.
+
+        FEB format: ``"05-10-2025 - 12:30"``.
+        Seasons run Sep–Aug: month >= 9 → season starts that year;
+        month < 9 → season started the previous year.
+
+        Args:
+            starttime: Raw HEADER.starttime value.
+
+        Returns:
+            Four-digit season start year as a string, e.g. ``"2025"``.
+        """
+        try:
+            dt = datetime.strptime(starttime.strip(), "%d-%m-%Y - %H:%M")
+            return str(dt.year) if dt.month >= 9 else str(dt.year - 1)
+        except (ValueError, AttributeError):
+            return ""
+
+    @staticmethod
+    def _inject_feb_metadata(doc: Dict) -> None:
+        """Mutate *doc* in-place adding ``_*`` metadata fields.
+
+        Fields are derived from ``HEADER`` which is always present in a
+        complete FEB boxscore document.  Safe to call even if HEADER keys
+        are missing — fields are set to empty string in that case.
+
+        Added fields:
+            _league      – always ``"FEB"``
+            _comp_id     – ``HEADER.CompID``  (e.g. ``"218"``)
+            _competition – ``HEADER.competition`` (e.g. ``"L.F.-2"``)
+            _group       – ``HEADER.round`` normalised (e.g. ``"B"``)
+            _season      – season start year derived from ``HEADER.starttime``
+        """
+        header = doc.get("HEADER", {})
+        raw_round = header.get("round", "")
+        # round arrives as '"B"                 ' — strip whitespace then quotes
+        group = raw_round.strip().strip('"').strip()
+        doc["_league"] = "FEB"
+        doc["_comp_id"] = header.get("CompID", "")
+        doc["_competition"] = header.get("competition", "")
+        doc["_group"] = group
+        doc["_season"] = FEBApiClient._derive_season(header.get("starttime", ""))

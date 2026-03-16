@@ -1,5 +1,5 @@
 /**
- * RankingsPage — player stat leaderboards.
+ * RankingsPage â€” player stat leaderboards.
  *
  * Select a stat category ? see ranked list with bar fills.
  * Filters: min minutes, team.
@@ -29,10 +29,10 @@ const STAT_TABS: StatDef[] = [
   { key: 'assists_per_game',   label: 'Asistencias', format: v => fmt(v) },
   { key: 'steals_per_game',    label: 'Robos',       format: v => fmt(v) },
   { key: 'blocks_per_game',    label: 'Tapones',     format: v => fmt(v) },
-  { key: 'valoracion_per_game',label: 'Valoración',  format: v => fmt(v) },
+  { key: 'valoracion_per_game',label: 'ValoraciÃ³n',  format: v => fmt(v) },
   { key: 'fg2_percentage',     label: '% T2',        format: v => fmtPct(v) },
   { key: 'fg3_percentage',     label: '% T3',        format: v => fmtPct(v) },
-  { key: 'turnovers_per_game', label: 'Pérdidas',    format: v => fmt(v), reverse: true },
+  { key: 'turnovers_per_game', label: 'PÃ©rdidas',    format: v => fmt(v), reverse: true },
 ]
 
 // -- Medal helpers -------------------------------------------------------------
@@ -85,7 +85,7 @@ export default function RankingsPage() {
   if (!collection) {
     return (
       <PageTransition>
-        <p className="text-center text-ink-muted mt-16">Selecciona una colección para continuar.</p>
+        <p className="text-center text-ink-muted mt-16">Selecciona una colecciÃ³n para continuar.</p>
       </PageTransition>
     )
   }
@@ -216,4 +216,4 @@ export default function RankingsPage() {
       </div>
     </PageTransition>
   )
-}
+}

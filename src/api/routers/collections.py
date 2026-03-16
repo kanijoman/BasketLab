@@ -1,6 +1,6 @@
 """Collections router — list available collections and their metadata."""
 
-from typing import List
+from typing import List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -8,6 +8,44 @@ from src.api.deps import get_db
 from src.services import CollectionService
 
 router = APIRouter()
+
+
+@router.get("/list", summary="List all available basketball collections")
+def list_collections(db=Depends(get_db)) -> List[Dict[str, Any]]:
+    """Return metadata for every FEB/FBCYL collection in MongoDB.
+
+    Returns:
+        List of objects with ``name``, ``league``, ``competition``,
+        ``season``, ``group``, and ``game_count``.
+        Sorted league → season desc → competition → group.
+    """
+    svc = CollectionService(db)
+    return svc.list_available()
+
+
+@router.delete("/{name}", summary="Drop a basketball collection")
+def delete_collection(name: str, db=Depends(get_db)) -> Dict[str, str]:
+    """Permanently drop the collection *name* from MongoDB.
+
+    Args:
+        name: Collection name, must start with ``FEB_`` or ``FBCYL_``.
+
+    Returns:
+        Confirmation message.
+
+    Raises:
+        400 if the name does not match the expected prefix.
+        500 on database error.
+    """
+    svc = CollectionService(db)
+    try:
+        svc.drop_collection(name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    return {"message": f"Collection '{name}' dropped."}
+
 
 
 @router.get("/", summary="List teams inside a collection")

@@ -12,11 +12,35 @@ From the repo root::
 
 Or via the provided ``run_api.py`` helper at the repo root.
 """
+import json
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from src.api.routers import collections, teams, players, lineups
+from src.api.routers import collections, teams, players, lineups, scrape
+
+
+class UTF8JSONResponse(JSONResponse):
+    """JSONResponse that always emits ``Content-Type: application/json; charset=utf-8``.
+
+    FastAPI's default response omits the charset, which can cause browsers to
+    misinterpret non-ASCII characters (ñ, tildes, ª …) when the context does
+    not inherit an explicit encoding.  Explicit charset=utf-8 removes all
+    ambiguity.
+    """
+
+    media_type = "application/json; charset=utf-8"
+
+    def render(self, content: object) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=None,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
 
 app = FastAPI(
     title="BasketLab API",
@@ -24,6 +48,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    default_response_class=UTF8JSONResponse,
 )
 
 # ---------------------------------------------------------------------------
@@ -52,6 +77,7 @@ app.include_router(collections.router, prefix="/api/v1/collections", tags=["coll
 app.include_router(teams.router,       prefix="/api/v1/teams",       tags=["teams"])
 app.include_router(players.router,     prefix="/api/v1/players",     tags=["players"])
 app.include_router(lineups.router,     prefix="/api/v1/lineups",     tags=["lineups"])
+app.include_router(scrape.router,      prefix="/api/v1/scrape",      tags=["scrape"])
 
 
 @app.get("/", tags=["health"])

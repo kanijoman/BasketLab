@@ -57,7 +57,7 @@ class FBCYLWebScraper:
         if not response:
             raise Exception("Failed to fetch FBCYL page")
 
-        soup = BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
         return soup, self.web_client.session
 
     def get_seasons(self, soup: BeautifulSoup) -> List[Tuple[str, str]]:
@@ -223,7 +223,7 @@ class FBCYLWebScraper:
                 return []
 
             # Parse HTML response
-            soup = BeautifulSoup(response.text, "html.parser")
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Find all option elements in the response
             categories = []
@@ -267,7 +267,7 @@ class FBCYLWebScraper:
                 return []
 
             # Parse HTML response
-            soup = BeautifulSoup(response.text, "html.parser")
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Find all option elements in the response
             competitions = []
@@ -495,15 +495,29 @@ class FBCYLWebScraper:
         except Exception as e:
             return None
 
-    def get_match_complete_data(self, match_uuid: str) -> Optional[Dict]:
+    def get_match_complete_data(
+        self,
+        match_uuid: str,
+        *,
+        league_ctx: Optional[Dict] = None,
+    ) -> Optional[Dict]:
         """
         Get complete match data by fetching both moves and stats JSONs.
 
         Args:
             match_uuid: The match UUID (24-character hex string)
+            league_ctx: Optional dict with competition metadata to persist
+                alongside the document.  When provided the following keys
+                are expected (all strings):
+                ``gender``, ``territory``, ``category``,
+                ``competition_id``, ``season``.
+                Injected as ``_league``, ``_gender``, ``_territory``,
+                ``_category``, ``_competition``, ``_season``.
 
         Returns:
-            Dictionary with combined data: {'moves': {...}, 'stats': {...}}, or None if both fail
+            Dictionary with combined data: {'moves': {...}, 'stats': {...}},
+            enriched with ``_*`` metadata fields when *league_ctx* is
+            supplied.  Returns ``None`` if both API calls fail.
         """
         moves_data = self.get_match_json_moves(match_uuid)
         stats_data = self.get_match_json_stats(match_uuid)
@@ -511,8 +525,18 @@ class FBCYLWebScraper:
         if not moves_data and not stats_data:
             return None
 
-        return {
+        doc: Dict = {
             'uuid': match_uuid,
             'moves': moves_data,
-            'stats': stats_data
+            'stats': stats_data,
         }
+
+        if league_ctx:
+            doc["_league"] = "FBCYL"
+            doc["_gender"] = league_ctx.get("gender", "")
+            doc["_territory"] = league_ctx.get("territory", "")
+            doc["_category"] = league_ctx.get("category", "")
+            doc["_competition"] = league_ctx.get("competition_id", "")
+            doc["_season"] = league_ctx.get("season", "")
+
+        return doc

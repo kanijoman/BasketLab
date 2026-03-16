@@ -324,3 +324,103 @@ export interface PossessionStat {
   pace: number
   [key: string]: unknown
 }
+
+// ── Collections management ────────────────────────────────────────────────────
+
+export interface CollectionInfo {
+  name: string
+  league: 'FEB' | 'FBCYL'
+  competition: string
+  season: string
+  group: string
+  game_count: number
+}
+
+export const getCollectionList = () =>
+  get<CollectionInfo[]>('/collections/list')
+
+export const deleteCollection = (name: string) =>
+  fetch(`${BASE}/collections/${encodeURIComponent(name)}`, { method: 'DELETE' })
+    .then(res => {
+      if (!res.ok) return res.json().then(b => Promise.reject(new Error(b.detail ?? `HTTP ${res.status}`)))
+    })
+
+// ── Scraping discovery ────────────────────────────────────────────────────────
+
+export interface DropdownOption {
+  text: string
+  value: string
+}
+
+export interface FbcylInitData {
+  seasons: DropdownOption[]
+  genders: DropdownOption[]
+  territories: DropdownOption[]
+}
+
+export const getFebCompetitions = () =>
+  get<{ name: string; results_url: string }[]>('/scrape/feb/competitions')
+
+export const getFebSeasons = (url: string, year = '2025') =>
+  get<DropdownOption[]>(`/scrape/feb/seasons?url=${encodeURIComponent(url)}&year=${year}`)
+
+export const getFebGroups = (url: string, season: string, year = '2025') =>
+  get<DropdownOption[]>(
+    `/scrape/feb/groups?url=${encodeURIComponent(url)}&season=${encodeURIComponent(season)}&year=${year}`,
+  )
+
+export const getFbcylInit = () =>
+  get<FbcylInitData>('/scrape/fbcyl/init')
+
+export const getFbcylCategories = (season: string, gender = '', territory = '0') =>
+  get<DropdownOption[]>(
+    `/scrape/fbcyl/categories?season=${encodeURIComponent(season)}&gender=${encodeURIComponent(gender)}&territory=${encodeURIComponent(territory)}`,
+  )
+
+export const getFbcylCompetitions = (category: string, gender = '', territory = '0') =>
+  get<DropdownOption[]>(
+    `/scrape/fbcyl/competitions?category=${encodeURIComponent(category)}&gender=${encodeURIComponent(gender)}&territory=${encodeURIComponent(territory)}`,
+  )
+
+// ── Scraping jobs ─────────────────────────────────────────────────────────────
+
+export interface FEBScrapeParams {
+  competition_url: string
+  season_value: string
+  group_value: string
+  year?: string
+  competition_label: string
+  season_label: string
+  group_label: string
+}
+
+export interface FBCYLScrapeParams {
+  competition_id: string
+  season: string
+  gender?: string
+  territory?: string
+  category: string
+  competition_label: string
+}
+
+export interface ScrapeRequest {
+  league: 'FEB' | 'FBCYL'
+  feb?: FEBScrapeParams
+  fbcyl?: FBCYLScrapeParams
+}
+
+export interface ScrapeJob {
+  status: 'starting' | 'discovering' | 'running' | 'done' | 'error'
+  total: number
+  done: number
+  skipped: number
+  errors: string[]
+  current_match: string | null
+  collection: string | null
+}
+
+export const postScrapeStart = (req: ScrapeRequest) =>
+  post<{ job_id: string }>('/scrape/start', req)
+
+export const getScrapeProgress = (jobId: string) =>
+  get<ScrapeJob>(`/scrape/progress/${encodeURIComponent(jobId)}`)

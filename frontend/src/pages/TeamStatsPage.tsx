@@ -1,7 +1,7 @@
 /**
- * TeamStatsPage � season statistics for all teams in a collection.
+ * TeamStatsPage — season statistics for all teams in a collection.
  *
- * Tabs: B�sico | Avanzado | Rivales
+ * Tabs: Básico | Avanzado | Rivales
  * Filters: venue (home/away), result (won/lost)
  * Quartile colouring via DataTable
  * Export: CSV / PNG / PDF via DataTable > ExportButton
@@ -113,7 +113,7 @@ function mean(rows: TeamStat[], key: keyof TeamStat): number {
 // -- Tabs config ---------------------------------------------------------------
 
 const TABS = [
-  { id: 'basic',    label: 'B�sico',   Icon: BarChart2 },
+  { id: 'basic',    label: 'Básico',   Icon: BarChart2 },
   { id: 'advanced', label: 'Avanzado', Icon: Zap       },
   { id: 'rivals',   label: 'Rivales',  Icon: Shield    },
 ] as const
@@ -169,7 +169,7 @@ export default function TeamStatsPage() {
     return (
       <PageTransition>
         <p className="text-center text-ink-muted mt-16">
-          Selecciona una colecci�n para continuar.
+          Selecciona una colección para continuar.
         </p>
       </PageTransition>
     )
@@ -182,7 +182,7 @@ export default function TeamStatsPage() {
         {/* Page header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Estad�sticas de Equipo</h1>
+            <h1 className="text-xl font-bold text-ink-primary">Estadísticas de Equipo</h1>
             <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
           </div>
           <FilterBar showDate={false} />
@@ -223,10 +223,10 @@ export default function TeamStatsPage() {
           reverseColumns={activeRev}
           loading={loadingStats}
           searchable
-          searchPlaceholder="Buscar equipo�"
+          searchPlaceholder="Buscar equipo…"
           exportOptions={{
             filename:   `equipos_${tab}_${collection.name}`,
-            pdfTitle:   `Estad�sticas de Equipo � ${tab}`,
+            pdfTitle:   `Estadísticas de Equipo — ${tab}`,
             csvHeaders: activeCols.map(c => ({
               key:   String((c as { accessorKey?: string }).accessorKey ?? c.id ?? ''),
               label: String(c.header ?? ''),

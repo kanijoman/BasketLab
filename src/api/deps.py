@@ -28,7 +28,6 @@ def _create_handler():
     # Import after path is set up.
     from src.database import MongoDBHandler  # noqa: PLC0415
     handler = MongoDBHandler()
-    handler.connect()
     return handler
 
 
