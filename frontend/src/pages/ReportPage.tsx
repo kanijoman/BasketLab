@@ -1,28 +1,170 @@
 /**
  * ReportPage — Fase 5
- * Wizard multi-paso para generación de informes semanales (PDF/DOCX).
+ * Three report types: player scouting (DOCX), team scouting (PDF), season summary (PDF).
  */
-import { FileText } from 'lucide-react'
-import PageTransition from '@/components/ui/PageTransition'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { FileText, User, Users, BarChart3, Download } from 'lucide-react'
+
 import { useCollection } from '@/context/CollectionContext'
+import {
+  getPlayerStats,
+  getPlayerScoutingUrl,
+  getTeamScoutingUrl,
+  getSeasonSummaryUrl,
+  type PlayerStat,
+} from '@/api/client'
+import PageTransition from '@/components/ui/PageTransition'
+
+// ---------------------------------------------------------------------------
+
+function download(url: string) { window.open(url, '_blank') }
+
+function ChevronDownIcon() {
+  return (
+    <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-secondary"
+      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+interface ReportCardProps {
+  icon: React.ReactNode
+  title: string
+  description: string
+  badge: string
+  children: React.ReactNode
+}
+
+function ReportCard({ icon, title, description, badge, children }: ReportCardProps) {
+  return (
+    <div className="card p-5 flex flex-col gap-4">
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-accent-500/10 text-accent-400">{icon}</div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-ink-primary">{title}</h3>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-hover text-ink-secondary">{badge}</span>
+          </div>
+          <p className="text-xs text-ink-secondary mt-0.5">{description}</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 
 export default function ReportPage() {
   const { collection } = useCollection()
+
+  const [selectedPlayer, setSelectedPlayer] = useState('')
+  const [scoutingTeam,   setScoutingTeam]   = useState('')
+
+  const { data: players = [] } = useQuery<PlayerStat[]>({
+    queryKey: ['player-list', collection?.name],
+    queryFn:  () => getPlayerStats(collection!.name),
+    enabled:  Boolean(collection),
+    staleTime: 5 * 60_000,
+    select: rows => [...rows].sort((a, b) => a.player_name.localeCompare(b.player_name)),
+  })
+
+  // Unique sorted team list from player stats
+  const teams = [...new Set(players.map(p => p.team_name))].sort()
+
+  const col = collection?.name ?? ''
+
   return (
     <PageTransition>
       <div className="space-y-4">
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary">Informe Semanal</h1>
-          <p className="text-ink-secondary text-sm mt-1">{collection?.label}</p>
+          <h1 className="text-2xl font-bold text-ink-primary">Informes</h1>
+          <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
         </div>
-        <div className="card p-10 flex flex-col items-center gap-3 text-center">
-          <FileText className="w-10 h-10 text-warn opacity-60" />
-          <p className="text-ink-primary font-medium">En desarrollo — Fase 5</p>
-          <p className="text-ink-secondary text-sm max-w-sm">
-            Wizard multi-paso: selección de equipos → secciones a incluir → preview web →
-            export PDF o DOCX generado por el backend.
-          </p>
-        </div>
+
+        {!collection && (
+          <div className="card p-10 flex flex-col items-center gap-2 text-center">
+            <FileText className="w-8 h-8 text-warn opacity-40" />
+            <p className="text-ink-secondary text-sm">Selecciona una colección para generar informes.</p>
+          </div>
+        )}
+
+        {collection && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* Player scouting DOCX */}
+            <ReportCard
+              icon={<User className="w-5 h-5" />}
+              title="Scouting individual"
+              description="Ficha DOCX con estadísticas por partido y espacio para notas del cuerpo técnico."
+              badge="DOCX"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}
+                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400">
+                    <option value="">— Selecciona jugador —</option>
+                    {players.map(p => (
+                      <option key={p.player_id} value={p.player_id}>
+                        {p.player_name} ({p.team_name})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDownIcon />
+                </div>
+                <button
+                  disabled={!selectedPlayer}
+                  onClick={() => download(getPlayerScoutingUrl(col, selectedPlayer))}
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <Download className="w-4 h-4" /> Descargar DOCX
+                </button>
+              </div>
+            </ReportCard>
+
+            {/* Team scouting PDF */}
+            <ReportCard
+              icon={<Users className="w-5 h-5" />}
+              title="Scouting de equipo"
+              description="Informe PDF con desglose ofensivo y defensivo del equipo seleccionado."
+              badge="PDF"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <select value={scoutingTeam} onChange={e => setScoutingTeam(e.target.value)}
+                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400">
+                    <option value="">— Selecciona equipo —</option>
+                    {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <ChevronDownIcon />
+                </div>
+                <button
+                  disabled={!scoutingTeam}
+                  onClick={() => download(getTeamScoutingUrl(col, scoutingTeam))}
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <Download className="w-4 h-4" /> Descargar PDF
+                </button>
+              </div>
+            </ReportCard>
+
+            {/* Season summary PDF */}
+            <ReportCard
+              icon={<BarChart3 className="w-5 h-5" />}
+              title="Resumen de temporada"
+              description="Tabla de clasificación de eficiencia (Pace · OER · DER · Net Rating) para toda la competición."
+              badge="PDF"
+            >
+              <button
+                onClick={() => download(getSeasonSummaryUrl(col))}
+                className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 transition-colors">
+                <Download className="w-4 h-4" /> Descargar PDF
+              </button>
+            </ReportCard>
+          </div>
+        )}
       </div>
     </PageTransition>
   )

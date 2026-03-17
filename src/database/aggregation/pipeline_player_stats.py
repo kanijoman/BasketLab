@@ -277,6 +277,27 @@ class PlayerStatsPipelineMixin:
                             {"$divide": ["$total_pllss", "$games_played"]},
                             0
                         ]
+                    },
+                    "offensive_rebounds_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_ro", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "defensive_rebounds_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_rd", "$games_played"]},
+                            0
+                        ]
+                    },
+                    "fouls_per_game": {
+                        "$cond": [
+                            {"$gt": ["$games_played", 0]},
+                            {"$divide": ["$total_pf", "$games_played"]},
+                            0
+                        ]
                     }
                 }
             },

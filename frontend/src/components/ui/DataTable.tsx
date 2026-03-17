@@ -58,12 +58,13 @@ function quartileCellClass(
   if (!thresholds || typeof value !== 'number') return ''
   const [q1, q2, q3] = thresholds
   if (!reverse) {
-    if (value <= q1) return 'table-cell-q1'
-    if (value <= q2) return 'table-cell-q2'
-    if (value <= q3) return 'table-cell-q3'
+    // Higher value = better: top 25% green, bottom 25% red
+    if (value >= q3) return 'table-cell-q1'
+    if (value >= q2) return 'table-cell-q2'
+    if (value >= q1) return 'table-cell-q3'
     return 'table-cell-q4'
   } else {
-    // reverse: lower = better
+    // Lower value = better (e.g. defensive_rating, turnovers): bottom 25% green
     if (value <= q1) return 'table-cell-q1'
     if (value <= q2) return 'table-cell-q2'
     if (value <= q3) return 'table-cell-q3'
@@ -199,8 +200,11 @@ export default function DataTable<TData>({
                         <td
                           key={cell.id}
                           className={cn(
-                            'px-3 py-2 tabular-nums text-ink-primary',
-                            i === 0 && 'sticky left-0 z-10 bg-surface-raised font-medium',
+                            'px-3 py-2 tabular-nums',
+                            // Only apply default text color when no quartile class is set;
+                            // the quartile classes define their own contrasting text color.
+                            qClass ? '' : 'text-ink-primary',
+                            i === 0 && 'sticky left-0 z-10 bg-surface-raised font-medium text-ink-primary',
                             qClass,
                           )}
                         >

@@ -112,6 +112,23 @@ class TestTeamStatsServiceGetQuartiles:
             result = svc.get_quartiles("COL")
         assert result == {}
 
+    def test_aggregator_receives_db_handler_not_connection(self):
+        """Regression: TeamStatsAggregator must receive the MongoDBHandler (which
+        has get_team_stats), not MongoDBHandler.connection (which does not).
+        Passing .connection causes a silent AttributeError and returns {} always.
+        """
+        from src.services import TeamStatsService
+        db = _make_db_handler()
+        with patch("src.services.team_stats_service.TeamStatsAggregator") as MockAgg:
+            MockAgg.return_value.calculate_league_quartiles.return_value = {}
+            svc = TeamStatsService(db)
+            svc.get_quartiles("COL")
+        # First positional arg to TeamStatsAggregator must be the handler itself
+        args, _ = MockAgg.call_args
+        assert args[0] is db, (
+            "TeamStatsAggregator should receive the MongoDBHandler, not .connection"
+        )
+
 
 # ---------------------------------------------------------------------------
 # PlayerStatsService

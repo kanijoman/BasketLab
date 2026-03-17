@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.routers import collections, teams, players, lineups, scrape
+from src.api.routers import shots, possessions, ai, reports
 
 
 class UTF8JSONResponse(JSONResponse):
@@ -78,6 +79,10 @@ app.include_router(teams.router,       prefix="/api/v1/teams",       tags=["team
 app.include_router(players.router,     prefix="/api/v1/players",     tags=["players"])
 app.include_router(lineups.router,     prefix="/api/v1/lineups",     tags=["lineups"])
 app.include_router(scrape.router,      prefix="/api/v1/scrape",      tags=["scrape"])
+app.include_router(shots.router,       prefix="/api/v1/shots",       tags=["shots"])
+app.include_router(possessions.router, prefix="/api/v1/possessions", tags=["possessions"])
+app.include_router(ai.router,          prefix="/api/v1/ai",          tags=["ai"])
+app.include_router(reports.router,     prefix="/api/v1/reports",     tags=["reports"])
 
 
 @app.get("/", tags=["health"])

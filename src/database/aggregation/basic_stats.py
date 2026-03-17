@@ -39,12 +39,19 @@ def get_per_game_stats() -> dict:
     Returns:
         Dictionary with field definitions for per-game stats
     """
+    # Inline the total rebound sum so this works even when total_rebounds is
+    # computed in the same $addFields stage (MongoDB evaluates all expressions
+    # against the *input* document, not sibling computed fields).
+    _reb_total = {"$add": ["$rebounds_def", "$rebounds_off"]}
+
     return {
         "points_per_game": {"$divide": ["$points_scored", "$total_games"]},
         "points_against_per_game": {"$divide": ["$points_received", "$total_games"]},
         "points_allowed_per_game": {"$divide": ["$points_received", "$total_games"]},  # Alias for compatibility
         "possessions_per_game": {"$divide": ["$total_possessions", "$total_games"]},
-        "rebounds_per_game": {"$divide": ["$total_rebounds", "$total_games"]},
+        "rebounds_per_game": {"$divide": [_reb_total, "$total_games"]},
+        "offensive_rebounds_per_game": {"$divide": ["$rebounds_off", "$total_games"]},
+        "defensive_rebounds_per_game": {"$divide": ["$rebounds_def", "$total_games"]},
         "assists_per_game": {"$divide": ["$assists", "$total_games"]},
         "steals_per_game": {"$divide": ["$steals", "$total_games"]},
         "turnovers_per_game": {"$divide": ["$turnovers", "$total_games"]},

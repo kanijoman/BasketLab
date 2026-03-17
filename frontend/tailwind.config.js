@@ -44,11 +44,11 @@ export default {
           secondary: '#8B949E',
           muted:     '#484F58',
         },
-        // ── Quartile coloring ────────────────────────────────────────────
-        q1: { bg: '#0d2818', text: '#4ade80' },  // best (green)
-        q2: { bg: '#132008', text: '#86efac' },
-        q3: { bg: '#271a08', text: '#fcd34d' },
-        q4: { bg: '#2e0f0f', text: '#f87171' },  // worst (red)
+        // ── Quartile coloring: use saturated dark colors with enough contrast on #161B22 ──────
+        q1: { bg: '#0f3d1e', text: '#4ade80' },  // best  (dark green  → bright green text)
+        q2: { bg: '#1e3510', text: '#86efac' },  // above median
+        q3: { bg: '#3d2c0a', text: '#fcd34d' },  // below median
+        q4: { bg: '#3d1010', text: '#f87171' },  // worst (dark red   → bright red text)
         // ── Legacy aliases (keep existing pages compiling) ───────────────
         primary: {
           50:  '#f0fdf4',

@@ -20,6 +20,7 @@ import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import SlideDrawer from '@/components/ui/SlideDrawer'
+import TrendBadge from '@/components/ui/TrendBadge'
 
 // -- Column helpers ------------------------------------------------------------
 
@@ -67,10 +68,13 @@ const STATS_COLS: ColumnDef<PlayerStat, unknown>[] = [
   numCol('minutes_per_game', 'MIN'),
   numCol('points_per_game', 'PTS'),
   numCol('rebounds_per_game', 'REB'),
+  numCol('offensive_rebounds_per_game', 'RO'),
+  numCol('defensive_rebounds_per_game', 'RD'),
   numCol('assists_per_game', 'AST'),
   numCol('steals_per_game', 'ROB'),
   numCol('turnovers_per_game', 'PER'),
   numCol('blocks_per_game', 'TAP'),
+  numCol('fouls_per_game', 'FP'),
   numCol('valoracion_per_game', 'VAL'),
   numCol('pllss_per_game', '+/-'),
 ]
@@ -90,7 +94,7 @@ const SHOOTING_COLS: ColumnDef<PlayerStat, unknown>[] = [
   numCol('total_p3a', 'T3I', { decimals: 0 }),
 ]
 
-const REVERSE_STATS = ['turnovers_per_game']
+const REVERSE_STATS = ['turnovers_per_game', 'fouls_per_game']
 
 // -- Client-side quartile computation -----------------------------------------
 
@@ -100,10 +104,11 @@ function computeColQuartile(data: PlayerStat[], key: string): [number, number, n
     .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v))
     .sort((a, b) => a - b)
   if (vals.length < 4) return [0, 0, 0]
+  // Use P20/P50/P80 — more discriminating for large player sets (60-200 records)
   return [
-    vals[Math.floor(vals.length * 0.25)],
+    vals[Math.floor(vals.length * 0.20)],
     vals[Math.floor(vals.length * 0.50)],
-    vals[Math.floor(vals.length * 0.75)],
+    vals[Math.floor(vals.length * 0.80)],
   ]
 }
 
@@ -141,10 +146,13 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
           <StatRow label="Minutos / partido" value={fmt(player.minutes_per_game)} />
           <StatRow label="Puntos / partido"  value={fmt(player.points_per_game)} />
           <StatRow label="Rebotes / partido" value={fmt(player.rebounds_per_game)} />
+          <StatRow label="Reb. ofensivos / partido" value={fmt(player.offensive_rebounds_per_game)} />
+          <StatRow label="Reb. defensivos / partido" value={fmt(player.defensive_rebounds_per_game)} />
           <StatRow label="Asistencias / partido" value={fmt(player.assists_per_game)} />
           <StatRow label="Robos / partido"   value={fmt(player.steals_per_game)} />
           <StatRow label="Pérdidas / partido" value={fmt(player.turnovers_per_game)} />
           <StatRow label="Tapones / partido" value={fmt(player.blocks_per_game)} />
+          <StatRow label="Faltas / partido"  value={fmt(player.fouls_per_game)} />
           <StatRow label="Valoración / partido" value={fmt(player.valoracion_per_game)} />
           <StatRow label="+/- por partido"   value={fmt(player.pllss_per_game)} />
         </div>
@@ -191,6 +199,20 @@ export default function PlayerStatsPage() {
     to:     filters.dateTo   || undefined,
   }), [filters])
 
+  // Season-baseline query (no date filter) — used for trend comparison
+  const hasDateFilter = Boolean(filters.dateFrom)
+  const baselineFilters: TeamFilters = useMemo(() => ({
+    venue:  filters.venue  || undefined,
+    result: filters.result || undefined,
+  }), [filters.venue, filters.result])
+
+  const { data: seasonPlayers = [] } = useQuery({
+    queryKey:  ['player-stats-season', collection?.name, baselineFilters],
+    queryFn:   () => getPlayerStats(collection!.name, baselineFilters),
+    enabled:   Boolean(collection) && hasDateFilter,
+    staleTime: 10 * 60_000,
+  })
+
   const { data: rawPlayers = [], isLoading } = useQuery({
     queryKey: ['player-stats', collection?.name, apiFilters],
     queryFn:  () => getPlayerStats(collection!.name, apiFilters),
@@ -207,6 +229,13 @@ export default function PlayerStatsPage() {
     () => teamFilter ? rawPlayers.filter(p => p.team_name === teamFilter) : rawPlayers,
     [rawPlayers, teamFilter],
   )
+
+  // Map player_id → full-season row for comparison
+  const seasonById = useMemo(() => {
+    const m: Record<string, PlayerStat> = {}
+    for (const p of seasonPlayers) m[p.player_id] = p
+    return m
+  }, [seasonPlayers])
 
   const activeCols = tab === 'shooting' ? SHOOTING_COLS : STATS_COLS
   const quartiles  = useMemo(() => buildPlayerQuartiles(players, activeCols), [players, activeCols])
@@ -229,8 +258,56 @@ export default function PlayerStatsPage() {
             <h1 className="text-xl font-bold text-ink-primary">Estadísticas de Jugadores</h1>
             <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
           </div>
-          <FilterBar showDate={false} />
+          <FilterBar showDate />
         </div>
+
+        {/* Trend comparison panel — visible only when a date filter is active */}
+        {hasDateFilter && seasonPlayers.length > 0 && (() => {
+          // Build comparison list for currently visible players
+          const compared = players
+            .map(p => ({ p, s: seasonById[p.player_id] }))
+            .filter(({ s }) => s != null && (s.points_per_game ?? 0) > 0) as Array<{ p: PlayerStat; s: PlayerStat }>
+
+          // If no team filter, show top-3 improved and top-3 declined by PPG %
+          const sorted = [...compared].sort((a, b) => {
+            const da = (a.p.points_per_game ?? 0) - (a.s.points_per_game ?? 0)
+            const db = (b.p.points_per_game ?? 0) - (b.s.points_per_game ?? 0)
+            return db - da
+          })
+          const display = teamFilter ? compared : [
+            ...sorted.slice(0, 3),
+            ...sorted.slice(-3).reverse(),
+          ]
+          if (display.length === 0) return null
+
+          return (
+            <div className="card p-4">
+              <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">
+                Tendencia vs temporada completa
+                {!teamFilter && <span className="ml-2 normal-case font-normal">(top +3 / top −3 por PPG)</span>}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {display.map(({ p, s }) => (
+                  <div
+                    key={p.player_id}
+                    className="flex items-center justify-between p-2 rounded bg-surface-muted border border-surface-border gap-2"
+                  >
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-xs font-medium text-ink-primary truncate">{p.player_name}</span>
+                      <span className="text-[10px] text-ink-muted truncate">{p.team_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <TrendBadge recent={p.points_per_game}    season={s.points_per_game}    />
+                      <TrendBadge recent={p.rebounds_per_game}  season={s.rebounds_per_game}  />
+                      <TrendBadge recent={p.assists_per_game}   season={s.assists_per_game}   />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-ink-muted mt-2">PPG · REB · AST</p>
+            </div>
+          )
+        })()}
 
         {/* Controls row */}
         <div className="flex flex-wrap items-center gap-3">
@@ -300,4 +377,5 @@ export default function PlayerStatsPage() {
       </div>
     </PageTransition>
   )
-}
+}
+

@@ -80,9 +80,14 @@ export const getTeamQuartiles = (collection: string) =>
 /** @deprecated Use getTeamQuartiles */
 export const getQuartiles = getTeamQuartiles
 
-export const getTeamEvolution = (collection: string, teamId: string, stat: string) =>
+export const getTeamEvolution = (
+  collection: string,
+  teamName: string,
+  stat: string,
+  window = 5,
+) =>
   get<EvolutionPoint[]>(
-    `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamId)}?stat=${encodeURIComponent(stat)}`,
+    `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamName)}?stat=${encodeURIComponent(stat)}&window=${window}`,
   )
 
 // ── Players ───────────────────────────────────────────────────────────────────
@@ -184,7 +189,10 @@ export interface TeamStat {
   points_per_game: number
   points_against_per_game: number
   possessions_per_game: number
+  // rebounding per game
   rebounds_per_game: number
+  offensive_rebounds_per_game?: number
+  defensive_rebounds_per_game?: number
   assists_per_game: number
   steals_per_game: number
   turnovers_per_game: number
@@ -246,10 +254,13 @@ export interface PlayerStat {
   // per-game
   points_per_game: number
   rebounds_per_game: number
+  offensive_rebounds_per_game?: number
+  defensive_rebounds_per_game?: number
   assists_per_game: number
   steals_per_game: number
   blocks_per_game: number
   turnovers_per_game: number
+  fouls_per_game?: number
   valoracion_per_game?: number
   pllss_per_game?: number
   // shooting percentages (0–100 scale)
@@ -299,11 +310,15 @@ export interface EvolutionPoint {
   game_number: number
   value: number
   rolling_avg?: number
+  won?: boolean
+  opponent?: string
 }
 
 export interface ShotZoneData {
   zone: string
   zone_label: string
+  /** 2 for two-point zone, 3 for three-point zone */
+  points: number
   fga: number
   fgm: number
   fg_pct: number
@@ -424,3 +439,14 @@ export const postScrapeStart = (req: ScrapeRequest) =>
 
 export const getScrapeProgress = (jobId: string) =>
   get<ScrapeJob>(`/scrape/progress/${encodeURIComponent(jobId)}`)
+
+// ── Reports (binary downloads) ────────────────────────────────────────────────
+
+export const getPlayerScoutingUrl = (collection: string, playerId: string) =>
+  `${BASE}/reports/${encodeURIComponent(collection)}/player-scouting/${encodeURIComponent(playerId)}`
+
+export const getTeamScoutingUrl = (collection: string, teamName: string) =>
+  `${BASE}/reports/${encodeURIComponent(collection)}/team-scouting/${encodeURIComponent(teamName)}`
+
+export const getSeasonSummaryUrl = (collection: string) =>
+  `${BASE}/reports/${encodeURIComponent(collection)}/season-summary`

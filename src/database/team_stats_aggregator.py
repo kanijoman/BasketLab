@@ -123,7 +123,8 @@ class TeamStatsAggregator:
             # Stat fields to calculate quartiles for (comprehensive list from basic_stats + advanced_stats)
             stat_fields = [
                 # Per-game stats
-                'points_per_game', 'points_allowed_per_game', 'rebounds_per_game',
+                'points_per_game', 'points_against_per_game', 'points_allowed_per_game',
+                'rebounds_per_game', 'offensive_rebounds_per_game', 'defensive_rebounds_per_game',
                 'assists_per_game', 'steals_per_game', 'turnovers_per_game', 'blocks_per_game',
                 'possessions_per_game',
                 # Shooting percentages

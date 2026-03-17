@@ -18,6 +18,7 @@ import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import StatCard from '@/components/ui/StatCard'
+import TrendBadge from '@/components/ui/TrendBadge'
 
 // -- Column factory helpers ----------------------------------------------------
 
@@ -65,6 +66,8 @@ const BASIC_COLS: ColumnDef<TeamStat, unknown>[] = [
   numCol('fg3_percentage', '%T3', { pct: true }),
   numCol('ft_percentage', '%TL', { pct: true }),
   numCol('rebounds_per_game', 'Reb'),
+  numCol('offensive_rebounds_per_game', 'RO'),
+  numCol('defensive_rebounds_per_game', 'RD'),
   numCol('assists_per_game', 'Ast'),
   numCol('steals_per_game', 'Rob'),
   numCol('turnovers_per_game', 'Perd'),
@@ -82,10 +85,13 @@ const ADVANCED_COLS: ColumnDef<TeamStat, unknown>[] = [
   numCol('true_shooting', 'TS%', { pct: true }),
   numCol('three_point_rate', '3Pr%', { pct: true }),
   numCol('free_throw_rate', 'FTr%', { pct: true }),
-  numCol('turnover_rate', 'TOV%', { pct: true }),
-  numCol('offensive_rebound_rate', 'ROB%', { pct: true }),
-  numCol('defensive_rebound_rate', 'RD%', { pct: true }),
   numCol('assist_fg_rate', 'AST/FG', { pct: true }),
+  numCol('assist_rate', 'AST%', { pct: true }),
+  numCol('turnover_rate', 'TOV%', { pct: true }),
+  numCol('steal_rate', 'ROB%', { pct: true }),
+  numCol('block_rate', 'TAP%', { pct: true }),
+  numCol('offensive_rebound_rate', 'ORB%', { pct: true }),
+  numCol('defensive_rebound_rate', 'RD%', { pct: true }),
 ]
 
 /** Columns where lower is better (reversed Q colouring) */
@@ -133,6 +139,20 @@ export default function TeamStatsPage() {
     to:     filters.dateTo   || undefined,
   }), [filters])
 
+  // Season-baseline query (no date filter) — used for trend comparison
+  const hasDateFilter = Boolean(filters.dateFrom)
+  const baselineFilters: TeamFilters = useMemo(() => ({
+    venue:  filters.venue  || undefined,
+    result: filters.result || undefined,
+  }), [filters.venue, filters.result])
+
+  const { data: seasonData } = useQuery({
+    queryKey:  ['team-stats-season', collection?.name, baselineFilters],
+    queryFn:   () => getTeamStats(collection!.name, baselineFilters),
+    enabled:   Boolean(collection) && hasDateFilter,
+    staleTime: 10 * 60_000,
+  })
+
   const { data: statsData, isLoading: loadingStats } = useQuery({
     queryKey: ['team-stats', collection?.name, apiFilters],
     queryFn:  () => getTeamStats(collection!.name, apiFilters),
@@ -149,6 +169,13 @@ export default function TeamStatsPage() {
 
   const teamRows    = statsData?.team_stats ?? []
   const rivalRows   = statsData?.opponent_stats ?? []
+
+  // Map team name → full-season row for comparison
+  const seasonByName = useMemo(() => {
+    const m: Record<string, TeamStat> = {}
+    for (const r of (seasonData?.team_stats ?? [])) m[r.team_name] = r
+    return m
+  }, [seasonData])
   const quartileMap = useMemo(
     () => (quartilesRaw ? buildQuartileMap(quartilesRaw) : {}),
     [quartilesRaw],
@@ -185,8 +212,39 @@ export default function TeamStatsPage() {
             <h1 className="text-xl font-bold text-ink-primary">Estadísticas de Equipo</h1>
             <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
           </div>
-          <FilterBar showDate={false} />
+          <FilterBar showDate />
         </div>
+
+        {/* Trend comparison panel — visible only when a date filter is active */}
+        {hasDateFilter && (seasonData?.team_stats?.length ?? 0) > 0 && (
+          <div className="card p-4">
+            <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">
+              Tendencia vs temporada completa
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+              {teamRows.map(recent => {
+                const season = seasonByName[recent.team_name]
+                if (!season) return null
+                return (
+                  <div
+                    key={recent.team_name}
+                    className="flex items-center justify-between p-2 rounded bg-surface-muted border border-surface-border gap-2"
+                  >
+                    <span className="text-xs font-medium text-ink-primary truncate flex-1">
+                      {recent.team_name}
+                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <TrendBadge recent={recent.offensive_rating}  season={season.offensive_rating}  />
+                      <TrendBadge recent={recent.defensive_rating}  season={season.defensive_rating}  reverse />
+                      <TrendBadge recent={recent.points_per_game}   season={season.points_per_game}   />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <p className="text-xs text-ink-muted mt-2">OER · DER (inv.) · PPG</p>
+          </div>
+        )}
 
         {/* Highlight stat cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

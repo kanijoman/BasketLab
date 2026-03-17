@@ -1,5 +1,6 @@
 """Players router — per-player statistics and IN/OUT analysis."""
 
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -15,6 +16,8 @@ def get_player_stats(
     collection: str,
     venue: Optional[str] = Query(None, description="home | away | null for all"),
     result: Optional[str] = Query(None, description="won | lost | null for all"),
+    from_date: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
+    to_date:   Optional[str] = Query(None, description="End date YYYY-MM-DD"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Return aggregated per-player statistics for all players in *collection*.
@@ -23,14 +26,24 @@ def get_player_stats(
         collection: MongoDB collection name, e.g. ``FEB_LF2_2025_A``.
         venue: Optional venue filter — ``"home"`` or ``"away"``.
         result: Optional result filter — ``"won"`` or ``"lost"``.
+        from_date: Optional start date (inclusive), format ``YYYY-MM-DD``.
+        to_date: Optional end date (inclusive), format ``YYYY-MM-DD``.
 
     Returns:
         List of player stat dicts (one per player).
     """
     svc = PlayerStatsService(db)
     venue_filter = True if venue == "home" else (False if venue == "away" else None)
+    date_filter: Optional[Dict] = None
+    if from_date or to_date:
+        date_filter = {}
+        if from_date:
+            date_filter["$gte"] = datetime.fromisoformat(from_date)
+        if to_date:
+            date_filter["$lte"] = datetime.fromisoformat(to_date)
     return svc.load_season_data(
         collection,
+        date_filter=date_filter,
         venue_filter=venue_filter,
         result_filter=result,
     )

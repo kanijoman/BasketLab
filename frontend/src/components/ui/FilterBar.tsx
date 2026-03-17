@@ -114,7 +114,28 @@ export default function FilterBar({ showDate = true, className }: Props) {
       />
 
       {showDate && (
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
+          {/* Quick date presets */}
+          {([7, 15, 30, 60] as const).map(n => {
+            const d = new Date()
+            d.setDate(d.getDate() - n)
+            const iso = d.toISOString().slice(0, 10)
+            const active7 = from === iso && !to
+            return (
+              <button
+                key={n}
+                onClick={() => { setParam('from', iso); setParam('to', '') }}
+                className={cn(
+                  'px-2 py-0.5 rounded text-xs border transition-colors',
+                  active7
+                    ? 'bg-brand-600/30 text-brand-400 border-brand-600/40'
+                    : 'border-surface-border text-ink-secondary hover:text-ink-primary',
+                )}
+              >
+                {n}d
+              </button>
+            )
+          })}
           <input
             type="date"
             value={from}

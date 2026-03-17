@@ -35,17 +35,20 @@
   }
 }
 
+
+/* ── Quartile cell coloring (in utilities layer so they override other utilities) ── */
+@layer utilities {
+  .table-cell-q1 { @apply bg-q1-bg text-q1-text; }
+  .table-cell-q2 { @apply bg-q2-bg text-q2-text; }
+  .table-cell-q3 { @apply bg-q3-bg text-q3-text; }
+  .table-cell-q4 { @apply bg-q4-bg text-q4-text; }
+}
+
 @layer components {
   /* ── Card ──────────────────────────────────────────────────────── */
   .card {
     @apply bg-surface-raised border border-surface-border rounded-card shadow-card;
   }
-
-  /* ── Table cells ────────────────────────────────────────────────── */
-  .table-cell-q1 { @apply bg-q1-bg text-q1-text; }
-  .table-cell-q2 { @apply bg-q2-bg text-q2-text; }
-  .table-cell-q3 { @apply bg-q3-bg text-q3-text; }
-  .table-cell-q4 { @apply bg-q4-bg text-q4-text; }
 
   /* ── Trend badges ───────────────────────────────────────────────── */
   .trend-great  { @apply text-brand-400 font-bold; }
