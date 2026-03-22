@@ -62,8 +62,8 @@ function buildTeamQs(params?: TeamFilters): string {
   const qs = new URLSearchParams()
   if (params?.venue)  qs.set('venue', params.venue)
   if (params?.result) qs.set('result', params.result)
-  if (params?.from)   qs.set('from', params.from)
-  if (params?.to)     qs.set('to', params.to)
+  if (params?.from)   qs.set('from_date', params.from)
+  if (params?.to)     qs.set('to_date', params.to)
   return qs.toString() ? `?${qs}` : ''
 }
 

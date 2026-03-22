@@ -158,10 +158,70 @@ class TestTeamsRouter:
         assert r.status_code == 200
         assert isinstance(r.json(), list)
 
+    def test_date_filter_from_date_regression(self):
+        """Regression: client must send from_date/to_date, not from/to.
 
-# ---------------------------------------------------------------------------
-# Players router
-# ---------------------------------------------------------------------------
+        Before the fix, buildTeamQs() sent ?from=... which the FastAPI router
+        does not recognise (it expects from_date), so date filters were silently
+        ignored.  This test verifies that from_date is wired through to the
+        service layer.
+        """
+        mock = _mock_db()
+        app.dependency_overrides[get_db] = lambda: mock
+        try:
+            with patch("src.services.team_stats_service.TeamStatsService.load_season_data",
+                       return_value={"team_stats": [], "opponent_stats": []}) as m:
+                r = TestClient(app).get(f"{V1}/teams/FEB_LF2_2025_A?from_date=2025-01-01")
+            assert r.status_code == 200
+            _, kwargs = m.call_args
+            date_filter = kwargs.get("date_filter") or m.call_args[0][1] if m.call_args[0][1:] else None
+            # If called with positional args, pick up the second positional arg
+            call_kwargs = m.call_args.kwargs if m.call_args.kwargs else {}
+            call_args = m.call_args.args if m.call_args.args else ()
+            df = call_kwargs.get("date_filter") or (call_args[1] if len(call_args) > 1 else None)
+            assert df is not None, "date_filter should not be None when from_date is provided"
+            assert "$gte" in df, "date_filter must contain $gte for from_date"
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_date_filter_to_date_regression(self):
+        """Regression: to_date must populate $lte in date_filter passed to service."""
+        mock = _mock_db()
+        app.dependency_overrides[get_db] = lambda: mock
+        try:
+            with patch("src.services.team_stats_service.TeamStatsService.load_season_data",
+                       return_value={"team_stats": [], "opponent_stats": []}) as m:
+                r = TestClient(app).get(f"{V1}/teams/FEB_LF2_2025_A?to_date=2025-12-31")
+            assert r.status_code == 200
+            call_kwargs = m.call_args.kwargs if m.call_args.kwargs else {}
+            call_args = m.call_args.args if m.call_args.args else ()
+            df = call_kwargs.get("date_filter") or (call_args[1] if len(call_args) > 1 else None)
+            assert df is not None, "date_filter should not be None when to_date is provided"
+            assert "$lte" in df, "date_filter must contain $lte for to_date"
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_date_filter_combined_regression(self):
+        """Regression: both from_date and to_date must produce $gte and $lte."""
+        mock = _mock_db()
+        app.dependency_overrides[get_db] = lambda: mock
+        try:
+            with patch("src.services.team_stats_service.TeamStatsService.load_season_data",
+                       return_value={"team_stats": [], "opponent_stats": []}) as m:
+                r = TestClient(app).get(
+                    f"{V1}/teams/FEB_LF2_2025_A?from_date=2025-01-01&to_date=2025-06-30"
+                )
+            assert r.status_code == 200
+            call_kwargs = m.call_args.kwargs if m.call_args.kwargs else {}
+            call_args = m.call_args.args if m.call_args.args else ()
+            df = call_kwargs.get("date_filter") or (call_args[1] if len(call_args) > 1 else None)
+            assert df is not None, "date_filter should not be None when both dates are provided"
+            assert "$gte" in df and "$lte" in df, "date_filter must contain both $gte and $lte"
+        finally:
+            app.dependency_overrides.clear()
+
+
+
 
 class TestPlayersRouter:
     def test_get_player_stats_returns_200(self, client):

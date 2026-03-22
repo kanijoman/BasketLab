@@ -124,7 +124,12 @@ export default function FilterBar({ showDate = true, className }: Props) {
             return (
               <button
                 key={n}
-                onClick={() => { setParam('from', iso); setParam('to', '') }}
+                onClick={() => {
+                  const next = new URLSearchParams(params)
+                  next.set('from', iso)
+                  next.delete('to')
+                  setParams(next, { replace: true })
+                }}
                 className={cn(
                   'px-2 py-0.5 rounded text-xs border transition-colors',
                   active7

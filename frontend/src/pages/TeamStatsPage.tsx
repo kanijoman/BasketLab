@@ -2,8 +2,9 @@
  * TeamStatsPage — season statistics for all teams in a collection.
  *
  * Tabs: Básico | Avanzado | Rivales
- * Filters: venue (home/away), result (won/lost)
+ * Filters: venue (home/away), result (won/lost), date range
  * Quartile colouring via DataTable
+ * Trend badges inline in every numeric cell when a date filter is active
  * Export: CSV / PNG / PDF via DataTable > ExportButton
  */
 import { useMemo, useState } from 'react'
@@ -13,31 +14,68 @@ import { BarChart2, Shield, Zap } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getTeamQuartiles, type TeamStat, type TeamFilters } from '@/api/client'
-import { fmt, fmtPct } from '@/lib/utils'
+import { fmt, fmtPct, getTrend } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import StatCard from '@/components/ui/StatCard'
 import TrendBadge from '@/components/ui/TrendBadge'
 
-// -- Column factory helpers ----------------------------------------------------
+// -- Column metadata (key, header, display options) ----------------------------
 
-function numCol(
-  key: string,
-  header: string,
-  opts: { decimals?: number; pct?: boolean } = {},
-): ColumnDef<TeamStat, unknown> {
-  const { decimals = 1, pct = false } = opts
-  return {
-    id: key,
-    accessorKey: key,
-    header,
-    cell: ({ getValue }) => {
-      const v = getValue() as number | null | undefined
-      return pct ? fmtPct(v) : fmt(v, decimals)
-    },
-  }
+interface ColDef {
+  key: keyof TeamStat
+  header: string
+  decimals?: number
+  pct?: boolean
+  /** Lower value = better for this stat */
+  reverse?: boolean
+  /** Count columns: no trend badge, no quartile colouring */
+  count?: boolean
 }
+
+const BASIC_COL_DEFS: ColDef[] = [
+  { key: 'total_games',                  header: 'PJ',     decimals: 0, count: true },
+  { key: 'games_home',                   header: 'L',      decimals: 0, count: true },
+  { key: 'games_away',                   header: 'V',      decimals: 0, count: true },
+  { key: 'points_per_game',              header: 'PPP' },
+  { key: 'points_against_per_game',      header: 'PPC',    reverse: true },
+  { key: 'fg2_percentage',               header: '%T2',    pct: true },
+  { key: 'fg3_percentage',               header: '%T3',    pct: true },
+  { key: 'ft_percentage',                header: '%TL',    pct: true },
+  { key: 'rebounds_per_game',            header: 'Reb' },
+  { key: 'offensive_rebounds_per_game',  header: 'RO' },
+  { key: 'defensive_rebounds_per_game',  header: 'RD' },
+  { key: 'assists_per_game',             header: 'Ast' },
+  { key: 'steals_per_game',              header: 'Rob' },
+  { key: 'turnovers_per_game',           header: 'Perd',   reverse: true },
+  { key: 'blocks_per_game',              header: 'Tap' },
+]
+
+const ADVANCED_COL_DEFS: ColDef[] = [
+  { key: 'total_games',               header: 'PJ',     decimals: 0, count: true },
+  { key: 'possessions_per_game',      header: 'Pos' },
+  { key: 'offensive_rating',          header: 'OER' },
+  { key: 'defensive_rating',          header: 'DER',    reverse: true },
+  { key: 'net_rating',                header: 'Net' },
+  { key: 'efg_percentage',            header: 'eFG%',   pct: true },
+  { key: 'true_shooting',             header: 'TS%',    pct: true },
+  { key: 'three_point_rate',          header: '3Pr%',   pct: true },
+  { key: 'free_throw_rate',           header: 'FTr%',   pct: true },
+  { key: 'assist_fg_rate',            header: 'AST/FG', pct: true },
+  { key: 'assist_rate',               header: 'AST%',   pct: true },
+  { key: 'turnover_rate',             header: 'TOV%',   pct: true, reverse: true },
+  { key: 'steal_rate',                header: 'ROB%',   pct: true },
+  { key: 'block_rate',                header: 'TAP%',   pct: true },
+  { key: 'offensive_rebound_rate',    header: 'ORB%',   pct: true },
+  { key: 'defensive_rebound_rate',    header: 'RD%',    pct: true },
+]
+
+/** Columns where lower is better (for DataTable quartile colouring) */
+const REVERSE_BASIC = BASIC_COL_DEFS.filter(d => d.reverse).map(d => d.key as string)
+const REVERSE_ADV   = ADVANCED_COL_DEFS.filter(d => d.reverse).map(d => d.key as string)
+
+// -- Column factory ------------------------------------------------------------
 
 function nameCol(): ColumnDef<TeamStat, unknown> {
   return {
@@ -53,50 +91,48 @@ function nameCol(): ColumnDef<TeamStat, unknown> {
   }
 }
 
-// -- Column sets ---------------------------------------------------------------
+/**
+ * Build a ColumnDef from a ColDef descriptor.
+ * When seasonByName is provided (date filter active) and the column is not a
+ * count, the cell also shows an inline TrendBadge.
+ */
+function buildCol(
+  def: ColDef,
+  seasonByName: Record<string, TeamStat> | null,
+): ColumnDef<TeamStat, unknown> {
+  const { key, header, decimals = 1, pct = false, reverse = false, count = false } = def
+  const showTrend = !count && seasonByName !== null
 
-const BASIC_COLS: ColumnDef<TeamStat, unknown>[] = [
-  nameCol(),
-  numCol('total_games', 'PJ', { decimals: 0 }),
-  numCol('games_home', 'L', { decimals: 0 }),
-  numCol('games_away', 'V', { decimals: 0 }),
-  numCol('points_per_game', 'PPP'),
-  numCol('points_against_per_game', 'PPC'),
-  numCol('fg2_percentage', '%T2', { pct: true }),
-  numCol('fg3_percentage', '%T3', { pct: true }),
-  numCol('ft_percentage', '%TL', { pct: true }),
-  numCol('rebounds_per_game', 'Reb'),
-  numCol('offensive_rebounds_per_game', 'RO'),
-  numCol('defensive_rebounds_per_game', 'RD'),
-  numCol('assists_per_game', 'Ast'),
-  numCol('steals_per_game', 'Rob'),
-  numCol('turnovers_per_game', 'Perd'),
-  numCol('blocks_per_game', 'Tap'),
-  numCol('possessions_per_game', 'Pos'),
-]
+  return {
+    id: key as string,
+    accessorKey: key as string,
+    header,
+    cell: ({ getValue, row }) => {
+      const v = getValue() as number | null | undefined
+      const formatted = pct ? fmtPct(v) : fmt(v, decimals)
 
-const ADVANCED_COLS: ColumnDef<TeamStat, unknown>[] = [
-  nameCol(),
-  numCol('total_games', 'PJ', { decimals: 0 }),
-  numCol('offensive_rating', 'OER'),
-  numCol('defensive_rating', 'DER'),
-  numCol('net_rating', 'Net'),
-  numCol('efg_percentage', 'eFG%', { pct: true }),
-  numCol('true_shooting', 'TS%', { pct: true }),
-  numCol('three_point_rate', '3Pr%', { pct: true }),
-  numCol('free_throw_rate', 'FTr%', { pct: true }),
-  numCol('assist_fg_rate', 'AST/FG', { pct: true }),
-  numCol('assist_rate', 'AST%', { pct: true }),
-  numCol('turnover_rate', 'TOV%', { pct: true }),
-  numCol('steal_rate', 'ROB%', { pct: true }),
-  numCol('block_rate', 'TAP%', { pct: true }),
-  numCol('offensive_rebound_rate', 'ORB%', { pct: true }),
-  numCol('defensive_rebound_rate', 'RD%', { pct: true }),
-]
+      if (!showTrend) return formatted
 
-/** Columns where lower is better (reversed Q colouring) */
-const REVERSE_BASIC = ['points_against_per_game', 'turnovers_per_game']
-const REVERSE_ADV   = ['defensive_rating', 'turnover_rate']
+      const teamName = (row.original as TeamStat).team_name
+      const seasonRow = seasonByName![teamName]
+      const seasonVal = seasonRow ? (seasonRow[key] as number | null | undefined) : null
+
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <span>{formatted}</span>
+          <TrendBadge recent={v} season={seasonVal} reverse={reverse} className="text-[10px]" />
+        </span>
+      )
+    },
+  }
+}
+
+function buildCols(
+  defs: ColDef[],
+  seasonByName: Record<string, TeamStat> | null,
+): ColumnDef<TeamStat, unknown>[] {
+  return [nameCol(), ...defs.map(d => buildCol(d, seasonByName))]
+}
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -181,16 +217,43 @@ export default function TeamStatsPage() {
     [quartilesRaw],
   )
 
+  // Trend source: season baseline for team rows; no trend for rivals
+  const trendSource = useMemo(
+    () => (hasDateFilter && tab !== 'rivals' ? seasonByName : null),
+    [hasDateFilter, tab, seasonByName],
+  )
+
+  const basicCols    = useMemo(() => buildCols(BASIC_COL_DEFS,    trendSource), [trendSource])
+  const advancedCols = useMemo(() => buildCols(ADVANCED_COL_DEFS, trendSource), [trendSource])
+
+  // Highlights: show per-stat trend on chips when date filter active
+  const seasonHighlights = useMemo(() => {
+    if (!hasDateFilter || !seasonData?.team_stats?.length) return null
+    const rows = seasonData.team_stats
+    return {
+      pos: mean(rows as TeamStat[], 'possessions_per_game'),
+      oer: mean(rows as TeamStat[], 'offensive_rating'),
+      ppg: mean(rows as TeamStat[], 'points_per_game'),
+    }
+  }, [hasDateFilter, seasonData])
+
   const highlights = useMemo(() => ({
+    pos: mean(teamRows, 'possessions_per_game'),
     oer: mean(teamRows, 'offensive_rating'),
-    der: mean(teamRows, 'defensive_rating'),
-    net: mean(teamRows, 'net_rating'),
     ppg: mean(teamRows, 'points_per_game'),
   }), [teamRows])
 
+  const [rivalsView, setRivalsView] = useState<'basic' | 'advanced'>('basic')
+
   const activeData = tab === 'rivals' ? rivalRows : teamRows
-  const activeCols = tab === 'advanced' ? ADVANCED_COLS : BASIC_COLS
-  const activeRev  = tab === 'advanced' ? REVERSE_ADV   : REVERSE_BASIC
+  const activeCols =
+    tab === 'advanced' || (tab === 'rivals' && rivalsView === 'advanced')
+      ? advancedCols
+      : basicCols
+  const activeRev =
+    tab === 'advanced' || (tab === 'rivals' && rivalsView === 'advanced')
+      ? REVERSE_ADV
+      : REVERSE_BASIC
 
   if (!collection) {
     return (
@@ -215,47 +278,40 @@ export default function TeamStatsPage() {
           <FilterBar showDate />
         </div>
 
-        {/* Trend comparison panel — visible only when a date filter is active */}
-        {hasDateFilter && (seasonData?.team_stats?.length ?? 0) > 0 && (
-          <div className="card p-4">
-            <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">
-              Tendencia vs temporada completa
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {teamRows.map(recent => {
-                const season = seasonByName[recent.team_name]
-                if (!season) return null
-                return (
-                  <div
-                    key={recent.team_name}
-                    className="flex items-center justify-between p-2 rounded bg-surface-muted border border-surface-border gap-2"
-                  >
-                    <span className="text-xs font-medium text-ink-primary truncate flex-1">
-                      {recent.team_name}
-                    </span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <TrendBadge recent={recent.offensive_rating}  season={season.offensive_rating}  />
-                      <TrendBadge recent={recent.defensive_rating}  season={season.defensive_rating}  reverse />
-                      <TrendBadge recent={recent.points_per_game}   season={season.points_per_game}   />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <p className="text-xs text-ink-muted mt-2">OER · DER (inv.) · PPG</p>
-          </div>
-        )}
-
-        {/* Highlight stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="OER Medio" value={fmt(highlights.oer)} accent="green" />
-          <StatCard label="DER Medio" value={fmt(highlights.der)} accent="blue"  />
-          <StatCard label="Net Medio" value={fmt(highlights.net)} accent={highlights.net >= 0 ? 'green' : 'red'} />
-          <StatCard label="PPP Medio" value={fmt(highlights.ppg)} />
+        {/* Highlight stat cards — show trend vs full season when date filter active */}
+        <div className="grid grid-cols-3 gap-3">
+          {(() => {
+            const posTrend  = seasonHighlights ? getTrend(highlights.pos, seasonHighlights.pos)  : null
+            const oerTrend  = seasonHighlights ? getTrend(highlights.oer, seasonHighlights.oer)  : null
+            const ppgTrend  = seasonHighlights ? getTrend(highlights.ppg, seasonHighlights.ppg)  : null
+            return (
+              <>
+                <StatCard
+                  label="Pos/Partido"
+                  value={fmt(highlights.pos)}
+                  trend={posTrend?.symbol}
+                  trendClass={posTrend?.className}
+                />
+                <StatCard
+                  label="OER Medio"
+                  value={fmt(highlights.oer)}
+                  accent="green"
+                  trend={oerTrend?.symbol}
+                  trendClass={oerTrend?.className}
+                />
+                <StatCard
+                  label="PPP Medio"
+                  value={fmt(highlights.ppg)}
+                  trend={ppgTrend?.symbol}
+                  trendClass={ppgTrend?.className}
+                />
+              </>
+            )
+          })()}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-surface-border">
+        <div className="flex items-center gap-1 border-b border-surface-border">
           {TABS.map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -271,6 +327,24 @@ export default function TeamStatsPage() {
               {label}
             </button>
           ))}
+          {tab === 'rivals' && (
+            <div className="ml-auto mb-1 flex rounded-lg overflow-hidden border border-surface-border">
+              {(['basic', 'advanced'] as const).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setRivalsView(v)}
+                  className={[
+                    'px-3 py-1 text-xs font-medium transition-colors',
+                    rivalsView === v
+                      ? 'bg-brand-600/30 text-brand-400'
+                      : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                  ].join(' ')}
+                >
+                  {v === 'basic' ? 'Básico' : 'Avanzado'}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Data table */}
