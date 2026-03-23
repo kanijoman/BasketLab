@@ -210,11 +210,20 @@ class TeamStatsService:
             "efg_percentage":              "efg_pct_game",
             "true_shooting":               "ts_pct_game",
             "turnover_rate":               "tov_pct_game",
+            "three_point_rate":            "three_point_rate_game",
+            "free_throw_rate":             "free_throw_rate_game",
+            "assist_fg_rate":              "assist_fg_rate_game",
+            "assist_rate":                 "assist_rate_game",
+            "steal_rate":                  "steal_rate_game",
+            "block_rate":                  "block_rate_game",
+            "offensive_rebound_rate":      "oreb_rate_game",
+            "defensive_rebound_rate":      "dreb_rate_game",
         }
 
         # stat_key → opponent raw field (rival columns use the same frontend keys)
         RIVAL_FIELD_MAP = {
             "points_per_game":             "opponent_points",
+            "points_against_per_game":     "points",
             "fg3_percentage":              "opp_fg3_pct_game",
             "fg2_percentage":              "opp_fg2_pct_game",
             "ft_percentage":               "opp_ft_pct_game",
@@ -225,6 +234,21 @@ class TeamStatsService:
             "steals_per_game":             "opp_steals",
             "turnovers_per_game":          "opp_turnovers",
             "blocks_per_game":             "opp_blocks",
+            "possessions_per_game":        "opp_possessions",
+            "offensive_rating":            "opp_oer_game",
+            "defensive_rating":            "opp_der_game",
+            "net_rating":                  "opp_net_game",
+            "efg_percentage":              "opp_efg_pct_game",
+            "true_shooting":               "opp_ts_pct_game",
+            "turnover_rate":               "opp_tov_pct_game",
+            "three_point_rate":            "opp_three_point_rate_game",
+            "free_throw_rate":             "opp_free_throw_rate_game",
+            "assist_fg_rate":              "opp_assist_fg_rate_game",
+            "assist_rate":                 "opp_assist_rate_game",
+            "steal_rate":                  "opp_steal_rate_game",
+            "block_rate":                  "opp_block_rate_game",
+            "offensive_rebound_rate":      "opp_orb_rate_game",
+            "defensive_rebound_rate":      "opp_drb_rate_game",
         }
 
         return {

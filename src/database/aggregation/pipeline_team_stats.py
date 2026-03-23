@@ -266,6 +266,18 @@ class TeamStatsPipelineMixin:
                 "off_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
                 "opponent_def_rebounds": builder._opponent_conditional_field("team_0_def_reb", "team_1_def_reb"),
                 "opponent_off_rebounds": builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb"),
+                # Opponent counting stats — kept here so they survive this $project
+                # and are available to build_per_game_raw_pipeline() downstream.
+                "opponent_fg2_made":      builder._opponent_conditional_field("team_0_fg2_made",  "team_1_fg2_made"),
+                "opponent_fg2_attempts":  builder._opponent_conditional_field("team_0_fg2_att",   "team_1_fg2_att"),
+                "opponent_fg3_made":      builder._opponent_conditional_field("team_0_fg3_made",  "team_1_fg3_made"),
+                "opponent_fg3_attempts":  builder._opponent_conditional_field("team_0_fg3_att",   "team_1_fg3_att"),
+                "opponent_ft_made":       builder._opponent_conditional_field("team_0_ft_made",   "team_1_ft_made"),
+                "opponent_ft_attempts":   builder._opponent_conditional_field("team_0_ft_att",    "team_1_ft_att"),
+                "opponent_assists":       builder._opponent_conditional_field("team_0_assists",   "team_1_assists"),
+                "opponent_steals":        builder._opponent_conditional_field("team_0_steals",    "team_1_steals"),
+                "opponent_turnovers":     builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
+                "opponent_blocks":        builder._opponent_conditional_field("team_0_blocks",    "team_1_blocks"),
                 "assists": {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
                 "possessions": get_possessions_calculation(),
                 "opponent_possessions": opponent_poss,
@@ -479,17 +491,19 @@ class TeamStatsPipelineMixin:
                     # Advanced computed fields
                     "oer_game": 1, "der_game": 1, "net_game": 1,
                     "efg_pct_game": 1, "ts_pct_game": 1, "tov_pct_game": 1,
-                    # Opponent (rival) raw fields for defensive consistency
-                    "opp_fg3_made":     TeamStatsPipelineMixin._opponent_conditional_field("team_0_fg3_made",  "team_1_fg3_made"),
-                    "opp_fg3_attempts": TeamStatsPipelineMixin._opponent_conditional_field("team_0_fg3_att",   "team_1_fg3_att"),
-                    "opp_fg2_made":     TeamStatsPipelineMixin._opponent_conditional_field("team_0_fg2_made",  "team_1_fg2_made"),
-                    "opp_fg2_attempts": TeamStatsPipelineMixin._opponent_conditional_field("team_0_fg2_att",   "team_1_fg2_att"),
-                    "opp_ft_made":      TeamStatsPipelineMixin._opponent_conditional_field("team_0_ft_made",   "team_1_ft_made"),
-                    "opp_ft_attempts":  TeamStatsPipelineMixin._opponent_conditional_field("team_0_ft_att",    "team_1_ft_att"),
-                    "opp_assists":      TeamStatsPipelineMixin._opponent_conditional_field("team_0_assists",   "team_1_assists"),
-                    "opp_steals":       TeamStatsPipelineMixin._opponent_conditional_field("team_0_steals",    "team_1_steals"),
-                    "opp_turnovers":    TeamStatsPipelineMixin._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
-                    "opp_blocks":       TeamStatsPipelineMixin._opponent_conditional_field("team_0_blocks",    "team_1_blocks"),
+                    # Opponent (rival) raw fields for defensive consistency.
+                    # These reference the fields added in _project_match_data() so
+                    # they survive the earlier $project stage (team_0_*/team_1_* do not).
+                    "opp_fg3_made":     "$opponent_fg3_made",
+                    "opp_fg3_attempts": "$opponent_fg3_attempts",
+                    "opp_fg2_made":     "$opponent_fg2_made",
+                    "opp_fg2_attempts": "$opponent_fg2_attempts",
+                    "opp_ft_made":      "$opponent_ft_made",
+                    "opp_ft_attempts":  "$opponent_ft_attempts",
+                    "opp_assists":      "$opponent_assists",
+                    "opp_steals":       "$opponent_steals",
+                    "opp_turnovers":    "$opponent_turnovers",
+                    "opp_blocks":       "$opponent_blocks",
                     "opp_def_rebounds": "$opponent_def_rebounds",
                     "opp_off_rebounds": "$opponent_off_rebounds",
                 }
@@ -513,6 +527,148 @@ class TeamStatsPipelineMixin:
                                   "else": None}
                     },
                     "opp_total_rebounds": {"$add": ["$opp_def_rebounds", "$opp_off_rebounds"]},
+                }
+            },
+            # Stage A — helper intermediate fields for advanced rival+own rate stats.
+            # Must be a separate stage so Stage B can reference these new fields.
+            {
+                "$addFields": {
+                    "opp_possessions": {
+                        "$subtract": [
+                            {"$add": ["$opp_fg2_attempts", "$opp_fg3_attempts",
+                                      {"$multiply": [0.45, "$opp_ft_attempts"]},
+                                      "$opp_turnovers"]},
+                            "$opp_off_rebounds"
+                        ]
+                    },
+                    "opp_fga_game": {"$add": ["$opp_fg2_attempts", "$opp_fg3_attempts"]},
+                    "opp_fgm_game": {"$add": ["$opp_fg2_made",     "$opp_fg3_made"]},
+                    # Own helpers: fga_game was dropped by the earlier $project
+                    "fga_game":     {"$add": ["$fg2_attempts", "$fg3_attempts"]},
+                    "fgm_game":     {"$add": ["$fg2_made",     "$fg3_made"]},
+                }
+            },
+            # Stage B — advanced per-game derived fields for rival and own rate stats.
+            {
+                "$addFields": {
+                    # --- Opponent (rival) advanced per-game ---
+                    "opp_oer_game": {
+                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opponent_points", "$opp_possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_der_game": {
+                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$points", "$opp_possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_net_game": {
+                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": [{"$subtract": ["$opponent_points", "$points"]}, "$opp_possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_efg_pct_game": {
+                        "$cond": {"if": {"$gt": ["$opp_fga_game", 0]},
+                                  "then": {"$multiply": [{"$divide": [{"$add": ["$opp_fg2_made", {"$multiply": [1.5, "$opp_fg3_made"]}]}, "$opp_fga_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_ts_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": [{"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}]}, 0]},
+                            "then": {"$multiply": [{"$divide": ["$opponent_points", {"$multiply": [2, {"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}]}]}]}, 100]},
+                            "else": None
+                        }
+                    },
+                    "opp_tov_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": [{"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}, "$opp_turnovers"]}, 0]},
+                            "then": {"$multiply": [{"$divide": ["$opp_turnovers", {"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}, "$opp_turnovers"]}]}, 100]},
+                            "else": None
+                        }
+                    },
+                    "opp_three_point_rate_game": {
+                        "$cond": {"if": {"$gt": ["$opp_fga_game", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_fg3_attempts", "$opp_fga_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_free_throw_rate_game": {
+                        "$cond": {"if": {"$gt": ["$opp_fga_game", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_ft_attempts", "$opp_fga_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_assist_fg_rate_game": {
+                        "$cond": {"if": {"$gt": ["$opp_fgm_game", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_assists", "$opp_fgm_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_assist_rate_game": {
+                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_assists", "$opp_possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    # steal_rate = rival steals / own possessions
+                    "opp_steal_rate_game": {
+                        "$cond": {"if": {"$gt": ["$possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_steals", "$possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    # block_rate = rival blocks / own fg2_attempts
+                    "opp_block_rate_game": {
+                        "$cond": {"if": {"$gt": ["$fg2_attempts", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_blocks", "$fg2_attempts"]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_orb_rate_game": {
+                        "$cond": {"if": {"$gt": [{"$add": ["$opp_off_rebounds", "$def_rebounds"]}, 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_off_rebounds", {"$add": ["$opp_off_rebounds", "$def_rebounds"]}]}, 100]},
+                                  "else": None}
+                    },
+                    "opp_drb_rate_game": {
+                        "$cond": {"if": {"$gt": [{"$add": ["$opp_def_rebounds", "$off_rebounds"]}, 0]},
+                                  "then": {"$multiply": [{"$divide": ["$opp_def_rebounds", {"$add": ["$opp_def_rebounds", "$off_rebounds"]}]}, 100]},
+                                  "else": None}
+                    },
+                    # --- Own rate stats (new) — require opp_possessions from Stage A ---
+                    "three_point_rate_game": {
+                        "$cond": {"if": {"$gt": ["$fga_game", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$fg3_attempts", "$fga_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "free_throw_rate_game": {
+                        "$cond": {"if": {"$gt": ["$fga_game", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$ft_attempts", "$fga_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "assist_fg_rate_game": {
+                        "$cond": {"if": {"$gt": ["$fgm_game", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$assists", "$fgm_game"]}, 100]},
+                                  "else": None}
+                    },
+                    "assist_rate_game": {
+                        "$cond": {"if": {"$gt": ["$possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$assists", "$possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    "steal_rate_game": {
+                        "$cond": {"if": {"$gt": ["$opp_possessions", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$steals", "$opp_possessions"]}, 100]},
+                                  "else": None}
+                    },
+                    "block_rate_game": {
+                        "$cond": {"if": {"$gt": ["$opp_fg2_attempts", 0]},
+                                  "then": {"$multiply": [{"$divide": ["$blocks", "$opp_fg2_attempts"]}, 100]},
+                                  "else": None}
+                    },
+                    "oreb_rate_game": {
+                        "$cond": {"if": {"$gt": [{"$add": ["$off_rebounds", "$opp_def_rebounds"]}, 0]},
+                                  "then": {"$multiply": [{"$divide": ["$off_rebounds", {"$add": ["$off_rebounds", "$opp_def_rebounds"]}]}, 100]},
+                                  "else": None}
+                    },
+                    "dreb_rate_game": {
+                        "$cond": {"if": {"$gt": [{"$add": ["$def_rebounds", "$opp_off_rebounds"]}, 0]},
+                                  "then": {"$multiply": [{"$divide": ["$def_rebounds", {"$add": ["$def_rebounds", "$opp_off_rebounds"]}]}, 100]},
+                                  "else": None}
+                    },
                 }
             },
         ]

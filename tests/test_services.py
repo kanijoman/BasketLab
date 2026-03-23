@@ -131,6 +131,117 @@ class TestTeamStatsServiceGetQuartiles:
 
 
 # ---------------------------------------------------------------------------
+# Helpers for get_consistency tests
+# ---------------------------------------------------------------------------
+
+def _make_fake_rows(n=4, seed=0):
+    """Return n per-game rows with all fields needed by RIVAL_FIELD_MAP and OWN_FIELD_MAP."""
+    rows = []
+    for i in range(n):
+        offset = i * 2 + seed  # small variation so std-dev > 0
+        rows.append({
+            "team_name":        "Equipo A",
+            "points":           80 + offset,
+            "opponent_points":  70 + offset,
+            "fg3_pct_game":     33.0 + offset,
+            "fg2_pct_game":     50.0 + offset,
+            "ft_pct_game":      75.0 + offset,
+            "opp_fg3_pct_game": 28.0 + offset,
+            "opp_fg2_pct_game": 45.0 + offset,
+            "opp_ft_pct_game":  70.0 + offset,
+            "opp_total_rebounds": 30 + offset,
+            "opp_off_rebounds":   8 + offset,
+            "opp_def_rebounds":  22 + offset,
+            "opp_assists":       12 + offset,
+            "opp_steals":         4 + offset,
+            "opp_turnovers":     10 + offset,
+            "opp_blocks":         2 + offset,
+            "total_rebounds":    35 + offset,
+            "def_rebounds":      25 + offset,
+            "off_rebounds":      10 + offset,
+            "assists":           15 + offset,
+            "steals":             5 + offset,
+            "turnovers":          8 + offset,
+            "blocks":             3 + offset,
+            "possessions":       70.0 + offset,
+            "oer_game":         114.3 + offset,
+            "der_game":         100.0 + offset,
+            "net_game":          14.3 + offset,
+            "efg_pct_game":      55.0 + offset,
+            "ts_pct_game":       57.0 + offset,
+            "tov_pct_game":      10.0 + offset,
+        })
+    return rows
+
+
+def _make_consistency_handler(rows):
+    """Mock handler whose .connection.get_collection().aggregate() returns rows."""
+    handler = _make_db_handler()
+    mock_coll = MagicMock()
+    mock_coll.aggregate.return_value = iter(rows)
+    handler.connection.get_collection.return_value = mock_coll
+    return handler
+
+
+class TestTeamStatsServiceGetConsistency:
+    def test_fbcyl_returns_empty_dict(self):
+        """FBCYL collections are not supported — should return {} immediately."""
+        from src.services import TeamStatsService
+        svc = TeamStatsService(_make_db_handler())
+        result = svc.get_consistency("FBCYL_SE_2025_A")
+        assert result == {}
+
+    def test_returns_own_and_rival_keys(self):
+        from src.services import TeamStatsService
+        handler = _make_consistency_handler(_make_fake_rows())
+        svc = TeamStatsService(handler)
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        assert "own" in result
+        assert "rival" in result
+
+    def test_rival_basic_fields_present_regression(self):
+        """Regression: rival CV must include basic counting stats.
+
+        Before the fix, opp_assists/steals/turnovers/blocks were null because
+        team_0_*/team_1_* fields were eliminated in _project_match_data() before
+        _opponent_conditional_field() could reference them in build_per_game_raw_pipeline().
+        """
+        from src.services import TeamStatsService
+        rows = _make_fake_rows(n=5)
+        handler = _make_consistency_handler(rows)
+        svc = TeamStatsService(handler)
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        rival = result.get("rival", {})
+        team = rival.get("Equipo A", {})
+        for key in ("fg3_percentage", "fg2_percentage", "ft_percentage",
+                    "assists_per_game", "steals_per_game",
+                    "turnovers_per_game", "blocks_per_game"):
+            assert key in team, (
+                f"rival CV missing '{key}' — was null due to team_0_*/team_1_* elimination bug"
+            )
+            assert team[key]["cv"] >= 0
+
+    def test_min_sample_guard(self):
+        """Teams with fewer than 3 games must not produce a CV entry."""
+        from src.services import TeamStatsService
+        rows = _make_fake_rows(n=2)  # only 2 rows — below the minimum
+        handler = _make_consistency_handler(rows)
+        svc = TeamStatsService(handler)
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        own = result.get("own", {})
+        assert own.get("Equipo A", {}) == {}
+
+    def test_exception_returns_empty_dict(self):
+        """Any exception during aggregation should be swallowed and return {}."""
+        from src.services import TeamStatsService
+        handler = _make_db_handler()
+        handler.connection.get_collection.side_effect = RuntimeError("db down")
+        svc = TeamStatsService(handler)
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        assert result == {}
+
+
+# ---------------------------------------------------------------------------
 # PlayerStatsService
 # ---------------------------------------------------------------------------
 

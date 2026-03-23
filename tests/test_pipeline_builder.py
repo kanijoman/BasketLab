@@ -250,5 +250,65 @@ class TestPipelineBuilderSymmetry(unittest.TestCase):
             self.assertIn(required, fbcyl_stages, f"FBCYL pipeline missing {required}")
 
 
+class TestPerGameRawPipelineStructure(unittest.TestCase):
+    """Structural tests for build_per_game_raw_pipeline.
+
+    Ensures the pipeline shape is correct and that opponent counting fields
+    (opp_assists, opp_steals, etc.) are declared in the $project stage.
+    These were previously null because team_0_*/team_1_* scalars were dropped
+    by the earlier _project_match_data() $project before they could be used.
+    """
+
+    def _get_pipeline(self):
+        return AggregationPipelineBuilder.build_per_game_raw_pipeline()
+
+    def test_returns_list_of_dicts(self):
+        pipeline = self._get_pipeline()
+        self.assertIsInstance(pipeline, list)
+        self.assertGreater(len(pipeline), 0)
+        for stage in pipeline:
+            self.assertIsInstance(stage, dict)
+
+    def test_has_no_group_stage(self):
+        """Per-game pipeline must NOT group — one document per team per game."""
+        pipeline = self._get_pipeline()
+        stage_keys = [list(s.keys())[0] for s in pipeline]
+        self.assertNotIn("$group", stage_keys)
+
+    def test_opp_counting_fields_declared_regression(self):
+        """Regression: opp_assists/steals/turnovers/blocks/fg*_made must be declared
+        in the $project stage as simple field references ("$opponent_*"), NOT as
+        _opponent_conditional_field() expressions that reference team_0_*/team_1_*
+        which are already gone by that point in the pipeline.
+        """
+        pipeline = self._get_pipeline()
+        # Find the $project stage that declares opp_assists
+        project_stage = None
+        for stage in pipeline:
+            if "$project" in stage and "opp_assists" in stage["$project"]:
+                project_stage = stage["$project"]
+                break
+        self.assertIsNotNone(
+            project_stage,
+            "No $project stage declares opp_assists — field will always be null"
+        )
+        required_fields = [
+            "opp_assists", "opp_steals", "opp_turnovers", "opp_blocks",
+            "opp_fg2_made", "opp_fg2_attempts",
+            "opp_fg3_made", "opp_fg3_attempts",
+            "opp_ft_made",  "opp_ft_attempts",
+        ]
+        for field in required_fields:
+            self.assertIn(
+                field, project_stage,
+                f"$project stage missing '{field}' — badge will be absent"
+            )
+            # Must be a plain string reference, not a conditional expression
+            self.assertIsInstance(
+                project_stage[field], str,
+                f"'{field}' should be a '$...' string reference, not an expression"
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
