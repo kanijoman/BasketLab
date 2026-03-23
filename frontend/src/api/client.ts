@@ -80,6 +80,24 @@ export const getTeamQuartiles = (collection: string) =>
 /** @deprecated Use getTeamQuartiles */
 export const getQuartiles = getTeamQuartiles
 
+/** Per-team intra-game consistency: {team_name: {stat_key: {mean, std, cv, n}}} */
+export interface CVEntry { mean: number; std: number; cv: number; n: number }
+export type CVMap = Record<string, Record<string, CVEntry>>
+/** Response from the team consistency endpoint: own stats + rival (opponent) stats */
+export interface TeamConsistencyResponse { own: CVMap; rival: CVMap }
+
+export const getTeamConsistency = (collection: string) =>
+  get<TeamConsistencyResponse>(
+    `/teams/${encodeURIComponent(collection)}/consistency`,
+  )
+
+/** Per-player intra-game consistency: {player_id: {stat_key: CVEntry}} */
+export type ConsistencyMap = CVMap   // alias kept for player stats page
+export const getPlayerConsistency = (collection: string) =>
+  get<ConsistencyMap>(
+    `/players/${encodeURIComponent(collection)}/consistency`,
+  )
+
 export const getTeamEvolution = (
   collection: string,
   teamName: string,

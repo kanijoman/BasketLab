@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 import { getLineupAnalysis, getTeamStats, type LineupRow } from '@/api/client'
 import { useEffect } from 'react'
+import { tippedHeader } from '@/components/ui/Tooltip'
 
 const col = createColumnHelper<LineupRow>()
 
@@ -19,14 +20,14 @@ const columns = [
     { id: 'players', header: 'Quinteto', size: 340 },
   ),
   col.accessor('minutes', {
-    header: 'MIN',
+    header: tippedHeader('MIN'),
     size: 65,
     cell: i => (i.getValue() as number)?.toFixed(1),
   }),
-  col.accessor('points_for', { header: 'PF', size: 55 }),
-  col.accessor('points_against', { header: 'PC', size: 55 }),
+  col.accessor('points_for', { header: tippedHeader('PF'), size: 55 }),
+  col.accessor('points_against', { header: tippedHeader('PC'), size: 55 }),
   col.accessor('plus_minus', {
-    header: '+/-',
+    header: tippedHeader('+/-'),
     size: 60,
     cell: i => {
       const v = i.getValue() as number
@@ -38,7 +39,7 @@ const columns = [
     },
   }),
   col.accessor('net_rating', {
-    header: 'Net Rtg',
+    header: tippedHeader('Net Rtg'),
     size: 70,
     cell: i => {
       const v = i.getValue() as number

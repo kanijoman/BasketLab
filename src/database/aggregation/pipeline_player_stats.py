@@ -428,3 +428,67 @@ class PlayerStatsPipelineMixin:
             }
         ]
 
+    @staticmethod
+    def build_per_player_per_game_pipeline() -> List[Dict]:
+        """Return one document per player per game with raw counting stats.
+
+        Reuses stages 1-5 of ``build_player_stats_pipeline`` but stops before
+        the ``$group`` stage.  Each document represents a single player's
+        performance in a single game.  Used by PlayerStatsService.get_consistency()
+        to compute intra-player std dev and CV game-to-game.
+
+        Only valid for FEB collections.
+
+        Returns:
+            List of aggregation pipeline stages.
+        """
+        return [
+            {
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
+                            "onError": None, "onNull": None,
+                        }
+                    },
+                    "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
+                    "awayPoints":  {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}},
+                }
+            },
+            {"$unwind": {"path": "$BOXSCORE.TEAM", "includeArrayIndex": "teamIndex"}},
+            {"$unwind": {"path": "$BOXSCORE.TEAM.PLAYER", "preserveNullAndEmptyArrays": False}},
+            {
+                "$project": {
+                    "player_id":   "$BOXSCORE.TEAM.PLAYER.id",
+                    "player_name": "$BOXSCORE.TEAM.PLAYER.name",
+                    "team_name":   "$BOXSCORE.TEAM.TOTAL.name",
+                    "minutes": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.min",    "0"]}},
+                    "pts":     {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pts",    "0"]}},
+                    "assist":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.assist", "0"]}},
+                    "ro":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.ro",     "0"]}},
+                    "rd":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rd",     "0"]}},
+                    "rt":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rt",     "0"]}},
+                    "st":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.st",     "0"]}},
+                    "to":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.to",     "0"]}},
+                    "bs":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.bs",     "0"]}},
+                    "pf":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pf",     "0"]}},
+                    "val":     {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.val",    "0"]}},
+                    "p1m":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1m",    "0"]}},
+                    "p1a":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1a",    "0"]}},
+                    "p2m":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2m",    "0"]}},
+                    "p2a":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2a",    "0"]}},
+                    "p3m":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3m",    "0"]}},
+                    "p3a":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3a",    "0"]}},
+                }
+            },
+            {"$match": {"minutes": {"$gt": 0}}},
+            {
+                "$addFields": {
+                    "fg1_pct_game": {"$cond": {"if": {"$gt": ["$p1a", 0]}, "then": {"$multiply": [{"$divide": ["$p1m", "$p1a"]}, 100]}, "else": None}},
+                    "fg2_pct_game": {"$cond": {"if": {"$gt": ["$p2a", 0]}, "then": {"$multiply": [{"$divide": ["$p2m", "$p2a"]}, 100]}, "else": None}},
+                    "fg3_pct_game": {"$cond": {"if": {"$gt": ["$p3a", 0]}, "then": {"$multiply": [{"$divide": ["$p3m", "$p3a"]}, 100]}, "else": None}},
+                }
+            },
+        ]
+

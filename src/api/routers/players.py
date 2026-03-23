@@ -49,6 +49,29 @@ def get_player_stats(
     )
 
 
+@router.get("/{collection}/quartiles", summary="Get league-wide player stat quartiles")
+def get_player_quartiles(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
+    svc = PlayerStatsService(db)
+    return svc.get_quartiles(collection)
+
+
+@router.get("/{collection}/consistency", summary="Get per-player intra-game consistency stats")
+def get_player_consistency(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
+    """Return CV (coefficient of variation) per stat for each player.
+
+    Computes how consistent each player is game-to-game across all their
+    tracked stats.  Only available for FEB collections.
+
+    Args:
+        collection: MongoDB collection name.
+
+    Returns:
+        ``{player_id: {stat_key: {mean, std, cv, n}}}``
+    """
+    svc = PlayerStatsService(db)
+    return svc.get_consistency(collection)
+
+
 @router.get("/{collection}/inout/{player_id}", summary="IN/OUT impact analysis for a player")
 def get_inout_analysis(
     collection: str,

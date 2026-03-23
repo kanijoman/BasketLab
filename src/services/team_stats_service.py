@@ -8,7 +8,10 @@ by FastAPI endpoints and tested without a display server.
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
+
+import numpy as np
 
 if TYPE_CHECKING:
     from database import MongoDBHandler
@@ -112,6 +115,122 @@ class TeamStatsService:
             Sorted list of team name strings (may be empty).
         """
         return self._db.get_all_teams(collection_name) or []
+
+    def get_consistency(self, collection_name: str) -> Dict[str, Dict[str, Any]]:
+        """Compute intra-team per-game variability (std dev + CV) for key stats.
+
+        For each team, queries raw per-game counting stats via a MongoDB
+        aggregation and then computes, **in Python**, the standard deviation
+        (σ) and coefficient of variation (CV = σ/μ × 100) across all games in
+        the collection.
+
+        This captures how *consistent* a team is game-to-game — e.g. a team
+        with an average %T3 of 30 % but CV of 40 % is very volatile, while one
+        with CV of 12 % is predictable.
+
+        Only available for FEB collections (FBCYL uses a different document
+        schema).  Returns an empty dict for FBCYL or on error.
+
+        Args:
+            collection_name: MongoDB collection name.
+
+        Returns:
+            ``{team_name: {stat_key: {"mean": float, "std": float, "cv": float,
+            "n": int}}}``
+            where *stat_key* mirrors the keys used in the team-stats table
+            (``points_per_game``, ``fg3_percentage``, …).
+        """
+        if _is_fbcyl(collection_name):
+            return {}
+
+        from src.database.aggregation.pipeline_builder import AggregationPipelineBuilder
+
+        try:
+            collection = self._db.connection.get_collection(collection_name)
+            pipeline = AggregationPipelineBuilder.build_per_game_raw_pipeline()
+            rows = list(collection.aggregate(pipeline))
+        except Exception:
+            return {}
+
+        if not rows:
+            return {}
+
+        def _build_cv_map(field_map: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
+            """Helper: accumulate per-game values and compute CV for a given field map."""
+            by_team: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
+            for row in rows:
+                team = row.get("team_name")
+                if not team:
+                    continue
+                for stat_key, raw_field in field_map.items():
+                    val = row.get(raw_field)
+                    if val is not None:
+                        try:
+                            by_team[team][stat_key].append(float(val))
+                        except (TypeError, ValueError):
+                            pass
+            cv_result: Dict[str, Dict[str, Any]] = {}
+            for team, stats in by_team.items():
+                cv_result[team] = {}
+                for stat_key, values in stats.items():
+                    if len(values) < 3:
+                        continue
+                    arr = np.array(values)
+                    mean = float(np.mean(arr))
+                    std = float(np.std(arr))
+                    cv = (std / mean * 100) if mean > 0 else 0.0
+                    cv_result[team][stat_key] = {
+                        "mean": round(mean, 2),
+                        "std":  round(std, 2),
+                        "cv":   round(cv, 1),
+                        "n":    len(values),
+                    }
+            return cv_result
+
+        # stat_key → raw field in the per-game document (own team stats)
+        OWN_FIELD_MAP = {
+            "points_per_game":             "points",
+            "points_against_per_game":     "opponent_points",
+            "fg3_percentage":              "fg3_pct_game",
+            "fg2_percentage":              "fg2_pct_game",
+            "ft_percentage":               "ft_pct_game",
+            "rebounds_per_game":           "total_rebounds",
+            "offensive_rebounds_per_game": "off_rebounds",
+            "defensive_rebounds_per_game": "def_rebounds",
+            "assists_per_game":            "assists",
+            "steals_per_game":             "steals",
+            "turnovers_per_game":          "turnovers",
+            "blocks_per_game":             "blocks",
+            "possessions_per_game":        "possessions",
+            "offensive_rating":            "oer_game",
+            "oer":                         "oer_game",
+            "defensive_rating":            "der_game",
+            "der":                         "der_game",
+            "net_rating":                  "net_game",
+            "efg_percentage":              "efg_pct_game",
+            "true_shooting":               "ts_pct_game",
+            "turnover_rate":               "tov_pct_game",
+        }
+
+        # stat_key → opponent raw field (rival columns use the same frontend keys)
+        RIVAL_FIELD_MAP = {
+            "points_per_game":             "opponent_points",
+            "fg3_percentage":              "opp_fg3_pct_game",
+            "fg2_percentage":              "opp_fg2_pct_game",
+            "ft_percentage":               "opp_ft_pct_game",
+            "rebounds_per_game":           "opp_total_rebounds",
+            "offensive_rebounds_per_game": "opp_off_rebounds",
+            "defensive_rebounds_per_game": "opp_def_rebounds",
+            "assists_per_game":            "opp_assists",
+            "steals_per_game":             "opp_steals",
+            "turnovers_per_game":          "opp_turnovers",
+            "blocks_per_game":             "opp_blocks",
+        }
+
+        return {
+            "own":   _build_cv_map(OWN_FIELD_MAP),
+            "rival": _build_cv_map(RIVAL_FIELD_MAP),
+        }
 
     def get_team_detailed_stats(
         self, collection_name: str, team_name: str

@@ -13,13 +13,15 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { BarChart2, Shield, Zap } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getTeamStats, getTeamQuartiles, type TeamStat, type TeamFilters } from '@/api/client'
+import { getTeamStats, getTeamQuartiles, getTeamConsistency, type TeamStat, type TeamFilters, type CVMap, type CVEntry } from '@/api/client'
 import { fmt, fmtPct, getTrend } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import StatCard from '@/components/ui/StatCard'
 import TrendBadge from '@/components/ui/TrendBadge'
+import { tippedHeader } from '@/components/ui/Tooltip'
+import CVBadge from '@/components/ui/CVBadge'
 
 // -- Column metadata (key, header, display options) ----------------------------
 
@@ -99,28 +101,34 @@ function nameCol(): ColumnDef<TeamStat, unknown> {
 function buildCol(
   def: ColDef,
   seasonByName: Record<string, TeamStat> | null,
+  consistencyByName: CVMap | null,
 ): ColumnDef<TeamStat, unknown> {
   const { key, header, decimals = 1, pct = false, reverse = false, count = false } = def
   const showTrend = !count && seasonByName !== null
+  const showCV    = !count && consistencyByName !== null
 
   return {
     id: key as string,
     accessorKey: key as string,
-    header,
+    header: tippedHeader(header),
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
       const formatted = pct ? fmtPct(v) : fmt(v, decimals)
+      const teamName  = (row.original as TeamStat).team_name
+      const cvEntry: CVEntry | undefined = showCV
+        ? consistencyByName![teamName]?.[key as string]
+        : undefined
 
-      if (!showTrend) return formatted
+      if (!showTrend && !cvEntry) return formatted
 
-      const teamName = (row.original as TeamStat).team_name
-      const seasonRow = seasonByName![teamName]
+      const seasonRow = showTrend ? seasonByName![teamName] : null
       const seasonVal = seasonRow ? (seasonRow[key] as number | null | undefined) : null
 
       return (
         <span className="inline-flex items-center gap-1.5">
           <span>{formatted}</span>
-          <TrendBadge recent={v} season={seasonVal} reverse={reverse} className="text-[10px]" />
+          {showTrend && <TrendBadge recent={v} season={seasonVal} reverse={reverse} className="text-[10px]" />}
+          {cvEntry && <CVBadge entry={cvEntry} />}
         </span>
       )
     },
@@ -130,8 +138,9 @@ function buildCol(
 function buildCols(
   defs: ColDef[],
   seasonByName: Record<string, TeamStat> | null,
+  consistencyByName: CVMap | null,
 ): ColumnDef<TeamStat, unknown>[] {
-  return [nameCol(), ...defs.map(d => buildCol(d, seasonByName))]
+  return [nameCol(), ...defs.map(d => buildCol(d, seasonByName, consistencyByName))]
 }
 
 // -- Helpers -------------------------------------------------------------------
@@ -203,6 +212,15 @@ export default function TeamStatsPage() {
     staleTime: 10 * 60_000,
   })
 
+  const { data: consistencyRaw } = useQuery({
+    queryKey:  ['team-consistency-v2', collection?.name],
+    queryFn:   () => getTeamConsistency(collection!.name),
+    enabled:   Boolean(collection),
+    staleTime: 30 * 60_000,
+  })
+  const ownCV:   CVMap | null = consistencyRaw?.own   ?? null
+  const rivalCV: CVMap | null = consistencyRaw?.rival ?? null
+
   const teamRows    = statsData?.team_stats ?? []
   const rivalRows   = statsData?.opponent_stats ?? []
 
@@ -222,9 +240,14 @@ export default function TeamStatsPage() {
     () => (hasDateFilter && tab !== 'rivals' ? seasonByName : null),
     [hasDateFilter, tab, seasonByName],
   )
+  // Consistency source: own CV for team rows, rival CV for rivals tab
+  const consistencySource = useMemo(
+    () => (tab === 'rivals' ? rivalCV : ownCV),
+    [tab, ownCV, rivalCV],
+  )
 
-  const basicCols    = useMemo(() => buildCols(BASIC_COL_DEFS,    trendSource), [trendSource])
-  const advancedCols = useMemo(() => buildCols(ADVANCED_COL_DEFS, trendSource), [trendSource])
+  const basicCols    = useMemo(() => buildCols(BASIC_COL_DEFS,    trendSource, consistencySource), [trendSource, consistencySource])
+  const advancedCols = useMemo(() => buildCols(ADVANCED_COL_DEFS, trendSource, consistencySource), [trendSource, consistencySource])
 
   // Highlights: show per-stat trend on chips when date filter active
   const seasonHighlights = useMemo(() => {

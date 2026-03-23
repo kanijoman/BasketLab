@@ -19,10 +19,12 @@ import {
 import { Activity } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getPossessionStats, type PossessionStat } from '@/api/client'
+import { getPossessionStats, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
 import { fmt } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
+import CVBadge from '@/components/ui/CVBadge'
+import { tippedHeader } from '@/components/ui/Tooltip'
 
 // -- Column definitions -------------------------------------------------------
 
@@ -30,31 +32,45 @@ function numCol(
   key: string,
   header: string,
   decimals = 1,
+  cv: CVMap | null = null,
 ): ColumnDef<PossessionStat, unknown> {
   return {
     id: key,
     accessorKey: key,
-    header,
-    cell: ({ getValue }) => fmt(getValue() as number, decimals),
+    header: tippedHeader(header),
+    cell: ({ getValue, row }) => {
+      const v = getValue() as number
+      const formatted = fmt(v, decimals)
+      const cvEntry = cv?.[(row.original as PossessionStat).team_name]?.[key]
+      if (!cvEntry) return formatted
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <span>{formatted}</span>
+          <CVBadge entry={cvEntry} />
+        </span>
+      )
+    },
   }
 }
 
-const COLS: ColumnDef<PossessionStat, unknown>[] = [
-  {
-    id: 'team_name',
-    accessorKey: 'team_name',
-    header: 'Equipo',
-    cell: ({ getValue }) => (
-      <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span>
-    ),
-  },
-  numCol('total_games', 'PJ', 0),
-  numCol('possessions_per_game', 'Pos/P'),
-  numCol('pace', 'Ritmo'),
-  numCol('oer', 'OER'),
-  numCol('der', 'DER'),
-  numCol('net_rating', 'Net'),
-]
+function buildCols(cv: CVMap | null): ColumnDef<PossessionStat, unknown>[] {
+  return [
+    {
+      id: 'team_name',
+      accessorKey: 'team_name',
+      header: 'Equipo',
+      cell: ({ getValue }) => (
+        <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span>
+      ),
+    },
+    numCol('total_games',          'PJ',    0),
+    numCol('possessions_per_game', 'Pos/P', 1, cv),
+    numCol('pace',                 'Ritmo', 1, cv),
+    numCol('oer',                  'OER',   1, cv),
+    numCol('der',                  'DER',   1, cv),
+    numCol('net_rating',           'Net',   1, cv),
+  ]
+}
 
 const REVERSE_COLS = ['der']
 
@@ -140,6 +156,15 @@ export default function PossessionsPage() {
     staleTime: 5 * 60_000,
   })
 
+  const { data: consistencyRaw } = useQuery({
+    queryKey:  ['team-consistency-v2', collection?.name],
+    queryFn:   () => getTeamConsistency(collection!.name),
+    enabled:   Boolean(collection),
+    staleTime: 30 * 60_000,
+  })
+  const consistencyByName: CVMap | null = consistencyRaw?.own ?? null
+
+  const cols = useMemo(() => buildCols(consistencyByName), [consistencyByName])
   const quartileMap = useMemo(() => buildQuartileMap(stats), [stats])
 
   // Scatter quadrant medians
@@ -183,7 +208,7 @@ export default function PossessionsPage() {
           </div>
         ) : tab === 'table' ? (
           <DataTable
-            columns={COLS}
+            columns={cols}
             data={stats}
             quartiles={quartileMap}
             reverseColumns={REVERSE_COLS}

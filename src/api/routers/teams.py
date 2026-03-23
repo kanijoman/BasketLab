@@ -84,6 +84,25 @@ def list_teams(collection: str, db=Depends(get_db)) -> List[str]:
     return svc.get_all_teams(collection)
 
 
+@router.get("/{collection}/consistency", summary="Get per-team intra-game consistency stats")
+def get_consistency(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
+    """Return per-team std dev and CV for key stats computed across all games.
+
+    Each value in the response captures how *variable* a team is game-to-game
+    for that statistic (not how they compare to the rest of the league).
+
+    Only available for FEB collections; returns an empty dict for FBCYL.
+
+    Args:
+        collection: MongoDB collection name.
+
+    Returns:
+        ``{team_name: {stat_key: {"mean", "std", "cv", "n"}}}``
+    """
+    svc = TeamStatsService(db)
+    return svc.get_consistency(collection)
+
+
 @router.get(
     "/{collection}/evolution/{team_name}",
     summary="Get game-by-game stat evolution for a team",

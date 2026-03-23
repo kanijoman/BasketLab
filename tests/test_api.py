@@ -237,6 +237,37 @@ class TestPlayersRouter:
         r = client.get(f"{V1}/players/FEB_LF2_2025_A/together/12/34")
         assert r.status_code == 200
 
+    def test_player_quartiles_returns_200_and_dict(self, client):
+        """New endpoint /players/{collection}/quartiles must return a dict."""
+        with patch("src.services.PlayerStatsService.get_quartiles", return_value={
+            "points_per_game": {"min": 0.0, "q1": 4.0, "q2": 8.0, "q3": 12.0, "max": 25.0, "count": 50}
+        }):
+            r = client.get(f"{V1}/players/FEB_LF2_2025_A/quartiles")
+        assert r.status_code == 200
+        body = r.json()
+        assert isinstance(body, dict)
+
+    def test_player_quartiles_returns_empty_dict_when_no_data(self, client):
+        """Returns empty dict (not 500) when collection has no players."""
+        with patch("src.services.PlayerStatsService.get_quartiles", return_value={}):
+            r = client.get(f"{V1}/players/EMPTY_COLLECTION/quartiles")
+        assert r.status_code == 200
+        assert r.json() == {}
+
+    def test_player_quartiles_structure_has_min_max(self, client):
+        """Each stat entry must include min, q1, q2, q3, max keys."""
+        mock_quartiles = {
+            "points_per_game": {
+                "min": 0.5, "q1": 3.0, "q2": 7.5, "q3": 14.0, "max": 28.0, "count": 40
+            }
+        }
+        with patch("src.services.PlayerStatsService.get_quartiles", return_value=mock_quartiles):
+            r = client.get(f"{V1}/players/FEB_LF2_2025_A/quartiles")
+        body = r.json()
+        entry = body["points_per_game"]
+        for key in ("min", "q1", "q2", "q3", "max"):
+            assert key in entry, f"Missing key: {key}"
+
 
 # ---------------------------------------------------------------------------
 # Lineups router

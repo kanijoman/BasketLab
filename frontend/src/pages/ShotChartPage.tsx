@@ -11,6 +11,8 @@ import { useCollection } from '@/context/CollectionContext'
 import { getShotZones, type ShotZoneData } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
+import Tooltip from '@/components/ui/Tooltip'
+import { STAT_LABELS } from '@/lib/statLabels'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -182,10 +184,18 @@ export default function ShotChartPage() {
                 <thead>
                   <tr className="text-xs text-ink-secondary uppercase tracking-wide">
                     <th className="px-3 py-2 text-left font-medium">Zona</th>
-                    <th className="px-3 py-2 text-right font-medium">T.I.</th>
-                    <th className="px-3 py-2 text-right font-medium">T.A.</th>
-                    <th className="px-3 py-2 text-right font-medium">%TF</th>
-                    <th className="px-3 py-2 text-right font-medium">Pts</th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      <Tooltip text={`${STAT_LABELS['T.I.'].label}: ${STAT_LABELS['T.I.'].description}`}>T.I.</Tooltip>
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      <Tooltip text={`${STAT_LABELS['T.A.'].label}: ${STAT_LABELS['T.A.'].description}`}>T.A.</Tooltip>
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      <Tooltip text={`${STAT_LABELS['%TF'].label}: ${STAT_LABELS['%TF'].description}`}>%TF</Tooltip>
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">
+                      <Tooltip text={`${STAT_LABELS['Pts'].label}: ${STAT_LABELS['Pts'].description}`}>Pts</Tooltip>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

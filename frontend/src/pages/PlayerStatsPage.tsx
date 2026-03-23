@@ -14,25 +14,40 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { Users, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getPlayerStats, type PlayerStat, type TeamFilters } from '@/api/client'
+import { getPlayerStats, getPlayerConsistency, type PlayerStat, type TeamFilters, type ConsistencyMap } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import SlideDrawer from '@/components/ui/SlideDrawer'
 import TrendBadge from '@/components/ui/TrendBadge'
+import CVBadge from '@/components/ui/CVBadge'
+import { tippedHeader } from '@/components/ui/Tooltip'
 
 // -- Column helpers ------------------------------------------------------------
 
-function numCol(key: string, header: string, opts: { decimals?: number; pct?: boolean } = {}): ColumnDef<PlayerStat, unknown> {
+function buildNumCol(
+  key: string,
+  header: string,
+  opts: { decimals?: number; pct?: boolean } = {},
+  consistencyByPlayerId: ConsistencyMap | null = null,
+): ColumnDef<PlayerStat, unknown> {
   const { decimals = 1, pct = false } = opts
   return {
     id: key,
     accessorKey: key,
-    header,
-    cell: ({ getValue }) => {
+    header: tippedHeader(header),
+    cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
-      return pct ? fmtPct(v) : fmt(v, decimals)
+      const formatted = pct ? fmtPct(v) : fmt(v, decimals)
+      const cvEntry = consistencyByPlayerId?.[(row.original as PlayerStat).player_id]?.[key]
+      if (!cvEntry) return formatted
+      return (
+        <span className="inline-flex items-center gap-1.5">
+          <span>{formatted}</span>
+          <CVBadge entry={cvEntry} />
+        </span>
+      )
     },
   }
 }
@@ -61,38 +76,44 @@ function teamCol(): ColumnDef<PlayerStat, unknown> {
 
 // -- Column sets ---------------------------------------------------------------
 
-const STATS_COLS: ColumnDef<PlayerStat, unknown>[] = [
-  nameCol(),
-  teamCol(),
-  numCol('games_played', 'PJ', { decimals: 0 }),
-  numCol('minutes_per_game', 'MIN'),
-  numCol('points_per_game', 'PTS'),
-  numCol('rebounds_per_game', 'REB'),
-  numCol('offensive_rebounds_per_game', 'RO'),
-  numCol('defensive_rebounds_per_game', 'RD'),
-  numCol('assists_per_game', 'AST'),
-  numCol('steals_per_game', 'ROB'),
-  numCol('turnovers_per_game', 'PER'),
-  numCol('blocks_per_game', 'TAP'),
-  numCol('fouls_per_game', 'FP'),
-  numCol('valoracion_per_game', 'VAL'),
-  numCol('pllss_per_game', '+/-'),
-]
+// -- Column sets (factories — receive consistency map at render time) ---------
 
-const SHOOTING_COLS: ColumnDef<PlayerStat, unknown>[] = [
-  nameCol(),
-  teamCol(),
-  numCol('games_played', 'PJ', { decimals: 0 }),
-  numCol('minutes_per_game', 'MIN'),
-  numCol('fg1_percentage', '%TL', { pct: true }),
-  numCol('fg2_percentage', '%T2', { pct: true }),
-  numCol('fg3_percentage', '%T3', { pct: true }),
-  numCol('points_per_game', 'PTS'),
-  numCol('total_p2m', 'T2M', { decimals: 0 }),
-  numCol('total_p2a', 'T2I', { decimals: 0 }),
-  numCol('total_p3m', 'T3M', { decimals: 0 }),
-  numCol('total_p3a', 'T3I', { decimals: 0 }),
-]
+function buildStatsCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
+  return [
+    nameCol(),
+    teamCol(),
+    buildNumCol('games_played', 'PJ', { decimals: 0 }),
+    buildNumCol('minutes_per_game',            'MIN',  {},              cv),
+    buildNumCol('points_per_game',             'PTS',  {},              cv),
+    buildNumCol('rebounds_per_game',           'REB',  {},              cv),
+    buildNumCol('offensive_rebounds_per_game', 'RO',   {},              cv),
+    buildNumCol('defensive_rebounds_per_game', 'RD',   {},              cv),
+    buildNumCol('assists_per_game',            'AST',  {},              cv),
+    buildNumCol('steals_per_game',             'ROB',  {},              cv),
+    buildNumCol('turnovers_per_game',          'PER',  {},              cv),
+    buildNumCol('blocks_per_game',             'TAP',  {},              cv),
+    buildNumCol('fouls_per_game',              'FP',   {},              cv),
+    buildNumCol('valoracion_per_game',         'VAL',  {},              cv),
+    buildNumCol('pllss_per_game',              '+/-',  {},              cv),
+  ]
+}
+
+function buildShootingCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
+  return [
+    nameCol(),
+    teamCol(),
+    buildNumCol('games_played', 'PJ', { decimals: 0 }),
+    buildNumCol('minutes_per_game', 'MIN',  {},               cv),
+    buildNumCol('fg1_percentage',   '%TL',  { pct: true },    cv),
+    buildNumCol('fg2_percentage',   '%T2',  { pct: true },    cv),
+    buildNumCol('fg3_percentage',   '%T3',  { pct: true },    cv),
+    buildNumCol('points_per_game',  'PTS',  {},               cv),
+    buildNumCol('total_p2m', 'T2M', { decimals: 0 }),
+    buildNumCol('total_p2a', 'T2I', { decimals: 0 }),
+    buildNumCol('total_p3m', 'T3M', { decimals: 0 }),
+    buildNumCol('total_p3a', 'T3I', { decimals: 0 }),
+  ]
+}
 
 const REVERSE_STATS = ['turnovers_per_game', 'fouls_per_game']
 
@@ -104,12 +125,13 @@ function computeColQuartile(data: PlayerStat[], key: string): [number, number, n
     .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v))
     .sort((a, b) => a - b)
   if (vals.length < 4) return [0, 0, 0]
-  // Use P20/P50/P80 — more discriminating for large player sets (60-200 records)
-  return [
-    vals[Math.floor(vals.length * 0.20)],
-    vals[Math.floor(vals.length * 0.50)],
-    vals[Math.floor(vals.length * 0.80)],
-  ]
+  const q = (p: number) => {
+    const idx = (vals.length - 1) * p
+    const lo = Math.floor(idx)
+    const hi = Math.ceil(idx)
+    return vals[lo] + (vals[hi] - vals[lo]) * (idx - lo)
+  }
+  return [q(0.25), q(0.5), q(0.75)]
 }
 
 function buildPlayerQuartiles(data: PlayerStat[], cols: ColumnDef<PlayerStat, unknown>[]): QuartileMap {
@@ -220,6 +242,14 @@ export default function PlayerStatsPage() {
     staleTime: 5 * 60_000,
   })
 
+  const { data: consistencyRaw } = useQuery({
+    queryKey:  ['player-consistency', collection?.name],
+    queryFn:   () => getPlayerConsistency(collection!.name),
+    enabled:   Boolean(collection),
+    staleTime: 30 * 60_000,
+  })
+  const consistencyByPlayerId: ConsistencyMap | null = consistencyRaw ?? null
+
   const teamOptions = useMemo(
     () => [...new Set(rawPlayers.map(p => p.team_name))].sort(),
     [rawPlayers],
@@ -237,7 +267,10 @@ export default function PlayerStatsPage() {
     return m
   }, [seasonPlayers])
 
-  const activeCols = tab === 'shooting' ? SHOOTING_COLS : STATS_COLS
+  const activeCols = useMemo(
+    () => tab === 'shooting' ? buildShootingCols(consistencyByPlayerId) : buildStatsCols(consistencyByPlayerId),
+    [tab, consistencyByPlayerId],
+  )
   const quartiles  = useMemo(() => buildPlayerQuartiles(players, activeCols), [players, activeCols])
 
   if (!collection) {
