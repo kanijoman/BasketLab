@@ -12,9 +12,10 @@ from .advanced_stats import get_all_advanced_stats  # noqa: F401
 
 from .pipeline_team_stats import TeamStatsPipelineMixin
 from .pipeline_player_stats import PlayerStatsPipelineMixin
+from .pipeline_player_per_game import PlayerPerGamePipelineMixin
 
 
-class AggregationPipelineBuilder(TeamStatsPipelineMixin, PlayerStatsPipelineMixin):
+class AggregationPipelineBuilder(TeamStatsPipelineMixin, PlayerStatsPipelineMixin, PlayerPerGamePipelineMixin):
     """Builds MongoDB aggregation pipeline for basketball statistics.
 
     Combines team stats, opponent stats, player stats and FBCYL timeline builders.

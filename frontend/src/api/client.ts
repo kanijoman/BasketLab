@@ -285,6 +285,12 @@ export interface PlayerStat {
   fg1_percentage?: number   // free throw %
   fg2_percentage?: number
   fg3_percentage?: number
+  // advanced shooting / efficiency
+  efg_percentage?: number
+  true_shooting?: number
+  free_throw_rate?: number
+  three_point_rate?: number
+  turnover_rate?: number
   [key: string]: unknown
 }
 

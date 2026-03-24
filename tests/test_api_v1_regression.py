@@ -98,6 +98,11 @@ PLAYER_ROW = {
     "fg1_percentage": 90.0,
     "fg2_percentage": 51.6,
     "fg3_percentage": 34.3,
+    "efg_percentage": 53.4,
+    "true_shooting": 56.8,
+    "free_throw_rate": 25.8,
+    "three_point_rate": 31.1,
+    "turnover_rate": 14.2,
 }
 
 
@@ -277,6 +282,24 @@ class TestPlayerStatShape:
         row = self._get_first_player(client)
         for field in ["total_pts", "total_minutes", "total_val"]:
             assert field in row, f"Total field missing for drawer: {field}"
+
+    def test_advanced_fields_present(self, client):
+        """Advanced shooting/efficiency fields must be present for the Avanzado tab."""
+        row = self._get_first_player(client)
+        for field in ("efg_percentage", "true_shooting", "free_throw_rate",
+                      "three_point_rate", "turnover_rate"):
+            assert field in row, f"Advanced player field '{field}' missing from API response"
+
+    def test_minutes_per_game_is_minutes_not_seconds(self, client):
+        """Regression: FEB stores minutes as seconds in the raw 'min' field.
+        The pipeline must divide by 60 — minutes_per_game should be <60
+        (a 60-minute game is already unusual; 600+ means seconds were returned)."""
+        row = self._get_first_player(client)
+        mpg = row.get("minutes_per_game")
+        assert mpg is not None, "minutes_per_game missing"
+        assert mpg < 60, (
+            f"minutes_per_game={mpg} looks like seconds, not minutes (expected <60)"
+        )
 
 
 # ---------------------------------------------------------------------------

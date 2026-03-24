@@ -245,6 +245,123 @@ class TestTeamStatsServiceGetConsistency:
 # PlayerStatsService
 # ---------------------------------------------------------------------------
 
+def _make_fake_player_rows(n=4, player_id="p001"):
+    """Return n per-player-per-game rows with all fields needed by FIELD_MAP."""
+    rows = []
+    for i in range(n):
+        off = i * 2 + 1
+        rows.append({
+            "player_id":    player_id,
+            "player_name":  "Ana García",
+            "team_name":    "Basket Club A",
+            "minutes":      25.0 + off,  # already in minutes (after /60 fix)
+            "pts":          10 + off,
+            "assist":        3 + off,
+            "ro":            1 + off,
+            "rd":            3 + off,
+            "rt":            4 + off,
+            "st":            1 + off,
+            "to":            2 + off,
+            "bs":            0 + off,
+            "pf":            2 + off,
+            "val":          12 + off,
+            "pllss_game":    3 + off,  # +/- per game
+            "fg1_pct_game":  80.0 + off,
+            "fg2_pct_game":  50.0 + off,
+            "fg3_pct_game":  33.0 + off,
+            "efg_pct_game":  52.0 + off,
+            "ts_pct_game":   55.0 + off,
+            "ftr_game":      30.0 + off,
+            "three_pr_game": 35.0 + off,
+            "tov_pct_game":  14.0 + off,
+        })
+    return rows
+
+
+def _make_player_consistency_handler(rows):
+    """Return a mock handler whose collection.aggregate() yields the given rows."""
+    handler = MagicMock()
+    handler.is_connected.return_value = True
+    mock_coll = MagicMock()
+    mock_coll.aggregate.return_value = iter(rows)
+    handler.connection.get_collection.return_value = mock_coll
+    return handler
+
+
+class TestPlayerStatsServiceGetConsistency:
+    """Verify PlayerStatsService.get_consistency() builds CVBadge data correctly."""
+
+    def test_fbcyl_returns_empty_dict(self):
+        """FBCYL collections are not supported — should return {} immediately."""
+        from src.services import PlayerStatsService
+        svc = PlayerStatsService(_make_db_handler())
+        result = svc.get_consistency("FBCYL_SE_2025_A")
+        assert result == {}
+
+    def test_returns_player_id_keyed_dict(self):
+        from src.services import PlayerStatsService
+        rows = _make_fake_player_rows()
+        svc = PlayerStatsService(_make_player_consistency_handler(rows))
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        assert "p001" in result
+        assert isinstance(result["p001"], dict)
+
+    def test_pllss_per_game_badge_regression(self):
+        """Regression: pllss_per_game CVBadge must be present when pllss_game is
+        populated.  Was absent before pllss was added to per-player per-game pipeline
+        and FIELD_MAP."""
+        from src.services import PlayerStatsService
+        rows = _make_fake_player_rows()
+        svc = PlayerStatsService(_make_player_consistency_handler(rows))
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        player = result.get("p001", {})
+        assert "pllss_per_game" in player, (
+            "pllss_per_game CV missing — was null because pllss not in pipeline/FIELD_MAP"
+        )
+        assert player["pllss_per_game"]["cv"] >= 0
+
+    def test_minutes_per_game_in_field_map_regression(self):
+        """Regression: minutes_per_game CVBadge must be present when minutes is
+        populated in per-game rows."""
+        from src.services import PlayerStatsService
+        rows = _make_fake_player_rows()
+        svc = PlayerStatsService(_make_player_consistency_handler(rows))
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        player = result.get("p001", {})
+        assert "minutes_per_game" in player, (
+            "minutes_per_game CV missing — not mapped in FIELD_MAP"
+        )
+
+    def test_advanced_fields_in_consistency(self):
+        """efg_percentage, true_shooting, free_throw_rate, three_point_rate,
+        turnover_rate must all produce CV entries."""
+        from src.services import PlayerStatsService
+        rows = _make_fake_player_rows()
+        svc = PlayerStatsService(_make_player_consistency_handler(rows))
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        player = result.get("p001", {})
+        for key in ("efg_percentage", "true_shooting", "free_throw_rate",
+                    "three_point_rate", "turnover_rate"):
+            assert key in player, f"Advanced CV field '{key}' missing from player consistency"
+
+    def test_min_sample_guard(self):
+        """Players with fewer than 3 games must not produce a CV entry."""
+        from src.services import PlayerStatsService
+        rows = _make_fake_player_rows(n=2)
+        svc = PlayerStatsService(_make_player_consistency_handler(rows))
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        assert result.get("p001", {}) == {}
+
+    def test_exception_returns_empty_dict(self):
+        """Any exception during aggregation should be swallowed and return {}."""
+        from src.services import PlayerStatsService
+        handler = _make_db_handler()
+        handler.connection.get_collection.side_effect = RuntimeError("db down")
+        svc = PlayerStatsService(handler)
+        result = svc.get_consistency("FEB_LF2_2025_A")
+        assert result == {}
+
+
 class TestPlayerStatsServiceLoadSeasonData:
     def test_returns_list(self):
         from src.services import PlayerStatsService

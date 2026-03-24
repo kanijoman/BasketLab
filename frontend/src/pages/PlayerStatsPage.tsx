@@ -31,6 +31,7 @@ function buildNumCol(
   header: string,
   opts: { decimals?: number; pct?: boolean } = {},
   consistencyByPlayerId: ConsistencyMap | null = null,
+  thresholds: [number, number] = [50, 100],
 ): ColumnDef<PlayerStat, unknown> {
   const { decimals = 1, pct = false } = opts
   return {
@@ -45,7 +46,7 @@ function buildNumCol(
       return (
         <span className="inline-flex items-center gap-1.5">
           <span>{formatted}</span>
-          <CVBadge entry={cvEntry} />
+          <CVBadge entry={cvEntry} thresholds={thresholds} />
         </span>
       )
     },
@@ -74,40 +75,30 @@ function teamCol(): ColumnDef<PlayerStat, unknown> {
   }
 }
 
-// -- Column sets ---------------------------------------------------------------
-
 // -- Column sets (factories — receive consistency map at render time) ---------
 
-function buildStatsCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
-  return [
-    nameCol(),
-    teamCol(),
-    buildNumCol('games_played', 'PJ', { decimals: 0 }),
-    buildNumCol('minutes_per_game',            'MIN',  {},              cv),
-    buildNumCol('points_per_game',             'PTS',  {},              cv),
-    buildNumCol('rebounds_per_game',           'REB',  {},              cv),
-    buildNumCol('offensive_rebounds_per_game', 'RO',   {},              cv),
-    buildNumCol('defensive_rebounds_per_game', 'RD',   {},              cv),
-    buildNumCol('assists_per_game',            'AST',  {},              cv),
-    buildNumCol('steals_per_game',             'ROB',  {},              cv),
-    buildNumCol('turnovers_per_game',          'PER',  {},              cv),
-    buildNumCol('blocks_per_game',             'TAP',  {},              cv),
-    buildNumCol('fouls_per_game',              'FP',   {},              cv),
-    buildNumCol('valoracion_per_game',         'VAL',  {},              cv),
-    buildNumCol('pllss_per_game',              '+/-',  {},              cv),
-  ]
-}
+const PLAYER_CV: [number, number] = [50, 100]
 
-function buildShootingCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
+function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
     teamCol(),
-    buildNumCol('games_played', 'PJ', { decimals: 0 }),
-    buildNumCol('minutes_per_game', 'MIN',  {},               cv),
-    buildNumCol('fg1_percentage',   '%TL',  { pct: true },    cv),
-    buildNumCol('fg2_percentage',   '%T2',  { pct: true },    cv),
-    buildNumCol('fg3_percentage',   '%T3',  { pct: true },    cv),
-    buildNumCol('points_per_game',  'PTS',  {},               cv),
+    buildNumCol('games_played',              'PJ',  { decimals: 0 }),
+    buildNumCol('minutes_per_game',          'MIN', {},              cv, PLAYER_CV),
+    buildNumCol('points_per_game',           'PTS', {},              cv, PLAYER_CV),
+    buildNumCol('rebounds_per_game',         'REB', {},              cv, PLAYER_CV),
+    buildNumCol('offensive_rebounds_per_game','RO', {},              cv, PLAYER_CV),
+    buildNumCol('defensive_rebounds_per_game','RD', {},              cv, PLAYER_CV),
+    buildNumCol('assists_per_game',          'AST', {},              cv, PLAYER_CV),
+    buildNumCol('steals_per_game',           'ROB', {},              cv, PLAYER_CV),
+    buildNumCol('turnovers_per_game',        'PER', {},              cv, PLAYER_CV),
+    buildNumCol('blocks_per_game',           'TAP', {},              cv, PLAYER_CV),
+    buildNumCol('fouls_per_game',            'FP',  {},              cv, PLAYER_CV),
+    buildNumCol('valoracion_per_game',       'VAL', {},              cv, PLAYER_CV),
+    buildNumCol('pllss_per_game',            '+/-', {},              cv, PLAYER_CV),
+    buildNumCol('fg1_percentage',            '%TL', { pct: true },   cv, PLAYER_CV),
+    buildNumCol('fg2_percentage',            '%T2', { pct: true },   cv, PLAYER_CV),
+    buildNumCol('fg3_percentage',            '%T3', { pct: true },   cv, PLAYER_CV),
     buildNumCol('total_p2m', 'T2M', { decimals: 0 }),
     buildNumCol('total_p2a', 'T2I', { decimals: 0 }),
     buildNumCol('total_p3m', 'T3M', { decimals: 0 }),
@@ -115,7 +106,58 @@ function buildShootingCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unk
   ]
 }
 
-const REVERSE_STATS = ['turnovers_per_game', 'fouls_per_game']
+function buildAdvancedCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
+  return [
+    nameCol(),
+    teamCol(),
+    buildNumCol('games_played',     'PJ',   { decimals: 0 }),
+    buildNumCol('minutes_per_game', 'MIN',  {},               cv, PLAYER_CV),
+    buildNumCol('efg_percentage',   'eFG%', { pct: true },    cv, PLAYER_CV),
+    buildNumCol('true_shooting',    'TS%',  { pct: true },    cv, PLAYER_CV),
+    buildNumCol('free_throw_rate',  'FTr',  { pct: true },    cv, PLAYER_CV),
+    buildNumCol('three_point_rate', '3Pr',  { pct: true },    cv, PLAYER_CV),
+    buildNumCol('turnover_rate',    'TOV%', { pct: true },    cv, PLAYER_CV),
+  ]
+}
+
+function projNum(
+  id: string,
+  header: string,
+  statKey: keyof PlayerStat,
+  reverse = false,
+): ColumnDef<PlayerStat, unknown> {
+  return {
+    id,
+    header: tippedHeader(header),
+    accessorFn: (row: PlayerStat) => {
+      const mpg = row.minutes_per_game
+      if (!mpg || mpg < 10) return null
+      const val = row[statKey] as number | null | undefined
+      if (val == null) return null
+      return (val / mpg) * 30
+    },
+    cell: ({ getValue }) => fmt(getValue() as number | null | undefined),
+    enableSorting: true,
+    meta: { reverse },
+  }
+}
+
+function buildProjectionCols(): ColumnDef<PlayerStat, unknown>[] {
+  return [
+    nameCol(),
+    teamCol(),
+    buildNumCol('games_played',    'PJ',  { decimals: 0 }),
+    buildNumCol('minutes_per_game','MIN', {}),
+    projNum('pts_proj',   'PTS×30', 'points_per_game'),
+    projNum('reb_proj',   'REB×30', 'rebounds_per_game'),
+    projNum('ast_proj',   'AST×30', 'assists_per_game'),
+    projNum('rob_proj',   'ROB×30', 'steals_per_game'),
+    projNum('per_proj',   'PER×30', 'turnovers_per_game', true),
+    projNum('tap_proj',   'TAP×30', 'blocks_per_game'),
+    projNum('val_proj',   'VAL×30', 'valoracion_per_game'),
+    projNum('pllss_proj', '+/-×30', 'pllss_per_game'),
+  ]
+}
 
 // -- Client-side quartile computation -----------------------------------------
 
@@ -180,6 +222,15 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
         </div>
 
         <div>
+          <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Avanzado</h3>
+          <StatRow label="eFG%"              value={fmtPct(player.efg_percentage)} />
+          <StatRow label="TS%"               value={fmtPct(player.true_shooting)} />
+          <StatRow label="Tasa TL (FTr)"    value={fmtPct(player.free_throw_rate)} />
+          <StatRow label="Tasa triples (3Pr)" value={fmtPct(player.three_point_rate)} />
+          <StatRow label="TOV%"              value={fmtPct(player.turnover_rate)} />
+        </div>
+
+        <div>
           <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Porcentajes de tiro</h3>
           <StatRow label="% Tiros libres"   value={fmtPct(player.fg1_percentage)} />
           <StatRow label="% Tiros de 2"     value={fmtPct(player.fg2_percentage)} />
@@ -190,7 +241,6 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
           <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Totales temporada</h3>
           <StatRow label="Puntos totales"   value={fmt(player.total_pts, 0)} />
           <StatRow label="Minutos totales"  value={fmt(player.total_minutes, 0)} />
-          <StatRow label="Minutos / partido (real)" value={fmt(player.total_minutes != null && player.games_played ? player.total_minutes / player.games_played : undefined)} />
         </div>
       </div>
     </SlideDrawer>
@@ -200,8 +250,9 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
 // -- Tabs ---------------------------------------------------------------------
 
 const TABS = [
-  { id: 'stats',    label: 'Stats'    },
-  { id: 'shooting', label: 'Tiro'    },
+  { id: 'basic',      label: 'Básico'     },
+  { id: 'advanced',   label: 'Avanzado'   },
+  { id: 'projection', label: 'Proyección' },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 
@@ -210,7 +261,7 @@ type TabId = (typeof TABS)[number]['id']
 export default function PlayerStatsPage() {
   const { collection } = useCollection()
   const filters = useFilters()
-  const [tab, setTab]           = useState<TabId>('stats')
+  const [tab, setTab]           = useState<TabId>('basic')
   const [teamFilter, setTeamFilter] = useState('')
   const [selected, setSelected]     = useState<PlayerStat | null>(null)
 
@@ -267,10 +318,16 @@ export default function PlayerStatsPage() {
     return m
   }, [seasonPlayers])
 
-  const activeCols = useMemo(
-    () => tab === 'shooting' ? buildShootingCols(consistencyByPlayerId) : buildStatsCols(consistencyByPlayerId),
-    [tab, consistencyByPlayerId],
-  )
+  const activeCols = useMemo(() => {
+    if (tab === 'advanced')   return buildAdvancedCols(consistencyByPlayerId)
+    if (tab === 'projection') return buildProjectionCols()
+    return buildBasicCols(consistencyByPlayerId)
+  }, [tab, consistencyByPlayerId])
+  const reverseColumns = useMemo(() => {
+    if (tab === 'advanced')   return ['turnover_rate']
+    if (tab === 'projection') return ['per_proj']
+    return ['turnovers_per_game', 'fouls_per_game']
+  }, [tab])
   const quartiles  = useMemo(() => buildPlayerQuartiles(players, activeCols), [players, activeCols])
 
   if (!collection) {
@@ -386,13 +443,13 @@ export default function PlayerStatsPage() {
           columns={activeCols}
           data={players}
           quartiles={quartiles}
-          reverseColumns={tab === 'stats' ? REVERSE_STATS : []}
+          reverseColumns={reverseColumns}
           loading={isLoading}
           searchable
           searchPlaceholder="Buscar jugador…"
           exportOptions={{
             filename:   `jugadores_${tab}_${collection.name}`,
-            pdfTitle:   `Estadísticas de Jugadores — ${tab}`,
+            pdfTitle:   `Estadísticas de Jugadores — ${tab === 'basic' ? 'Básico' : tab === 'advanced' ? 'Avanzado' : 'Proyección'}`,
             csvHeaders: activeCols.map(c => ({
               key:   String((c as { accessorKey?: string }).accessorKey ?? c.id ?? ''),
               label: String(c.header ?? ''),

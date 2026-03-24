@@ -19,32 +19,35 @@ export interface CVEntry {
 
 interface CVBadgeProps {
   entry: CVEntry
+  /** Thresholds [low, high] for colour coding.
+   *  Default [15, 30] suits team-level stats; use [50, 100] for players. */
+  thresholds?: [number, number]
 }
 
 /** Returns Tailwind classes for the pill background + text so it remains
  *  readable on any quartile cell background (green Q1 through red Q4). */
-function cvClass(cv: number): string {
-  if (cv >= 30) return 'bg-red-950 text-red-300 ring-1 ring-red-800'
-  if (cv >= 15) return 'bg-amber-950 text-amber-300 ring-1 ring-amber-800'
+function cvClass(cv: number, thresholds: [number, number]): string {
+  if (cv >= thresholds[1]) return 'bg-red-950 text-red-300 ring-1 ring-red-800'
+  if (cv >= thresholds[0]) return 'bg-amber-950 text-amber-300 ring-1 ring-amber-800'
   return 'bg-zinc-800 text-zinc-400 ring-1 ring-zinc-600'
 }
 
-function cvLabel(cv: number): string {
-  if (cv >= 30) return 'Alta variabilidad'
-  if (cv >= 15) return 'Variabilidad moderada'
+function cvLabel(cv: number, thresholds: [number, number]): string {
+  if (cv >= thresholds[1]) return 'Alta variabilidad'
+  if (cv >= thresholds[0]) return 'Variabilidad moderada'
   return 'Consistente'
 }
 
-export default function CVBadge({ entry }: CVBadgeProps) {
+export default function CVBadge({ entry, thresholds = [15, 30] }: CVBadgeProps) {
   const { mean, std, cv, n } = entry
   const tipText =
-    `${cvLabel(cv)} partido a partido\n` +
+    `${cvLabel(cv, thresholds)} partido a partido\n` +
     `Media: ${mean.toFixed(1)}  ·  σ: ${std.toFixed(1)}  ·  CV: ${cv.toFixed(1)}%\n` +
     `(sobre ${n} partidos)`
 
   return (
     <Tooltip text={tipText}>
-      <span className={`inline-block px-1 rounded text-[10px] font-mono leading-none ${cvClass(cv)}`}>
+      <span className={`inline-block px-1 rounded text-[10px] font-mono leading-none ${cvClass(cv, thresholds)}`}>
         σ{cv.toFixed(0)}%
       </span>
     </Tooltip>

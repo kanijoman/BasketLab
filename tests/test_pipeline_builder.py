@@ -310,5 +310,82 @@ class TestPerGameRawPipelineStructure(unittest.TestCase):
             )
 
 
+class TestPerPlayerPerGamePipelineStructure(unittest.TestCase):
+    """Structural tests for build_per_player_per_game_pipeline.
+
+    Verifies that the per-game player pipeline declares the fields required
+    for CVBadge rendering (pllss, minutes in minutes not seconds, and advanced
+    shooting metrics).
+    """
+
+    def _get_pipeline(self):
+        return AggregationPipelineBuilder.build_per_player_per_game_pipeline()
+
+    def test_returns_list_of_dicts(self):
+        pipeline = self._get_pipeline()
+        self.assertIsInstance(pipeline, list)
+        self.assertGreater(len(pipeline), 0)
+        for stage in pipeline:
+            self.assertIsInstance(stage, dict)
+
+    def test_has_no_group_stage(self):
+        """Per-game pipeline must NOT group — one document per player per game."""
+        pipeline = self._get_pipeline()
+        stage_keys = [list(s.keys())[0] for s in pipeline]
+        self.assertNotIn("$group", stage_keys)
+
+    def test_pllss_field_in_project_stage_regression(self):
+        """Regression: pllss must be declared in the $project stage so that the
+        CVBadge for +/- is computed.  Was absent before this fix."""
+        pipeline = self._get_pipeline()
+        project_stage = None
+        for stage in pipeline:
+            if "$project" in stage and "player_id" in stage["$project"]:
+                project_stage = stage["$project"]
+                break
+        self.assertIsNotNone(project_stage, "No $project stage found in per-player pipeline")
+        self.assertIn(
+            "pllss", project_stage,
+            "pllss not in $project stage — +/- CVBadge will never render"
+        )
+
+    def test_minutes_divides_by_60_regression(self):
+        """Regression: FEB stores minutes as seconds in the raw 'min' field.
+        The pipeline must divide by 60 so minutes_per_game is in minutes, not
+        in the range ~1500-1800 (seconds per 25-30 minute game)."""
+        pipeline = self._get_pipeline()
+        project_stage = None
+        for stage in pipeline:
+            if "$project" in stage and "player_id" in stage["$project"]:
+                project_stage = stage["$project"]
+                break
+        self.assertIsNotNone(project_stage)
+        minutes_expr = project_stage.get("minutes")
+        self.assertIsInstance(
+            minutes_expr, dict,
+            "minutes in $project must be an expression (dict), not a plain field ref"
+        )
+        # The expression must contain a $divide operator somewhere
+        expr_str = str(minutes_expr)
+        self.assertIn(
+            "$divide", expr_str,
+            "minutes expression must include $divide to convert seconds→minutes"
+        )
+
+    def test_advanced_addfields_stage_present(self):
+        """The advanced computed fields (efg_pct_game, ts_pct_game, etc.) must be
+        declared in a $addFields stage after the $match stage."""
+        pipeline = self._get_pipeline()
+        addfields_keys: set = set()
+        for stage in pipeline:
+            if "$addFields" in stage:
+                addfields_keys.update(stage["$addFields"].keys())
+        for field in ("efg_pct_game", "ts_pct_game", "ftr_game", "three_pr_game", "tov_pct_game"):
+            self.assertIn(
+                field, addfields_keys,
+                f"Advanced field '{field}' missing from per-player per-game pipeline"
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

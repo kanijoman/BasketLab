@@ -108,6 +108,7 @@ class PlayerStatsPipelineMixin:
                     "team_name": "$BOXSCORE.TEAM.TOTAL.name",
                     "team_id": "$BOXSCORE.TEAM.TOTAL.id",
                     "date": "$parsedDate",
+                    # minutes: keep raw seconds from FEB min field; conversion happens in Stage 7
                     "minutes": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.min", "0"]}},
                     "pllss": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pllss", "0"]}},
                     "p1m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1m", "0"]}},
@@ -175,11 +176,18 @@ class PlayerStatsPipelineMixin:
                     "team_name": "$_id.team_name",
                     "team_id": "$_id.team_id",
                     "games_played": "$games_played",
-                    "total_minutes": "$total_minutes",
+                    # total_minutes: raw sum is in seconds → convert to minutes here
+                    "total_minutes": {
+                        "$cond": [
+                            {"$gt": ["$total_minutes", 0]},
+                            {"$divide": ["$total_minutes", 60]},
+                            0
+                        ]
+                    },
                     "minutes_per_game": {
                         "$cond": [
                             {"$gt": ["$games_played", 0]},
-                            {"$divide": ["$total_minutes", "$games_played"]},
+                            {"$divide": [{"$divide": ["$total_minutes", 60]}, "$games_played"]},
                             0
                         ]
                     },
@@ -298,7 +306,67 @@ class PlayerStatsPipelineMixin:
                             {"$divide": ["$total_pf", "$games_played"]},
                             0
                         ]
-                    }
+                    },
+                    # Advanced shooting / efficiency
+                    "efg_percentage": {
+                        "$cond": [
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                            {"$multiply": [
+                                {"$divide": [
+                                    {"$add": ["$total_p2m", {"$multiply": [1.5, "$total_p3m"]}]},
+                                    {"$add": ["$total_p2a", "$total_p3a"]},
+                                ]},
+                                100,
+                            ]},
+                            None,
+                        ]
+                    },
+                    "true_shooting": {
+                        "$cond": [
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}, 0]},
+                            {"$multiply": [
+                                {"$divide": [
+                                    "$total_pts",
+                                    {"$multiply": [2.0, {"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}]},
+                                ]},
+                                100,
+                            ]},
+                            None,
+                        ]
+                    },
+                    "free_throw_rate": {
+                        "$cond": [
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                            {"$multiply": [
+                                {"$divide": ["$total_p1a", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                                100,
+                            ]},
+                            None,
+                        ]
+                    },
+                    "three_point_rate": {
+                        "$cond": [
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a"]}, 0]},
+                            {"$multiply": [
+                                {"$divide": ["$total_p3a", {"$add": ["$total_p2a", "$total_p3a"]}]},
+                                100,
+                            ]},
+                            None,
+                        ]
+                    },
+                    "turnover_rate": {
+                        "$cond": [
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}, "$total_to"]}, 0]},
+                            {"$multiply": [
+                                {"$divide": [
+                                    "$total_to",
+                                    {"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}, "$total_to"]},
+                                ]},
+                                100,
+                            ]},
+                            None,
+                        ]
+                    },
                 }
             },
             # Stage 8: Sort by team and then by points descending
@@ -428,67 +496,5 @@ class PlayerStatsPipelineMixin:
             }
         ]
 
-    @staticmethod
-    def build_per_player_per_game_pipeline() -> List[Dict]:
-        """Return one document per player per game with raw counting stats.
-
-        Reuses stages 1-5 of ``build_player_stats_pipeline`` but stops before
-        the ``$group`` stage.  Each document represents a single player's
-        performance in a single game.  Used by PlayerStatsService.get_consistency()
-        to compute intra-player std dev and CV game-to-game.
-
-        Only valid for FEB collections.
-
-        Returns:
-            List of aggregation pipeline stages.
-        """
-        return [
-            {
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None, "onNull": None,
-                        }
-                    },
-                    "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
-                    "awayPoints":  {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}},
-                }
-            },
-            {"$unwind": {"path": "$BOXSCORE.TEAM", "includeArrayIndex": "teamIndex"}},
-            {"$unwind": {"path": "$BOXSCORE.TEAM.PLAYER", "preserveNullAndEmptyArrays": False}},
-            {
-                "$project": {
-                    "player_id":   "$BOXSCORE.TEAM.PLAYER.id",
-                    "player_name": "$BOXSCORE.TEAM.PLAYER.name",
-                    "team_name":   "$BOXSCORE.TEAM.TOTAL.name",
-                    "minutes": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.min",    "0"]}},
-                    "pts":     {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pts",    "0"]}},
-                    "assist":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.assist", "0"]}},
-                    "ro":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.ro",     "0"]}},
-                    "rd":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rd",     "0"]}},
-                    "rt":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rt",     "0"]}},
-                    "st":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.st",     "0"]}},
-                    "to":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.to",     "0"]}},
-                    "bs":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.bs",     "0"]}},
-                    "pf":      {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pf",     "0"]}},
-                    "val":     {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.val",    "0"]}},
-                    "p1m":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1m",    "0"]}},
-                    "p1a":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1a",    "0"]}},
-                    "p2m":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2m",    "0"]}},
-                    "p2a":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2a",    "0"]}},
-                    "p3m":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3m",    "0"]}},
-                    "p3a":    {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3a",    "0"]}},
-                }
-            },
-            {"$match": {"minutes": {"$gt": 0}}},
-            {
-                "$addFields": {
-                    "fg1_pct_game": {"$cond": {"if": {"$gt": ["$p1a", 0]}, "then": {"$multiply": [{"$divide": ["$p1m", "$p1a"]}, 100]}, "else": None}},
-                    "fg2_pct_game": {"$cond": {"if": {"$gt": ["$p2a", 0]}, "then": {"$multiply": [{"$divide": ["$p2m", "$p2a"]}, 100]}, "else": None}},
-                    "fg3_pct_game": {"$cond": {"if": {"$gt": ["$p3a", 0]}, "then": {"$multiply": [{"$divide": ["$p3m", "$p3a"]}, 100]}, "else": None}},
-                }
-            },
-        ]
+    # build_per_player_per_game_pipeline moved to pipeline_player_per_game.py
 

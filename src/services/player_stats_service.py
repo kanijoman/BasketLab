@@ -156,9 +156,16 @@ class PlayerStatsService:
             "blocks_per_game":             "bs",
             "fouls_per_game":              "pf",
             "valoracion_per_game":         "val",
+            "pllss_per_game":              "pllss_game",
+            "minutes_per_game":            "minutes",
             "fg1_percentage":              "fg1_pct_game",
             "fg2_percentage":              "fg2_pct_game",
             "fg3_percentage":              "fg3_pct_game",
+            "efg_percentage":              "efg_pct_game",
+            "true_shooting":               "ts_pct_game",
+            "free_throw_rate":             "ftr_game",
+            "three_point_rate":            "three_pr_game",
+            "turnover_rate":               "tov_pct_game",
         }
 
         by_player: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
