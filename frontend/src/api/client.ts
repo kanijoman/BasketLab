@@ -285,12 +285,24 @@ export interface PlayerStat {
   fg1_percentage?: number   // free throw %
   fg2_percentage?: number
   fg3_percentage?: number
-  // advanced shooting / efficiency
+  // advanced shooting / efficiency (pipeline-computed)
   efg_percentage?: number
   true_shooting?: number
   free_throw_rate?: number
   three_point_rate?: number
   turnover_rate?: number
+  // advanced metrics (service-computed — need team context)
+  usage_pct?: number
+  orating?: number
+  drating?: number
+  net_rtg?: number
+  ast_pct?: number
+  tov_pct_adv?: number
+  stl_pct?: number
+  blk_pct?: number
+  drb_pct?: number
+  orb_pct?: number
+  pie?: number
   [key: string]: unknown
 }
 

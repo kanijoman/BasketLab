@@ -1,11 +1,65 @@
 """Table population utilities for player statistics."""
 
-from typing import Dict, List, Any
-from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem
+import io
+from typing import Dict, List, Any, Optional
+from PyQt6.QtWidgets import QTableWidget, QTableWidgetItem, QLabel
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap
 
 from .table_items import NumericTableWidgetItem
 from .stats_config import calculate_quartiles, get_quartile_color
 from .player_stats_calculator import PlayerStatsCalculator
+
+# Module-level logo cache: team_id → QPixmap (None if unavailable)
+_LOGO_CACHE: Dict[str, Optional[QPixmap]] = {}
+
+
+def _fetch_team_logo(team_id: str) -> Optional[QPixmap]:
+    """Download team logo from FEB CDN, cache result. Returns None on failure."""
+    if team_id in _LOGO_CACHE:
+        return _LOGO_CACHE[team_id]
+
+    if not team_id:
+        _LOGO_CACHE[team_id] = None
+        return None
+
+    url = f"https://imagenes.feb.es/imagen.aspx?i={team_id}&ti=1"
+    try:
+        import requests
+        resp = requests.get(url, timeout=3)
+        if resp.status_code == 200 and resp.content:
+            pixmap = QPixmap()
+            pixmap.loadFromData(resp.content)
+            if not pixmap.isNull():
+                scaled = pixmap.scaled(
+                    40, 35,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                _LOGO_CACHE[team_id] = scaled
+                return scaled
+    except Exception:
+        pass
+
+    _LOGO_CACHE[team_id] = None
+    return None
+
+
+def _build_logo_label(team_id: str, team_name: str) -> QLabel:
+    """Create a centered QLabel showing the team logo or a 3-letter abbreviation."""
+    label = QLabel()
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    label.setToolTip(team_name)
+
+    pixmap = _fetch_team_logo(team_id)
+    if pixmap and not pixmap.isNull():
+        label.setPixmap(pixmap)
+    else:
+        abbrev = team_name[:3].upper() if team_name else "---"
+        label.setText(abbrev)
+        label.setStyleSheet("font-size: 8pt; font-weight: bold; color: #444;")
+
+    return label
 
 
 class PlayerStatsTablePopulator:
@@ -30,6 +84,16 @@ class PlayerStatsTablePopulator:
         17: ('pllss', False),   # +/-
         18: ('val', False)      # Val
     }
+
+    @staticmethod
+    def set_team_logo_cell(table: QTableWidget, row: int, col: int, player: Dict[str, Any]):
+        """Set team logo as cell widget (col item holds team name for sort)."""
+        team_name = str(player.get('team_name', ''))
+        team_id = str(player.get('team_id', ''))
+        # Item for sort key
+        table.setItem(row, col, QTableWidgetItem(team_name))
+        # Widget for visual display
+        table.setCellWidget(row, col, _build_logo_label(team_id, team_name))
 
     @staticmethod
     def calculate_quartiles(all_players: List[Dict[str, Any]], view_mode: str) -> Dict[int, List[float]]:
@@ -93,8 +157,8 @@ class PlayerStatsTablePopulator:
         # Player name (col 0)
         table.setItem(row, 0, QTableWidgetItem(str(player.get('player_name', ''))))
 
-        # Team name (col 1)
-        table.setItem(row, 1, QTableWidgetItem(str(player.get('team_name', ''))))
+        # Team logo (col 1) — item = team name for sort, widget = logo thumbnail
+        PlayerStatsTablePopulator.set_team_logo_cell(table, row, 1, player)
 
         # Games played (col 2)
         table.setItem(row, 2, NumericTableWidgetItem(games_played, str(games_played)))

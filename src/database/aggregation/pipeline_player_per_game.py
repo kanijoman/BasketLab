@@ -70,6 +70,17 @@ class PlayerPerGamePipelineMixin:
                     "p2a":   {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2a",   "0"]}},
                     "p3m":   {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3m",   "0"]}},
                     "p3a":   {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3a",   "0"]}},
+                    # Team totals for this game — needed to compute per-game usage/share proxies
+                    "tm_p2m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.p2m", "0"]}},
+                    "tm_p2a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.p2a", "0"]}},
+                    "tm_p3m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.p3m", "0"]}},
+                    "tm_p3a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.p3a", "0"]}},
+                    "tm_p1a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.p1a", "0"]}},
+                    "tm_to":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.to",  "0"]}},
+                    "tm_ro":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.ro",  "0"]}},
+                    "tm_rd":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.rd",  "0"]}},
+                    "tm_st":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.st",  "0"]}},
+                    "tm_bs":  {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.TOTAL.bs",  "0"]}},
                 }
             },
             {"$match": {"minutes": {"$gt": 0}}},
@@ -157,6 +168,68 @@ class PlayerPerGamePipelineMixin:
                                     100,
                                 ]
                             },
+                            "else": None,
+                        }
+                    },
+                    # ── Per-game team-share proxies for advanced stats ────────────────────
+                    # Usage: player's share of team possessions (FGA+0.44FTA+TO denominator)
+                    "usg_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": [{"$add": ["$tm_p2a", "$tm_p3a", {"$multiply": [0.44, "$tm_p1a"]}, "$tm_to"]}, 0]},
+                            "then": {
+                                "$multiply": [
+                                    {"$divide": [
+                                        {"$add": [_fga_game, {"$multiply": [0.44, "$p1a"]}, "$to"]},
+                                        {"$add": ["$tm_p2a", "$tm_p3a", {"$multiply": [0.44, "$tm_p1a"]}, "$tm_to"]},
+                                    ]},
+                                    100,
+                                ]
+                            },
+                            "else": None,
+                        }
+                    },
+                    # AST%: player assists / (team FGM − player FGM)
+                    "ast_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": [{"$subtract": [{"$add": ["$tm_p2m", "$tm_p3m"]}, {"$add": ["$p2m", "$p3m"]}]}, 0]},
+                            "then": {
+                                "$multiply": [
+                                    {"$divide": [
+                                        "$assist",
+                                        {"$subtract": [{"$add": ["$tm_p2m", "$tm_p3m"]}, {"$add": ["$p2m", "$p3m"]}]},
+                                    ]},
+                                    100,
+                                ]
+                            },
+                            "else": None,
+                        }
+                    },
+                    # ORB%/DRB%/STL%/BLK%: player's share of team total for that game
+                    "orb_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": ["$tm_ro", 0]},
+                            "then": {"$multiply": [{"$divide": ["$ro", "$tm_ro"]}, 100]},
+                            "else": None,
+                        }
+                    },
+                    "drb_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": ["$tm_rd", 0]},
+                            "then": {"$multiply": [{"$divide": ["$rd", "$tm_rd"]}, 100]},
+                            "else": None,
+                        }
+                    },
+                    "stl_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": ["$tm_st", 0]},
+                            "then": {"$multiply": [{"$divide": ["$st", "$tm_st"]}, 100]},
+                            "else": None,
+                        }
+                    },
+                    "blk_pct_game": {
+                        "$cond": {
+                            "if": {"$gt": ["$tm_bs", 0]},
+                            "then": {"$multiply": [{"$divide": ["$bs", "$tm_bs"]}, 100]},
                             "else": None,
                         }
                     },

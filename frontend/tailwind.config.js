@@ -44,11 +44,11 @@ export default {
           secondary: '#8B949E',
           muted:     '#484F58',
         },
-        // ── Quartile coloring: use saturated dark colors with enough contrast on #161B22 ──────
-        q1: { bg: '#0f3d1e', text: '#4ade80' },  // best  (dark green  → bright green text)
-        q2: { bg: '#1e3510', text: '#86efac' },  // above median
-        q3: { bg: '#3d2c0a', text: '#fcd34d' },  // below median
-        q4: { bg: '#3d1010', text: '#f87171' },  // worst (dark red   → bright red text)
+        // ── Quartile coloring: green → yellow → amber → red (matches PyQt UI)
+        q1: { bg: '#14532d', text: '#4ade80' },  // Q1 best   — dark forest green / bright green
+        q2: { bg: '#5a3e00', text: '#fde047' },  // Q2 above  — medium gold         / bright yellow
+        q3: { bg: '#3d2000', text: '#fb923c' },  // Q3 below  — dark amber-orange  / orange-400 text (clearly warmer than red)
+        q4: { bg: '#500000', text: '#ef4444' },  // Q4 worst  — deep crimson       / red-500 text (clearly redder)
         // ── Legacy aliases (keep existing pages compiling) ───────────────
         primary: {
           50:  '#f0fdf4',

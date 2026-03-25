@@ -77,7 +77,7 @@ function Shell() {
         {hasCollection && <Sidebar />}
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 min-w-0 overflow-y-auto">
           <div className="p-5 max-w-[1600px] mx-auto min-h-full">
             <Outlet />
           </div>

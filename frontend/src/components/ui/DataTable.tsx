@@ -145,7 +145,7 @@ export default function DataTable<TData>({
 
       {/* Table wrapper */}
       <div className="overflow-x-auto rounded-card border border-surface-border">
-        <table ref={tableRef} className="w-full text-sm border-collapse">
+        <table ref={tableRef} className="w-full min-w-[480px] text-sm border-collapse">
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
@@ -154,7 +154,7 @@ export default function DataTable<TData>({
                     key={header.id}
                     colSpan={header.colSpan}
                     className={cn(
-                      'px-3 py-2.5 text-left text-xs font-medium text-ink-secondary',
+                      'px-2 py-2.5 text-left text-xs font-medium text-ink-secondary',
                       'bg-surface-raised border-b border-surface-border select-none',
                       i === 0 && 'sticky left-0 z-10 bg-surface-raised',
                       header.column.getCanSort() && 'cursor-pointer hover:text-ink-primary',
@@ -198,7 +198,7 @@ export default function DataTable<TData>({
                         <td
                           key={cell.id}
                           className={cn(
-                            'px-3 py-2 tabular-nums',
+                            'px-2 py-1.5 tabular-nums',
                             qClass ? '' : 'text-ink-primary',
                             i === 0 && 'sticky left-0 z-10 bg-surface-raised font-medium text-ink-primary',
                             qClass,

@@ -111,9 +111,85 @@ class PlayerStatsService:
         Returns:
             List of player stat dicts (may be empty).
         """
-        return self._db.get_player_stats(
+        players = self._db.get_player_stats(
             collection_name, date_filter, venue_filter, result_filter
         ) or []
+        if players:
+            self._enrich_with_advanced_stats(collection_name, players)
+        return players
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _enrich_with_advanced_stats(
+        self, collection_name: str, players: List[Dict]
+    ) -> List[Dict]:
+        """Add advanced per-player metrics (ORtg, DRtg, Usg%, etc.) in-place.
+
+        Fetches season-wide team and opponent stats once per unique team, then
+        runs AdvancedStatsCalculator for every player.  Failures for individual
+        players are silently ignored — they receive zero defaults instead.
+
+        Args:
+            collection_name: MongoDB collection name.
+            players: List of player stat dicts (modified in-place).
+
+        Returns:
+            The same list with advanced stats merged in.
+        """
+        try:
+            from stats.advanced_stats_calculator import AdvancedStatsCalculator
+        except ImportError:
+            return players
+
+        # Collect unique team names
+        unique_teams = {p.get('team_name') for p in players if p.get('team_name')}
+
+        # Fetch team/opponent context once per team
+        team_context: Dict[str, Dict] = {}
+        for team_name in unique_teams:
+            try:
+                ts = self._db.get_aggregated_team_stats(collection_name, team_name)
+                os_ = self._db.get_aggregated_opponent_stats(collection_name, team_name)
+                if ts and os_:
+                    team_context[team_name] = {'team_stats': ts, 'opp_stats': os_}
+            except Exception:
+                pass
+
+        _default_adv = {
+            'usage': 0.0, 'orating': 0.0, 'drating': 0.0, 'net_rtg': 0.0,
+            'ftr_adv': 0.0, 'three_pr_adv': 0.0, 'efg_adv': 0.0, 'ts_adv': 0.0,
+            'ast_pct': 0.0, 'tov_pct': 0.0, 'stl_pct': 0.0, 'blk_pct': 0.0,
+            'drb_pct': 0.0, 'orb_pct': 0.0, 'pie': 0.0,
+        }
+
+        for player in players:
+            team_name = player.get('team_name', '')
+            ctx = team_context.get(team_name)
+            if not ctx:
+                player.update(_default_adv)
+                continue
+            try:
+                adv = AdvancedStatsCalculator.calculate_all_advanced_stats(
+                    player, ctx['team_stats'], ctx['opp_stats']
+                )
+                # Expose under API-friendly keys (avoid shadowing basic fields)
+                player['usage_pct']  = round(adv.get('usage', 0.0), 1)
+                player['orating']    = round(adv.get('orating', 0.0), 1)
+                player['drating']    = round(adv.get('drating', 0.0), 1)
+                player['net_rtg']    = round(adv.get('net_rtg', 0.0), 1)
+                player['ast_pct']    = round(adv.get('ast_pct', 0.0), 1)
+                player['tov_pct_adv'] = round(adv.get('tov_pct', 0.0), 1)
+                player['stl_pct']    = round(adv.get('stl_pct', 0.0), 1)
+                player['blk_pct']    = round(adv.get('blk_pct', 0.0), 1)
+                player['drb_pct']    = round(adv.get('drb_pct', 0.0), 1)
+                player['orb_pct']    = round(adv.get('orb_pct', 0.0), 1)
+                player['pie']        = round(adv.get('pie', 0.0), 2)
+            except Exception:
+                player.update(_default_adv)
+
+        return players
 
     def get_consistency(self, collection_name: str) -> Dict[str, Dict[str, Any]]:
         """Compute intra-player per-game variability (std dev + CV) for key stats.
@@ -166,6 +242,13 @@ class PlayerStatsService:
             "free_throw_rate":             "ftr_game",
             "three_point_rate":            "three_pr_game",
             "turnover_rate":               "tov_pct_game",
+            # Advanced per-game team-share proxies (added to per-game pipeline)
+            "usage_pct":                   "usg_pct_game",
+            "ast_pct":                     "ast_pct_game",
+            "orb_pct":                     "orb_pct_game",
+            "drb_pct":                     "drb_pct_game",
+            "stl_pct":                     "stl_pct_game",
+            "blk_pct":                     "blk_pct_game",
         }
 
         by_player: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))

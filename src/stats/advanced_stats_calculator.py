@@ -30,7 +30,7 @@ class AdvancedStatsCalculator:
         Returns:
             Usage percentage (0-100)
         """
-        mp = player.get('total_minutes', 0) / 60  # Convert seconds to minutes
+        mp = player.get('total_minutes', 0)  # Already in minutes (pipeline converts seconds→min)
         games = player.get('games_played', 1)
         team_mp = team_stats.get('total_games', 1) * 200  # 5 players * 40 minutes
 
@@ -169,7 +169,7 @@ class AdvancedStatsCalculator:
         Returns:
             Assist percentage (0-100)
         """
-        mp = player.get('total_minutes', 0) / 60
+        mp = player.get('total_minutes', 0)  # Already in minutes
         team_games = team_stats.get('total_games', 1)
         team_mp = team_games * 200  # 5 players * 40 minutes per game
 
@@ -233,7 +233,7 @@ class AdvancedStatsCalculator:
         Returns:
             Steal percentage (0-100)
         """
-        mp = player.get('total_minutes', 0) / 60
+        mp = player.get('total_minutes', 0)  # Already in minutes
         team_games = team_stats.get('total_games', 1)
         team_mp = team_games * 200  # 5 players * 40 minutes per game
 
@@ -272,7 +272,7 @@ class AdvancedStatsCalculator:
         Returns:
             Block percentage (0-100)
         """
-        mp = player.get('total_minutes', 0) / 60
+        mp = player.get('total_minutes', 0)  # Already in minutes
         team_games = team_stats.get('total_games', 1)
         team_mp = team_games * 200  # 5 players * 40 minutes per game
 
@@ -309,7 +309,7 @@ class AdvancedStatsCalculator:
         Returns:
             Rebound percentage (0-100)
         """
-        mp = player.get('total_minutes', 0) / 60
+        mp = player.get('total_minutes', 0)  # Already in minutes
         team_games = team_stats.get('total_games', 1)
         team_mp = team_games * 200  # 5 players * 40 minutes per game
 
@@ -352,7 +352,7 @@ class AdvancedStatsCalculator:
             Offensive rating (points per 100 possessions)
         """
         # Player stats
-        mp = player.get('total_minutes', 0) / 60  # Convert to minutes
+        mp = player.get('total_minutes', 0)  # Already in minutes
         pts = player.get('total_pts', 0)
         fgm = player.get('total_p2m', 0) + player.get('total_p3m', 0)
         fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
@@ -461,7 +461,7 @@ class AdvancedStatsCalculator:
             Defensive rating (points allowed per 100 possessions)
         """
         # Player stats
-        mp = player.get('total_minutes', 0) / 60
+        mp = player.get('total_minutes', 0)  # Already in minutes
         stl = player.get('total_st', 0)
         blk = player.get('total_bs', 0)
         drb = player.get('total_rd', 0)
@@ -531,6 +531,62 @@ class AdvancedStatsCalculator:
         return drtg
 
     @staticmethod
+    def calculate_net_rating(player: Dict[str, Any], team_stats: Dict[str, Any],
+                             opp_stats: Dict[str, Any]) -> float:
+        """Net Rating = ORtg − DRtg (points differential per 100 possessions)."""
+        ortg = AdvancedStatsCalculator.calculate_offensive_rating(player, team_stats, opp_stats)
+        drtg = AdvancedStatsCalculator.calculate_defensive_rating(player, team_stats, opp_stats)
+        # Only meaningful when both ratings are non-default
+        if ortg == 100.0 and drtg == 100.0:
+            return 0.0
+        return ortg - drtg
+
+    @staticmethod
+    def calculate_pie(player: Dict[str, Any], team_stats: Dict[str, Any],
+                      opp_stats: Dict[str, Any]) -> float:
+        """
+        Player Impact Estimate (PIE%).
+
+        Formula (Basketball Reference):
+          PIE = player_impact / game_impact * 100
+          where impact = PTS + FGM + FTM - FGA - FTA + DRB + 0.5*ORB + AST + STL + 0.5*BLK - PF - TOV
+        """
+        # Player season totals
+        pts = player.get('total_pts', 0)
+        fgm = player.get('total_p2m', 0) + player.get('total_p3m', 0)
+        fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
+        ftm = player.get('total_p1m', 0)
+        fta = player.get('total_p1a', 0)
+        drb = player.get('total_rd', 0)
+        orb = player.get('total_ro', 0)
+        ast = player.get('total_assist', 0)
+        stl = player.get('total_st', 0)
+        blk = player.get('total_bs', 0)
+        pf = player.get('total_pf', 0)
+        tov = player.get('total_to', 0)
+        player_impact = pts + fgm + ftm - fga - fta + drb + 0.5 * orb + ast + stl + 0.5 * blk - pf - tov
+
+        def _stats_impact(stats: Dict[str, Any]) -> float:
+            t_pts = stats.get('points_scored', 0)
+            t_fgm = stats.get('fg2_made', 0) + stats.get('fg3_made', 0)
+            t_fga = stats.get('fg2_attempted', 0) + stats.get('fg3_attempted', 0)
+            t_ftm = stats.get('ft_made', 0)
+            t_fta = stats.get('ft_attempted', 0)
+            t_drb = stats.get('rebounds_def', 0)
+            t_orb = stats.get('rebounds_off', 0)
+            t_ast = stats.get('assists', 0)
+            t_stl = stats.get('steals', 0)
+            t_blk = stats.get('blocks', 0)
+            t_pf = stats.get('personal_fouls', 0)
+            t_tov = stats.get('turnovers', 0)
+            return t_pts + t_fgm + t_ftm - t_fga - t_fta + t_drb + 0.5 * t_orb + t_ast + t_stl + 0.5 * t_blk - t_pf - t_tov
+
+        game_impact = _stats_impact(team_stats) + _stats_impact(opp_stats)
+        if game_impact == 0:
+            return 0.0
+        return 100.0 * (player_impact / game_impact)
+
+    @staticmethod
     def calculate_all_advanced_stats(player: Dict[str, Any], team_stats: Dict[str, Any],
                                      opp_stats: Dict[str, Any]) -> Dict[str, float]:
         """
@@ -545,7 +601,7 @@ class AdvancedStatsCalculator:
             Dictionary with all advanced statistics
         """
         games_played = player.get('games_played', 0)
-        total_minutes = player.get('total_minutes', 0) / 60  # Convert to minutes
+        total_minutes = player.get('total_minutes', 0)  # Already in minutes
         total_val = player.get('total_val', 0)
 
         # Basic averages
@@ -559,6 +615,7 @@ class AdvancedStatsCalculator:
             'usage': AdvancedStatsCalculator.calculate_usage_percentage(player, team_stats),
             'orating': AdvancedStatsCalculator.calculate_offensive_rating(player, team_stats, opp_stats),
             'drating': AdvancedStatsCalculator.calculate_defensive_rating(player, team_stats, opp_stats),
+            'net_rtg': AdvancedStatsCalculator.calculate_net_rating(player, team_stats, opp_stats),
             'ftr': AdvancedStatsCalculator.calculate_ftr(player),
             'three_pr': AdvancedStatsCalculator.calculate_3pr(player),
             'efg': AdvancedStatsCalculator.calculate_effective_fg_percentage(player),
@@ -569,5 +626,6 @@ class AdvancedStatsCalculator:
             'blk_pct': AdvancedStatsCalculator.calculate_block_percentage(player, team_stats, opp_stats),
             'drb_pct': AdvancedStatsCalculator.calculate_rebound_percentage(player, team_stats, opp_stats, is_offensive=False),
             'orb_pct': AdvancedStatsCalculator.calculate_rebound_percentage(player, team_stats, opp_stats, is_offensive=True),
-            'val_pg': val_per_game
+            'val_pg': val_per_game,
+            'pie': AdvancedStatsCalculator.calculate_pie(player, team_stats, opp_stats),
         }

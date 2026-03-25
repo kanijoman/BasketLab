@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QTableWidget, QHeaderView, QLabel, QComboBox,
                               QLineEdit, QPushButton, QMessageBox, QFrame,
                               QTableWidgetItem, QDialog, QTextEdit, QDialogButtonBox,
-                              QMenu)
+                              QMenu, QTabBar)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QAction
 from typing import List, Dict, Optional, Any, Callable
@@ -33,8 +33,8 @@ class PlayerStatsWindow(QMainWindow):
     # Column definitions for advanced stats
     ADVANCED_COLUMNS = [
         "Jugador", "Equipo", "PJ", "Min/PJ", "Pts/PJ",
-        "Usg%", "ORtg", "DRtg", "FTr", "3Pr", "eFG%", "TS%",
-        "%AST", "%TO", "%ROB", "%TAP", "%RD", "%RO", "Val/PJ"
+        "Usg%", "ORtg", "DRtg", "NetRtg", "FTr", "3Pr", "eFG%", "TS%",
+        "%AST", "%TO", "%ROB", "%TAP", "%RD", "%RO", "Val/PJ", "PIE%"
     ]
 
     # Field definitions for quartile calculation and coloring (advanced stats)
@@ -44,17 +44,19 @@ class PlayerStatsWindow(QMainWindow):
         5: ('usage', False),        # Usg%
         6: ('orating', False),      # ORtg
         7: ('drating', True),       # DRtg (reverse - lower is better)
-        8: ('ftr', False),          # FTr
-        9: ('three_pr', False),     # 3Pr
-        10: ('efg', False),         # eFG%
-        11: ('ts', False),          # TS%
-        12: ('ast_pct', False),     # %AST
-        13: ('tov_pct', True),      # %TO (reverse)
-        14: ('stl_pct', False),     # %ROB
-        15: ('blk_pct', False),     # %TAP
-        16: ('drb_pct', False),     # %RD
-        17: ('orb_pct', False),     # %RO
-        18: ('val_pg', False),      # Val/PJ
+        8: ('net_rtg', False),      # NetRtg
+        9: ('ftr', False),          # FTr
+        10: ('three_pr', False),    # 3Pr
+        11: ('efg', False),         # eFG%
+        12: ('ts', False),          # TS%
+        13: ('ast_pct', False),     # %AST
+        14: ('tov_pct', True),      # %TO (reverse)
+        15: ('stl_pct', False),     # %ROB
+        16: ('blk_pct', False),     # %TAP
+        17: ('drb_pct', False),     # %RD
+        18: ('orb_pct', False),     # %RO
+        19: ('val_pg', False),      # Val/PJ
+        20: ('pie', False),         # PIE%
     }
 
     def __init__(self, player_stats: List[Dict], collection_name: Optional[str] = None,
@@ -72,7 +74,7 @@ class PlayerStatsWindow(QMainWindow):
         """
         super().__init__(parent)
         self.setWindowTitle("MfA - Estadísticas Individuales")
-        self.setMinimumSize(1600, 700)
+        self.setMinimumSize(1800, 700)
 
         # Set application icon
         set_app_icon(self)
@@ -155,26 +157,53 @@ class PlayerStatsWindow(QMainWindow):
         period_layout.addStretch()
         main_layout.addWidget(period_frame)
 
+        # View mode tab bar
+        view_frame = QFrame()
+        view_frame.setFrameStyle(QFrame.Shape.StyledPanel)
+        view_layout = QHBoxLayout(view_frame)
+        view_layout.setContentsMargins(8, 4, 8, 4)
+
+        view_label = QLabel("Vista:")
+        view_label.setStyleSheet("font-weight: bold;")
+        view_layout.addWidget(view_label)
+
+        self.view_tab_bar = QTabBar()
+        self.view_tab_bar.addTab("Promedios /PJ")
+        self.view_tab_bar.addTab("Totales temporada")
+        self.view_tab_bar.addTab("Proyección 30 min")
+        self.view_tab_bar.addTab("Est. Avanzadas")
+        self.view_tab_bar.setStyleSheet("""
+            QTabBar::tab {
+                padding: 6px 18px;
+                border: 1px solid #ccc;
+                border-bottom: none;
+                border-radius: 4px 4px 0 0;
+                margin-right: 2px;
+                font-size: 10pt;
+            }
+            QTabBar::tab:selected {
+                background-color: #1976D2;
+                color: white;
+                font-weight: bold;
+                border-color: #1976D2;
+            }
+            QTabBar::tab:!selected {
+                background-color: #f0f0f0;
+                color: #333;
+            }
+            QTabBar::tab:!selected:hover {
+                background-color: #e0e0e0;
+            }
+        """)
+        self.view_tab_bar.currentChanged.connect(self.change_view_mode)
+        view_layout.addWidget(self.view_tab_bar)
+        view_layout.addStretch()
+        main_layout.addWidget(view_frame)
+
         # Filters section
         filters_frame = QFrame()
         filters_frame.setFrameStyle(QFrame.Shape.StyledPanel)
         filters_layout = QHBoxLayout(filters_frame)
-
-        # View mode selector
-        view_label = QLabel("Visualización:")
-        filters_layout.addWidget(view_label)
-
-        self.view_mode_combo = QComboBox()
-        self.view_mode_combo.addItem("Promedios por partido", "average")
-        self.view_mode_combo.addItem("Totales acumulados", "total")
-        self.view_mode_combo.addItem("Proyección 30 minutos", "projection")
-        self.view_mode_combo.addItem("Estadísticas Avanzadas", "advanced")
-        self.view_mode_combo.currentIndexChanged.connect(self.change_view_mode)
-        filters_layout.addWidget(self.view_mode_combo)
-
-        filters_layout.addWidget(QLabel("  "))  # Spacer
-
-        # Team filter
         team_label = QLabel("Equipo:")
         filters_layout.addWidget(team_label)
 
@@ -246,18 +275,19 @@ class PlayerStatsWindow(QMainWindow):
 
         # Configure table
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        self.table.horizontalHeader().setStretchLastSection(False)
+        self.table.horizontalHeader().setStretchLastSection(True)
         self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(True)
+        self.table.setAlternatingRowColors(False)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSortingEnabled(True)
 
-        # Set column widths
-        self.table.horizontalHeader().resizeSection(0, 180)  # Player name
-        self.table.horizontalHeader().resizeSection(1, 150)  # Team name
-        for i in range(2, len(self.PLAYER_COLUMNS)):
-            self.table.horizontalHeader().resizeSection(i, 60)
+        # Set column widths — logo col (1) narrow, stats cols compact
+        self.table.horizontalHeader().resizeSection(0, 160)  # Player name
+        self.table.horizontalHeader().resizeSection(1, 55)   # Team logo
+        self.table.horizontalHeader().resizeSection(2, 45)   # PJ
+        for i in range(3, len(self.PLAYER_COLUMNS) - 1):
+            self.table.horizontalHeader().resizeSection(i, 55)
 
         main_layout.addWidget(self.table)
 
@@ -330,16 +360,17 @@ class PlayerStatsWindow(QMainWindow):
         self.populate_table()
 
     def change_view_mode(self):
-        """Change the view mode (average, total, projection, advanced, or in_out)."""
-        new_mode = self.view_mode_combo.currentData()
-
-        # Normal view mode handling (advanced/basic/projection)
+        """Change the view mode based on the selected tab (0=average, 1=total, 2=projection, 3=advanced)."""
+        _TAB_MODES = ["average", "total", "projection", "advanced"]
+        tab_idx = self.view_tab_bar.currentIndex()
+        if tab_idx < 0 or tab_idx >= len(_TAB_MODES):
+            return
+        new_mode = _TAB_MODES[tab_idx]
 
         # Check if switching to/from advanced mode
         if new_mode == "advanced" and not self.show_advanced:
             # Switching to advanced stats
             if not self.advanced_stats_calculated:
-                # Stats should have been pre-calculated, but try again if not
                 if self.db_handler and self.collection_name:
                     try:
                         self._calculate_advanced_stats()
@@ -350,8 +381,10 @@ class PlayerStatsWindow(QMainWindow):
                             "Error",
                             f"No se pudieron calcular las estadísticas avanzadas:\n{str(e)}"
                         )
-                        # Revert to previous mode
-                        self.view_mode_combo.setCurrentIndex(0)
+                        # Revert tab to Promedios
+                        self.view_tab_bar.blockSignals(True)
+                        self.view_tab_bar.setCurrentIndex(0)
+                        self.view_tab_bar.blockSignals(False)
                         return
                 else:
                     QMessageBox.warning(
@@ -359,8 +392,9 @@ class PlayerStatsWindow(QMainWindow):
                         "Error",
                         "No hay conexión a la base de datos para calcular estadísticas avanzadas."
                     )
-                    # Revert to previous mode
-                    self.view_mode_combo.setCurrentIndex(0)
+                    self.view_tab_bar.blockSignals(True)
+                    self.view_tab_bar.setCurrentIndex(0)
+                    self.view_tab_bar.blockSignals(False)
                     return
 
             # Switch to advanced view
@@ -371,13 +405,12 @@ class PlayerStatsWindow(QMainWindow):
             self.table.setColumnCount(len(self.ADVANCED_COLUMNS))
             self.update_column_headers()
 
-            # Set column widths for advanced stats
-            self.table.horizontalHeader().resizeSection(0, 160)  # Player name (reduced from 180)
-            self.table.horizontalHeader().resizeSection(1, 130)  # Team name (reduced from 150)
-            self.table.horizontalHeader().resizeSection(2, 50)   # PJ (games played)
-            # Other columns: Min/PJ through Val/PJ
-            for i in range(3, len(self.ADVANCED_COLUMNS)):
-                self.table.horizontalHeader().resizeSection(i, 75)  # Reduced from 80
+            # Column widths for advanced stats
+            self.table.horizontalHeader().resizeSection(0, 160)  # Player name
+            self.table.horizontalHeader().resizeSection(1, 55)   # Team logo
+            self.table.horizontalHeader().resizeSection(2, 45)   # PJ
+            for i in range(3, len(self.ADVANCED_COLUMNS) - 1):
+                self.table.horizontalHeader().resizeSection(i, 65)
 
         elif new_mode != "advanced" and self.show_advanced:
             # Switching from advanced to basic mode
@@ -399,11 +432,12 @@ class PlayerStatsWindow(QMainWindow):
             self.table.setColumnCount(len(self.PLAYER_COLUMNS))
             self.update_column_headers()
 
-            # Set column widths for basic stats
-            self.table.horizontalHeader().resizeSection(0, 180)  # Player name
-            self.table.horizontalHeader().resizeSection(1, 150)  # Team name
-            for i in range(2, len(self.PLAYER_COLUMNS)):
-                self.table.horizontalHeader().resizeSection(i, 60)
+            # Column widths for basic stats
+            self.table.horizontalHeader().resizeSection(0, 160)  # Player name
+            self.table.horizontalHeader().resizeSection(1, 55)   # Team logo
+            self.table.horizontalHeader().resizeSection(2, 45)   # PJ
+            for i in range(3, len(self.PLAYER_COLUMNS) - 1):
+                self.table.horizontalHeader().resizeSection(i, 55)
         else:
             # Normal view mode change (within basic stats)
             self.view_mode = new_mode
@@ -693,6 +727,7 @@ class PlayerStatsWindow(QMainWindow):
             'usage': 0.0,
             'orating': 0.0,
             'drating': 0.0,
+            'net_rtg': 0.0,
             'ftr': 0.0,
             'three_pr': 0.0,
             'efg': 0.0,
@@ -703,7 +738,8 @@ class PlayerStatsWindow(QMainWindow):
             'blk_pct': 0.0,
             'drb_pct': 0.0,
             'orb_pct': 0.0,
-            'val_pg': 0.0
+            'val_pg': 0.0,
+            'pie': 0.0
         })
 
     def _calculate_advanced_quartiles(self) -> Dict:
@@ -737,8 +773,8 @@ class PlayerStatsWindow(QMainWindow):
             # Column 0: Player name
             self.table.setItem(row, 0, QTableWidgetItem(player.get('player_name', '')))
 
-            # Column 1: Team name
-            self.table.setItem(row, 1, QTableWidgetItem(player.get('team_name', '')))
+            # Column 1: Team logo (item = team name for sort; widget = logo thumbnail)
+            PlayerStatsTablePopulator.set_team_logo_cell(self.table, row, 1, player)
 
             # Column 2: Games played - show comparison if in comparative mode
             games = player.get('games_played', 0)
@@ -851,7 +887,7 @@ class PlayerStatsWindow(QMainWindow):
             self.table.setItem(row, 0, QTableWidgetItem(str(current_player.get('player_name', ''))))
 
             # Team name (col 1)
-            self.table.setItem(row, 1, QTableWidgetItem(str(current_player.get('team_name', ''))))
+            PlayerStatsTablePopulator.set_team_logo_cell(self.table, row, 1, current_player)
 
             # Games played (col 2) - show comparison if available
             if comparison_player:

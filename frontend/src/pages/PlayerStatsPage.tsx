@@ -11,7 +11,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Users, ChevronDown } from 'lucide-react'
+import { Users, ChevronDown, Info } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getPlayerStats, getPlayerConsistency, type PlayerStat, type TeamFilters, type ConsistencyMap } from '@/api/client'
@@ -32,6 +32,7 @@ function buildNumCol(
   opts: { decimals?: number; pct?: boolean } = {},
   consistencyByPlayerId: ConsistencyMap | null = null,
   thresholds: [number, number] = [50, 100],
+  cvKey?: string,
 ): ColumnDef<PlayerStat, unknown> {
   const { decimals = 1, pct = false } = opts
   return {
@@ -41,7 +42,7 @@ function buildNumCol(
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
       const formatted = pct ? fmtPct(v) : fmt(v, decimals)
-      const cvEntry = consistencyByPlayerId?.[(row.original as PlayerStat).player_id]?.[key]
+      const cvEntry = consistencyByPlayerId?.[(row.original as PlayerStat).player_id]?.[cvKey ?? key]
       if (!cvEntry) return formatted
       return (
         <span className="inline-flex items-center gap-1.5">
@@ -64,13 +65,30 @@ function nameCol(): ColumnDef<PlayerStat, unknown> {
   }
 }
 
-function teamCol(): ColumnDef<PlayerStat, unknown> {
+function TeamLogoCell({ teamId, teamName }: { teamId?: string; teamName: string }) {
+  const [failed, setFailed] = useState(false)
+  if (teamId && !failed) {
+    const url = `https://imagenes.feb.es/imagen.aspx?i=${teamId}&ti=1`
+    return (
+      <img
+        src={url}
+        alt={teamName}
+        title={teamName}
+        className="h-7 max-w-[42px] object-contain mx-auto block"
+        onError={() => setFailed(true)}
+      />
+    )
+  }
+  return <span className="text-ink-secondary text-xs" title={teamName}>{teamName.slice(0, 3).toUpperCase()}</span>
+}
+
+function teamLogoCol(): ColumnDef<PlayerStat, unknown> {
   return {
     id: 'team_name',
     accessorKey: 'team_name',
-    header: 'Equipo',
-    cell: ({ getValue }) => (
-      <span className="text-ink-secondary text-xs whitespace-nowrap">{getValue() as string}</span>
+    header: '',
+    cell: ({ getValue, row }) => (
+      <TeamLogoCell teamId={row.original.team_id} teamName={getValue() as string} />
     ),
   }
 }
@@ -82,7 +100,7 @@ const PLAYER_CV: [number, number] = [50, 100]
 function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
-    teamCol(),
+    teamLogoCol(),
     buildNumCol('games_played',              'PJ',  { decimals: 0 }),
     buildNumCol('minutes_per_game',          'MIN', {},              cv, PLAYER_CV),
     buildNumCol('points_per_game',           'PTS', {},              cv, PLAYER_CV),
@@ -99,24 +117,30 @@ function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknow
     buildNumCol('fg1_percentage',            '%TL', { pct: true },   cv, PLAYER_CV),
     buildNumCol('fg2_percentage',            '%T2', { pct: true },   cv, PLAYER_CV),
     buildNumCol('fg3_percentage',            '%T3', { pct: true },   cv, PLAYER_CV),
-    buildNumCol('total_p2m', 'T2M', { decimals: 0 }),
-    buildNumCol('total_p2a', 'T2I', { decimals: 0 }),
-    buildNumCol('total_p3m', 'T3M', { decimals: 0 }),
-    buildNumCol('total_p3a', 'T3I', { decimals: 0 }),
   ]
 }
 
 function buildAdvancedCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
-    teamCol(),
-    buildNumCol('games_played',     'PJ',   { decimals: 0 }),
-    buildNumCol('minutes_per_game', 'MIN',  {},               cv, PLAYER_CV),
-    buildNumCol('efg_percentage',   'eFG%', { pct: true },    cv, PLAYER_CV),
-    buildNumCol('true_shooting',    'TS%',  { pct: true },    cv, PLAYER_CV),
-    buildNumCol('free_throw_rate',  'FTr',  { pct: true },    cv, PLAYER_CV),
-    buildNumCol('three_point_rate', '3Pr',  { pct: true },    cv, PLAYER_CV),
-    buildNumCol('turnover_rate',    'TOV%', { pct: true },    cv, PLAYER_CV),
+    teamLogoCol(),
+    buildNumCol('games_played',      'PJ',     { decimals: 0 }),
+    buildNumCol('minutes_per_game',  'MIN',    {},              cv, PLAYER_CV),
+    buildNumCol('usage_pct',         'Usg%',   {},              cv, PLAYER_CV),
+    buildNumCol('orating',           'ORtg',   {}),
+    buildNumCol('drating',           'DRtg',   {}),
+    buildNumCol('net_rtg',           'NetRtg', {}),
+    buildNumCol('efg_percentage',    'eFG%',   { pct: true },   cv, PLAYER_CV),
+    buildNumCol('true_shooting',     'TS%',    { pct: true },   cv, PLAYER_CV),
+    buildNumCol('free_throw_rate',   'FTr',    { pct: true },   cv, PLAYER_CV),
+    buildNumCol('three_point_rate',  '3Pr',    { pct: true },   cv, PLAYER_CV),
+    buildNumCol('ast_pct',           '%AST',   {},              cv, PLAYER_CV),
+    buildNumCol('tov_pct_adv',       '%TO',    {},              cv, PLAYER_CV, 'turnover_rate'),
+    buildNumCol('stl_pct',           '%ROB',   {},              cv, PLAYER_CV),
+    buildNumCol('blk_pct',           '%TAP',   {},              cv, PLAYER_CV),
+    buildNumCol('drb_pct',           '%RD',    {},              cv, PLAYER_CV),
+    buildNumCol('orb_pct',           '%RO',    {},              cv, PLAYER_CV),
+    buildNumCol('pie',               'PIE%',   {}),
   ]
 }
 
@@ -142,10 +166,44 @@ function projNum(
   }
 }
 
+function buildProjectionQuartiles(data: PlayerStat[]): QuartileMap {
+  const projPairs: Array<[string, keyof PlayerStat, boolean]> = [
+    ['pts_proj',   'points_per_game',    false],
+    ['reb_proj',   'rebounds_per_game',  false],
+    ['ast_proj',   'assists_per_game',   false],
+    ['rob_proj',   'steals_per_game',    false],
+    ['per_proj',   'turnovers_per_game', true ],
+    ['tap_proj',   'blocks_per_game',    false],
+    ['val_proj',   'valoracion_per_game',false],
+    ['pllss_proj', 'pllss_per_game',     false],
+  ]
+  const map: QuartileMap = {}
+  for (const [id, statKey] of projPairs) {
+    const vals = data
+      .filter(p => (p.minutes_per_game ?? 0) >= 10)
+      .map(p => {
+        const v = p[statKey] as number | null | undefined
+        if (v == null || !p.minutes_per_game) return null
+        return (v / p.minutes_per_game) * 30
+      })
+      .filter((v): v is number => v !== null && !Number.isNaN(v))
+      .sort((a, b) => a - b)
+    if (vals.length >= 4) {
+      const q = (p: number) => {
+        const idx = (vals.length - 1) * p
+        const lo = Math.floor(idx), hi = Math.ceil(idx)
+        return vals[lo] + (vals[hi] - vals[lo]) * (idx - lo)
+      }
+      map[id] = [q(0.25), q(0.5), q(0.75)]
+    }
+  }
+  return map
+}
+
 function buildProjectionCols(): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
-    teamCol(),
+    teamLogoCol(),
     buildNumCol('games_played',    'PJ',  { decimals: 0 }),
     buildNumCol('minutes_per_game','MIN', {}),
     projNum('pts_proj',   'PTS×30', 'points_per_game'),
@@ -324,11 +382,14 @@ export default function PlayerStatsPage() {
     return buildBasicCols(consistencyByPlayerId)
   }, [tab, consistencyByPlayerId])
   const reverseColumns = useMemo(() => {
-    if (tab === 'advanced')   return ['turnover_rate']
+    if (tab === 'advanced')   return ['drating', 'tov_pct_adv', 'turnover_rate']
     if (tab === 'projection') return ['per_proj']
     return ['turnovers_per_game', 'fouls_per_game']
   }, [tab])
-  const quartiles  = useMemo(() => buildPlayerQuartiles(players, activeCols), [players, activeCols])
+  const quartiles = useMemo(() => {
+    if (tab === 'projection') return buildProjectionQuartiles(players)
+    return buildPlayerQuartiles(players, activeCols)
+  }, [tab, players, activeCols])
 
   if (!collection) {
     return (
@@ -437,6 +498,20 @@ export default function PlayerStatsPage() {
             </button>
           ))}
         </div>
+
+        {/* Projection methodology banner */}
+        {tab === 'projection' && (
+          <div className="flex items-start gap-3 rounded-md bg-blue-950/40 border border-blue-800/50 px-4 py-3 text-sm text-blue-200">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-400" />
+            <div className="space-y-0.5">
+              <p className="font-semibold">Proyección estadística a 30 minutos</p>
+              <p className="text-blue-300/80 text-xs">
+                Escala las estadísticas de cada jugadora al equivalente de disputar 30 minutos por partido.
+                Las jugadoras con menos de 10 minutos de media por partido no se incluyen en el cálculo.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Table — clicking a row opens the player drawer */}
         <DataTable
