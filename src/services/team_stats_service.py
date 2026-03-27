@@ -296,18 +296,8 @@ class TeamStatsService:
         return self._db.get_league_stats(collection_name) or {}
 
     # ------------------------------------------------------------------
-    # Evolution (per-game time series)
+    # Evolution (per-game time series) — delegated to EvolutionService
     # ------------------------------------------------------------------
-
-    # Supported stat keys → (FEB field expression, FBCYL field expression)
-    _EVOLUTION_STATS: Dict[str, tuple] = {
-        "points":       ("$BOXSCORE.TEAM.TOTAL.pts",    "$stats.teams.PTS"),
-        "assists":      ("$BOXSCORE.TEAM.TOTAL.assist", "$stats.teams.AST"),
-        "rebounds":     None,   # computed below
-        "steals":       ("$BOXSCORE.TEAM.TOTAL.st",     "$stats.teams.ST"),
-        "turnovers":    ("$BOXSCORE.TEAM.TOTAL.to",     "$stats.teams.TO"),
-        "blocks":       ("$BOXSCORE.TEAM.TOTAL.bs",     "$stats.teams.BS"),
-    }
 
     def get_team_evolution(
         self,
@@ -316,182 +306,15 @@ class TeamStatsService:
         stat: str = "points",
         rolling_window: int = 5,
     ) -> List[Dict[str, Any]]:
-        """Return game-by-game values for *stat* for a specific team in a collection.
+        """Delegate to EvolutionService.get_team_evolution.
 
-        Args:
-            collection_name: MongoDB collection name.
-            team_name: Exact team name as stored in the DB.
-            stat: One of the keys in ``_EVOLUTION_STATS``.
-            rolling_window: Number of games for rolling-average computation.
-
-        Returns:
-            List of dicts with keys ``game_number``, ``game_date``, ``opponent``,
-            ``value``, ``rolling_avg``, ``won`` — sorted chronologically.
+        Kept here for backward compatibility with callers that hold a reference
+        to ``TeamStatsService``.
         """
-        is_fbcyl = _is_fbcyl(collection_name)
-        try:
-            coll = self._db.connection.get_collection(collection_name)
-            if is_fbcyl:
-                rows = self._evolution_fbcyl(coll, team_name, stat)
-            else:
-                rows = self._evolution_feb(coll, team_name, stat)
-        except Exception:
-            return []
-
-        # Compute rolling average in Python
-        for i, row in enumerate(rows):
-            window = rows[max(0, i - rolling_window + 1): i + 1]
-            vals = [r["value"] for r in window if r["value"] is not None]
-            row["rolling_avg"] = round(sum(vals) / len(vals), 2) if vals else None
-            row["game_number"] = i + 1
-        return rows
-
-    def _evolution_feb(self, coll, team_name: str, stat: str) -> List[Dict]:
-        """Build FEB per-game evolution rows for a team."""
-        stat_expr = self._feb_stat_expr(stat)
-        pipeline = [
-            {
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None, "onNull": None,
-                        }
-                    }
-                }
-            },
-            {
-                "$match": {"HEADER.TEAM.name": team_name}
-            },
-            {
-                "$addFields": {
-                    "localTeamName": {"$arrayElemAt": ["$HEADER.TEAM.name", 0]},
-                    "awayTeamName":  {"$arrayElemAt": ["$HEADER.TEAM.name", 1]},
-                    "localPts":  {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
-                    "awayPts":   {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}},
-                }
-            },
-            {"$unwind": {"path": "$BOXSCORE.TEAM", "includeArrayIndex": "teamIndex"}},
-            {"$match": {"BOXSCORE.TEAM.name": team_name}},
-            {
-                "$project": {
-                    "game_date": {
-                        "$dateToString": {
-                            "format": "%Y-%m-%d",
-                            "date": "$parsedDate",
-                            "onNull": "unknown",
-                        }
-                    },
-                    "won": {
-                        "$cond": [
-                            {"$eq": ["$teamIndex", 0]},
-                            {"$gt": ["$localPts", "$awayPts"]},
-                            {"$gt": ["$awayPts", "$localPts"]},
-                        ]
-                    },
-                    "opponent": {
-                        "$cond": [
-                            {"$eq": ["$teamIndex", 0]},
-                            "$awayTeamName",
-                            "$localTeamName",
-                        ]
-                    },
-                    "value": stat_expr,
-                }
-            },
-            {"$sort": {"game_date": 1}},
-        ]
-        docs = list(coll.aggregate(pipeline))
-        return [
-            {
-                "game_date": d.get("game_date", ""),
-                "opponent": d.get("opponent", ""),
-                "value": self._safe_num(d.get("value")),
-                "won": bool(d.get("won")),
-            }
-            for d in docs
-        ]
-
-    def _evolution_fbcyl(self, coll, team_name: str, stat: str) -> List[Dict]:
-        """Build FBCYL per-game evolution rows for a team."""
-        stat_expr = self._fbcyl_stat_expr(stat)
-        pipeline = [
-            {
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$stats.startDate",
-                            "format": "%Y-%m-%dT%H:%M:%S.%LZ",
-                            "onError": None, "onNull": None,
-                        }
-                    }
-                }
-            },
-            {"$match": {"stats.teams.name": team_name}},
-            {"$unwind": {"path": "$stats.teams", "includeArrayIndex": "teamIndex"}},
-            {"$match": {"stats.teams.name": team_name}},
-            {
-                "$project": {
-                    "game_date": {
-                        "$dateToString": {
-                            "format": "%Y-%m-%d",
-                            "date": "$parsedDate",
-                            "onNull": "unknown",
-                        }
-                    },
-                    "opponent": "unknown",
-                    "value": stat_expr,
-                    "won": {"$ifNull": ["$stats.teams.isWinner", False]},
-                }
-            },
-            {"$sort": {"game_date": 1}},
-        ]
-        docs = list(coll.aggregate(pipeline))
-        return [
-            {
-                "game_date": d.get("game_date", ""),
-                "opponent": d.get("opponent", ""),
-                "value": self._safe_num(d.get("value")),
-                "won": bool(d.get("won")),
-            }
-            for d in docs
-        ]
-
-    def _feb_stat_expr(self, stat: str):
-        """Return MongoDB projection expression for a FEB stat field."""
-        expr_map = {
-            "points":    {"$toInt": "$BOXSCORE.TEAM.TOTAL.pts"},
-            "assists":   {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
-            "rebounds":  {"$add": [
-                {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
-                {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
-            ]},
-            "steals":    {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
-            "turnovers": {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
-            "blocks":    {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
-        }
-        return expr_map.get(stat, {"$toInt": "$BOXSCORE.TEAM.TOTAL.pts"})
-
-    def _fbcyl_stat_expr(self, stat: str):
-        """Return MongoDB projection expression for a FBCYL stat field."""
-        expr_map = {
-            "points":    "$stats.teams.PTS",
-            "assists":   "$stats.teams.AST",
-            "rebounds":  "$stats.teams.REB",
-            "steals":    "$stats.teams.ST",
-            "turnovers": "$stats.teams.TO",
-            "blocks":    "$stats.teams.BS",
-        }
-        return expr_map.get(stat, "$stats.teams.PTS")
-
-    @staticmethod
-    def _safe_num(val) -> Optional[float]:
-        """Convert a raw DB value to float, returning None on failure."""
-        try:
-            return float(val) if val is not None else None
-        except (TypeError, ValueError):
-            return None
+        from src.services.evolution_service import EvolutionService
+        return EvolutionService(self._db).get_team_evolution(
+            collection_name, team_name, stat=stat, rolling_window=rolling_window
+        )
 
     # ------------------------------------------------------------------
     # Possession league-wide stats for scatter analysis

@@ -6,14 +6,12 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, Query
 
 from src.api.deps import get_db
-from src.services import TeamStatsService
+from src.services import TeamStatsService, EvolutionService, EVOLUTION_STAT_KEYS
 
 router = APIRouter()
 
-# Allowed stat keys for the evolution endpoint
-_VALID_EVOLUTION_STATS = frozenset({
-    "points", "assists", "rebounds", "steals", "turnovers", "blocks",
-})
+# All supported stat keys for evolution endpoints (from EvolutionService)
+_VALID_EVOLUTION_STATS = EVOLUTION_STAT_KEYS
 
 
 @router.get("/{collection}", summary="Get all team stats for a collection")
@@ -110,23 +108,51 @@ def get_consistency(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
 def get_team_evolution(
     collection: str,
     team_name: str,
-    stat: str = Query("points", description="Stat key: points | assists | rebounds | steals | turnovers | blocks"),
+    stat: str = Query("points", description="Stat key — see EVOLUTION_STAT_KEYS for full list"),
     window: int = Query(5, ge=2, le=15, description="Rolling-average window in games (2–15)"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
-    """Return chronological game-by-game values for a single stat, with rolling average.
+    """Return chronological game-by-game values for a single stat with rolling and cumulative averages.
 
     Args:
         collection: MongoDB collection name.
         team_name: Exact team name as stored in the DB.
-        stat: Stat key — one of ``points``, ``assists``, ``rebounds``,
-            ``steals``, ``turnovers``, ``blocks``.
+        stat: Any key from ``EVOLUTION_STAT_KEYS`` (30+ stats supported).
         window: Rolling-average window size (default 5 games).
 
     Returns:
-        Ordered list of ``{game_number, game_date, opponent, value, rolling_avg, won}``.
+        Ordered list of ``{game_number, game_date, opponent, value, rolling_avg, cumulative_avg, won}``.
     """
     if stat not in _VALID_EVOLUTION_STATS:
         stat = "points"
-    svc = TeamStatsService(db)
+    svc = EvolutionService(db)
     return svc.get_team_evolution(collection, team_name, stat=stat, rolling_window=window)
+
+
+@router.get(
+    "/{collection}/competition-evolution",
+    summary="Get competition-wide rolling and cumulative averages by game index",
+)
+def get_competition_evolution(
+    collection: str,
+    stat: str = Query("points", description="Stat key — see EVOLUTION_STAT_KEYS for full list"),
+    window: int = Query(5, ge=2, le=15, description="Rolling-average window in games (2–15)"),
+    db=Depends(get_db),
+) -> List[Dict[str, Any]]:
+    """Return competition-wide rolling and cumulative averages aligned by game index.
+
+    For each game position P_i, averages all teams' rolling and cumulative averages.
+    Teams with fewer games than i do not contribute at that position.
+
+    Args:
+        collection: MongoDB collection name.
+        stat: Any key from ``EVOLUTION_STAT_KEYS``.
+        window: Rolling-average window size (default 5 games).
+
+    Returns:
+        List of ``{game_number, competition_rolling, competition_cumulative}``.
+    """
+    if stat not in _VALID_EVOLUTION_STATS:
+        stat = "points"
+    svc = EvolutionService(db)
+    return svc.get_competition_evolution(collection, stat=stat, rolling_window=window)

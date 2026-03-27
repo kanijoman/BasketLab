@@ -20,10 +20,13 @@ from .team_stats_service import TeamStatsService
 from .player_stats_service import PlayerStatsService
 from .lineup_service import LineupService
 from .collection_service import CollectionService
+from .evolution_service import EvolutionService, EVOLUTION_STAT_KEYS
 
 __all__ = [
     "TeamStatsService",
     "PlayerStatsService",
     "LineupService",
     "CollectionService",
+    "EvolutionService",
+    "EVOLUTION_STAT_KEYS",
 ]

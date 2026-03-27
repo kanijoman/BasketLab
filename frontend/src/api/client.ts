@@ -108,6 +108,15 @@ export const getTeamEvolution = (
     `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamName)}?stat=${encodeURIComponent(stat)}&window=${window}`,
   )
 
+export const getCompetitionEvolution = (
+  collection: string,
+  stat: string,
+  window = 5,
+) =>
+  get<CompetitionEvolutionPoint[]>(
+    `/teams/${encodeURIComponent(collection)}/competition-evolution?stat=${encodeURIComponent(stat)}&window=${window}`,
+  )
+
 // ── Players ───────────────────────────────────────────────────────────────────
 
 export const getPlayerStats = (collection: string, params?: TeamFilters) => {
@@ -345,9 +354,16 @@ export interface EvolutionPoint {
   game_date: string
   game_number: number
   value: number
-  rolling_avg?: number
+  rolling_avg?: number | null
+  cumulative_avg?: number | null
   won?: boolean
   opponent?: string
+}
+
+export interface CompetitionEvolutionPoint {
+  game_number: number
+  competition_rolling: number | null
+  competition_cumulative: number | null
 }
 
 export interface ShotZoneData {

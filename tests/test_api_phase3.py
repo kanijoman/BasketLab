@@ -45,22 +45,31 @@ TEAM_STAT_ROW = {
 
 _EVOLUTION_DOCS = [
     {
-        "game_date": "2025-01-05",
-        "opponent": "Rival A",
-        "value": 82.0,
-        "won": True,
+        "game_date": "2025-01-05", "opponent": "Rival A", "won": True,
+        "pts": 82,  "fg2m": 24, "fg2a": 38, "fg3m": 8,  "fg3a": 22,
+        "ftm": 8,   "fta": 10,  "drb": 32,  "orb": 10,
+        "ast": 18,  "stl": 5,   "tov": 11,  "blk": 3,
+        "opp_pts": 75, "opp_fg2m": 20, "opp_fg2a": 35, "opp_fg3m": 6,  "opp_fg3a": 18,
+        "opp_ftm": 7,  "opp_fta": 9,   "opp_drb": 28,  "opp_orb": 8,
+        "opp_ast": 14, "opp_stl": 4,   "opp_tov": 9,   "opp_blk": 2,
     },
     {
-        "game_date": "2025-01-12",
-        "opponent": "Rival B",
-        "value": 74.0,
-        "won": False,
+        "game_date": "2025-01-12", "opponent": "Rival B", "won": False,
+        "pts": 74,  "fg2m": 20, "fg2a": 35, "fg3m": 6,  "fg3a": 20,
+        "ftm": 10,  "fta": 13,  "drb": 29,  "orb": 8,
+        "ast": 15,  "stl": 4,   "tov": 13,  "blk": 2,
+        "opp_pts": 80, "opp_fg2m": 22, "opp_fg2a": 37, "opp_fg3m": 9,  "opp_fg3a": 24,
+        "opp_ftm": 6,  "opp_fta": 8,   "opp_drb": 31,  "opp_orb": 7,
+        "opp_ast": 16, "opp_stl": 6,   "opp_tov": 10,  "opp_blk": 3,
     },
     {
-        "game_date": "2025-01-19",
-        "opponent": "Rival C",
-        "value": 90.0,
-        "won": True,
+        "game_date": "2025-01-19", "opponent": "Rival C", "won": True,
+        "pts": 90,  "fg2m": 28, "fg2a": 42, "fg3m": 9,  "fg3a": 24,
+        "ftm": 9,   "fta": 11,  "drb": 35,  "orb": 12,
+        "ast": 22,  "stl": 7,   "tov": 9,   "blk": 4,
+        "opp_pts": 78, "opp_fg2m": 21, "opp_fg2a": 36, "opp_fg3m": 7,  "opp_fg3a": 20,
+        "opp_ftm": 9,  "opp_fta": 12,  "opp_drb": 30,  "opp_orb": 9,
+        "opp_ast": 18, "opp_stl": 5,   "opp_tov": 11,  "opp_blk": 2,
     },
 ]
 
@@ -129,7 +138,7 @@ class TestEvolutionEndpoint:
     def test_evolution_returns_list(self, client):
         """Evolution endpoint returns a list (even if empty with mock data)."""
         with patch(
-            "src.services.team_stats_service.TeamStatsService._evolution_feb",
+            "src.services.evolution_service.EvolutionService._evolution_feb",
             return_value=_EVOLUTION_DOCS,
         ), patch(
             "utils.collection_utils.is_fbcyl",
@@ -141,9 +150,9 @@ class TestEvolutionEndpoint:
         assert isinstance(data, list)
 
     def test_evolution_returns_game_number(self, client):
-        """Each item in the evolution list has a game_number field."""
+        """Each item in the evolution list has game_number, rolling_avg, and cumulative_avg fields."""
         with patch(
-            "src.services.team_stats_service.TeamStatsService._evolution_feb",
+            "src.services.evolution_service.EvolutionService._evolution_feb",
             return_value=_EVOLUTION_DOCS,
         ), patch(
             "utils.collection_utils.is_fbcyl",
@@ -156,10 +165,31 @@ class TestEvolutionEndpoint:
             assert "game_number" in data[0]
             assert "rolling_avg" in data[0]
 
+    def test_evolution_returns_cumulative_avg(self, client):
+        """Evolution response includes cumulative_avg field computed from game 1."""
+        with patch(
+            "src.services.evolution_service.EvolutionService._evolution_feb",
+            return_value=_EVOLUTION_DOCS,
+        ), patch(
+            "utils.collection_utils.is_fbcyl",
+            return_value=False,
+        ):
+            resp = client.get(f"{V1}/teams/FEB_LF2_2025_A/evolution/Club%20Ejemplo?stat=points")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 3
+        assert "cumulative_avg" in data[0]
+        # After game 1: cumulative = game 1 value
+        assert data[0]["cumulative_avg"] == data[0]["value"]
+        # After game 2: cumulative = mean of games 1-2
+        assert data[1]["cumulative_avg"] == pytest.approx(
+            (data[0]["value"] + data[1]["value"]) / 2, abs=0.1
+        )
+
     def test_evolution_invalid_stat_falls_back(self, client):
         """Invalid stat key is silently replaced with 'points'."""
         with patch(
-            "src.services.team_stats_service.TeamStatsService._evolution_feb",
+            "src.services.evolution_service.EvolutionService._evolution_feb",
             return_value=[],
         ), patch(
             "utils.collection_utils.is_fbcyl",
@@ -173,7 +203,7 @@ class TestEvolutionEndpoint:
     def test_evolution_empty_collection_returns_empty_list(self, client):
         """No games for a team returns an empty list (not an error)."""
         with patch(
-            "src.services.team_stats_service.TeamStatsService._evolution_feb",
+            "src.services.evolution_service.EvolutionService._evolution_feb",
             return_value=[],
         ), patch(
             "utils.collection_utils.is_fbcyl",
@@ -184,6 +214,68 @@ class TestEvolutionEndpoint:
             )
         assert resp.status_code == 200
         assert resp.json() == []
+
+    def test_evolution_advanced_stat_returns_values(self, client):
+        """Advanced stats (e.g. offensive_rating) return numeric values."""
+        with patch(
+            "src.services.evolution_service.EvolutionService._evolution_feb",
+            return_value=_EVOLUTION_DOCS,
+        ), patch(
+            "utils.collection_utils.is_fbcyl",
+            return_value=False,
+        ):
+            resp = client.get(
+                f"{V1}/teams/FEB_LF2_2025_A/evolution/Club%20Ejemplo?stat=offensive_rating"
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 3
+        # OER = pts / possessions * 100 — should be a positive float
+        assert all(isinstance(row["value"], (int, float)) and row["value"] > 0 for row in data)
+
+
+# ---------------------------------------------------------------------------
+# Competition evolution endpoint
+# ---------------------------------------------------------------------------
+
+class TestCompetitionEvolutionEndpoint:
+    """Tests for GET /api/v1/teams/{collection}/competition-evolution"""
+
+    def test_competition_evolution_returns_list(self, client):
+        """Competition evolution endpoint returns a list."""
+        mock_db = MagicMock()
+        mock_db.is_connected.return_value = True
+        mock_db.get_all_teams.return_value = ["Club Ejemplo"]
+        mock_coll = MagicMock()
+        mock_coll.aggregate.return_value = iter(_EVOLUTION_DOCS)
+        mock_db.connection.get_collection.return_value = mock_coll
+        from src.api.app import app as _app
+        _app.dependency_overrides[get_db] = lambda: mock_db
+        try:
+            with patch("utils.collection_utils.is_fbcyl", return_value=False):
+                resp = client.get(f"{V1}/teams/FEB_LF2_2025_A/competition-evolution?stat=points")
+        finally:
+            _app.dependency_overrides.clear()
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
+
+    def test_competition_evolution_invalid_stat_falls_back(self, client):
+        """Invalid stat key falls back to 'points' without HTTP error."""
+        mock_db = MagicMock()
+        mock_db.is_connected.return_value = True
+        mock_db.get_all_teams.return_value = []
+        mock_db.connection.get_collection.return_value = MagicMock()
+        from src.api.app import app as _app
+        _app.dependency_overrides[get_db] = lambda: mock_db
+        try:
+            with patch("utils.collection_utils.is_fbcyl", return_value=False):
+                resp = client.get(
+                    f"{V1}/teams/FEB_LF2_2025_A/competition-evolution?stat=not_a_real_stat"
+                )
+        finally:
+            _app.dependency_overrides.clear()
+        assert resp.status_code == 200
+        assert resp.json() == []  # empty teams → empty result
 
 
 # ---------------------------------------------------------------------------
