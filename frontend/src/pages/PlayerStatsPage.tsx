@@ -29,15 +29,16 @@ import { tippedHeader } from '@/components/ui/Tooltip'
 function buildNumCol(
   key: string,
   header: string,
-  opts: { decimals?: number; pct?: boolean } = {},
+  opts: { decimals?: number; pct?: boolean; size?: number } = {},
   consistencyByPlayerId: ConsistencyMap | null = null,
   thresholds: [number, number] = [50, 100],
   cvKey?: string,
 ): ColumnDef<PlayerStat, unknown> {
-  const { decimals = 1, pct = false } = opts
+  const { decimals = 1, pct = false, size = 56 } = opts
   return {
     id: key,
     accessorKey: key,
+    size,
     header: tippedHeader(header),
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
@@ -47,7 +48,9 @@ function buildNumCol(
       return (
         <span className="inline-flex items-center gap-1.5">
           <span>{formatted}</span>
-          <CVBadge entry={cvEntry} thresholds={thresholds} />
+          <span className="hidden group-hover:inline-flex">
+            <CVBadge entry={cvEntry} thresholds={thresholds} />
+          </span>
         </span>
       )
     },
@@ -58,6 +61,7 @@ function nameCol(): ColumnDef<PlayerStat, unknown> {
   return {
     id: 'player_name',
     accessorKey: 'player_name',
+    size: 140,
     header: 'Jugador',
     cell: ({ getValue }) => (
       <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span>
@@ -86,6 +90,7 @@ function teamLogoCol(): ColumnDef<PlayerStat, unknown> {
   return {
     id: 'team_name',
     accessorKey: 'team_name',
+    size: 42,
     header: '',
     cell: ({ getValue, row }) => (
       <TeamLogoCell teamId={row.original.team_id} teamName={getValue() as string} />
@@ -101,22 +106,22 @@ function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknow
   return [
     nameCol(),
     teamLogoCol(),
-    buildNumCol('games_played',              'PJ',  { decimals: 0 }),
-    buildNumCol('minutes_per_game',          'MIN', {},              cv, PLAYER_CV),
-    buildNumCol('points_per_game',           'PTS', {},              cv, PLAYER_CV),
-    buildNumCol('rebounds_per_game',         'REB', {},              cv, PLAYER_CV),
-    buildNumCol('offensive_rebounds_per_game','RO', {},              cv, PLAYER_CV),
-    buildNumCol('defensive_rebounds_per_game','RD', {},              cv, PLAYER_CV),
-    buildNumCol('assists_per_game',          'AST', {},              cv, PLAYER_CV),
-    buildNumCol('steals_per_game',           'ROB', {},              cv, PLAYER_CV),
-    buildNumCol('turnovers_per_game',        'PER', {},              cv, PLAYER_CV),
-    buildNumCol('blocks_per_game',           'TAP', {},              cv, PLAYER_CV),
-    buildNumCol('fouls_per_game',            'FP',  {},              cv, PLAYER_CV),
-    buildNumCol('valoracion_per_game',       'VAL', {},              cv, PLAYER_CV),
-    buildNumCol('pllss_per_game',            '+/-', {},              cv, PLAYER_CV),
-    buildNumCol('fg1_percentage',            '%TL', { pct: true },   cv, PLAYER_CV),
-    buildNumCol('fg2_percentage',            '%T2', { pct: true },   cv, PLAYER_CV),
-    buildNumCol('fg3_percentage',            '%T3', { pct: true },   cv, PLAYER_CV),
+    buildNumCol('games_played',              'PJ',  { decimals: 0, size: 44 }),
+    buildNumCol('minutes_per_game',          'MIN', { size: 52 },  cv, PLAYER_CV),
+    buildNumCol('points_per_game',           'PTS', { size: 52 },  cv, PLAYER_CV),
+    buildNumCol('rebounds_per_game',         'REB', {},            cv, PLAYER_CV),
+    buildNumCol('offensive_rebounds_per_game','RO', { size: 48 },  cv, PLAYER_CV),
+    buildNumCol('defensive_rebounds_per_game','RD', { size: 48 },  cv, PLAYER_CV),
+    buildNumCol('assists_per_game',          'AST', {},            cv, PLAYER_CV),
+    buildNumCol('steals_per_game',           'ROB', {},            cv, PLAYER_CV),
+    buildNumCol('turnovers_per_game',        'PER', {},            cv, PLAYER_CV),
+    buildNumCol('blocks_per_game',           'TAP', {},            cv, PLAYER_CV),
+    buildNumCol('fouls_per_game',            'FP',  { size: 48 },  cv, PLAYER_CV),
+    buildNumCol('valoracion_per_game',       'VAL', {},            cv, PLAYER_CV),
+    buildNumCol('pllss_per_game',            '+/-', {},            cv, PLAYER_CV),
+    buildNumCol('fg1_percentage',            '%TL', { pct: true, size: 58 }, cv, PLAYER_CV),
+    buildNumCol('fg2_percentage',            '%T2', { pct: true, size: 58 }, cv, PLAYER_CV),
+    buildNumCol('fg3_percentage',            '%T3', { pct: true, size: 58 }, cv, PLAYER_CV),
   ]
 }
 
@@ -124,23 +129,23 @@ function buildAdvancedCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unk
   return [
     nameCol(),
     teamLogoCol(),
-    buildNumCol('games_played',      'PJ',     { decimals: 0 }),
-    buildNumCol('minutes_per_game',  'MIN',    {},              cv, PLAYER_CV),
-    buildNumCol('usage_pct',         'Usg%',   {},              cv, PLAYER_CV),
-    buildNumCol('orating',           'ORtg',   {}),
-    buildNumCol('drating',           'DRtg',   {}),
-    buildNumCol('net_rtg',           'NetRtg', {}),
-    buildNumCol('efg_percentage',    'eFG%',   { pct: true },   cv, PLAYER_CV),
-    buildNumCol('true_shooting',     'TS%',    { pct: true },   cv, PLAYER_CV),
-    buildNumCol('free_throw_rate',   'FTr',    { pct: true },   cv, PLAYER_CV),
-    buildNumCol('three_point_rate',  '3Pr',    { pct: true },   cv, PLAYER_CV),
-    buildNumCol('ast_pct',           '%AST',   {},              cv, PLAYER_CV),
-    buildNumCol('tov_pct_adv',       '%TO',    {},              cv, PLAYER_CV, 'turnover_rate'),
-    buildNumCol('stl_pct',           '%ROB',   {},              cv, PLAYER_CV),
-    buildNumCol('blk_pct',           '%TAP',   {},              cv, PLAYER_CV),
-    buildNumCol('drb_pct',           '%RD',    {},              cv, PLAYER_CV),
-    buildNumCol('orb_pct',           '%RO',    {},              cv, PLAYER_CV),
-    buildNumCol('pie',               'PIE%',   {}),
+    buildNumCol('games_played',      'PJ',     { decimals: 0, size: 44 }),
+    buildNumCol('minutes_per_game',  'MIN',    { size: 52 },  cv, PLAYER_CV),
+    buildNumCol('usage_pct',         'Usg%',   { size: 58 },  cv, PLAYER_CV),
+    buildNumCol('orating',           'ORtg',   { size: 58 }),
+    buildNumCol('drating',           'DRtg',   { size: 58 }),
+    buildNumCol('net_rtg',           'NetRtg', { size: 62 }),
+    buildNumCol('efg_percentage',    'eFG%',   { pct: true, size: 60 }, cv, PLAYER_CV),
+    buildNumCol('true_shooting',     'TS%',    { pct: true, size: 56 }, cv, PLAYER_CV),
+    buildNumCol('free_throw_rate',   'FTr',    { pct: true, size: 52 }, cv, PLAYER_CV),
+    buildNumCol('three_point_rate',  '3Pr',    { pct: true, size: 52 }, cv, PLAYER_CV),
+    buildNumCol('ast_pct',           '%AST',   { size: 58 },  cv, PLAYER_CV),
+    buildNumCol('tov_pct_adv',       '%TO',    { size: 52 },  cv, PLAYER_CV, 'turnover_rate'),
+    buildNumCol('stl_pct',           '%ROB',   { size: 56 },  cv, PLAYER_CV),
+    buildNumCol('blk_pct',           '%TAP',   { size: 56 },  cv, PLAYER_CV),
+    buildNumCol('drb_pct',           '%RD',    { size: 52 },  cv, PLAYER_CV),
+    buildNumCol('orb_pct',           '%RO',    { size: 52 },  cv, PLAYER_CV),
+    buildNumCol('pie',               'PIE%',   { size: 58 }),
   ]
 }
 
@@ -152,6 +157,7 @@ function projNum(
 ): ColumnDef<PlayerStat, unknown> {
   return {
     id,
+    size: 60,
     header: tippedHeader(header),
     accessorFn: (row: PlayerStat) => {
       const mpg = row.minutes_per_game
@@ -204,8 +210,8 @@ function buildProjectionCols(): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
     teamLogoCol(),
-    buildNumCol('games_played',    'PJ',  { decimals: 0 }),
-    buildNumCol('minutes_per_game','MIN', {}),
+    buildNumCol('games_played',    'PJ',  { decimals: 0, size: 44 }),
+    buildNumCol('minutes_per_game','MIN', { size: 52 }),
     projNum('pts_proj',   'PTS×30', 'points_per_game'),
     projNum('reb_proj',   'REB×30', 'rebounds_per_game'),
     projNum('ast_proj',   'AST×30', 'assists_per_game'),
@@ -305,6 +311,62 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
   )
 }
 
+// -- Available stats for the trend comparison panel -------------------------
+
+const TREND_STAT_GROUPS: Array<{
+  group: string
+  options: Array<{ key: keyof PlayerStat; label: string; reverse?: boolean }>
+}> = [
+  {
+    group: 'Básico',
+    options: [
+      { key: 'points_per_game',              label: 'PTS' },
+      { key: 'rebounds_per_game',            label: 'REB' },
+      { key: 'offensive_rebounds_per_game',  label: 'RO' },
+      { key: 'defensive_rebounds_per_game',  label: 'RD' },
+      { key: 'assists_per_game',             label: 'AST' },
+      { key: 'steals_per_game',              label: 'ROB' },
+      { key: 'turnovers_per_game',           label: 'PÉR', reverse: true },
+      { key: 'blocks_per_game',              label: 'TAP' },
+      { key: 'fouls_per_game',               label: 'FP',  reverse: true },
+      { key: 'valoracion_per_game',          label: 'VAL' },
+      { key: 'pllss_per_game',               label: '+/-' },
+      { key: 'minutes_per_game',             label: 'MIN' },
+    ],
+  },
+  {
+    group: 'Tiro',
+    options: [
+      { key: 'fg1_percentage',  label: '%TL' },
+      { key: 'fg2_percentage',  label: '%T2' },
+      { key: 'fg3_percentage',  label: '%T3' },
+      { key: 'efg_percentage',  label: 'eFG%' },
+      { key: 'true_shooting',   label: 'TS%' },
+      { key: 'free_throw_rate', label: 'FTr' },
+      { key: 'three_point_rate',label: '3Pr' },
+    ],
+  },
+  {
+    group: 'Avanzado',
+    options: [
+      { key: 'usage_pct',    label: 'Usg%' },
+      { key: 'orating',      label: 'ORtg' },
+      { key: 'drating',      label: 'DRtg', reverse: true },
+      { key: 'net_rtg',      label: 'Net' },
+      { key: 'ast_pct',      label: '%AST' },
+      { key: 'tov_pct_adv',  label: '%TO',  reverse: true },
+      { key: 'stl_pct',      label: '%ROB' },
+      { key: 'blk_pct',      label: '%TAP' },
+      { key: 'orb_pct',      label: '%RO' },
+      { key: 'drb_pct',      label: '%RD' },
+      { key: 'pie',          label: 'PIE%' },
+    ],
+  },
+]
+
+/** Flat list used for lookups */
+const TREND_STAT_OPTIONS = TREND_STAT_GROUPS.flatMap(g => g.options)
+
 // -- Tabs ---------------------------------------------------------------------
 
 const TABS = [
@@ -322,6 +384,9 @@ export default function PlayerStatsPage() {
   const [tab, setTab]           = useState<TabId>('basic')
   const [teamFilter, setTeamFilter] = useState('')
   const [selected, setSelected]     = useState<PlayerStat | null>(null)
+  const [trendStats, setTrendStats] = useState<Array<keyof PlayerStat>>(
+    ['points_per_game', 'rebounds_per_game', 'assists_per_game'],
+  )
 
   const apiFilters: TeamFilters = useMemo(() => ({
     venue:  filters.venue  || undefined,
@@ -376,6 +441,23 @@ export default function PlayerStatsPage() {
     return m
   }, [seasonPlayers])
 
+  // Players to show in the trend comparison panel
+  const trendDisplay = useMemo(() => {
+    if (!hasDateFilter || seasonPlayers.length === 0) return []
+    const compared = players
+      .map(p => ({ p, s: seasonById[p.player_id] }))
+      .filter(({ s }) => s != null && (s.points_per_game ?? 0) > 0) as Array<{ p: PlayerStat; s: PlayerStat }>
+    if (teamFilter) return compared
+    const primaryKey = trendStats[0] ?? 'points_per_game'
+    const primaryOpt = TREND_STAT_OPTIONS.find(o => o.key === primaryKey)
+    const sorted = [...compared].sort((a, b) => {
+      const da = ((a.p[primaryKey] as number) ?? 0) - ((a.s[primaryKey] as number) ?? 0)
+      const db = ((b.p[primaryKey] as number) ?? 0) - ((b.s[primaryKey] as number) ?? 0)
+      return primaryOpt?.reverse ? da - db : db - da
+    })
+    return [...sorted.slice(0, 3), ...sorted.slice(-3).reverse()]
+  }, [hasDateFilter, seasonPlayers, players, seasonById, teamFilter, trendStats])
+
   const activeCols = useMemo(() => {
     if (tab === 'advanced')   return buildAdvancedCols(consistencyByPlayerId)
     if (tab === 'projection') return buildProjectionCols()
@@ -413,32 +495,52 @@ export default function PlayerStatsPage() {
         </div>
 
         {/* Trend comparison panel — visible only when a date filter is active */}
-        {hasDateFilter && seasonPlayers.length > 0 && (() => {
-          // Build comparison list for currently visible players
-          const compared = players
-            .map(p => ({ p, s: seasonById[p.player_id] }))
-            .filter(({ s }) => s != null && (s.points_per_game ?? 0) > 0) as Array<{ p: PlayerStat; s: PlayerStat }>
-
-          // If no team filter, show top-3 improved and top-3 declined by PPG %
-          const sorted = [...compared].sort((a, b) => {
-            const da = (a.p.points_per_game ?? 0) - (a.s.points_per_game ?? 0)
-            const db = (b.p.points_per_game ?? 0) - (b.s.points_per_game ?? 0)
-            return db - da
-          })
-          const display = teamFilter ? compared : [
-            ...sorted.slice(0, 3),
-            ...sorted.slice(-3).reverse(),
-          ]
-          if (display.length === 0) return null
-
-          return (
-            <div className="card p-4">
-              <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">
+        {hasDateFilter && trendDisplay.length > 0 && (
+          <div className="card p-4 space-y-3">
+            {/* Header + stat toggles */}
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wider">
                 Tendencia vs temporada completa
-                {!teamFilter && <span className="ml-2 normal-case font-normal">(top +3 / top −3 por PPG)</span>}
               </h2>
+              {TREND_STAT_GROUPS.map(({ group, options }) => (
+                <div key={group} className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider w-14 shrink-0">{group}</span>
+                  {options.map(opt => {
+                    const active = trendStats.includes(opt.key)
+                    return (
+                      <button
+                        key={String(opt.key)}
+                        onClick={() =>
+                          setTrendStats(prev =>
+                            prev.includes(opt.key)
+                              ? prev.filter(k => k !== opt.key)
+                              : [...prev, opt.key],
+                          )
+                        }
+                        className={[
+                          'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                          active
+                            ? 'bg-brand-500/20 border-brand-500/50 text-brand-400'
+                            : 'bg-surface-muted border-surface-border text-ink-muted hover:text-ink-primary',
+                        ].join(' ')}
+                      >
+                        {opt.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+            {!teamFilter && trendStats.length > 0 && (
+              <p className="text-xs text-ink-muted">
+                Top +3 / Top −3 por {TREND_STAT_OPTIONS.find(o => o.key === trendStats[0])?.label ?? 'PTS'}
+              </p>
+            )}
+            {trendStats.length === 0 ? (
+              <p className="text-xs text-ink-muted italic">Selecciona al menos un estadístico para comparar.</p>
+            ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {display.map(({ p, s }) => (
+                {trendDisplay.map(({ p, s }) => (
                   <div
                     key={p.player_id}
                     className="flex items-center justify-between p-2 rounded bg-surface-muted border border-surface-border gap-2"
@@ -447,18 +549,28 @@ export default function PlayerStatsPage() {
                       <span className="text-xs font-medium text-ink-primary truncate">{p.player_name}</span>
                       <span className="text-[10px] text-ink-muted truncate">{p.team_name}</span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <TrendBadge recent={p.points_per_game}    season={s.points_per_game}    />
-                      <TrendBadge recent={p.rebounds_per_game}  season={s.rebounds_per_game}  />
-                      <TrendBadge recent={p.assists_per_game}   season={s.assists_per_game}   />
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                      {trendStats.map(key => {
+                        const opt = TREND_STAT_OPTIONS.find(o => o.key === key)
+                        if (!opt) return null
+                        return (
+                          <span key={String(key)} className="inline-flex items-center gap-0.5">
+                            <span className="text-[10px] text-ink-muted font-medium">{opt.label}</span>
+                            <TrendBadge
+                              recent={p[key] as number}
+                              season={s[key] as number}
+                              reverse={opt.reverse}
+                            />
+                          </span>
+                        )
+                      })}
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-ink-muted mt-2">PPG · REB · AST</p>
-            </div>
-          )
-        })()}
+            )}
+          </div>
+        )}
 
         {/* Controls row */}
         <div className="flex flex-wrap items-center gap-3">

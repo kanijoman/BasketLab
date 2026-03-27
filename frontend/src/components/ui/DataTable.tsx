@@ -109,6 +109,8 @@ export default function DataTable<TData>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    columnResizeMode: 'onChange',
+    defaultColumn: { size: 80, minSize: 40 },
   })
 
   const csvData = useMemo(
@@ -145,7 +147,11 @@ export default function DataTable<TData>({
 
       {/* Table wrapper */}
       <div className="overflow-x-auto rounded-card border border-surface-border">
-        <table ref={tableRef} className="w-full min-w-[480px] text-sm border-collapse">
+        <table
+          ref={tableRef}
+          className="text-sm border-collapse"
+          style={{ width: '100%', minWidth: table.getTotalSize(), tableLayout: 'fixed' }}
+        >
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
@@ -153,6 +159,7 @@ export default function DataTable<TData>({
                   <th
                     key={header.id}
                     colSpan={header.colSpan}
+                    style={{ width: header.getSize() }}
                     className={cn(
                       'px-2 py-2.5 text-left text-xs font-medium text-ink-secondary',
                       'bg-surface-raised border-b border-surface-border select-none',
@@ -185,7 +192,7 @@ export default function DataTable<TData>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick?.(row)}
-                    className={`border-b border-surface-border/50 hover:bg-surface-hover transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
+                    className={`group border-b border-surface-border/50 hover:bg-surface-hover transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
                   >
                     {row.getVisibleCells().map((cell, i) => {
                       const colId = cell.column.id
@@ -197,6 +204,7 @@ export default function DataTable<TData>({
                       return (
                         <td
                           key={cell.id}
+                          style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize(), overflow: 'hidden' }}
                           className={cn(
                             'px-2 py-1.5 tabular-nums',
                             qClass ? '' : 'text-ink-primary',

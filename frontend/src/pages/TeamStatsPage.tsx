@@ -34,43 +34,45 @@ interface ColDef {
   reverse?: boolean
   /** Count columns: no trend badge, no quartile colouring */
   count?: boolean
+  /** Column width in pixels for DataTable */
+  size?: number
 }
 
 const BASIC_COL_DEFS: ColDef[] = [
-  { key: 'total_games',                  header: 'PJ',     decimals: 0, count: true },
-  { key: 'games_home',                   header: 'L',      decimals: 0, count: true },
-  { key: 'games_away',                   header: 'V',      decimals: 0, count: true },
-  { key: 'points_per_game',              header: 'PPP' },
-  { key: 'points_against_per_game',      header: 'PPC',    reverse: true },
-  { key: 'fg2_percentage',               header: '%T2',    pct: true },
-  { key: 'fg3_percentage',               header: '%T3',    pct: true },
-  { key: 'ft_percentage',                header: '%TL',    pct: true },
-  { key: 'rebounds_per_game',            header: 'Reb' },
-  { key: 'offensive_rebounds_per_game',  header: 'RO' },
-  { key: 'defensive_rebounds_per_game',  header: 'RD' },
-  { key: 'assists_per_game',             header: 'Ast' },
-  { key: 'steals_per_game',              header: 'Rob' },
-  { key: 'turnovers_per_game',           header: 'Perd',   reverse: true },
-  { key: 'blocks_per_game',              header: 'Tap' },
+  { key: 'total_games',                  header: 'PJ',     decimals: 0, count: true, size: 44 },
+  { key: 'games_home',                   header: 'L',      decimals: 0, count: true, size: 44 },
+  { key: 'games_away',                   header: 'V',      decimals: 0, count: true, size: 44 },
+  { key: 'points_per_game',              header: 'PPP',    size: 58 },
+  { key: 'points_against_per_game',      header: 'PPC',    reverse: true, size: 58 },
+  { key: 'fg2_percentage',               header: '%T2',    pct: true, size: 62 },
+  { key: 'fg3_percentage',               header: '%T3',    pct: true, size: 62 },
+  { key: 'ft_percentage',                header: '%TL',    pct: true, size: 62 },
+  { key: 'rebounds_per_game',            header: 'Reb',    size: 56 },
+  { key: 'offensive_rebounds_per_game',  header: 'RO',     size: 48 },
+  { key: 'defensive_rebounds_per_game',  header: 'RD',     size: 48 },
+  { key: 'assists_per_game',             header: 'Ast',    size: 48 },
+  { key: 'steals_per_game',              header: 'Rob',    size: 48 },
+  { key: 'turnovers_per_game',           header: 'Perd',   reverse: true, size: 52 },
+  { key: 'blocks_per_game',              header: 'Tap',    size: 48 },
 ]
 
 const ADVANCED_COL_DEFS: ColDef[] = [
-  { key: 'total_games',               header: 'PJ',     decimals: 0, count: true },
-  { key: 'possessions_per_game',      header: 'Pos' },
-  { key: 'offensive_rating',          header: 'OER' },
-  { key: 'defensive_rating',          header: 'DER',    reverse: true },
-  { key: 'net_rating',                header: 'Net' },
-  { key: 'efg_percentage',            header: 'eFG%',   pct: true },
-  { key: 'true_shooting',             header: 'TS%',    pct: true },
-  { key: 'three_point_rate',          header: '3Pr%',   pct: true },
-  { key: 'free_throw_rate',           header: 'FTr%',   pct: true },
-  { key: 'assist_fg_rate',            header: 'AST/FG', pct: true },
-  { key: 'assist_rate',               header: 'AST%',   pct: true },
-  { key: 'turnover_rate',             header: 'TOV%',   pct: true, reverse: true },
-  { key: 'steal_rate',                header: 'ROB%',   pct: true },
-  { key: 'block_rate',                header: 'TAP%',   pct: true },
-  { key: 'offensive_rebound_rate',    header: 'ORB%',   pct: true },
-  { key: 'defensive_rebound_rate',    header: 'RD%',    pct: true },
+  { key: 'total_games',               header: 'PJ',     decimals: 0, count: true, size: 44 },
+  { key: 'possessions_per_game',      header: 'Pos',    size: 52 },
+  { key: 'offensive_rating',          header: 'OER',    size: 56 },
+  { key: 'defensive_rating',          header: 'DER',    reverse: true, size: 56 },
+  { key: 'net_rating',                header: 'Net',    size: 56 },
+  { key: 'efg_percentage',            header: 'eFG%',   pct: true, size: 62 },
+  { key: 'true_shooting',             header: 'TS%',    pct: true, size: 58 },
+  { key: 'three_point_rate',          header: '3Pr%',   pct: true, size: 58 },
+  { key: 'free_throw_rate',           header: 'FTr%',   pct: true, size: 58 },
+  { key: 'assist_fg_rate',            header: 'AST/FG', pct: true, size: 68 },
+  { key: 'assist_rate',               header: 'AST%',   pct: true, size: 60 },
+  { key: 'turnover_rate',             header: 'TOV%',   pct: true, reverse: true, size: 62 },
+  { key: 'steal_rate',                header: 'ROB%',   pct: true, size: 62 },
+  { key: 'block_rate',                header: 'TAP%',   pct: true, size: 62 },
+  { key: 'offensive_rebound_rate',    header: 'ORB%',   pct: true, size: 62 },
+  { key: 'defensive_rebound_rate',    header: 'RD%',    pct: true, size: 60 },
 ]
 
 /** Columns where lower is better (for DataTable quartile colouring) */
@@ -83,6 +85,7 @@ function nameCol(): ColumnDef<TeamStat, unknown> {
   return {
     id: 'team_name',
     accessorKey: 'team_name',
+    size: 150,
     header: 'Equipo',
     cell: ({ getValue }) => (
       <span className="font-medium text-ink-primary whitespace-nowrap">
@@ -103,13 +106,14 @@ function buildCol(
   seasonByName: Record<string, TeamStat> | null,
   consistencyByName: CVMap | null,
 ): ColumnDef<TeamStat, unknown> {
-  const { key, header, decimals = 1, pct = false, reverse = false, count = false } = def
+  const { key, header, decimals = 1, pct = false, reverse = false, count = false, size = 60 } = def
   const showTrend = !count && seasonByName !== null
   const showCV    = !count && consistencyByName !== null
 
   return {
     id: key as string,
     accessorKey: key as string,
+    size,
     header: tippedHeader(header),
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
