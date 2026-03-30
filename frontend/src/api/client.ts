@@ -176,6 +176,17 @@ export const getShotZones = (
   return get<ShotZoneData[]>(`/shots/${encodeURIComponent(collection)}?${qs}`)
 }
 
+export const getShotRaw = (
+  collection: string,
+  params: { team?: string; player?: string; limit?: number },
+) => {
+  const qs = new URLSearchParams()
+  if (params.team)   qs.set('team', params.team)
+  if (params.player) qs.set('player', params.player)
+  if (params.limit)  qs.set('limit', String(params.limit))
+  return get<ShotRawData[]>(`/shots/${encodeURIComponent(collection)}/raw?${qs}`)
+}
+
 // ── Possessions ───────────────────────────────────────────────────────────────
 
 export const getPossessionStats = (collection: string, params?: TeamFilters) =>
@@ -375,6 +386,14 @@ export interface ShotZoneData {
   fgm: number
   fg_pct: number
   polygon?: [number, number][]
+}
+
+/** Individual shot coordinate for scatter/heatmap modes. */
+export interface ShotRawData {
+  x: number       // FIBA metres [0-15]
+  y: number       // FIBA metres [0-14]
+  made: boolean
+  zone: string
 }
 
 export interface RadarData {

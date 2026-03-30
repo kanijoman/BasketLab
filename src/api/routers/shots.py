@@ -141,11 +141,32 @@ def _feb_to_fiba(x_feb: float, y_feb: float, team: int) -> tuple[float, float]:
 # MongoDB extraction helpers
 # ---------------------------------------------------------------------------
 
+def _build_dorsal_to_id_map(shotchart: dict) -> dict:
+    """Build a (team_idx, dorsal_str) → player_id lookup from SHOTCHART.TEAM.
+
+    SHOTCHART.SHOTS[].player stores the dorsal number, not the player ID.
+    SHOTCHART.TEAM[n].PLAYER[].id holds the actual player identifier that
+    matches PlayerStat.player_id from the stats aggregation pipeline.
+    """
+    mapping: dict = {}
+    # SHOTCHART.TEAM is a list ordered by team slot (0 = local, 1 = away)
+    for t_idx, team_entry in enumerate(shotchart.get("TEAM", [])):
+        for player in team_entry.get("PLAYER", []):
+            raw_no = str(player.get("no", ""))
+            stripped = raw_no.lstrip("0") or raw_no  # "05" → "5", but "0" → "0"
+            pid = str(player.get("id", ""))
+            if pid:
+                mapping[(t_idx, raw_no)] = pid
+                mapping[(t_idx, stripped)] = pid
+    return mapping
+
+
 def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional[str]) -> List[Dict]:
     """Retrieve and classify FEB shots from a MongoDB collection."""
-    # Pull only the fields we need for performance
+    # Include SHOTCHART.TEAM so we can resolve dorsal → player_id per game
     projection = {
         "SHOTCHART.SHOTS": 1,
+        "SHOTCHART.TEAM": 1,
         "HEADER.TEAM.name": 1,
     }
     cursor = coll.find({"SHOTCHART.SHOTS": {"$exists": True}}, projection)
@@ -156,9 +177,17 @@ def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional
         local_name = header_teams[0].get("name") if len(header_teams) > 0 else None
         away_name  = header_teams[1].get("name") if len(header_teams) > 1 else None
 
-        shots_raw = doc.get("SHOTCHART", {}).get("SHOTS", [])
+        shotchart = doc.get("SHOTCHART", {})
+        # Build dorsal→player_id map for this game (needed for player filter)
+        dorsal_map = _build_dorsal_to_id_map(shotchart) if player_filter else {}
+
+        shots_raw = shotchart.get("SHOTS", [])
         for s in shots_raw:
-            team_idx = s.get("team")   # 0 or 1
+            # FEB scraper stores team as a string ("0" / "1") in MongoDB — cast to int
+            try:
+                team_idx = int(s.get("team"))
+            except (TypeError, ValueError):
+                continue
             if team_idx not in (0, 1):
                 continue
             team_name = local_name if team_idx == 0 else away_name
@@ -166,10 +195,13 @@ def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional
             # Apply team filter
             if team_filter and team_name != team_filter:
                 continue
-            # Apply player filter
-            player_id = str(s.get("player", ""))
-            if player_filter and player_id != player_filter:
-                continue
+
+            # Apply player filter: resolve dorsal to actual player ID before comparing
+            if player_filter:
+                dorsal = str(s.get("player", ""))
+                resolved_id = dorsal_map.get((team_idx, dorsal), "")
+                if resolved_id != player_filter:
+                    continue
 
             x_pct = float(s.get("x", 0))
             y_pct = float(s.get("y", 0))
@@ -180,6 +212,8 @@ def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional
             all_shots.append({
                 "zone": zone,
                 "made": made,
+                "x":    x_fiba,
+                "y":    y_fiba,
             })
     return all_shots
 
@@ -242,5 +276,42 @@ def get_shot_zones(
         coll = db.connection.get_collection(collection)
         shots = _extract_shots_feb(coll, team_filter=team, player_filter=player)
         return _aggregate_zones(shots)
+    except Exception:
+        return []
+
+
+@router.get("/{collection}/raw", summary="Individual shot coordinates for scatter/heatmap")
+def get_shot_raw(
+    collection: str,
+    team: Optional[str] = Query(None, description="Filter by exact team name"),
+    player: Optional[str] = Query(None, description="Filter by player ID"),
+    limit: int = Query(5000, ge=1, le=10000),
+    db=Depends(get_db),
+) -> List[Dict[str, Any]]:
+    """Return individual shot coordinates in FIBA metres.
+
+    Only FEB collections contain individual shot coordinates.
+    FBCYL collections return an empty list.
+
+    Args:
+        collection: MongoDB collection name.
+        team: Optional exact team name filter.
+        player: Optional player ID filter.
+        limit: Maximum shots to return (default 5000, max 10000).
+
+    Returns:
+        List of shot dicts each with ``x`` (0-15), ``y`` (0-14),
+        ``made`` (bool) and ``zone`` (str).
+    """
+    if _is_fbcyl(collection):
+        return []
+
+    try:
+        coll = db.connection.get_collection(collection)
+        shots = _extract_shots_feb(coll, team_filter=team, player_filter=player)
+        return [
+            {"x": s["x"], "y": s["y"], "made": s["made"], "zone": s["zone"]}
+            for s in shots[:limit]
+        ]
     except Exception:
         return []

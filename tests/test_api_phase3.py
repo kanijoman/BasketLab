@@ -77,11 +77,19 @@ _SHOT_DOCS = [
     {
         "SHOTCHART": {
             "SHOTS": [
-                {"x": 50.0, "y": 50.0, "m": 1, "team": 0, "player": "101", "quarter": 1},
-                {"x": 50.0, "y": 50.0, "m": 0, "team": 0, "player": "101", "quarter": 1},
-                {"x": 5.0,  "y": 50.0, "m": 1, "team": 0, "player": "102", "quarter": 2},
-                {"x": 95.0, "y": 90.0, "m": 0, "team": 0, "player": "103", "quarter": 2},
-            ]
+                {"x": 50.0, "y": 50.0, "m": 1, "team": "0", "player": "5",  "quarter": 1},
+                {"x": 50.0, "y": 50.0, "m": 0, "team": "0", "player": "5",  "quarter": 1},
+                {"x": 5.0,  "y": 50.0, "m": 1, "team": "0", "player": "23", "quarter": 2},
+                {"x": 95.0, "y": 90.0, "m": 0, "team": "0", "player": "11", "quarter": 2},
+            ],
+            "TEAM": [
+                {"PLAYER": [
+                    {"no": "5",  "id": "FE-101", "name": "Jugador A"},
+                    {"no": "23", "id": "FE-102", "name": "Jugador B"},
+                    {"no": "11", "id": "FE-103", "name": "Jugador C"},
+                ]},
+                {"PLAYER": []},
+            ],
         },
         "HEADER": {
             "TEAM": [
@@ -325,6 +333,123 @@ class TestShotZonesEndpoint:
             resp = client.get(f"{V1}/shots/FEB_LF2_2025_A")
         for zone in resp.json():
             assert zone["fgm"] <= zone["fga"]
+
+    def test_shots_string_team_field_regression(self):
+        """Regression: SHOTCHART.SHOTS.team is stored as a string in FEB MongoDB documents.
+
+        Previously the check `team_idx not in (0, 1)` used int literals, so
+        every shot with team="0" was silently discarded, returning all-zero
+        zone stats regardless of the selected team.  After the fix, int()
+        conversion is applied before the comparison.
+        """
+        string_team_docs = [
+            {
+                "SHOTCHART": {
+                    "SHOTS": [
+                        # team stored as STRING — the real FEB scraper format
+                        {"x": 50.0, "y": 50.0, "m": 1, "team": "0", "player": "5"},
+                        {"x": 50.0, "y": 50.0, "m": 0, "team": "0", "player": "5"},
+                        {"x": 5.0,  "y": 50.0, "m": 1, "team": "0", "player": "23"},
+                    ],
+                    "TEAM": [
+                        {"PLAYER": [
+                            {"no": "5",  "id": "FE-001", "name": "Jugador Uno"},
+                            {"no": "23", "id": "FE-002", "name": "Jugador Dos"},
+                        ]},
+                        {"PLAYER": []},
+                    ],
+                },
+                "HEADER": {
+                    "TEAM": [{"name": "Club Ejemplo"}, {"name": "Rival Team"}]
+                },
+            }
+        ]
+        mock_db = MagicMock()
+        mock_db.is_connected.return_value = True
+        mock_coll = MagicMock()
+        mock_coll.find.side_effect = lambda *a, **kw: iter(string_team_docs)
+        mock_db.connection.get_collection.return_value = mock_coll
+        app.dependency_overrides[get_db] = lambda: mock_db
+        try:
+            with TestClient(app) as c:
+                with patch("utils.collection_utils.is_fbcyl", return_value=False):
+                    # All shots for team
+                    resp_team = c.get(f"{V1}/shots/FEB_LF2_2025_A")
+                    assert resp_team.status_code == 200
+                    total_fga = sum(z["fga"] for z in resp_team.json())
+                    assert total_fga == 3, (
+                        f"Expected 3 FGA but got {total_fga}. "
+                        "Bug: string '0' was rejected by int comparison."
+                    )
+                    # Player filter — pass actual player ID (not dorsal)
+                    resp_player = c.get(f"{V1}/shots/FEB_LF2_2025_A?player=FE-001")
+                    assert resp_player.status_code == 200
+                    player_fga = sum(z["fga"] for z in resp_player.json())
+                    assert player_fga == 2, (
+                        f"Expected 2 FGA for player FE-001 but got {player_fga}. "
+                        "Bug: dorsal not resolved to player_id."
+                    )
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_shots_raw_returns_coordinates(self):
+        """GET /shots/{collection}/raw returns individual shot dicts with x, y, made, zone.
+
+        Each shot must have:
+        - x in [0, 15]  (FIBA court width metres)
+        - y in [0, 14]  (FIBA half-court length metres)
+        - made (bool)
+        - zone (str from the 10-zone taxonomy)
+        """
+        raw_docs = [
+            {
+                "SHOTCHART": {
+                    "SHOTS": [
+                        {"x": 50.0, "y": 50.0, "m": 1, "team": "0", "player": "5"},
+                        {"x": 20.0, "y": 30.0, "m": 0, "team": "0", "player": "5"},
+                        {"x": 90.0, "y": 10.0, "m": 1, "team": "1", "player": "11"},
+                    ],
+                    "TEAM": [
+                        {"PLAYER": [{"no": "5", "id": "FE-001", "name": "Jugador Uno"}]},
+                        {"PLAYER": [{"no": "11", "id": "FE-010", "name": "Jugador Diez"}]},
+                    ],
+                },
+                "HEADER": {
+                    "TEAM": [{"name": "Club A"}, {"name": "Club B"}]
+                },
+            }
+        ]
+        mock_db = MagicMock()
+        mock_db.is_connected.return_value = True
+        mock_coll = MagicMock()
+        mock_coll.find.side_effect = lambda *a, **kw: iter(raw_docs)
+        mock_db.connection.get_collection.return_value = mock_coll
+        app.dependency_overrides[get_db] = lambda: mock_db
+        try:
+            with TestClient(app) as c:
+                with patch("utils.collection_utils.is_fbcyl", return_value=False):
+                    resp = c.get(f"{V1}/shots/FEB_LF2_2025_A/raw")
+                    assert resp.status_code == 200
+                    shots = resp.json()
+                    assert len(shots) == 3, f"Expected 3 shots, got {len(shots)}"
+                    for shot in shots:
+                        assert "x" in shot and "y" in shot
+                        assert "made" in shot and isinstance(shot["made"], bool)
+                        assert "zone" in shot and isinstance(shot["zone"], str)
+                        assert 0 <= shot["x"] <= 15, f"x={shot['x']} out of FIBA range"
+                        assert 0 <= shot["y"] <= 14, f"y={shot['y']} out of FIBA range"
+                    # Verify made/missed correctly mapped
+                    made_count = sum(1 for s in shots if s["made"])
+                    assert made_count == 2, f"Expected 2 made shots, got {made_count}"
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_shots_raw_returns_empty_for_fbcyl(self, client_fbcyl):
+        """Raw endpoint returns empty list for FBCYL collections."""
+        with patch("utils.collection_utils.is_fbcyl", return_value=True):
+            resp = client_fbcyl.get(f"{V1}/shots/FBCYL_U16_2025_A/raw")
+        assert resp.status_code == 200
+        assert resp.json() == []
 
 
 # ---------------------------------------------------------------------------

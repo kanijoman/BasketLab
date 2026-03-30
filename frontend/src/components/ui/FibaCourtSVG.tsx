@@ -13,8 +13,8 @@
  * highlightZone  – Key of the zone to highlight with a ring.
  * width / height – Override the default SVG size (default: 450 × 420).
  */
-import { useMemo } from 'react'
-import type { ShotZoneData } from '@/api/client'
+import { useMemo, type RefObject } from 'react'
+import type { ShotZoneData, ShotRawData } from '@/api/client'
 
 // ---------------------------------------------------------------------------
 // Court geometry (all measurements in SVG pixels, 1 px = 1/30 m)
@@ -83,6 +83,11 @@ interface Props {
   highlightZone?: string | null
   width?: number
   height?: number
+  svgRef?: RefObject<SVGSVGElement>
+  /** Visualization layer: 'zones' (default), 'scatter', or 'heatmap'. */
+  vizMode?: 'zones' | 'scatter' | 'heatmap'
+  /** Individual shot records used for scatter / heatmap modes. */
+  rawShots?: ShotRawData[]
 }
 
 const LINE = '#cccccc'
@@ -94,6 +99,9 @@ export default function FibaCourtSVG({
   highlightZone,
   width = CW,
   height = CH,
+  svgRef,
+  vizMode = 'zones',
+  rawShots,
 }: Props) {
   // Normalise zone data keyed by zone id
   const zoneMap = useMemo(() => {
@@ -108,6 +116,7 @@ export default function FibaCourtSVG({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${CW} ${CH}`}
       width={width}
       height={height}
@@ -126,15 +135,15 @@ export default function FibaCourtSVG({
       <rect x={KL} y={KT} width={KR - KL} height={CH - KT}
         fill="rgba(59,130,246,0.06)" stroke={LINE} strokeWidth={LINE_W} />
 
-      {/* Free-throw semi-circles */}
-      {/* Top half (solid) */}
+      {/* Free-throw semi-circles — centred on basket x with correct radius */}
+      {/* Top half (solid) — faces midcourt */}
       <path
-        d={`M ${KL},${KT} A ${FTR},${FTR} 0 0,0 ${KR},${KT}`}
+        d={`M ${BX - FTR},${KT} A ${FTR},${FTR} 0 0,1 ${BX + FTR},${KT}`}
         fill="none" stroke={LINE} strokeWidth={LINE_W}
       />
-      {/* Bottom half (dashed) */}
+      {/* Bottom half (dashed) — faces basket */}
       <path
-        d={`M ${KL},${KT} A ${FTR},${FTR} 0 0,1 ${KR},${KT}`}
+        d={`M ${BX - FTR},${KT} A ${FTR},${FTR} 0 0,0 ${BX + FTR},${KT}`}
         fill="none" stroke={LINE} strokeWidth={LINE_W} strokeDasharray="5,4"
       />
 
@@ -150,15 +159,15 @@ export default function FibaCourtSVG({
       />
 
       {/* Restricted area */}
-      {/* Left vertical line: backboard to arc start */}
-      <line x1={BX - RR} y1={BBY} x2={BX - RR} y2={BY} stroke={LINE} strokeWidth={LINE_W} />
-      {/* Arc */}
+      {/* Left vertical line: arc end down to baseline */}
+      <line x1={BX - RR} y1={BY} x2={BX - RR} y2={CH} stroke={LINE} strokeWidth={LINE_W} />
+      {/* Arc — semicircle open toward baseline (curving toward midcourt) */}
       <path
-        d={`M ${BX - RR},${BY} A ${RR},${RR} 0 0,0 ${BX + RR},${BY}`}
+        d={`M ${BX - RR},${BY} A ${RR},${RR} 0 0,1 ${BX + RR},${BY}`}
         fill="none" stroke={LINE} strokeWidth={LINE_W}
       />
-      {/* Right vertical line */}
-      <line x1={BX + RR} y1={BY} x2={BX + RR} y2={BBY} stroke={LINE} strokeWidth={LINE_W} />
+      {/* Right vertical line: arc end down to baseline */}
+      <line x1={BX + RR} y1={BY} x2={BX + RR} y2={CH} stroke={LINE} strokeWidth={LINE_W} />
 
       {/* Backboard */}
       <line x1={BX - 27} y1={BBY} x2={BX + 27} y2={BBY} stroke={LINE} strokeWidth={LINE_W + 1} />
@@ -166,8 +175,54 @@ export default function FibaCourtSVG({
       {/* Hoop */}
       <circle cx={BX} cy={BY} r={6.75} fill="none" stroke="#ff8c00" strokeWidth={2} />
 
-      {/* Zone heatmap bubbles */}
-      {zones && zones.length > 0 && Object.entries(ZONE_CENTERS).map(([zoneKey, center]) => {
+      {/* ── Heatmap overlay — two-layer screen-blend for wide contrast ── */}
+      {/* screen() on a dark background compounds additively: sparse zones stay  */}
+      {/* cool-blue, medium zones turn orange, dense zones saturate to yellow.  */}
+      {vizMode === 'heatmap' && rawShots && rawShots.length > 0 && (
+        <>
+          <defs>
+            {/* Wide spread: reveals density shape across the court */}
+            <filter id="heat-wide" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="22" />
+            </filter>
+            {/* Tight: concentrates heat on the exact hotspots */}
+            <filter id="heat-tight" x="-15%" y="-15%" width="130%" height="130%">
+              <feGaussianBlur stdDeviation="9" />
+            </filter>
+          </defs>
+          {/* Cool layer — blue, wide, shows general density shape */}
+          <g filter="url(#heat-wide)" style={{ mixBlendMode: 'screen' }}>
+            {rawShots.map((s, i) => (
+              <circle key={`hw${i}`} cx={s.x * S} cy={(14 - s.y) * S} r={20}
+                fill="rgba(40,90,255,0.22)" />
+            ))}
+          </g>
+          {/* Hot layer — orange/yellow, tight, marks high-density spots */}
+          <g filter="url(#heat-tight)" style={{ mixBlendMode: 'screen' }}>
+            {rawShots.map((s, i) => (
+              <circle key={`hh${i}`} cx={s.x * S} cy={(14 - s.y) * S} r={15}
+                fill="rgba(255,160,0,0.32)" />
+            ))}
+          </g>
+        </>
+      )}
+
+      {/* ── Scatter overlay (individual shot dots) ── */}
+      {vizMode === 'scatter' && rawShots && rawShots.length > 0 &&
+        rawShots.map((s, i) => (
+          <circle
+            key={i}
+            cx={s.x * S}
+            cy={(14 - s.y) * S}
+            r={4}
+            fill={s.made ? '#4ade80' : '#f87171'}
+            fillOpacity={0.65}
+          />
+        ))
+      }
+
+      {/* ── Zone heatmap bubbles — only in 'zones' mode ── */}
+      {vizMode === 'zones' && zones && zones.length > 0 && Object.entries(ZONE_CENTERS).map(([zoneKey, center]) => {
         const zData = zoneMap[zoneKey]
         if (!zData || zData.fga === 0) return null
 
@@ -198,8 +253,8 @@ export default function FibaCourtSVG({
         )
       })}
 
-      {/* Empty-state zone labels (no data loaded) */}
-      {(!zones || zones.length === 0) && Object.entries(ZONE_CENTERS).map(([key, c]) => (
+      {/* Empty-state zone placeholders — only in 'zones' mode when no data */}
+      {vizMode === 'zones' && (!zones || zones.length === 0) && Object.entries(ZONE_CENTERS).map(([key, c]) => (
         <circle key={key} cx={c.x} cy={c.y} r={10}
           fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" strokeWidth={1}
         />
