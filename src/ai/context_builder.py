@@ -25,14 +25,17 @@ class ContextBuilder:
         Build comprehensive analysis context from team statistics.
 
         Constructs a structured markdown document containing team statistics
-        with league-wide quartile comparisons. Each statistic is annotated
-        with strength/weakness indicators based on quartile position.
+        with league-wide quartile comparisons, differentials vs league median,
+        and consistency (CV) data. Each statistic is annotated with
+        strength/weakness indicators based on quartile position.
 
         Args:
             team_name: Name of the team being analyzed
-            stats: Dictionary containing team_stats and league_stats
+            stats: Dictionary containing team_stats, league_stats, and optional
+                   consistency {stat_key: {mean, std, cv, n}}
             include_recommendations: Whether to request strategic recommendations
-            analysis_type: 'own' for own team analysis, 'opponent' for rival scouting
+            analysis_type: 'own', 'scouting'/'opponent' for rival scouting,
+                           or 'individual' (falls back to own)
 
         Returns:
             Formatted markdown string with annotated statistics ready for AI analysis
@@ -287,6 +290,81 @@ class ContextBuilder:
 
                 sections.append('')
 
+        # ── Differentials vs league median ──────────────────────────────────
+        if 'team_stats' in stats and stats['team_stats']:
+            team_stats = stats['team_stats']
+            league_stats = stats.get('league_stats', {})
+
+            # Key stats with (team_key, league_key, label, higher_good)
+            diff_stats = [
+                ('points_per_game',         'points_per_game',        'Puntos/P',     True),
+                ('points_allowed_per_game', 'points_allowed_per_game','Puntos recib.', False),
+                ('rebounds_per_game',       'rebounds_per_game',      'Rebotes/P',    True),
+                ('assists_per_game',        'assists_per_game',       'Asistencias/P', True),
+                ('turnovers_per_game',      'turnovers_per_game',     'Pérdidas/P',   False),
+                ('offensive_rating',        'offensive_rating',       'ORtg',         True),
+                ('defensive_rating',        'defensive_rating',       'DRtg',         False),
+                ('net_rating',              'net_rating',             'Net Rating',   True),
+                ('effective_fg_percentage', 'efg_percentage',         'eFG%',         True),
+                ('true_shooting_percentage','true_shooting',          'TS%',          True),
+            ]
+
+            diff_lines = []
+            for team_key, league_key, label, higher_good in diff_stats:
+                tval = team_stats.get(team_key)
+                lq   = league_stats.get(league_key, {})
+                median = lq.get('q2') if isinstance(lq, dict) else None
+                if tval is not None and median is not None:
+                    try:
+                        diff = float(tval) - float(median)
+                        sign = '+' if diff >= 0 else ''
+                        good = (diff > 0) == higher_good
+                        marker = '[+]' if good else '[-]'
+                        diff_lines.append(f"  {marker} {label}: {sign}{diff:.1f} vs media liga ({float(median):.1f})")
+                    except (TypeError, ValueError):
+                        pass
+
+            if diff_lines:
+                sections.append("### Diferenciales vs Liga (equipo − media de la competición)\n")
+                sections.extend(diff_lines)
+                sections.append("")
+
+        # ── Consistency / dispersion (CV) ───────────────────────────────────
+        consistency = stats.get('consistency', {})
+        if consistency:
+            cv_labels = {
+                'points_per_game':         'Puntos/P',
+                'points_allowed_per_game': 'Puntos recib./P',
+                'rebounds_per_game':       'Rebotes/P',
+                'assists_per_game':        'Asistencias/P',
+                'turnovers_per_game':      'Pérdidas/P',
+                'offensive_rating':        'ORtg',
+                'defensive_rating':        'DRtg',
+                'net_rating':              'Net Rating',
+                'effective_fg_percentage': 'eFG%',
+                'true_shooting':           'TS%',
+                'fg3_percentage':          'T3%',
+            }
+            sections.append("### Consistencia partido a partido (Coeficiente de Variación)\n")
+            sections.append("CV < 15% = Consistente | 15–30% = Variabilidad moderada | > 30% = Alta variabilidad\n")
+            for stat_key, label in cv_labels.items():
+                entry = consistency.get(stat_key)
+                if entry and isinstance(entry, dict):
+                    cv = entry.get('cv')
+                    mean = entry.get('mean')
+                    if cv is not None and mean is not None:
+                        if cv < 15:
+                            nivel = 'Consistente'
+                        elif cv < 30:
+                            nivel = 'Variabilidad moderada'
+                        else:
+                            nivel = 'Alta variabilidad'
+                        sections.append(f"  - {label}: media={float(mean):.1f}, CV={float(cv):.1f}% → {nivel}")
+            sections.append("")
+        else:
+            sections.append("### Consistencia\n")
+            sections.append("  - Datos de consistencia no disponibles para esta liga.\n")
+
         # Analysis request
         sections.append("\n---\n")
         sections.append("PETICION DE ANALISIS:\n")
@@ -299,7 +377,7 @@ class ContextBuilder:
         sections.append("5. Si hay datos de zonas de tiro, analiza las zonas calientes y frias\n")
 
         if include_recommendations:
-            if analysis_type == 'opponent':
+            if analysis_type in ('opponent', 'scouting'):
                 sections.append("TIPO DE ANALISIS: SCOUTING RIVAL")
                 sections.append("Este informe es para un ENTRENADOR que se va a ENFRENTAR a este equipo.")
                 sections.append("Enfoca todo el analisis en COMO NEUTRALIZAR sus fortalezas y EXPLOTAR sus debilidades.\n")

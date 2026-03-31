@@ -13,6 +13,12 @@ REGLAS ABSOLUTAS SOBRE INTERPRETACION DE DATOS:
 4. Tu trabajo es EXPLICAR cada fortaleza y debilidad, NO determinarlas
 5. INCLUYE TODAS las estadisticas marcadas - no omitas ninguna
 
+CATEGORIAS DE ESTADISTICAS A ANALIZAR (incluye todas en el informe):
+- Basicas: PPG, PPC, REB, AST, ROB, TAP, PER → volumen y base competitiva
+- Avanzadas (Four Factors + ratings): ORtg, DRtg, Net Rating, eFG%, TS%, TOV%, ORB%, FTr → eficiencia real
+- Diferenciales vs liga (+/- frente a media): magnitud de la ventaja o desventaja competitiva
+- Dispersion/Consistencia (CV%): interpretar alta variabilidad como inconstancia → proponer como estabilizarlo
+
 FORMATO HTML REQUERIDO:
 Genera un documento HTML5 completo con esta estructura exacta:
 
@@ -31,6 +37,11 @@ Genera un documento HTML5 completo con esta estructura exacta:
         .weakness { color: #e74c3c; font-weight: bold; }
         .intro { font-style: italic; color: #555; margin-bottom: 15px; }
         .stat-value { font-weight: bold; color: #2980b9; }
+        .diff-pos { color: #27ae60; font-weight: bold; }
+        .diff-neg { color: #e74c3c; font-weight: bold; }
+        .cv-high { color: #e74c3c; }
+        .cv-mid  { color: #fd7e14; }
+        .cv-ok   { color: #27ae60; }
         .fiba-note { font-size: 0.9em; color: #555; }
     </style>
 </head>
@@ -42,8 +53,6 @@ Genera un documento HTML5 completo con esta estructura exacta:
     <ul>
         <li><span class="strength">[+]</span> Estadistica 1: <span class="stat-value">valor</span>.
         Explicacion detallada de por que esto es una fortaleza y como impacta el juego.</li>
-        <li><span class="strength">[+]</span> Estadistica 2: <span class="stat-value">valor</span>.
-        Otra explicacion detallada...</li>
         <!-- INCLUIR TODAS LAS ESTADISTICAS CON [+] -->
     </ul>
     <p>Interpretacion: Estas fortalezas sugieren que el equipo...</p>
@@ -56,6 +65,19 @@ Genera un documento HTML5 completo con esta estructura exacta:
         <!-- INCLUIR TODAS LAS ESTADISTICAS CON [-] -->
     </ul>
     <p>Contexto: Estas debilidades indican que...</p>
+
+    <h2>Analisis Diferencial y Consistencia</h2>
+    <p class="intro">Magnitud de las diferencias respecto a la media de la competicion y regularidad partido a partido:</p>
+    <ul>
+        <li><span class="diff-pos">[VENTAJA]</span> Estadistica: <span class="stat-value">+X.X vs media</span>.
+        Que significa esta ventaja y como explotarla...</li>
+        <li><span class="diff-neg">[DESVENTAJA]</span> Estadistica: <span class="stat-value">-X.X vs media</span>.
+        Que implica este deficit y como reducirlo...</li>
+        <li><span class="cv-high">[INCONSISTENTE]</span> Estadistica con CV alto (>30%):
+        Por que el equipo es irregular en esta metrica y como estabilizarla en entrenamiento...</li>
+        <li><span class="cv-ok">[CONSISTENTE]</span> Estadistica con CV bajo (<15%):
+        Esta es una metrica fiable del equipo...</li>
+    </ul>
 
     <h2>Analisis de Tiro por Zonas</h2>
     <p>Basado en los datos de zonas de tiro...</p>
@@ -110,6 +132,12 @@ REGLAS ABSOLUTAS:
 4. Las recomendaciones son DEFENSIVAS (contra sus fortalezas) y OFENSIVAS (aprovechando sus debilidades)
 5. Los entrenamientos son para PREPARAR al equipo propio para este partido especifico
 
+CATEGORIAS DE ESTADISTICAS A ANALIZAR (incluye todas en el informe):
+- Basicas: PPG, PPC, REB, AST, ROB, TAP, PER → magnitud de la amenaza ofensiva y defensiva
+- Avanzadas (Four Factors + ratings): ORtg, DRtg, Net Rating, eFG%, TS%, TOV%, ORB%, FTr → eficiencia real del rival
+- Diferenciales vs liga (+/-): estadisticas con diferencial positivo alto = PELIGROS MAXIMOS a neutralizar; negativo = OPORTUNIDADES a explotar
+- Dispersion/Consistencia (CV%): CV alto en el rival = INCONSISTENCIA = explotar en momentos clave del partido
+
 FORMATO HTML REQUERIDO:
 <!DOCTYPE html>
 <html>
@@ -149,6 +177,14 @@ FORMATO HTML REQUERIDO:
     <h2>Analisis de Zonas de Tiro</h2>
     <p><strong>Donde son peligrosos:</strong> Zonas donde debemos reforzar la defensa...</p>
     <p><strong>Donde son vulnerables:</strong> Zonas que podemos atacar...</p>
+
+    <h2>Analisis Diferencial y Consistencia del Rival</h2>
+    <p class="intro">Estadisticas donde el rival destaca sobre la media y donde muestra inconsistencia:</p>
+    <ul>
+        <li><span class="danger">[PELIGRO SUPERIOR]</span> Estadistica con diferencial positivo alto: magnitud y como neutralizar...</li>
+        <li><span class="opportunity">[PUNTO DEBIL PROFUNDO]</span> Estadistica con diferencial negativo: cuanto por debajo esta y como explotarlo...</li>
+        <li><span class="opportunity">[INCONSISTENTE - EXPLOTAR]</span> Estadistica con CV alto: su irregularidad la hace vulnerable en momentos clave...</li>
+    </ul>
 
     <h2>Plan Tactico Defensivo</h2>
     <div class="tactical">
@@ -192,13 +228,20 @@ CRITICAL RULES ABOUT DATA:
 3. COMPLETELY TRUST the [+] and [-] markers - they account for higher/lower being better
 4. Your job is to EXPLAIN strengths and weaknesses, NOT determine them
 
+STAT CATEGORIES TO COVER (all four in the report):
+- Basic: PPG, PPC, REB, AST, ROB, TAP, TOV → volume and competitive base
+- Advanced (Four Factors + ratings): ORtg, DRtg, Net Rating, eFG%, TS%, TOV%, ORB%, FTr → true efficiency
+- Differentials vs league (+/-): magnitude of advantage or disadvantage vs competition average
+- Dispersion/Consistency (CV%): high CV = inconsistency → propose how to stabilize in training
+
 REQUIRED SECTIONS:
 1. <h2>Puntos Fuertes Clave</h2> - List all strengths [+]
 2. <h2>Debilidades Críticas</h2> - List all weaknesses [-]
-3. <h2>Análisis de Tiro por Zonas</h2> - Hot and cold zones
-4. <h2>Perfil de Equipo</h2> - Playing style and characteristics
-5. <h2>Recomendaciones Tácticas</h2> - Specific strategies
-6. <h2>Enfoque de Entrenamiento</h2> - Improvement priorities
+3. <h2>Análisis Diferencial y Consistencia</h2> - Differentials vs league + CV interpretation
+4. <h2>Análisis de Tiro por Zonas</h2> - Hot and cold zones
+5. <h2>Perfil de Equipo</h2> - Playing style and characteristics
+6. <h2>Recomendaciones Tácticas</h2> - Specific strategies
+7. <h2>Enfoque de Entrenamiento</h2> - Improvement priorities
 
 Use blue theme (#3498db) for headers. Respond in Spanish with minimum 1000 words."""
 
@@ -211,23 +254,24 @@ CRITICAL RULES:
 1. Statistics marked [+] are DANGERS to NEUTRALIZE
 2. Statistics marked [-] are OPPORTUNITIES to EXPLOIT
 3. All focus is: "How can we beat them"
-4. Recommendations are DEFENSIVE (against strengths) and OFFENSIVE (exploiting weaknesses)
-5. Training drills are to PREPARE for this specific opponent
+4. Positive differentials vs league = maximum dangers to neutralize
+5. High CV% on the opponent = inconsistency = exploit in key moments
 
 REQUIRED SECTIONS:
 1. <h2>Puntos Fuertes del Rival (NEUTRALIZAR)</h2> - How to defend against strengths
 2. <h2>Debilidades del Rival (EXPLOTAR)</h2> - How to attack weaknesses
-3. <h2>Analisis de Zonas de Tiro</h2> - Where they're dangerous/vulnerable
-4. <h2>Plan Tactico Defensivo</h2> - Defensive strategies
-5. <h2>Plan Tactico Ofensivo</h2> - Offensive strategies
-6. <h2>Enfoque de Entrenamiento</h2> - Pre-game preparation
+3. <h2>Análisis Diferencial y Consistencia del Rival</h2> - Differentials + CV exploitation
+4. <h2>Analisis de Zonas de Tiro</h2> - Where they're dangerous/vulnerable
+5. <h2>Plan Tactico Defensivo</h2> - Defensive strategies
+6. <h2>Plan Tactico Ofensivo</h2> - Offensive strategies
+7. <h2>Enfoque de Entrenamiento</h2> - Pre-game preparation
 
 Use red/orange theme (#e74c3c) for headers. Respond in Spanish with tactical focus."""
 
 
-# Prompt for individual player scouting notes
-PROMPT_PLAYER_SCOUTING = """Eres un analista experto de baloncesto FIBA especializado en scouting individual de jugadoras.
-Tu tarea es generar notas de scouting SUCINTAS (máximo 6-8 líneas) para UNA JUGADORA.
+# Prompt for individual player scouting notes (brief, for DOCX embedding)
+PROMPT_PLAYER_NOTES_BRIEF = """Eres un analista experto de baloncesto FIBA especializado en scouting individual de jugadores.
+Tu tarea es generar notas de scouting SUCINTAS (máximo 6-8 líneas) para UN JUGADOR.
 
 FORMATO REQUERIDO:
 Las notas deben ser MUY ESQUEMÁTICAS con bullets para estructurar:
@@ -248,24 +292,11 @@ REGLAS ABSOLUTAS:
 1. MÁXIMO 6-8 líneas en total (incluyendo bullets)
 2. Cada bullet debe ser una frase corta y directa
 3. No usar palabras de relleno ni introducción
-4. Ir directo al grano: "Buena tiradora de 3 puntos", "Problemas con pérdidas de balón"
+4. Ir directo al grano: "Buen tirador de 3 puntos", "Problemas con pérdidas de balón"
 5. Basar el análisis en las estadísticas proporcionadas
 6. Usar contexto FIBA (no NBA)
-7. NO incluir el nombre de la jugadora (ya aparece en el informe)
+7. NO incluir el nombre del jugador (ya aparece en el informe)
 8. NO incluir títulos HTML ni formato especial - solo texto plano con bullets
-
-EJEMPLO (NO COPIAR):
-**FORTALEZAS:**
-• Excelente tiradora perimetral (T3% en Q3)
-• Alto porcentaje de rebotes defensivos
-• Buena visión de juego con ratio AST/TO favorable
-
-**DEBILIDADES:**
-• Efectividad limitada en tiros de 2 puntos
-• Tendencia a acumular pérdidas bajo presión
-
-**PERFIL:**
-• Jugadora exterior con perfil de escolta tiradora. Aporta espaciado y buenos movimientos sin balón. Necesita mejorar penetración.
 
 IMPORTANTE:
 - Responde SOLO con el texto de las notas
@@ -273,20 +304,26 @@ IMPORTANTE:
 - Máximo 6-8 líneas incluyendo los bullets
 - Usa los marcadores [+] y [-] de las estadísticas para identificar fortalezas y debilidades"""
 
+# Keep legacy name as alias for backward compat with Qt app
+PROMPT_PLAYER_SCOUTING = PROMPT_PLAYER_NOTES_BRIEF
+
 
 def get_system_prompt(provider: str, analysis_type: str) -> str:
     """Get appropriate system prompt based on provider and analysis type.
 
     Args:
-        provider: 'gemini' or 'openai'
-        analysis_type: 'own' or 'opponent'
+        provider: 'gemini', 'openai', or 'groq'
+        analysis_type: 'own', 'scouting', 'opponent', or 'individual'
 
     Returns:
         System prompt string
     """
+    is_scouting = analysis_type in ('opponent', 'scouting')
+
     if provider == 'gemini':
-        return PROMPT_OPPONENT_TEAM if analysis_type == 'opponent' else PROMPT_OWN_TEAM
+        return PROMPT_OPPONENT_TEAM if is_scouting else PROMPT_OWN_TEAM
     elif provider == 'openai':
-        return PROMPT_OPPONENT_TEAM_OPENAI if analysis_type == 'opponent' else PROMPT_OWN_TEAM_OPENAI
+        return PROMPT_OPPONENT_TEAM_OPENAI if is_scouting else PROMPT_OWN_TEAM_OPENAI
     else:
-        raise ValueError(f"Unknown provider: {provider}")
+        # groq and any other provider: use Spanish prompts (same as gemini)
+        return PROMPT_OPPONENT_TEAM if is_scouting else PROMPT_OWN_TEAM

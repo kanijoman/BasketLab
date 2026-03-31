@@ -274,6 +274,51 @@ class PDFGenerator:
         except Exception as e:
             raise
 
+    @staticmethod
+    def generate_bytes_from_html(
+        html_content: str,
+        team_name: str = "",
+        season: str = "",
+    ) -> bytes:
+        """Generate PDF from HTML and return raw bytes (no file I/O).
+
+        Same processing pipeline as ``generate_from_html`` but writes to an
+        in-memory buffer so the caller (e.g. a FastAPI endpoint) can stream
+        the result directly.
+
+        Args:
+            html_content: HTML string containing the analysis report.
+            team_name: Name of the team (for title line).
+            season: Optional season identifier.
+
+        Returns:
+            PDF file contents as raw bytes.
+        """
+        html_content = PDFGenerator._clean_html(html_content)
+        html_content = PDFGenerator._replace_emojis(html_content)
+
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+
+        if team_name:
+            pdf.set_font("Arial", "B", 18)
+            title = f"Análisis: {team_name}"
+            if season:
+                title += f" - {season}"
+            pdf.cell(0, 10, title, 0, 1, "C")
+            pdf.ln(5)
+
+        pdf.set_font("Arial", "", 10)
+        try:
+            pdf.write_html(html_content)
+        except Exception:
+            text = re.sub("<[^<]+?>", " ", html_content)
+            text = re.sub(r"\s+", " ", text).strip()
+            pdf.multi_cell(0, 5, text)
+
+        return bytes(pdf.output())
+
 
 # Backward compatibility: Keep old class name as alias
 HTMLToPDFParser = None  # Deprecated - use PDFGenerator.generate_from_html() instead

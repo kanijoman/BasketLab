@@ -618,8 +618,8 @@ export default function PlayerStatsPage() {
             <div className="space-y-0.5">
               <p className="font-semibold">Proyección estadística a 30 minutos</p>
               <p className="text-blue-300/80 text-xs">
-                Escala las estadísticas de cada jugadora al equivalente de disputar 30 minutos por partido.
-                Las jugadoras con menos de 10 minutos de media por partido no se incluyen en el cálculo.
+                Escala las estadísticas de cada jugador al equivalente de disputar 30 minutos por partido.
+                Los jugadores con menos de 10 minutos de media por partido no se incluyen en el cálculo.
               </p>
             </div>
           </div>

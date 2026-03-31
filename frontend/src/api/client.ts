@@ -199,7 +199,7 @@ export const getPossessionStats = (collection: string, params?: TeamFilters) =>
 export interface AIAnalysisRequest {
   collection: string
   team: string
-  analysis_type: 'own' | 'scouting' | 'comparative'
+  analysis_type: 'own' | 'scouting' | 'individual'
   opponent_team?: string
   provider: 'gemini' | 'openai' | 'groq'
   model?: string
@@ -212,6 +212,43 @@ export const postAIAnalysis = (req: AIAnalysisRequest) =>
 
 export const getAIAnalysisStreamUrl = (req: AIAnalysisRequest): string =>
   `${BASE}/ai/analyze/stream?${new URLSearchParams(req as unknown as Record<string, string>)}`
+
+/** Download the individual scouting DOCX for an entire team. */
+export const downloadIndividualScoutingDocx = async (
+  collection: string,
+  team: string,
+  includeAiNotes = true,
+): Promise<Blob> => {
+  const params = new URLSearchParams({
+    collection,
+    team,
+    include_ai_notes: String(includeAiNotes),
+  })
+  const res = await fetch(`${BASE}/ai/individual-scouting/docx?${params}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? 'Error descargando DOCX')
+  }
+  return res.blob()
+}
+
+/** Convert streamed AI HTML to PDF and download it. */
+export const exportAIAnalysisPDF = async (
+  html: string,
+  team: string,
+  analysisType: string,
+): Promise<Blob> => {
+  const res = await fetch(`${BASE}/ai/export-pdf`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ html, team, analysis_type: analysisType }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? 'Error generando PDF')
+  }
+  return res.blob()
+}
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@
  * EvolutionPage — Fase 3
  * Evolución temporal de métricas con Recharts multi-equipo/multi-stat + rolling average + brush zoom.
  */
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import {
   ResponsiveContainer,
@@ -20,6 +20,7 @@ import { TrendingUp, X, ChevronDown } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamEvolution, getCompetitionEvolution, type EvolutionPoint, type CompetitionEvolutionPoint } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import ExportButton from '@/components/ui/ExportButton'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -174,6 +175,20 @@ export default function EvolutionPage() {
 
   const statLabel = STAT_LABEL_MAP[stat] ?? stat
 
+  const chartRef = useRef<HTMLDivElement>(null)
+
+  const csvHeaders = useMemo(() => {
+    const cols: { key: string; label: string }[] = [{ key: 'game', label: 'Jornada' }]
+    selectedTeams.forEach(team => {
+      if (showRaw)        cols.push({ key: `${team}_raw`, label: `${team} (partido)` })
+      if (showRolling)    cols.push({ key: `${team}_avg`, label: `${team} (media ${rollingWindow}J)` })
+      if (showCumulative) cols.push({ key: `${team}_cum`, label: `${team} (acumulado)` })
+    })
+    if (showCompetitionRolling)    cols.push({ key: 'comp_rolling',    label: `Liga (media ${rollingWindow}J)` })
+    if (showCompetitionCumulative) cols.push({ key: 'comp_cumulative', label: 'Liga (acumulado)' })
+    return cols
+  }, [selectedTeams, showRaw, showRolling, showCumulative, showCompetitionRolling, showCompetitionCumulative, rollingWindow])
+
   function toggleTeam(team: string) {
     setSelectedTeams(prev =>
       prev.includes(team) ? prev.filter(t => t !== team) : [...prev.slice(0, 7), team]
@@ -189,6 +204,13 @@ export default function EvolutionPage() {
             <h1 className="text-2xl font-bold text-ink-primary">Evolución Temporal</h1>
             <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
           </div>
+          <ExportButton
+            filename={`evolucion_${stat}_${collection?.name ?? ''}`}
+            captureRef={chartRef}
+            pdfTitle={`Evolución Temporal — ${statLabel} — ${collection?.label ?? ''}`}
+            csvData={chartData}
+            csvHeaders={csvHeaders}
+          />
         </div>
 
         {/* Controls */}
@@ -298,7 +320,7 @@ export default function EvolutionPage() {
         </div>
 
         {/* Chart */}
-        <div className="card p-4">
+        <div className="card p-4" ref={chartRef}>
           {selectedTeams.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-2 text-center">
               <TrendingUp className="w-10 h-10 text-accent-400 opacity-40" />
