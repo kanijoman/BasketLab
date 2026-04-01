@@ -1,13 +1,16 @@
 /**
  * RankingsPage — player stat leaderboards.
  *
- * Select a stat category ? see ranked list with bar fills.
- * Filters: min minutes, team.
- * Top 3 highlighted with medal styling.
+ * Select a stat category (Básicas / Tiro / Avanzadas) → see ranked list with bar fills.
+ * Filters: min minutes, team, player name search.
+ * Top 3 global ranks highlighted with medal icons (Trophy/Medal/Award).
+ * Filtering by team/player preserves global league rank, not filtered rank.
+ * Each row shows the delta relative to the league leader.
  */
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Trophy, Medal, Award, Search } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getPlayerStats, type PlayerStat } from '@/api/client'
@@ -23,33 +26,77 @@ interface StatDef {
   reverse?: boolean   // lower = better
 }
 
-const STAT_TABS: StatDef[] = [
-  { key: 'points_per_game',    label: 'Puntos',      format: v => fmt(v) },
-  { key: 'rebounds_per_game',  label: 'Rebotes',     format: v => fmt(v) },
-  { key: 'assists_per_game',   label: 'Asistencias', format: v => fmt(v) },
-  { key: 'steals_per_game',    label: 'Robos',       format: v => fmt(v) },
-  { key: 'blocks_per_game',    label: 'Tapones',     format: v => fmt(v) },
-  { key: 'valoracion_per_game',label: 'Valoración',  format: v => fmt(v) },
-  { key: 'fg2_percentage',     label: '% T2',        format: v => fmtPct(v) },
-  { key: 'fg3_percentage',     label: '% T3',        format: v => fmtPct(v) },
-  { key: 'turnovers_per_game', label: 'Pérdidas',    format: v => fmt(v), reverse: true },
+interface StatGroup {
+  label: string
+  stats: StatDef[]
+}
+
+const STAT_GROUPS: StatGroup[] = [
+  {
+    label: 'Básicas',
+    stats: [
+      { key: 'points_per_game',             label: 'Puntos',      format: v => fmt(v) },
+      { key: 'rebounds_per_game',           label: 'Rebotes',     format: v => fmt(v) },
+      { key: 'offensive_rebounds_per_game', label: 'Reb. Of.',    format: v => fmt(v) },
+      { key: 'defensive_rebounds_per_game', label: 'Reb. Def.',   format: v => fmt(v) },
+      { key: 'assists_per_game',            label: 'Asistencias', format: v => fmt(v) },
+      { key: 'steals_per_game',             label: 'Robos',       format: v => fmt(v) },
+      { key: 'blocks_per_game',             label: 'Tapones',     format: v => fmt(v) },
+      { key: 'turnovers_per_game',          label: 'Pérdidas',    format: v => fmt(v), reverse: true },
+      { key: 'fouls_per_game',              label: 'Faltas',      format: v => fmt(v), reverse: true },
+      { key: 'valoracion_per_game',         label: 'Valoración',  format: v => fmt(v) },
+      { key: 'pllss_per_game',              label: '+/-',         format: v => fmt(v) },
+    ],
+  },
+  {
+    label: 'Tiro',
+    stats: [
+      { key: 'fg1_percentage',   label: '% TL',  format: v => fmtPct(v) },
+      { key: 'fg2_percentage',   label: '% T2',  format: v => fmtPct(v) },
+      { key: 'fg3_percentage',   label: '% T3',  format: v => fmtPct(v) },
+      { key: 'efg_percentage',   label: 'eFG%',  format: v => fmtPct(v) },
+      { key: 'true_shooting',    label: 'TS%',   format: v => fmtPct(v) },
+      { key: 'free_throw_rate',  label: 'FTr',   format: v => fmt(v) },
+      { key: 'three_point_rate', label: '3PAr',  format: v => fmt(v) },
+    ],
+  },
+  {
+    label: 'Avanzadas',
+    stats: [
+      { key: 'usage_pct',   label: 'USG%',    format: v => fmtPct(v) },
+      { key: 'orating',     label: 'ORtg',    format: v => fmt(v) },
+      { key: 'drating',     label: 'DRtg',    format: v => fmt(v), reverse: true },
+      { key: 'net_rtg',     label: 'Net Rtg', format: v => fmt(v) },
+      { key: 'ast_pct',     label: 'Ast%',    format: v => fmtPct(v) },
+      { key: 'tov_pct_adv', label: 'TO%',     format: v => fmtPct(v), reverse: true },
+      { key: 'stl_pct',     label: 'Stl%',    format: v => fmtPct(v) },
+      { key: 'blk_pct',     label: 'Blk%',    format: v => fmtPct(v) },
+      { key: 'orb_pct',     label: 'ROF%',    format: v => fmtPct(v) },
+      { key: 'drb_pct',     label: 'RDef%',   format: v => fmtPct(v) },
+      { key: 'pie',         label: 'PIE',     format: v => fmtPct(v) },
+    ],
+  },
 ]
 
 // -- Medal helpers -------------------------------------------------------------
 
-const MEDAL: Record<number, { emoji: string; bg: string; text: string }> = {
-  1: { emoji: '??', bg: 'bg-yellow-900/30', text: 'text-yellow-400' },
-  2: { emoji: '??', bg: 'bg-slate-700/40',  text: 'text-slate-300'  },
-  3: { emoji: '??', bg: 'bg-amber-900/30',  text: 'text-amber-500'  },
+interface MedalDef { icon: LucideIcon; bg: string; text: string }
+
+const MEDAL: Record<number, MedalDef> = {
+  1: { icon: Trophy, bg: 'bg-yellow-900/30', text: 'text-yellow-400' },
+  2: { icon: Medal,  bg: 'bg-slate-700/40',  text: 'text-slate-300'  },
+  3: { icon: Award,  bg: 'bg-amber-900/30',  text: 'text-amber-500'  },
 }
 
 // -- Component -----------------------------------------------------------------
 
 export default function RankingsPage() {
   const { collection } = useCollection()
-  const [statIdx, setStatIdx]     = useState(0)
-  const [minMin, setMinMin]       = useState(0)
-  const [teamFilter, setTeamFilter] = useState('')
+  const [groupIdx, setGroupIdx]         = useState(0)
+  const [statIdx, setStatIdx]           = useState(0)
+  const [minMin, setMinMin]             = useState(0)
+  const [teamFilter, setTeamFilter]     = useState('')
+  const [playerSearch, setPlayerSearch] = useState('')
 
   const { data: rawPlayers = [], isLoading } = useQuery({
     queryKey: ['player-stats', collection?.name],
@@ -58,29 +105,45 @@ export default function RankingsPage() {
     staleTime: 5 * 60_000,
   })
 
-  const stat = STAT_TABS[statIdx]
+  const group       = STAT_GROUPS[groupIdx]
+  // Clamp so changing group never leaves statIdx out-of-range
+  const safeStatIdx = Math.min(statIdx, group.stats.length - 1)
+  const stat        = group.stats[safeStatIdx]
 
   const teamOptions = useMemo(
     () => [...new Set(rawPlayers.map(p => p.team_name))].sort(),
     [rawPlayers],
   )
 
-  const ranked = useMemo(() => {
+  // Global ranking: only min-minutes filter, NO team/player filter → real league position
+  const allRanked = useMemo(() => {
     let list = rawPlayers
-    if (minMin > 0)    list = list.filter(p => p.minutes_per_game >= minMin)
-    if (teamFilter)    list = list.filter(p => p.team_name === teamFilter)
-    list = [...list].sort((a, b) => {
+    if (minMin > 0) list = list.filter(p => p.minutes_per_game >= minMin)
+    return [...list].sort((a, b) => {
       const av = (a[stat.key] as number) ?? 0
       const bv = (b[stat.key] as number) ?? 0
       return stat.reverse ? av - bv : bv - av
     })
-    return list
-  }, [rawPlayers, stat, minMin, teamFilter])
+  }, [rawPlayers, stat, minMin])
 
-  const maxVal = useMemo(
-    () => Math.max(...ranked.map(p => (p[stat.key] as number) ?? 0), 0.001),
-    [ranked, stat],
+  // Map player_id → globally-ranked position (1-indexed)
+  const globalRankMap = useMemo(
+    () => new Map(allRanked.map((p, i) => [p.player_id, i + 1])),
+    [allRanked],
   )
+
+  // Visible subset after team + player search filters (rank stays global)
+  const filteredRanked = useMemo(() => {
+    let list = allRanked
+    if (teamFilter)   list = list.filter(p => p.team_name === teamFilter)
+    if (playerSearch) list = list.filter(p =>
+      p.player_name.toLowerCase().includes(playerSearch.toLowerCase()),
+    )
+    return list
+  }, [allRanked, teamFilter, playerSearch])
+
+  const leaderVal = allRanked.length > 0 ? ((allRanked[0][stat.key] as number) ?? 0) : 0
+  const maxVal    = Math.max(...allRanked.map(p => (p[stat.key] as number) ?? 0), 0.001)
 
   if (!collection) {
     return (
@@ -100,16 +163,34 @@ export default function RankingsPage() {
           <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
         </div>
 
-        {/* Stat tabs (scrollable on mobile) */}
+        {/* Group tabs (Básicas / Tiro / Avanzadas) */}
+        <div className="flex gap-2">
+          {STAT_GROUPS.map((g, i) => (
+            <button
+              key={g.label}
+              onClick={() => { setGroupIdx(i); setStatIdx(0) }}
+              className={[
+                'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                i === groupIdx
+                  ? 'bg-brand-600/40 text-brand-300 border border-brand-500/50'
+                  : 'bg-surface-raised text-ink-secondary border border-surface-border hover:text-ink-primary',
+              ].join(' ')}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Stat tabs within the active group (scrollable on mobile) */}
         <div className="overflow-x-auto pb-1">
           <div className="flex gap-2 min-w-max">
-            {STAT_TABS.map((s, i) => (
+            {group.stats.map((s, i) => (
               <button
                 key={s.key as string}
                 onClick={() => setStatIdx(i)}
                 className={[
                   'px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
-                  i === statIdx
+                  i === safeStatIdx
                     ? 'bg-brand-600/30 text-brand-400 border border-brand-600/40'
                     : 'bg-surface-raised text-ink-secondary border border-surface-border hover:text-ink-primary',
                 ].join(' ')}
@@ -150,7 +231,19 @@ export default function RankingsPage() {
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-muted pointer-events-none" />
           </div>
 
-          <span className="text-xs text-ink-muted ml-auto">{ranked.length} jugadores</span>
+          {/* Player search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-muted pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar jugador…"
+              value={playerSearch}
+              onChange={e => setPlayerSearch(e.target.value)}
+              className="input pl-7 pr-3 py-1.5 text-xs w-44"
+            />
+          </div>
+
+          <span className="text-xs text-ink-muted ml-auto">{filteredRanked.length} jugadores</span>
         </div>
 
         {/* Ranked list */}
@@ -160,17 +253,20 @@ export default function RankingsPage() {
               <div key={i} className="h-12 rounded-card animate-pulse bg-surface-raised/60" />
             ))}
           </div>
-        ) : ranked.length === 0 ? (
+        ) : filteredRanked.length === 0 ? (
           <div className="py-16 text-center text-sm text-ink-muted">
             Sin resultados para los filtros aplicados.
           </div>
         ) : (
           <div className="space-y-1.5">
-            {ranked.slice(0, 30).map((player, idx) => {
-              const rank   = idx + 1
-              const val    = (player[stat.key] as number) ?? 0
-              const barPct = maxVal > 0 ? (val / maxVal) * 100 : 0
-              const medal  = MEDAL[rank]
+            {filteredRanked.slice(0, 30).map(player => {
+              const rank      = globalRankMap.get(player.player_id) ?? 0
+              const val       = (player[stat.key] as number) ?? 0
+              const barPct    = maxVal > 0 ? (val / maxVal) * 100 : 0
+              const medal     = MEDAL[rank]
+              const MedalIcon = medal?.icon
+              const rawDelta  = stat.reverse ? val - leaderVal : leaderVal - val
+              const deltaStr  = rank === 1 ? '—' : `-${fmt(Math.abs(rawDelta))}`
 
               return (
                 <div
@@ -188,9 +284,9 @@ export default function RankingsPage() {
                     style={{ width: `${Math.min(barPct, 100)}%` }}
                   />
 
-                  {/* Rank */}
-                  <span className={`w-8 shrink-0 text-center font-bold text-sm ${medal ? medal.text : 'text-ink-muted'}`}>
-                    {medal ? medal.emoji : rank}
+                  {/* Rank / medal icon */}
+                  <span className={`w-8 shrink-0 flex items-center justify-center font-bold text-sm ${medal ? medal.text : 'text-ink-muted'}`}>
+                    {MedalIcon ? <MedalIcon className="w-5 h-5" /> : rank}
                   </span>
 
                   {/* Player info */}
@@ -199,21 +295,27 @@ export default function RankingsPage() {
                     <p className="text-xs text-ink-muted truncate">{player.team_name}</p>
                   </div>
 
-                  {/* Value */}
-                  <span className={`shrink-0 text-lg font-bold tabular-nums ${medal ? medal.text : 'text-ink-primary'}`}>
-                    {stat.format(val)}
-                  </span>
+                  {/* Value + delta vs league leader */}
+                  <div className="shrink-0 text-right">
+                    <span className={`block text-lg font-bold tabular-nums leading-tight ${medal ? medal.text : 'text-ink-primary'}`}>
+                      {stat.format(val)}
+                    </span>
+                    <span className={`block text-xs tabular-nums font-medium ${rank === 1 ? 'text-ink-muted' : 'text-ink-secondary'}`}>
+                      {deltaStr}
+                    </span>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
 
-        {ranked.length > 30 && (
-          <p className="text-xs text-center text-ink-muted">Mostrando los 30 primeros de {ranked.length}</p>
+        {filteredRanked.length > 30 && (
+          <p className="text-xs text-center text-ink-muted">Mostrando los 30 primeros de {filteredRanked.length}</p>
         )}
 
       </div>
     </PageTransition>
   )
-}
+}
+
