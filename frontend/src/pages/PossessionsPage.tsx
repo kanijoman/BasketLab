@@ -1,6 +1,7 @@
 /**
- * PossessionsPage — Fase 3
- * Tabla de ritmo/eficiencia con cuartiles + scatter Ritmo × OER con 4 cuadrantes.
+ * PossessionsPage
+ * Tabla de ritmo/eficiencia con cuartiles + scatter Ritmo × OER + scatter % Rápidas × OER Rápidas.
+ * Los scatter muestran el logo FEB de cada equipo (fallback: abreviatura 3 letras).
  */
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -53,6 +54,20 @@ function numCol(
   }
 }
 
+/** Column for nullable numeric fields — shows em dash when value is null/undefined. */
+function numColOpt(key: string, header: string, decimals = 1): ColumnDef<PossessionStat, unknown> {
+  return {
+    id: key,
+    accessorKey: key,
+    header: tippedHeader(header),
+    cell: ({ getValue }) => {
+      const v = getValue() as number | null | undefined
+      if (v == null) return <span className="text-ink-disabled">—</span>
+      return fmt(v, decimals)
+    },
+  }
+}
+
 function buildCols(cv: CVMap | null): ColumnDef<PossessionStat, unknown>[] {
   return [
     {
@@ -69,10 +84,19 @@ function buildCols(cv: CVMap | null): ColumnDef<PossessionStat, unknown>[] {
     numCol('oer',                  'OER',   1, cv),
     numCol('der',                  'DER',   1, cv),
     numCol('net_rating',           'Net',   1, cv),
+    // Play-by-play derived columns
+    numColOpt('avg_duration',             'Tpo. Pos. (s)', 1),
+    numColOpt('pct_fast',                 '% Rápidas',    1),
+    numColOpt('pct_medium',               '% Medias',     1),
+    numColOpt('pct_slow',                 '% Lentas',     1),
+    numColOpt('oer_fast',                 'OER Rápidas',  1),
+    numColOpt('oer_medium',               'OER Medias',   1),
+    numColOpt('oer_slow',                 'OER Lentas',   1),
+    numColOpt('est_possessions_per_game', 'Est. Pos/40',  1),
   ]
 }
 
-const REVERSE_COLS = ['der']
+const REVERSE_COLS = ['der', 'pct_slow']
 
 // -- Quartile computation from data (no separate endpoint for possessions) ----
 
@@ -92,7 +116,11 @@ function computeQuartiles(data: PossessionStat[], key: keyof PossessionStat): [n
 }
 
 function buildQuartileMap(data: PossessionStat[]): QuartileMap {
-  const keys: (keyof PossessionStat)[] = ['possessions_per_game', 'pace', 'oer', 'der', 'net_rating']
+  const keys: (keyof PossessionStat)[] = [
+    'possessions_per_game', 'pace', 'oer', 'der', 'net_rating',
+    'avg_duration', 'pct_fast', 'pct_medium', 'pct_slow',
+    'oer_fast', 'oer_medium', 'oer_slow', 'est_possessions_per_game',
+  ]
   const map: QuartileMap = {}
   keys.forEach(k => { map[k as string] = computeQuartiles(data, k) })
   return map
@@ -105,7 +133,9 @@ function median(vals: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
 }
 
-// -- Custom scatter dot with team label ---------------------------------------
+// -- Team logo scatter dot (FEB logo, fallback to 3-letter abbreviation) ------
+
+const FEB_LOGO = (id: string) => `https://imagenes.feb.es/imagen.aspx?i=${id}&ti=1`
 
 interface DotProps {
   cx?: number
@@ -113,41 +143,161 @@ interface DotProps {
   payload?: PossessionStat
 }
 
-function TeamDot({ cx = 0, cy = 0, payload }: DotProps) {
+function TeamLogoDot({ cx = 0, cy = 0, payload }: DotProps) {
+  const [imgError, setImgError] = useState(false)
   if (!payload) return null
+
+  const teamId = payload.team_id
+  const initials = (payload.team_name ?? '').split(' ').filter(Boolean).slice(-1)[0]?.slice(0, 3).toUpperCase() ?? '?'
+  const r = 13
+
+  if (!teamId || imgError) {
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={r} fill="#1e3a5f" stroke="#3b82f6" strokeWidth={1} />
+        <text x={cx} y={cy + 4} textAnchor="middle" fontSize={8} fill="#d1d5db" style={{ pointerEvents: 'none' }}>
+          {initials}
+        </text>
+      </g>
+    )
+  }
+
+  const clipId = `logo-clip-${teamId}`
   return (
     <g>
-      <circle cx={cx} cy={cy} r={5} fill="#3b82f6" fillOpacity={0.85} stroke="#93c5fd" strokeWidth={1} />
-      <text
-        x={cx + 6} y={cy + 4}
-        fontSize={9} fill="#d1d5db"
-        style={{ pointerEvents: 'none' }}
-      >
-        {payload.team_name?.split(' ').slice(-1)[0]}
-      </text>
+      <defs>
+        <clipPath id={clipId}>
+          <circle cx={cx} cy={cy} r={r} />
+        </clipPath>
+      </defs>
+      <circle cx={cx} cy={cy} r={r} fill="#0f172a" stroke="#334155" strokeWidth={1} />
+      <image
+        href={FEB_LOGO(teamId)}
+        x={cx - r} y={cy - r}
+        width={r * 2} height={r * 2}
+        clipPath={`url(#${clipId})`}
+        onError={() => setImgError(true)}
+      />
     </g>
   )
 }
 
-function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: PossessionStat }> }) {
+function CustomTooltip({
+  active,
+  payload,
+  mode,
+}: {
+  active?: boolean
+  payload?: Array<{ payload: PossessionStat }>
+  mode: 'pace' | 'fast'
+}) {
   if (!active || !payload?.length) return null
   const d = payload[0].payload
+  const teamId = d.team_id
   return (
-    <div className="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-xs shadow-lg">
-      <p className="font-semibold text-ink-primary mb-1">{d.team_name as string}</p>
-      <p className="text-ink-secondary">Ritmo: <span className="text-ink-primary">{fmt(d.pace as number)}</span></p>
-      <p className="text-ink-secondary">OER: <span className="text-ink-primary">{fmt(d.oer as number)}</span></p>
-      <p className="text-ink-secondary">DER: <span className="text-ink-primary">{fmt(d.der as number)}</span></p>
-      <p className="text-ink-secondary">Net: <span className="text-ink-primary">{fmt(d.net_rating as number)}</span></p>
+    <div className="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-xs shadow-lg min-w-[140px]">
+      <div className="flex items-center gap-2 mb-2">
+        {teamId && (
+          <img
+            src={FEB_LOGO(teamId)}
+            alt=""
+            className="w-5 h-5 object-contain rounded-sm"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+          />
+        )}
+        <p className="font-semibold text-ink-primary leading-tight">{d.team_name}</p>
+      </div>
+      {mode === 'pace' ? (
+        <>
+          <p className="text-ink-secondary">Ritmo: <span className="text-ink-primary">{fmt(d.pace)}</span></p>
+          <p className="text-ink-secondary">OER: <span className="text-ink-primary">{fmt(d.oer)}</span></p>
+          <p className="text-ink-secondary">DER: <span className="text-ink-primary">{fmt(d.der)}</span></p>
+          <p className="text-ink-secondary">Net: <span className="text-ink-primary">{fmt(d.net_rating)}</span></p>
+        </>
+      ) : (
+        <>
+          <p className="text-ink-secondary">% Rápidas: <span className="text-ink-primary">{d.pct_fast != null ? fmt(d.pct_fast) + '%' : '—'}</span></p>
+          <p className="text-ink-secondary">OER Rápidas: <span className="text-ink-primary">{d.oer_fast != null ? fmt(d.oer_fast) : '—'}</span></p>
+          <p className="text-ink-secondary">% Medias: <span className="text-ink-primary">{d.pct_medium != null ? fmt(d.pct_medium) + '%' : '—'}</span></p>
+          <p className="text-ink-secondary">% Lentas: <span className="text-ink-primary">{d.pct_slow != null ? fmt(d.pct_slow) + '%' : '—'}</span></p>
+        </>
+      )}
+    </div>
+  )
+}
+
+// -- Reusable scatter card ----------------------------------------------------
+
+interface ScatterCardProps {
+  xKey: keyof PossessionStat
+  yKey: keyof PossessionStat
+  xLabel: string
+  yLabel: string
+  description: string
+  data: PossessionStat[]
+  mode: 'pace' | 'fast'
+}
+
+function ScatterCard({ xKey, yKey, xLabel, yLabel, description, data, mode }: ScatterCardProps) {
+  const xVals = useMemo(
+    () => data.map(d => d[xKey] as number).filter(v => v != null && !Number.isNaN(v)),
+    [data, xKey],
+  )
+  const yVals = useMemo(
+    () => data.map(d => d[yKey] as number).filter(v => v != null && !Number.isNaN(v)),
+    [data, yKey],
+  )
+  const medX = useMemo(() => median(xVals), [xVals])
+  const medY = useMemo(() => median(yVals), [yVals])
+
+  return (
+    <div className="card p-4">
+      <p className="text-sm text-ink-secondary mb-4">{description}</p>
+      <div className="grid grid-cols-2 gap-1 text-xs mb-3 max-w-sm ml-auto mr-0">
+        <span className="text-right text-yellow-500">Rápido + Eficiente →</span>
+        <span className="text-green-500">← Rápido – Ineficiente</span>
+        <span className="text-red-400">Lento + Eficiente →</span>
+        <span className="text-ink-secondary">← Lento – Ineficiente</span>
+      </div>
+      <ResponsiveContainer width="100%" height={420}>
+        <ScatterChart margin={{ top: 10, right: 30, bottom: 30, left: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <XAxis
+            type="number" dataKey={xKey as string} name={xLabel}
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 11, fill: '#6b7280' }}
+          >
+            <Label value={xLabel} position="insideBottom" offset={-15} fontSize={11} fill="#6b7280" />
+          </XAxis>
+          <YAxis
+            type="number" dataKey={yKey as string} name={yLabel}
+            domain={['auto', 'auto']}
+            tick={{ fontSize: 11, fill: '#6b7280' }}
+            width={45}
+          >
+            <Label value={yLabel} angle={-90} position="insideLeft" fontSize={11} fill="#6b7280" />
+          </YAxis>
+          <Tooltip content={<CustomTooltip mode={mode} />} />
+          {medX > 0 && <ReferenceLine x={medX} stroke="#555" strokeDasharray="5 4" />}
+          {medY > 0 && <ReferenceLine y={medY} stroke="#555" strokeDasharray="5 4" />}
+          <Scatter
+            data={data}
+            // @ts-ignore — recharts shape prop accepts render function
+            shape={(props: DotProps) => <TeamLogoDot {...props} />}
+          />
+        </ScatterChart>
+      </ResponsiveContainer>
     </div>
   )
 }
 
 // -- Component ----------------------------------------------------------------
 
+type Tab = 'table' | 'scatter' | 'scatter2'
+
 export default function PossessionsPage() {
   const { collection } = useCollection()
-  const [tab, setTab] = useState<'table' | 'scatter'>('table')
+  const [tab, setTab] = useState<Tab>('table')
 
   const { data: stats = [], isLoading } = useQuery<PossessionStat[]>({
     queryKey: ['possessions', collection?.name],
@@ -167,11 +317,17 @@ export default function PossessionsPage() {
   const cols = useMemo(() => buildCols(consistencyByName), [consistencyByName])
   const quartileMap = useMemo(() => buildQuartileMap(stats), [stats])
 
-  // Scatter quadrant medians
-  const paceVals = useMemo(() => stats.map(d => d.pace).filter(Boolean), [stats])
-  const oerVals  = useMemo(() => stats.map(d => d.oer).filter(Boolean), [stats])
-  const medPace  = useMemo(() => median(paceVals), [paceVals])
-  const medOer   = useMemo(() => median(oerVals), [oerVals])
+  // Fast-possession scatter — filter teams without PBP data
+  const statsWithPBP = useMemo(
+    () => stats.filter(d => d.pct_fast != null && d.oer_fast != null),
+    [stats],
+  )
+
+  const TABS: [Tab, string][] = [
+    ['table',    'Tabla'],
+    ['scatter',  'Scatter Ritmo × OER'],
+    ['scatter2', 'Scatter % Rápidas × OER'],
+  ]
 
   return (
     <PageTransition>
@@ -183,7 +339,7 @@ export default function PossessionsPage() {
           </div>
           {/* Tab toggle */}
           <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm">
-            {([['table', 'Tabla'], ['scatter', 'Scatter Ritmo × OER']] as const).map(([key, lbl]) => (
+            {TABS.map(([key, lbl]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -216,54 +372,26 @@ export default function PossessionsPage() {
             searchPlaceholder="Buscar equipo…"
             exportOptions={{ filename: `posesiones_${collection?.name}` }}
           />
+        ) : tab === 'scatter' ? (
+          <ScatterCard
+            xKey="pace"
+            yKey="oer"
+            xLabel="Ritmo (pos/P)"
+            yLabel="OER"
+            description="Ritmo (posesiones/partido) × OER (eficiencia ofensiva · pts/100 pos.) — líneas discontinuas = mediana de la liga"
+            data={stats}
+            mode="pace"
+          />
         ) : (
-          /* Scatter chart */
-          <div className="card p-4">
-            <p className="text-sm text-ink-secondary mb-4">
-              Ritmo (posesiones/partido) × OER (eficiencia ofensiva · pts/100 pos.)
-              — líneas discontinuas = mediana de la liga
-            </p>
-            {/* Quadrant labels */}
-            <div className="grid grid-cols-2 gap-1 text-xs text-ink-secondary mb-3 max-w-sm ml-auto mr-0">
-              <span className="text-right text-yellow-500">Rápido + Eficiente →</span>
-              <span className="text-green-500">← Rápido – Ineficiente</span>
-              <span className="text-red-400">Lento + Eficiente →</span>
-              <span className="text-ink-secondary">← Lento – Ineficiente</span>
-            </div>
-            <ResponsiveContainer width="100%" height={400}>
-              <ScatterChart margin={{ top: 10, right: 30, bottom: 30, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis
-                  type="number" dataKey="pace" name="Ritmo"
-                  domain={['auto', 'auto']}
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
-                >
-                  <Label value="Ritmo (pos/P)" position="insideBottom" offset={-15} fontSize={11} fill="#6b7280" />
-                </XAxis>
-                <YAxis
-                  type="number" dataKey="oer" name="OER"
-                  domain={['auto', 'auto']}
-                  tick={{ fontSize: 11, fill: '#6b7280' }}
-                  width={45}
-                >
-                  <Label value="OER" angle={-90} position="insideLeft" fontSize={11} fill="#6b7280" />
-                </YAxis>
-                <Tooltip content={<CustomTooltip />} />
-                {/* Quadrant reference lines at medians */}
-                {medPace > 0 && (
-                  <ReferenceLine x={medPace} stroke="#555" strokeDasharray="5 4" />
-                )}
-                {medOer > 0 && (
-                  <ReferenceLine y={medOer} stroke="#555" strokeDasharray="5 4" />
-                )}
-                <Scatter
-                  data={stats}
-                  // @ts-ignore — recharts shape prop accepts render function
-                  shape={(props: DotProps) => <TeamDot {...props} />}
-                />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
+          <ScatterCard
+            xKey="pct_fast"
+            yKey="oer_fast"
+            xLabel="% Posesiones Rápidas (≤8s)"
+            yLabel="OER Rápidas"
+            description="% de posesiones rápidas (≤8s) × eficiencia ofensiva en esas posesiones — líneas discontinuas = mediana de la liga"
+            data={statsWithPBP}
+            mode="fast"
+          />
         )}
       </div>
     </PageTransition>

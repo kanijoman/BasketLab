@@ -440,11 +440,22 @@ export interface RadarData {
 
 export interface PossessionStat {
   team_name: string
+  team_id?: string
   possessions_per_game: number
   points_per_100: number
   oer: number
   der: number
   pace: number
+  net_rating: number
+  total_games: number
+  avg_duration: number | null
+  pct_fast: number | null
+  pct_medium: number | null
+  pct_slow: number | null
+  oer_fast: number | null
+  oer_medium: number | null
+  oer_slow: number | null
+  est_possessions_per_game: number | null
   [key: string]: unknown
 }
 

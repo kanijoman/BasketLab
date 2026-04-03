@@ -12,12 +12,17 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 import numpy as np
+from cachetools import TTLCache
 
 if TYPE_CHECKING:
     from database import MongoDBHandler
 
 from src.database.team_stats_aggregator import TeamStatsAggregator
+from src.ui.team_utils import get_available_teams_from_collection
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+
+# Cache possession stats per collection for 1 hour — play-by-play analysis is expensive
+_possession_cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
 
 
 class TeamStatsService:
@@ -321,30 +326,85 @@ class TeamStatsService:
     # ------------------------------------------------------------------
 
     def get_possession_stats(self, collection_name: str) -> List[Dict[str, Any]]:
-        """Return per-team possession efficiency stats (OER, DER, Pace).
+        """Return per-team possession efficiency stats enriched with play-by-play
+        per-category breakdown (fast/medium/slow possessions, OER per category,
+        estimated possessions per 40 min).
 
-        Derives all values from the existing team stats aggregation — no extra
-        DB query needed.  OER and DER are the ``offensive_rating`` and
-        ``defensive_rating`` already computed by the pipeline; Pace is
-        ``possessions_per_game``.
+        Results are cached per collection for 1 hour (TTLCache) because the
+        play-by-play analysis is expensive on first call.
 
         Args:
             collection_name: MongoDB collection name.
 
         Returns:
             List of dicts with ``team_name``, ``pace``, ``oer``, ``der``,
-            ``net_rating``, ``possessions_per_game``.
+            ``net_rating``, ``possessions_per_game``, plus play-by-play fields
+            ``avg_duration``, ``pct_fast``, ``pct_medium``, ``pct_slow``,
+            ``oer_fast``, ``oer_medium``, ``oer_slow``,
+            ``est_possessions_per_game`` (all ``None`` when unavailable).
         """
+        cached = _possession_cache.get(collection_name)
+        if cached is not None:
+            return cached
+
         raw = self._db.get_team_stats(collection_name) or []
+
+        # Build team_name -> team_id map once for all teams
+        teams_info = get_available_teams_from_collection(self._db, collection_name)
+        name_to_id = {t["name"]: t["id"] for t in teams_info}
+
         result = []
         for t in raw:
-            result.append({
-                "team_name":           t.get("team_name", ""),
+            team_name = t.get("team_name", "")
+            team_id = name_to_id.get(team_name)
+
+            entry: Dict[str, Any] = {
+                "team_name":            team_name,
+                "team_id":              str(team_id) if team_id else None,
                 "possessions_per_game": round(float(t.get("possessions_per_game") or 0), 2),
-                "pace":                round(float(t.get("possessions_per_game") or 0), 2),
-                "oer":                 round(float(t.get("offensive_rating") or 0), 2),
-                "der":                 round(float(t.get("defensive_rating") or 0), 2),
-                "net_rating":          round(float(t.get("net_rating") or 0), 2),
-                "total_games":         int(t.get("total_games") or 0),
-            })
+                "pace":                 round(float(t.get("possessions_per_game") or 0), 2),
+                "oer":                  round(float(t.get("offensive_rating") or 0), 2),
+                "der":                  round(float(t.get("defensive_rating") or 0), 2),
+                "net_rating":           round(float(t.get("net_rating") or 0), 2),
+                "total_games":          int(t.get("total_games") or 0),
+                # Play-by-play derived fields — None when no PBP data available
+                "avg_duration":           None,
+                "pct_fast":               None,
+                "pct_medium":             None,
+                "pct_slow":               None,
+                "oer_fast":               None,
+                "oer_medium":             None,
+                "oer_slow":               None,
+                "est_possessions_per_game": None,
+            }
+
+            if team_id:
+                poss = self._db.repository.get_team_possession_stats(
+                    collection_name, team_id
+                )
+                total = poss.get("total_possessions", 0) if poss else 0
+                if total > 0:
+                    avg_dur = poss["avg_duration"]
+                    by_dur  = poss.get("possessions_by_duration", {})
+                    fast    = by_dur.get("<=8s",  {})
+                    medium  = by_dur.get("8-16s", {})
+                    slow    = by_dur.get(">16s",  {})
+
+                    def _pct(count: int) -> Optional[float]:
+                        return round(count / total * 100, 1) if total > 0 else None
+
+                    entry["avg_duration"]             = avg_dur
+                    entry["pct_fast"]                 = _pct(fast.get("count", 0))
+                    entry["pct_medium"]               = _pct(medium.get("count", 0))
+                    entry["pct_slow"]                 = _pct(slow.get("count", 0))
+                    entry["oer_fast"]                 = fast.get("oer")
+                    entry["oer_medium"]               = medium.get("oer")
+                    entry["oer_slow"]                 = slow.get("oer")
+                    entry["est_possessions_per_game"] = (
+                        round(2400 / avg_dur / 2, 1) if avg_dur and avg_dur > 0 else None
+                    )
+
+            result.append(entry)
+
+        _possession_cache[collection_name] = result
         return result
