@@ -123,15 +123,31 @@ class LineupExtractor:
             # FBCYL format
             stats = self.game_data.get('stats', {})
             teams = stats.get('teams', [])
-            
+
+            try:
+                team_id_int = int(team_id)
+            except (ValueError, TypeError):
+                team_id_int = None
+
             for team in teams:
-                # Match by teamIdIntern (used in moves) or teamIdExtern
-                if team.get('teamIdIntern') == team_id or team.get('teamIdExtern') == team_id:
+                intern_id = team.get('teamIdIntern')
+                extern_id = team.get('teamIdExtern')
+                match = (
+                    str(intern_id) == str(team_id) or
+                    str(extern_id) == str(team_id) or
+                    (team_id_int is not None and (intern_id == team_id_int or extern_id == team_id_int))
+                )
+                if match:
                     for player in team.get('players', []):
-                        # Use actorId for single-game analysis
-                        player_id = player.get('actorId')
-                        if player_id:
-                            players.add(str(player_id))
+                        # Use licenseId (persistent across games) via the analyzer's
+                        # actorId→licenseId map; fall back to actorId if not found.
+                        actor_id = player.get('actorId')
+                        if actor_id:
+                            player_key = (
+                                self.analyzer._fbcyl_actor_to_license.get(actor_id)
+                                or str(actor_id)
+                            )
+                            players.add(player_key)
                     break
         else:
             # FEB format

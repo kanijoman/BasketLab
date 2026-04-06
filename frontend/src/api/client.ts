@@ -154,15 +154,54 @@ export const getPlayersTogether = (collection: string, p1: string, p2: string) =
 
 // ── Lineups ───────────────────────────────────────────────────────────────────
 
+export const LINEUP_STAT_GROUPS: Array<{
+  label: string
+  options: Array<{ key: string; label: string }>
+}> = [
+  {
+    label: 'General',
+    options: [
+      { key: 'net_rating',     label: 'Net Rating' },
+      { key: 'plus_minus',     label: 'Diferencial (+/-)' },
+      { key: 'points_for',     label: 'Puntos a favor' },
+      { key: 'points_against', label: 'Puntos en contra' },
+      { key: 'ast',            label: 'Asistencias' },
+      { key: 'trb',            label: 'Rebotes totales' },
+    ],
+  },
+  {
+    label: 'Avanzadas / Four Factors',
+    options: [
+      { key: 'ortg',    label: 'Rating Ofensivo (ORtg)' },
+      { key: 'drtg',    label: 'Rating Defensivo (DRtg)' },
+      { key: 'efg_pct', label: 'eFG%' },
+      { key: 'tov_pct', label: 'TOV%' },
+      { key: 'orb_pct', label: 'ORB%' },
+      { key: 'ftr',     label: 'FT Rate (FTr)' },
+    ],
+  },
+]
+
 export const getLineupAnalysis = (
   collection: string,
   teamId: string,
   teamName: string,
   size = 5,
-) =>
-  get<LineupRow[]>(
-    `/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?team_name=${encodeURIComponent(teamName)}&size=${size}`,
+  stat = 'net_rating',
+  period = 0,
+  includeGameLog = false,
+) => {
+  const qs = new URLSearchParams({
+    team_name: teamName,
+    size: String(size),
+    stat,
+    period: String(period),
+    include_game_log: String(includeGameLog),
+  })
+  return get<LineupRow[]>(
+    `/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?${qs}`,
   )
+}
 
 // ── Shot charts ───────────────────────────────────────────────────────────────
 
@@ -256,6 +295,7 @@ export interface TeamStat {
   // identity
   _id?: string
   team_name: string
+  team_id?: number | string
   // volume
   total_games: number
   games_home: number
@@ -416,13 +456,43 @@ export interface PlayersTogetherResult {
   apart: InOutStatBlock
 }
 
+export interface GameLogEntry {
+  date: string
+  net_rating: number
+  ortg: number
+  drtg: number
+  plus_minus: number
+  points_for: number
+  points_against: number
+  efg_pct: number
+  tov_pct: number
+  orb_pct: number
+  ftr: number
+  ast: number
+  trb: number
+  minutes: number
+}
+
 export interface LineupRow {
   players: string[]
+  player_ids?: string[]
+  player_photo_urls?: string[]
   minutes: number
+  games_played?: number
+  avg_minutes_per_game?: number
   plus_minus: number
   points_for: number
   points_against: number
   net_rating: number
+  ortg?: number
+  drtg?: number
+  efg_pct?: number
+  tov_pct?: number
+  orb_pct?: number
+  ftr?: number
+  ast?: number
+  trb?: number
+  game_log?: GameLogEntry[]
   [key: string]: unknown
 }
 

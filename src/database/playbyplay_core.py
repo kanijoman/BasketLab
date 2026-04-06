@@ -22,6 +22,15 @@ class PlayByPlayAnalyzer:
         if is_fbcyl:
             # FBCYL: moves are directly in 'moves' key (list)
             self.lines = game_data.get('moves', [])
+            # Build actorId → licenseId map for stable cross-game player identity.
+            # actorId is game-scoped (changes every game); licenseId is the
+            # persistent FEB player identifier and must be used as lineup keys.
+            self._fbcyl_actor_to_license: Dict = {}
+            for move in self.lines:
+                aid = move.get('actorId')
+                lid = move.get('licenseId')
+                if aid is not None and lid is not None:
+                    self._fbcyl_actor_to_license[aid] = str(lid)
         else:
             # FEB: play-by-play in PLAYBYPLAY.LINES
             self.playbyplay = game_data.get('PLAYBYPLAY', {})
@@ -137,9 +146,13 @@ class PlayByPlayAnalyzer:
             for team in teams:
                 players = team.get('players', [])
                 for player in players:
-                    player_id = player.get('actorId')
-                    if not player_id:
+                    actor_id = player.get('actorId')
+                    if not actor_id:
                         continue
+
+                    # Use licenseId (persistent) instead of actorId (game-scoped)
+                    # so that lineup keys remain stable across games.
+                    player_id = self._fbcyl_actor_to_license.get(actor_id) or str(actor_id)
 
                     in_outs_list = player.get('inOutsList', [])
                     

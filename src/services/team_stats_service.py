@@ -89,6 +89,14 @@ class TeamStatsService:
         opponent_stats = self._db.get_opponent_stats(
             collection_name, date_filter, venue_filter, result_filter
         )
+        # FEB pipelines use _id as the team identifier (group key); normalise so
+        # every row always carries an explicit team_id field for the frontend.
+        for row in team_stats or []:
+            if not row.get("team_id"):
+                row["team_id"] = row.get("_id")
+        for row in opponent_stats or []:
+            if not row.get("team_id"):
+                row["team_id"] = row.get("_id")
         return {"team_stats": team_stats or [], "opponent_stats": opponent_stats or []}
 
     def get_quartiles(self, collection_name: str) -> Dict[str, Dict[str, float]]:

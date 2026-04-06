@@ -59,6 +59,12 @@ Thumbs.db
 *.log
 logs/
 
+# Dev server redirect logs (created when backend is started with -Redirect*)
+api_out*.txt
+api_err*.txt
+debug*.txt
+debug*.py
+
 # Database
 *.db
 *.sqlite

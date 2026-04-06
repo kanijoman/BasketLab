@@ -265,7 +265,10 @@ class TestLineupAnalysisRepository(unittest.TestCase):
         }
         
         # Mock _get_player_names_for_lineup
-        self.repo._get_player_names_for_lineup = Mock(return_value=['Player1', 'Player2', 'Player3', 'Player4', 'Player5'])
+        self.repo._get_player_names_for_lineup = Mock(return_value=(
+            ['Player1', 'Player2', 'Player3', 'Player4', 'Player5'],
+            [None, None, None, None, None]
+        ))
         
         result = self.repo.get_lineup_analysis(
             'test_collection',
@@ -315,7 +318,10 @@ class TestLineupAnalysisRepository(unittest.TestCase):
             'ast': 0, 'stl': 0, 'blk': 0, 'tov': 0, 'pf': 0
         }
         
-        self.repo._get_player_names_for_lineup = Mock(return_value=['P1', 'P2', 'P3', 'P4', 'P5'])
+        self.repo._get_player_names_for_lineup = Mock(return_value=(
+            ['P1', 'P2', 'P3', 'P4', 'P5'],
+            [None, None, None, None, None]
+        ))
         
         result = self.repo.get_lineup_analysis(
             'test_collection',

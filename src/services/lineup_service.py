@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 
 from src.utils.collection_utils import is_fbcyl as _is_fbcyl
 
+# Stats where lower values are better (sort ascending)
+REVERSE_STATS = {'drtg', 'tov_pct'}
+
 
 class LineupService:
     """High-level service for lineup (player combination) analysis.
@@ -41,28 +44,48 @@ class LineupService:
         team_id: str,
         team_name: str,
         combination_size: int = 5,
+        stat: str = "net_rating",
         date_filter: Optional[Dict] = None,
+        include_game_log: bool = False,
         progress_callback: Optional[Callable] = None,
     ) -> List[Dict]:
-        """Return best/worst player combinations for a team.
+        """Return player combinations for a team sorted by the chosen stat.
 
         Args:
             collection_name: MongoDB collection name.
             team_id: Team identifier (FEB numeric string or FBCYL UUID-like).
             team_name: Human-readable team name.
             combination_size: Number of players per lineup (default 5).
-            date_filter: Optional date range filter.
+            stat: Stat key to sort by (default ``net_rating``).
+            date_filter: Optional date range filter dict.
+            include_game_log: Include per-game breakdown in each lineup dict.
             progress_callback: Optional ``(current, total) -> None`` callback.
 
         Returns:
-            List of lineup stat dicts sorted by net rating (desc), or
-            empty list on failure.
+            List of lineup stat dicts sorted by ``stat``, or empty list on failure.
         """
         fbcyl = _is_fbcyl(collection_name)
-        return self._db.get_lineup_analysis(
+        results = self._db.get_lineup_analysis(
             collection_name, team_id, team_name,
             combination_size=combination_size,
             date_filter=date_filter,
             is_fbcyl=fbcyl,
+            include_game_log=include_game_log,
             progress_callback=progress_callback,
         ) or []
+
+        # Re-sort by requested stat (repository always sorts by net_rating)
+        reverse = stat not in REVERSE_STATS
+        results.sort(key=lambda x: x.get(stat) or 0, reverse=reverse)
+
+        # Normalise field name: repository uses 'player_names', frontend expects 'players'
+        for row in results:
+            if 'players' not in row and 'player_names' in row:
+                row['players'] = row['player_names']
+            # player_photo_urls is already set by the repository:
+            #   FEB  → BOXSCORE.TEAM.PLAYER[].logo  (https://imagenes.feb.es/foto.aspx?c=...)
+            #   FBCYL → list of None  (no reliable CDN; frontend uses initials fallback)
+            if 'player_photo_urls' not in row:
+                row['player_photo_urls'] = [None] * len(row.get('players') or [])
+
+        return results

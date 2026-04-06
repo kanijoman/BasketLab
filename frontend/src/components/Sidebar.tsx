@@ -43,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: FileText,         label: 'Informe semanal',      subPath: 'report' },
   { icon: Activity,         label: 'Posesiones',           subPath: 'possessions' },
   { icon: ArrowLeftRight,   label: 'IN/OUT',               subPath: 'inout' },
-  { icon: Users2,           label: 'Quintetos',            subPath: 'lineups' },
+  { icon: Users2,           label: 'Combinaciones',        subPath: 'lineups' },
 ]
 
 const STORAGE_KEY = 'sidebar-collapsed'
