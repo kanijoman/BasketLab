@@ -1,7 +1,7 @@
 """UI Builder for IN/OUT Analysis Window - Extracts UI construction logic."""
 
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
-                              QLabel, QPushButton, QTableWidget, QHeaderView)
+                              QLabel, QLineEdit, QPushButton, QTableWidget, QHeaderView)
 
 
 class InOutUIBuilder:
@@ -57,6 +57,34 @@ class InOutUIBuilder:
             combo.setToolTip(tooltip)
             
         return label, combo
+
+    @staticmethod
+    def create_searchable_player_selector(label_text: str, tooltip: str = "") -> tuple:
+        """
+        Create a label, search input and combobox group for player selection.
+
+        Args:
+            label_text: Text for the label
+            tooltip: Optional tooltip for the combobox
+
+        Returns:
+            Tuple of (QLabel, QLineEdit, QComboBox)
+        """
+        label = QLabel(label_text)
+        label.setStyleSheet("font-weight: bold;")
+
+        search = QLineEdit()
+        search.setPlaceholderText("Buscar jugador...")
+        search.setMinimumWidth(120)
+        search.setMaximumWidth(160)
+        search.setToolTip("Escriba para filtrar jugadores")
+
+        combo = QComboBox()
+        combo.setMaxVisibleItems(20)
+        if tooltip:
+            combo.setToolTip(tooltip)
+
+        return label, search, combo
     
     @staticmethod
     def create_result_table(column_count: int, headers: list) -> QTableWidget:
@@ -99,36 +127,37 @@ class InOutUIBuilder:
         
         # Player selector
         selector_layout = QHBoxLayout()
-        player_label, player_combo = InOutUIBuilder.create_combo_with_label(
+        player_label, player_search, player_combo = InOutUIBuilder.create_searchable_player_selector(
             "Jugador:", "Seleccione jugador para análisis IN/OUT"
         )
         selector_layout.addWidget(player_label)
+        selector_layout.addWidget(player_search)
         selector_layout.addWidget(player_combo)
-        
+
         calc_button = QPushButton("Calcular IN/OUT")
         calc_button.setStyleSheet(InOutUIBuilder.BUTTON_STYLE_GREEN)
         calc_button.clicked.connect(parent._on_inout_calculate)
         selector_layout.addWidget(calc_button)
-        
+
         export_button = QPushButton("📤 Exportar")
         export_button.setStyleSheet(InOutUIBuilder.BUTTON_STYLE_BLUE)
         export_button.setToolTip("Exportar tabla en CSV/PNG/PDF")
         selector_layout.addWidget(export_button)
-        
+
         selector_layout.addStretch()
         layout.addLayout(selector_layout)
-        
+
         # Result table
         table = InOutUIBuilder.create_result_table(
             4, ["Estadística", "IN (Equipo)", "OUT (Equipo)", "Δ %"]
         )
         layout.addWidget(table)
-        
+
         # Info label
         info_label = QLabel("")
         layout.addWidget(info_label)
-        
-        return tab, player_combo, calc_button, table, info_label, export_button
+
+        return tab, player_search, player_combo, calc_button, table, info_label, export_button
     
     @staticmethod
     def create_invin_tab_ui(parent) -> tuple:
@@ -157,43 +186,45 @@ class InOutUIBuilder:
         
         # Player selectors
         selector_layout = QHBoxLayout()
-        
-        player1_label, player1_combo = InOutUIBuilder.create_combo_with_label(
+
+        player1_label, player1_search, player1_combo = InOutUIBuilder.create_searchable_player_selector(
             "Jugador 1:", "Primer jugador para comparar"
         )
         selector_layout.addWidget(player1_label)
+        selector_layout.addWidget(player1_search)
         selector_layout.addWidget(player1_combo)
-        
-        player2_label, player2_combo = InOutUIBuilder.create_combo_with_label(
+
+        player2_label, player2_search, player2_combo = InOutUIBuilder.create_searchable_player_selector(
             "Jugador 2:", "Segundo jugador para comparar"
         )
         selector_layout.addWidget(player2_label)
+        selector_layout.addWidget(player2_search)
         selector_layout.addWidget(player2_combo)
-        
+
         calc_button = QPushButton("Comparar")
         calc_button.setStyleSheet(InOutUIBuilder.BUTTON_STYLE_GREEN)
         calc_button.clicked.connect(parent._on_invin_calculate)
         selector_layout.addWidget(calc_button)
-        
+
         export_button = QPushButton("📤 Exportar")
         export_button.setStyleSheet(InOutUIBuilder.BUTTON_STYLE_BLUE)
         export_button.setToolTip("Exportar tabla en CSV/PNG/PDF")
         selector_layout.addWidget(export_button)
-        
+
         selector_layout.addStretch()
         layout.addLayout(selector_layout)
-        
+
         # Result table
         table = InOutUIBuilder.create_result_table(
             4, ["Estadística", "Jugador 1 IN", "Jugador 2 IN", "Δ %"]
         )
         layout.addWidget(table)
-        
+
         # Info label
         info_label = QLabel("")
         layout.addWidget(info_label)
-        
-        return tab, player1_combo, player2_combo, calc_button, table, info_label, export_button
+
+        return tab, player1_search, player1_combo, player2_search, player2_combo, calc_button, table, info_label, export_button
     
     @staticmethod
     def create_comparison_tab_ui(parent) -> tuple:
@@ -223,51 +254,54 @@ class InOutUIBuilder:
         
         # Player selectors
         selector_layout = QHBoxLayout()
-        
+
         # Main player
-        main_label, main_combo = InOutUIBuilder.create_combo_with_label(
+        main_label, main_search, main_combo = InOutUIBuilder.create_searchable_player_selector(
             "Jugador Principal:", "Seleccione el jugador principal"
         )
         selector_layout.addWidget(main_label)
+        selector_layout.addWidget(main_search)
         selector_layout.addWidget(main_combo)
-        
+
         # Teammate A
-        a_label, a_combo = InOutUIBuilder.create_combo_with_label(
+        a_label, a_search, a_combo = InOutUIBuilder.create_searchable_player_selector(
             "Compañero A:", "Seleccione el primer compañero"
         )
         selector_layout.addWidget(a_label)
+        selector_layout.addWidget(a_search)
         selector_layout.addWidget(a_combo)
-        
+
         # Teammate B
-        b_label, b_combo = InOutUIBuilder.create_combo_with_label(
+        b_label, b_search, b_combo = InOutUIBuilder.create_searchable_player_selector(
             "Compañero B:", "Seleccione el segundo compañero"
         )
         selector_layout.addWidget(b_label)
+        selector_layout.addWidget(b_search)
         selector_layout.addWidget(b_combo)
-        
+
         # Calculate button
         calc_button = QPushButton("Comparar")
         calc_button.setStyleSheet(InOutUIBuilder.BUTTON_STYLE_GREEN)
         calc_button.clicked.connect(parent._on_comparison_calculate)
         selector_layout.addWidget(calc_button)
-        
+
         export_button = QPushButton("📤 Exportar")
         export_button.setStyleSheet(InOutUIBuilder.BUTTON_STYLE_BLUE)
         export_button.setToolTip("Exportar tabla en CSV/PNG/PDF")
         selector_layout.addWidget(export_button)
-        
+
         selector_layout.addStretch()
         layout.addLayout(selector_layout)
-        
+
         # Result table
         table = InOutUIBuilder.create_result_table(
             4, ["Estadística", "Con Compañero A", "Con Compañero B", "Δ %"]
         )
         layout.addWidget(table)
-        
+
         # Info label
         info_label = QLabel("")
         layout.addWidget(info_label)
-        
-        return (tab, main_combo, a_combo, b_combo,
+
+        return (tab, main_search, main_combo, a_search, a_combo, b_search, b_combo,
                 calc_button, table, info_label, export_button)

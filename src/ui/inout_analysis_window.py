@@ -126,24 +126,45 @@ class InOutAnalysisWindow(QMainWindow):
         
     def _create_inout_tab(self) -> QWidget:
         """Create the traditional IN/OUT analysis tab."""
-        (tab, self.inout_player_combo, self.inout_calc_button,
+        (tab, self.inout_search, self.inout_player_combo, self.inout_calc_button,
          self.inout_table, self.inout_info_label, self.inout_export_button) = InOutUIBuilder.create_inout_tab_ui(self)
         self.inout_export_button.clicked.connect(self._export_inout_stats)
+        self.inout_search.textChanged.connect(
+            lambda text: self._filter_players_combo(text, self.inout_player_combo)
+        )
         return tab
         
     def _create_invin_tab(self) -> QWidget:
         """Create the IN vs IN comparison tab."""
-        (tab, self.invin_player1_combo, self.invin_player2_combo, self.invin_calc_button,
+        (tab, self.invin_search1, self.invin_player1_combo,
+         self.invin_search2, self.invin_player2_combo, self.invin_calc_button,
          self.invin_table, self.invin_info_label, self.invin_export_button) = InOutUIBuilder.create_invin_tab_ui(self)
         self.invin_export_button.clicked.connect(self._export_invin_stats)
+        self.invin_search1.textChanged.connect(
+            lambda text: self._filter_players_combo(text, self.invin_player1_combo)
+        )
+        self.invin_search2.textChanged.connect(
+            lambda text: self._filter_players_combo(text, self.invin_player2_combo)
+        )
         return tab
         
     def _create_comparison_tab(self) -> QWidget:
         """Create the teammate comparison tab."""
-        (tab, self.main_player_combo, self.teammate_a_combo, self.teammate_b_combo,
+        (tab, self.main_search, self.main_player_combo,
+         self.teammate_a_search, self.teammate_a_combo,
+         self.teammate_b_search, self.teammate_b_combo,
          self.comparison_calc_button, self.comparison_table,
          self.comparison_info_label, self.comparison_export_button) = InOutUIBuilder.create_comparison_tab_ui(self)
         self.comparison_export_button.clicked.connect(self._export_comparison_stats)
+        self.main_search.textChanged.connect(
+            lambda text: self._filter_players_combo(text, self.main_player_combo)
+        )
+        self.teammate_a_search.textChanged.connect(
+            lambda text: self._filter_players_combo(text, self.teammate_a_combo)
+        )
+        self.teammate_b_search.textChanged.connect(
+            lambda text: self._filter_players_combo(text, self.teammate_b_combo)
+        )
         return tab
         
     def _load_team_players(self):
@@ -178,12 +199,32 @@ class InOutAnalysisWindow(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Error", f"Error al cargar jugadores: {e}")
             
+    def _filter_players_combo(self, search_text: str, combo):
+        """Filter combo box items by player name substring (case-insensitive)."""
+        team_name = self.team_combo.currentText()
+        players = self.team_players.get(team_name, [])
+        search_lower = search_text.lower().strip()
+
+        combo.blockSignals(True)
+        combo.clear()
+        for player_name, player_id in players:
+            if not search_lower or search_lower in player_name.lower():
+                combo.addItem(player_name, player_id)
+        combo.blockSignals(False)
+
     def _on_team_changed(self):
         """Handle team selection change."""
         team_name = self.team_combo.currentText()
         if not team_name:
             return
             
+        # Clear all search inputs and player combos
+        for search in (self.inout_search, self.invin_search1, self.invin_search2,
+                       self.main_search, self.teammate_a_search, self.teammate_b_search):
+            search.blockSignals(True)
+            search.clear()
+            search.blockSignals(False)
+
         # Clear all player combos
         self.inout_player_combo.clear()
         self.invin_player1_combo.clear()

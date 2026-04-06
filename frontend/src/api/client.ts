@@ -368,6 +368,34 @@ export interface InOutStatBlock {
   points_against: number
   minutes: number
   net_rating?: number
+  offensive_rating?: number
+  defensive_rating?: number
+  possessions?: number
+  possessions_per_40?: number
+  efg_percentage?: number
+  true_shooting?: number
+  fg2_percentage?: number
+  fg3_percentage?: number
+  ft_percentage?: number
+  three_point_rate?: number
+  free_throw_rate?: number
+  assist_rate?: number
+  turnover_rate?: number
+  offensive_rebound_rate?: number
+  defensive_rebound_rate?: number
+  fg2_made?: number
+  fg2_attempts?: number
+  fg3_made?: number
+  fg3_attempts?: number
+  ft_made?: number
+  ft_attempts?: number
+  assists?: number
+  steals?: number
+  blocks?: number
+  turnovers?: number
+  fouls?: number
+  off_rebounds?: number
+  def_rebounds?: number
   [key: string]: unknown
 }
 

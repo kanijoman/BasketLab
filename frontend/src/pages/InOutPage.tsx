@@ -2,7 +2,7 @@
  * InOutPage — Fase 4
  * Impacto de jugadores dentro/fuera de la cancha con cards ON/OFF.
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeftRight, Users } from 'lucide-react'
 
@@ -41,19 +41,80 @@ function DeltaBar({ value, label }: { value: number; label: string }) {
   )
 }
 
-function StatCard({ label, block, accent }: { label: string; block: InOutStatBlock; accent: string }) {
+function fmt(v: number | undefined, dec = 1): string {
+  return v != null ? v.toFixed(dec) : '—'
+}
+
+function StatRow({ label, val }: { label: string; val: string }) {
   return (
-    <div className={`card p-4 flex-1 border-t-2 ${accent}`}>
-      <h3 className="text-sm font-semibold text-ink-primary mb-3">{label}</h3>
-      <div className="space-y-1.5 text-sm">
-        <div className="flex justify-between"><span className="text-ink-secondary">Pts a favor</span><span className="font-mono text-ink-primary">{block.points_for?.toFixed(1) ?? '—'}</span></div>
-        <div className="flex justify-between"><span className="text-ink-secondary">Pts en contra</span><span className="font-mono text-ink-primary">{block.points_against?.toFixed(1) ?? '—'}</span></div>
-        <div className="flex justify-between"><span className="text-ink-secondary">Net Rating</span>
-          <span className={`font-mono font-semibold ${(block.net_rating ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {block.net_rating != null ? (block.net_rating >= 0 ? '+' : '') + block.net_rating.toFixed(1) : '—'}
-          </span>
+    <div className="flex justify-between text-sm">
+      <span className="text-ink-secondary">{label}</span>
+      <span className="font-mono text-ink-primary">{val}</span>
+    </div>
+  )
+}
+
+function StatCard({ label, block, accent }: { label: string; block: InOutStatBlock; accent: string }) {
+  const nr = block.net_rating ?? 0
+  return (
+    <div className={`card p-4 flex-1 border-t-2 ${accent} space-y-3`}>
+      <h3 className="text-sm font-semibold text-ink-primary">{label}</h3>
+
+      {/* Ratings */}
+      <div>
+        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Rating</p>
+        <div className="space-y-0.5">
+          <div className="flex justify-between text-sm">
+            <span className="text-ink-secondary">Net Rating</span>
+            <span className={`font-mono font-semibold ${nr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {nr >= 0 ? '+' : ''}{fmt(block.net_rating)}
+            </span>
+          </div>
+          <StatRow label="ORtg" val={fmt(block.offensive_rating)} />
+          <StatRow label="DRtg" val={fmt(block.defensive_rating)} />
+          <StatRow label="Poss/40min" val={fmt(block.possessions_per_40)} />
         </div>
-        <div className="flex justify-between"><span className="text-ink-secondary">Minutos</span><span className="font-mono text-ink-primary">{block.minutes?.toFixed(0) ?? '—'}</span></div>
+      </div>
+
+      {/* Shooting */}
+      <div>
+        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Tiro</p>
+        <div className="space-y-0.5">
+          <StatRow label="Pts a favor"  val={fmt(block.points_for)} />
+          <StatRow label="Pts en contra" val={fmt(block.points_against)} />
+          <StatRow label="eFG%"  val={`${fmt(block.efg_percentage)}%`} />
+          <StatRow label="TS%"   val={`${fmt(block.true_shooting)}%`} />
+          <StatRow label="T2"    val={`${block.fg2_made ?? '—'}/${block.fg2_attempts ?? '—'} (${fmt(block.fg2_percentage)}%)`} />
+          <StatRow label="T3"    val={`${block.fg3_made ?? '—'}/${block.fg3_attempts ?? '—'} (${fmt(block.fg3_percentage)}%)`} />
+          <StatRow label="TL"    val={`${block.ft_made ?? '—'}/${block.ft_attempts ?? '—'} (${fmt(block.ft_percentage)}%)`} />
+          <StatRow label="3Pr"   val={`${fmt(block.three_point_rate)}%`} />
+          <StatRow label="FTr"   val={`${fmt(block.free_throw_rate)}%`} />
+        </div>
+      </div>
+
+      {/* Rebounding */}
+      <div>
+        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Rebotes</p>
+        <div className="space-y-0.5">
+          <StatRow label="OR%"  val={`${fmt(block.offensive_rebound_rate)}%`} />
+          <StatRow label="DR%"  val={`${fmt(block.defensive_rebound_rate)}%`} />
+          <StatRow label="REB-O" val={String(block.off_rebounds ?? '—')} />
+          <StatRow label="REB-D" val={String(block.def_rebounds ?? '—')} />
+        </div>
+      </div>
+
+      {/* Other */}
+      <div>
+        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Otros</p>
+        <div className="space-y-0.5">
+          <StatRow label="%AST"  val={`${fmt(block.assist_rate)}%`} />
+          <StatRow label="%TO"   val={`${fmt(block.turnover_rate)}%`} />
+          <StatRow label="AST"   val={String(block.assists ?? '—')} />
+          <StatRow label="TOV"   val={String(block.turnovers ?? '—')} />
+          <StatRow label="STL"   val={String(block.steals ?? '—')} />
+          <StatRow label="BLK"   val={String(block.blocks ?? '—')} />
+          <StatRow label="Minutos" val={fmt(block.minutes, 0)} />
+        </div>
       </div>
     </div>
   )
@@ -62,15 +123,50 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
 function PlayerSelect({
   label, value, onChange, players,
 }: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[] }) {
+  const [nameFilter, setNameFilter] = useState('')
+  const [teamFilter, setTeamFilter] = useState('')
+
+  const teams = useMemo(
+    () => Array.from(new Set(players.map(p => (p.team_name ?? '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [players],
+  )
+
+  const filtered = useMemo(
+    () => players.filter(p => {
+      const normalizedTeam = (p.team_name ?? '').trim()
+      const matchesTeam = teamFilter === '' || normalizedTeam === teamFilter
+      const matchesName = nameFilter === '' || p.player_name.toLowerCase().includes(nameFilter.toLowerCase())
+      return matchesTeam && matchesName
+    }),
+    [players, teamFilter, nameFilter],
+  )
+
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       <label className="text-xs text-ink-secondary font-medium uppercase tracking-wide">{label}</label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Buscar nombre…"
+          value={nameFilter}
+          onChange={e => setNameFilter(e.target.value)}
+          className="flex-1 bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:ring-2 focus:ring-accent-400"
+        />
+        <select
+          value={teamFilter}
+          onChange={e => setTeamFilter(e.target.value)}
+          className="bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+        >
+          <option value="">Todos los equipos</option>
+          {teams.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
       <select value={value} onChange={e => onChange(e.target.value)}
         className="bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400">
         <option value="">— Selecciona jugador —</option>
-        {players.map(p => (
-          <option key={p.player_id} value={p.player_id}>
-            {p.player_name} ({p.team_name})
+        {filtered.map((p, idx) => (
+          <option key={`${p.player_id}_${(p.team_name ?? '').trim()}_${idx}`} value={p.player_id}>
+            {p.player_name} ({(p.team_name ?? '').trim() || '—'})
           </option>
         ))}
       </select>
@@ -135,7 +231,7 @@ export default function InOutPage() {
         {/* IN/OUT Tab */}
         {tab === 'IN/OUT' && (
           <div className="space-y-4">
-            <div className="card p-4 max-w-md">
+            <div className="card p-4 max-w-xl">
               <PlayerSelect label="Jugador" value={p1} onChange={setP1} players={players} />
             </div>
 
@@ -163,9 +259,14 @@ export default function InOutPage() {
                     Impacto diferencial (ON − OFF)
                   </h3>
                   <div className="space-y-2">
-                    <DeltaBar value={delta(inout.on.points_for, inout.off.points_for)} label="Puntos a favor" />
-                    <DeltaBar value={delta(inout.off.points_against, inout.on.points_against)} label="Def. (↓ mejor)" />
                     <DeltaBar value={delta(inout.on.net_rating, inout.off.net_rating)} label="Net Rating" />
+                    <DeltaBar value={delta(inout.on.offensive_rating, inout.off.offensive_rating)} label="ORtg" />
+                    <DeltaBar value={delta(inout.off.defensive_rating, inout.on.defensive_rating)} label="DRtg (↓ mejor)" />
+                    <DeltaBar value={delta(inout.on.efg_percentage, inout.off.efg_percentage)} label="eFG%" />
+                    <DeltaBar value={delta(inout.on.true_shooting, inout.off.true_shooting)} label="TS%" />
+                    <DeltaBar value={delta(inout.on.offensive_rebound_rate, inout.off.offensive_rebound_rate)} label="OR%" />
+                    <DeltaBar value={delta(inout.on.defensive_rebound_rate, inout.off.defensive_rebound_rate)} label="DR%" />
+                    <DeltaBar value={delta(inout.off.turnover_rate, inout.on.turnover_rate)} label="%TO (↓ mejor)" />
                   </div>
                 </div>
               </>
@@ -183,7 +284,7 @@ export default function InOutPage() {
         {/* Juntos Tab */}
         {tab === 'Juntos' && (
           <div className="space-y-4">
-            <div className="card p-4 grid grid-cols-2 gap-3 max-w-lg">
+            <div className="card p-4 grid grid-cols-2 gap-4 max-w-3xl">
               <PlayerSelect label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} />
               <PlayerSelect label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} />
             </div>
@@ -207,9 +308,11 @@ export default function InOutPage() {
                     Impacto diferencial (Juntos − Separados)
                   </h3>
                   <div className="space-y-2">
-                    <DeltaBar value={delta(tog.together.points_for, tog.apart.points_for)} label="Puntos a favor" />
-                    <DeltaBar value={delta(tog.apart.points_against, tog.together.points_against)} label="Def. (↓ mejor)" />
                     <DeltaBar value={delta(tog.together.net_rating, tog.apart.net_rating)} label="Net Rating" />
+                    <DeltaBar value={delta(tog.together.offensive_rating, tog.apart.offensive_rating)} label="ORtg" />
+                    <DeltaBar value={delta(tog.apart.defensive_rating, tog.together.defensive_rating)} label="DRtg (↓ mejor)" />
+                    <DeltaBar value={delta(tog.together.efg_percentage, tog.apart.efg_percentage)} label="eFG%" />
+                    <DeltaBar value={delta(tog.together.true_shooting, tog.apart.true_shooting)} label="TS%" />
                   </div>
                 </div>
               </>
