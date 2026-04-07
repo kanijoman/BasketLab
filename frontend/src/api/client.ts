@@ -667,3 +667,17 @@ export const getTeamScoutingUrl = (collection: string, teamName: string) =>
 
 export const getSeasonSummaryUrl = (collection: string) =>
   `${BASE}/reports/${encodeURIComponent(collection)}/season-summary`
+
+export const postWeeklyReport = (
+  collection: string,
+  teamA: string,
+  teamB: string,
+): Promise<Blob> =>
+  fetch(`${BASE}/reports/${encodeURIComponent(collection)}/weekly-report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ team_a: teamA, team_b: teamB }),
+  }).then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.blob()
+  })

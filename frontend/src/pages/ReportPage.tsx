@@ -1,24 +1,22 @@
 /**
- * ReportPage — Fase 5
- * Three report types: player scouting (DOCX), team scouting (PDF), season summary (PDF).
+ * ReportPage — Informe Semanal
+ * Scouting individual → AIAnalysisPage · Scouting rival → AIAnalysisPage
+ * Stats de temporada → TeamStatsPage
+ * Aquí: solo el informe semanal completo (ZIP de PNGs).
  */
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, User, Users, BarChart3, Download } from 'lucide-react'
+import { FileText, Download, CalendarDays } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import {
   getPlayerStats,
-  getPlayerScoutingUrl,
-  getTeamScoutingUrl,
-  getSeasonSummaryUrl,
+  postWeeklyReport,
   type PlayerStat,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 
 // ---------------------------------------------------------------------------
-
-function download(url: string) { window.open(url, '_blank') }
 
 function ChevronDownIcon() {
   return (
@@ -62,8 +60,9 @@ function ReportCard({ icon, title, description, badge, children }: ReportCardPro
 export default function ReportPage() {
   const { collection } = useCollection()
 
-  const [selectedPlayer, setSelectedPlayer] = useState('')
-  const [scoutingTeam,   setScoutingTeam]   = useState('')
+  const [weeklyTeamA,   setWeeklyTeamA]   = useState('')
+  const [weeklyTeamB,   setWeeklyTeamB]   = useState('')
+  const [weeklyLoading, setWeeklyLoading] = useState(false)
 
   const { data: players = [] } = useQuery<PlayerStat[]>({
     queryKey: ['player-list', collection?.name],
@@ -96,72 +95,66 @@ export default function ReportPage() {
 
         {collection && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {/* Player scouting DOCX */}
+            {/* Weekly report ZIP */}
             <ReportCard
-              icon={<User className="w-5 h-5" />}
-              title="Scouting individual"
-              description="Ficha DOCX con estadísticas por partido y espacio para notas del cuerpo técnico."
-              badge="DOCX"
+              icon={<CalendarDays className="w-5 h-5" />}
+              title="Informe Semanal"
+              description="Bundle completo de PNG: estadísticas generales, comparativas, último partido, stats individuales y gráficos de lanzamiento para dos equipos."
+              badge="ZIP"
             >
               <div className="flex flex-col gap-2">
                 <div className="relative">
-                  <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}
-                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400">
-                    <option value="">— Selecciona jugador —</option>
-                    {players.map(p => (
-                      <option key={p.player_id} value={p.player_id}>
-                        {p.player_name} ({p.team_name})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDownIcon />
-                </div>
-                <button
-                  disabled={!selectedPlayer}
-                  onClick={() => download(getPlayerScoutingUrl(col, selectedPlayer))}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  <Download className="w-4 h-4" /> Descargar DOCX
-                </button>
-              </div>
-            </ReportCard>
-
-            {/* Team scouting PDF */}
-            <ReportCard
-              icon={<Users className="w-5 h-5" />}
-              title="Scouting de equipo"
-              description="Informe PDF con desglose ofensivo y defensivo del equipo seleccionado."
-              badge="PDF"
-            >
-              <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <select value={scoutingTeam} onChange={e => setScoutingTeam(e.target.value)}
-                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400">
-                    <option value="">— Selecciona equipo —</option>
+                  <select
+                    value={weeklyTeamA}
+                    onChange={e => setWeeklyTeamA(e.target.value)}
+                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  >
+                    <option value="">— Equipo propio (A) —</option>
                     {teams.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                   <ChevronDownIcon />
                 </div>
+                <div className="relative">
+                  <select
+                    value={weeklyTeamB}
+                    onChange={e => setWeeklyTeamB(e.target.value)}
+                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  >
+                    <option value="">— Equipo rival (B) —</option>
+                    {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <ChevronDownIcon />
+                </div>
+                {weeklyTeamA && weeklyTeamB && weeklyTeamA === weeklyTeamB && (
+                  <p className="text-xs text-warn">Los equipos A y B deben ser diferentes.</p>
+                )}
                 <button
-                  disabled={!scoutingTeam}
-                  onClick={() => download(getTeamScoutingUrl(col, scoutingTeam))}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  <Download className="w-4 h-4" /> Descargar PDF
+                  disabled={
+                    !weeklyTeamA ||
+                    !weeklyTeamB ||
+                    weeklyTeamA === weeklyTeamB ||
+                    weeklyLoading
+                  }
+                  onClick={async () => {
+                    setWeeklyLoading(true)
+                    try {
+                      const blob = await postWeeklyReport(col, weeklyTeamA, weeklyTeamB)
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `informe_${col.slice(0, 20)}.zip`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    } finally {
+                      setWeeklyLoading(false)
+                    }
+                  }}
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
                 </button>
               </div>
-            </ReportCard>
-
-            {/* Season summary PDF */}
-            <ReportCard
-              icon={<BarChart3 className="w-5 h-5" />}
-              title="Resumen de temporada"
-              description="Tabla de clasificación de eficiencia (Pace · OER · DER · Net Rating) para toda la competición."
-              badge="PDF"
-            >
-              <button
-                onClick={() => download(getSeasonSummaryUrl(col))}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 transition-colors">
-                <Download className="w-4 h-4" /> Descargar PDF
-              </button>
             </ReportCard>
           </div>
         )}
