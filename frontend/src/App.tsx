@@ -38,6 +38,7 @@ import ReportPage from '@/pages/ReportPage'
 import PossessionsPage from '@/pages/PossessionsPage'
 import InOutPage from '@/pages/InOutPage'
 import AdminPage from '@/pages/AdminPage'
+import PredictivePage from '@/pages/PredictivePage'
 
 export default function App() {
   const location = useLocation()
@@ -63,6 +64,7 @@ export default function App() {
               <Route path="possessions" element={<PossessionsPage />} />
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />
+              <Route path="predictive"  element={<PredictivePage />} />
             </Route>
 
             {/* ── Admin ── */}

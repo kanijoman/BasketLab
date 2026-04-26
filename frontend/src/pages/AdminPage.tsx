@@ -17,18 +17,21 @@ import {
   getFebCompetitions, getFebSeasons, getFebGroups,
   getFbcylInit, getFbcylCategories, getFbcylCompetitions,
   postScrapeStart, getScrapeProgress,
+  getHistoricalProgress, getHistoricalSummary, postCompetitionIngest,
   type CollectionInfo, type DropdownOption, type ScrapeJob,
+  type HistoricalJob, type HistoricalSummaryEntry,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 
 // ── Simple tabs ───────────────────────────────────────────────────────────────
 
-type Tab = 'collections' | 'feb' | 'fbcyl'
+type Tab = 'collections' | 'feb' | 'fbcyl' | 'historical'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'collections', label: 'Colecciones' },
   { id: 'feb',         label: 'Descargar FEB' },
   { id: 'fbcyl',       label: 'Descargar FBCYL' },
+  { id: 'historical',  label: 'Histórico' },
 ]
 
 // ── Progress panel ────────────────────────────────────────────────────────────
@@ -358,6 +361,264 @@ function FBCYLDownloadTab() {
   )
 }
 
+// ── Tab: Histórico ───────────────────────────────────────────────────────────
+
+function HistoricalProgressPanel({ jobId }: { jobId: string }) {
+  const [job, setJob] = useState<HistoricalJob | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    intervalRef.current = setInterval(async () => {
+      try {
+        const data = await getHistoricalProgress(jobId)
+        setJob(data)
+        if (data.status === 'done' || data.status === 'error') {
+          clearInterval(intervalRef.current!)
+        }
+      } catch {
+        clearInterval(intervalRef.current!)
+      }
+    }, 1500)
+    return () => clearInterval(intervalRef.current!)
+  }, [jobId])
+
+  if (!job) return <div className="flex items-center gap-2 text-sm text-ink-secondary p-4"><Loader2 className="w-4 h-4 animate-spin" /> Iniciando…</div>
+
+  const pct = job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
+  const isDone  = job.status === 'done'
+  const isError = job.status === 'error'
+
+  return (
+    <div className="space-y-3 p-4 rounded-card border border-surface-border bg-surface-raised">
+      <div className="flex items-center gap-2 text-sm">
+        {isDone  && <CheckCircle2 className="w-4 h-4 text-up shrink-0" />}
+        {isError && <AlertCircle  className="w-4 h-4 text-down shrink-0" />}
+        {!isDone && !isError && <Loader2 className="w-4 h-4 animate-spin text-brand-400 shrink-0" />}
+        <span className={isDone ? 'text-up' : isError ? 'text-down' : 'text-ink-primary'}>
+          {isDone  ? `Ingesta completada — ${job.done} partidos procesados` :
+           isError ? 'Error durante la ingesta' :
+                     `Procesando… ${job.done} / ${job.total ?? '?'}`}
+        </span>
+      </div>
+      {job.current_season && !isDone && (
+        <p className="text-xs text-ink-muted">Temporada activa: <span className="font-medium">{job.current_season}</span></p>
+      )}
+      {!isError && (
+        <div className="h-2 rounded-full bg-surface-border overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-up' : 'bg-brand-500'}`}
+            style={{ width: isDone ? '100%' : `${pct}%` }}
+          />
+        </div>
+      )}
+      {job.current_match && !isDone && (
+        <p className="text-xs text-ink-muted font-mono truncate">Partido: {job.current_match}</p>
+      )}
+      {job.errors.length > 0 && (
+        <details className="text-xs">
+          <summary className="text-down cursor-pointer">{job.errors.length} error{job.errors.length > 1 ? 'es' : ''}</summary>
+          <ul className="mt-1 space-y-0.5 pl-3 text-ink-secondary max-h-28 overflow-y-auto">
+            {job.errors.map((e, i) => <li key={i}>{e}</li>)}
+          </ul>
+        </details>
+      )}
+    </div>
+  )
+}
+
+function HistoricalTab() {
+  const { data: summary, isLoading: loadingSummary, refetch } = useQuery({
+    queryKey: ['historical-summary'],
+    queryFn: getHistoricalSummary,
+    staleTime: 30_000,
+  })
+
+  const [compUrl, setCompUrl]   = useState('')
+  const [compLabel, setCompLabel] = useState('')
+  const [checked, setChecked]   = useState<Set<string>>(new Set())
+  const [jobId, setJobId]       = useState<string | null>(null)
+  const [starting, setStarting] = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+
+  const { data: competitions, isLoading: loadingComps } = useQuery({
+    queryKey: ['feb-competitions'], queryFn: getFebCompetitions, staleTime: 5 * 60_000,
+  })
+  const { data: seasons, isLoading: loadingSeasons } = useQuery({
+    queryKey: ['feb-seasons', compUrl],
+    queryFn: () => getFebSeasons(compUrl),
+    enabled: !!compUrl,
+    staleTime: 5 * 60_000,
+  })
+
+  function handleCompChange(url: string) {
+    setCompUrl(url)
+    setCompLabel(competitions?.find(c => c.results_url === url)?.name ?? '')
+    setChecked(new Set())
+  }
+
+  function toggleSeason(value: string) {
+    setChecked(prev => {
+      const next = new Set(prev)
+      next.has(value) ? next.delete(value) : next.add(value)
+      return next
+    })
+  }
+
+  async function handleStart() {
+    if (checked.size === 0 || !compUrl) return
+    setStarting(true); setError(null)
+    try {
+      const seasonsToIngest = (seasons ?? [])
+        .filter(s => checked.has(s.value))
+        .map(s => ({ season_value: s.value, season_label: s.text }))
+      const { job_id } = await postCompetitionIngest({
+        competition_url: compUrl,
+        competition_label: compLabel,
+        seasons: seasonsToIngest,
+      })
+      setJobId(job_id)
+      setChecked(new Set())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar')
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  const allValues = seasons?.map(s => s.value) ?? []
+
+  return (
+    <div className="mt-4 space-y-6">
+      {/* Summary table */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-ink-primary">Contenido actual de HISTORICAL</h3>
+          <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink-primary transition-colors">
+            <RefreshCw className="w-3 h-3" /> Actualizar
+          </button>
+        </div>
+        {loadingSummary && <div className="h-8 rounded-card bg-surface-border/40 animate-pulse" />}
+        {!loadingSummary && (!summary || summary.length === 0) && (
+          <p className="text-sm text-ink-secondary">Sin datos históricos todavía.</p>
+        )}
+        {summary && summary.length > 0 && (
+          <div className="rounded-card border border-surface-border overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-surface-raised">
+                <tr>{['Liga', 'Competición', 'Temporada', 'Grupo', 'Partidos'].map(h => (
+                  <th key={h} className="px-3 py-2 text-left font-medium text-ink-secondary">{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {summary.map((row: HistoricalSummaryEntry, i: number) => (
+                  <tr key={i} className="border-t border-surface-border hover:bg-surface-hover/50">
+                    <td className="px-3 py-2">{row.league}</td>
+                    <td className="px-3 py-2">{row.competition}</td>
+                    <td className="px-3 py-2">{row.season}</td>
+                    <td className="px-3 py-2">{row.group || '—'}</td>
+                    <td className="px-3 py-2 font-medium">{Math.round(row.match_count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Download form */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-ink-primary">Descargar temporadas FEB → HISTORICAL</h3>
+
+        <CascadeSelect
+          label="Competición"
+          options={(competitions ?? []).map(c => ({ text: c.name, value: c.results_url }))}
+          value={compUrl}
+          onChange={handleCompChange}
+          loading={loadingComps}
+          placeholder="Seleccionar competición…"
+        />
+
+        {compUrl && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-ink-secondary">Temporadas disponibles</span>
+              {allValues.length > 0 && (
+                <div className="flex gap-3 text-xs">
+                  <button
+                    onClick={() => setChecked(new Set(allValues))}
+                    className="text-brand-400 hover:text-brand-300 transition-colors"
+                  >
+                    Todas
+                  </button>
+                  <button
+                    onClick={() => setChecked(new Set())}
+                    className="text-ink-muted hover:text-ink-primary transition-colors"
+                  >
+                    Ninguna
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {loadingSeasons && (
+              <div className="space-y-1">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-9 rounded bg-surface-border/40 animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {!loadingSeasons && seasons && seasons.length > 0 && (
+              <div className="rounded-card border border-surface-border divide-y divide-surface-border max-h-56 overflow-y-auto">
+                {seasons.map(s => (
+                  <label
+                    key={s.value}
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-surface-hover/60 transition-colors select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked.has(s.value)}
+                      onChange={() => toggleSeason(s.value)}
+                      className="w-4 h-4 accent-brand-400 cursor-pointer"
+                    />
+                    <span className="text-sm text-ink-primary">{s.text}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+
+            {!loadingSeasons && seasons && seasons.length === 0 && (
+              <p className="text-sm text-ink-secondary">No se encontraron temporadas para esta competición.</p>
+            )}
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-down/10 border border-down/20 text-down text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
+          </div>
+        )}
+
+        {!jobId && (
+          <button
+            onClick={handleStart}
+            disabled={checked.size === 0 || starting}
+            className="btn-primary w-full justify-center gap-2 py-2.5 disabled:opacity-50"
+          >
+            {starting
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Play className="w-4 h-4" />}
+            Descargar {checked.size > 0 ? checked.size : ''} temporada{checked.size !== 1 ? 's' : ''}
+            {checked.size > 0 ? ' (todos los grupos)' : ''}
+          </button>
+        )}
+
+        {jobId && <HistoricalProgressPanel jobId={jobId} />}
+      </div>
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -390,11 +651,13 @@ export default function AdminPage() {
           {activeTab === 'collections' && <CollectionsTab onOpen={name => navigate(`/${encodeURIComponent(name)}`)} />}
           {activeTab === 'feb'         && <FEBDownloadTab />}
           {activeTab === 'fbcyl'       && <FBCYLDownloadTab />}
+          {activeTab === 'historical'  && <HistoricalTab />}
         </div>
 
         <div className="pt-4 border-t border-surface-border text-xs text-ink-muted space-y-1">
           <p><span className="font-medium">FEB:</span> Descarga partidos de las ligas nacionales FEB (L.F.2, EBA, etc.).</p>
           <p><span className="font-medium">FBCYL:</span> Descarga partidos de las ligas de Castilla y León.</p>
+          <p><span className="font-medium">Histórico:</span> Descarga temporadas pasadas en la colección unificada HISTORICAL para modelos predictivos.</p>
           <p className="flex items-center gap-1">
             <ChevronRight className="w-3 h-3" />
             Los datos nuevos incluyen metadatos de competición para análisis cruzado futuro.

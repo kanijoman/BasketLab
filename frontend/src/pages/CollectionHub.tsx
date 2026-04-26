@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart2, Users, TrendingUp, Target, Bot, Trophy,
-  FileText, Activity, ArrowLeftRight, Users2, Loader2,
+  FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit,
 } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getPlayerStats, type TeamStat, type PlayerStat } from '@/api/client'
@@ -36,6 +36,7 @@ const MODULES: Module[] = [
   { icon: ArrowLeftRight, label: 'IN/OUT',                     description: 'Impacto por jugador dentro/fuera de la cancha',    subPath: 'inout',       accent: 'text-brand-400' },
   { icon: Users2,         label: 'Combinaciones',              description: 'Mejores y peores combinaciones de jugadoras por estadística',    subPath: 'lineups',     accent: 'text-brand-400' },
   { icon: FileText,       label: 'Informe Semanal',            description: 'Report builder con PDF/DOCX exportable',           subPath: 'report',      accent: 'text-warn' },
+  { icon: BrainCircuit,   label: 'Análisis Predictivo',        description: 'Ajuste por rival · Elasticidades · Monte Carlo',   subPath: 'predictive',  accent: 'text-brand-400' },
 ]
 
 // ── Highlights derived from data ──────────────────────────────────────────────

@@ -46,6 +46,7 @@ from src.services._weekly_report_helpers import (
     build_basic_rows, build_advanced_rows,
     build_comparative_basic_rows, build_comparative_advanced_rows,
     build_last_match_rows, build_player_rows,
+    CONSISTENCY_HEADERS, build_consistency_rows,
 )
 
 
@@ -224,6 +225,28 @@ class WeeklyReportService:
                                  'Ganados vs Perdidos', '02')
         self._gen_compare_venue(zf, collection, 'Local vs Visitante', '03')
         self._gen_compare_month(zf, collection, 'Último Mes', '04')
+        self._gen_consistency_png(zf, collection)
+
+    def _gen_consistency_png(
+        self, zf: zipfile.ZipFile, collection: str,
+    ) -> None:
+        """Add a league-wide consistency (CV) table PNG to the General/ folder."""
+        try:
+            from src.services.team_stats_service import TeamStatsService
+            consistency = TeamStatsService(self._db).get_consistency(collection)
+            own_map = consistency.get("own", {})
+            if not own_map:
+                return
+            rows, cols = build_consistency_rows(own_map)
+            if not rows:
+                return
+            zf.writestr(
+                'General/06_Consistencia_Liga.png',
+                render_table_png(CONSISTENCY_HEADERS, rows, cols,
+                                 'Consistencia Intraequipo - CV% (menor = más consistente)'),
+            )
+        except Exception as exc:
+            print(f'[WeeklyReportService] consistency_png: {exc}')
 
     def _gen_compare_result(
         self, zf: zipfile.ZipFile, collection: str,

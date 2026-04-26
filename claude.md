@@ -7,6 +7,7 @@
 ## Your Role as Claude
 
 **Implementation rules:**
+- **TDD por defecto**: Escribir el test primero (`tests/test_<feature>.py`) → ejecutar `pytest -v` para confirmar que falla (rojo) → implementar el mínimo código que lo corrija (verde). Ninguna feature se completa sin este ciclo rojo→verde.
 - **Infer > ask**: "add export" = CSV/PNG/PDF trinity (standard)
 - **Follow patterns**: Search similar code before creating new
 - **Dual format**: Always handle FEB + FBCYL (`is_fbcyl` flag)

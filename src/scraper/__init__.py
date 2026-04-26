@@ -93,6 +93,10 @@ class FEBWebScraper:
         """
         return self.web_scraper.get_feb_competitions()
 
+    def get_groups_for_season(self, competition_url: str, season_value: str) -> List[tuple[str, str]]:
+        """Return group options after selecting a specific season on a competition page."""
+        return self.web_scraper.get_groups_for_season(competition_url, season_value)
+
 
 # Re-export for easier imports
 __all__ = [

@@ -97,8 +97,11 @@ class CollectionService:
 
     # Collections whose names start with these prefixes are never basketball data
     _SKIP_PREFIXES = re.compile(r'^system\.', re.IGNORECASE)
-    # Names to skip entirely
-    _SKIP_NAMES: frozenset = frozenset({'test', 'admin', 'local', 'config'})
+    # Names to skip entirely (internal/system collections, not user-facing)
+    _SKIP_NAMES: frozenset = frozenset({
+        'test', 'admin', 'local', 'config',
+        'HISTORICAL', 'ELASTICITIES',  # internal predictive-analytics collections
+    })
     # FBCYL collections are prefixed with FBCYL_; everything else is FEB
     _FBCYL_PREFIX = re.compile(r'^FBCYL_', re.IGNORECASE)
     # Used to extract a 4-digit year component for season parsing

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
+import numpy as np
+
 if TYPE_CHECKING:
     from database import MongoDBHandler
 
@@ -65,12 +67,13 @@ class LineupService:
             List of lineup stat dicts sorted by ``stat``, or empty list on failure.
         """
         fbcyl = _is_fbcyl(collection_name)
+        # Always fetch game_log internally to enable IFQ computation.
         results = self._db.get_lineup_analysis(
             collection_name, team_id, team_name,
             combination_size=combination_size,
             date_filter=date_filter,
             is_fbcyl=fbcyl,
-            include_game_log=include_game_log,
+            include_game_log=True,
             progress_callback=progress_callback,
         ) or []
 
@@ -80,6 +83,23 @@ class LineupService:
 
         # Normalise field name: repository uses 'player_names', frontend expects 'players'
         for row in results:
+            # Compute IFQ = mean(net_rating) / std(net_rating) across game log.
+            # Returns None when std is zero or fewer than 3 appearances.
+            game_log = row.get('game_log', [])
+            nr_values = [g['net_rating'] for g in game_log
+                         if g.get('net_rating') is not None]
+            if len(nr_values) >= 3:
+                arr = np.array(nr_values, dtype=float)
+                std = float(np.std(arr))
+                mean_nr = float(np.mean(arr))
+                row['ifq'] = round(mean_nr / std, 2) if std > 0 else None
+            else:
+                row['ifq'] = None
+
+            # Strip game_log if the caller did not request it.
+            if not include_game_log:
+                row.pop('game_log', None)
+
             if 'players' not in row and 'player_names' in row:
                 row['players'] = row['player_names']
             # player_photo_urls is already set by the repository:

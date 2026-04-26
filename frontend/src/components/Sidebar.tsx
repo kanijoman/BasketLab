@@ -17,6 +17,7 @@ import {
   Activity,
   ArrowLeftRight,
   Users2,
+  BrainCircuit,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Activity,         label: 'Posesiones',           subPath: 'possessions' },
   { icon: ArrowLeftRight,   label: 'IN/OUT',               subPath: 'inout' },
   { icon: Users2,           label: 'Combinaciones',        subPath: 'lineups' },
+  { icon: BrainCircuit,     label: 'Análisis Predictivo', subPath: 'predictive' },
 ]
 
 const STORAGE_KEY = 'sidebar-collapsed'

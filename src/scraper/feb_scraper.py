@@ -94,6 +94,37 @@ class FEBWebScraper:
 
         return groups
 
+    def get_groups_for_season(
+        self, competition_url: str, season_value: str
+    ) -> List[Tuple[str, str]]:
+        """Return group options after selecting a specific season on a competition page.
+
+        Performs a GET to *competition_url*, then a season-selection POST (ASP.NET
+        postback), and returns the updated group dropdown options.  Used by
+        historical ingestion to auto-discover all groups without the caller needing
+        to know them in advance.
+
+        Args:
+            competition_url: Full URL of the competition calendar page.
+            season_value:    Season dropdown value to select before reading groups.
+
+        Returns:
+            List of (group_label, group_value) tuples, empty on failure.
+        """
+        try:
+            response = self.web_client.get(competition_url, timeout=EXTENDED_TIMEOUT)
+            if not response:
+                return []
+            soup = BeautifulSoup(response.content, "html.parser")
+            hidden_fields = self.get_hidden_fields(soup)
+            session = self.web_client.get_session()
+            updated_soup, _ = self.select_season(
+                session, competition_url, season_value, hidden_fields
+            )
+            return self.get_groups(updated_soup)
+        except Exception:
+            return []
+
     def select_season(self, session: requests.Session, url: str, season_value: str,
                      hidden_fields: Dict[str, str]) -> Tuple[BeautifulSoup, Dict[str, str]]:
         """

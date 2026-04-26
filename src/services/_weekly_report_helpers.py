@@ -444,3 +444,71 @@ def build_player_rows(
         texts.append(rt)
         colors.append(rc)
     return headers, texts, colors
+
+
+# ---------------------------------------------------------------------------
+# Consistency table builder
+# ---------------------------------------------------------------------------
+
+# Key stats shown in the league-wide consistency PNG (CV % for each)
+_CONSISTENCY_KEYS = [
+    ("Pts CV%",   "points_per_game",   False),
+    ("eFG% CV%",  "efg_percentage",    False),
+    ("NR CV%",    "net_rating",        False),
+    ("Poss CV%",  "possessions_per_game", False),
+    ("TOV% CV%",  "turnover_rate",     True),   # higher CV = worse → reverse colouring
+    ("3P% CV%",   "fg3_percentage",    False),
+]
+
+CONSISTENCY_HEADERS = ["Equipo"] + [k[0] for k in _CONSISTENCY_KEYS]
+
+
+def build_consistency_rows(
+    own_map: Dict[str, Dict],
+) -> Tuple[List[List[str]], List[List[str]]]:
+    """Return (row_texts, row_colors) for the league-wide consistency PNG.
+
+    Args:
+        own_map: The ``"own"`` sub-dict from ``TeamStatsService.get_consistency()``.
+                 Format: ``{team_name: {stat_key: {"mean", "std", "cv", "n"}}}``.
+
+    Returns:
+        Tuple of (row_texts, row_colors) ready for :func:`render_table_png`.
+    """
+    if not own_map:
+        return [], []
+
+    # Collect CV values per column for quartile colouring
+    col_values: Dict[str, List[float]] = {k[1]: [] for k in _CONSISTENCY_KEYS}
+    for team_stats in own_map.values():
+        for _, stat_key, _ in _CONSISTENCY_KEYS:
+            cv = (team_stats.get(stat_key) or {}).get("cv")
+            if cv is not None:
+                col_values[stat_key].append(cv)
+
+    quartiles = {sk: calc_quartiles(col_values[sk]) for _, sk, _ in _CONSISTENCY_KEYS}
+
+    # Sort teams by net_rating CV ascending (most consistent first)
+    sorted_teams = sorted(
+        own_map.items(),
+        key=lambda kv: (kv[1].get("net_rating") or {}).get("cv") or 9999,
+    )
+
+    texts:  List[List[str]] = []
+    colors: List[List[str]] = []
+    for team_name, team_stats in sorted_teams:
+        row_t = [team_name]
+        row_c = ['#FFFFFF']
+        for _, stat_key, reverse in _CONSISTENCY_KEYS:
+            cv = (team_stats.get(stat_key) or {}).get("cv")
+            row_t.append(sf(cv, 1) if cv is not None else '-')
+            if cv is not None:
+                # For consistency tables low CV = good → reverse colouring convention
+                row_c.append(q_color(cv, quartiles[stat_key], reverse=not reverse))
+            else:
+                row_c.append('#FFFFFF')
+        texts.append(row_t)
+        colors.append(row_c)
+
+    return texts, colors
+

@@ -207,7 +207,7 @@ class PlayerStatsService:
             ``{player_id: {stat_key: {"mean": float, "std": float, "cv": float, "n": int}}}``
         """
         if _is_fbcyl(collection_name):
-            return {}
+            return self._get_consistency_fbcyl(collection_name)
 
         from src.database.aggregation.pipeline_builder import AggregationPipelineBuilder
 
@@ -274,6 +274,78 @@ class PlayerStatsService:
                 mean = float(np.mean(arr))
                 std = float(np.std(arr))
                 cv = (std / mean * 100) if mean > 0 else 0.0
+                result[pid][stat_key] = {
+                    "mean": round(mean, 2),
+                    "std":  round(std, 2),
+                    "cv":   round(cv, 1),
+                    "n":    len(values),
+                }
+
+        return result
+
+    def _get_consistency_fbcyl(self, collection_name: str) -> Dict[str, Any]:
+        """FBCYL per-game player consistency using the FBCYL player per-game pipeline."""
+        from src.database.aggregation.fbcyl_per_game_pipeline import (
+            build_fbcyl_player_per_game_pipeline, enrich_fbcyl_player_row,
+        )
+        from collections import defaultdict
+
+        try:
+            collection = self._db.connection.get_collection(collection_name)
+            pipeline   = build_fbcyl_player_per_game_pipeline()
+            raw_rows   = list(collection.aggregate(pipeline))
+        except Exception:
+            return {}
+
+        if not raw_rows:
+            return {}
+
+        rows = [enrich_fbcyl_player_row(r) for r in raw_rows]
+
+        FBCYL_FIELD_MAP = {
+            "points_per_game":             "pts",
+            "rebounds_per_game":           "rt",
+            "offensive_rebounds_per_game": "ro",
+            "defensive_rebounds_per_game": "rd",
+            "assists_per_game":            "assist",
+            "steals_per_game":             "st",
+            "turnovers_per_game":          "to",
+            "blocks_per_game":             "bs",
+            "fouls_per_game":              "pf",
+            "valoracion_per_game":         "val",
+            "minutes_per_game":            "minutes",
+            "fg2_percentage":              "fg2_pct_game",
+            "fg3_percentage":              "fg3_pct_game",
+            "efg_percentage":              "efg_pct_game",
+            "true_shooting":               "ts_pct_game",
+            "free_throw_rate":             "ftr_game",
+            "three_point_rate":            "three_pr_game",
+            "turnover_rate":               "tov_pct_game",
+        }
+
+        by_player: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
+        for row in rows:
+            pid = row.get("player_id")
+            if not pid:
+                continue
+            for stat_key, raw_field in FBCYL_FIELD_MAP.items():
+                val = row.get(raw_field)
+                if val is not None:
+                    try:
+                        by_player[pid][stat_key].append(float(val))
+                    except (TypeError, ValueError):
+                        pass
+
+        result: Dict[str, Any] = {}
+        for pid, stats in by_player.items():
+            result[pid] = {}
+            for stat_key, values in stats.items():
+                if len(values) < 3:
+                    continue
+                arr  = np.array(values)
+                mean = float(np.mean(arr))
+                std  = float(np.std(arr))
+                cv   = (std / mean * 100) if mean > 0 else 0.0
                 result[pid][stat_key] = {
                     "mean": round(mean, 2),
                     "std":  round(std, 2),
