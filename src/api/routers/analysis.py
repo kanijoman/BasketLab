@@ -320,3 +320,90 @@ def predict_game(
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result
+
+
+# ---------------------------------------------------------------------------
+# FASE 9 — Season-End Projections (Monte Carlo standings)
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/season-projection/{collection}",
+    summary="Proyección de clasificación final de liga por Monte Carlo (FASE 9)",
+)
+def get_season_projection(
+    collection: str,
+    season: str = Query(..., description='Temporada normalizada, e.g. "2024-25"'),
+    season_length: int = Query(22, description="Número total de partidos por equipo en la temporada"),
+    n_simulations: int = Query(1000, description="Número de simulaciones Monte Carlo"),
+    playoff_spots: int = Query(4, description="Puestos de playoff"),
+    db=Depends(get_db),
+) -> Any:
+    """Project final league standings via Monte Carlo simulation.
+
+    For each remaining game, samples the outcome from a Bernoulli distribution
+    based on the net-rating difference between teams.  Returns the projected
+    wins distribution, playoff probability, and rank probability per team.
+
+    Args:
+        collection:    MongoDB live collection (used to scope HISTORICAL filter).
+        season:        Normalised season label.
+        season_length: Total games each team will play.
+        n_simulations: Monte Carlo samples.
+        playoff_spots: How many teams qualify for playoffs.
+
+    Returns:
+        List of team projection entries sorted by projected wins (desc).
+    """
+    from src.services.season_projection_service import SeasonProjectionService
+    svc = SeasonProjectionService(db.connection)
+    result = svc.project(
+        collection=collection,
+        season=season,
+        season_length=season_length,
+        n_simulations=n_simulations,
+        playoff_spots=playoff_spots,
+    )
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/player-prediction/{collection}/{player_id}",
+    summary="Predicción de estadísticas del próximo partido para un jugador (FASE 8)",
+)
+def predict_player(
+    collection: str,
+    player_id: str,
+    is_home: bool = Query(..., description="¿El equipo juega en casa?"),
+    opp_net_rtg: float = Query(0.0, description="Net rating del rival en la temporada"),
+    is_fbcyl: bool = Query(False, description="True si la colección es formato FBCYL"),
+    db=Depends(get_db),
+) -> Dict[str, Any]:
+    """Predict a player's next-game counting stats using Ridge regression.
+
+    Trains per-target-stat Ridge models on the player's game history from the
+    live collection, using rolling-window features + context (home/opp strength).
+
+    Args:
+        collection: MongoDB live collection name.
+        player_id:  Player identifier (FEB integer string or FBCYL UUID).
+        is_home:    Whether the next game is at home.
+        opp_net_rtg: Opponent net rating for context bucketing.
+        is_fbcyl:   True for FBCYL format collections.
+
+    Returns:
+        ``{pts: {estimate, ci_low, ci_high, n_train}, reb: {...}, ast: {...}, val: {...}}``
+    """
+    from src.services.player_prediction_service import PlayerPredictionService
+    svc = PlayerPredictionService(db.connection)
+    result = svc.predict(
+        collection=collection,
+        player_id=player_id,
+        is_home=is_home,
+        opp_net_rtg=opp_net_rtg,
+        is_fbcyl=is_fbcyl,
+    )
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result["error"])
+    return result

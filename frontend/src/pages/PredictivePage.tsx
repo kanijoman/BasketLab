@@ -1,11 +1,13 @@
 /**
- * PredictivePage — Análisis Predictivo (FASE 2-6)
+ * PredictivePage — Análisis Predictivo (FASE 2-8)
  *
  * Tabs:
- *   1. Ajuste por Rival   — rival-adjusted stats for all teams this season
- *   2. Elasticidades      — model training + per-team next-game prediction
- *   3. Proyección MC      — Monte Carlo simulation for N future games
- *   4. Validación         — walk-forward backtesting metrics (FASE 6)
+ *   1. Ajuste por Rival        — rival-adjusted stats for all teams this season
+ *   2. Elasticidades           — model training + per-team next-game prediction
+ *   3. Proyección MC           — Monte Carlo simulation for N future games
+ *   4. Predicción Partido      — Win/Loss probability (FASE 7)
+ *   5. Validación              — walk-forward backtesting metrics (FASE 6)
+ *   6. Predicción Jugador      — per-player next-game Ridge prediction (FASE 8)
  */
 import { useState, useEffect } from 'react'
 import { useCollection } from '@/context/CollectionContext'
@@ -15,11 +17,13 @@ import {
   getRivalAdjusted, getElasticityModels, postTrainElasticity,
   getElasticityPredict, postMonteCarlo, getLiveTeamNames,
   getHistoricalSeasons, getHistoricalTeams, getBacktesting, postGamePrediction,
+  getPlayerPrediction, getPlayerStats, getSeasonProjection,
   type RivalAdjustedResult, type ElasticityModelMeta,
   type ElasticityPrediction, type MonteCarloResult,
   type HistoricalTeamEntry, type BacktestingResult, type GamePredictionResult,
+  type PlayerPredictionResult, type SeasonProjectionEntry,
 } from '@/api/client'
-import { Loader2, TrendingUp, BarChart2, Dices, FlaskConical, Target } from 'lucide-react'
+import { Loader2, TrendingUp, BarChart2, Dices, FlaskConical, Target, User, Trophy } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt = (v: number | null | undefined, d = 1) =>
@@ -844,8 +848,277 @@ function ValidationTab() {
   )
 }
 
+// ── FASE 9 — Season Projection tab ──────────────────────────────────────────
+function SeasonProjectionTab() {
+  const { collection } = useCollection()
+  const collectionName = collection?.name ?? ''
+  const [season, setSeason] = useState('')
+  const [seasonLength, setSeasonLength] = useState(22)
+  const [submitted, setSubmitted] = useState<{
+    season: string; seasonLength: number
+  } | null>(null)
+
+  const { data: seasons } = useQuery({
+    queryKey: ['historicalSeasons'],
+    queryFn: () => getHistoricalSeasons(),
+  })
+
+  const { data, isFetching, error } = useQuery({
+    queryKey: ['seasonProjection', collectionName, submitted],
+    queryFn: () => getSeasonProjection(
+      collectionName, submitted!.season, submitted!.seasonLength, 1000, 4
+    ),
+    enabled: !!submitted && !!collectionName,
+    retry: false,
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!season) return
+    setSubmitted({ season, seasonLength })
+  }
+
+  return (
+    <div className="space-y-5">
+      <h2 className="text-lg font-semibold text-white">Proyección de Clasificación Final (FASE 9)</h2>
+      <p className="text-slate-400 text-sm">
+        Proyección Monte Carlo de la clasificación final de la liga simulando los partidos
+        restantes usando modelos de net rating.  Muestra victorias proyectadas, probabilidad
+        de playoff y distribución de posiciones para cada equipo.
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-400">Temporada</label>
+          <select
+            value={season}
+            onChange={e => setSeason(e.target.value)}
+            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
+          >
+            <option value="">Selecciona...</option>
+            {(seasons ?? []).map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-400">Partidos/temporada</label>
+          <input
+            type="number"
+            value={seasonLength}
+            onChange={e => setSeasonLength(Number(e.target.value))}
+            min={1} max={40}
+            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-20"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={!season || isFetching}
+          className="px-5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm rounded disabled:opacity-50"
+        >
+          {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Proyectar'}
+        </button>
+      </form>
+
+      {error && (
+        <p className="text-red-400 text-sm">
+          {error instanceof Error ? error.message : 'Error al obtener proyección'}
+        </p>
+      )}
+
+      {data && data.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-slate-200 border-collapse">
+            <thead>
+              <tr className="text-slate-400 border-b border-slate-700">
+                <th className="text-left py-2 px-3">#</th>
+                <th className="text-left py-2 px-3">Equipo</th>
+                <th className="text-right py-2 px-3">V-D act.</th>
+                <th className="text-right py-2 px-3">V proy.</th>
+                <th className="text-right py-2 px-3">IC 90%</th>
+                <th className="text-right py-2 px-3">P(Playoff)</th>
+                <th className="text-right py-2 px-3">P(1º)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((entry: SeasonProjectionEntry, idx: number) => (
+                <tr key={entry.team_id} className="border-b border-slate-800 hover:bg-slate-800/30">
+                  <td className="py-2 px-3 text-slate-400">{idx + 1}</td>
+                  <td className="py-2 px-3 font-medium">{entry.team_name}</td>
+                  <td className="py-2 px-3 text-right">
+                    {entry.wins_so_far}-{entry.losses_so_far}
+                  </td>
+                  <td className="py-2 px-3 text-right font-semibold">
+                    {fmt(entry.proj_wins)}
+                  </td>
+                  <td className="py-2 px-3 text-right text-slate-400 text-xs">
+                    {fmt(entry.proj_wins_ci_low)}–{fmt(entry.proj_wins_ci_high)}
+                  </td>
+                  <td className={`py-2 px-3 text-right font-semibold ${
+                    entry.playoff_prob >= 0.7 ? 'text-green-400' :
+                    entry.playoff_prob >= 0.4 ? 'text-amber-400' : 'text-red-400'
+                  }`}>
+                    {pct(entry.playoff_prob)}
+                  </td>
+                  <td className="py-2 px-3 text-right text-slate-300">
+                    {pct(entry.rank_probs[1] ?? 0)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── FASE 8 — Player Prediction tab ──────────────────────────────────────────
+function PlayerPredictionTab() {
+  const { collection } = useCollection()
+  const collectionName = collection?.name ?? ''
+  const [playerId, setPlayerId] = useState('')
+  const [playerName, setPlayerName] = useState('')
+  const [isHome, setIsHome] = useState(true)
+  const [oppNetRtg, setOppNetRtg] = useState(0)
+  const [submitted, setSubmitted] = useState<{
+    playerId: string; isHome: boolean; oppNetRtg: number
+  } | null>(null)
+
+  // Fetch player list for autocomplete
+  const { data: players } = useQuery({
+    queryKey: ['playerStats', collectionName],
+    queryFn: () => getPlayerStats(collectionName),
+    enabled: !!collectionName,
+  })
+
+  const { data, isFetching, error } = useQuery({
+    queryKey: ['playerPrediction', collectionName, submitted],
+    queryFn: () => getPlayerPrediction(
+      collectionName,
+      submitted!.playerId,
+      submitted!.isHome,
+      submitted!.oppNetRtg,
+    ),
+    enabled: !!submitted && !!collectionName,
+    retry: false,
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!playerId) return
+    setSubmitted({ playerId, isHome, oppNetRtg })
+  }
+
+  const statLabels: Record<keyof PlayerPredictionResult, string> = {
+    pts: 'Puntos',
+    reb: 'Rebotes',
+    ast: 'Asistencias',
+    val: 'Valoración',
+  }
+
+  return (
+    <div className="space-y-5">
+      <h2 className="text-lg font-semibold text-white">Predicción por Jugador (FASE 8)</h2>
+      <p className="text-slate-400 text-sm">
+        Predicción del próximo partido de un jugador usando regresión Ridge sobre su historial
+        de la temporada actual en la colección seleccionada.
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
+        {/* Player selector */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-400">Jugador (ID o nombre)</label>
+          <div className="relative">
+            <input
+              list="player-list"
+              value={playerName}
+              onChange={e => {
+                setPlayerName(e.target.value)
+                const found = (players ?? []).find(p => p.player_name === e.target.value)
+                setPlayerId(found?.player_id ?? e.target.value)
+              }}
+              placeholder="Nombre del jugador"
+              className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-56"
+            />
+            <datalist id="player-list">
+              {(players ?? []).map(p => (
+                <option key={p.player_id} value={p.player_name} />
+              ))}
+            </datalist>
+          </div>
+        </div>
+
+        {/* Home/Away */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-400">Local / Visitante</label>
+          <select
+            value={isHome ? 'home' : 'away'}
+            onChange={e => setIsHome(e.target.value === 'home')}
+            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
+          >
+            <option value="home">Local</option>
+            <option value="away">Visitante</option>
+          </select>
+        </div>
+
+        {/* Opponent net rating */}
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-400">Net Rtg rival</label>
+          <input
+            type="number"
+            value={oppNetRtg}
+            onChange={e => setOppNetRtg(Number(e.target.value))}
+            step="0.5"
+            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-24"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={!playerId || isFetching}
+          className="px-5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm rounded disabled:opacity-50"
+        >
+          {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Predecir'}
+        </button>
+      </form>
+
+      {error && (
+        <p className="text-red-400 text-sm">
+          {error instanceof Error ? error.message : 'Error al obtener predicción'}
+        </p>
+      )}
+
+      {data && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          {(Object.keys(statLabels) as Array<keyof PlayerPredictionResult>).map(stat => {
+            const s = data[stat]
+            const hasValue = s.estimate != null
+            return (
+              <div key={stat} className="bg-slate-800/60 rounded-lg p-4 space-y-1 border border-slate-700/50">
+                <p className="text-xs text-slate-400 uppercase tracking-wider">{statLabels[stat]}</p>
+                <p className="text-3xl font-bold text-white">
+                  {hasValue ? fmt(s.estimate) : '—'}
+                </p>
+                {hasValue && (
+                  <p className="text-xs text-slate-400">
+                    IC 90%: {fmt(s.ci_low)} – {fmt(s.ci_high)}
+                  </p>
+                )}
+                <p className="text-xs text-slate-500">n={s.n_train} partidos</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
-type Tab = 'rival' | 'elasticity' | 'montecarlo' | 'prediction' | 'validation'
+type Tab = 'rival' | 'elasticity' | 'montecarlo' | 'prediction' | 'validation' | 'player' | 'season'
 
 const TABS: Array<{ id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: 'rival',       label: 'Ajuste por Rival',   icon: TrendingUp },
@@ -853,6 +1126,8 @@ const TABS: Array<{ id: Tab; label: string; icon: React.ComponentType<{ classNam
   { id: 'montecarlo',  label: 'Proyección MC',        icon: Dices },
   { id: 'prediction',  label: 'Predicción Partido',  icon: Target },
   { id: 'validation',  label: 'Validación',           icon: FlaskConical },
+  { id: 'player',      label: 'Predicción Jugador',   icon: User },
+  { id: 'season',      label: 'Clasificación Final', icon: Trophy },
 ]
 
 export default function PredictivePage() {
@@ -893,6 +1168,8 @@ export default function PredictivePage() {
           {tab === 'montecarlo' && <MonteCarloTab />}
           {tab === 'prediction' && <GamePredictionTab />}
           {tab === 'validation' && <ValidationTab />}
+          {tab === 'player'     && <PlayerPredictionTab />}
+          {tab === 'season'     && <SeasonProjectionTab />}
         </div>
       </div>
     </PageTransition>

@@ -934,3 +934,69 @@ export const postGamePrediction = (teamId: string, req: GamePredictionRequest) =
     `/analysis/game-prediction/${encodeURIComponent(teamId)}`,
     req,
   )
+
+// ── Player Prediction (FASE 8) ───────────────────────────────────────────────
+
+export interface PlayerPredictionStat {
+  estimate: number | null
+  ci_low:   number | null
+  ci_high:  number | null
+  n_train:  number
+}
+
+export interface PlayerPredictionResult {
+  pts: PlayerPredictionStat
+  reb: PlayerPredictionStat
+  ast: PlayerPredictionStat
+  val: PlayerPredictionStat
+}
+
+export const getPlayerPrediction = (
+  collection: string,
+  playerId: string,
+  isHome: boolean,
+  oppNetRtg: number = 0,
+  isFbcyl: boolean = false,
+) => {
+  const qs = new URLSearchParams({
+    is_home:     String(isHome),
+    opp_net_rtg: String(oppNetRtg),
+    is_fbcyl:    String(isFbcyl),
+  })
+  return get<PlayerPredictionResult>(
+    `/analysis/player-prediction/${encodeURIComponent(collection)}/${encodeURIComponent(playerId)}?${qs}`,
+  )
+}
+
+// ── Season Projection (FASE 9) ───────────────────────────────────────────────
+
+export interface SeasonProjectionEntry {
+  team_id:           string
+  team_name:         string
+  wins_so_far:       number
+  losses_so_far:     number
+  proj_wins:         number
+  proj_losses:       number
+  proj_wins_ci_low:  number
+  proj_wins_ci_high: number
+  playoff_prob:      number
+  rank_probs:        Record<number, number>
+}
+
+export const getSeasonProjection = (
+  collection: string,
+  season: string,
+  seasonLength: number = 22,
+  nSimulations: number = 1000,
+  playoffSpots: number = 4,
+) => {
+  const qs = new URLSearchParams({
+    season,
+    season_length: String(seasonLength),
+    n_simulations: String(nSimulations),
+    playoff_spots: String(playoffSpots),
+  })
+  return get<SeasonProjectionEntry[]>(
+    `/analysis/season-projection/${encodeURIComponent(collection)}?${qs}`,
+  )
+}
