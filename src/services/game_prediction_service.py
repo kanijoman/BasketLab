@@ -35,7 +35,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from database.historical_repository import HistoricalRepository
-from services.elasticity_service import ROLLING_WINDOWS
+from services._elasticity_models import ROLLING_WINDOWS
 
 # Minimum records to attempt fitting
 MIN_TRAIN = 12

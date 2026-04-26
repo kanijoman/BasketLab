@@ -1,4 +1,4 @@
-"""FastAPI router for predictive analytics endpoints (FASE 2-5).
+﻿"""FastAPI router for team-level analytics endpoints (FASE 2-5).
 
 Prefixed at /api/v1/analysis
 
@@ -9,6 +9,8 @@ POST /analysis/elasticity/train                      FASE 3/4
 GET  /analysis/elasticity/models                     FASE 3/4
 GET  /analysis/elasticity/predict/{team_id}          FASE 3/4
 POST /analysis/montecarlo/{team_id}                  FASE 5
+
+FASE 6-9 live in analysis_predictive.py
 """
 
 from __future__ import annotations
@@ -24,12 +26,12 @@ router = APIRouter()
 
 
 # ---------------------------------------------------------------------------
-# FASE 2 — Rival-adjusted stats
+# FASE 2 â€” Rival-adjusted stats
 # ---------------------------------------------------------------------------
 
 @router.get(
     "/{collection}/rival_adjusted",
-    summary="Estadísticas ajustadas por calidad del rival",
+    summary="EstadÃ­sticas ajustadas por calidad del rival",
 )
 def get_rival_adjusted(
     collection: str,
@@ -57,7 +59,7 @@ def get_rival_adjusted(
 
 
 # ---------------------------------------------------------------------------
-# FASE 3/4 — Elasticity models
+# FASE 3/4 â€” Elasticity models
 # ---------------------------------------------------------------------------
 
 class ElasticityTrainRequest(BaseModel):
@@ -108,20 +110,20 @@ def list_elasticity_models(db=Depends(get_db)) -> List[Dict[str, Any]]:
 
 @router.get(
     "/elasticity/predict/{team_id}",
-    summary="Predecir próximo partido con modelo de elasticidad",
+    summary="Predecir prÃ³ximo partido con modelo de elasticidad",
 )
 def predict_next_game(
     team_id: str,
     season: str = Query(..., description='Temporada normalizada, e.g. "2024-25"'),
-    is_home: Optional[bool] = Query(None, description="¿El equipo juega en casa?"),
+    is_home: Optional[bool] = Query(None, description="Â¿El equipo juega en casa?"),
     opp_net_rtg: Optional[float] = Query(
         None, description="Net rating del rival en la temporada"
     ),
     leagues: Optional[str] = Query(
-        None, description="Liga para selección de modelo (FEB, FBCYL)"
+        None, description="Liga para selecciÃ³n de modelo (FEB, FBCYL)"
     ),
     competitions: Optional[str] = Query(
-        None, description="Competición para selección de modelo (LF2, etc.)"
+        None, description="CompeticiÃ³n para selecciÃ³n de modelo (LF2, etc.)"
     ),
     db=Depends(get_db),
 ) -> Dict[str, Any]:
@@ -153,16 +155,16 @@ def predict_next_game(
 
 
 # ---------------------------------------------------------------------------
-# FASE 5 — Monte Carlo simulation
+# FASE 5 â€” Monte Carlo simulation
 # ---------------------------------------------------------------------------
 
 class MonteCarloRequest(BaseModel):
     # Historical mode (requires season + team_id in URL)
-    season: Optional[str] = Field(None, description='Temporada normalizada, e.g. "2024-25". Requerida en modo histórico.')
+    season: Optional[str] = Field(None, description='Temporada normalizada, e.g. "2024-25". Requerida en modo histÃ³rico.')
     # Live mode (reads current season from the active collection)
-    live_collection: Optional[str] = Field(None, description="Nombre de la colección activa (modo temporada actual)")
-    live_team_name: Optional[str] = Field(None, description="Nombre exacto del equipo en la colección activa")
-    live_is_fbcyl: bool = Field(False, description="True si la colección es formato FBCYL")
+    live_collection: Optional[str] = Field(None, description="Nombre de la colecciÃ³n activa (modo temporada actual)")
+    live_team_name: Optional[str] = Field(None, description="Nombre exacto del equipo en la colecciÃ³n activa")
+    live_is_fbcyl: bool = Field(False, description="True si la colecciÃ³n es formato FBCYL")
     # Shared simulation params
     n_games: int = Field(5, ge=1, le=10, description="Partidos a proyectar")
     n_simulations: int = Field(
@@ -180,7 +182,7 @@ class MonteCarloRequest(BaseModel):
 
 @router.post(
     "/montecarlo/{team_id}",
-    summary="Proyección Monte Carlo de próximos partidos",
+    summary="ProyecciÃ³n Monte Carlo de prÃ³ximos partidos",
 )
 def run_monte_carlo(
     team_id: str,
@@ -190,12 +192,12 @@ def run_monte_carlo(
     """Run a Monte Carlo simulation projecting the next n_games for a team.
 
     Supports two modes:
-    - **Histórico**: supply ``season``. Uses HISTORICAL collection (trained data).
+    - **HistÃ³rico**: supply ``season``. Uses HISTORICAL collection (trained data).
     - **Temporada actual**: supply ``live_collection``, ``live_team_name``, ``live_is_fbcyl``.
-      Normalises live docs on-the-fly — does not affect elasticity training.
+      Normalises live docs on-the-fly â€” does not affect elasticity training.
 
     Args:
-        team_id: Team identifier (HISTORICAL) — ignored in live mode.
+        team_id: Team identifier (HISTORICAL) â€” ignored in live mode.
         req:     Simulation parameters.
 
     Returns:
@@ -220,7 +222,7 @@ def run_monte_carlo(
         )
     else:
         if not req.season:
-            raise HTTPException(status_code=422, detail="season es obligatorio en modo histórico.")
+            raise HTTPException(status_code=422, detail="season es obligatorio en modo histÃ³rico.")
         result = svc.simulate(
             team_id, req.season,
             n_games=req.n_games,
@@ -236,174 +238,4 @@ def run_monte_carlo(
     return result
 
 
-# ---------------------------------------------------------------------------
-# FASE 6 — Backtesting (walk-forward validation)
-# ---------------------------------------------------------------------------
-
-@router.get(
-    "/backtesting/{team_id}",
-    summary="Validación walk-forward de modelos de elasticidad (FASE 6)",
-)
-def get_backtesting(
-    team_id: str,
-    season: str = Query(..., description='Temporada normalizada, e.g. "2024-25"'),
-    leagues: Optional[str] = Query(None, description="Liga para filtrar datos (FEB, FBCYL)"),
-    competitions: Optional[str] = Query(None, description="Competición para filtrar datos"),
-    db=Depends(get_db),
-) -> Dict[str, Any]:
-    """Run walk-forward backtesting for a team's season.
-
-    For each game from MIN_TRAIN_SIZE onwards, trains a Ridge model on all
-    previous games and evaluates its prediction against the actual observed value.
-    No future data is used in any training fold (strict time-series split).
-
-    Args:
-        team_id:      Team ID as stored in HISTORICAL.
-        season:       Normalised season label.
-        leagues:      Optional league filter.
-        competitions: Optional competition filter.
-
-    Returns:
-        ``{stat: {model_a: {mae, rmse, mape, n_evaluated}, model_b: {...}}}``
-    """
-    from src.services.backtesting_service import BacktestingService
-    leagues_list = [leagues] if leagues else None
-    comps_list   = [competitions] if competitions else None
-    svc = BacktestingService(db.connection)
-    result = svc.run_backtest(team_id, season, leagues_list, comps_list)
-    return result
-
-
-# ---------------------------------------------------------------------------
-# FASE 7 — Game prediction (Win/Loss classifier)
-# ---------------------------------------------------------------------------
-
-class GamePredictionRequest(BaseModel):
-    season:       str   = Field(..., description='Temporada normalizada, e.g. "2024-25"')
-    is_home:      bool  = Field(..., description="¿El equipo juega en casa?")
-    opp_net_rtg:  float = Field(0.0, description="Net rating del rival en la temporada")
-    leagues:      Optional[List[str]] = None
-    competitions: Optional[List[str]] = None
-
-
-@router.post(
-    "/game-prediction/{team_id}",
-    summary="Predicción Victoria/Derrota para el próximo partido (FASE 7)",
-)
-def predict_game(
-    team_id: str,
-    req: GamePredictionRequest,
-    db=Depends(get_db),
-) -> Dict[str, Any]:
-    """Predict Win/Loss probability using a calibrated Logistic Regression.
-
-    Trains on the team's season-to-date game history from HISTORICAL using
-    rolling-window features + home/away context + opponent strength.
-
-    Args:
-        team_id: Team ID as stored in HISTORICAL.
-        req:     Request body with season, context, and optional filters.
-
-    Returns:
-        ``{win_prob, ci_low, ci_high, feature_importances, n_train, accuracy}``
-    """
-    from src.services.game_prediction_service import GamePredictionService
-    svc = GamePredictionService(db.connection)
-    result = svc.predict(
-        team_id,
-        req.season,
-        is_home=req.is_home,
-        opp_net_rtg=req.opp_net_rtg,
-        leagues=req.leagues,
-        competitions=req.competitions,
-    )
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
-
-
-# ---------------------------------------------------------------------------
-# FASE 9 — Season-End Projections (Monte Carlo standings)
-# ---------------------------------------------------------------------------
-
-@router.get(
-    "/season-projection/{collection}",
-    summary="Proyección de clasificación final de liga por Monte Carlo (FASE 9)",
-)
-def get_season_projection(
-    collection: str,
-    season: str = Query(..., description='Temporada normalizada, e.g. "2024-25"'),
-    season_length: int = Query(22, description="Número total de partidos por equipo en la temporada"),
-    n_simulations: int = Query(1000, description="Número de simulaciones Monte Carlo"),
-    playoff_spots: int = Query(4, description="Puestos de playoff"),
-    db=Depends(get_db),
-) -> Any:
-    """Project final league standings via Monte Carlo simulation.
-
-    For each remaining game, samples the outcome from a Bernoulli distribution
-    based on the net-rating difference between teams.  Returns the projected
-    wins distribution, playoff probability, and rank probability per team.
-
-    Args:
-        collection:    MongoDB live collection (used to scope HISTORICAL filter).
-        season:        Normalised season label.
-        season_length: Total games each team will play.
-        n_simulations: Monte Carlo samples.
-        playoff_spots: How many teams qualify for playoffs.
-
-    Returns:
-        List of team projection entries sorted by projected wins (desc).
-    """
-    from src.services.season_projection_service import SeasonProjectionService
-    svc = SeasonProjectionService(db.connection)
-    result = svc.project(
-        collection=collection,
-        season=season,
-        season_length=season_length,
-        n_simulations=n_simulations,
-        playoff_spots=playoff_spots,
-    )
-    if isinstance(result, dict) and "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
-# ---------------------------------------------------------------------------
-
-@router.get(
-    "/player-prediction/{collection}/{player_id}",
-    summary="Predicción de estadísticas del próximo partido para un jugador (FASE 8)",
-)
-def predict_player(
-    collection: str,
-    player_id: str,
-    is_home: bool = Query(..., description="¿El equipo juega en casa?"),
-    opp_net_rtg: float = Query(0.0, description="Net rating del rival en la temporada"),
-    is_fbcyl: bool = Query(False, description="True si la colección es formato FBCYL"),
-    db=Depends(get_db),
-) -> Dict[str, Any]:
-    """Predict a player's next-game counting stats using Ridge regression.
-
-    Trains per-target-stat Ridge models on the player's game history from the
-    live collection, using rolling-window features + context (home/opp strength).
-
-    Args:
-        collection: MongoDB live collection name.
-        player_id:  Player identifier (FEB integer string or FBCYL UUID).
-        is_home:    Whether the next game is at home.
-        opp_net_rtg: Opponent net rating for context bucketing.
-        is_fbcyl:   True for FBCYL format collections.
-
-    Returns:
-        ``{pts: {estimate, ci_low, ci_high, n_train}, reb: {...}, ast: {...}, val: {...}}``
-    """
-    from src.services.player_prediction_service import PlayerPredictionService
-    svc = PlayerPredictionService(db.connection)
-    result = svc.predict(
-        collection=collection,
-        player_id=player_id,
-        is_home=is_home,
-        opp_net_rtg=opp_net_rtg,
-        is_fbcyl=is_fbcyl,
-    )
-    if "error" in result:
-        raise HTTPException(status_code=404, detail=result["error"])
-    return result
+# FASE 6-9 endpoints are in analysis_predictive.py

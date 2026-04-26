@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from database.historical_repository import HistoricalRepository
-from services.elasticity_service import (
+from services._elasticity_models import (
     TARGET_STATS,
     ROLLING_WINDOWS,
     _fit_ridge_with_bootstrap,
