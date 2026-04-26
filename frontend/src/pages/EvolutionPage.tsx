@@ -82,8 +82,6 @@ const STAT_GROUPS = [
   },
 ] as const
 
-type StatKey = (typeof STAT_GROUPS)[number]['options'][number]['key']
-
 const STAT_LABEL_MAP: Record<string, string> = Object.fromEntries(
   STAT_GROUPS.flatMap(g => g.options.map(o => [o.key, o.label]))
 )
