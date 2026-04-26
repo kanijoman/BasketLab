@@ -182,10 +182,72 @@ analysis = analyzer.analyze_team("Team", formatted, "own", provider="groq")
 ```bash
 .\install_dependencies.ps1        # Install deps
 .\build_windows.ps1               # Build EXE
-python src/main.py                # Run dev
+python src/main.py                # Run dev (PyQt6)
+python run_api.py                 # Run FastAPI backend (:8000)
+cd frontend && npm run dev        # Run Vite frontend (:5173)
 # DB creds: src/database/db_credentials.txt (format: mongodb+srv://user:pass@cluster/db)
 # AI keys: ~/.basketlab/config.txt
 ```
+
+## Predictive Analytics Roadmap (Descriptivo → Predictivo)
+
+### ✅ COMPLETADO
+| Fase | Descripción | Archivos clave | Tests |
+|------|-------------|----------------|-------|
+| FASE 2 | Rival-adjusted stats | `analysis.py` /rival_adjusted | - |
+| FASE 3/4 | Elasticity Ridge models (Modelo A/B) | `elasticity_service.py` | `test_elasticity_*` |
+| FASE 5 | Monte Carlo team projection | `monte_carlo_service.py` | `test_monte_carlo_*` |
+| FASE 6 | Walk-forward backtesting | `backtesting_service.py` | `test_backtesting.py` (16) |
+| FASE 7 | Win/Loss classifier (Logistic+Platt) | `game_prediction_service.py` | `test_game_prediction.py` (22) |
+| FASE 8 | Player-level Ridge prediction | `player_prediction_service.py` | `test_player_prediction.py` (21) |
+| FASE 9 | Season-end standings projection MC | `season_projection_service.py` | `test_season_projection.py` (21) |
+
+**Suite total: 627 tests, 0 failures (26/04/2026)**
+
+### 🔜 PRÓXIMAS FASES PROPUESTAS
+
+**FASE 10 — Prescriptive Automation (Recomendador táctico)**
+- Input: equipo + próximo rival → output: recomendaciones de ajuste
+- `prescriptive_service.py`: usa ElasticityService + GamePredictionService
+- Endpoint: `POST /api/v1/analysis/prescriptive/{team_id}`
+- UI: tab "Recomendaciones" en PredictivePage
+- Complejidad: Media | Impacto: Alto
+
+**FASE 11 — Refactor de servicios grandes (deuda técnica)**
+- `analysis.py` (409L) → split en `routers/analysis_predictive.py` + `routers/analysis_player.py`
+- `player_prediction_service.py` (357L) → extraer `_ridge_helpers.py`
+- `elasticity_service.py` (480L) → extraer `_elasticity_models.py`
+- `repository_inout.py` (1001L) → URGENTE split en módulos
+- Complejidad: Media | Impacto: Calidad
+
+**FASE 12 — Player Scouting Predictive**
+- Proyección de próximas N temporadas para un jugador (Ridge multi-temporada)
+- Curvas de desarrollo por edad (polynomial regression)
+- `player_development_service.py` usando HISTORICAL
+- Endpoint: `GET /api/v1/analysis/player-development/{player_id}`
+- Complejidad: Alta | Impacto: Alto
+
+**FASE 13 — Lineup Optimizer (Prescriptivo avanzado)**
+- Dado un rival, recomendar el quinteto con mayor P(victoria)
+- GamePredictionService por combinación de quinteto
+- `lineup_optimizer_service.py`: pruning por combinatoria (máx 5-choose-5 de 12)
+- Endpoint: `POST /api/v1/analysis/lineup-optimizer/{collection}`
+- Complejidad: Alta | Impacto: Muy Alto
+
+**FASE 14 — Live Dashboard (tiempo real)**
+- WebSocket endpoint para live-update durante partidos
+- Actualización automática de net_rtg parcial → recalcular predicciones
+- `ws/live/{collection}/{match_id}`
+- Complejidad: Muy Alta | Impacto: Diferenciador
+
+### Deuda técnica identificada
+| Archivo | Líneas | Acción recomendada |
+|---------|--------|-------------------|
+| `repository_inout.py` | 1001 | Split urgente en ≥3 módulos |
+| `individual_scouting_service.py` | 637 | Extract helpers |
+| `historical_ingestion_service.py` | 628 | Extract pipeline builders |
+| `team_stats_service.py` | 580 | Extract calculators |
+| `possession_analyzer.py` | 574 | Extract zone helpers |
 
 ---
 *AI-only doc. Human docs: [README.md](README.md), [DATABASE_CONFIG.md](DATABASE_CONFIG.md), [DISTRIBUTION_GUIDE.md](DISTRIBUTION_GUIDE.md)*
