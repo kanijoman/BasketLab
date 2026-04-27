@@ -1294,7 +1294,20 @@ class FBCYLPipelineBuilder:
             }
         })
 
-        # Stage 12: Sort by team and total points
+        # Stage 12: Add standard API field name aliases for shooting metrics.
+        # The $project above uses short names (ts, efg, three_pr, ftr) but the
+        # frontend and service layer expect the same keys the FEB pipeline uses:
+        # true_shooting, efg_percentage, three_point_rate, free_throw_rate.
+        pipeline.append({
+            "$addFields": {
+                "true_shooting":    "$ts",
+                "efg_percentage":   "$efg",
+                "three_point_rate": "$three_pr",
+                "free_throw_rate":  "$ftr",
+            }
+        })
+
+        # Stage 13: Sort by team and total points
         pipeline.append({
             "$sort": {
                 "team_name": 1,

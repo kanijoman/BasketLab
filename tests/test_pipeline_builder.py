@@ -376,6 +376,70 @@ class TestFBCYLPhantomPlayerFilter(unittest.TestCase):
         )
 
 
+class TestFBCYLPlayerStatsShootingFields(unittest.TestCase):
+    """Regression: FBCYL player stats pipeline must expose standard-named
+    shooting fields (true_shooting, efg_percentage, three_point_rate,
+    free_throw_rate) so the PlayerStatsPage advanced tab renders data.
+
+    Bug: the pipeline computed these as 'ts', 'efg', 'three_pr', 'ftr' — the
+    FEB-compatible names expected by the frontend were never added.
+    """
+
+    _REQUIRED = (
+        "true_shooting",
+        "efg_percentage",
+        "three_point_rate",
+        "free_throw_rate",
+    )
+
+    def _pipeline_str(self):
+        return str(FBCYLPipelineBuilder.build_player_stats_pipeline())
+
+    def test_pipeline_returns_list(self):
+        pipeline = FBCYLPipelineBuilder.build_player_stats_pipeline()
+        self.assertIsInstance(pipeline, list)
+        self.assertGreater(len(pipeline), 0)
+
+    def test_true_shooting_alias_present_regression(self):
+        """Regression: 'true_shooting' must appear in the FBCYL player stats
+        pipeline so the TS% column is populated for FBCYL players."""
+        self.assertIn(
+            "'true_shooting'", self._pipeline_str(),
+            "FBCYL player pipeline missing 'true_shooting' alias — TS% will be empty"
+        )
+
+    def test_efg_percentage_alias_present_regression(self):
+        """Regression: 'efg_percentage' must appear so the eFG% column renders."""
+        self.assertIn(
+            "'efg_percentage'", self._pipeline_str(),
+            "FBCYL player pipeline missing 'efg_percentage' alias — eFG% will be empty"
+        )
+
+    def test_three_point_rate_alias_present_regression(self):
+        """Regression: 'three_point_rate' must appear so the 3Pr column renders."""
+        self.assertIn(
+            "'three_point_rate'", self._pipeline_str(),
+            "FBCYL player pipeline missing 'three_point_rate' alias — 3Pr will be empty"
+        )
+
+    def test_free_throw_rate_alias_present_regression(self):
+        """Regression: 'free_throw_rate' must appear so the FTr column renders."""
+        self.assertIn(
+            "'free_throw_rate'", self._pipeline_str(),
+            "FBCYL player pipeline missing 'free_throw_rate' alias — FTr will be empty"
+        )
+
+    def test_all_four_shooting_fields_present(self):
+        """All four standard-named shooting fields must appear in the pipeline."""
+        pipeline_str = self._pipeline_str()
+        for field in self._REQUIRED:
+            self.assertIn(
+                f"'{field}'", pipeline_str,
+                f"FBCYL player pipeline missing '{field}'"
+            )
+
+
+
 
 class TestPerPlayerPerGamePipelineStructure(unittest.TestCase):
     """Structural tests for build_per_player_per_game_pipeline.
