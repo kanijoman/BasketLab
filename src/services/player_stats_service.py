@@ -273,7 +273,8 @@ class PlayerStatsService:
                 arr = np.array(values)
                 mean = float(np.mean(arr))
                 std = float(np.std(arr))
-                cv = (std / mean * 100) if mean > 0 else 0.0
+                cv = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
+                cv = min(cv, 200.0)
                 result[pid][stat_key] = {
                     "mean": round(mean, 2),
                     "std":  round(std, 2),
@@ -345,7 +346,8 @@ class PlayerStatsService:
                 arr  = np.array(values)
                 mean = float(np.mean(arr))
                 std  = float(np.std(arr))
-                cv   = (std / mean * 100) if mean > 0 else 0.0
+                cv   = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
+                cv   = min(cv, 200.0)
                 result[pid][stat_key] = {
                     "mean": round(mean, 2),
                     "std":  round(std, 2),

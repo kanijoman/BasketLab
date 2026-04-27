@@ -87,7 +87,6 @@ def render_table_png(
     rows: List[List[str]],
     cell_colors: List[List[str]],
     title: str,
-    dpi: int = 120,
     text_colors: Optional[List[List[str]]] = None,
 ) -> bytes:
     """Return PNG bytes for a styled table rendered with matplotlib Agg backend.
@@ -97,7 +96,6 @@ def render_table_png(
         rows: Cell text values (rows × cols).
         cell_colors: Per-cell background hex colours (rows × cols).
         title: Figure title.
-        dpi: Output resolution.
         text_colors: Optional per-cell text colour overrides (rows × cols).
             When *None*, text colour is derived from the cell background using
             :data:`_BG_TEXT` so quartile cells stay readable on dark theme.
@@ -105,9 +103,9 @@ def render_table_png(
     n_rows = len(rows)
     n_cols = len(col_headers)
     has_cv = bool(text_colors)
-    row_h  = 0.07 if has_cv else 0.055  # taller rows when σ badge wraps
-    fig_width  = max(12, n_cols * 1.1)
-    fig_height = max(2.5, n_rows * row_h * 10 + 1.4)
+    row_h  = 0.09 if has_cv else 0.07   # taller rows when σ badge wraps
+    fig_width  = max(16, n_cols * 1.4)
+    fig_height = max(3.0, n_rows * row_h * 10 + 1.8)
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
     fig.patch.set_facecolor(_FIG_BG)
@@ -119,7 +117,7 @@ def render_table_png(
         ax.text(0.5, 0.5, 'Sin datos', ha='center', va='center',
                 color=_CELL_TEXT, transform=ax.transAxes)
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor=_FIG_BG)
+        fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor=_FIG_BG)
         plt.close(fig)
         return buf.getvalue()
 
@@ -131,14 +129,14 @@ def render_table_png(
         loc='center',
     )
     tbl.auto_set_font_size(False)
-    tbl.set_fontsize(7)
+    tbl.set_fontsize(8)
     tbl.auto_set_column_width(col=list(range(n_cols)))
 
     # Header row
     for col in range(n_cols):
         cell = tbl[0, col]
         cell.set_text_props(color=_CELL_TEXT, fontweight='bold')
-        cell.set_height(0.06)
+        cell.set_height(0.07)
 
     # Data rows — auto-derive text colour from cell background for dark theme
     for row in range(1, n_rows + 1):
@@ -154,7 +152,7 @@ def render_table_png(
             c.get_text().set_color(txt)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor=_FIG_BG)
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor=_FIG_BG)
     plt.close(fig)
     return buf.getvalue()
 
@@ -573,6 +571,24 @@ def build_consistency_rows(
 # CV badge overlay — appends σXX% annotation to stat cells
 # ---------------------------------------------------------------------------
 
+# BASIC_FIELDS / ADV_FIELDS use the team-stats doc keys (e.g. 'points_scored')
+# while TeamStatsService.get_consistency() stores CV under per-game keys.
+# This alias maps table key → CV data key so badges resolve correctly.
+_CV_FIELD_ALIAS: Dict[str, str] = {
+    'points_scored':   'points_per_game',
+    'points_received': 'points_against_per_game',
+    'total_rebounds':  'rebounds_per_game',
+    'rebounds_def':    'defensive_rebounds_per_game',
+    'rebounds_off':    'offensive_rebounds_per_game',
+    'assists':         'assists_per_game',
+    'steals':          'steals_per_game',
+    'turnovers':       'turnovers_per_game',
+    'blocks':          'blocks_per_game',
+}
+
+# These fields produce meaningless CV values (signed / oscillates near zero)
+_CV_NO_BADGE: frozenset = frozenset({'net_rating'})
+
 def apply_cv_overlay(
     texts: List[List[str]],
     cv_data: Dict[str, Dict],
@@ -611,7 +627,10 @@ def apply_cv_overlay(
 
         for i, (field, _) in enumerate(fields):
             col_idx  = n_meta + i
-            cv_entry = team_cv.get(field)
+            if field in _CV_NO_BADGE:
+                continue
+            cv_key   = _CV_FIELD_ALIAS.get(field, field)
+            cv_entry = team_cv.get(cv_key)
             if cv_entry and cv_entry.get('n', 0) >= 3:
                 cv          = float(cv_entry['cv'])
                 badge_color = _cv_badge_color(cv)

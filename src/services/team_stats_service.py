@@ -230,7 +230,11 @@ class TeamStatsService:
                     arr = np.array(values)
                     mean = float(np.mean(arr))
                     std = float(np.std(arr))
-                    cv = (std / mean * 100) if mean > 0 else 0.0
+                    # Use abs(mean) with a floor to avoid absurd CV for signed/
+                    # near-zero metrics (e.g. net_rating). Cap at 200% so edge
+                    # cases don't produce misleading badge values.
+                    cv = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
+                    cv = min(cv, 200.0)
                     cv_result[team][stat_key] = {
                         "mean": round(mean, 2),
                         "std":  round(std, 2),
@@ -417,7 +421,8 @@ class TeamStatsService:
                     arr  = np.array(values)
                     mean = float(np.mean(arr))
                     std  = float(np.std(arr))
-                    cv   = (std / mean * 100) if mean > 0 else 0.0
+                    cv   = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
+                    cv   = min(cv, 200.0)
                     result[team][stat_key] = {
                         "mean": round(mean, 2),
                         "std":  round(std, 2),
