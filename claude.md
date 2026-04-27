@@ -52,24 +52,24 @@ No fix is complete without its regression test.
 - Flag issues: "File X: 650 lines, extract Y" | "Function Z: complexity ~12, split needed"
 
 ## Architecture
-- **UI → Repository → MongoDB**: Never direct DB access from UI
+- **UI → Repository → MongoDB**: Never direct DB access from frontend
+- **Web stack**: FastAPI (port 8000) + React/Vite (port 5173)
 - **Complex queries**: Aggregation pipelines (NOT Python filtering)
 - **AI flow**: Stats → `ContextBuilder` → `TeamAnalyzer` (multi-provider)
-- **Viz**: matplotlib → QLabel/file
+- **Viz**: matplotlib → PNG bytes returned by API
 
 ## Mandatory Patterns
 
-### PyQt6 UI
+### FastAPI / Python backend
 
 ```python
-class NewStatsWindow(QMainWindow):
-    def __init__(self, repository, scope, season, group, competition):
-        self.is_fbcyl = "FBCYL" in scope
-        self.table = StatsTableManager.create_table_with_quartiles(...)
-        self.exporter = StatsExporter(self, self.table, "file_name")
+@router.get("/example/{collection}")
+def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
+    svc = MyService(db)
+    return svc.get_data(collection)
 ```
-**Critical:** Use `NumericTableWidgetItem(value)` for numeric columns (NOT `QTableWidgetItem(str(value))`)
-**Background ops:** Use `QThread` with signals (`finished`, `error`) - never block main thread
+**Background ops:** Use FastAPI `BackgroundTasks` — never block the event loop
+**Lazy imports in services:** Use `from src.services.xxx import X` inside functions for optional heavy deps
 
 ### MongoDB
 **NEVER:** `list(collection.find({}))` then filter in Python
@@ -194,6 +194,7 @@ cd frontend && npm run dev        # Run Vite frontend (:5173)
 ### ✅ COMPLETADO
 | Fase | Descripción | Archivos clave | Tests |
 |------|-------------|----------------|-------|
+| FASE 0 | Eliminar capa Qt UI deprecada | `src/ui/` → eliminado, `src/utils/team_utils.py`, `src/services/pdf_generator.py`, `src/services/player_data_fetcher.py` | - |
 | FASE 2 | Rival-adjusted stats | `analysis.py` /rival_adjusted | - |
 | FASE 3/4 | Elasticity Ridge models (Modelo A/B) | `elasticity_service.py` | `test_elasticity_*` |
 | FASE 5 | Monte Carlo team projection | `monte_carlo_service.py` | `test_monte_carlo_*` |
@@ -201,8 +202,10 @@ cd frontend && npm run dev        # Run Vite frontend (:5173)
 | FASE 7 | Win/Loss classifier (Logistic+Platt) | `game_prediction_service.py` | `test_game_prediction.py` (22) |
 | FASE 8 | Player-level Ridge prediction | `player_prediction_service.py` | `test_player_prediction.py` (21) |
 | FASE 9 | Season-end standings projection MC | `season_projection_service.py` | `test_season_projection.py` (21) |
+| FASE 11 | Refactor deuda técnica | `repository_inout.py`, `elasticity_service.py`, `analysis.py`, `player_prediction_service.py` split | - |
+| FASE A | Backend coverage crítica | `test_indexes.py` (12), `test_scraper_endpoints.py` (18), `test_individual_scouting.py` (22), `test_weekly_report.py` (14) | 66 |
 
-**Suite total: 627 tests, 0 failures (26/04/2026)**
+**Suite total: 670 tests, 0 failures (26/04/2026)**
 
 ### 🔜 PRÓXIMAS FASES PROPUESTAS
 
