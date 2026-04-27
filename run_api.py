@@ -18,10 +18,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 import uvicorn  # noqa: E402
 
 if __name__ == "__main__":
+    dev_mode = os.environ.get("BASKETLAB_DEV", "0") == "1"
     uvicorn.run(
         "src.api.app:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
+        reload=dev_mode,
+        workers=1 if dev_mode else 4,
         log_level="info",
     )

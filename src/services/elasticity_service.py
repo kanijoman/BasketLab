@@ -7,6 +7,7 @@ This module provides ElasticityRepository (DB layer) and ElasticityService (orch
 from __future__ import annotations
 
 from datetime import datetime
+from time import monotonic
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -27,8 +28,12 @@ ELASTICITIES_COLLECTION = "ELASTICITIES"
 class ElasticityRepository:
     """Store and retrieve fitted elasticity models from MongoDB."""
 
+    _LIST_MODELS_TTL = 60.0  # seconds
+
     def __init__(self, connection) -> None:
         self._conn = connection
+        self._list_models_cache: Optional[List[Dict[str, Any]]] = None
+        self._list_models_ts: float = 0.0
 
     def _col(self):
         return self._conn.get_collection(ELASTICITIES_COLLECTION)
@@ -75,10 +80,16 @@ class ElasticityRepository:
             return None
 
     def list_models(self) -> List[Dict[str, Any]]:
+        now = monotonic()
+        if self._list_models_cache is not None and (now - self._list_models_ts) < self._LIST_MODELS_TTL:
+            return self._list_models_cache
         if not self._conn.is_connected():
             return []
         try:
-            return list(self._col().find({}, {"_id": 0}))
+            result = list(self._col().find({}, {"_id": 0}))
+            self._list_models_cache = result
+            self._list_models_ts = now
+            return result
         except Exception:
             return []
 

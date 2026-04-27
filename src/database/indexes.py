@@ -94,6 +94,13 @@ class IndexManager:
                 background=True
             )
 
+            # Index 6: Team name for name-based lookups
+            collection.create_index(
+                [("stats.teams.name", pymongo.ASCENDING)],
+                name="stats_teams_name_1",
+                background=True
+            )
+
             print(f"[IndexManager] Successfully ensured FBCYL indexes")
             return True
 
@@ -137,6 +144,13 @@ class IndexManager:
             collection.create_index(
                 [("HEADER.TEAM.id", pymongo.ASCENDING)],
                 name="team_id_1",
+                background=True
+            )
+
+            # Index 5: Team name for name-based lookups
+            collection.create_index(
+                [("HEADER.localTeam.teamName", pymongo.ASCENDING)],
+                name="header_local_team_name_1",
                 background=True
             )
 

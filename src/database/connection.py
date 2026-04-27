@@ -20,7 +20,13 @@ class MongoDBConnection:
             connection_string = get_mongodb_connection_string()
 
         try:
-            self.client = pymongo.MongoClient(connection_string)
+            self.client = pymongo.MongoClient(
+                connection_string,
+                maxPoolSize=100,
+                minPoolSize=10,
+                retryWrites=True,
+                serverSelectionTimeoutMS=5000,
+            )
             self.client.server_info()  # Test connection
             self.db = self.client["BASKETBALL"]
             self._connected = True

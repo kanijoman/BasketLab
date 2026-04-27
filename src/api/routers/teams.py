@@ -69,17 +69,25 @@ def get_quartiles(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
 
 
 @router.get("/{collection}/teams", summary="List team names in a collection")
-def list_teams(collection: str, db=Depends(get_db)) -> List[str]:
+def list_teams(
+    collection: str,
+    skip: int = Query(0, ge=0, description="Number of teams to skip"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum teams to return"),
+    db=Depends(get_db),
+) -> List[str]:
     """Return a sorted list of all team names present in the collection.
 
     Args:
         collection: MongoDB collection name.
+        skip: Pagination offset (default 0).
+        limit: Max results per page (default 100, max 500).
 
     Returns:
         Sorted list of name strings.
     """
     svc = TeamStatsService(db)
-    return svc.get_all_teams(collection)
+    teams = svc.get_all_teams(collection)
+    return teams[skip: skip + limit]
 
 
 @router.get("/{collection}/consistency", summary="Get per-team intra-game consistency stats")

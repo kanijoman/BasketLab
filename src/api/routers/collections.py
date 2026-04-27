@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.deps import get_db
 from src.services import CollectionService
@@ -11,8 +11,16 @@ router = APIRouter()
 
 
 @router.get("/list", summary="List all available basketball collections")
-def list_collections(db=Depends(get_db)) -> List[Dict[str, Any]]:
+def list_collections(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum records to return"),
+    db=Depends(get_db),
+) -> List[Dict[str, Any]]:
     """Return metadata for every FEB/FBCYL collection in MongoDB.
+
+    Args:
+        skip: Pagination offset (default 0).
+        limit: Max results per page (default 100, max 500).
 
     Returns:
         List of objects with ``name``, ``league``, ``competition``,
@@ -20,7 +28,8 @@ def list_collections(db=Depends(get_db)) -> List[Dict[str, Any]]:
         Sorted league → season desc → competition → group.
     """
     svc = CollectionService(db)
-    return svc.list_available()
+    results = svc.list_available()
+    return results[skip: skip + limit]
 
 
 @router.delete("/{name}", summary="Drop a basketball collection")
