@@ -708,10 +708,28 @@ class FBCYLPipelineBuilder:
             }
         })
 
-        # Stage 5: Filter players with playing time > 0
+        # Stage 5: Filter players with playing time > 0.
+        # Also exclude phantom players: inscribed but never played; the raw
+        # FBCYL data assigns them timePlayed=40 (full game) while every
+        # activity stat remains zero.
+        # $nor excludes any player where timePlayed==40 AND every listed stat
+        # is zero or absent.
         pipeline.append({
             "$match": {
-                "stats.teams.players.timePlayed": {"$gt": 0}
+                "stats.teams.players.timePlayed": {"$gt": 0},
+                "$nor": [{
+                    "stats.teams.players.timePlayed": 40,
+                    "stats.teams.players.data.score":               {"$in": [0, None]},
+                    "stats.teams.players.data.shotsOfTwoAttempted":   {"$in": [0, None]},
+                    "stats.teams.players.data.shotsOfThreeAttempted": {"$in": [0, None]},
+                    "stats.teams.players.data.shotsOfOneAttempted":   {"$in": [0, None]},
+                    "stats.teams.players.data.offensiveRebound":      {"$in": [0, None]},
+                    "stats.teams.players.data.defensiveRebound":      {"$in": [0, None]},
+                    "stats.teams.players.data.assists":               {"$in": [0, None]},
+                    "stats.teams.players.data.lost":                  {"$in": [0, None]},
+                    "stats.teams.players.data.block":                 {"$in": [0, None]},
+                    "stats.teams.players.data.steals":                {"$in": [0, None]},
+                }],
             }
         })
 

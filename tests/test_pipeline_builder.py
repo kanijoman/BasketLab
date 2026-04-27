@@ -310,6 +310,73 @@ class TestPerGameRawPipelineStructure(unittest.TestCase):
             )
 
 
+class TestFBCYLPhantomPlayerFilter(unittest.TestCase):
+    """Regression: FBCYL phantom-player validation.
+
+    A player inscribed to a match but who never actually played can appear in
+    the raw data with ``timePlayed = 40`` (full game) and all activity stats
+    equal to zero.  Both FBCYL pipelines must exclude such records.
+    """
+
+    # ------------------------------------------------------------------
+    # fbcyl_pipeline.py — Stage 5 $match
+    # ------------------------------------------------------------------
+
+    def _get_player_filter_stage(self):
+        """Return the Stage-5 $match dict from FBCYLPipelineBuilder."""
+        pipeline = FBCYLPipelineBuilder.build_player_stats_pipeline()
+        for stage in pipeline:
+            if "$match" in stage:
+                mc = stage["$match"]
+                if "stats.teams.players.timePlayed" in str(mc):
+                    return mc
+        return None
+
+    def test_player_pipeline_filter_stage_exists(self):
+        stage = self._get_player_filter_stage()
+        self.assertIsNotNone(stage, "No $match stage filtering timePlayed found")
+
+    def test_player_pipeline_filter_excludes_phantom_via_expr(self):
+        """Stage 5 must contain a $nor condition that catches the phantom
+        pattern (timePlayed==40 AND all stats==0)."""
+        stage = self._get_player_filter_stage()
+        self.assertIsNotNone(stage)
+        stage_str = str(stage)
+        self.assertIn(
+            "$nor", stage_str,
+            "Stage 5 $match must use $nor to exclude phantom players "
+            "(timePlayed==40, all stats==0); missing $nor"
+        )
+
+    # ------------------------------------------------------------------
+    # fbcyl_per_game_pipeline.py — Stage 4 $match
+    # ------------------------------------------------------------------
+
+    def _get_per_game_filter_stage(self):
+        from database.aggregation.fbcyl_per_game_pipeline import (
+            build_fbcyl_player_per_game_pipeline,
+        )
+        pipeline = build_fbcyl_player_per_game_pipeline()
+        for stage in pipeline:
+            if "$match" in stage:
+                mc = stage["$match"]
+                if "timePlayed" in str(mc):
+                    return mc
+        return None
+
+    def test_per_game_pipeline_filter_excludes_phantom_via_expr(self):
+        """Per-game pipeline Stage 4 must also use $nor to exclude phantom
+        players."""
+        stage = self._get_per_game_filter_stage()
+        self.assertIsNotNone(stage, "No $match stage filtering timePlayed found in per-game pipeline")
+        stage_str = str(stage)
+        self.assertIn(
+            "$nor", stage_str,
+            "Per-game pipeline $match must use $nor to exclude phantom players; missing $nor"
+        )
+
+
+
 class TestPerPlayerPerGamePipelineStructure(unittest.TestCase):
     """Structural tests for build_per_player_per_game_pipeline.
 

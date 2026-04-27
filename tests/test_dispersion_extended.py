@@ -421,6 +421,125 @@ class TestDerivedIndexes:
         assert "volatilidad_triple" not in own_map["Team C"]
 
 
+# ---------------------------------------------------------------------------
+# Phantom-player regression (FBCYL timePlayed=40 + all stats=0)
+# ---------------------------------------------------------------------------
+
+def _phantom_player_doc(collection: str = "FBCYL_SE_2025_A") -> dict:
+    """Game document containing one real player + one phantom (timePlayed=40, stats=0)."""
+    return {
+        "stats": {
+            "time": "Jan 10, 2025 6:00:00 PM",
+            "startDate": "2025-01-10",
+            "teams": [
+                {
+                    "name": "Real Team",
+                    "teamIdExtern": 1,
+                    "players": [
+                        {   # Real player: played 28 minutes, has stats
+                            "uuid": "real-player",
+                            "actorId": "actor-real",
+                            "name": "Real Player",
+                            "timePlayed": 28,
+                            "data": {
+                                "score": 12, "valoration": 15,
+                                "shotsOfTwoSuccessful": 4, "shotsOfTwoAttempted": 8,
+                                "shotsOfThreeSuccessful": 1, "shotsOfThreeAttempted": 3,
+                                "shotsOfOneSuccessful": 2, "shotsOfOneAttempted": 3,
+                                "offensiveRebound": 1, "defensiveRebound": 3,
+                                "assists": 2, "lost": 1, "block": 0, "steals": 1,
+                                "faults": 2, "faultReceived": 3,
+                            },
+                        },
+                        {   # Phantom: registered but never played; system assigns 40 min
+                            "uuid": "phantom-player",
+                            "actorId": "actor-phantom",
+                            "name": "Phantom Player",
+                            "timePlayed": 40,
+                            "data": {
+                                "score": 0, "valoration": 0,
+                                "shotsOfTwoSuccessful": 0, "shotsOfTwoAttempted": 0,
+                                "shotsOfThreeSuccessful": 0, "shotsOfThreeAttempted": 0,
+                                "shotsOfOneSuccessful": 0, "shotsOfOneAttempted": 0,
+                                "offensiveRebound": 0, "defensiveRebound": 0,
+                                "assists": 0, "lost": 0, "block": 0, "steals": 0,
+                                "faults": 0, "faultReceived": 0,
+                            },
+                        },
+                    ],
+                    "data": {"score": 12, "shotsOfTwoSuccessful": 4, "shotsOfTwoAttempted": 8,
+                             "shotsOfThreeSuccessful": 1, "shotsOfThreeAttempted": 3,
+                             "shotsOfOneSuccessful": 2, "shotsOfOneAttempted": 3,
+                             "offensiveRebound": 1, "defensiveRebound": 3,
+                             "assists": 2, "lost": 1, "block": 0, "steals": 1, "faults": 2},
+                },
+                {
+                    "name": "Opponent",
+                    "teamIdExtern": 2,
+                    "players": [
+                        {"uuid": "opp-p1", "actorId": "actor-opp", "name": "Opp Player",
+                         "timePlayed": 35,
+                         "data": {"score": 10, "valoration": 8,
+                                  "shotsOfTwoSuccessful": 3, "shotsOfTwoAttempted": 7,
+                                  "shotsOfThreeSuccessful": 1, "shotsOfThreeAttempted": 4,
+                                  "shotsOfOneSuccessful": 2, "shotsOfOneAttempted": 2,
+                                  "offensiveRebound": 1, "defensiveRebound": 4,
+                                  "assists": 3, "lost": 2, "block": 1, "steals": 0,
+                                  "faults": 3, "faultReceived": 2}},
+                    ],
+                    "data": {"score": 10, "shotsOfTwoSuccessful": 3, "shotsOfTwoAttempted": 7,
+                             "shotsOfThreeSuccessful": 1, "shotsOfThreeAttempted": 4,
+                             "shotsOfOneSuccessful": 2, "shotsOfOneAttempted": 2,
+                             "offensiveRebound": 1, "defensiveRebound": 4,
+                             "assists": 3, "lost": 2, "block": 1, "steals": 0, "faults": 3},
+                },
+            ],
+        }
+    }
+
+
+class TestPhantomPlayerFilterRegression:
+    """Regression: FBCYL phantom player (timePlayed=40, all stats=0) must be excluded.
+
+    Bug: players inscribed to a match but who never played appear in raw FBCYL
+    data with timePlayed=40 and every activity stat set to 0.  The system was
+    incorrectly counting them as having played a full 40-minute game.
+    Fix: filter them out in both FBCYL pipelines and in repository_inout.py.
+    """
+
+    def _run_player_per_game(self, doc: dict, collection: str = "FBCYL_SE_2025_A"):
+        client = mongomock.MongoClient()
+        db = client["basketlab_test"]
+        db[collection].insert_one(doc)
+        pipeline = build_fbcyl_player_per_game_pipeline()
+        return list(db[collection].aggregate(pipeline))
+
+    def test_real_player_is_kept(self):
+        """A player with timePlayed=28 and non-zero stats must appear in results."""
+        results = self._run_player_per_game(_phantom_player_doc())
+        names = {r["player_name"] for r in results}
+        assert "Real Player" in names, f"Real player must be retained; got: {names}"
+
+    def test_phantom_player_is_excluded_regression(self):
+        """Regression: phantom player (timePlayed=40, all stats=0) must NOT appear."""
+        results = self._run_player_per_game(_phantom_player_doc())
+        names = {r["player_name"] for r in results}
+        assert "Phantom Player" not in names, (
+            f"Phantom player (timePlayed=40, stats=0) was not filtered out; got: {names}"
+        )
+
+    def test_real_player_with_40min_is_kept(self):
+        """A player who genuinely played 40 minutes with non-zero stats must be kept."""
+        doc = _phantom_player_doc()
+        # Make the real player's timePlayed = 40 (legitimate full-game performance)
+        doc["stats"]["teams"][0]["players"][0]["timePlayed"] = 40
+        results = self._run_player_per_game(doc)
+        names = {r["player_name"] for r in results}
+        assert "Real Player" in names, (
+            "A player with timePlayed=40 but actual stats must NOT be filtered out"
+        )
+
+
 # ===========================================================================
 # 6. API-level consistency endpoint tests
 # ===========================================================================

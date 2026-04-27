@@ -213,8 +213,27 @@ def build_fbcyl_player_per_game_pipeline() -> List[Dict]:
             "preserveNullAndEmptyArrays": False,
         }},
 
-        # Stage 4: only players who actually played
-        {"$match": {"stats.teams.players.timePlayed": {"$gt": 0}}},
+        # Stage 4: only players who actually played.
+        # Also exclude phantom players: inscribed but never played; FBCYL
+        # assigns them timePlayed=40 (full game) with all activity stats==0.
+        # $nor excludes any player where timePlayed==40 AND every listed stat is
+        # zero or absent — those are registered-but-did-not-play entries.
+        {"$match": {
+            "stats.teams.players.timePlayed": {"$gt": 0},
+            "$nor": [{
+                "stats.teams.players.timePlayed": 40,
+                "stats.teams.players.data.score":               {"$in": [0, None]},
+                "stats.teams.players.data.shotsOfTwoAttempted":   {"$in": [0, None]},
+                "stats.teams.players.data.shotsOfThreeAttempted": {"$in": [0, None]},
+                "stats.teams.players.data.shotsOfOneAttempted":   {"$in": [0, None]},
+                "stats.teams.players.data.offensiveRebound":      {"$in": [0, None]},
+                "stats.teams.players.data.defensiveRebound":      {"$in": [0, None]},
+                "stats.teams.players.data.assists":               {"$in": [0, None]},
+                "stats.teams.players.data.lost":                  {"$in": [0, None]},
+                "stats.teams.players.data.block":                 {"$in": [0, None]},
+                "stats.teams.players.data.steals":                {"$in": [0, None]},
+            }],
+        }},
 
         # Stage 5: project with FEB-compatible field names
         {"$project": {

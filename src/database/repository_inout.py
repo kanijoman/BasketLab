@@ -178,12 +178,24 @@ class InOutRepositoryMixin(InOutHelpersMixin):
                                     m = p.get('timePlayed')  # FBCYL uses 'timePlayed' field
                                     if m is None:
                                         return 0.0
-                                    if isinstance(m, (int, float)):
-                                        return float(m)
-                                    try:
-                                        return float(m)
-                                    except Exception:
-                                        return 0.0
+                                    minutes = float(m)
+                                    # Phantom player: inscribed but never played.
+                                    # FBCYL assigns timePlayed=40 to these players while
+                                    # every activity stat remains 0.
+                                    if minutes == 40.0:
+                                        data = p.get('data', {}) or {}
+                                        activity = sum(
+                                            data.get(k, 0) or 0
+                                            for k in (
+                                                'score', 'shotsOfTwoAttempted',
+                                                'shotsOfThreeAttempted', 'shotsOfOneAttempted',
+                                                'offensiveRebound', 'defensiveRebound',
+                                                'assists', 'lost', 'block', 'steals',
+                                            )
+                                        )
+                                        if activity == 0:
+                                            return 0.0
+                                    return minutes
                         return 0.0
                     else:
                         # FEB structure: BOXSCORE.TEAM[].PLAYER[]
