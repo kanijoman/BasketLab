@@ -47,6 +47,8 @@ from src.services._weekly_report_helpers import (
     build_comparative_basic_rows, build_comparative_advanced_rows,
     build_last_match_rows, build_player_rows,
     CONSISTENCY_HEADERS, build_consistency_rows,
+    apply_cv_overlay,
+    BASIC_FIELDS, ADV_FIELDS,
 )
 
 
@@ -236,33 +238,47 @@ class WeeklyReportService:
 
     def _gen_general_stats(self, zf: zipfile.ZipFile, collection: str) -> None:
         ts = self._db.get_team_stats(collection) or []
+
+        # Fetch CV data once for the whole general-stats section
+        cv_own: Dict = {}
+        try:
+            from src.services.team_stats_service import TeamStatsService
+            cv_own = TeamStatsService(self._db).get_consistency(collection).get('own', {})
+        except Exception:
+            pass
+
         if ts:
             rows, cols = build_basic_rows(ts)
+            rows, txt_colors = apply_cv_overlay(rows, cv_own, BASIC_FIELDS, n_meta=4)
             zf.writestr('General/01_Basicas_Toda_Competicion.png',
                         render_table_png(BASIC_HEADERS, rows, cols,
-                                        'Estadísticas Básicas - Toda la Competición'))
+                                        'Estadísticas Básicas - Toda la Competición',
+                                        text_colors=txt_colors or None))
             rows, cols = build_advanced_rows(ts)
+            rows, txt_colors = apply_cv_overlay(rows, cv_own, ADV_FIELDS, n_meta=2)
             zf.writestr('General/01_Avanzadas_Toda_Competicion.png',
                         render_table_png(ADV_HEADERS, rows, cols,
-                                        'Estadísticas Avanzadas - Toda la Competición'))
+                                        'Estadísticas Avanzadas - Toda la Competición',
+                                        text_colors=txt_colors or None))
 
         self._gen_compare_result(zf, collection, 'won', 'lost',
                                  'Ganados vs Perdidos', '02')
         self._gen_compare_venue(zf, collection, 'Local vs Visitante', '03')
         self._gen_compare_month(zf, collection, 'Último Mes', '04')
-        self._gen_consistency_png(zf, collection)
+        self._gen_consistency_png(zf, collection, cv_own)
 
     def _gen_consistency_png(
-        self, zf: zipfile.ZipFile, collection: str,
+        self, zf: zipfile.ZipFile, collection: str, cv_own: Dict = None,
     ) -> None:
         """Add a league-wide consistency (CV) table PNG to the General/ folder."""
         try:
-            from src.services.team_stats_service import TeamStatsService
-            consistency = TeamStatsService(self._db).get_consistency(collection)
-            own_map = consistency.get("own", {})
-            if not own_map:
+            if cv_own is None:
+                from src.services.team_stats_service import TeamStatsService
+                consistency = TeamStatsService(self._db).get_consistency(collection)
+                cv_own = consistency.get("own", {})
+            if not cv_own:
                 return
-            rows, cols = build_consistency_rows(own_map)
+            rows, cols = build_consistency_rows(cv_own)
             if not rows:
                 return
             zf.writestr(

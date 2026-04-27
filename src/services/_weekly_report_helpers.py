@@ -7,7 +7,7 @@ No database access, no PyQt6, no side-effects.
 from __future__ import annotations
 
 import io
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib
 matplotlib.use('Agg')
@@ -15,11 +15,38 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # ---------------------------------------------------------------------------
-# Quartile colour helpers
+# Colour constants — dark theme matching the web UI (tailwind.config.js)
 # ---------------------------------------------------------------------------
 
-_Q_COLORS     = ['#FFB3B3', '#FFD9A0', '#FFFFB3', '#B3FFB3']  # Q1→Q4 higher-is-better
-_Q_COLORS_REV = list(reversed(_Q_COLORS))                      # Q1→Q4 lower-is-better
+# Q4 worst → Q1 best (higher-is-better); mirrors tailwind q1-q4 bg tokens
+_Q_COLORS     = ['#500000', '#3d2000', '#5a3e00', '#14532d']  # worst→best bg
+_Q_COLORS_REV = list(reversed(_Q_COLORS))                      # lower-is-better
+
+# Cell background → high-contrast text colour
+_BG_TEXT: Dict[str, str] = {
+    '#14532d': '#4ade80',   # Q1 best  — bright green
+    '#5a3e00': '#fde047',   # Q2       — bright yellow
+    '#3d2000': '#fb923c',   # Q3       — orange
+    '#500000': '#ef4444',   # Q4 worst — red
+}
+_CELL_BG   = '#0d1117'  # default cell background
+_CELL_TEXT = '#e6edf3'  # default cell text
+_HDR_BG    = '#1f2937'  # header background
+_FIG_BG    = '#0d1117'  # figure / axes background
+
+# CV badge thresholds and colours (matches CVBadge.tsx)
+_CV_LO, _CV_HI = 15.0, 30.0
+
+
+def _cv_badge_color(cv: float) -> str:
+    if cv >= _CV_HI:  return '#ef4444'   # high   — red
+    if cv >= _CV_LO:  return '#fbbf24'   # medium — amber
+    return '#9ca3af'                      # low    — slate
+
+
+# ---------------------------------------------------------------------------
+# Quartile colour helpers
+# ---------------------------------------------------------------------------
 
 
 def q_color(value: float, quartiles: List[float], reverse: bool = False) -> str:
@@ -61,21 +88,38 @@ def render_table_png(
     cell_colors: List[List[str]],
     title: str,
     dpi: int = 120,
+    text_colors: Optional[List[List[str]]] = None,
 ) -> bytes:
-    """Return PNG bytes for a styled table rendered with matplotlib Agg backend."""
+    """Return PNG bytes for a styled table rendered with matplotlib Agg backend.
+
+    Args:
+        col_headers: Column header labels.
+        rows: Cell text values (rows × cols).
+        cell_colors: Per-cell background hex colours (rows × cols).
+        title: Figure title.
+        dpi: Output resolution.
+        text_colors: Optional per-cell text colour overrides (rows × cols).
+            When *None*, text colour is derived from the cell background using
+            :data:`_BG_TEXT` so quartile cells stay readable on dark theme.
+    """
     n_rows = len(rows)
     n_cols = len(col_headers)
+    has_cv = bool(text_colors)
+    row_h  = 0.07 if has_cv else 0.055  # taller rows when σ badge wraps
     fig_width  = max(12, n_cols * 1.1)
-    fig_height = max(2.5, n_rows * 0.38 + 1.4)
+    fig_height = max(2.5, n_rows * row_h * 10 + 1.4)
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    fig.patch.set_facecolor(_FIG_BG)
+    ax.set_facecolor(_FIG_BG)
     ax.axis('off')
-    ax.set_title(title, fontsize=10, fontweight='bold', pad=8)
+    ax.set_title(title, fontsize=10, fontweight='bold', pad=8, color=_CELL_TEXT)
 
     if not rows:
-        ax.text(0.5, 0.5, 'Sin datos', ha='center', va='center', transform=ax.transAxes)
+        ax.text(0.5, 0.5, 'Sin datos', ha='center', va='center',
+                color=_CELL_TEXT, transform=ax.transAxes)
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight')
+        fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor=_FIG_BG)
         plt.close(fig)
         return buf.getvalue()
 
@@ -83,22 +127,34 @@ def render_table_png(
         cellText=rows,
         colLabels=col_headers,
         cellColours=cell_colors,
-        colColours=['#2E4053'] * n_cols,
+        colColours=[_HDR_BG] * n_cols,
         loc='center',
     )
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(7)
     tbl.auto_set_column_width(col=list(range(n_cols)))
+
+    # Header row
     for col in range(n_cols):
         cell = tbl[0, col]
-        cell.set_text_props(color='white', fontweight='bold')
+        cell.set_text_props(color=_CELL_TEXT, fontweight='bold')
         cell.set_height(0.06)
+
+    # Data rows — auto-derive text colour from cell background for dark theme
     for row in range(1, n_rows + 1):
         for col in range(n_cols):
-            tbl[row, col].set_height(0.05)
+            c = tbl[row, col]
+            c.set_height(row_h)
+            ri = row - 1
+            if text_colors and ri < len(text_colors) and col < len(text_colors[ri]):
+                txt = text_colors[ri][col]
+            else:
+                bg  = cell_colors[ri][col] if cell_colors else _CELL_BG
+                txt = _BG_TEXT.get(bg, _CELL_TEXT)
+            c.get_text().set_color(txt)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=dpi, bbox_inches='tight', facecolor=_FIG_BG)
     plt.close(fig)
     return buf.getvalue()
 
@@ -228,9 +284,9 @@ def build_basic_rows(
     qs = {f: calc_quartiles([float(t.get(f) or 0) for t in team_stats]) for f, _ in BASIC_FIELDS}
     texts, colors = [], []
     for team in team_stats:
-        rt, rc = [str(team.get('team_name', team.get('_id', '')))], ['#FFFFFF']
+        rt, rc = [str(team.get('team_name', team.get('_id', '')))], [_CELL_BG]
         rt += [str(int(team.get(k, 0) or 0)) for k in ('total_games', 'games_home', 'games_away')]
-        rc += ['#FFFFFF', '#FFFFFF', '#FFFFFF']
+        rc += [_CELL_BG, _CELL_BG, _CELL_BG]
         for field, rev in BASIC_FIELDS:
             v = float(team.get(field) or 0)
             rt.append(sf(v))
@@ -249,7 +305,7 @@ def build_advanced_rows(
     texts, colors = [], []
     for team in team_stats:
         rt = [str(team.get('team_name', team.get('_id', ''))), str(int(team.get('total_games', 0) or 0))]
-        rc = ['#FFFFFF', '#FFFFFF']
+        rc = [_CELL_BG, _CELL_BG]
         for field, rev in ADV_FIELDS:
             v = float(team.get(field) or 0)
             rt.append(sf(v))
@@ -274,10 +330,10 @@ def build_comparative_basic_rows(
     for cs in comp_stats:
         p1, p2, deltas = cs['monthly'], cs['rest'], cs.get('deltas', {})
         rt = [str(p1.get('team_name', p1.get('_id', '')))]
-        rc = ['#FFFFFF']
+        rc = [_CELL_BG]
         for key in ('total_games', 'games_home', 'games_away'):
             rt.append(f"{int(p1.get(key, 0) or 0)}+{int(p2.get(key, 0) or 0)}")
-            rc.append('#FFFFFF')
+            rc.append(_CELL_BG)
         for field, rev in BASIC_FIELDS:
             v = float(p1.get(field) or 0)
             arrow = trend_arrow(float(deltas.get(field, 0)), rev)
@@ -300,7 +356,7 @@ def build_comparative_advanced_rows(
         p1, deltas = cs['monthly'], cs.get('deltas', {})
         pg1, pg2 = int(p1.get('total_games', 0) or 0), int(cs['rest'].get('total_games', 0) or 0)
         rt = [str(p1.get('team_name', p1.get('_id', ''))), f'{pg1}+{pg2}']
-        rc = ['#FFFFFF', '#FFFFFF']
+        rc = [_CELL_BG, _CELL_BG]
         for field, rev in ADV_FIELDS:
             v = float(p1.get(field) or 0)
             arrow = trend_arrow(float(deltas.get(field, 0)), rev)
@@ -333,12 +389,12 @@ _LOWER_IS_BETTER_LM = {
 
 def _lm_cell_color(val: float, opp: float, field: str) -> str:
     if abs(val - opp) < 0.01:
-        return '#D3D3D3'
+        return '#1e2530'  # neutral dark
     if field in _HIGHER_IS_BETTER:
-        return '#90EE90' if val > opp else '#FFB6C1'
+        return '#14532d' if val > opp else '#500000'  # Q1 green / Q4 red
     if field in _LOWER_IS_BETTER_LM:
-        return '#90EE90' if val < opp else '#FFB6C1'
-    return '#90EE90' if val > opp else '#FFB6C1'
+        return '#14532d' if val < opp else '#500000'
+    return '#14532d' if val > opp else '#500000'
 
 
 def build_last_match_rows(
@@ -352,7 +408,7 @@ def build_last_match_rows(
         (opp_stats, sel_stats, opp_season, opp_name),
     ]:
         rt = [name, '1']
-        rc = ['#FFFFFF', '#FFFFFF']
+        rc = [_CELL_BG, _CELL_BG]
         for field, rev in ADV_FIELDS:
             val     = float(team_stats.get(field) or 0)
             opp_val = float(opp_match.get(field) or 0)
@@ -436,7 +492,7 @@ def build_player_rows(
     texts, colors = [], []
     for p in players:
         gp = int(p.get('games_played', 0))
-        rt, rc = [str(p.get('player_name', '')), str(gp)], ['#FFFFFF', '#FFFFFF']
+        rt, rc = [str(p.get('player_name', '')), str(gp)], [_CELL_BG, _CELL_BG]
         for field, rev in PLAYER_FIELDS:
             v = _player_val(p, field, mode)
             rt.append(sf(v))
@@ -498,7 +554,7 @@ def build_consistency_rows(
     colors: List[List[str]] = []
     for team_name, team_stats in sorted_teams:
         row_t = [team_name]
-        row_c = ['#FFFFFF']
+        row_c = [_CELL_BG]
         for _, stat_key, reverse in _CONSISTENCY_KEYS:
             cv = (team_stats.get(stat_key) or {}).get("cv")
             row_t.append(sf(cv, 1) if cv is not None else '-')
@@ -506,9 +562,64 @@ def build_consistency_rows(
                 # For consistency tables low CV = good → reverse colouring convention
                 row_c.append(q_color(cv, quartiles[stat_key], reverse=not reverse))
             else:
-                row_c.append('#FFFFFF')
+                row_c.append(_CELL_BG)
         texts.append(row_t)
         colors.append(row_c)
 
     return texts, colors
+
+
+# ---------------------------------------------------------------------------
+# CV badge overlay — appends σXX% annotation to stat cells
+# ---------------------------------------------------------------------------
+
+def apply_cv_overlay(
+    texts: List[List[str]],
+    cv_data: Dict[str, Dict],
+    fields: List[Tuple[str, bool]],
+    n_meta: int = 4,
+) -> Tuple[List[List[str]], List[List[str]]]:
+    """Append a σXX% CV badge to numeric cells and return (new_texts, text_colors).
+
+    Mirrors the ``CVBadge`` component in the web UI. Each cell that has a CV
+    value gets its text replaced with ``"VALUE\\nσXX%"`` so the badge appears
+    on a second line inside the cell, and the text colour is set to the badge
+    colour (slate / amber / red depending on severity).
+
+    Args:
+        texts:   Row texts produced by any row-builder function.
+        cv_data: ``{team_name: {field: {"cv", "mean", "std", "n"}}}`` from
+                 ``TeamStatsService.get_consistency()['own']``.
+        fields:  Ordered field list (e.g. ``BASIC_FIELDS`` or ``ADV_FIELDS``).
+        n_meta:  Number of leading metadata columns to skip (name + count cols).
+
+    Returns:
+        Tuple ``(modified_texts, text_colors)`` where *text_colors* carries the
+        per-cell display colour (CV badge colour, or ``_CELL_TEXT`` otherwise).
+    """
+    if not cv_data or not texts:
+        return texts, []
+
+    new_texts:   List[List[str]] = []
+    text_colors: List[List[str]] = []
+
+    for row in texts:
+        team_name = row[0]
+        team_cv   = cv_data.get(team_name, {})
+        row_t     = list(row)
+        row_c     = [_CELL_TEXT] * len(row)
+
+        for i, (field, _) in enumerate(fields):
+            col_idx  = n_meta + i
+            cv_entry = team_cv.get(field)
+            if cv_entry and cv_entry.get('n', 0) >= 3:
+                cv          = float(cv_entry['cv'])
+                badge_color = _cv_badge_color(cv)
+                row_t[col_idx] = f"{row_t[col_idx]}\n\u03c3{cv:.0f}%"
+                row_c[col_idx] = badge_color
+
+        new_texts.append(row_t)
+        text_colors.append(row_c)
+
+    return new_texts, text_colors
 
