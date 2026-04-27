@@ -4,7 +4,7 @@
  * Stats de temporada → TeamStatsPage
  * Aquí: solo el informe semanal completo (ZIP de PNGs).
  */
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, Download, CalendarDays } from 'lucide-react'
 
@@ -12,7 +12,10 @@ import { useCollection } from '@/context/CollectionContext'
 import {
   getPlayerStats,
   postWeeklyReport,
+  getWeeklyReportProgress,
+  downloadWeeklyReport,
   type PlayerStat,
+  type WeeklyReportProgress,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 
@@ -63,6 +66,8 @@ export default function ReportPage() {
   const [weeklyTeamA,   setWeeklyTeamA]   = useState('')
   const [weeklyTeamB,   setWeeklyTeamB]   = useState('')
   const [weeklyLoading, setWeeklyLoading] = useState(false)
+  const [weeklyProgress, setWeeklyProgress] = useState<WeeklyReportProgress | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { data: players = [] } = useQuery<PlayerStat[]>({
     queryKey: ['player-list', collection?.name],
@@ -137,14 +142,36 @@ export default function ReportPage() {
                   }
                   onClick={async () => {
                     setWeeklyLoading(true)
+                    setWeeklyProgress({ status: 'running', step: 0, total: 5, message: 'Iniciando…', error: null })
                     try {
-                      const blob = await postWeeklyReport(col, weeklyTeamA, weeklyTeamB)
+                      const { job_id } = await postWeeklyReport(col, weeklyTeamA, weeklyTeamB)
+                      await new Promise<void>((resolve, reject) => {
+                        pollRef.current = setInterval(async () => {
+                          try {
+                            const prog = await getWeeklyReportProgress(job_id)
+                            setWeeklyProgress(prog)
+                            if (prog.status === 'done') {
+                              clearInterval(pollRef.current!)
+                              resolve()
+                            } else if (prog.status === 'error') {
+                              clearInterval(pollRef.current!)
+                              reject(new Error(prog.error ?? 'Error desconocido'))
+                            }
+                          } catch (e) {
+                            clearInterval(pollRef.current!)
+                            reject(e)
+                          }
+                        }, 1500)
+                      })
+                      const blob = await downloadWeeklyReport(job_id)
                       const url = URL.createObjectURL(blob)
                       const a = document.createElement('a')
                       a.href = url
                       a.download = `informe_${col.slice(0, 20)}.zip`
                       a.click()
                       URL.revokeObjectURL(url)
+                    } catch (err) {
+                      console.error('Weekly report error:', err)
                     } finally {
                       setWeeklyLoading(false)
                     }
@@ -154,6 +181,23 @@ export default function ReportPage() {
                   <Download className="w-4 h-4" />
                   {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
                 </button>
+                {weeklyLoading && weeklyProgress && (
+                  <div className="flex flex-col gap-1">
+                    <div className="w-full h-1.5 rounded-full bg-surface-hover overflow-hidden">
+                      <div
+                        className="h-full bg-accent-500 transition-all duration-500"
+                        style={{ width: `${weeklyProgress.total > 0 ? (weeklyProgress.step / weeklyProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-ink-secondary text-center">
+                      {weeklyProgress.message}
+                      {weeklyProgress.total > 0 && ` (${weeklyProgress.step}/${weeklyProgress.total})`}
+                    </p>
+                    {weeklyProgress.status === 'error' && (
+                      <p className="text-xs text-warn text-center">{weeklyProgress.error}</p>
+                    )}
+                  </div>
+                )}
               </div>
             </ReportCard>
           </div>

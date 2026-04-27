@@ -672,12 +672,32 @@ export const postWeeklyReport = (
   collection: string,
   teamA: string,
   teamB: string,
-): Promise<Blob> =>
+): Promise<{ job_id: string }> =>
   fetch(`${BASE}/reports/${encodeURIComponent(collection)}/weekly-report`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ team_a: teamA, team_b: teamB }),
   }).then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.json()
+  })
+
+export interface WeeklyReportProgress {
+  status: 'running' | 'done' | 'error'
+  step: number
+  total: number
+  message: string
+  error: string | null
+}
+
+export const getWeeklyReportProgress = (jobId: string): Promise<WeeklyReportProgress> =>
+  fetch(`${BASE}/reports/weekly-report-progress/${encodeURIComponent(jobId)}`).then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.json()
+  })
+
+export const downloadWeeklyReport = (jobId: string): Promise<Blob> =>
+  fetch(`${BASE}/reports/weekly-report-download/${encodeURIComponent(jobId)}`).then(r => {
     if (!r.ok) throw new Error(`HTTP ${r.status}`)
     return r.blob()
   })

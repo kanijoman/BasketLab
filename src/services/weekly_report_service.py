@@ -194,14 +194,39 @@ class WeeklyReportService:
     # Public
     # ------------------------------------------------------------------
 
-    def generate_report_zip(self, collection: str, team_a: str, team_b: str) -> bytes:
-        """Return ZIP bytes with the full weekly report."""
+    def generate_report_zip(
+        self,
+        collection: str,
+        team_a: str,
+        team_b: str,
+        progress_callback=None,
+    ) -> bytes:
+        """Return ZIP bytes with the full weekly report.
+
+        Args:
+            collection: MongoDB collection name.
+            team_a: Own team name.
+            team_b: Rival team name.
+            progress_callback: Optional callable(step, total, message) called
+                at each major stage to report progress (e.g. for a job tracker).
+        """
+        _TOTAL = 5
+
+        def _cb(step: int, msg: str) -> None:
+            if progress_callback:
+                progress_callback(step, _TOTAL, msg)
+
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+            _cb(1, 'Estadísticas generales de competición')
             self._gen_general_stats(zf, collection)
+            _cb(2, f'Último partido — {team_a}')
             self._gen_last_match(zf, collection, team_a)
+            _cb(3, f'Último partido — {team_b}')
             self._gen_last_match(zf, collection, team_b)
+            _cb(4, f'Informe equipo — {team_a}')
             self._gen_team_report(zf, collection, team_a)
+            _cb(5, f'Informe equipo — {team_b}')
             self._gen_team_report(zf, collection, team_b)
         return buf.getvalue()
 
@@ -278,8 +303,12 @@ class WeeklyReportService:
     ) -> None:
         if not (ts1 and ts2):
             return
-        d1 = {str(t['_id']): t for t in ts1}
-        d2 = {str(t['_id']): t for t in ts2}
+        # Use team_name as key (works for both FEB scalar _id and FBCYL dict _id)
+        def _key(t: Dict) -> str:
+            return str(t.get('team_name') or t.get('_id', ''))
+
+        d1 = {_key(t): t for t in ts1}
+        d2 = {_key(t): t for t in ts2}
         comp = [self._calc.create_comparative_stat(d1[k], d2[k]) for k in (set(d1) & set(d2))]
         if not comp:
             return

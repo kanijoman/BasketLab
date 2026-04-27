@@ -7,6 +7,8 @@ Covers:
 - Works with minimal FEB mock data
 - _sanitize helper strips illegal filesystem characters
 - _aggregate_fbcyl_players sums player stats correctly
+- progress_callback is called at each of the 5 stages
+- _write_comparative uses team_name key (FBCYL dict _id regression)
 """
 
 import io
@@ -176,3 +178,79 @@ class TestWeeklyReportService:
         svc = WeeklyReportService(db)
         result = svc.generate_report_zip("FBCYL_SE_2025", "Team A", "Team B")
         assert isinstance(result, bytes)
+
+    def test_progress_callback_called_five_times(self):
+        """progress_callback must be called once per major stage (total=5)."""
+        db = _make_db_handler(team_stats=[])
+        svc = WeeklyReportService(db)
+        calls = []
+        svc.generate_report_zip(
+            "FEB_LF2_2025_A", "Team A", "Team B",
+            progress_callback=lambda step, total, msg: calls.append((step, total, msg)),
+        )
+        assert len(calls) == 5
+        # Steps must be 1..5 in order
+        assert [c[0] for c in calls] == [1, 2, 3, 4, 5]
+        # total always 5
+        assert all(c[1] == 5 for c in calls)
+        # All messages are non-empty strings
+        assert all(isinstance(c[2], str) and c[2] for c in calls)
+
+    def test_progress_callback_none_does_not_raise(self):
+        """Passing no progress_callback (default None) must not raise."""
+        db = _make_db_handler(team_stats=[])
+        svc = WeeklyReportService(db)
+        result = svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        assert isinstance(result, bytes)
+
+    def test_write_comparative_uses_team_name_key(self):
+        """_write_comparative must match teams by team_name, not str(_id).
+
+        Regression for FBCYL where _id is a dict {"team_id": ..., "team_name": ...}.
+        str(dict) produces different strings when dict ordering varies across
+        Python versions, causing the intersection to be empty.
+        """
+        stats_won = [
+            {"_id": {"team_id": 1, "team_name": "Alpha"}, "team_name": "Alpha",
+             "total_games": 5, "games_home": 3, "games_away": 2,
+             "points_scored": 400, "points_received": 350,
+             "points_per_game": 80.0, "points_against_per_game": 70.0,
+             "fg2_percentage": 50.0, "fg3_percentage": 35.0, "ft_percentage": 75.0,
+             "total_rebounds": 200, "rebounds_def": 150, "rebounds_off": 50,
+             "assists": 80, "steals": 30, "turnovers": 60, "blocks": 10,
+             "offensive_rating": 110.0, "defensive_rating": 100.0, "net_rating": 10.0,
+             "possessions_per_game": 70.0, "efg_percentage": 52.0,
+             "true_shooting": 55.0, "three_point_rate": 30.0, "free_throw_rate": 20.0,
+             "assist_fg_rate": 60.0, "assist_rate": 55.0, "turnover_rate": 12.0,
+             "steal_rate": 8.0, "block_rate": 3.0, "offensive_rebound_rate": 25.0,
+             "defensive_rebound_rate": 75.0},
+        ]
+        stats_lost = [
+            {"_id": {"team_id": 1, "team_name": "Alpha"}, "team_name": "Alpha",
+             "total_games": 3, "games_home": 1, "games_away": 2,
+             "points_scored": 220, "points_received": 240,
+             "points_per_game": 73.0, "points_against_per_game": 80.0,
+             "fg2_percentage": 44.0, "fg3_percentage": 30.0, "ft_percentage": 70.0,
+             "total_rebounds": 120, "rebounds_def": 90, "rebounds_off": 30,
+             "assists": 45, "steals": 15, "turnovers": 40, "blocks": 5,
+             "offensive_rating": 100.0, "defensive_rating": 110.0, "net_rating": -10.0,
+             "possessions_per_game": 68.0, "efg_percentage": 46.0,
+             "true_shooting": 50.0, "three_point_rate": 28.0, "free_throw_rate": 18.0,
+             "assist_fg_rate": 50.0, "assist_rate": 48.0, "turnover_rate": 15.0,
+             "steal_rate": 6.0, "block_rate": 2.0, "offensive_rebound_rate": 22.0,
+             "defensive_rebound_rate": 78.0},
+        ]
+        db = _make_db_handler()
+        db.get_team_stats.side_effect = lambda coll, **kw: (
+            stats_won if kw.get("result_filter") == "won"
+            else stats_lost if kw.get("result_filter") == "lost"
+            else []
+        )
+        svc = WeeklyReportService(db)
+        import zipfile as _zf, io as _io
+        result = svc.generate_report_zip("FBCYL_TEST", "Alpha", "Beta")
+        with _zf.ZipFile(_io.BytesIO(result)) as zf:
+            names = zf.namelist()
+        # Comparative PNGs must be present (both basic and advanced)
+        comparative = [n for n in names if "02_" in n and "Ganados" in n]
+        assert len(comparative) == 2, f"Expected 2 comparative PNGs, got: {names}"
