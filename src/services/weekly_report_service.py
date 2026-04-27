@@ -89,7 +89,7 @@ def _extract_shots(
     db: Any, collection_name: str, team_name: str,
 ) -> Tuple[List[Dict], Dict, bool]:
     """Return (all_shots, player_id_map, is_fbcyl) for a team across all games."""
-    from src.ui.team_utils import get_team_data_by_name, get_team_index_in_document
+    from src.utils.team_utils import get_team_data_by_name, get_team_index_in_document
 
     coll = db.connection.get_collection(collection_name)
     if coll is None:
@@ -307,7 +307,7 @@ class WeeklyReportService:
             if not season_ts:
                 return
 
-            from src.ui.team_utils import get_team_data_by_name
+            from src.utils.team_utils import get_team_data_by_name
             is_fbcyl = 'stats' in last and 'teams' in last.get('stats', {})
 
             if is_fbcyl:

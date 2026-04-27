@@ -8,9 +8,9 @@ Two tests intentionally expose real bugs found during the audit:
 
 import unittest
 
-from src.ui.stats_calculator import StatsCalculator
-from src.ui.player_stats_calculator import PlayerStatsCalculator
-from src.ui.advanced_stats_calculator import AdvancedStatsCalculator
+from src.stats.stats_calculator import StatsCalculator
+from src.stats.player_stats_calculator import PlayerStatsCalculator
+from src.stats.advanced_stats_calculator import AdvancedStatsCalculator
 
 
 # ---------------------------------------------------------------------------

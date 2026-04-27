@@ -1,7 +1,5 @@
 # BasketLab - Dependencies
-
-# GUI Framework
-PyQt6>=6.4.0
+# Qt UI layer removed — web-only stack
 
 # Database
 pymongo>=4.3.3
@@ -31,9 +29,6 @@ jinja2>=3.1.0
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 
-# Desktop web wrapper (Phase 7 — optional PyWebView)
-pywebview>=5.0.0
-
 # Other utilities
 Pillow>=10.0.0
 shapely>=2.0.0
@@ -41,9 +36,6 @@ shapely>=2.0.0
 # AI Analysis
 openai>=1.0.0
 google-generativeai>=0.3.0
-
-# Build Tools (optional - for creating executables)
-pyinstaller>=6.0.0
 
 # --- Development / Testing ---
 pytest>=7.4.0

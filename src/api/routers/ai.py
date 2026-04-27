@@ -290,7 +290,7 @@ def export_analysis_pdf(req: _ExportPDFRequest):
         Binary PDF file as an attachment.
     """
     try:
-        from src.ui.pdf_generator import PDFGenerator
+        from src.services.pdf_generator import PDFGenerator
 
         pdf_bytes = PDFGenerator.generate_bytes_from_html(
             html_content=req.html,

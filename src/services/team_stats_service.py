@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from database import MongoDBHandler
 
 from src.database.team_stats_aggregator import TeamStatsAggregator
-from src.ui.team_utils import get_available_teams_from_collection
+from src.utils.team_utils import get_available_teams_from_collection
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 # Cache possession stats per collection for 1 hour — play-by-play analysis is expensive

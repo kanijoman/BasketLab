@@ -286,7 +286,7 @@ class IndividualScoutingDocxBuilder:
         from docx import Document
         from docx.shared import Cm
         from src.services.player_stats_service import PlayerStatsService
-        from src.ui.player_data_fetcher import PlayerDataFetcher
+        from src.services.player_data_fetcher import PlayerDataFetcher
 
         svc = PlayerStatsService(self.db)
         all_players = svc.load_season_data(self.collection)
