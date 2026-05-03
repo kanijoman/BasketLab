@@ -645,3 +645,86 @@ class TestGetMatchesPlayoffGroup:
             "Regular groups must not trigger /resultados/ switch"
         )
         assert "88001" in matches
+
+
+# ---------------------------------------------------------------------------
+# _extract_match_codes — fallback for /resultados/ page structure
+# ---------------------------------------------------------------------------
+
+class TestExtractMatchCodesFallback:
+    """Regression: _extract_match_codes must extract codes from /resultados/
+    pages which use jornadaDataGrid instead of 'tableLayout de dos columnas'."""
+
+    @pytest.fixture
+    def scraper(self):
+        from unittest.mock import MagicMock, patch
+        with patch("src.scraper.feb_scraper.FEBWebScraper.__init__", return_value=None):
+            from src.scraper.feb_scraper import FEBWebScraper
+            s = FEBWebScraper.__new__(FEBWebScraper)
+            s.web_client = MagicMock()
+            return s
+
+    def _resultados_soup(self, codes_and_scores):
+        """Build a minimal /resultados/-style page with match links."""
+        from bs4 import BeautifulSoup
+        rows = "".join(
+            f'<tr><td><a href="https://baloncestoenvivo.feb.es/Partido.aspx?p={code}">'
+            f'{score}</a></td></tr>'
+            for code, score in codes_and_scores
+        )
+        html = (
+            f'<table id="_ctl0_MainContentPlaceHolderMaster_jornadaDataGrid">'
+            f'{rows}</table>'
+        )
+        return BeautifulSoup(html, "html.parser")
+
+    def test_extracts_codes_from_resultados_structure_regression(self, scraper):
+        """Regression: playoff match codes must be found on /resultados/ pages."""
+        soup = self._resultados_soup([
+            ("2512426", "52-67"),
+            ("2512422", "56-65"),
+            ("2512424", "68-70"),
+            ("2512423", "*-*"),   # future match — must be skipped
+        ])
+        codes = scraper._extract_match_codes(soup)
+        assert set(codes) == {"2512426", "2512422", "2512424"}
+        assert len(codes) == 3
+
+    def test_skips_future_matches_with_star_score(self, scraper):
+        soup = self._resultados_soup([("9999", "*-*"), ("8888", "70-60")])
+        codes = scraper._extract_match_codes(soup)
+        assert codes == ["8888"]
+
+    def test_calendar_structure_still_works(self, scraper):
+        """Primary /calendario/ structure must still be used when present."""
+        from bs4 import BeautifulSoup
+        html = (
+            '<div class="tableLayout de dos columnas">'
+            '  <table>'
+            '    <tr><th>Header</th></tr>'
+            '    <tr><td class="resultado">'
+            '      <a href="partido.aspx?p=11111">72 - 65</a>'
+            '    </td></tr>'
+            '  </table>'
+            '</div>'
+        )
+        soup = BeautifulSoup(html, "html.parser")
+        codes = scraper._extract_match_codes(soup)
+        assert codes == ["11111"]
+
+    def test_no_duplicates_across_both_structures(self, scraper):
+        """Same code must not appear twice even if both structures are present."""
+        from bs4 import BeautifulSoup
+        html = (
+            '<div class="tableLayout de dos columnas">'
+            '  <table><tr><th/></tr>'
+            '  <tr><td class="resultado">'
+            '    <a href="partido.aspx?p=55555">72 - 65</a>'
+            '  </td></tr></table></div>'
+            '<table id="jornadaDataGrid">'
+            '  <tr><td><a href="Partido.aspx?p=55555">72-65</a></td></tr>'
+            '</table>'
+        )
+        soup = BeautifulSoup(html, "html.parser")
+        codes = scraper._extract_match_codes(soup)
+        assert codes.count("55555") == 1

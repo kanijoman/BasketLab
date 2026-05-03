@@ -408,25 +408,47 @@ class FEBWebScraper:
 
     def _extract_match_codes(self, soup: BeautifulSoup) -> List[str]:
         """
-        Extract match codes from the calendar page.
+        Extract match codes from the calendar or results page.
+
+        Supports two page structures:
+        - ``/calendario/`` — match links inside ``div.tableLayout de dos columnas``
+          tables, score cell has class ``resultado``.
+        - ``/resultados/`` — match links inside ``table#jornadaDataGrid`` (or
+          similar), no special container class; scores appear as ``"72-65"``
+          directly in the ``<a>`` text.
+
+        Only links whose text matches a completed-score pattern
+        (``digits - digits``) are returned; future matches (``*-*``) are skipped.
 
         Args:
-            soup: BeautifulSoup object of the calendar page
+            soup: BeautifulSoup object of the calendar or results page
 
         Returns:
-            List of match codes
+            List of match code strings (the ``p=`` URL parameter value)
         """
-        matches = []
+        matches: List[str] = []
+        seen: set = set()
 
-        # Find all calendar containers
+        # --- Primary: /calendario/ structure ---
         for container in soup.find_all("div", class_="tableLayout de dos columnas"):
             for table in container.find_all("table"):
-                # Skip header row
                 for row in table.find_all("tr")[1:]:
-                    match_code = self._extract_match_code_from_row(row)
-                    if match_code:
-                        matches.append(match_code)
+                    code = self._extract_match_code_from_row(row)
+                    if code and code not in seen:
+                        matches.append(code)
+                        seen.add(code)
+        if matches:
+            return matches
 
+        # --- Fallback: /resultados/ structure ---
+        # Links are present anywhere on the page; filter by completed-score text.
+        for link in soup.find_all("a", href=re.compile(r"[Pp]=\d+")):
+            text = link.get_text(strip=True)
+            if re.match(r"^\d+\s*-\s*\d+$", text):
+                m = re.search(r"[Pp]=(\d+)", link["href"])
+                if m and m.group(1) not in seen:
+                    matches.append(m.group(1))
+                    seen.add(m.group(1))
         return matches
 
     def _extract_match_code_from_row(self, row) -> Optional[str]:
