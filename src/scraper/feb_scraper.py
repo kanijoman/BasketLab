@@ -97,33 +97,133 @@ class FEBWebScraper:
     def get_groups_for_season(
         self, competition_url: str, season_value: str
     ) -> List[Tuple[str, str]]:
-        """Return group options after selecting a specific season on a competition page.
+        """Return group options for a given season on a competition page.
 
-        Performs a GET to *competition_url*, then a season-selection POST (ASP.NET
-        postback), and returns the updated group dropdown options.  Used by
-        historical ingestion to auto-discover all groups without the caller needing
-        to know them in advance.
+        Tries the *resultados* equivalent of the URL first (which shows all
+        groups including playoff phases without requiring an ASP.NET postback),
+        then falls back to the classic GET + season-selection postback on the
+        *calendario* page.
+
+        The FEB website has two page families:
+        - ``/calendario/`` – calendar/schedule view, sometimes only shows
+          active regular-season groups in the dropdown.
+        - ``/resultados/`` – results view, always lists all groups for the
+          season (regular + playoff), making it the authoritative source.
 
         Args:
             competition_url: Full URL of the competition calendar page.
-            season_value:    Season dropdown value to select before reading groups.
+            season_value:    Season dropdown value to select before reading
+                             groups (e.g. ``"2025"`` for the 2025/26 season).
 
         Returns:
             List of (group_label, group_value) tuples, empty on failure.
         """
         try:
+            # Attempt 1: derive and fetch the resultados URL for the requested
+            # season — this gives ALL groups (including playoffs) in one GET.
+            results_url = self._calendar_to_results_url(competition_url, season_value)
+            if results_url != competition_url:
+                resp = self.web_client.get(results_url, timeout=EXTENDED_TIMEOUT)
+                if resp:
+                    groups = self.get_groups(BeautifulSoup(resp.content, "html.parser"))
+                    if groups:
+                        return groups
+
+            # Attempt 2 (fallback): GET the calendar page, POST to select the
+            # season, then supplement with fasesDataList navigation links.
+            # The fasesDataList on the calendar page lists playoff phases as
+            # <a href="Series.aspx?f=XXXXX"> links that are outside the standard
+            # group dropdown.  We GET each Series page and read the selected
+            # option in the group dropdown to recover the proper group ID.
             response = self.web_client.get(competition_url, timeout=EXTENDED_TIMEOUT)
             if not response:
                 return []
-            soup = BeautifulSoup(response.content, "html.parser")
-            hidden_fields = self.get_hidden_fields(soup)
+            calendar_soup = BeautifulSoup(response.content, "html.parser")
+            hidden_fields = self.get_hidden_fields(calendar_soup)
             session = self.web_client.get_session()
             updated_soup, _ = self.select_season(
                 session, competition_url, season_value, hidden_fields
             )
-            return self.get_groups(updated_soup)
+            groups = self.get_groups(updated_soup)
+            existing_ids = {v for _, v in groups}
+            extra = self._get_fases_groups(calendar_soup, existing_ids)
+            return groups + extra
         except Exception:
             return []
+
+    def _get_fases_groups(
+        self, soup: BeautifulSoup, existing_ids: set
+    ) -> List[Tuple[str, str]]:
+        """Resolve playoff groups from ``fasesDataList`` navigation links.
+
+        The FEB calendar page shows playoff phases as ``<a>`` links inside the
+        ``fasesDataList`` element when those phases are not yet included in the
+        standard group dropdown (e.g. when the postback only returns regular-
+        season groups).  Each link points to ``Series.aspx?f=XXXXX``.
+
+        We GET each Series page and read the currently selected ``<option>``
+        in the group dropdown to recover the proper group ID that can be used
+        in form postbacks.  Only returns entries whose IDs are not already in
+        ``existing_ids``.
+
+        Args:
+            soup:         Parsed HTML of the calendar page.
+            existing_ids: Set of group IDs already discovered; updated in-place
+                          to avoid duplicates across calls.
+
+        Returns:
+            List of (label, group_id) tuples for phases not in existing_ids.
+        """
+        fases_el = soup.find(id=re.compile(r"fasesDataList$"))
+        if not fases_el:
+            return []
+
+        extra: List[Tuple[str, str]] = []
+        for link in fases_el.find_all("a", href=re.compile(r"Series\.aspx", re.I)):
+            href = link.get("href", "").split("#")[0]
+            label = link.get_text(strip=True)
+            if not href or not label:
+                continue
+            resp = self.web_client.get(href, timeout=EXTENDED_TIMEOUT)
+            if not resp:
+                continue
+            page = BeautifulSoup(resp.content, "html.parser")
+            grp_sel = page.find("select", {"id": GROUP_DROPDOWN_ID})
+            if not grp_sel:
+                continue
+            selected_opt = grp_sel.find("option", selected=True)
+            if not selected_opt:
+                continue
+            gid = selected_opt.get("value", "")
+            if gid and gid not in existing_ids:
+                extra.append((label, gid))
+                existing_ids.add(gid)
+        return extra
+
+    @staticmethod
+    def _calendar_to_results_url(calendar_url: str, season: str) -> str:
+        """Derive the FEB results page URL from a calendar URL for a given season.
+
+        FEB exposes two URL formats:
+        - Pretty:  ``https://baloncestoenvivo.feb.es/calendario/lf2/9/2025``
+        - Aspx:    ``https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2``
+
+        The corresponding results pages (which list *all* groups including
+        playoff phases) follow the same pattern with ``resultados`` in place
+        of ``calendario``, and the season year embedded in the URL:
+        - Pretty:  ``https://baloncestoenvivo.feb.es/resultados/lf2/9/{season}``
+        - Aspx:    ``https://baloncestoenvivo.feb.es/resultados.aspx?g=9&t={season}&nm=lf2``
+
+        Returns the original URL unchanged if no substitution could be made.
+        """
+        if "/calendario/" in calendar_url:
+            base = re.sub(r"/\d{4}$", f"/{season}", calendar_url)
+            return base.replace("/calendario/", "/resultados/")
+        if "calendario.aspx" in calendar_url:
+            url = calendar_url.replace("calendario.aspx", "resultados.aspx")
+            url = re.sub(r"([\?&]t=)\d+", rf"\g<1>{season}", url)
+            return url
+        return calendar_url
 
     def select_season(self, session: requests.Session, url: str, season_value: str,
                      hidden_fields: Dict[str, str]) -> Tuple[BeautifulSoup, Dict[str, str]]:

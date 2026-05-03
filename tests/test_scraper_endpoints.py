@@ -374,3 +374,149 @@ class TestFebDiscoveryEndpoints:
             )
         assert r.status_code == 200
         assert r.json()[0]["text"] == "Grupo A"
+
+
+# ---------------------------------------------------------------------------
+# FEB scraper — _get_fases_groups + _calendar_to_results_url unit tests
+# ---------------------------------------------------------------------------
+
+class TestFebScraperFasesGroups:
+    """Unit tests for the fasesDataList navigation link parser."""
+
+    @pytest.fixture
+    def scraper(self):
+        from unittest.mock import MagicMock, patch
+        with patch("src.scraper.feb_scraper.FEBWebScraper.__init__", return_value=None):
+            from src.scraper.feb_scraper import FEBWebScraper
+            s = FEBWebScraper.__new__(FEBWebScraper)
+            s.web_client = MagicMock()
+            return s
+
+    def _soup_with_fases(self, links):
+        """Build a minimal soup containing a fasesDataList with given links."""
+        from bs4 import BeautifulSoup
+        items = "".join(
+            f'<a id="fake_{i}" class="hyperlink" href="{href}">{label}</a>'
+            for i, (label, href) in enumerate(links)
+        )
+        html = (
+            f'<table id="_ctl0_MainContentPlaceHolderMaster_fasesDataList">'
+            f'{items}</table>'
+        )
+        return BeautifulSoup(html, "html.parser")
+
+    def _soup_group_dropdown(self, value, text):
+        """Build a Series.aspx response soup with a group dropdown."""
+        from bs4 import BeautifulSoup
+        html = (
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">'
+            f'<option selected="selected" value="{value}">{text}</option>'
+            f'</select>'
+        )
+        return BeautifulSoup(html, "html.parser")
+
+    def test_returns_empty_when_no_fases_container(self, scraper):
+        from bs4 import BeautifulSoup
+        empty = BeautifulSoup("<html></html>", "html.parser")
+        result = scraper._get_fases_groups(empty, set())
+        assert result == []
+
+    def test_resolves_single_fases_link_to_group_id(self, scraper):
+        from unittest.mock import MagicMock
+        soup = self._soup_with_fases([
+            ("ELIMINATORIAS", "https://baloncestoenvivo.feb.es/Series.aspx?f=44786")
+        ])
+        series_resp = MagicMock()
+        series_resp.content = str(self._soup_group_dropdown("89478", "ELIMINATORIAS 1/4 Final")).encode()
+        scraper.web_client.get.return_value = series_resp
+
+        result = scraper._get_fases_groups(soup, set())
+        assert len(result) == 1
+        assert result[0] == ("ELIMINATORIAS", "89478")
+
+    def test_skips_already_known_ids(self, scraper):
+        """Groups whose IDs are already in existing_ids are not duplicated."""
+        from unittest.mock import MagicMock
+        soup = self._soup_with_fases([
+            ("ELIMINATORIAS", "https://baloncestoenvivo.feb.es/Series.aspx?f=44786")
+        ])
+        series_resp = MagicMock()
+        series_resp.content = str(self._soup_group_dropdown("89478", "ELIMINATORIAS")).encode()
+        scraper.web_client.get.return_value = series_resp
+
+        result = scraper._get_fases_groups(soup, {"89478"})  # already known
+        assert result == []
+
+    def test_skips_link_when_series_page_unreachable(self, scraper):
+        soup = self._soup_with_fases([
+            ("ELIMINATORIAS", "https://baloncestoenvivo.feb.es/Series.aspx?f=44786")
+        ])
+        scraper.web_client.get.return_value = None
+        result = scraper._get_fases_groups(soup, set())
+        assert result == []
+
+    def test_skips_link_when_no_group_dropdown_on_series_page(self, scraper):
+        from unittest.mock import MagicMock
+        from bs4 import BeautifulSoup
+        soup = self._soup_with_fases([
+            ("ELIMINATORIAS", "https://baloncestoenvivo.feb.es/Series.aspx?f=44786")
+        ])
+        resp = MagicMock()
+        resp.content = b"<html><body>no dropdown</body></html>"
+        scraper.web_client.get.return_value = resp
+        result = scraper._get_fases_groups(soup, set())
+        assert result == []
+
+    def test_resolves_multiple_fases_links(self, scraper):
+        """Two fasesDataList links should both be resolved and returned."""
+        from unittest.mock import MagicMock
+        soup = self._soup_with_fases([
+            ("ELIMINATORIAS", "https://baloncestoenvivo.feb.es/Series.aspx?f=44786"),
+            ("2ºA-1ºB", "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"),
+        ])
+        responses = [
+            MagicMock(content=str(self._soup_group_dropdown("89478", "ELIM")).encode()),
+            MagicMock(content=str(self._soup_group_dropdown("89477", "2AB")).encode()),
+        ]
+        scraper.web_client.get.side_effect = responses
+        result = scraper._get_fases_groups(soup, set())
+        assert len(result) == 2
+        assert ("ELIMINATORIAS", "89478") in result
+        assert ("2ºA-1ºB", "89477") in result
+
+
+class TestCalendarToResultsUrl:
+    """Unit tests for _FEBWebScraper._calendar_to_results_url."""
+
+    def _convert(self, url, season):
+        from src.scraper.feb_scraper import FEBWebScraper
+        return FEBWebScraper._calendar_to_results_url(url, season)
+
+    def test_pretty_url_converted_correctly(self):
+        result = self._convert(
+            "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025", "2025"
+        )
+        assert result == "https://baloncestoenvivo.feb.es/resultados/lf2/9/2025"
+
+    def test_pretty_url_season_updated(self):
+        """When a different season is requested the year in the path changes."""
+        result = self._convert(
+            "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025", "2024"
+        )
+        assert result == "https://baloncestoenvivo.feb.es/resultados/lf2/9/2024"
+
+    def test_aspx_url_converted_correctly(self):
+        result = self._convert(
+            "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2", "2025"
+        )
+        assert result == "https://baloncestoenvivo.feb.es/resultados.aspx?g=9&t=2025&nm=lf2"
+
+    def test_aspx_url_season_updated(self):
+        result = self._convert(
+            "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2", "2024"
+        )
+        assert result == "https://baloncestoenvivo.feb.es/resultados.aspx?g=9&t=2024&nm=lf2"
+
+    def test_unrecognised_url_returned_unchanged(self):
+        url = "https://baloncestoenvivo.feb.es/other/page"
+        assert self._convert(url, "2025") == url
