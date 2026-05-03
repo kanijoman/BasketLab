@@ -204,8 +204,10 @@ cd frontend && npm run dev        # Run Vite frontend (:5173)
 | FASE 9 | Season-end standings projection MC | `season_projection_service.py` | `test_season_projection.py` (21) |
 | FASE 11 | Refactor deuda técnica | `repository_inout.py`, `elasticity_service.py`, `analysis.py`, `player_prediction_service.py` split | - |
 | FASE A | Backend coverage crítica | `test_indexes.py` (12), `test_scraper_endpoints.py` (18), `test_individual_scouting.py` (22), `test_weekly_report.py` (14) | 66 |
+| FASE B | Weekly report helpers coverage | `test_weekly_report_helpers.py` — `_cv_badge_color`, `apply_cv_overlay`, `render_table_png`, `q_color`, `calc_quartiles`, CV formula regression | 43 |
+| FASE C | PlayerStatsService CV + phantom guard | `test_player_stats_cv_regression.py` — FEB/FBCYL CV formula (near-zero floor, 200% cap), FIELD_MAP regression, `_player_minutes_played` phantom logic | 29 |
 
-**Suite total: 670 tests, 0 failures (26/04/2026)**
+**Suite total: 773 tests, 0 failures (HEAD `5b4a89a`)**
 
 ### 🔜 PRÓXIMAS FASES PROPUESTAS
 
