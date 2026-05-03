@@ -366,6 +366,29 @@ class FEBWebScraper:
 
         # Select group (only if different from current)
         if current_group != group_value:
+            # Verify the group exists in the current page's dropdown.
+            # Playoff groups (discovered via /resultados/) are absent from the
+            # /calendario/ dropdown — POSTing an unknown group value causes the
+            # server to return a non-200 response → raise_for_status() → None →
+            # Exception("Failed to select group").
+            grp_dd = soup.find("select", {"id": GROUP_DROPDOWN_ID})
+            in_dropdown = grp_dd and grp_dd.find("option", {"value": group_value})
+            if not in_dropdown:
+                # Switch to the /resultados/ equivalent URL which lists all groups
+                results_url = self._calendar_to_results_url(url, season_value)
+                if results_url != url:
+                    resp = self.web_client.get(results_url, timeout=EXTENDED_TIMEOUT)
+                    if resp:
+                        soup = BeautifulSoup(resp.content, "html.parser")
+                        hidden_fields = self.get_hidden_fields(soup)
+                        # Re-select season on the new page if needed
+                        s_dd = soup.find("select", {"id": SEASON_DROPDOWN_ID})
+                        s_sel = s_dd and s_dd.find("option", selected=True)
+                        if s_sel and s_sel.get("value") != season_value:
+                            soup, hidden_fields = self.select_season(
+                                session, results_url, season_value, hidden_fields
+                            )
+                        url = results_url
             soup = self.select_group(session, url, season_value, group_value, hidden_fields)
 
         # Extract match codes

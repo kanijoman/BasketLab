@@ -520,3 +520,128 @@ class TestCalendarToResultsUrl:
     def test_unrecognised_url_returned_unchanged(self):
         url = "https://baloncestoenvivo.feb.es/other/page"
         assert self._convert(url, "2025") == url
+
+
+# ---------------------------------------------------------------------------
+# get_matches — playoff group switches to /resultados/ URL
+# ---------------------------------------------------------------------------
+
+class TestGetMatchesPlayoffGroup:
+    """Regression: select_group POST must not be sent to /calendario/ for
+    groups that are absent from that page's dropdown (e.g. playoff phases).
+
+    Before the fix, _run_feb_scrape crashed with
+    'Fatal: Failed to select group' because the ASP.NET server returned a
+    non-200 for an unknown group value, causing web_client.post → None.
+    """
+
+    @pytest.fixture
+    def scraper(self):
+        from unittest.mock import MagicMock, patch
+        with patch("src.scraper.feb_scraper.FEBWebScraper.__init__", return_value=None):
+            from src.scraper.feb_scraper import FEBWebScraper
+            s = FEBWebScraper.__new__(FEBWebScraper)
+            s.web_client = MagicMock()
+            return s
+
+    def _make_calendar_soup(self, group_options, selected_season="2025"):
+        """Calendar page with limited groups (no playoff groups)."""
+        from bs4 import BeautifulSoup
+        opts = "".join(
+            f'<option {"selected" if i == 0 else ""} value="{v}">{t}</option>'
+            for i, (t, v) in enumerate(group_options)
+        )
+        html = (
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_temporadasDropDownList">'
+            f'<option selected value="{selected_season}">{selected_season}/2026</option>'
+            f'</select>'
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">{opts}</select>'
+            f'<input id="__VIEWSTATE" value="vs1"/>'
+            f'<input id="__EVENTVALIDATION" value="ev1"/>'
+        )
+        return BeautifulSoup(html, "html.parser")
+
+    def _make_results_soup(self, group_options, selected_season="2025", match_code="12345"):
+        """Results page with all groups including playoffs, with a match link."""
+        from bs4 import BeautifulSoup
+        opts = "".join(
+            f'<option value="{v}">{t}</option>'
+            for t, v in group_options
+        )
+        html = (
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_temporadasDropDownList">'
+            f'<option selected value="{selected_season}">{selected_season}/2026</option>'
+            f'</select>'
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">{opts}</select>'
+            f'<input id="__VIEWSTATE" value="vs2"/>'
+            f'<input id="__EVENTVALIDATION" value="ev2"/>'
+            f'<div class="tableLayout de dos columnas">'
+            f'  <table><tr><th>Match</th></tr>'
+            f'  <tr><td class="resultado"><a href="partido.aspx?p={match_code}">72 - 65</a></td></tr>'
+            f'  </table></div>'
+        )
+        return BeautifulSoup(html, "html.parser")
+
+    def test_playoff_group_switches_to_resultados_url_regression(self, scraper):
+        """Regression: playoff group must use /resultados/ URL, not /calendario/."""
+        from unittest.mock import MagicMock, call
+        import requests
+
+        calendar_url = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025"
+        results_url = "https://baloncestoenvivo.feb.es/resultados/lf2/9/2025"
+        regular_groups = [("Liga Regular A", "88868"), ("Liga Regular B", "88869")]
+        all_groups = regular_groups + [("ELIMINATORIAS 1/4 Final", "89478")]
+
+        calendar_soup = self._make_calendar_soup(regular_groups)
+        results_soup = self._make_results_soup(all_groups, match_code="99001")
+        after_select_soup = self._make_results_soup(
+            all_groups, match_code="99001"
+        )
+
+        cal_resp = MagicMock(); cal_resp.content = str(calendar_soup).encode()
+        res_resp = MagicMock(); res_resp.content = str(results_soup).encode()
+        post_resp = MagicMock(); post_resp.content = str(after_select_soup).encode()
+
+        scraper.web_client.get.side_effect = [cal_resp, res_resp]
+        scraper.web_client.post.return_value = post_resp
+        scraper.web_client.get_session.return_value = MagicMock()
+
+        matches = scraper.get_matches("2025", "89478", "2025",
+                                      MagicMock(spec=requests.Session),
+                                      url=calendar_url)
+
+        # Must have switched to the resultados URL for the group POST
+        post_calls = scraper.web_client.post.call_args_list
+        assert any(results_url in str(c) for c in post_calls), (
+            "select_group POST should target /resultados/ URL, not /calendario/"
+        )
+        assert "99001" in matches
+
+    def test_regular_group_does_not_switch_to_resultados(self, scraper):
+        """Regular-season groups must NOT trigger the resultados URL switch."""
+        from unittest.mock import MagicMock
+        import requests
+
+        calendar_url = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025"
+        regular_groups = [("Liga Regular A", "88868"), ("Liga Regular B", "88869")]
+        after_select_soup = self._make_results_soup(regular_groups, match_code="88001")
+
+        cal_resp = MagicMock()
+        cal_resp.content = str(self._make_calendar_soup(regular_groups)).encode()
+        post_resp = MagicMock()
+        post_resp.content = str(after_select_soup).encode()
+
+        scraper.web_client.get.return_value = cal_resp
+        scraper.web_client.post.return_value = post_resp
+        scraper.web_client.get_session.return_value = MagicMock()
+
+        matches = scraper.get_matches("2025", "88869", "2025",
+                                      MagicMock(spec=requests.Session),
+                                      url=calendar_url)
+
+        # Must have posted to the calendar URL (no switch to resultados)
+        post_calls = scraper.web_client.post.call_args_list
+        assert all("resultados" not in str(c) for c in post_calls), (
+            "Regular groups must not trigger /resultados/ switch"
+        )
+        assert "88001" in matches
