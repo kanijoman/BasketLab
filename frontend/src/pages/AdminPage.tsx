@@ -232,7 +232,7 @@ function FEBDownloadTab() {
   })
   const { data: groups, isLoading: loadingGroups } = useQuery({
     queryKey: ['feb-groups', compUrl, season], queryFn: () => getFebGroups(compUrl, season),
-    enabled: !!compUrl && !!season, staleTime: 5 * 60_000,
+    enabled: !!compUrl && !!season, staleTime: 0,
   })
 
   function handleCompChange(url: string) {

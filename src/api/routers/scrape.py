@@ -51,18 +51,26 @@ def feb_competitions() -> List[Dict[str, str]]:
 def feb_seasons(url: str, year: str = "2025") -> List[Dict[str, str]]:
     """Fetch the calendar page and return season dropdown options.
 
+    Loads ``url`` directly so the page state matches the competition the caller
+    selected.  Falls back to the year-based BASE_URL when the GET fails.
+
     Args:
         url:  Competition calendar URL (e.g. ``https://baloncestoenvivo.feb.es/…``).
-        year: Hint year used to construct the URL if the scraper needs it.
+        year: Fallback year used to construct the URL if the direct GET fails.
 
     Returns:
         List of ``{text, value}`` dicts for the season dropdown.
     """
     from src.scraper import FEBWebScraper
+    from bs4 import BeautifulSoup
 
     scraper = FEBWebScraper()
     try:
-        soup, _ = scraper.web_scraper.get_page_content(year)
+        response = scraper.web_client.get(url)
+        if response is not None:
+            soup = BeautifulSoup(response.content, "html.parser")
+        else:
+            soup, _ = scraper.web_scraper.get_page_content(year)
         seasons = scraper.get_seasons(soup)
         return [{"text": t, "value": v} for t, v in seasons]
     except Exception as exc:
@@ -73,10 +81,14 @@ def feb_seasons(url: str, year: str = "2025") -> List[Dict[str, str]]:
 def feb_groups(url: str, season: str, year: str = "2025") -> List[Dict[str, str]]:
     """Select the given season and return the group dropdown options.
 
+    Delegates to ``get_groups_for_season`` which loads ``url`` directly so that
+    the ASP.NET __VIEWSTATE is obtained from the same page as the POST target.
+    Falls back to the year-based BASE_URL approach if the direct GET fails.
+
     Args:
         url:    Competition calendar URL.
         season: Season value from the season dropdown.
-        year:   Hint year for the scraper.
+        year:   Fallback year used when the direct GET to ``url`` returns None.
 
     Returns:
         List of ``{text, value}`` dicts for the group dropdown.
@@ -85,10 +97,13 @@ def feb_groups(url: str, season: str, year: str = "2025") -> List[Dict[str, str]
 
     scraper = FEBWebScraper()
     try:
-        soup, session = scraper.web_scraper.get_page_content(year)
-        hidden = scraper.get_hidden_fields(soup)
-        soup, _ = scraper.select_season(session, url, season, hidden)
-        groups = scraper.get_groups(soup)
+        groups = scraper.get_groups_for_season(url, season)
+        if not groups:
+            # Direct GET failed — fall back to the year-based page load
+            soup, session = scraper.web_scraper.get_page_content(year)
+            hidden = scraper.get_hidden_fields(soup)
+            soup, _ = scraper.select_season(session, url, season, hidden)
+            groups = scraper.get_groups(soup)
         return [{"text": t, "value": v} for t, v in groups]
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not fetch groups: {exc}")

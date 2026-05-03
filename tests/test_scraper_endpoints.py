@@ -239,3 +239,138 @@ class TestDiscoveryEndpoints:
             MockScraper.return_value.get_page_content.side_effect = ConnectionError("offline")
             r = client.get(f"{V1}/scrape/fbcyl/init")
         assert r.status_code == 502
+
+
+# ---------------------------------------------------------------------------
+# FEB seasons/groups — url-direct load + fallback + regression
+# ---------------------------------------------------------------------------
+
+_COMP_URL = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025"
+_COMP_URL_2026 = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2026"
+
+
+class TestFebDiscoveryEndpoints:
+    """Covers the url-direct GET pattern for feb_seasons and feb_groups.
+
+    Before the fix these endpoints called get_page_content(year) which always
+    loaded BASE_URL(year='2025').  When the competition url points to a
+    different year the __VIEWSTATE from the wrong page causes ASP.NET to
+    ignore the postback and return the default group list — omitting
+    playoff phases like "ELIMINATORIAS 1/ FINAL".
+    """
+
+    # ── feb_seasons ──────────────────────────────────────────────────────────
+
+    def test_feb_seasons_uses_url_directly(self, client):
+        """web_client.get must be called with the url parameter, not BASE_URL."""
+        from unittest.mock import MagicMock
+        fake_resp = MagicMock()
+        fake_resp.content = b"<html></html>"
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            inst = MockScraper.return_value
+            inst.web_client.get.return_value = fake_resp
+            inst.get_seasons.return_value = [("Temporada 2025/26", "s25")]
+            r = client.get(f"{V1}/scrape/feb/seasons?url={_COMP_URL}&year=2025")
+        assert r.status_code == 200
+        inst.web_client.get.assert_called_once_with(_COMP_URL)
+        inst.web_scraper.get_page_content.assert_not_called()
+
+    def test_feb_seasons_fallback_on_none_response(self, client):
+        """When web_client.get returns None the fallback get_page_content is used."""
+        from bs4 import BeautifulSoup
+        fake_soup = BeautifulSoup("<html></html>", "html.parser")
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            inst = MockScraper.return_value
+            inst.web_client.get.return_value = None
+            inst.web_scraper.get_page_content.return_value = (fake_soup, MagicMock())
+            inst.get_seasons.return_value = [("Temporada 2025/26", "s25")]
+            r = client.get(f"{V1}/scrape/feb/seasons?url={_COMP_URL}&year=2025")
+        assert r.status_code == 200
+        inst.web_scraper.get_page_content.assert_called_once_with("2025")
+
+    def test_feb_seasons_returns_502_on_exception(self, client):
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            MockScraper.return_value.web_client.get.side_effect = RuntimeError("boom")
+            r = client.get(f"{V1}/scrape/feb/seasons?url={_COMP_URL}&year=2025")
+        assert r.status_code == 502
+
+    # ── feb_groups ───────────────────────────────────────────────────────────
+
+    def test_feb_groups_uses_url_directly(self, client):
+        """get_groups_for_season must be called with the url parameter."""
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            inst = MockScraper.return_value
+            inst.get_groups_for_season.return_value = [("Grupo A", "ga")]
+            r = client.get(
+                f"{V1}/scrape/feb/groups?url={_COMP_URL}&season=s25&year=2025"
+            )
+        assert r.status_code == 200
+        inst.get_groups_for_season.assert_called_once_with(_COMP_URL, "s25")
+        inst.web_scraper.get_page_content.assert_not_called()
+
+    def test_feb_groups_fallback_on_empty_result(self, client):
+        """When get_groups_for_season returns [] the year-based fallback is used."""
+        from bs4 import BeautifulSoup
+        fake_soup = BeautifulSoup("<html></html>", "html.parser")
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            inst = MockScraper.return_value
+            inst.get_groups_for_season.return_value = []
+            inst.web_scraper.get_page_content.return_value = (fake_soup, MagicMock())
+            inst.get_hidden_fields.return_value = {}
+            inst.select_season.return_value = (fake_soup, {})
+            inst.get_groups.return_value = [("Grupo A", "ga")]
+            r = client.get(
+                f"{V1}/scrape/feb/groups?url={_COMP_URL}&season=s25&year=2025"
+            )
+        assert r.status_code == 200
+        inst.web_scraper.get_page_content.assert_called_once_with("2025")
+        data = r.json()
+        assert data[0]["text"] == "Grupo A"
+
+    def test_feb_groups_returns_502_on_exception(self, client):
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            MockScraper.return_value.get_groups_for_season.side_effect = RuntimeError("boom")
+            r = client.get(
+                f"{V1}/scrape/feb/groups?url={_COMP_URL}&season=s25&year=2025"
+            )
+        assert r.status_code == 502
+
+    def test_feb_groups_returns_eliminatorias_group_regression(self, client):
+        """Regression: ELIMINATORIAS 1/ FINAL must appear when the scraper returns it.
+
+        Before the fix the VIEWSTATE mismatch caused ASP.NET to ignore the
+        season selection postback so only default (regular-season) groups were
+        returned — the playoff group "ELIMINATORIAS 1/ FINAL" was silently
+        omitted.
+        """
+        playoff_groups = [
+            ("Grupo A", "ga"),
+            ("Grupo B", "gb"),
+            ("ELIMINATORIAS 1/ FINAL", "elim1"),
+        ]
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            MockScraper.return_value.get_groups_for_season.return_value = playoff_groups
+            r = client.get(
+                f"{V1}/scrape/feb/groups?url={_COMP_URL}&season=s25&year=2025"
+            )
+        assert r.status_code == 200
+        texts = [item["text"] for item in r.json()]
+        assert "ELIMINATORIAS 1/ FINAL" in texts
+
+    def test_feb_groups_year_mismatch_does_not_break_regression(self, client):
+        """Regression: url with year=2026 and year param=2025 must not raise.
+
+        This simulates the October 2026 scenario when the FEB website updates
+        its competition links to /9/2026 but the frontend still sends year=2025
+        as the default.  The fix (using url directly) makes the year param
+        irrelevant for the happy path.
+        """
+        with patch("src.scraper.FEBWebScraper") as MockScraper:
+            MockScraper.return_value.get_groups_for_season.return_value = [
+                ("Grupo A", "ga")
+            ]
+            r = client.get(
+                f"{V1}/scrape/feb/groups?url={_COMP_URL_2026}&season=s26&year=2025"
+            )
+        assert r.status_code == 200
+        assert r.json()[0]["text"] == "Grupo A"
