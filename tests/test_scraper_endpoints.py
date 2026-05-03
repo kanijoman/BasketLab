@@ -390,6 +390,7 @@ class TestFebScraperFasesGroups:
             from src.scraper.feb_scraper import FEBWebScraper
             s = FEBWebScraper.__new__(FEBWebScraper)
             s.web_client = MagicMock()
+            s._series_url_by_group = {}
             return s
 
     def _soup_with_fases(self, links):
@@ -420,6 +421,35 @@ class TestFebScraperFasesGroups:
         empty = BeautifulSoup("<html></html>", "html.parser")
         result = scraper._get_fases_groups(empty, set())
         assert result == []
+
+    def test_resolves_direct_link_layout2_aspx_url_regression(self, scraper):
+        """Regression: Layout 2 — direct <a> with ID containing fasesDataList.
+
+        The calendario.aspx?g=... URL does not render an outer container;
+        the <a> elements have IDs like ..._fasesDataList__ctl0_seriesHyperLink.
+        """
+        from unittest.mock import MagicMock
+        from bs4 import BeautifulSoup
+        # Layout 2: direct <a> without outer container
+        html = (
+            '<a id="_ctl0_MainContentPlaceHolderMaster_fasesDataList__ctl0_seriesHyperLink"'
+            ' href="https://baloncestoenvivo.feb.es/Series.aspx?f=44785">'
+            '2\u00baA-1\u00baB Final</a>'
+        )
+        soup = BeautifulSoup(html, "html.parser")
+        series_resp = MagicMock()
+        series_resp.content = str(
+            self._soup_group_dropdown("89477", "2\u00baA-1\u00baB Final")
+        ).encode()
+        scraper.web_client.get.return_value = series_resp
+
+        result = scraper._get_fases_groups(soup, set())
+        assert len(result) == 1
+        assert result[0] == ("2\u00baA-1\u00baB Final", "89477")
+        # Cache must be populated
+        assert scraper._series_url_by_group.get("89477") == (
+            "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
+        )
 
     def test_resolves_single_fases_link_to_group_id(self, scraper):
         from unittest.mock import MagicMock
@@ -542,6 +572,7 @@ class TestGetMatchesPlayoffGroup:
             from src.scraper.feb_scraper import FEBWebScraper
             s = FEBWebScraper.__new__(FEBWebScraper)
             s.web_client = MagicMock()
+            s._series_url_by_group = {}
             return s
 
     def _make_calendar_soup(self, group_options, selected_season="2025"):
@@ -728,3 +759,187 @@ class TestExtractMatchCodesFallback:
         soup = BeautifulSoup(html, "html.parser")
         codes = scraper._extract_match_codes(soup)
         assert codes.count("55555") == 1
+
+
+# ---------------------------------------------------------------------------
+# _get_matches_via_series — Series.aspx fallback for groups with no matches
+# on /resultados/ page (e.g. "2ºA-1ºB Final")
+# ---------------------------------------------------------------------------
+
+class TestGetMatchesViaSeriesFallback:
+    """Regression: get_matches must return match codes for playoff groups whose
+    matches only appear on Series.aspx pages, not on /resultados/.
+
+    Root cause: after select_group POST, the ASP.NET session state causes a
+    re-GET of /calendario/ to omit the fasesDataList block.  The fix caches
+    the group→Series.aspx URL mapping during get_groups_for_season so
+    _get_matches_via_series can use it directly.
+    """
+
+    @pytest.fixture
+    def scraper(self):
+        from unittest.mock import MagicMock, patch
+        with patch("src.scraper.feb_scraper.FEBWebScraper.__init__", return_value=None):
+            from src.scraper.feb_scraper import FEBWebScraper
+            s = FEBWebScraper.__new__(FEBWebScraper)
+            s.web_client = MagicMock()
+            s._series_url_by_group = {}
+            return s
+
+    def _series_soup(self, group_value, match_codes_scores):
+        """Series.aspx page with group dropdown selected and match links."""
+        from bs4 import BeautifulSoup
+        opts = f'<option selected value="{group_value}">2ºA-1ºB Final</option>'
+        rows = "".join(
+            f'<tr><td><a href="https://baloncestoenvivo.feb.es/Partido.aspx?p={code}">'
+            f'{score}</a></td></tr>'
+            for code, score in match_codes_scores
+        )
+        html = (
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">'
+            f'{opts}</select>'
+            f'<table id="jornadaDataGrid">{rows}</table>'
+        )
+        return BeautifulSoup(html, "html.parser")
+
+    def test_uses_cached_series_url_when_available_regression(self, scraper):
+        """Regression: when cache has series URL for the group, use it directly."""
+        from unittest.mock import MagicMock
+        series_url = "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
+        scraper._series_url_by_group["89477"] = series_url
+
+        series_resp = MagicMock()
+        series_resp.content = str(
+            self._series_soup("89477", [("2512420", "58 - 71"), ("2512421", "* - *")])
+        ).encode()
+        scraper.web_client.get.return_value = series_resp
+
+        codes = scraper._get_matches_via_series(
+            "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2",
+            "89477",
+        )
+
+        assert codes == ["2512420"], f"Expected ['2512420'], got {codes}"
+        # Must have fetched the cached series URL, not the calendar
+        scraper.web_client.get.assert_called_once_with(
+            series_url, timeout=scraper.web_client.get.call_args[1].get("timeout", None)
+            if scraper.web_client.get.call_args[1] else None
+        )
+
+    def test_cached_series_url_skips_future_matches(self, scraper):
+        """Only completed matches (score digits-digits) must be returned."""
+        from unittest.mock import MagicMock
+        series_url = "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
+        scraper._series_url_by_group["89477"] = series_url
+
+        series_resp = MagicMock()
+        series_resp.content = str(
+            self._series_soup("89477", [("2512421", "* - *"), ("2512422", "* - *")])
+        ).encode()
+        scraper.web_client.get.return_value = series_resp
+
+        codes = scraper._get_matches_via_series(
+            "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2",
+            "89477",
+        )
+        assert codes == [], "Future-only playoff series must return empty list"
+
+    def test_cache_populated_by_get_fases_groups(self, scraper):
+        """_get_fases_groups must populate _series_url_by_group for each found group."""
+        from unittest.mock import MagicMock
+        from bs4 import BeautifulSoup
+
+        series_url = "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
+        # Calendar page with fasesDataList link
+        cal_html = (
+            f'<div id="_ctl0_MainContentPlaceHolderMaster_fasesDataList">'
+            f'  <a href="{series_url}">2ºA-1ºB Final</a>'
+            f'</div>'
+        )
+        # Series page with group 89477 selected
+        series_html = (
+            '<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">'
+            '  <option selected value="89477">2ºA-1ºB Final</option>'
+            '</select>'
+        )
+        series_resp = MagicMock()
+        series_resp.content = series_html.encode()
+        scraper.web_client.get.return_value = series_resp
+
+        existing_ids = {"88868", "88869"}
+        cal_soup = BeautifulSoup(cal_html, "html.parser")
+        scraper._get_fases_groups(cal_soup, existing_ids)
+
+        assert scraper._series_url_by_group.get("89477") == series_url, (
+            "_series_url_by_group must be populated with the series URL"
+        )
+
+    def test_returns_empty_when_cache_miss_and_no_fases_on_page(self, scraper):
+        """Cache miss and calendar page without fasesDataList must return []."""
+        from unittest.mock import MagicMock, patch
+
+        # No cache entry for this group
+        assert "89477" not in scraper._series_url_by_group
+
+        # Fresh requests.get returns page without fasesDataList (neither layout)
+        no_fases_html = "<html><body><p>No fases</p></body></html>"
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.content = no_fases_html.encode()
+
+        with patch("src.scraper.feb_scraper.requests.get", return_value=mock_resp):
+            codes = scraper._get_matches_via_series(
+                "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2",
+                "89477",
+            )
+
+        assert codes == []
+
+    def test_slow_path_layout2_direct_link_regression(self, scraper):
+        """Regression: slow path must work when cache is empty — rebuilds via
+        /resultados/ groups + label matching and retries Series.aspx.
+
+        This covers the case where _get_matches_via_series is called without
+        a prior get_groups_for_season call (e.g. direct API use).
+        """
+        from unittest.mock import MagicMock, call
+        from bs4 import BeautifulSoup
+
+        assert "89477" not in scraper._series_url_by_group
+
+        series_url = "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
+        cal_url = "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2025&nm=lf2"
+
+        # /resultados/ response with all groups
+        results_html = (
+            '<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">'
+            '  <option value="89477">2\u00baA-1\u00baB Final</option>'
+            '  <option value="89478">ELIMINATORIAS 1/4 Final</option>'
+            '</select>'
+        )
+        results_resp = MagicMock()
+        results_resp.content = results_html.encode()
+
+        # Calendar page with fasesDataList (Layout 2)
+        cal_html = (
+            '<a id="_ctl0_MainContentPlaceHolderMaster_fasesDataList__ctl0_seriesHyperLink"'
+            f' href="{series_url}">2\u00baA-1\u00baB</a>'
+        )
+        cal_resp = MagicMock()
+        cal_resp.content = cal_html.encode()
+
+        # Series.aspx page with match links
+        series_resp = MagicMock()
+        series_resp.content = str(
+            self._series_soup("89477", [("2512420", "58 - 71"), ("2512421", "* - *")])
+        ).encode()
+
+        # Calls: [results GET, calendar GET for _build_series_cache, series GET]
+        scraper.web_client.get.side_effect = [results_resp, cal_resp, series_resp]
+
+        codes = scraper._get_matches_via_series(cal_url, "89477", season_value="2025")
+
+        assert codes == ["2512420"]
+        assert scraper._series_url_by_group.get("89477") == series_url
+

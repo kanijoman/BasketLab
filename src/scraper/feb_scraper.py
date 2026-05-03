@@ -24,6 +24,11 @@ class FEBWebScraper:
             web_client: WebClient instance
         """
         self.web_client = web_client
+        # Maps group_id → Series.aspx URL, populated by _get_fases_groups.
+        # Used by _get_matches_via_series to find playoff match pages without
+        # re-fetching the calendar (which may not show fasesDataList after a
+        # group-select POST changes the ASP.NET session state).
+        self._series_url_by_group: Dict[str, str] = {}
 
     def get_page_content(self, year: str) -> Tuple[BeautifulSoup, requests.Session]:
         """
@@ -127,6 +132,11 @@ class FEBWebScraper:
                 if resp:
                     groups = self.get_groups(BeautifulSoup(resp.content, "html.parser"))
                     if groups:
+                        # Build the series URL cache so _get_matches_via_series
+                        # can later reach playoff matches that are only on
+                        # Series.aspx pages.  Series.aspx has no group dropdown,
+                        # so we correlate by label substring matching.
+                        self._build_series_cache(groups, competition_url)
                         return groups
 
             # Attempt 2 (fallback): GET the calendar page, POST to select the
@@ -147,9 +157,87 @@ class FEBWebScraper:
             groups = self.get_groups(updated_soup)
             existing_ids = {v for _, v in groups}
             extra = self._get_fases_groups(calendar_soup, existing_ids)
+            # Also build series URL cache for any groups we know about
+            if groups or extra:
+                self._build_series_cache(groups + extra, competition_url)
             return groups + extra
         except Exception:
             return []
+
+    def _build_series_cache(
+        self, groups: List[Tuple[str, str]], calendar_url: str
+    ) -> None:
+        """Populate ``_series_url_by_group`` using label-substring matching.
+
+        Series.aspx pages do not expose the group dropdown, so the group_id →
+        Series URL mapping cannot be obtained by parsing those pages.  Instead,
+        we match the short label of each fasesDataList link (e.g. ``"2ºA-1ºB"``)
+        against the known group labels from the dropdown
+        (e.g. ``"2ºA-1ºB Final"``) using case-insensitive substring containment.
+
+        Args:
+            groups:       List of ``(label, group_id)`` tuples already discovered.
+            calendar_url: Competition calendar URL used to find fasesDataList.
+        """
+        try:
+            cal_resp = self.web_client.get(calendar_url, timeout=EXTENDED_TIMEOUT)
+            if not cal_resp:
+                return
+            soup = BeautifulSoup(cal_resp.content, "html.parser")
+            for fases_label, fases_href in self._find_fases_links(soup):
+                norm_fases = fases_label.upper().strip()
+                if not norm_fases:
+                    continue
+                for g_label, g_id in groups:
+                    norm_group = g_label.upper().strip()
+                    if norm_fases in norm_group or norm_group in norm_fases:
+                        self._series_url_by_group[g_id] = fases_href
+                        break
+        except Exception:
+            pass
+
+    def _find_fases_links(self, soup: BeautifulSoup) -> List[Tuple[str, str]]:
+        """Return ``(label, href)`` pairs for every Series.aspx link in fasesDataList.
+
+        The FEB ASP.NET site renders the fasesDataList block differently depending
+        on which URL format is requested:
+
+        * **Pretty URL** (``/calendario/lf2/9/2025``): an outer ``<table>`` or
+          ``<div>`` element carries an ID that ends with ``fasesDataList``.  The
+          ``<a>`` links are children of that container.
+
+        * **ASPX URL** (``calendario.aspx?g=9&t=2025&nm=lf2``): no outer
+          container element; the ``<a>`` elements themselves carry IDs of the
+          form ``..._fasesDataList__ctl0_seriesHyperLink`` (no parent wrapper
+          with a matching ID).
+
+        This method handles both layouts so callers don't need to care which URL
+        was requested.
+        """
+        results: List[Tuple[str, str]] = []
+        seen: set = set()
+
+        # Layout 1: outer container whose ID ends with "fasesDataList"
+        container = soup.find(id=re.compile(r"fasesDataList$"))
+        if container:
+            for a in container.find_all("a", href=re.compile(r"Series\.aspx", re.I)):
+                href = a.get("href", "").split("#")[0]
+                label = a.get_text(strip=True)
+                if href and href not in seen:
+                    results.append((label or href, href))
+                    seen.add(href)
+            return results
+
+        # Layout 2: direct <a> elements whose ID contains "fasesDataList"
+        for a in soup.find_all("a", href=re.compile(r"Series\.aspx", re.I)):
+            if "fasesDataList" not in a.get("id", ""):
+                continue
+            href = a.get("href", "").split("#")[0]
+            label = a.get_text(strip=True)
+            if href and href not in seen:
+                results.append((label or href, href))
+                seen.add(href)
+        return results
 
     def _get_fases_groups(
         self, soup: BeautifulSoup, existing_ids: set
@@ -174,16 +262,8 @@ class FEBWebScraper:
         Returns:
             List of (label, group_id) tuples for phases not in existing_ids.
         """
-        fases_el = soup.find(id=re.compile(r"fasesDataList$"))
-        if not fases_el:
-            return []
-
         extra: List[Tuple[str, str]] = []
-        for link in fases_el.find_all("a", href=re.compile(r"Series\.aspx", re.I)):
-            href = link.get("href", "").split("#")[0]
-            label = link.get_text(strip=True)
-            if not href or not label:
-                continue
+        for label, href in self._find_fases_links(soup):
             resp = self.web_client.get(href, timeout=EXTENDED_TIMEOUT)
             if not resp:
                 continue
@@ -195,9 +275,15 @@ class FEBWebScraper:
             if not selected_opt:
                 continue
             gid = selected_opt.get("value", "")
-            if gid and gid not in existing_ids:
-                extra.append((label, gid))
-                existing_ids.add(gid)
+            if gid:
+                # Always cache the series URL — even when the group already
+                # appears in the standard dropdown (found via /resultados/).  The
+                # cache is the only reliable way to reach Series.aspx pages after
+                # a group-select POST taints the ASP.NET session state.
+                self._series_url_by_group[gid] = href
+                if gid not in existing_ids:
+                    extra.append((label, gid))
+                    existing_ids.add(gid)
         return extra
 
     @staticmethod
@@ -224,6 +310,96 @@ class FEBWebScraper:
             url = re.sub(r"([\?&]t=)\d+", rf"\g<1>{season}", url)
             return url
         return calendar_url
+
+    def _get_matches_via_series(
+        self, calendar_url: str, group_value: str, season_value: str = ""
+    ) -> List[str]:
+        """Fetch match codes from a Series.aspx page for a playoff group.
+
+        Some playoff phases (e.g. "2ºA-1ºB Final") render their matches
+        exclusively on a ``Series.aspx?f=XXXXX`` page.  The ``/resultados/``
+        page for those groups shows the group selected in the dropdown but
+        contains no match rows in the jornadaDataGrid.
+
+        Note: Series.aspx pages have no group dropdown.  The group_id → URL
+        mapping is built by label matching in ``_build_series_cache`` and
+        stored in ``_series_url_by_group`` during ``get_groups_for_season``.
+
+        Strategy:
+        1. **Cache hit** — if ``_build_series_cache`` already resolved this
+           group's Series URL, GET it directly (fast, no re-fetch).
+        2. **Cache miss** — rebuild the cache by re-fetching groups from
+           ``/resultados/`` then calling ``_build_series_cache``, and retry.
+
+        Args:
+            calendar_url:  Original competition calendar URL.
+            group_value:   Group dropdown value to find matches for.
+            season_value:  Season value used to derive the /resultados/ URL
+                           when rebuilding the cache on a cache miss.
+
+        Returns:
+            List of match code strings, or empty list if not found.
+        """
+        # --- Fast path: cached Series URL from get_groups_for_season ----------
+        series_href = self._series_url_by_group.get(group_value)
+        if series_href:
+            resp = self.web_client.get(series_href, timeout=EXTENDED_TIMEOUT)
+            if resp:
+                return self._extract_match_codes(
+                    BeautifulSoup(resp.content, "html.parser")
+                )
+
+        # --- Slow path: rebuild cache from /resultados/ + label matching ------
+        # Used when _get_matches_via_series is called without a prior
+        # get_groups_for_season call (e.g. direct API usage in tests).
+        if season_value:
+            try:
+                results_url = self._calendar_to_results_url(calendar_url, season_value)
+                if results_url != calendar_url:
+                    res_resp = self.web_client.get(results_url, timeout=EXTENDED_TIMEOUT)
+                    if res_resp:
+                        groups = self.get_groups(
+                            BeautifulSoup(res_resp.content, "html.parser")
+                        )
+                        if groups:
+                            self._build_series_cache(groups, calendar_url)
+                            series_href = self._series_url_by_group.get(group_value)
+                            if series_href:
+                                resp = self.web_client.get(
+                                    series_href, timeout=EXTENDED_TIMEOUT
+                                )
+                                if resp:
+                                    return self._extract_match_codes(
+                                        BeautifulSoup(resp.content, "html.parser")
+                                    )
+            except Exception:
+                pass
+        return []
+
+    @staticmethod
+    def _aspx_to_pretty_calendar_url(aspx_url: str) -> str:
+        """Convert ``calendario.aspx?g=G&t=T&nm=NM`` to ``/calendario/NM/G/T``.
+
+        The FEB website exposes two URL formats for the same page.  The
+        pretty-URL format (``/calendario/lf2/9/2025``) renders the
+        ``fasesDataList`` playoff navigation block while the ASPX query-string
+        format (``calendario.aspx?g=9&t=2025&nm=lf2``) does not.
+
+        Returns the original URL unchanged if it is not in ASPX format or if
+        the required query parameters are missing.
+        """
+        if "calendario.aspx" not in aspx_url:
+            return aspx_url
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(aspx_url)
+        qs = parse_qs(parsed.query)
+        g = qs.get("g", [""])[0]
+        t = qs.get("t", [""])[0]
+        nm = qs.get("nm", [""])[0]
+        if g and t and nm:
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            return f"{base}/calendario/{nm}/{g}/{t}"
+        return aspx_url
 
     def select_season(self, session: requests.Session, url: str, season_value: str,
                      hidden_fields: Dict[str, str]) -> Tuple[BeautifulSoup, Dict[str, str]]:
@@ -327,6 +503,9 @@ class FEBWebScraper:
             norm_year = normalize_year(year)
             url = BASE_URL.format(year=norm_year)
 
+        # Remember original calendar URL for fasesDataList fallback
+        original_calendar_url = url
+
         # Get initial page
         response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
         if not response:
@@ -391,8 +570,18 @@ class FEBWebScraper:
                         url = results_url
             soup = self.select_group(session, url, season_value, group_value, hidden_fields)
 
-        # Extract match codes
-        return self._extract_match_codes(soup)
+        # Extract match codes — primary and /resultados/ fallback
+        codes = self._extract_match_codes(soup)
+        if codes:
+            return codes
+
+        # Final fallback: some playoff phases (e.g. "2ºA-1ºB Final") render their
+        # matches exclusively on Series.aspx pages linked from the fasesDataList
+        # navigation element.  The /resultados/ page for those groups shows the
+        # group selected but no match rows.  Scan the original calendar page for
+        # Series.aspx links, find the one whose group dropdown matches group_value,
+        # and extract match codes from there.
+        return self._get_matches_via_series(original_calendar_url, group_value, season_value)
 
     def _build_form_data(self, event_target: str, hidden_fields: Dict[str, str],
                         additional_fields: Dict[str, str]) -> Dict[str, str]:
