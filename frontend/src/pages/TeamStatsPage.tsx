@@ -7,17 +7,18 @@
  * Trend badges inline in every numeric cell when a date filter is active
  * Export: CSV / PNG / PDF via DataTable > ExportButton
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
-import { BarChart2, Shield, Zap } from 'lucide-react'
+import { BarChart2, Loader2, Shield, TrendingUp, Zap } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getTeamStats, getTeamQuartiles, getTeamConsistency, type TeamStat, type TeamFilters, type CVMap, type CVEntry } from '@/api/client'
+import { getTeamStats, getTeamQuartiles, getTeamConsistency, getRivalAdjusted, type TeamStat, type TeamFilters, type CVMap, type CVEntry, type RivalAdjustedResult } from '@/api/client'
 import { fmt, fmtPct, getTrend } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
+import ExportButton from '@/components/ui/ExportButton'
 import StatCard from '@/components/ui/StatCard'
 import TrendBadge from '@/components/ui/TrendBadge'
 import { tippedHeader } from '@/components/ui/Tooltip'
@@ -168,11 +169,135 @@ function mean(rows: TeamStat[], key: keyof TeamStat): number {
 // -- Tabs config ---------------------------------------------------------------
 
 const TABS = [
-  { id: 'basic',    label: 'Básico',   Icon: BarChart2 },
-  { id: 'advanced', label: 'Avanzado', Icon: Zap       },
-  { id: 'rivals',   label: 'Rivales',  Icon: Shield    },
+  { id: 'basic',     label: 'Básico',     Icon: BarChart2  },
+  { id: 'advanced',  label: 'Avanzado',   Icon: Zap        },
+  { id: 'rivals',    label: 'Rivales',    Icon: Shield     },
+  { id: 'rival-adj', label: 'Aj. Rival',  Icon: TrendingUp },
 ] as const
 type TabId = (typeof TABS)[number]['id']
+
+// -- Rival-adjusted panel ------------------------------------------------------
+
+const RIVAL_STAT_LABELS: Record<string, string> = {
+  net_rtg:   'Net Rating',
+  ortg:      'ORtg (ataque)',
+  drtg:      'DRtg (defensa)',
+  efg_pct:   'eFG%',
+  tov_rate:  'TOV%',
+  oreb_rate: 'OReb%',
+  pts:       'Puntos/Partido',
+  pace:      'Ritmo (Pos/P)',
+}
+
+function RivalAdjPanel() {
+  const { collection } = useCollection()
+  const [statKey, setStatKey] = useState('net_rtg')
+  const tableRef = useRef<HTMLDivElement>(null)
+
+  const { data, isLoading, isError } = useQuery<RivalAdjustedResult>({
+    queryKey:  ['rival-adjusted', collection?.name],
+    queryFn:   () => getRivalAdjusted(collection!.name),
+    enabled:   Boolean(collection),
+    staleTime: 10 * 60_000,
+  })
+
+  const tableData = data
+    ? Object.entries(data)
+        .map(([team, stats]) => ({ team, ...(stats[statKey] ?? {}) }))
+        .filter((r): r is typeof r & { adj_avg: number } => r.adj_avg != null)
+        .sort((a, b) => b.adj_avg - a.adj_avg)
+    : []
+
+  // Teams exist but none have enough games for adjustment (< 5 paired games)
+  const hasRawData = data && Object.keys(data).length > 0
+  const insufficientGames = hasRawData && tableData.length === 0
+
+  const csvHeaders = [
+    { key: 'team',    label: 'Equipo' },
+    { key: 'raw_avg', label: 'Bruto' },
+    { key: 'adj',     label: 'Ajuste' },
+    { key: 'adj_avg', label: 'Ajustado' },
+    { key: 'sos',     label: 'SOS' },
+    { key: 'n',       label: 'PJ' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium text-ink-secondary">Estadística:</label>
+        <select
+          className="bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-ink-primary"
+          value={statKey}
+          onChange={e => setStatKey(e.target.value)}
+        >
+          {Object.entries(RIVAL_STAT_LABELS).map(([k, l]) => (
+            <option key={k} value={k}>{l}</option>
+          ))}
+        </select>
+        {tableData.length > 0 && (
+          <ExportButton
+            className="ml-auto"
+            filename={`ajuste_rival_${statKey}_${collection?.name ?? ''}`}
+            pdfTitle={`Ajuste por Rival — ${RIVAL_STAT_LABELS[statKey] ?? statKey}`}
+            csvHeaders={csvHeaders}
+            csvData={tableData as unknown as Record<string, unknown>[]}
+            captureRef={tableRef}
+          />
+        )}
+      </div>
+
+      {isLoading && <Loader2 className="animate-spin text-brand-400 w-6 h-6" />}
+      {isError   && <p className="text-red-400 text-sm">Error al cargar los datos.</p>}
+
+      {tableData.length > 0 && (
+        <div ref={tableRef} className="overflow-x-auto rounded-lg border border-surface-border">
+          <table className="w-full text-sm text-ink-primary border-collapse">
+            <thead>
+              <tr className="bg-surface-hover text-ink-secondary text-xs uppercase tracking-wider">
+                <th className="px-4 py-2.5 text-left">Equipo</th>
+                <th className="px-4 py-2.5 text-right cursor-help" title="Promedio real sin ajuste">Bruto</th>
+                <th className="px-4 py-2.5 text-right cursor-help" title="Corrección proporcional por calidad del rival. Positivo = calendario más difícil que la media de la liga">Ajuste</th>
+                <th className="px-4 py-2.5 text-right cursor-help" title="Valor ajustado por la dificultad del calendario — mejor estimador del rendimiento real independientemente del rival">Ajustado</th>
+                <th className="px-4 py-2.5 text-right cursor-help" title="Strength of Schedule: valor medio del contexto rival para esta estadística">SOS</th>
+                <th className="px-4 py-2.5 text-right cursor-help" title="Partidos con ajuste calculado">PJ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.map((r, i) => (
+                <tr
+                  key={r.team}
+                  className={`border-t border-surface-border hover:bg-surface-hover/50 ${i % 2 !== 0 ? 'bg-surface-card/30' : ''}`}
+                >
+                  <td className="px-4 py-2 font-medium text-ink-primary">{r.team}</td>
+                  <td className="px-4 py-2 text-right text-ink-secondary">{(r as { raw_avg?: number }).raw_avg?.toFixed(1) ?? '—'}</td>
+                  <td className={`px-4 py-2 text-right font-semibold ${((r as { adj?: number }).adj ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {(r as { adj?: number }).adj != null
+                      ? `${(r as { adj: number }).adj >= 0 ? '+' : ''}${(r as { adj: number }).adj.toFixed(1)}`
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-2 text-right font-semibold text-ink-primary">{r.adj_avg.toFixed(1)}</td>
+                  <td className="px-4 py-2 text-right text-ink-muted">{(r as { sos?: number }).sos?.toFixed(1) ?? '—'}</td>
+                  <td className="px-4 py-2 text-right text-ink-muted">{(r as { n?: number }).n ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {!isLoading && !isError && insufficientGames && (
+        <p className="text-amber-400 text-sm">
+          La colección tiene muy pocos partidos (mínimo 5 por equipo) para calcular un ajuste por rival fiable.
+          Con muestras pequeñas los cálculos generan resultados circulares que distorsionan los datos.
+        </p>
+      )}
+
+      {!isLoading && !isError && !hasRawData && (
+        <p className="text-ink-muted text-sm">Sin datos disponibles para esta colección.</p>
+      )}
+    </div>
+  )
+}
 
 // -- Component -----------------------------------------------------------------
 
@@ -374,7 +499,10 @@ export default function TeamStatsPage() {
           )}
         </div>
 
-        {/* Data table */}
+        {/* Data table / rival-adjusted panel */}
+        {tab === 'rival-adj' ? (
+          <RivalAdjPanel />
+        ) : (
         <DataTable
           columns={activeCols}
           data={activeData}
@@ -393,6 +521,7 @@ export default function TeamStatsPage() {
             csvData: activeData,
           }}
         />
+        )}
 
       </div>
     </PageTransition>
