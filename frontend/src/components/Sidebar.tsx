@@ -22,6 +22,8 @@ import {
   ChevronRight,
   LayoutDashboard,
   Settings,
+  Swords,
+  Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -46,6 +48,8 @@ const NAV_ITEMS: NavItem[] = [
   { icon: ArrowLeftRight,   label: 'IN/OUT',               subPath: 'inout' },
   { icon: Users2,           label: 'Combinaciones',        subPath: 'lineups' },
   { icon: BrainCircuit,     label: 'Análisis Predictivo', subPath: 'predictive' },
+  { icon: Swords,           label: 'Análisis de Partido',  subPath: 'matches' },
+  { icon: Layers,           label: 'Multifase',            subPath: 'multiphase' },
 ]
 
 const STORAGE_KEY = 'sidebar-collapsed'

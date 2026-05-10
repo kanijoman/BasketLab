@@ -106,7 +106,7 @@ class CollectionService:
     _FBCYL_PREFIX = re.compile(r'^FBCYL_', re.IGNORECASE)
     # Used to extract a 4-digit year component for season parsing
     _YEAR_RE = re.compile(r'^\d{4}$')
-    # Valid group suffix: single letter or 1-2 alphanumeric chars
+    # Valid short group suffix: single letter or 1-2 alphanumeric chars (A, B, 1A, …)
     _GROUP_RE = re.compile(r'^[A-Z0-9]{1,2}$', re.IGNORECASE)
 
     def _parse_components(self, name: str, league: str) -> Dict[str, str]:
@@ -136,7 +136,9 @@ class CollectionService:
         competition = '_'.join(parts[:year_idx])
         remainder = parts[year_idx:]
 
-        # If last token looks like a group label (A, B, C, …) peel it off
+        # If the last token is a short group label (A, B, C, 1A, …) peel it off.
+        # Longer phase names (ELIMINATORIAS, FASE_ASCENSO) stay in the season
+        # string; sibling detection uses _season_year() to ignore the suffix.
         if len(remainder) > 1 and self._GROUP_RE.match(remainder[-1]):
             group = remainder[-1]
             season = '_'.join(remainder[:-1])
@@ -145,6 +147,21 @@ class CollectionService:
             season = '_'.join(remainder)
 
         return {'competition': competition, 'season': season, 'group': group}
+
+    def _season_year(self, season: str) -> str:
+        """Return only the leading year token(s) from a season string.
+
+        E.g. ``'2025_ELIMINATORIAS'`` → ``'2025'``,
+             ``'2025_2026_Liga_Regular'`` → ``'2025_2026'``,
+             ``'2025'`` → ``'2025'``.
+        """
+        year_parts: List[str] = []
+        for part in season.split('_'):
+            if self._YEAR_RE.match(part):
+                year_parts.append(part)
+            else:
+                break
+        return '_'.join(year_parts) or season
 
     def list_available(self) -> List[Dict]:
         """Return metadata for every basketball collection in the database.
@@ -229,3 +246,37 @@ class CollectionService:
         if not self._db.is_connected():
             raise RuntimeError("Database not connected.")
         self._db.connection.get_database().drop_collection(collection_name)
+
+    def get_sibling_collections(
+        self, collection_name: str, all_collections: List[str]
+    ) -> List[str]:
+        """Return all collections sharing the same competition and season.
+
+        Two collections are siblings when ``_parse_components`` produces the
+        same ``competition`` and ``season`` values.  Different group suffixes
+        (A, B, C, …) are treated as phases of the same competition.
+
+        Args:
+            collection_name: The reference collection.
+            all_collections: Pool to search in (may or may not include itself).
+
+        Returns:
+            Sorted list of sibling collection names (always includes
+            *collection_name* if present in *all_collections* or by itself).
+        """
+        league = 'FBCYL' if self._FBCYL_PREFIX.match(collection_name) else 'FEB'
+        ref = self._parse_components(collection_name, league)
+
+        siblings = []
+        for name in all_collections:
+            coll_league = 'FBCYL' if self._FBCYL_PREFIX.match(name) else 'FEB'
+            if coll_league != league:
+                continue
+            cmp = self._parse_components(name, coll_league)
+            if (cmp['competition'] == ref['competition']
+                    and self._season_year(cmp['season']) == self._season_year(ref['season'])):
+                siblings.append(name)
+
+        if collection_name not in siblings:
+            siblings.append(collection_name)
+        return sorted(siblings)

@@ -39,6 +39,8 @@ import PossessionsPage from '@/pages/PossessionsPage'
 import InOutPage from '@/pages/InOutPage'
 import AdminPage from '@/pages/AdminPage'
 import PredictivePage from '@/pages/PredictivePage'
+import MatchAnalysisPage from '@/pages/MatchAnalysisPage'
+import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
 
 export default function App() {
   const location = useLocation()
@@ -65,6 +67,8 @@ export default function App() {
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />
               <Route path="predictive"  element={<PredictivePage />} />
+              <Route path="matches"    element={<MatchAnalysisPage />} />
+              <Route path="multiphase" element={<MultiPhaseStatsPage />} />
             </Route>
 
             {/* ── Admin ── */}

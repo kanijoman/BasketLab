@@ -289,6 +289,75 @@ export const exportAIAnalysisPDF = async (
   return res.blob()
 }
 
+// ── Match Analysis ────────────────────────────────────────────────────────────
+
+export interface MatchSummary {
+  match_id: number | string
+  date: string
+  round: string
+  venue: string
+  home_team: string
+  away_team: string
+  home_score: number
+  away_score: number
+}
+
+export interface ComparisonRow {
+  stat_key: string
+  label: string
+  section: string
+  home_value: number
+  away_value: number
+  delta: number
+  winner: 'home' | 'away' | 'tie'
+  lower_is_better: boolean
+}
+
+export interface MatchAnalysis {
+  home: { team_name: string; [key: string]: unknown }
+  away: { team_name: string; [key: string]: unknown }
+  comparison: ComparisonRow[]
+}
+
+export const getMatchList = (collection: string, is_fbcyl = false) =>
+  get<MatchSummary[]>(
+    `/matches/${encodeURIComponent(collection)}?is_fbcyl=${is_fbcyl}`,
+  )
+
+export const getMatchAnalysis = (
+  collection: string,
+  matchId: string | number,
+  is_fbcyl = false,
+) =>
+  get<MatchAnalysis>(
+    `/matches/${encodeURIComponent(collection)}/${matchId}?is_fbcyl=${is_fbcyl}`,
+  )
+
+// ── Multi-phase ───────────────────────────────────────────────────────────────
+
+export const getMultiTeamStats = (collections: string[], is_fbcyl = false) =>
+  get<TeamStat[]>(
+    `/multi/team-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
+  )
+
+export const getMultiPlayerStats = (collections: string[], is_fbcyl = false) =>
+  get<PlayerStat[]>(
+    `/multi/player-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
+  )
+
+export const getMultiTeamStatsBreakdown = (collections: string[], is_fbcyl = false) =>
+  get<Record<string, TeamStat[]>>(
+    `/multi/team-stats/breakdown?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
+  )
+
+export const getMultiPlayerStatsBreakdown = (collections: string[], is_fbcyl = false) =>
+  get<Record<string, PlayerStat[]>>(
+    `/multi/player-stats/breakdown?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
+  )
+
+export const getSiblingCollections = (collection: string) =>
+  get<string[]>(`/multi/sibling-collections?collection=${encodeURIComponent(collection)}`)
+
 // ── Shared types ─────────────────────────────────────────────────────────────
 
 export interface TeamStat {
