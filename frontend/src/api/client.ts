@@ -868,7 +868,7 @@ export type RivalAdjustedResult = Record<string, Record<string, RivalAdjEntry>>
 
 export const getRivalAdjusted = (collection: string) =>
   get<RivalAdjustedResult>(
-    `/analysis/${encodeURIComponent(collection)}/rival_adjusted`,
+    `/teams/${encodeURIComponent(collection)}/rival-adjusted`,
   )
 
 // FASE 3/4 — Elasticity models

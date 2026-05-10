@@ -187,6 +187,49 @@ class TestRivalAdjustedService:
             svc.get_rival_adjusted_stats("FBCYL_SE_2025_A")
             mock_fetch.assert_called_once_with("FBCYL_SE_2025_A", True)
 
+    def test_small_sample_suppresses_adj_avg_regression(self):
+        """Regression: with < _MIN_ADJ_GAMES paired games adj_avg must be None.
+
+        Bug: with n=2 games the rival's 'allowed ortg' equals the evaluated
+        team's own OER (circular dependency), causing adj_avg = league_mean
+        for every team.  The fix requires min _MIN_ADJ_GAMES paired games.
+        """
+        from services.rival_adjusted_service import RivalAdjustedService, _MIN_ADJ_GAMES
+
+        # Build exactly (_MIN_ADJ_GAMES - 1) games between two teams → below threshold
+        n_below = _MIN_ADJ_GAMES - 1
+        rows = _make_rows_two_teams(n_below)
+        handler = MagicMock()
+        svc = RivalAdjustedService(handler)
+        with patch.object(svc, '_fetch_rows', return_value=rows):
+            result = svc.get_rival_adjusted_stats("SMALL_COLL")
+
+        for team, stats in result.items():
+            for stat_key, v in stats.items():
+                assert v["adj_avg"] is None, (
+                    f"{team}.{stat_key}: expected adj_avg=None with n={v['n']} < {_MIN_ADJ_GAMES}"
+                )
+                assert v["adj"] is None
+                assert v["sos"] is None
+                assert v["raw_avg"] is not None   # raw always populated
+                assert v["n"] == n_below
+
+    def test_sufficient_sample_produces_adj_avg(self):
+        """With >= _MIN_ADJ_GAMES games adj_avg must be populated."""
+        from services.rival_adjusted_service import RivalAdjustedService, _MIN_ADJ_GAMES
+
+        rows = _make_rows_two_teams(_MIN_ADJ_GAMES)
+        handler = MagicMock()
+        svc = RivalAdjustedService(handler)
+        with patch.object(svc, '_fetch_rows', return_value=rows):
+            result = svc.get_rival_adjusted_stats("OK_COLL")
+
+        for team, stats in result.items():
+            for stat_key, v in stats.items():
+                assert v["adj_avg"] is not None, (
+                    f"{team}.{stat_key}: expected adj_avg populated with n={v['n']} >= {_MIN_ADJ_GAMES}"
+                )
+
 
 # ===========================================================================
 # FASE 3/4 — ElasticityService
@@ -454,13 +497,13 @@ def api_client_analysis(feb_game_doc):
 class TestAnalysisAPIEndpoints:
     def test_rival_adjusted_returns_200(self, api_client_analysis):
         resp = api_client_analysis.get(
-            "/api/v1/analysis/FEB_LF2_2025_A/rival_adjusted"
+            "/api/v1/teams/FEB_LF2_2025_A/rival-adjusted"
         )
         assert resp.status_code == 200
 
     def test_rival_adjusted_returns_dict(self, api_client_analysis):
         resp = api_client_analysis.get(
-            "/api/v1/analysis/FEB_LF2_2025_A/rival_adjusted"
+            "/api/v1/teams/FEB_LF2_2025_A/rival-adjusted"
         )
         assert isinstance(resp.json(), dict)
 

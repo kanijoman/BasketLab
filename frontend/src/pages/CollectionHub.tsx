@@ -36,7 +36,7 @@ const MODULES: Module[] = [
   { icon: ArrowLeftRight, label: 'IN/OUT',                     description: 'Impacto por jugador dentro/fuera de la cancha',    subPath: 'inout',       accent: 'text-brand-400' },
   { icon: Users2,         label: 'Combinaciones',              description: 'Mejores y peores combinaciones de jugadoras por estadística',    subPath: 'lineups',     accent: 'text-brand-400' },
   { icon: FileText,       label: 'Informe Semanal',            description: 'Report builder con PDF/DOCX exportable',           subPath: 'report',      accent: 'text-warn' },
-  { icon: BrainCircuit,   label: 'Análisis Predictivo',        description: 'Ajuste por rival · Elasticidades · Monte Carlo',   subPath: 'predictive',  accent: 'text-brand-400' },
+  { icon: BrainCircuit,   label: 'Análisis Predictivo',        description: 'Elasticidades Ridge · Monte Carlo · Predicción partido',   subPath: 'predictive',  accent: 'text-brand-400' },
 ]
 
 // ── Highlights derived from data ──────────────────────────────────────────────

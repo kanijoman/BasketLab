@@ -1,29 +1,31 @@
 /**
- * PredictivePage — Análisis Predictivo (FASE 2-8)
+ * PredictivePage — Análisis Predictivo (FASE 3-8)
  *
  * Tabs:
- *   1. Ajuste por Rival        — rival-adjusted stats for all teams this season
- *   2. Elasticidades           — model training + per-team next-game prediction
- *   3. Proyección MC           — Monte Carlo simulation for N future games
- *   4. Predicción Partido      — Win/Loss probability (FASE 7)
- *   5. Validación              — walk-forward backtesting metrics (FASE 6)
- *   6. Predicción Jugador      — per-player next-game Ridge prediction (FASE 8)
+ *   1. Elasticidades           — model training + per-team next-game prediction
+ *   2. Proyección MC           — Monte Carlo simulation for N future games
+ *   3. Predicción Partido      — Win/Loss probability (FASE 7)
+ *   4. Validación              — walk-forward backtesting metrics (FASE 6)
+ *   5. Predicción Jugador      — per-player next-game Ridge prediction (FASE 8)
+ *   6. Clasificación Final     — season-end standings projection (FASE 9)
+ *
+ * Ajuste por Rival (descriptivo) → Estadísticas de Equipo > tab "Aj. Rival"
  */
 import { useState, useEffect } from 'react'
 import { useCollection } from '@/context/CollectionContext'
 import { useQuery } from '@tanstack/react-query'
 import PageTransition from '@/components/ui/PageTransition'
 import {
-  getRivalAdjusted, getElasticityModels, postTrainElasticity,
+  getElasticityModels, postTrainElasticity,
   getElasticityPredict, postMonteCarlo, getLiveTeamNames,
   getHistoricalSeasons, getHistoricalTeams, getBacktesting, postGamePrediction,
   getPlayerPrediction, getPlayerStats, getSeasonProjection,
-  type RivalAdjustedResult, type ElasticityModelMeta,
+  type ElasticityModelMeta,
   type ElasticityPrediction, type MonteCarloResult,
   type HistoricalTeamEntry, type BacktestingResult, type GamePredictionResult,
   type PlayerPredictionResult, type SeasonProjectionEntry,
 } from '@/api/client'
-import { Loader2, TrendingUp, BarChart2, Dices, FlaskConical, Target, User, Trophy } from 'lucide-react'
+import { Loader2, BarChart2, Dices, FlaskConical, Target, User, Trophy } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const fmt = (v: number | null | undefined, d = 1) =>
@@ -31,96 +33,6 @@ const fmt = (v: number | null | undefined, d = 1) =>
 
 const pct = (v: number | null | undefined) =>
   v == null ? '—' : `${(v * 100).toFixed(1)} %`
-
-const STAT_LABELS: Record<string, string> = {
-  net_rtg:   'Net Rating',
-  ortg:      'ORtg',
-  drtg:      'DRtg',
-  efg_pct:   'eFG%',
-  tov_rate:  'TOV%',
-  oreb_pct:  'OReb%',
-}
-
-// ── Rival-adjusted tab ────────────────────────────────────────────────────────
-function RivalAdjTab() {
-  const { collection } = useCollection()
-  const [data, setData]     = useState<RivalAdjustedResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState<string | null>(null)
-  const [statKey, setStatKey] = useState('net_rtg')
-
-  useEffect(() => {
-    if (!collection) return
-    setLoading(true); setError(null)
-    getRivalAdjusted(collection.name)
-      .then(setData)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [collection])
-
-  const teams = data ? Object.keys(data) : []
-  const tableData = teams
-    .map(t => ({ team: t, ...(data![t][statKey] ?? {}) }))
-    .filter(r => r.adj_avg != null)
-    .sort((a, b) => (b.adj_avg ?? 0) - (a.adj_avg ?? 0))
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-slate-300">Estadística:</label>
-        <select
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
-          value={statKey}
-          onChange={e => setStatKey(e.target.value)}
-        >
-          {Object.entries(STAT_LABELS).map(([k, l]) => (
-            <option key={k} value={k}>{l}</option>
-          ))}
-        </select>
-      </div>
-
-      {loading && <Loader2 className="animate-spin text-brand-400 w-6 h-6" />}
-      {error   && <p className="text-red-400 text-sm">{error}</p>}
-
-      {tableData.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-slate-200 border-collapse">
-            <thead>
-              <tr className="bg-slate-700 text-slate-300">
-                <th className="px-3 py-2 text-left">Equipo</th>
-                <th className="px-3 py-2 text-right cursor-help" title="Promedio real de la estadística sin ningún ajuste">Media bruta</th>
-                <th className="px-3 py-2 text-right cursor-help" title="Corrección aplicada según la dificultad de los rivales enfrentados (modelo Ridge). Positivo = rivales mejor que la media">Ajuste rival</th>
-                <th className="px-3 py-2 text-right cursor-help" title="Media bruta + ajuste por rival. Mejor estimador del rendimiento real del equipo independientemente del calendario">Media ajustada</th>
-                <th className="px-3 py-2 text-right cursor-help" title="Strength of Schedule: puntuación media de los rivales — cuanto mayor, más difícil el calendario">SOS</th>
-                <th className="px-3 py-2 text-right cursor-help" title="Partidos jugados considerados en el cálculo">PJ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map(r => (
-                <tr key={r.team} className="border-t border-slate-700 hover:bg-slate-800/50">
-                  <td className="px-3 py-1.5 font-medium">{r.team}</td>
-                  <td className="px-3 py-1.5 text-right">{fmt(r.raw_avg)}</td>
-                  <td className={`px-3 py-1.5 text-right font-semibold ${
-                    (r.adj ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {r.adj != null ? `${r.adj >= 0 ? '+' : ''}${fmt(r.adj)}` : '—'}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">{fmt(r.adj_avg)}</td>
-                  <td className="px-3 py-1.5 text-right text-slate-400">{fmt(r.sos)}</td>
-                  <td className="px-3 py-1.5 text-right text-slate-400">{r.n ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {!loading && !error && tableData.length === 0 && (
-        <p className="text-slate-400 text-sm">Sin datos suficientes para ajuste por rival.</p>
-      )}
-    </div>
-  )
-}
 
 // ── Shared season + team picker ───────────────────────────────────────────────
 function TeamPicker({
@@ -1118,10 +1030,9 @@ function PlayerPredictionTab() {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-type Tab = 'rival' | 'elasticity' | 'montecarlo' | 'prediction' | 'validation' | 'player' | 'season'
+type Tab = 'elasticity' | 'montecarlo' | 'prediction' | 'validation' | 'player' | 'season'
 
 const TABS: Array<{ id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: 'rival',       label: 'Ajuste por Rival',   icon: TrendingUp },
   { id: 'elasticity',  label: 'Elasticidades',       icon: BarChart2 },
   { id: 'montecarlo',  label: 'Proyección MC',        icon: Dices },
   { id: 'prediction',  label: 'Predicción Partido',  icon: Target },
@@ -1131,7 +1042,7 @@ const TABS: Array<{ id: Tab; label: string; icon: React.ComponentType<{ classNam
 ]
 
 export default function PredictivePage() {
-  const [tab, setTab] = useState<Tab>('rival')
+  const [tab, setTab] = useState<Tab>('elasticity')
 
   return (
     <PageTransition>
@@ -1163,7 +1074,6 @@ export default function PredictivePage() {
 
         {/* Tab content */}
         <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6">
-          {tab === 'rival'      && <RivalAdjTab />}
           {tab === 'elasticity' && <ElasticityTab />}
           {tab === 'montecarlo' && <MonteCarloTab />}
           {tab === 'prediction' && <GamePredictionTab />}

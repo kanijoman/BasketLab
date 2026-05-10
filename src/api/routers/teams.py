@@ -90,6 +90,36 @@ def list_teams(
     return teams[skip: skip + limit]
 
 
+@router.get(
+    "/{collection}/rival-adjusted",
+    summary="Estadísticas descriptivas ajustadas por calidad del rival",
+)
+def get_rival_adjusted(
+    collection: str,
+    db=Depends(get_db),
+) -> Dict[str, Any]:
+    """Return per-team advanced stats adjusted for opponent seasonal quality.
+
+    For each game, each stat is weighted by the rival's seasonal defensive
+    (or offensive) quality using a proportional formula::
+
+        adj_game = raw_game * (league_avg_context / rival_seasonal_context)
+
+    For ``net_rtg`` (signed), an additive form is used::
+
+        adj_game = raw_game + (rival_net_rtg - league_avg_net_rtg)
+
+    Args:
+        collection: MongoDB collection name.
+
+    Returns:
+        ``{team_name: {stat_key: {raw_avg, adj_avg, adj, sos, n}}}``
+    """
+    from src.services.rival_adjusted_service import RivalAdjustedService
+    svc = RivalAdjustedService(db)
+    return svc.get_rival_adjusted_stats(collection)
+
+
 @router.get("/{collection}/consistency", summary="Get per-team intra-game consistency stats")
 def get_consistency(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
     """Return per-team std dev and CV for key stats computed across all games.

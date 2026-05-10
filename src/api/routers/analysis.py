@@ -1,10 +1,9 @@
-﻿"""FastAPI router for team-level analytics endpoints (FASE 2-5).
+﻿"""FastAPI router for team-level analytics endpoints (FASE 3-5).
 
 Prefixed at /api/v1/analysis
 
 Endpoints
 ---------
-GET  /analysis/{collection}/rival_adjusted           FASE 2
 POST /analysis/elasticity/train                      FASE 3/4
 GET  /analysis/elasticity/models                     FASE 3/4
 GET  /analysis/elasticity/predict/{team_id}          FASE 3/4
@@ -24,38 +23,6 @@ from src.api.deps import get_db
 
 router = APIRouter()
 
-
-# ---------------------------------------------------------------------------
-# FASE 2 â€” Rival-adjusted stats
-# ---------------------------------------------------------------------------
-
-@router.get(
-    "/{collection}/rival_adjusted",
-    summary="EstadÃ­sticas ajustadas por calidad del rival",
-)
-def get_rival_adjusted(
-    collection: str,
-    db=Depends(get_db),
-) -> Dict[str, Any]:
-    """Return per-team stats adjusted for opponent strength.
-
-    ``adj_avg = raw_avg - (opp_avg_allowed - league_avg_allowed)``
-
-    Positive ``adj`` means better-than-expected performance vs schedule
-    difficulty; negative means underperformance.
-
-    Args:
-        collection: MongoDB collection name.
-
-    Returns:
-        ``{team_name: {stat_key: {raw_avg, adj_avg, adj, sos, n}}}``
-    """
-    from src.services.rival_adjusted_service import RivalAdjustedService
-    svc = RivalAdjustedService(db)
-    result = svc.get_rival_adjusted_stats(collection)
-    if not result:
-        return {}
-    return result
 
 
 # ---------------------------------------------------------------------------
