@@ -11,10 +11,26 @@
  *
  * The sidebar is only visible when a collection is active (URL has /:collection).
  */
+import { Component, type ReactNode } from 'react'
 import { Outlet, Link, useParams, useNavigate } from 'react-router-dom'
 import { ChevronRight, Home, ExternalLink } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
+
+class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error) { console.error('[PageErrorBoundary]', error) }
+  render() {
+    if (this.state.error) return (
+      <div className="p-8 space-y-2">
+        <p className="text-red-400 font-semibold">Error al cargar la página</p>
+        <pre className="text-xs text-slate-400 whitespace-pre-wrap">{(this.state.error as Error).message}</pre>
+      </div>
+    )
+    return this.props.children
+  }
+}
 
 function Header() {
   const { collection } = useCollection()
@@ -79,7 +95,9 @@ function Shell() {
         {/* Page content */}
         <main className="flex-1 min-w-0 overflow-y-auto">
           <div className="p-5 max-w-[1600px] mx-auto min-h-full">
-            <Outlet />
+            <PageErrorBoundary>
+              <Outlet />
+            </PageErrorBoundary>
           </div>
         </main>
       </div>

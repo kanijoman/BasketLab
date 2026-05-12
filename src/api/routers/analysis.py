@@ -77,45 +77,65 @@ def list_elasticity_models(db=Depends(get_db)) -> List[Dict[str, Any]]:
 
 @router.get(
     "/elasticity/predict/{team_id}",
-    summary="Predecir prÃ³ximo partido con modelo de elasticidad",
+    summary="Predecir próximo partido con modelo de elasticidad",
 )
 def predict_next_game(
     team_id: str,
-    season: str = Query(..., description='Temporada normalizada, e.g. "2024-25"'),
-    is_home: Optional[bool] = Query(None, description="Â¿El equipo juega en casa?"),
+    season: Optional[str] = Query(None, description='Temporada normalizada, e.g. "2024-25". Requerida en modo histórico.'),
+    is_home: Optional[bool] = Query(None, description="¿El equipo juega en casa?"),
     opp_net_rtg: Optional[float] = Query(
         None, description="Net rating del rival en la temporada"
     ),
     leagues: Optional[str] = Query(
-        None, description="Liga para selecciÃ³n de modelo (FEB, FBCYL)"
+        None, description="Liga para selección de modelo (FEB, FBCYL)"
     ),
     competitions: Optional[str] = Query(
-        None, description="CompeticiÃ³n para selecciÃ³n de modelo (LF2, etc.)"
+        None, description="Competición para selección de modelo (LF2, etc.)"
+    ),
+    live_collection: Optional[str] = Query(
+        None, description="Colección live para modo temporada actual (e.g. FEB_2526_Liga)"
+    ),
+    live_team_name: Optional[str] = Query(
+        None, description="Nombre exacto del equipo en la colección live"
+    ),
+    live_is_fbcyl: Optional[bool] = Query(
+        False, description="True si la colección live es formato FBCYL"
     ),
     db=Depends(get_db),
 ) -> Dict[str, Any]:
-    """Predict next-game stats for a team using trained Ridge elasticity models.
+    """Predict next-game stats using trained Ridge elasticity models.
 
-    Args:
-        team_id:     Team ID as stored in HISTORICAL.
-        season:      Normalised season label.
-        is_home:     Whether the next game is at home (enables Modelo B).
-        opp_net_rtg: Opponent season net_rtg (enables Modelo B conditioning).
-        leagues:     Filter for model selection.
-        competitions: Filter for model selection.
-
-    Returns:
-        ``{stat: {model_a: {estimate, ci_low, ci_high, r2}, model_b: {...}}}``
+    Supports two modes:
+    - **Histórico**: provide ``team_id`` (URL) + ``season`` query param.
+    - **Live** (temporada actual): provide ``live_collection`` + ``live_team_name``.
+      The ``team_id`` URL param is ignored in live mode.
     """
     from src.services.elasticity_service import ElasticityService
     leagues_list = [leagues] if leagues else None
     comps_list   = [competitions] if competitions else None
     svc = ElasticityService(db.connection)
-    result = svc.predict_next_game(
-        team_id, season,
-        is_home=is_home, opp_net_rtg=opp_net_rtg,
-        leagues=leagues_list, competitions=comps_list,
-    )
+
+    if live_collection:
+        if not live_team_name:
+            raise HTTPException(status_code=422, detail="live_team_name es obligatorio en modo live")
+        result = svc.predict_next_game_live(
+            live_collection=live_collection,
+            team_name=live_team_name,
+            is_fbcyl=live_is_fbcyl,
+            is_home=is_home,
+            opp_net_rtg=opp_net_rtg,
+            leagues=leagues_list,
+            competitions=comps_list,
+        )
+    else:
+        if not season:
+            raise HTTPException(status_code=422, detail="season es obligatorio en modo histórico")
+        result = svc.predict_next_game(
+            team_id, season,
+            is_home=is_home, opp_net_rtg=opp_net_rtg,
+            leagues=leagues_list, competitions=comps_list,
+        )
+
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
     return result

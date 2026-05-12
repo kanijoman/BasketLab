@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query'
 import PageTransition from '@/components/ui/PageTransition'
 import {
   getElasticityModels, postTrainElasticity,
-  getElasticityPredict, postMonteCarlo, getLiveTeamNames,
+  getElasticityPredictLive, postMonteCarlo, getLiveTeamNames,
   getHistoricalSeasons, getHistoricalTeams, getBacktesting, postGamePrediction,
   getPlayerPrediction, getPlayerStats, getSeasonProjection,
   type ElasticityModelMeta,
@@ -25,6 +25,7 @@ import {
   type HistoricalTeamEntry, type BacktestingResult, type GamePredictionResult,
   type PlayerPredictionResult, type SeasonProjectionEntry,
 } from '@/api/client'
+import { STAT_LABELS } from '@/lib/statLabels'
 import { Loader2, BarChart2, Dices, FlaskConical, Target, User, Trophy } from 'lucide-react'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -109,14 +110,27 @@ function TeamPicker({
 
 // ── Elasticity tab ────────────────────────────────────────────────────────────
 function ElasticityTab() {
+  const { collection } = useCollection()
   const [models, setModels]     = useState<ElasticityModelMeta[]>([])
   const [training, setTraining] = useState(false)
   const [trainMsg, setTrainMsg] = useState<string | null>(null)
-  const [season, setSeason]     = useState('')
-  const [teamId, setTeamId]     = useState('')
+  const [liveTeam, setLiveTeam] = useState('')
+  // Optional Modelo B inputs
+  const [isHome, setIsHome]         = useState<boolean | null>(null)
+  const [oppNetRtg, setOppNetRtg]   = useState('')
+
   const [pred, setPred]         = useState<ElasticityPrediction | null>(null)
   const [predLoading, setPredLoading] = useState(false)
   const [predError, setPredError]     = useState<string | null>(null)
+
+  const isLiveFbcyl = collection ? collection.name.includes('FBCYL') : false
+
+  const { data: liveTeams = [], isLoading: loadingLiveTeams } = useQuery({
+    queryKey: ['live-teams-elasticity', collection?.name],
+    queryFn:  () => getLiveTeamNames(collection!.name),
+    enabled:  !!collection,
+    staleTime: 60_000,
+  })
 
   useEffect(() => {
     getElasticityModels().then(setModels).catch(() => {})
@@ -135,13 +149,19 @@ function ElasticityTab() {
   }
 
   const handlePredict = () => {
-    if (!teamId || !season) return
     setPredLoading(true); setPredError(null); setPred(null)
-    getElasticityPredict(teamId, season)
+    const oppVal = oppNetRtg !== '' ? parseFloat(oppNetRtg) : undefined
+    getElasticityPredictLive(
+      collection!.name, liveTeam, isLiveFbcyl,
+      isHome ?? undefined,
+      Number.isFinite(oppVal) ? oppVal : undefined,
+    )
       .then(setPred)
       .catch(e => setPredError(e.message))
       .finally(() => setPredLoading(false))
   }
+
+  const canPredict = !!collection && !!liveTeam
 
   return (
     <div className="space-y-6">
@@ -183,7 +203,7 @@ function ElasticityTab() {
                 {models.map(m => (
                   <tr key={`${m.model_type}-${m.stat}`} className="border-t border-slate-700">
                     <td className="px-3 py-1.5 font-mono text-brand-400">Modelo {m.model_type}</td>
-                    <td className="px-3 py-1.5">{STAT_LABELS[m.stat] ?? m.stat}</td>
+                    <td className="px-3 py-1.5">{STAT_LABELS[m.stat]?.label ?? m.stat}</td>
                     <td className="px-3 py-1.5 text-slate-400">{m.league}</td>
                     <td className="px-3 py-1.5 text-right">{fmt(m.r2_train, 3)}</td>
                     <td className="px-3 py-1.5 text-right">{m.n_samples}</td>
@@ -199,18 +219,74 @@ function ElasticityTab() {
       {/* Prediction section */}
       <div className="bg-slate-800/50 rounded-lg p-4 space-y-3">
         <h3 className="font-semibold text-slate-200">Predecir próximo partido</h3>
+
         <div className="flex gap-3 flex-wrap items-end">
-          <TeamPicker
-            season={season} teamId={teamId}
-            onSeasonChange={setSeason} onTeamChange={setTeamId}
-          />
-          <button onClick={handlePredict} disabled={predLoading || !teamId} className="btn-primary">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Equipo</label>
+            {loadingLiveTeams
+              ? <div className="h-8 w-52 rounded bg-slate-700 animate-pulse" />
+              : !collection
+                ? <p className="text-xs text-slate-500 italic">Selecciona una colección primero</p>
+                : liveTeams.length === 0
+                  ? <p className="text-xs text-slate-500 italic">Sin equipos en esta colección</p>
+                  : (
+                    <select
+                      className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-56"
+                      value={liveTeam}
+                      onChange={e => setLiveTeam(e.target.value)}
+                    >
+                      <option value="">Seleccionar equipo…</option>
+                      {(liveTeams as string[]).map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  )
+            }
+          </div>
+          <button onClick={handlePredict} disabled={predLoading || !canPredict} className="btn-primary">
             {predLoading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Predecir'}
           </button>
         </div>
+
+        {/* Optional Modelo B inputs */}
+        <div className="flex gap-4 flex-wrap items-end pt-1">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">
+              ¿Local o visitante? <span className="text-slate-500">(opcional — activa Modelo B)</span>
+            </label>
+            <div className="flex gap-1">
+              {([null, true, false] as const).map(v => (
+                <button
+                  key={String(v)}
+                  onClick={() => setIsHome(v)}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors border ${
+                    isHome === v
+                      ? 'bg-brand-600 border-brand-500 text-white'
+                      : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {v === null ? 'Sin especificar' : v ? 'Local' : 'Visitante'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Net Rating rival <span className="text-slate-500">(opcional)</span></label>
+            <input
+              type="number"
+              step="0.1"
+              placeholder="p.ej. -2.5"
+              value={oppNetRtg}
+              onChange={e => setOppNetRtg(e.target.value)}
+              className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-36"
+            />
+          </div>
+        </div>
         {predError && <p className="text-red-400 text-sm">{predError}</p>}
 
-        {pred && (
+        {pred && (() => {
+          const hasModelB = Object.values(pred).some(v => v.model_b)
+          return (
           <div className="overflow-x-auto mt-3">
             <table className="w-full text-sm text-slate-200 border-collapse">
               <thead>
@@ -218,32 +294,37 @@ function ElasticityTab() {
                   <th className="px-3 py-2 text-left">Estadística</th>
                   <th className="px-3 py-2 text-right">Modelo A (estimación)</th>
                   <th className="px-3 py-2 text-right">IC 90% (A)</th>
-                  <th className="px-3 py-2 text-right">Modelo B (estimación)</th>
-                  <th className="px-3 py-2 text-right">IC 90% (B)</th>
+                  {hasModelB && <th className="px-3 py-2 text-right">Modelo B (estimación)</th>}
+                  {hasModelB && <th className="px-3 py-2 text-right">IC 90% (B)</th>}
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(pred).map(([stat, v]) => (
                   <tr key={stat} className="border-t border-slate-700">
-                    <td className="px-3 py-1.5 font-medium">{STAT_LABELS[stat] ?? stat}</td>
+                    <td className="px-3 py-1.5 font-medium">{STAT_LABELS[stat]?.label ?? stat}</td>
                     <td className="px-3 py-1.5 text-right font-semibold text-brand-300">
                       {v.model_a ? fmt(v.model_a.estimate) : '—'}
                     </td>
                     <td className="px-3 py-1.5 text-right text-slate-400">
                       {v.model_a ? `[${fmt(v.model_a.ci_low)}, ${fmt(v.model_a.ci_high)}]` : '—'}
                     </td>
-                    <td className="px-3 py-1.5 text-right font-semibold text-accent-300">
-                      {v.model_b ? fmt(v.model_b.estimate) : '—'}
-                    </td>
-                    <td className="px-3 py-1.5 text-right text-slate-400">
-                      {v.model_b ? `[${fmt(v.model_b.ci_low)}, ${fmt(v.model_b.ci_high)}]` : '—'}
-                    </td>
+                    {hasModelB && (
+                      <td className="px-3 py-1.5 text-right font-semibold text-accent-300">
+                        {v.model_b ? fmt(v.model_b.estimate) : '—'}
+                      </td>
+                    )}
+                    {hasModelB && (
+                      <td className="px-3 py-1.5 text-right text-slate-400">
+                        {v.model_b ? `[${fmt(v.model_b.ci_low)}, ${fmt(v.model_b.ci_high)}]` : '—'}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
@@ -334,7 +415,7 @@ function MonteCarloTab() {
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                {s === 'historical' ? 'Histórico' : 'Temporada actual'}
+                {s === 'historical' ? 'Temporadas anteriores' : 'Temporada actual'}
               </button>
             ))}
           </div>
@@ -430,7 +511,7 @@ function MonteCarloTab() {
                   <th className="px-3 py-2 text-center">Local/Visit.</th>
                   <th className="px-3 py-2 text-right">P(victoria)</th>
                   {result.games[0] && Object.keys(result.games[0].stats).map(s => (
-                    <th key={s} className="px-3 py-2 text-right">{STAT_LABELS[s] ?? s}</th>
+                    <th key={s} className="px-3 py-2 text-right">{STAT_LABELS[s]?.label ?? s}</th>
                   ))}
                 </tr>
               </thead>
@@ -726,11 +807,12 @@ function ValidationTab() {
               {Object.entries(result).flatMap(([stat, models]) =>
                 (['model_a', 'model_b'] as const).map(mk => {
                   const m = models[mk]
+                  if (!m) return null
                   return (
                     <tr key={`${stat}-${mk}`} className="hover:bg-slate-800/40">
                       {mk === 'model_a' && (
                         <td rowSpan={2} className="px-3 py-2 font-medium text-slate-300 align-middle border-r border-slate-700/40">
-                          {STAT_LABELS[stat] ?? stat}
+                          {STAT_LABELS[stat]?.label ?? stat}
                         </td>
                       )}
                       <td className="px-3 py-1 text-right text-slate-400 text-xs">
@@ -875,7 +957,7 @@ function SeasonProjectionTab() {
                     {pct(entry.playoff_prob)}
                   </td>
                   <td className="py-2 px-3 text-right text-slate-300">
-                    {pct(entry.rank_probs[1] ?? 0)}
+                    {pct(entry.rank_probs?.[1] ?? 0)}
                   </td>
                 </tr>
               ))}

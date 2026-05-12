@@ -25,11 +25,6 @@ import ExportButton from '@/components/ui/ExportButton'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function fmt(v: number, decimals = 1): string {
-  if (v == null) return '—'
-  return Number.isInteger(v) ? String(v) : v.toFixed(decimals)
-}
-
 function fmtVal(v: number, key: string): string {
   if (v == null) return '—'
   const pctKeys = ['fg_pct', 'two_pct', 'three_pct', 'ft_pct',

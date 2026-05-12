@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from database.historical_repository import HistoricalRepository
+from services.live_history_adapter import LiveHistoryAdapter
 from services._elasticity_models import (
     TARGET_STATS, ROLLING_WINDOWS, BOOTSTRAP_ITERATIONS, CI_LOW, CI_HIGH,
     _build_dataset, _fit_ridge_with_bootstrap, _predict_with_ci,
@@ -177,35 +178,15 @@ class ElasticityService:
     # Inference (called by GET /elasticity/predict/{team_id})
     # ------------------------------------------------------------------
 
-    def predict_next_game(
+    def _predict_from_records(
         self,
-        team_id: str,
-        season: str,
-        is_home: Optional[bool] = None,
-        opp_net_rtg: Optional[float] = None,
-        leagues: Optional[List[str]] = None,
-        competitions: Optional[List[str]] = None,
+        records: List[Dict[str, Any]],
+        is_home: Optional[bool],
+        opp_net_rtg: Optional[float],
+        leagues: Optional[List[str]],
+        competitions: Optional[List[str]],
     ) -> Dict[str, Any]:
-        """Predict next-game stats for a team using trained elasticity models.
-
-        Args:
-            team_id:     Team identifier (as stored in HISTORICAL).
-            season:      Normalised season label ("2024-25").
-            is_home:     Whether the next game is at home (for Modelo B).
-            opp_net_rtg: Opponent's season net_rtg (for Modelo B bucketing).
-            leagues:     League filter for model retrieval.
-            competitions: Competition filter for model retrieval.
-
-        Returns:
-            ``{stat: {model_a: {...}, model_b: {...}}}`` or error dict.
-        """
-        # Fetch team's game-by-game history for this season
-        records = self._hist.get_team_history(team_id, season)
-        if not records:
-            return {"error": f"Sin historial para equipo {team_id} en temporada {season}"}
-
-        records.sort(key=lambda r: r.get("date") or datetime.min)
-
+        """Core prediction logic over pre-loaded, chronologically sorted records."""
         league_tag = ",".join(leagues) if leagues else "ALL"
         comp_tag   = ",".join(competitions) if competitions else "ALL"
 
@@ -242,6 +223,43 @@ class ElasticityService:
                 result[stat] = stat_out
 
         return result
+
+    def predict_next_game(
+        self,
+        team_id: str,
+        season: str,
+        is_home: Optional[bool] = None,
+        opp_net_rtg: Optional[float] = None,
+        leagues: Optional[List[str]] = None,
+        competitions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Predict next-game stats from HISTORICAL data."""
+        records = self._hist.get_team_history(team_id, season)
+        if not records:
+            return {"error": f"Sin historial para equipo {team_id} en temporada {season}"}
+        records.sort(key=lambda r: r.get("date") or datetime.min)
+        return self._predict_from_records(records, is_home, opp_net_rtg, leagues, competitions)
+
+    def predict_next_game_live(
+        self,
+        live_collection: str,
+        team_name: str,
+        is_fbcyl: bool = False,
+        is_home: Optional[bool] = None,
+        opp_net_rtg: Optional[float] = None,
+        leagues: Optional[List[str]] = None,
+        competitions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Predict next-game stats from a live collection (current season).
+
+        Uses LiveHistoryAdapter to normalise live docs on-the-fly into the same
+        schema as HISTORICAL — the trained model is unchanged.
+        """
+        adapter = LiveHistoryAdapter(self._conn)
+        records = adapter.get_team_history(live_collection, team_name, is_fbcyl)
+        if not records:
+            return {"error": f"Sin historial para '{team_name}' en colección '{live_collection}'"}
+        return self._predict_from_records(records, is_home, opp_net_rtg, leagues, competitions)
 
     def list_models(self) -> List[Dict[str, Any]]:
         """Return metadata for all stored models (no coefficients)."""

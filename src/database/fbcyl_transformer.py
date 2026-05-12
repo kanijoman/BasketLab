@@ -1,4 +1,13 @@
-"""Transformer to convert FBCYL data format to internal boxscore format."""
+"""Transformer to convert FBCYL data format to internal boxscore format.
+
+NOTE: Both public methods below (`transform_match_to_boxscore` and
+`extract_player_stats_from_moves`) are **intentionally incomplete stubs**.
+The rest of the codebase reads FBCYL match data directly from the pre-aggregated
+`stats.teams[].shotsOfTwoSuccessful` / `stats.teams[].players[].PTS` etc. fields
+in MongoDB documents.  There is no active call site for these transformer methods;
+they were prototyped but never wired up.  Do NOT implement them unless the data
+pipeline is changed to supply raw `moves` arrays instead of pre-aggregated stats.
+"""
 
 from typing import Dict, List, Optional
 from collections import defaultdict

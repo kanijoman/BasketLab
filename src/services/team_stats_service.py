@@ -8,10 +8,8 @@ by FastAPI endpoints and tested without a display server.
 from __future__ import annotations
 
 import math
-from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
-import numpy as np
 from cachetools import TTLCache
 
 if TYPE_CHECKING:
@@ -20,48 +18,20 @@ if TYPE_CHECKING:
 from src.database.team_stats_aggregator import TeamStatsAggregator
 from src.utils.team_utils import get_available_teams_from_collection
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+from src.services._consistency_calculator import (
+    build_cv_map,
+    add_derived_indexes,
+    OWN_FIELD_MAP,
+    RIVAL_FIELD_MAP,
+    FBCYL_OWN_FIELD_MAP,
+    FBCYL_RIVAL_FIELD_MAP,
+)
+
+# Backward-compat alias: tests import _add_derived_indexes directly from this module
+_add_derived_indexes = add_derived_indexes
 
 # Cache possession stats per collection for 1 hour — play-by-play analysis is expensive
 _possession_cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
-
-
-def _add_derived_indexes(own_map: dict) -> None:
-    """Compute per-team derived dispersion indexes and append them in-place.
-
-    ``own_map`` is the ``{team_name: {stat_key: {mean, std, cv, n}}}`` dict
-    returned by ``_build_cv_map``.  Two indexes are added per team:
-
-    * **volatilidad_triple** — ``std(3PT%) × mean(fg3_attempts_per_game)``.
-      Measures how volatile the 3PT-shooting contribution is, weighted by volume.
-
-    * **sostenibilidad_efg** — ``mean(eFG%) − league_mean_eFG``.
-      Positive values indicate a team shoots above the league average (regression-
-      to-mean risk); negative means below average.
-    """
-    # League mean eFG across all teams that have enough data
-    efg_means = [
-        v["efg_percentage"]["mean"]
-        for v in own_map.values()
-        if "efg_percentage" in v
-    ]
-    league_efg = float(np.mean(efg_means)) if efg_means else None
-
-    for team, stats in own_map.items():
-        # Volatilidad triple
-        fg3_pct = stats.get("fg3_percentage", {})
-        fg3_vol = stats.get("fg3_attempts_per_game", {})
-        if fg3_pct.get("std") is not None and fg3_vol.get("mean") is not None:
-            stats["volatilidad_triple"] = {
-                "value": round(fg3_pct["std"] * fg3_vol["mean"], 2),
-                "n":     min(fg3_pct.get("n", 0), fg3_vol.get("n", 0)),
-            }
-        # Sostenibilidad eFG
-        efg = stats.get("efg_percentage", {})
-        if efg.get("mean") is not None and league_efg is not None:
-            stats["sostenibilidad_efg"] = {
-                "value": round(efg["mean"] - league_efg, 2),
-                "n":     efg.get("n", 0),
-            }
 
 
 class TeamStatsService:
@@ -207,110 +177,9 @@ class TeamStatsService:
         if not rows:
             return {}
 
-        def _build_cv_map(field_map: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
-            """Helper: accumulate per-game values and compute CV for a given field map."""
-            by_team: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
-            for row in rows:
-                team = row.get("team_name")
-                if not team:
-                    continue
-                for stat_key, raw_field in field_map.items():
-                    val = row.get(raw_field)
-                    if val is not None:
-                        try:
-                            by_team[team][stat_key].append(float(val))
-                        except (TypeError, ValueError):
-                            pass
-            cv_result: Dict[str, Dict[str, Any]] = {}
-            for team, stats in by_team.items():
-                cv_result[team] = {}
-                for stat_key, values in stats.items():
-                    if len(values) < 3:
-                        continue
-                    arr = np.array(values)
-                    mean = float(np.mean(arr))
-                    std = float(np.std(arr))
-                    # Use abs(mean) with a floor to avoid absurd CV for signed/
-                    # near-zero metrics (e.g. net_rating). Cap at 200% so edge
-                    # cases don't produce misleading badge values.
-                    cv = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
-                    cv = min(cv, 200.0)
-                    cv_result[team][stat_key] = {
-                        "mean": round(mean, 2),
-                        "std":  round(std, 2),
-                        "cv":   round(cv, 1),
-                        "n":    len(values),
-                    }
-            return cv_result
-
-        # stat_key → raw field in the per-game document (own team stats)
-        OWN_FIELD_MAP = {
-            "points_per_game":             "points",
-            "points_against_per_game":     "opponent_points",
-            "fg3_percentage":              "fg3_pct_game",
-            "fg2_percentage":              "fg2_pct_game",
-            "ft_percentage":               "ft_pct_game",
-            "fg3_attempts_per_game":       "fg3_attempts",
-            "rebounds_per_game":           "total_rebounds",
-            "offensive_rebounds_per_game": "off_rebounds",
-            "defensive_rebounds_per_game": "def_rebounds",
-            "assists_per_game":            "assists",
-            "steals_per_game":             "steals",
-            "turnovers_per_game":          "turnovers",
-            "blocks_per_game":             "blocks",
-            "possessions_per_game":        "possessions",
-            "offensive_rating":            "oer_game",
-            "oer":                         "oer_game",
-            "defensive_rating":            "der_game",
-            "der":                         "der_game",
-            "net_rating":                  "net_game",
-            "efg_percentage":              "efg_pct_game",
-            "true_shooting":               "ts_pct_game",
-            "turnover_rate":               "tov_pct_game",
-            "three_point_rate":            "three_point_rate_game",
-            "free_throw_rate":             "free_throw_rate_game",
-            "assist_fg_rate":              "assist_fg_rate_game",
-            "assist_rate":                 "assist_rate_game",
-            "steal_rate":                  "steal_rate_game",
-            "block_rate":                  "block_rate_game",
-            "offensive_rebound_rate":      "oreb_rate_game",
-            "defensive_rebound_rate":      "dreb_rate_game",
-        }
-
-        # stat_key → opponent raw field (rival columns use the same frontend keys)
-        RIVAL_FIELD_MAP = {
-            "points_per_game":             "opponent_points",
-            "points_against_per_game":     "points",
-            "fg3_percentage":              "opp_fg3_pct_game",
-            "fg2_percentage":              "opp_fg2_pct_game",
-            "ft_percentage":               "opp_ft_pct_game",
-            "rebounds_per_game":           "opp_total_rebounds",
-            "offensive_rebounds_per_game": "opp_off_rebounds",
-            "defensive_rebounds_per_game": "opp_def_rebounds",
-            "assists_per_game":            "opp_assists",
-            "steals_per_game":             "opp_steals",
-            "turnovers_per_game":          "opp_turnovers",
-            "blocks_per_game":             "opp_blocks",
-            "possessions_per_game":        "opp_possessions",
-            "offensive_rating":            "opp_oer_game",
-            "defensive_rating":            "opp_der_game",
-            "net_rating":                  "opp_net_game",
-            "efg_percentage":              "opp_efg_pct_game",
-            "true_shooting":               "opp_ts_pct_game",
-            "turnover_rate":               "opp_tov_pct_game",
-            "three_point_rate":            "opp_three_point_rate_game",
-            "free_throw_rate":             "opp_free_throw_rate_game",
-            "assist_fg_rate":              "opp_assist_fg_rate_game",
-            "assist_rate":                 "opp_assist_rate_game",
-            "steal_rate":                  "opp_steal_rate_game",
-            "block_rate":                  "opp_block_rate_game",
-            "offensive_rebound_rate":      "opp_orb_rate_game",
-            "defensive_rebound_rate":      "opp_drb_rate_game",
-        }
-
-        own_map   = _build_cv_map(OWN_FIELD_MAP)
-        rival_map = _build_cv_map(RIVAL_FIELD_MAP)
-        _add_derived_indexes(own_map)
+        own_map   = build_cv_map(rows, OWN_FIELD_MAP)
+        rival_map = build_cv_map(rows, RIVAL_FIELD_MAP)
+        add_derived_indexes(own_map)
         return {
             "own":   own_map,
             "rival": rival_map,
@@ -322,7 +191,6 @@ class TeamStatsService:
         from src.database.aggregation.fbcyl_per_game_pipeline import (
             build_fbcyl_team_per_game_pipeline, enrich_fbcyl_team_row,
         )
-        from collections import defaultdict
 
         try:
             collection = self._db.connection.get_collection(collection_name)
@@ -336,104 +204,9 @@ class TeamStatsService:
 
         rows = [enrich_fbcyl_team_row(r) for r in raw_rows]
 
-        # Supported subset (excludes FEB-only rate stats that need opp pipeline data)
-        FBCYL_OWN_FIELD_MAP = {
-            "points_per_game":             "points",
-            "points_against_per_game":     "opponent_points",
-            "fg3_percentage":              "fg3_pct_game",
-            "fg2_percentage":              "fg2_pct_game",
-            "ft_percentage":               "ft_pct_game",
-            "fg3_attempts_per_game":       "fg3_attempts",
-            "rebounds_per_game":           "total_rebounds",
-            "offensive_rebounds_per_game": "off_rebounds",
-            "defensive_rebounds_per_game": "def_rebounds",
-            "assists_per_game":            "assists",
-            "steals_per_game":             "steals",
-            "turnovers_per_game":          "turnovers",
-            "blocks_per_game":             "blocks",
-            "possessions_per_game":        "possessions",
-            "offensive_rating":            "oer_game",
-            "oer":                         "oer_game",
-            "defensive_rating":            "der_game",
-            "der":                         "der_game",
-            "net_rating":                  "net_game",
-            "efg_percentage":              "efg_pct_game",
-            "true_shooting":               "ts_pct_game",
-            "turnover_rate":               "tov_pct_game",
-            "three_point_rate":            "three_point_rate_game",
-            "free_throw_rate":             "free_throw_rate_game",
-            "assist_fg_rate":              "assist_fg_rate_game",
-            "assist_rate":                 "assist_rate_game",
-            "steal_rate":                  "steal_rate_game",
-            "block_rate":                  "block_rate_game",
-            "offensive_rebound_rate":      "oreb_rate_game",
-            "defensive_rebound_rate":      "dreb_rate_game",
-        }
-        FBCYL_RIVAL_FIELD_MAP = {
-            "points_per_game":             "opp_points",
-            "points_against_per_game":     "points",
-            "fg3_percentage":              "opp_fg3_pct_game",
-            "fg2_percentage":              "opp_fg2_pct_game",
-            "ft_percentage":               "opp_ft_pct_game",
-            "rebounds_per_game":           "opp_total_rebounds",
-            "offensive_rebounds_per_game": "opp_off_rebounds",
-            "defensive_rebounds_per_game": "opp_def_rebounds",
-            "assists_per_game":            "opp_assists",
-            "steals_per_game":             "opp_steals",
-            "turnovers_per_game":          "opp_turnovers",
-            "blocks_per_game":             "opp_blocks",
-            "possessions_per_game":        "opp_possessions",
-            "offensive_rating":            "opp_oer_game",
-            "defensive_rating":            "opp_der_game",
-            "net_rating":                  "opp_net_game",
-            "efg_percentage":              "opp_efg_pct_game",
-            "true_shooting":               "opp_ts_pct_game",
-            "turnover_rate":               "opp_tov_pct_game",
-            "three_point_rate":            "opp_three_point_rate_game",
-            "free_throw_rate":             "opp_free_throw_rate_game",
-            "assist_fg_rate":              "opp_assist_fg_rate_game",
-            "assist_rate":                 "opp_assist_rate_game",
-            "steal_rate":                  "opp_steal_rate_game",
-            "block_rate":                  "opp_block_rate_game",
-            "offensive_rebound_rate":      "opp_orb_rate_game",
-            "defensive_rebound_rate":      "opp_drb_rate_game",
-        }
-
-        def _build_cv_map_from_rows(field_map):
-            by_team = defaultdict(lambda: defaultdict(list))
-            for row in rows:
-                team = row.get("team_name")
-                if not team:
-                    continue
-                for stat_key, raw_field in field_map.items():
-                    val = row.get(raw_field)
-                    if val is not None:
-                        try:
-                            by_team[team][stat_key].append(float(val))
-                        except (TypeError, ValueError):
-                            pass
-            result = {}
-            for team, stats in by_team.items():
-                result[team] = {}
-                for stat_key, values in stats.items():
-                    if len(values) < 3:
-                        continue
-                    arr  = np.array(values)
-                    mean = float(np.mean(arr))
-                    std  = float(np.std(arr))
-                    cv   = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
-                    cv   = min(cv, 200.0)
-                    result[team][stat_key] = {
-                        "mean": round(mean, 2),
-                        "std":  round(std, 2),
-                        "cv":   round(cv, 1),
-                        "n":    len(values),
-                    }
-            return result
-
-        own_map   = _build_cv_map_from_rows(FBCYL_OWN_FIELD_MAP)
-        rival_map = _build_cv_map_from_rows(FBCYL_RIVAL_FIELD_MAP)
-        _add_derived_indexes(own_map)
+        own_map   = build_cv_map(rows, FBCYL_OWN_FIELD_MAP)
+        rival_map = build_cv_map(rows, FBCYL_RIVAL_FIELD_MAP)
+        add_derived_indexes(own_map)
         return {"own": own_map, "rival": rival_map}
 
     def get_team_detailed_stats(

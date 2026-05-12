@@ -176,38 +176,38 @@ class PossessionAnalyzer:
               Each contains: count, percentage, total_points, oer
         """
         team_id_str = str(team_id)
-        
-        # Get opponent team ID
         opponent_id = self._get_opponent_team(team_id_str, self.moves)
-        
-        # Sort moves chronologically
         moves_sorted = sorted(self.moves, key=lambda m: self._get_timestamp(m))
-        
-        possessions = []
-        current_possession_team = None
-        possession_start_time = 0
-        possession_points = 0
-        
-        # Pre-process to identify offensive rebounds (to avoid ending possessions prematurely)
-        offensive_rebound_indices = set()
+        offensive_rebound_indices = self._detect_offensive_rebounds(moves_sorted)
+        possessions = self._run_possession_state_machine(
+            moves_sorted, team_id_str, opponent_id, offensive_rebound_indices
+        )
+        return self._aggregate_possession_stats(possessions)
+
+    def _detect_offensive_rebounds(self, moves_sorted: List[Dict]) -> set:
+        """Pre-process moves to identify offensive rebound indices.
+
+        Marks the list indices (into moves_sorted) of missed field goals that
+        are immediately followed by an offensive rebound by the same team.
+        Used to avoid closing possessions prematurely on missed shots.
+
+        Returns:
+            Set of indices into moves_sorted that are missed FGs followed by OReb.
+        """
+        offensive_rebound_indices: set = set()
         for i, move in enumerate(moves_sorted):
             move_text = move.get('move', '') if self.is_fbcyl else move.get('text', '')
             move_text_upper = move_text.upper()
             action_type = move.get('action', '').lower() if not self.is_fbcyl else ''
-            
-            # Check if this is a rebound
+
             if action_type == 'rebound' or 'REBOTE' in move_text_upper:
                 curr_team = str(move.get('idTeam', ''))
-                
-                # Look back up to 2 moves to find a missed shot by same team
-                # (more than 2 suggests it's not the same possession)
                 for lookback in range(1, min(3, i + 1)):
                     prev_move = moves_sorted[i - lookback]
                     prev_team = str(prev_move.get('idTeam', ''))
                     prev_text = (prev_move.get('move', '') if self.is_fbcyl else prev_move.get('text', '')).upper()
                     prev_action = prev_move.get('action', '').lower() if not self.is_fbcyl else ''
-                    
-                    # Check if it's a missed field goal (not free throw)
+
                     is_missed_fg = False
                     if self.is_fbcyl:
                         if 'Intento fallado' in prev_text and 'de 1' not in prev_text.lower():
@@ -215,26 +215,40 @@ class PossessionAnalyzer:
                     else:
                         if ('TIRO DE 2' in prev_text or 'TIRO DE 3' in prev_text) and 'FALLADO' in prev_text:
                             is_missed_fg = True
-                    
+
                     if is_missed_fg:
                         if prev_team == curr_team:
-                            # Same team rebounded their own miss = offensive rebound
                             offensive_rebound_indices.add(i - lookback)
                         break
-                    
-                    # Stop if we hit events that definitely end possessions
+
                     if (('CANASTA' in prev_text or 'ANOTADO' in prev_text) and 'FALLADO' not in prev_text) or 'PÉRDIDA' in prev_text or 'PERDIDA' in prev_text:
                         break
-                    
-                    # Stop if we hit another rebound or steal (suggests different possession)
+
                     if 'REBOTE' in prev_text or 'ROBO' in prev_text or prev_action == 'rebound' or prev_action == 'steal':
                         break
-        
-        possessions = []
+        return offensive_rebound_indices
+
+    def _run_possession_state_machine(
+        self,
+        moves_sorted: List[Dict],
+        team_id_str: str,
+        opponent_id: str,
+        offensive_rebound_indices: set,
+    ) -> List[Dict]:
+        """Execute the possession state machine over chronologically sorted moves.
+
+        Tracks team-level possession changes event by event, recording each
+        observed possession of *team_id_str* as a dict with duration and points.
+
+        Returns:
+            List of possession dicts, each with keys:
+            ``duration``, ``points``, ``start_time``, ``end_time``.
+        """
+        possessions: List[Dict] = []
         current_possession_team = None
         possession_start_time = 0
         possession_points = 0
-        
+
         for i, move in enumerate(moves_sorted):
             move_team_id = str(move.get('idTeam', ''))
             timestamp = self._get_timestamp(move)
@@ -475,8 +489,17 @@ class PossessionAnalyzer:
                     current_possession_team = new_possession_team
                     possession_start_time = timestamp
                     possession_points = points_scored if new_possession_team == move_team_id else 0
-        
-        # Calculate statistics
+
+        return possessions
+
+    def _aggregate_possession_stats(self, possessions: List[Dict]) -> Dict[str, Any]:
+        """Aggregate possession list into duration-based summary statistics.
+
+        Returns:
+            Dict with ``total_possessions``, ``avg_duration``, and
+            ``possessions_by_duration`` (keys: ``<=8s``, ``8-16s``, ``>16s``).
+            Each bucket contains ``count``, ``percentage``, ``total_points``, ``oer``.
+        """
         if not possessions:
             return {
                 'total_possessions': 0,
@@ -487,12 +510,11 @@ class PossessionAnalyzer:
                     '>16s': {'count': 0, 'percentage': 0.0, 'total_points': 0, 'oer': 0.0}
                 }
             }
-        
-        # Categorize possessions by duration
-        short_poss = []   # <=8s
-        medium_poss = []  # 8-16s
-        long_poss = []    # >16s
-        
+
+        short_poss = []
+        medium_poss = []
+        long_poss = []
+
         for poss in possessions:
             duration = poss['duration']
             if duration <= 8:
@@ -501,28 +523,24 @@ class PossessionAnalyzer:
                 medium_poss.append(poss)
             else:
                 long_poss.append(poss)
-        
-        # Calculate totals
+
         total_possessions = len(possessions)
         avg_duration = sum(p['duration'] for p in possessions) / total_possessions
-        
+
         short_count = len(short_poss)
         short_points = sum(p['points'] for p in short_poss)
         short_pct = (short_count / total_possessions) * 100
-        
+
         medium_count = len(medium_poss)
         medium_points = sum(p['points'] for p in medium_poss)
         medium_pct = (medium_count / total_possessions) * 100
-        
+
         long_count = len(long_poss)
         long_points = sum(p['points'] for p in long_poss)
         long_pct = (long_count / total_possessions) * 100
-        
-        # Calculate OER (Offensive Efficiency Rating) = Points per 100 possessions
-        def calculate_oer(poss_count: int, points: int) -> float:
-            if poss_count == 0:
-                return 0.0
-            return (points / poss_count) * 100
+
+        def _oer(count: int, points: int) -> float:
+            return (points / count) * 100 if count else 0.0
 
         return {
             'total_possessions': total_possessions,
@@ -532,23 +550,23 @@ class PossessionAnalyzer:
                     'count': short_count,
                     'percentage': round(short_pct, 1),
                     'total_points': short_points,
-                    'oer': round(calculate_oer(short_count, short_points), 2)
+                    'oer': round(_oer(short_count, short_points), 2)
                 },
                 '8-16s': {
                     'count': medium_count,
                     'percentage': round(medium_pct, 1),
                     'total_points': medium_points,
-                    'oer': round(calculate_oer(medium_count, medium_points), 2)
+                    'oer': round(_oer(medium_count, medium_points), 2)
                 },
                 '>16s': {
                     'count': long_count,
                     'percentage': round(long_pct, 1),
                     'total_points': long_points,
-                    'oer': round(calculate_oer(long_count, long_points), 2)
+                    'oer': round(_oer(long_count, long_points), 2)
                 }
             }
         }
-    
+
     def _get_opponent_team(self, team_id: str, moves: List[Dict]) -> str:
         """Get the opponent team ID."""
         team_ids = set(str(m.get('idTeam', '')) for m in moves if m.get('idTeam'))

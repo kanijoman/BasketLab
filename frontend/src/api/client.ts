@@ -8,11 +8,23 @@
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 
+function _fmtDetail(detail: unknown, status: number): string {
+  if (Array.isArray(detail))
+    return (detail as { msg?: string; loc?: unknown[] }[])
+      .map(e => {
+        const field = Array.isArray(e.loc) ? String(e.loc[e.loc.length - 1]) : ''
+        return field ? `${e.msg ?? JSON.stringify(e)} (campo: ${field})` : (e.msg ?? JSON.stringify(e))
+      })
+      .join('; ')
+  if (typeof detail === 'string') return detail
+  return `HTTP ${status}`
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail ?? `HTTP ${res.status}`)
+    throw new Error(_fmtDetail(body.detail, res.status))
   }
   return res.json() as Promise<T>
 }
@@ -25,7 +37,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   })
   if (!res.ok) {
     const b = await res.json().catch(() => ({}))
-    throw new Error(b.detail ?? `HTTP ${res.status}`)
+    throw new Error(_fmtDetail(b.detail, res.status))
   }
   return res.json() as Promise<T>
 }
@@ -917,6 +929,28 @@ export const getElasticityPredict = (
   return get<ElasticityPrediction>(
     `/analysis/elasticity/predict/${encodeURIComponent(teamId)}?${qs}`,
   )
+}
+
+export const getElasticityPredictLive = (
+  liveCollection: string,
+  liveTeamName: string,
+  liveIsFbcyl: boolean,
+  isHome?: boolean,
+  oppNetRtg?: number,
+  league?: string,
+  competition?: string,
+) => {
+  const qs = new URLSearchParams({
+    live_collection: liveCollection,
+    live_team_name: liveTeamName,
+    live_is_fbcyl: String(liveIsFbcyl),
+  })
+  if (isHome !== undefined) qs.set('is_home', String(isHome))
+  if (oppNetRtg  !== undefined) qs.set('opp_net_rtg', String(oppNetRtg))
+  if (league)      qs.set('leagues', league)
+  if (competition) qs.set('competitions', competition)
+  // team_id placeholder — ignored by server in live mode
+  return get<ElasticityPrediction>(`/analysis/elasticity/predict/_live?${qs}`)
 }
 
 // FASE 5 — Monte Carlo
