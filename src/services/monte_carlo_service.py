@@ -28,7 +28,10 @@ from services._elasticity_models import (
     TARGET_STATS,
     ROLLING_WINDOWS,
     _predict_with_ci,
+    _opp_bucket,
+    _vectorized_ridge_predict,
 )
+from services._feature_builders import _build_feat_matrix_for_mc
 from services.live_history_adapter import LiveHistoryAdapter
 
 N_SIMULATIONS_DEFAULT = 1000
@@ -181,47 +184,73 @@ class MonteCarloService:
         if opp_net_rtg_schedule is None:
             opp_net_rtg_schedule = [0.0] * n_games
 
-        # Pre-load Modelo A for each target stat
+        # Single RNG for the entire call — no fixed seed for true stochasticity
+        rng = np.random.default_rng()
+
+        # Prefer Modelo C (best accuracy) > B > A; skip Modelo D (GBM, not MC-compatible)
         models: Dict[str, Dict] = {}
         for stat in TARGET_STATS:
-            doc = self._repo.get_model("A", stat, league_tag, comp_tag)
-            if doc:
-                models[stat] = doc
+            for mtype in ("C", "B", "A"):
+                doc = self._repo.get_model(mtype, stat, league_tag, comp_tag)
+                if doc:
+                    models[stat] = doc
+                    break
 
         if not models:
             return {"error": "No hay modelos entrenados. Ejecuta /elasticity/train primero."}
 
-        # Build initial rolling history per stat
-        history: Dict[str, List[float]] = {
-            stat: [r[stat] for r in records if r.get(stat) is not None]
+        # Build initial simulation paths per stat: shape (n_simulations, n_history)
+        # All n_simulations paths start from the same real observed history
+        init_vals: Dict[str, List[float]] = {
+            stat: [float(r[stat]) for r in records if r.get(stat) is not None]
             for stat in models
         }
+        sim_paths: Dict[str, np.ndarray] = {
+            stat: np.tile(np.array(vals, dtype=float), (n_simulations, 1))
+            for stat, vals in init_vals.items()
+            if vals
+        }
+        # Keep only stats that have both a model and initial history
+        models = {stat: doc for stat, doc in models.items() if stat in sim_paths}
+        if not models:
+            return {"error": "Historial insuficiente para proyectar estadísticas."}
 
         game_samples: List[Dict[str, np.ndarray]] = []
 
         for g_idx in range(n_games):
+            is_home_flag = float(is_home_schedule[g_idx]) if g_idx < len(is_home_schedule) else 0.0
+            opp_nr = float(opp_net_rtg_schedule[g_idx]) if g_idx < len(opp_net_rtg_schedule) else 0.0
+
             game_draws: Dict[str, np.ndarray] = {}
 
             for stat, model_doc in models.items():
-                vals = history[stat]
-                rolling: List[float] = []
-                for w in ROLLING_WINDOWS:
-                    window = vals[-w:] if len(vals) >= w else vals
-                    rolling.append(float(np.mean(window)) if window else 0.0)
+                paths = sim_paths[stat]  # shape (n_simulations, n_history)
 
-                pred = _predict_with_ci(model_doc, rolling)
-                estimate = pred["estimate"]
-                ci_range = pred["ci_high"] - pred["ci_low"]
-                sigma = ci_range / 3.29 if ci_range > 0 else 1.0
+                feat_mat = _build_feat_matrix_for_mc(
+                    model_doc, sim_paths, stat, is_home_flag, opp_nr
+                )
 
-                rng = np.random.default_rng(42 + g_idx)
-                draws = rng.normal(estimate, sigma, n_simulations)
+                # Vectorized ridge inference — each simulation gets its own estimate
+                estimates = _vectorized_ridge_predict(model_doc, feat_mat)  # (n_simulations,)
+
+                # Sigma: training RMSE (game-to-game outcome noise) preferred over
+                # bootstrap CI width (model parameter uncertainty only)
+                rmse = model_doc.get("rmse_train")
+                if rmse and float(rmse) > 0:
+                    sigma = float(rmse)
+                else:
+                    rolling_scalar = feat_mat[0, :len(ROLLING_WINDOWS)].tolist()
+                    ci_scalar = _predict_with_ci(model_doc, rolling_scalar)
+                    ci_range  = ci_scalar["ci_high"] - ci_scalar["ci_low"]
+                    sigma     = ci_range / 3.29 if ci_range > 0 else 1.0
+
+                draws = rng.normal(estimates, sigma)  # shape (n_simulations,)
                 game_draws[stat] = draws
 
-            game_samples.append(game_draws)
+                # Auto-regressive: each simulation feeds its own draw into next game
+                sim_paths[stat] = np.column_stack([paths, draws])
 
-            for stat in models:
-                history[stat].append(float(np.mean(game_samples[-1][stat])))
+            game_samples.append(game_draws)
 
         games_result: List[Dict[str, Any]] = []
         all_net_rtg_sim: List[np.ndarray] = []

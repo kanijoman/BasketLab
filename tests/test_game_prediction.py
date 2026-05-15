@@ -140,7 +140,7 @@ class TestGamePredictionContract:
 
     def test_result_keys_complete(self):
         required = {"win_prob", "ci_low", "ci_high", "feature_importances",
-                    "n_train", "accuracy"}
+                    "feature_coefficients", "n_train", "accuracy"}
         result = self._predict(_make_records("T0", 25))
         assert required.issubset(result.keys()), (
             f"Missing keys: {required - set(result.keys())}"
@@ -240,6 +240,42 @@ class TestGamePredictionEdgeCases:
         assert 0.0 <= result["win_prob"] <= 1.0
 
 
+class TestWalkForwardPipelineRegression:
+    """Regression: walk-forward must use calibrated pipeline (Bug 5 fix)."""
+
+    def test_walk_forward_uses_predict_proba_not_predict(self):
+        """Ensure _walk_forward_accuracy delegates to _fit() (calibrated pipeline).
+
+        Before the fix, _walk_forward_accuracy instantiated an uncalibrated
+        LogisticRegression inline, diverging from the deployed CalibratedClassifierCV.
+        After the fix it calls self._fit() and predict_proba, so mocking _fit()
+        with a constant-return pipeline must be reflected in the accuracy result.
+        """
+        from unittest.mock import MagicMock, patch
+        from services.game_prediction_service import GamePredictionService
+
+        records = _make_records("T0", 40, seed=7)
+        conn = _mock_conn(records)
+        svc = GamePredictionService(conn)
+
+        fit_calls = []
+        original_fit = svc._fit
+
+        def tracking_fit(X, y):
+            result = original_fit(X, y)
+            if result is not None:
+                fit_calls.append(True)
+            return result
+
+        with patch.object(svc, "_fit", side_effect=tracking_fit):
+            with patch.object(svc, "_load_records", return_value=records):
+                svc.predict("T0", "2024-25", is_home=True, opp_net_rtg=0.0)
+
+        assert len(fit_calls) > 0, (
+            "_fit() (calibrated pipeline) should have been called during walk-forward"
+        )
+
+
 # ===========================================================================
 # API endpoint
 # ===========================================================================
@@ -291,9 +327,40 @@ class TestGamePredictionAPIEndpoint:
         assert "win_prob" in body
         assert 0.0 <= body["win_prob"] <= 1.0
 
-    def test_missing_season_returns_422(self, client):
-        resp = client.post(
-            "/api/v1/analysis/game-prediction/T0",
-            json={"is_home": True},
-        )
+    def test_missing_season_without_live_params_returns_422(self, client):
+        """Without season AND without live_collection+live_team_name, the handler
+        must return 422 (neither historical nor live mode can be resolved).
+        This replaces the old test that expected 422 just from missing season,
+        which broke when season became Optional to support live mode."""
+        with (
+            patch("src.api.deps.get_db") as mock_db,
+        ):
+            mock_db.return_value = MagicMock()
+            resp = client.post(
+                "/api/v1/analysis/game-prediction/T0",
+                json={"is_home": True},
+            )
         assert resp.status_code == 422
+
+    def test_live_mode_without_season_returns_200(self, client):
+        """Live mode must work when season is absent.
+        Regression test: previously season was a required Pydantic field
+        so this would return 422 Field required."""
+        with (
+            patch("src.api.deps.get_db") as mock_db,
+            patch("src.services.game_prediction_service.GamePredictionService") as MockSvc,
+        ):
+            mock_db.return_value = MagicMock()
+            MockSvc.return_value.predict_live.return_value = self._mock_result()
+            resp = client.post(
+                "/api/v1/analysis/game-prediction/_live",
+                json={
+                    "live_collection": "FBCYL_test",
+                    "live_team_name":  "Equipo A",
+                    "live_is_fbcyl":   True,
+                    "is_home":         True,
+                    "opp_net_rtg":     1.5,
+                    # season intentionally absent
+                },
+            )
+        assert resp.status_code == 200, resp.text

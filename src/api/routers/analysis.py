@@ -14,9 +14,13 @@ FASE 6-9 live in analysis_predictive.py
 
 from __future__ import annotations
 
+import asyncio
+import json
+import threading
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from src.api.deps import get_db
@@ -62,6 +66,60 @@ def train_elasticity(
     if "error" in result:
         raise HTTPException(status_code=422, detail=result["error"])
     return result
+
+
+@router.post(
+    "/elasticity/train/stream",
+    summary="Entrenar modelos de elasticidad con progreso SSE",
+)
+async def train_elasticity_stream(
+    req: ElasticityTrainRequest,
+    db=Depends(get_db),
+) -> StreamingResponse:
+    """Same as /elasticity/train but streams progress as Server-Sent Events.
+
+    Each SSE event is ``data: <json>\\n\\n``.
+    Progress events: ``{"step": str}``
+    Final event:    ``{"done": true, "result": {...}}`` or ``{"done": true, "error": str}``
+    """
+    from src.services.elasticity_service import ElasticityService
+
+    svc = ElasticityService(db.connection)
+    loop = asyncio.get_event_loop()
+    queue: asyncio.Queue = asyncio.Queue()
+
+    def _cb(msg: str) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, {"step": msg})
+
+    result_holder: Dict[str, Any] = {}
+
+    def _worker() -> None:
+        try:
+            r = svc.train(req.leagues, req.competitions, progress_cb=_cb)
+            result_holder["data"] = r
+        except Exception as exc:  # pragma: no cover
+            result_holder["error"] = str(exc)
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, None)  # sentinel
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+    async def _generate():
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield f"data: {json.dumps(item)}\n\n"
+        if "error" in result_holder:
+            yield f"data: {json.dumps({'done': True, 'error': result_holder['error']})}\n\n"
+        else:
+            yield f"data: {json.dumps({'done': True, 'result': result_holder.get('data', {})})}\n\n"
+
+    return StreamingResponse(
+        _generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get(

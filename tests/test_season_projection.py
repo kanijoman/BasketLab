@@ -309,8 +309,15 @@ class TestSeasonProjectionAPIEndpoint:
             )
         assert isinstance(resp.json(), list)
 
-    def test_missing_season_returns_422(self, client):
-        resp = client.get(
-            "/api/v1/analysis/season-projection/FEB_LF2_2025_A"
-        )
-        assert resp.status_code == 422
+    def test_missing_season_uses_live_mode(self, client):
+        """season is now optional — endpoint must not return 422 when omitted."""
+        with (
+            patch("src.api.deps.get_db") as mock_db,
+            patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc,
+        ):
+            mock_db.return_value = MagicMock()
+            MockSvc.return_value.project.return_value = []
+            resp = client.get(
+                "/api/v1/analysis/season-projection/FEB_LF2_2025_A"
+            )
+        assert resp.status_code != 422

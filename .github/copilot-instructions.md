@@ -22,10 +22,27 @@
 **BasketLab** - PyQt6 basketball statistics analyzer (Spanish leagues: FEB/FBCYL). MongoDB + matplotlib + multi-provider AI. PoC phase (LF2).
 **Stack:** Python 3.8+ | PyQt6 | MongoDB | matplotlib | fpdf2 | python-docx | Gemini/OpenAI/Groq
 
+## ❌ TDD ES OBLIGATORIO — NUNCA SALTAR ESTE PASO
+
+> **Si modificas código sin haber escrito antes el test que falla → PARA. Escribe el test primero.**
+
+**Ciclo rojo→verde (sin excepciones, incluye bugfixes):**
+1. `tests/test_<feature>.py` — escribir test que describe el comportamiento deseado
+2. `pytest -v tests/test_<feature>.py` — confirmar que **falla** (rojo)
+3. Implementar el mínimo código que lo corrija
+4. `pytest -v tests/test_<feature>.py` — confirmar que **pasa** (verde)
+5. Ningún PR / commit sin este ciclo completado
+
+**Violaciones frecuentes a evitar:**
+- Arreglar un bug directamente sin test de regresión previo
+- Añadir un feature y los tests después
+- "Es un fix pequeño, no necesita test" → **No existe fix pequeño sin test**
+
+---
+
 ## Your Role as Claude
 
 **Implementation rules:**
-- **TDD por defecto**: Escribir el test primero (`tests/test_<feature>.py`) → ejecutar `pytest -v` para confirmar que falla (rojo) → implementar el mínimo código que lo corrija (verde). Ninguna feature se completa sin este ciclo rojo→verde.
 - **Infer > ask**: "add export" = CSV/PNG/PDF trinity (standard)
 - **Follow patterns**: Search similar code before creating new
 - **Dual format**: Always handle FEB + FBCYL (`is_fbcyl` flag)

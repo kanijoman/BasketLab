@@ -8,16 +8,20 @@ from __future__ import annotations
 
 from datetime import datetime
 from time import monotonic
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
 from database.historical_repository import HistoricalRepository
 from services.live_history_adapter import LiveHistoryAdapter
 from services._elasticity_models import (
-    TARGET_STATS, ROLLING_WINDOWS, BOOTSTRAP_ITERATIONS, CI_LOW, CI_HIGH,
+    TARGET_STATS, ROLLING_WINDOWS, ROLLING_WINDOWS_C,
+    BOOTSTRAP_ITERATIONS, CI_LOW, CI_HIGH,
     _build_dataset, _fit_ridge_with_bootstrap, _predict_with_ci,
+    _compute_league_thresholds, _compute_sample_weights, CROSS_STAT_FEATURES,
 )
+from services._feature_builders import _build_features_for_inference
+from services._gbm_models import _fit_gbm_with_quantiles, _predict_gbm
 
 ELASTICITIES_COLLECTION = "ELASTICITIES"
 
@@ -110,6 +114,7 @@ class ElasticityService:
         self,
         leagues: Optional[List[str]] = None,
         competitions: Optional[List[str]] = None,
+        progress_cb: Optional[Callable[[str], None]] = None,
     ) -> Dict[str, Any]:
         """Train Modelo A and Modelo B for all target stats, persist results.
 
@@ -128,46 +133,113 @@ class ElasticityService:
         league_tag = ",".join(leagues) if leagues else "ALL"
         comp_tag   = ",".join(competitions) if competitions else "ALL"
         trained_at = datetime.utcnow().isoformat()
+        opp_q33, opp_q67 = _compute_league_thresholds(records)
+
+        total_steps = len(TARGET_STATS) * 4  # A + B + C + D per stat
+        step = 0
+
+        # Model configs: (type, extra, momentum, extended_windows, cross_stat, opp_continuous)
+        _RIDGE_CONFIGS = [
+            ("A", False, False, False, False, False),
+            ("B", True,  False, False, False, False),
+            ("C", True,  True,  True,  True,  True),
+        ]
 
         for stat in TARGET_STATS:
             stat_summary: Dict[str, Any] = {}
+            n_teams_last = 0
 
-            # Modelo A
-            X_a, y_a, n_teams = _build_dataset(records, stat, extra_features=False)
-            if len(y_a) >= 20:
-                model_a = _fit_ridge_with_bootstrap(X_a, y_a)
-                if model_a:
-                    model_a.update({
-                        "model_type":  "A",
-                        "stat":        stat,
-                        "league":      league_tag,
-                        "competition": comp_tag,
-                        "n_teams":     n_teams,
-                        "trained_at":  trained_at,
-                        "features":    [f"roll_{w}" for w in ROLLING_WINDOWS],
-                    })
-                    self._repo.upsert_model(model_a)
-                    stat_summary["model_a"] = {
-                        "r2": model_a["r2_train"], "n": model_a["n_samples"]
-                    }
+            # ── Ridge models A, B, C ─────────────────────────────────────
+            # sample_weight is intentionally NOT used for Ridge: _build_dataset
+            # iterates by_team in dict order (not global temporal order), so
+            # exponential-decay weights would favour the last team in the dict
+            # rather than the most recent games, degrading generalisation.
+            for mtype, extra, momentum, extended, cross, opp_cont in _RIDGE_CONFIGS:
+                step += 1
+                if progress_cb:
+                    progress_cb(f"Modelo {mtype} — {stat} ({step}/{total_steps})")
+                X, y, n_teams = _build_dataset(
+                    records, stat,
+                    extra_features=extra,
+                    add_momentum=momentum,
+                    extended_windows=extended,
+                    cross_stat_features=cross,
+                    opp_continuous=opp_cont,
+                )
+                if len(y) < 20:
+                    continue
+                n_teams_last = n_teams
+                model = _fit_ridge_with_bootstrap(X, y)
+                if not model:
+                    continue
+                windows = ROLLING_WINDOWS_C if extended else ROLLING_WINDOWS
+                n_cross = len(CROSS_STAT_FEATURES.get(stat, [])) if cross else 0
+                model.update({
+                    "model_type":    mtype,
+                    "stat":          stat,
+                    "league":        league_tag,
+                    "competition":   comp_tag,
+                    "n_teams":       n_teams,
+                    "trained_at":    trained_at,
+                    "windows":       windows,
+                    "feature_flags": {
+                        "momentum":         momentum,
+                        "cross_stats":      cross,
+                        "context":          extra,
+                        "opp_continuous":   opp_cont,
+                        "extended_windows": extended,
+                    },
+                    "features": (
+                        [f"roll_{w}" for w in windows]
+                        + (["momentum"] if momentum else [])
+                        + (["is_home", "opp_net_rtg" if opp_cont else "opp_bucket"] if extra else [])
+                        + ([f"roll3_{cs}" for cs in CROSS_STAT_FEATURES.get(stat, [])] if cross else [])
+                    ),
+                    **(({"opp_q33": opp_q33, "opp_q67": opp_q67}) if extra else {}),
+                })
+                self._repo.upsert_model(model)
+                stat_summary[f"model_{mtype.lower()}"] = {
+                    "r2": model["r2_train"], "n": model["n_samples"]
+                }
 
-            # Modelo B
-            X_b, y_b, _ = _build_dataset(records, stat, extra_features=True)
-            if len(y_b) >= 20:
-                model_b = _fit_ridge_with_bootstrap(X_b, y_b)
-                if model_b:
-                    model_b.update({
-                        "model_type":  "B",
-                        "stat":        stat,
-                        "league":      league_tag,
-                        "competition": comp_tag,
-                        "n_teams":     n_teams,
-                        "trained_at":  trained_at,
-                        "features":    [f"roll_{w}" for w in ROLLING_WINDOWS] + ["is_home", "opp_bucket"],
+            # ── Modelo D: GBM with same features as C ────────────────────
+            step += 1
+            if progress_cb:
+                progress_cb(f"Modelo D — {stat} ({step}/{total_steps})")
+            X_d, y_d, _ = _build_dataset(
+                records, stat,
+                extra_features=True, add_momentum=True, extended_windows=True,
+                cross_stat_features=True, opp_continuous=True,
+            )
+            if len(y_d) >= 20:
+                # GBM can use sample_weight safely because it is tree-based
+                # and not affected by the cross-team ordering issue.
+                sw_d    = _compute_sample_weights(len(y_d))
+                model_d = _fit_gbm_with_quantiles(X_d, y_d, sample_weight=sw_d)
+                if model_d:
+                    n_cross = len(CROSS_STAT_FEATURES.get(stat, []))
+                    windows_d = ROLLING_WINDOWS_C
+                    model_d.update({
+                        "model_type":    "D",
+                        "stat":          stat,
+                        "league":        league_tag,
+                        "competition":   comp_tag,
+                        "n_teams":       n_teams_last,
+                        "trained_at":    trained_at,
+                        "windows":       windows_d,
+                        "feature_flags": {
+                            "momentum":         True,
+                            "cross_stats":      True,
+                            "context":          True,
+                            "opp_continuous":   True,
+                            "extended_windows": True,
+                        },
+                        "opp_q33": opp_q33,
+                        "opp_q67": opp_q67,
                     })
-                    self._repo.upsert_model(model_b)
-                    stat_summary["model_b"] = {
-                        "r2": model_b["r2_train"], "n": model_b["n_samples"]
+                    self._repo.upsert_model(model_d)
+                    stat_summary["model_d"] = {
+                        "r2": model_d["r2_train"], "n": model_d["n_samples"]
                     }
 
             summary[stat] = stat_summary
@@ -190,34 +262,37 @@ class ElasticityService:
         league_tag = ",".join(leagues) if leagues else "ALL"
         comp_tag   = ",".join(competitions) if competitions else "ALL"
 
+        vals_by_stat: Dict[str, List[float]] = {
+            s: [r.get(s) for r in records if r.get(s) is not None]
+            for s in TARGET_STATS
+        }
+
         result: Dict[str, Any] = {}
-
         for stat in TARGET_STATS:
-            vals = [r.get(stat) for r in records if r.get(stat) is not None]
-            if not vals:
+            if not vals_by_stat.get(stat):
                 continue
-
-            rolling: List[float] = []
-            for w in ROLLING_WINDOWS:
-                window = vals[-w:] if len(vals) >= w else vals
-                rolling.append(float(np.mean(window)))
-
             stat_out: Dict[str, Any] = {}
 
-            # Modelo A
-            doc_a = self._repo.get_model("A", stat, league_tag, comp_tag)
-            if doc_a:
-                stat_out["model_a"] = _predict_with_ci(doc_a, rolling)
+            for mtype in ("A", "B", "C"):
+                doc = self._repo.get_model(mtype, stat, league_tag, comp_tag)
+                if not doc:
+                    continue
+                # Skip context models (B/C) when caller provides no context
+                flags = doc.get("feature_flags") or {}
+                needs_ctx = flags.get("context") or mtype in ("B", "C")
+                if needs_ctx and (is_home is None or opp_net_rtg is None):
+                    continue
+                feats = _build_features_for_inference(
+                    doc, vals_by_stat, stat, is_home, opp_net_rtg
+                )
+                stat_out[f"model_{mtype.lower()}"] = _predict_with_ci(doc, feats)
 
-            # Modelo B
-            doc_b = self._repo.get_model("B", stat, league_tag, comp_tag)
-            if doc_b and is_home is not None and opp_net_rtg is not None:
-                all_net = [r.get("net_rtg") for r in records if r.get("net_rtg") is not None]
-                q33 = float(np.percentile(all_net, 33)) if all_net else 0.0
-                q67 = float(np.percentile(all_net, 67)) if all_net else 0.0
-                bucket = 1.0 if opp_net_rtg >= q67 else (-1.0 if opp_net_rtg <= q33 else 0.0)
-                extra = [float(is_home), bucket]
-                stat_out["model_b"] = _predict_with_ci(doc_b, rolling, extra)
+            doc_d = self._repo.get_model("D", stat, league_tag, comp_tag)
+            if doc_d and "gbm_mean" in doc_d and is_home is not None and opp_net_rtg is not None:
+                feats_d = _build_features_for_inference(
+                    doc_d, vals_by_stat, stat, is_home, opp_net_rtg
+                )
+                stat_out["model_d"] = _predict_gbm(doc_d, feats_d)
 
             if stat_out:
                 result[stat] = stat_out

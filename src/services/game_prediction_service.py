@@ -193,21 +193,86 @@ class GamePredictionService:
             return {"error": "No hay suficiente historial para construir features de inferencia"}
 
         win_prob, ci_low, ci_high = self._predict_with_ci(model, feat_vec, X, y)
-        importances = self._feature_importances(model)
+        importances, coefficients = self._feature_importances(model)
         accuracy = self._walk_forward_accuracy(records)
 
         return {
-            "win_prob":            round(win_prob, 4),
-            "ci_low":              round(ci_low, 4),
-            "ci_high":             round(ci_high, 4),
-            "feature_importances": importances,
-            "n_train":             len(y),
-            "accuracy":            round(accuracy, 4) if accuracy is not None else None,
+            "win_prob":              round(win_prob, 4),
+            "ci_low":               round(ci_low, 4),
+            "ci_high":              round(ci_high, 4),
+            "feature_importances":  importances,
+            "feature_coefficients": coefficients,
+            "n_train":              len(y),
+            "accuracy":             round(accuracy, 4) if accuracy is not None else None,
         }
 
     # ------------------------------------------------------------------
     # Internal helpers (patchable in tests)
     # ------------------------------------------------------------------
+
+    def predict_live(
+        self,
+        live_collection: str,
+        live_team_name: str,
+        is_fbcyl: bool,
+        is_home: bool,
+        opp_net_rtg: float,
+    ) -> Dict[str, Any]:
+        """Predict win probability using live (current-season) collection data."""
+        from services.live_history_adapter import LiveHistoryAdapter
+        adapter = LiveHistoryAdapter(self._conn)
+        records = adapter.get_team_history(live_collection, live_team_name, is_fbcyl)
+        if not records:
+            return {"error": "Sin partidos en la colección en vivo para este equipo"}
+
+        records = sorted(records, key=lambda r: r.get("date") or "")
+
+        if len(records) < MIN_TRAIN + _MAX_WINDOW:
+            return {
+                "error": (
+                    f"Datos insuficientes: se necesitan al menos "
+                    f"{MIN_TRAIN + _MAX_WINDOW} partidos, hay {len(records)}"
+                )
+            }
+
+        X, y = self._build_dataset(records)
+        if len(y) < MIN_TRAIN:
+            return {"error": f"Muestras insuficientes tras construir features: {len(y)}"}
+
+        unique_labels = set(y)
+        if len(unique_labels) < 2:
+            only = int(list(unique_labels)[0]) if unique_labels else 0
+            return {
+                "win_prob":              float(only),
+                "ci_low":               float(only),
+                "ci_high":              float(only),
+                "feature_importances":  {name: 0.0 for name in FEATURE_NAMES},
+                "feature_coefficients": {name: 0.0 for name in FEATURE_NAMES},
+                "n_train":              len(y),
+                "accuracy":             float(only),
+            }
+
+        model = self._fit(X, y)
+        if model is None:
+            return {"error": "No se pudo ajustar el clasificador"}
+
+        feat_vec = _build_feature_vector(records, len(records), is_home, opp_net_rtg)
+        if feat_vec is None:
+            return {"error": "No hay suficiente historial para construir features de inferencia"}
+
+        win_prob, ci_low, ci_high = self._predict_with_ci(model, feat_vec, X, y)
+        importances, coefficients = self._feature_importances(model)
+        accuracy = self._walk_forward_accuracy(records)
+
+        return {
+            "win_prob":              round(win_prob, 4),
+            "ci_low":               round(ci_low, 4),
+            "ci_high":              round(ci_high, 4),
+            "feature_importances":  importances,
+            "feature_coefficients": coefficients,
+            "n_train":              len(y),
+            "accuracy":             round(accuracy, 4) if accuracy is not None else None,
+        }
 
     def _load_records(
         self,
@@ -339,18 +404,26 @@ class GamePredictionService:
             abs_coefs = np.abs(coefs)
             total = abs_coefs.sum()
             norm = abs_coefs / total if total > 0 else np.zeros_like(abs_coefs)
-            return {name: round(float(v), 4) for name, v in zip(FEATURE_NAMES, norm)}
+            # Signed: preserves direction (positive = helps win, negative = hurts)
+            signed = coefs / total if total > 0 else np.zeros_like(coefs)
+            return (
+                {name: round(float(v), 4) for name, v in zip(FEATURE_NAMES, norm)},
+                {name: round(float(v), 4) for name, v in zip(FEATURE_NAMES, signed)},
+            )
         except Exception:
-            return {name: 0.0 for name in FEATURE_NAMES}
+            return (
+                {name: 0.0 for name in FEATURE_NAMES},
+                {name: 0.0 for name in FEATURE_NAMES},
+            )
 
     def _walk_forward_accuracy(
         self, records: List[Dict[str, Any]]
     ) -> Optional[float]:
-        """Walk-forward accuracy: train on [0..i-1], predict game i."""
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.pipeline import Pipeline
+        """Walk-forward accuracy: train on [0..i-1], predict game i.
 
+        Uses the same CalibratedClassifierCV pipeline as predict() so the
+        reported accuracy reflects the deployed model, not a bare classifier.
+        """
         correct = 0
         total = 0
         start = _MAX_WINDOW + MIN_TRAIN
@@ -369,15 +442,13 @@ class GamePredictionService:
             )
             if feat is None:
                 continue
+            pipe = self._fit(X_tr, y_tr)
+            if pipe is None:
+                continue
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 try:
-                    pipe = Pipeline([
-                        ("scaler", StandardScaler()),
-                        ("clf",    LogisticRegression(max_iter=500, C=1.0, solver="lbfgs")),
-                    ])
-                    pipe.fit(X_tr, y_tr)
-                    pred = int(pipe.predict(np.array(feat).reshape(1, -1))[0])
+                    pred = int(np.argmax(pipe.predict_proba(np.array(feat).reshape(1, -1))[0]))
                     correct += int(pred == label)
                     total += 1
                 except Exception:

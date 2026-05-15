@@ -1012,9 +1012,16 @@ export interface BacktestingMetrics {
   n_evaluated:  number
 }
 
+export interface BacktestingNaiveMetrics {
+  mae:         number | null
+  rmse:        number | null
+  n_evaluated: number
+}
+
 export interface BacktestingStatResult {
   model_a: BacktestingMetrics
   model_b: BacktestingMetrics
+  naive:   BacktestingNaiveMetrics
 }
 
 export type BacktestingResult = Record<string, BacktestingStatResult>
@@ -1033,23 +1040,38 @@ export const getBacktesting = (
   )
 }
 
+export const getBacktestingLive = (
+  collection: string,
+  teamName:   string,
+  isFbcyl:    boolean,
+) => {
+  const params = new URLSearchParams({ is_fbcyl: String(isFbcyl) })
+  return get<BacktestingResult>(
+    `/analysis/backtesting-live/${encodeURIComponent(collection)}/${encodeURIComponent(teamName)}?${params}`,
+  )
+}
+
 // ── Game Prediction (FASE 7) ─────────────────────────────────────────────────
 
 export interface GamePredictionRequest {
-  season:       string
-  is_home:      boolean
-  opp_net_rtg?: number
-  leagues?:     string[]
-  competitions?: string[]
+  season?:          string
+  is_home:          boolean
+  opp_net_rtg?:     number
+  live_collection?: string
+  live_team_name?:  string
+  live_is_fbcyl?:   boolean
+  leagues?:         string[]
+  competitions?:    string[]
 }
 
 export interface GamePredictionResult {
-  win_prob:             number
-  ci_low:               number
-  ci_high:              number
-  feature_importances:  Record<string, number>
-  n_train:              number
-  accuracy:             number | null
+  win_prob:              number
+  ci_low:                number
+  ci_high:               number
+  feature_importances:   Record<string, number>
+  feature_coefficients:  Record<string, number>
+  n_train:               number
+  accuracy:              number | null
 }
 
 export const postGamePrediction = (teamId: string, req: GamePredictionRequest) =>
@@ -1108,16 +1130,16 @@ export interface SeasonProjectionEntry {
 
 export const getSeasonProjection = (
   collection: string,
-  season: string,
   seasonLength: number = 22,
   nSimulations: number = 1000,
   playoffSpots: number = 4,
+  isFbcyl: boolean = false,
 ) => {
   const qs = new URLSearchParams({
-    season,
     season_length: String(seasonLength),
     n_simulations: String(nSimulations),
     playoff_spots: String(playoffSpots),
+    is_fbcyl:      String(isFbcyl),
   })
   return get<SeasonProjectionEntry[]>(
     `/analysis/season-projection/${encodeURIComponent(collection)}?${qs}`,

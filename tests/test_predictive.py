@@ -266,6 +266,147 @@ class TestElasticityDataset:
         assert len(y) == 0
 
 
+class TestModeloC:
+    """Tests for the new Modelo C and D (FASE E improvements)."""
+
+    def _records(self, n_teams: int = 4, n_games: int = 30) -> list:
+        records = []
+        for i in range(n_teams):
+            records.extend(_fake_historical_records(f"team-{i}", n_games, start_net=float(i)))
+        return records
+
+    # --- _build_dataset new flags ---
+
+    def test_modelo_c_extended_windows_adds_roll20(self):
+        from services._elasticity_models import _build_dataset, ROLLING_WINDOWS_C
+        records = self._records()
+        X, y, _ = _build_dataset(records, "net_rtg", extended_windows=True)
+        assert X.shape[1] == len(ROLLING_WINDOWS_C)  # 4 rolling features
+
+    def test_modelo_c_momentum_adds_one_feature(self):
+        from services._elasticity_models import _build_dataset
+        records = self._records()
+        X_base, _, _ = _build_dataset(records, "net_rtg")
+        X_mom,  _, _ = _build_dataset(records, "net_rtg", add_momentum=True)
+        assert X_mom.shape[1] == X_base.shape[1] + 1
+
+    def test_modelo_c_cross_stat_adds_driver_features(self):
+        from services._elasticity_models import _build_dataset, CROSS_STAT_FEATURES
+        records = self._records()
+        n_cross = len(CROSS_STAT_FEATURES.get("net_rtg", []))  # 2 for net_rtg
+        X_base, _, _ = _build_dataset(records, "net_rtg")
+        X_cross, _, _ = _build_dataset(records, "net_rtg", cross_stat_features=True)
+        assert X_cross.shape[1] == X_base.shape[1] + n_cross
+
+    def test_modelo_c_opp_continuous_uses_float_not_bucket(self):
+        """opp_continuous=True → feature varies continuously, not in {-1, 0, 1}."""
+        from services._elasticity_models import _build_dataset
+        records = self._records()
+        X_cont, _, _ = _build_dataset(records, "net_rtg", extra_features=True, opp_continuous=True)
+        # Extract the opp column (last extra feature)
+        opp_col = X_cont[:, -1]
+        unique_vals = set(np.unique(np.round(opp_col, 1)))
+        # If continuous, there are far more than 3 unique values
+        assert len(unique_vals) > 3
+
+    def test_modelo_c_full_feature_count(self):
+        """Modelo C full feature count: roll3/5/10/20 + momentum + is_home + opp + cross-stats."""
+        from services._elasticity_models import _build_dataset, ROLLING_WINDOWS_C, CROSS_STAT_FEATURES
+        records = self._records()
+        n_cross = len(CROSS_STAT_FEATURES.get("net_rtg", []))
+        X, y, _ = _build_dataset(
+            records, "net_rtg",
+            extended_windows=True, add_momentum=True,
+            extra_features=True, opp_continuous=True,
+            cross_stat_features=True,
+        )
+        expected = len(ROLLING_WINDOWS_C) + 1 + 2 + n_cross  # windows + momentum + is_home + opp + cross
+        assert X.shape[1] == expected
+
+    def test_extended_windows_requires_20_games(self):
+        """roll20 needs at least 21 games per team — teams with < 21 are skipped."""
+        from services._elasticity_models import _build_dataset
+        # Teams with only 15 games → skipped with extended_windows=True
+        records = []
+        for i in range(4):
+            records.extend(_fake_historical_records(f"t{i}", 15))
+        X, y, n_teams = _build_dataset(records, "net_rtg", extended_windows=True)
+        assert len(y) == 0  # all teams skipped (15 < 20+1)
+
+    # --- _compute_sample_weights ---
+
+    def test_sample_weights_sum_to_n(self):
+        from services._elasticity_models import _compute_sample_weights
+        n = 100
+        w = _compute_sample_weights(n)
+        assert len(w) == n
+        assert abs(w.sum() - n) < 1e-6
+
+    def test_sample_weights_increasing(self):
+        """Recent samples must have strictly higher weight than older ones."""
+        from services._elasticity_models import _compute_sample_weights
+        w = _compute_sample_weights(50)
+        assert w[-1] > w[0]  # last (recent) > first (oldest)
+        assert np.all(np.diff(w) > 0)  # strictly monotone
+
+    # --- _fit_ridge_with_bootstrap sample_weight ---
+
+    def test_fit_with_sample_weight_returns_model(self):
+        from services._elasticity_models import _fit_ridge_with_bootstrap, _compute_sample_weights
+        rng = np.random.default_rng(0)
+        X = rng.standard_normal((60, 4))
+        y = X[:, 0] * 2 + rng.standard_normal(60) * 0.5
+        sw = _compute_sample_weights(len(y))
+        model = _fit_ridge_with_bootstrap(X, y, sample_weight=sw)
+        assert model is not None
+        assert "rmse_train" in model
+        assert len(model["coef"]) == 4
+
+    # --- _build_features_for_inference ---
+
+    def test_feature_builder_modelo_c(self):
+        from services._feature_builders import _build_features_for_inference
+        from services._elasticity_models import ROLLING_WINDOWS_C, CROSS_STAT_FEATURES
+        model_doc = {
+            "model_type": "C",
+            "windows": ROLLING_WINDOWS_C,
+            "feature_flags": {
+                "momentum": True, "cross_stats": True, "context": True,
+                "opp_continuous": True, "extended_windows": True,
+            },
+            "coef": [0.1] * (len(ROLLING_WINDOWS_C) + 1 + 2 + len(CROSS_STAT_FEATURES["net_rtg"])),
+            "intercept": 0.0,
+            "scaler_mean":  [0.0] * (len(ROLLING_WINDOWS_C) + 1 + 2 + len(CROSS_STAT_FEATURES["net_rtg"])),
+            "scaler_scale": [1.0] * (len(ROLLING_WINDOWS_C) + 1 + 2 + len(CROSS_STAT_FEATURES["net_rtg"])),
+        }
+        vals_by_stat = {s: [float(i) for i in range(25)] for s in ["net_rtg", "ortg", "drtg"]}
+        feats = _build_features_for_inference(model_doc, vals_by_stat, "net_rtg", is_home=True, opp_net_rtg=2.5)
+        n_cross = len(CROSS_STAT_FEATURES["net_rtg"])
+        expected_len = len(ROLLING_WINDOWS_C) + 1 + 2 + n_cross
+        assert len(feats) == expected_len
+
+    # --- _gbm_models ---
+
+    def test_gbm_fit_returns_serialized_dict(self):
+        from services._gbm_models import _fit_gbm_with_quantiles
+        rng = np.random.default_rng(1)
+        X = rng.standard_normal((60, 5))
+        y = X[:, 0] * 3 + rng.standard_normal(60)
+        result = _fit_gbm_with_quantiles(X, y)
+        assert result is not None
+        assert all(k in result for k in ("gbm_mean", "gbm_q05", "gbm_q95", "r2_train", "rmse_train"))
+
+    def test_gbm_predict_returns_ci(self):
+        from services._gbm_models import _fit_gbm_with_quantiles, _predict_gbm
+        rng = np.random.default_rng(2)
+        X = rng.standard_normal((60, 3))
+        y = X[:, 0] * 2 + rng.standard_normal(60)
+        model_doc = _fit_gbm_with_quantiles(X, y)
+        result = _predict_gbm(model_doc, [0.5, -0.2, 1.1])
+        assert "estimate" in result
+        assert result["ci_low"] <= result["ci_high"]
+
+
 class TestRidgeFitting:
     def test_fit_returns_model_dict(self):
         from services.elasticity_service import _fit_ridge_with_bootstrap
@@ -438,6 +579,107 @@ class TestMonteCarloService:
         result = svc.simulate("team-0", "2024-25", n_games=5, n_simulations=200)
         if "projected_wins_std" in result:
             assert result["projected_wins_std"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Fake model docs with rmse_train (post Fase 1)
+# ---------------------------------------------------------------------------
+
+def _fake_model_docs_with_rmse() -> List[Dict]:
+    """Model docs with rmse_train populated — realistic game-to-game RMSE."""
+    from services.elasticity_service import TARGET_STATS, ROLLING_WINDOWS
+
+    rmse_by_stat = {
+        "net_rtg": 8.0, "ortg": 5.0, "drtg": 5.0,
+        "efg_pct": 3.0, "tov_rate": 4.0, "oreb_pct": 5.0,
+    }
+    docs = []
+    for stat in TARGET_STATS:
+        n_feat = len(ROLLING_WINDOWS)
+        docs.append({
+            "model_type":   "A",
+            "stat":         stat,
+            "league":       "ALL",
+            "competition":  "ALL",
+            "coef":         [0.3] * n_feat,
+            "intercept":    2.0,
+            "scaler_mean":  [0.0] * n_feat,
+            "scaler_scale": [1.0] * n_feat,
+            "ci_low":       [0.2] * n_feat,
+            "ci_high":      [0.4] * n_feat,
+            "r2_train":     0.3,
+            "rmse_train":   rmse_by_stat.get(stat, 5.0),
+            "n_samples":    100,
+            "n_teams":      5,
+            "features":     [f"roll_{w}" for w in ROLLING_WINDOWS],
+        })
+    return docs
+
+
+class TestMonteCarloRegressions:
+    """Regression tests for bugs fixed in Fases 2/4/5.
+
+    Bug history:
+    - sigma derived from model param CI (~0.67 pts) instead of RMSE (~8 pts)
+      → all net_rtg draws positive → P(victoria)=100%, std=0.00
+    - RNG seed reset inside stat loop → fully deterministic simulation
+    - History collapsed to mean → no auto-regressive variance propagation
+    """
+
+    def _make_service(self, net_rtg_mean: float = 4.0) -> object:
+        import mongomock
+        client = mongomock.MongoClient()
+        db = client["basketlab_test"]
+        for i in range(3):
+            for rec in _fake_historical_records(f"team-{i}", 25, start_net=net_rtg_mean):
+                db["HISTORICAL"].insert_one(rec)
+        for rec in _fake_model_docs_with_rmse():
+            db["ELASTICITIES"].insert_one(rec)
+        conn = MagicMock()
+        conn.is_connected.return_value = True
+        conn.get_collection.side_effect = lambda name: db[name]
+        from services.monte_carlo_service import MonteCarloService
+        return MonteCarloService(conn)
+
+    def test_projected_wins_std_positive_regression(self):
+        """Bug: sigma from model CI ~0.67 → all draws > 0 → std == 0.00."""
+        svc = self._make_service()
+        result = svc.simulate("team-0", "2024-25", n_games=5, n_simulations=500)
+        assert "projected_wins_std" in result
+        assert result["projected_wins_std"] > 0, (
+            f"projected_wins_std must be > 0, got {result['projected_wins_std']}"
+        )
+
+    def test_win_prob_not_always_one_regression(self):
+        """Bug: P(victoria)=100.0% for every game when sigma too small."""
+        svc = self._make_service(net_rtg_mean=3.0)
+        result = svc.simulate("team-0", "2024-25", n_games=5, n_simulations=1000)
+        win_probs = [g["win_prob"] for g in result.get("games", [])]
+        assert any(p < 1.0 for p in win_probs), (
+            f"Expected at least one game with win_prob < 1.0, got {win_probs}"
+        )
+
+    def test_simulation_is_stochastic(self):
+        """Bug: RNG seed 42+g_idx reset per stat → deterministic results."""
+        svc = self._make_service()
+        r1 = svc.simulate("team-0", "2024-25", n_games=3, n_simulations=200)
+        r2 = svc.simulate("team-0", "2024-25", n_games=3, n_simulations=200)
+        if "games" in r1 and "games" in r2:
+            stds1 = [g["stats"].get("net_rtg", {}).get("std") for g in r1["games"]]
+            stds2 = [g["stats"].get("net_rtg", {}).get("std") for g in r2["games"]]
+            assert stds1 != stds2 or r1["projected_wins_std"] != r2["projected_wins_std"], (
+                "Two independent calls returned identical results (simulation is deterministic)"
+            )
+
+    def test_projected_wins_ci_spread_regression(self):
+        """Bug: IC collapsed [5.0, 5.0] — lower must be < upper."""
+        svc = self._make_service()
+        result = svc.simulate("team-0", "2024-25", n_games=5, n_simulations=500)
+        ci_low  = result.get("projected_wins_ci_low", 0.0)
+        ci_high = result.get("projected_wins_ci_high", 0.0)
+        assert ci_high > ci_low, (
+            f"IC must have positive width, got [{ci_low}, {ci_high}]"
+        )
 
 
 def _fake_model_docs() -> List[Dict]:

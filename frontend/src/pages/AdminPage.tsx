@@ -22,16 +22,18 @@ import {
   type HistoricalJob, type HistoricalSummaryEntry,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import { ElasticityTab, ValidationTab } from './PredictivePage'
 
 // ── Simple tabs ───────────────────────────────────────────────────────────────
 
-type Tab = 'collections' | 'feb' | 'fbcyl' | 'historical'
+type Tab = 'collections' | 'feb' | 'fbcyl' | 'historical' | 'models'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'collections', label: 'Colecciones' },
   { id: 'feb',         label: 'Descargar FEB' },
   { id: 'fbcyl',       label: 'Descargar FBCYL' },
   { id: 'historical',  label: 'Histórico' },
+  { id: 'models',      label: 'Modelos predictivos' },
 ]
 
 // ── Progress panel ────────────────────────────────────────────────────────────
@@ -619,6 +621,35 @@ function HistoricalTab() {
   )
 }
 
+// ── Tab: Modelos predictivos ──────────────────────────────────────────────────
+
+function ModelsTab() {
+  const [subTab, setSubTab] = useState<'elasticity' | 'validation'>('elasticity')
+  return (
+    <div className="mt-4 space-y-4">
+      <div className="flex gap-2 border-b border-surface-border pb-2">
+        {(['elasticity', 'validation'] as const).map(id => (
+          <button
+            key={id}
+            onClick={() => setSubTab(id)}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              subTab === id
+                ? 'bg-brand-600 text-white'
+                : 'text-ink-muted hover:text-ink-primary'
+            }`}
+          >
+            {id === 'elasticity' ? 'Elasticidades' : 'Validación'}
+          </button>
+        ))}
+      </div>
+      <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6">
+        {subTab === 'elasticity' && <ElasticityTab />}
+        {subTab === 'validation' && <ValidationTab />}
+      </div>
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -652,12 +683,14 @@ export default function AdminPage() {
           {activeTab === 'feb'         && <FEBDownloadTab />}
           {activeTab === 'fbcyl'       && <FBCYLDownloadTab />}
           {activeTab === 'historical'  && <HistoricalTab />}
+          {activeTab === 'models'      && <ModelsTab />}
         </div>
 
         <div className="pt-4 border-t border-surface-border text-xs text-ink-muted space-y-1">
           <p><span className="font-medium">FEB:</span> Descarga partidos de las ligas nacionales FEB (L.F.2, EBA, etc.).</p>
           <p><span className="font-medium">FBCYL:</span> Descarga partidos de las ligas de Castilla y León.</p>
           <p><span className="font-medium">Histórico:</span> Descarga temporadas pasadas en la colección unificada HISTORICAL para modelos predictivos.</p>
+          <p><span className="font-medium">Modelos:</span> Entrenamiento Ridge/GBM y validación walk-forward de los modelos predictivos.</p>
           <p className="flex items-center gap-1">
             <ChevronRight className="w-3 h-3" />
             Los datos nuevos incluyen metadatos de competición para análisis cruzado futuro.

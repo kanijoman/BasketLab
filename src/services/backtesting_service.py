@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from database.historical_repository import HistoricalRepository
+from services.live_history_adapter import LiveHistoryAdapter
 from services._elasticity_models import (
     TARGET_STATS,
     ROLLING_WINDOWS,
@@ -55,19 +56,27 @@ class BacktestingService:
         leagues: Optional[List[str]] = None,
         competitions: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """Run walk-forward backtesting for a team's season.
-
-        Args:
-            team_id:      Team identifier as stored in HISTORICAL.
-            season:       Normalised season label ("2024-25").
-            leagues:      Optional league filter (passed to data loader).
-            competitions: Optional competition filter.
-
-        Returns:
-            ``{stat: {model_a: {mae, rmse, mape, n_evaluated},
-                      model_b: {mae, rmse, mape, n_evaluated}}}``
-        """
+        """Run walk-forward backtesting for a team's season."""
         records = self._load_records(team_id, season, leagues, competitions)
+        return self._run_on_records(records)
+
+    def run_backtest_live(
+        self,
+        live_collection: str,
+        live_team_name: str,
+        is_fbcyl: bool,
+    ) -> Dict[str, Any]:
+        """Run walk-forward backtesting using the live (current-season) collection.
+
+        Uses LiveHistoryAdapter so no ingestion into HISTORICAL is required.
+        Returns the same schema as run_backtest().
+        """
+        adapter = LiveHistoryAdapter(self._conn)
+        records = adapter.get_team_history(live_collection, live_team_name, is_fbcyl)
+        return self._run_on_records(records)
+
+    def _run_on_records(self, records: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Shared walk-forward logic for both historical and live modes."""
         if not records:
             return {}
 
@@ -78,17 +87,14 @@ class BacktestingService:
 
         result: Dict[str, Any] = {}
         for stat in TARGET_STATS:
-            errors_a, errors_b = self._evaluate_stat(records, stat)
+            errors_a, errors_b, errors_naive = self._evaluate_stat(records, stat)
             result[stat] = {
-                "model_a": _compute_metrics(errors_a),
-                "model_b": _compute_metrics(errors_b),
+                "model_a": _compute_metrics(errors_a, stat),
+                "model_b": _compute_metrics(errors_b, stat),
+                "naive":   _compute_metrics(errors_naive, stat, include_mape=False),
             }
 
         return result
-
-    # ------------------------------------------------------------------
-    # Internal helpers (patchable in tests)
-    # ------------------------------------------------------------------
 
     def _load_records(
         self,
@@ -139,14 +145,15 @@ class BacktestingService:
         self,
         records: List[Dict[str, Any]],
         stat: str,
-    ) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]]]:
+    ) -> Tuple[List[Tuple[float, float]], List[Tuple[float, float]], List[Tuple[float, float]]]:
         """Walk-forward evaluation for one stat.
 
         Returns:
-            (errors_a, errors_b) — each is a list of (predicted, actual) pairs.
+            (errors_a, errors_b, errors_naive) — each is a list of (predicted, actual) pairs.
         """
-        errors_a: List[Tuple[float, float]] = []
-        errors_b: List[Tuple[float, float]] = []
+        errors_a:     List[Tuple[float, float]] = []
+        errors_b:     List[Tuple[float, float]] = []
+        errors_naive: List[Tuple[float, float]] = []
 
         for i in range(MIN_TRAIN_SIZE, len(records)):
             train = records[:i]
@@ -155,6 +162,11 @@ class BacktestingService:
                 continue
 
             rolling_feats = _rolling_features(records, i, stat)
+
+            # Naive baseline: mean of last 5 non-None values
+            past_vals = [r.get(stat) for r in train if r.get(stat) is not None]
+            naive_pred = float(np.mean(past_vals[-5:])) if past_vals else 0.0
+            errors_naive.append((naive_pred, float(actual)))
 
             # Modelo A
             model_a = self._fit_fold(train, stat, extra_features=False)
@@ -175,7 +187,7 @@ class BacktestingService:
                 )["estimate"]
                 errors_b.append((pred_b, float(actual)))
 
-        return errors_a, errors_b
+        return errors_a, errors_b, errors_naive
 
 
 # ---------------------------------------------------------------------------
@@ -281,25 +293,36 @@ def _opp_bucket_features(
     return [_bucket(opp_net_rtg, q33, q67)]
 
 
+# Stats whose actual values oscillate near zero — MAPE is meaningless for them
+_MAPE_SUPPRESSED_STATS = {"net_rtg"}
+
+
 def _compute_metrics(
     errors: List[Tuple[float, float]],
+    stat: str = "",
+    include_mape: bool = True,
 ) -> Dict[str, Any]:
-    """Compute MAE, RMSE, MAPE from (predicted, actual) pairs."""
+    """Compute MAE, RMSE, MAPE from (predicted, actual) pairs.
+
+    MAPE is suppressed (set to None) for stats in _MAPE_SUPPRESSED_STATS because
+    their actual values oscillate near zero, making MAPE misleadingly large.
+    """
     n = len(errors)
     if n == 0:
         return {"mae": None, "rmse": None, "mape": None, "n_evaluated": 0}
 
-    preds = np.array([e[0] for e in errors])
+    preds   = np.array([e[0] for e in errors])
     actuals = np.array([e[1] for e in errors])
-    diffs = np.abs(preds - actuals)
+    diffs   = np.abs(preds - actuals)
 
-    mae = float(np.mean(diffs))
+    mae  = float(np.mean(diffs))
     rmse = float(np.sqrt(np.mean(diffs ** 2)))
 
     mape: Optional[float] = None
-    nonzero = actuals != 0
-    if nonzero.any():
-        mape = float(np.mean(diffs[nonzero] / np.abs(actuals[nonzero])) * 100)
+    if include_mape and stat not in _MAPE_SUPPRESSED_STATS:
+        nonzero = actuals != 0
+        if nonzero.any():
+            mape = float(np.mean(diffs[nonzero] / np.abs(actuals[nonzero])) * 100)
 
     return {
         "mae":         round(mae, 4),
@@ -312,7 +335,12 @@ def _compute_metrics(
 def _empty_result() -> Dict[str, Any]:
     """Return a result dict signalling no data was available per stat."""
     empty_metrics = {"mae": None, "rmse": None, "mape": None, "n_evaluated": 0}
+    empty_naive   = {"mae": None, "rmse": None, "n_evaluated": 0}
     return {
-        stat: {"model_a": dict(empty_metrics), "model_b": dict(empty_metrics)}
+        stat: {
+            "model_a": dict(empty_metrics),
+            "model_b": dict(empty_metrics),
+            "naive":   dict(empty_naive),
+        }
         for stat in TARGET_STATS
     }
