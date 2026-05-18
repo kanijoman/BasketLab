@@ -44,5 +44,13 @@ def get_mongodb_connection_string() -> str:
                 if connection_string:
                     return connection_string
 
-    # Default fallback (should not be reached in production)
+    # In production, refuse to silently fall back to localhost.
+    environment = os.getenv("ENVIRONMENT", "development")
+    if environment == "production":
+        raise RuntimeError(
+            "MONGODB_CONNECTION_STRING env var is required in production. "
+            "Set it to your Atlas connection string before starting the server."
+        )
+
+    # Local development fallback only.
     return "mongodb://localhost:27017/"

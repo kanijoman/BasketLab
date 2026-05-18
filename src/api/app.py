@@ -54,10 +54,17 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS — reads ALLOWED_ORIGINS env var (comma-separated) for production.
-# Falls back to wide-open for local development.
+# CORS — reads ALLOWED_ORIGINS env var (comma-separated).
+# In production (ENVIRONMENT=production) the variable is mandatory.
+# In development it defaults to allowing all origins ("*").
 # ---------------------------------------------------------------------------
+_environment = os.getenv("ENVIRONMENT", "development")
 _origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if not _origins_env and _environment == "production":
+    raise RuntimeError(
+        "ALLOWED_ORIGINS env var is required in production. "
+        "Set it to the frontend URL, e.g. https://basketlab.vercel.app"
+    )
 _allowed_origins: list[str] = (
     [o.strip() for o in _origins_env.split(",") if o.strip()]
     if _origins_env

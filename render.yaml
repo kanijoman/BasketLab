@@ -1,0 +1,39 @@
+# Render configuration-as-code
+# Docs: https://render.com/docs/yaml-spec
+#
+# On first deploy, create the service manually on Render and link the repo.
+# After that, this file keeps the service config in sync with the codebase.
+
+services:
+  - type: web
+    name: basketlab-api
+    runtime: python
+    region: frankfurt  # closest to Spain
+    plan: free
+
+    buildCommand: pip install -r requirements.txt
+
+    # run_api.py reads PORT from env (injected by Render) and ENVIRONMENT
+    startCommand: python run_api.py
+
+    # Health check — Render uses this to know when the app is ready
+    healthCheckPath: /docs
+
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+
+      # Set these in the Render dashboard (mark as secret):
+      - key: MONGODB_CONNECTION_STRING
+        sync: false   # must be set manually in Render dashboard
+
+      - key: ALLOWED_ORIGINS
+        sync: false   # set to Vercel URL after first Vercel deploy
+
+      # Optional AI providers (leave unset if not used)
+      # - key: OPENAI_API_KEY
+      #   sync: false
+      # - key: GOOGLE_API_KEY
+      #   sync: false
+      # - key: GROQ_API_KEY
+      #   sync: false
