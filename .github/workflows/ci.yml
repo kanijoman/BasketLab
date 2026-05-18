@@ -31,14 +31,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tests
-        # Override addopts to skip HTML coverage report in CI (saves ~15s)
-        run: |
-          python -m pytest tests/ \
-            --cov=src \
-            --cov-report=term-missing \
-            --tb=short \
-            -q \
-            --override-ini="addopts="
+        # Override addopts to skip HTML coverage report in CI (saves ~15s).
+        # Use single-quoted override-ini to avoid bash quoting issues.
+        run: python -m pytest tests/ --cov=src --cov-report=term-missing --tb=short -q --override-ini='addopts='
         env:
           # Tests use mongomock — no real DB needed.
           # Set ENVIRONMENT to development so db_config doesn't raise on missing Atlas URL.
@@ -55,7 +50,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 

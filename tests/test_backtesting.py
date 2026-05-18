@@ -260,15 +260,13 @@ class TestBacktestingAPIEndpoint:
     def client(self):
         from fastapi.testclient import TestClient
         from src.api.app import app
-        return TestClient(app)
+        from src.api.deps import get_db
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        yield TestClient(app)
+        app.dependency_overrides.pop(get_db, None)
 
     def test_endpoint_returns_200(self, client):
-        records = _make_historical_records("T0", 25)
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.backtesting_service.BacktestingService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.backtesting_service.BacktestingService") as MockSvc:
             instance = MagicMock()
             instance.run_backtest.return_value = {
                 "net_rtg": {
@@ -284,11 +282,7 @@ class TestBacktestingAPIEndpoint:
         assert resp.status_code == 200
 
     def test_endpoint_response_structure(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.backtesting_service.BacktestingService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.backtesting_service.BacktestingService") as MockSvc:
             instance = MagicMock()
             instance.run_backtest.return_value = {
                 "net_rtg": {
@@ -497,7 +491,10 @@ class TestLiveBacktestingAPIEndpoint:
     def client(self):
         from fastapi.testclient import TestClient
         from src.api.app import app
-        return TestClient(app)
+        from src.api.deps import get_db
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        yield TestClient(app)
+        app.dependency_overrides.pop(get_db, None)
 
     def _mock_result(self):
         return {
@@ -509,11 +506,7 @@ class TestLiveBacktestingAPIEndpoint:
         }
 
     def test_live_endpoint_returns_200(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.backtesting_service.BacktestingService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.backtesting_service.BacktestingService") as MockSvc:
             MockSvc.return_value.run_backtest_live.return_value = self._mock_result()
             resp = client.get(
                 "/api/v1/analysis/backtesting-live/FEB_Test/Team%20T0",
@@ -522,11 +515,7 @@ class TestLiveBacktestingAPIEndpoint:
         assert resp.status_code == 200, resp.text
 
     def test_live_endpoint_response_has_stat_keys(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.backtesting_service.BacktestingService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.backtesting_service.BacktestingService") as MockSvc:
             MockSvc.return_value.run_backtest_live.return_value = self._mock_result()
             resp = client.get(
                 "/api/v1/analysis/backtesting-live/FEB_Test/Team%20T0",
