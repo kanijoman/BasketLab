@@ -1204,7 +1204,7 @@ function PlayerPredictionTab() {
   const collectionName = collection?.name ?? ''
   const [teamFilter, setTeamFilter] = useState('')
   const [playerId, setPlayerId] = useState('')
-  const [playerName, setPlayerName] = useState('')
+  const [_playerName, setPlayerName] = useState('')
   const [isHome, setIsHome] = useState(true)
   const [oppNetRtg, setOppNetRtg] = useState('')
   const [submitted, setSubmitted] = useState<{
