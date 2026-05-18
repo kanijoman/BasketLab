@@ -286,7 +286,10 @@ class TestGamePredictionAPIEndpoint:
     def client(self):
         from fastapi.testclient import TestClient
         from src.api.app import app
-        return TestClient(app)
+        from src.api.deps import get_db
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        yield TestClient(app)
+        app.dependency_overrides.pop(get_db, None)
 
     def _mock_result(self):
         return {
@@ -300,11 +303,7 @@ class TestGamePredictionAPIEndpoint:
         }
 
     def test_returns_200(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.game_prediction_service.GamePredictionService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.game_prediction_service.GamePredictionService") as MockSvc:
             MockSvc.return_value.predict.return_value = self._mock_result()
             resp = client.post(
                 "/api/v1/analysis/game-prediction/T0",
@@ -313,11 +312,7 @@ class TestGamePredictionAPIEndpoint:
         assert resp.status_code == 200
 
     def test_response_has_win_prob(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.game_prediction_service.GamePredictionService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.game_prediction_service.GamePredictionService") as MockSvc:
             MockSvc.return_value.predict.return_value = self._mock_result()
             resp = client.post(
                 "/api/v1/analysis/game-prediction/T0",
@@ -332,25 +327,17 @@ class TestGamePredictionAPIEndpoint:
         must return 422 (neither historical nor live mode can be resolved).
         This replaces the old test that expected 422 just from missing season,
         which broke when season became Optional to support live mode."""
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-        ):
-            mock_db.return_value = MagicMock()
-            resp = client.post(
-                "/api/v1/analysis/game-prediction/T0",
-                json={"is_home": True},
-            )
+        resp = client.post(
+            "/api/v1/analysis/game-prediction/T0",
+            json={"is_home": True},
+        )
         assert resp.status_code == 422
 
     def test_live_mode_without_season_returns_200(self, client):
         """Live mode must work when season is absent.
         Regression test: previously season was a required Pydantic field
         so this would return 422 Field required."""
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.game_prediction_service.GamePredictionService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.game_prediction_service.GamePredictionService") as MockSvc:
             MockSvc.return_value.predict_live.return_value = self._mock_result()
             resp = client.post(
                 "/api/v1/analysis/game-prediction/_live",

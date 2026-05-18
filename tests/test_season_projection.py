@@ -269,7 +269,10 @@ class TestSeasonProjectionAPIEndpoint:
     def client(self):
         from fastapi.testclient import TestClient
         from src.api.app import app
-        return TestClient(app)
+        from src.api.deps import get_db
+        app.dependency_overrides[get_db] = lambda: MagicMock()
+        yield TestClient(app)
+        app.dependency_overrides.pop(get_db, None)
 
     def _mock_result(self):
         return [
@@ -284,11 +287,7 @@ class TestSeasonProjectionAPIEndpoint:
         ]
 
     def test_returns_200(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc:
             MockSvc.return_value.project.return_value = self._mock_result()
             resp = client.get(
                 "/api/v1/analysis/season-projection/FEB_LF2_2025_A",
@@ -297,11 +296,7 @@ class TestSeasonProjectionAPIEndpoint:
         assert resp.status_code == 200
 
     def test_response_is_list(self, client):
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc:
             MockSvc.return_value.project.return_value = self._mock_result()
             resp = client.get(
                 "/api/v1/analysis/season-projection/FEB_LF2_2025_A",
@@ -311,11 +306,7 @@ class TestSeasonProjectionAPIEndpoint:
 
     def test_missing_season_uses_live_mode(self, client):
         """season is now optional — endpoint must not return 422 when omitted."""
-        with (
-            patch("src.api.deps.get_db") as mock_db,
-            patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc,
-        ):
-            mock_db.return_value = MagicMock()
+        with patch("src.services.season_projection_service.SeasonProjectionService") as MockSvc:
             MockSvc.return_value.project.return_value = []
             resp = client.get(
                 "/api/v1/analysis/season-projection/FEB_LF2_2025_A"
