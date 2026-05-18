@@ -16,10 +16,14 @@ from src.api.app import app
 # Fixtures
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client():
+    from src.api.deps import get_db
+    from unittest.mock import MagicMock
+    app.dependency_overrides[get_db] = lambda: MagicMock()
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
+    app.dependency_overrides.pop(get_db, None)
 
 
 # ---------------------------------------------------------------------------

@@ -14,10 +14,13 @@ _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.doc
 _PDF_MIME  = "application/pdf"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client():
+    from src.api.deps import get_db
+    app.dependency_overrides[get_db] = lambda: MagicMock()
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
+    app.dependency_overrides.pop(get_db, None)
 
 
 # ---------------------------------------------------------------------------
