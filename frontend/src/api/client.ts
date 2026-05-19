@@ -8,6 +8,10 @@
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 
+// Separate service for scraping — lighter Render instance with no ML deps loaded.
+// Falls back to the main API base so local dev works with a single backend.
+const SCRAPER_BASE = (import.meta.env.VITE_SCRAPER_BASE ?? import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
+
 function _fmtDetail(detail: unknown, status: number): string {
   if (Array.isArray(detail))
     return (detail as { msg?: string; loc?: unknown[] }[])
@@ -18,6 +22,28 @@ function _fmtDetail(detail: unknown, status: number): string {
       .join('; ')
   if (typeof detail === 'string') return detail
   return `HTTP ${status}`
+}
+
+async function scrapeGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${SCRAPER_BASE}${path}`)
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(_fmtDetail((body as { detail?: unknown }).detail, res.status))
+  }
+  return res.json() as Promise<T>
+}
+
+async function scrapePost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${SCRAPER_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}))
+    throw new Error(_fmtDetail((b as { detail?: unknown }).detail, res.status))
+  }
+  return res.json() as Promise<T>
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -672,26 +698,26 @@ export interface FbcylInitData {
 }
 
 export const getFebCompetitions = () =>
-  get<{ name: string; results_url: string }[]>('/scrape/feb/competitions')
+  scrapeGet<{ name: string; results_url: string }[]>('/scrape/feb/competitions')
 
 export const getFebSeasons = (url: string, year = '2025') =>
-  get<DropdownOption[]>(`/scrape/feb/seasons?url=${encodeURIComponent(url)}&year=${year}`)
+  scrapeGet<DropdownOption[]>(`/scrape/feb/seasons?url=${encodeURIComponent(url)}&year=${year}`)
 
 export const getFebGroups = (url: string, season: string, year = '2025') =>
-  get<DropdownOption[]>(
+  scrapeGet<DropdownOption[]>(
     `/scrape/feb/groups?url=${encodeURIComponent(url)}&season=${encodeURIComponent(season)}&year=${year}`,
   )
 
 export const getFbcylInit = () =>
-  get<FbcylInitData>('/scrape/fbcyl/init')
+  scrapeGet<FbcylInitData>('/scrape/fbcyl/init')
 
 export const getFbcylCategories = (season: string, gender = '', territory = '0') =>
-  get<DropdownOption[]>(
+  scrapeGet<DropdownOption[]>(
     `/scrape/fbcyl/categories?season=${encodeURIComponent(season)}&gender=${encodeURIComponent(gender)}&territory=${encodeURIComponent(territory)}`,
   )
 
 export const getFbcylCompetitions = (category: string, gender = '', territory = '0') =>
-  get<DropdownOption[]>(
+  scrapeGet<DropdownOption[]>(
     `/scrape/fbcyl/competitions?category=${encodeURIComponent(category)}&gender=${encodeURIComponent(gender)}&territory=${encodeURIComponent(territory)}`,
   )
 
@@ -733,10 +759,10 @@ export interface ScrapeJob {
 }
 
 export const postScrapeStart = (req: ScrapeRequest) =>
-  post<{ job_id: string }>('/scrape/start', req)
+  scrapePost<{ job_id: string }>('/scrape/start', req)
 
 export const getScrapeProgress = (jobId: string) =>
-  get<ScrapeJob>(`/scrape/progress/${encodeURIComponent(jobId)}`)
+  scrapeGet<ScrapeJob>(`/scrape/progress/${encodeURIComponent(jobId)}`)
 
 // ── Reports (binary downloads) ────────────────────────────────────────────────
 
