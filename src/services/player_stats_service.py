@@ -99,6 +99,7 @@ class PlayerStatsService:
         date_filter: Optional[Dict] = None,
         venue_filter: Optional[bool] = None,
         result_filter: Optional[str] = None,
+        team_filter: Optional[str] = None,
     ) -> List[Dict]:
         """Load aggregated player stats for a collection.
 
@@ -107,12 +108,14 @@ class PlayerStatsService:
             date_filter: Optional MongoDB date range dict.
             venue_filter: ``True`` = home only, ``False`` = away only.
             result_filter: ``"won"``, ``"lost"``, or ``None``.
+            team_filter: Optional team name to restrict results (server-side).
 
         Returns:
             List of player stat dicts (may be empty).
         """
         players = self._db.get_player_stats(
-            collection_name, date_filter, venue_filter, result_filter
+            collection_name, date_filter, venue_filter, result_filter,
+            team_filter=team_filter,
         ) or []
         if players:
             self._enrich_with_advanced_stats(collection_name, players)
@@ -145,17 +148,33 @@ class PlayerStatsService:
 
         # Collect unique team names
         unique_teams = {p.get('team_name') for p in players if p.get('team_name')}
+        if not unique_teams:
+            return players
 
-        # Fetch team/opponent context once per team
+        # Fetch ALL team/opponent context in exactly 2 calls (fixes N+1 pattern).
+        # Previously get_aggregated_team_stats was called once per unique team,
+        # each call executing a full aggregation pipeline.
+        try:
+            all_team_stats = {
+                t['team_name']: t
+                for t in (self._db.get_team_stats(collection_name) or [])
+                if t.get('team_name')
+            }
+            all_opp_stats = {
+                t['team_name']: t
+                for t in (self._db.get_opponent_stats(collection_name) or [])
+                if t.get('team_name')
+            }
+        except Exception:
+            all_team_stats = {}
+            all_opp_stats = {}
+
         team_context: Dict[str, Dict] = {}
         for team_name in unique_teams:
-            try:
-                ts = self._db.get_aggregated_team_stats(collection_name, team_name)
-                os_ = self._db.get_aggregated_opponent_stats(collection_name, team_name)
-                if ts and os_:
-                    team_context[team_name] = {'team_stats': ts, 'opp_stats': os_}
-            except Exception:
-                pass
+            ts = all_team_stats.get(team_name)
+            os_ = all_opp_stats.get(team_name)
+            if ts and os_:
+                team_context[team_name] = {'team_stats': ts, 'opp_stats': os_}
 
         _default_adv = {
             'usage': 0.0, 'orating': 0.0, 'drating': 0.0, 'net_rtg': 0.0,

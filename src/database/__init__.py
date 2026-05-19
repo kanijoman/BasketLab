@@ -53,9 +53,9 @@ class MongoDBHandler:
         """Get list of all unique team names in the collection."""
         return self.repository.get_all_teams(collection_name)
 
-    def get_player_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None, result_filter: str = None) -> list:
+    def get_player_stats(self, collection_name: str, date_filter: dict = None, venue_filter: bool = None, result_filter: str = None, team_filter: str = None) -> list:
         """Get aggregated player statistics."""
-        return self.repository.get_player_stats(collection_name, date_filter, venue_filter, result_filter)
+        return self.repository.get_player_stats(collection_name, date_filter, venue_filter, result_filter, team_filter=team_filter)
 
     def get_aggregated_team_stats(self, collection_name: str, team_name: str) -> dict:
         """Get aggregated team statistics for advanced calculations."""

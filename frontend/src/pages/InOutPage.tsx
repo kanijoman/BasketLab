@@ -9,6 +9,7 @@ import { ArrowLeftRight, Users } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import {
   getPlayerStats,
+  getTeamsInCollection,
   getInOutAnalysis,
   getPlayersTogether,
   type InOutStatBlock,
@@ -121,15 +122,18 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
 }
 
 function PlayerSelect({
-  label, value, onChange, players,
-}: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[] }) {
+  label, value, onChange, players, teams: teamsProp,
+}: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[]; teams?: string[] }) {
   const [nameFilter, setNameFilter] = useState('')
   const [teamFilter, setTeamFilter] = useState('')
 
-  const teams = useMemo(
+  const derivedTeams = useMemo(
     () => Array.from(new Set(players.map(p => (p.team_name ?? '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
     [players],
   )
+  // Prefer independent team list (from getTeamsInCollection) to decouple dropdown
+  // availability from full player load
+  const teams = teamsProp && teamsProp.length > 0 ? teamsProp : derivedTeams
 
   const filtered = useMemo(
     () => players.filter(p => {
@@ -193,6 +197,14 @@ export default function InOutPage() {
     select: rows => [...rows].sort((a, b) => a.player_name.localeCompare(b.player_name)),
   })
 
+  // Independent team list — available before player data loads
+  const { data: teamList = [] } = useQuery<string[]>({
+    queryKey: ['team-list', collection?.name],
+    queryFn:  () => getTeamsInCollection(collection!.name),
+    enabled:  Boolean(collection),
+    staleTime: 10 * 60_000,
+  })
+
   const { data: inout, isFetching: inoutLoading } = useQuery({
     queryKey: ['inout', collection?.name, p1],
     queryFn:  () => getInOutAnalysis(collection!.name, p1),
@@ -232,7 +244,7 @@ export default function InOutPage() {
         {tab === 'IN/OUT' && (
           <div className="space-y-4">
             <div className="card p-4 max-w-xl">
-              <PlayerSelect label="Jugador" value={p1} onChange={setP1} players={players} />
+              <PlayerSelect label="Jugador" value={p1} onChange={setP1} players={players} teams={teamList} />
             </div>
 
             {inoutLoading && (
@@ -285,8 +297,8 @@ export default function InOutPage() {
         {tab === 'Juntos' && (
           <div className="space-y-4">
             <div className="card p-4 grid grid-cols-2 gap-4 max-w-3xl">
-              <PlayerSelect label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} />
-              <PlayerSelect label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} />
+              <PlayerSelect label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
+              <PlayerSelect label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} teams={teamList} />
             </div>
 
             {togLoading && (

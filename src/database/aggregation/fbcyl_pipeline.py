@@ -536,7 +536,7 @@ class FBCYLPipelineBuilder:
         return FBCYLPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
 
     @staticmethod
-    def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
+    def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None, team_filter: str = None) -> List[Dict]:
         """
         Build aggregation pipeline for FBCYL player statistics.
 
@@ -699,6 +699,10 @@ class FBCYLPipelineBuilder:
 
         if match_conditions:
             pipeline.append({"$match": {"$and": match_conditions}})
+
+        # Apply team filter BEFORE player unwind (reduces docs processed)
+        if team_filter is not None:
+            pipeline.append({"$match": {"team_name": team_filter}})
 
         # Stage 4: Unwind players
         pipeline.append({

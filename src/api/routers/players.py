@@ -102,6 +102,7 @@ def get_player_stats(
     result: Optional[str] = Query(None, description="won | lost | null for all"),
     from_date: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
     to_date:   Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    team: Optional[str] = Query(None, description="Restrict to a single team name (server-side filter)"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Return aggregated per-player statistics for all players in *collection*.
@@ -112,6 +113,7 @@ def get_player_stats(
         result: Optional result filter — ``"won"`` or ``"lost"``.
         from_date: Optional start date (inclusive), format ``YYYY-MM-DD``.
         to_date: Optional end date (inclusive), format ``YYYY-MM-DD``.
+        team: Optional team name to restrict results (server-side, reduces memory).
 
     Returns:
         List of player stat dicts (one per player).
@@ -130,6 +132,7 @@ def get_player_stats(
         date_filter=date_filter,
         venue_filter=venue_filter,
         result_filter=result,
+        team_filter=team,
     )
 
 

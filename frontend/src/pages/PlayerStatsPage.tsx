@@ -14,7 +14,7 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { Users, ChevronDown, Info } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getPlayerStats, getPlayerConsistency, type PlayerStat, type TeamFilters, type ConsistencyMap } from '@/api/client'
+import { getPlayerStats, getTeamsInCollection, getPlayerConsistency, type PlayerStat, type TeamFilters, type ConsistencyMap } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
@@ -388,31 +388,42 @@ export default function PlayerStatsPage() {
     ['points_per_game', 'rebounds_per_game', 'assists_per_game'],
   )
 
+  // Independent team list — lightweight distinct() call, always available
+  const { data: teamList = [] } = useQuery({
+    queryKey: ['team-list', collection?.name],
+    queryFn:  () => getTeamsInCollection(collection!.name),
+    enabled:  Boolean(collection),
+    staleTime: 10 * 60_000,
+  })
+
   const apiFilters: TeamFilters = useMemo(() => ({
     venue:  filters.venue  || undefined,
     result: filters.result || undefined,
     from:   filters.dateFrom || undefined,
     to:     filters.dateTo   || undefined,
-  }), [filters])
+    team:   teamFilter || undefined,
+  }), [filters, teamFilter])
 
   // Season-baseline query (no date filter) — used for trend comparison
   const hasDateFilter = Boolean(filters.dateFrom)
   const baselineFilters: TeamFilters = useMemo(() => ({
     venue:  filters.venue  || undefined,
     result: filters.result || undefined,
-  }), [filters.venue, filters.result])
+    team:   teamFilter || undefined,
+  }), [filters.venue, filters.result, teamFilter])
 
   const { data: seasonPlayers = [] } = useQuery({
     queryKey:  ['player-stats-season', collection?.name, baselineFilters],
     queryFn:   () => getPlayerStats(collection!.name, baselineFilters),
-    enabled:   Boolean(collection) && hasDateFilter,
+    enabled:   Boolean(collection) && hasDateFilter && Boolean(teamFilter),
     staleTime: 10 * 60_000,
   })
 
+  // Player stats only load once a team is selected (team-first to avoid OOM)
   const { data: rawPlayers = [], isLoading } = useQuery({
     queryKey: ['player-stats', collection?.name, apiFilters],
     queryFn:  () => getPlayerStats(collection!.name, apiFilters),
-    enabled:  Boolean(collection),
+    enabled:  Boolean(collection) && Boolean(teamFilter),
     staleTime: 5 * 60_000,
   })
 
@@ -424,15 +435,8 @@ export default function PlayerStatsPage() {
   })
   const consistencyByPlayerId: ConsistencyMap | null = consistencyRaw ?? null
 
-  const teamOptions = useMemo(
-    () => [...new Set(rawPlayers.map(p => p.team_name))].sort(),
-    [rawPlayers],
-  )
-
-  const players = useMemo(
-    () => teamFilter ? rawPlayers.filter(p => p.team_name === teamFilter) : rawPlayers,
-    [rawPlayers, teamFilter],
-  )
+  // rawPlayers is already server-filtered by team; no client-side re-filter needed
+  const players = rawPlayers
 
   // Map player_id → full-season row for comparison
   const seasonById = useMemo(() => {
@@ -582,7 +586,7 @@ export default function PlayerStatsPage() {
               className="select pr-8 pl-3 py-1.5 text-sm appearance-none"
             >
               <option value="">Todos los equipos</option>
-              {teamOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              {teamList.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted pointer-events-none" />
           </div>
@@ -593,7 +597,16 @@ export default function PlayerStatsPage() {
           </span>
         </div>
 
+        {/* Prompt when no team selected */}
+        {!teamFilter && (
+          <div className="card p-8 flex flex-col items-center gap-2 text-center">
+            <Users className="w-8 h-8 text-ink-muted opacity-40" />
+            <p className="text-ink-secondary text-sm">Selecciona un equipo para ver las estadísticas de sus jugadores.</p>
+          </div>
+        )}
+
         {/* Tabs */}
+        {teamFilter && (
         <div className="flex gap-1 border-b border-surface-border">
           {TABS.map(({ id, label }) => (
             <button
@@ -610,9 +623,10 @@ export default function PlayerStatsPage() {
             </button>
           ))}
         </div>
+        )}
 
         {/* Projection methodology banner */}
-        {tab === 'projection' && (
+        {teamFilter && tab === 'projection' && (
           <div className="flex items-start gap-3 rounded-md bg-blue-950/40 border border-blue-800/50 px-4 py-3 text-sm text-blue-200">
             <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-400" />
             <div className="space-y-0.5">
@@ -626,6 +640,7 @@ export default function PlayerStatsPage() {
         )}
 
         {/* Table — clicking a row opens the player drawer */}
+        {teamFilter && (
         <DataTable
           columns={activeCols}
           data={players}
@@ -645,6 +660,7 @@ export default function PlayerStatsPage() {
           }}
           onRowClick={row => setSelected(row.original)}
         />
+        )}
 
         {/* Player detail drawer */}
         {selected && (
