@@ -6,13 +6,14 @@ from typing import List, Dict, Optional
 class PlayerStatsPipelineMixin:
     """Mixin providing player stats and FBCYL timeline pipeline builders."""
     @staticmethod
-    def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: Optional[str] = None) -> List[Dict]:
+    def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: Optional[str] = None, team_filter: Optional[str] = None) -> List[Dict]:
         """
         Build aggregation pipeline for player statistics across all matches.
 
         Args:
             date_filter: Optional date filter (e.g., {"$gte": datetime, "$lt": datetime})
             venue_filter: Optional venue filter (True=home, False=away, None=all)
+            team_filter: Optional team name — restricts to one team before player unwind
             result_filter: Optional result filter ('won' or 'lost')
 
         Returns:
@@ -91,6 +92,10 @@ class PlayerStatsPipelineMixin:
                 pipeline.append({"$match": {"won": True}})
             elif result_filter == 'lost':
                 pipeline.append({"$match": {"won": False}})
+
+        # Apply team filter BEFORE player unwind (reduces docs processed)
+        if team_filter is not None:
+            pipeline.append({"$match": {"BOXSCORE.TEAM.TOTAL.name": team_filter}})
 
         pipeline.extend([
             # Stage 3: Unwind players within each team

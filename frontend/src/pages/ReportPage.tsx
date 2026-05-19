@@ -10,11 +10,10 @@ import { FileText, Download, CalendarDays } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import {
-  getPlayerStats,
+  getTeamsInCollection,
   postWeeklyReport,
   getWeeklyReportProgress,
   downloadWeeklyReport,
-  type PlayerStat,
   type WeeklyReportProgress,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
@@ -69,16 +68,12 @@ export default function ReportPage() {
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyReportProgress | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const { data: players = [] } = useQuery<PlayerStat[]>({
-    queryKey: ['player-list', collection?.name],
-    queryFn:  () => getPlayerStats(collection!.name),
+  const { data: teams = [] } = useQuery<string[]>({
+    queryKey: ['team-list', collection?.name],
+    queryFn:  () => getTeamsInCollection(collection!.name),
     enabled:  Boolean(collection),
-    staleTime: 5 * 60_000,
-    select: rows => [...rows].sort((a, b) => a.player_name.localeCompare(b.player_name)),
+    staleTime: 10 * 60_000,
   })
-
-  // Unique sorted team list from player stats
-  const teams = [...new Set(players.map(p => p.team_name))].sort()
 
   const col = collection?.name ?? ''
 

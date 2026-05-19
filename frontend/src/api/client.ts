@@ -94,6 +94,7 @@ export interface TeamFilters {
   result?: 'won' | 'lost'
   from?: string
   to?: string
+  team?: string
 }
 
 function buildTeamQs(params?: TeamFilters): string {
@@ -163,6 +164,7 @@ export const getPlayerStats = (collection: string, params?: TeamFilters) => {
   if (params?.result) qs.set('result', params.result)
   if (params?.from)   qs.set('from_date', params.from)
   if (params?.to)     qs.set('to_date', params.to)
+  if (params?.team)   qs.set('team', params.team)
   const query = qs.toString() ? `?${qs}` : ''
   return get<PlayerStat[]>(`/players/${encodeURIComponent(collection)}${query}`)
 }

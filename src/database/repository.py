@@ -309,7 +309,7 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
         except PyMongoError as e:
             return []
 
-    def get_player_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
+    def get_player_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None, team_filter: str = None) -> List[Dict]:
         """
         Get aggregated player statistics from all matches in the collection.
 
@@ -325,6 +325,7 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
             date_filter: Optional MongoDB date filter dict with datetime object
             venue_filter: Optional boolean to filter by venue (True=home, False=away, None=all)
             result_filter: Optional string to filter by result ('won', 'lost', None=all)
+            team_filter: Optional team name to restrict to a single team before player unwind
 
         Returns:
             List of player statistics dictionaries
@@ -339,9 +340,9 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
             is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
-                pipeline = FBCYLPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter)
+                pipeline = FBCYLPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter, team_filter=team_filter)
             else:
-                pipeline = AggregationPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter)
+                pipeline = AggregationPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter, team_filter=team_filter)
 
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
