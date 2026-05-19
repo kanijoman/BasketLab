@@ -1,4 +1,4 @@
 """Router package for BasketLab API."""
-from . import collections, teams, players, lineups, scrape, shots, possessions, ai, reports
+# Intentionally empty — each app imports only the routers it needs.
+# Avoids loading all routers (and their heavy transitive deps) at package import time.
 
-__all__ = ["collections", "teams", "players", "lineups", "scrape", "shots", "possessions", "ai", "reports"]

@@ -12,6 +12,8 @@ restart — acceptable for a PoC.  For production, replace with Redis/Celery.
 
 from __future__ import annotations
 
+import gc
+import os
 import uuid as _uuid
 from typing import Any, Dict, List, Optional
 
@@ -19,6 +21,24 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Production guard — scraping is memory-intensive and disabled on free-tier
+# cloud deployments.  Set DISABLE_SCRAPING=1 to block all ingestion endpoints
+# while still allowing read-only analytics.
+# ---------------------------------------------------------------------------
+_SCRAPING_DISABLED = os.getenv("DISABLE_SCRAPING", "0") == "1"
+
+def _require_scraping() -> None:
+    if _SCRAPING_DISABLED:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "El scraping está deshabilitado en este servidor. "
+                "Ejecuta la descarga localmente con `python run_api.py` "
+                "y sube los datos directamente a MongoDB Atlas."
+            ),
+        )
 
 # ---------------------------------------------------------------------------
 # In-process job store
@@ -336,6 +356,8 @@ def _run_feb_scrape(job_id: str, params: FEBScrapeParams) -> None:
 
         for code in match_codes:
             _store_feb_match(job, db, scraper, session, collection_name, code)
+            if job["done"] % 10 == 0:
+                gc.collect()
 
         job["status"] = "done"
         job["current_match"] = None
@@ -403,6 +425,8 @@ def _run_fbcyl_scrape(job_id: str, params: FBCYLScrapeParams) -> None:
 
         for uuid in match_uuids:
             _store_fbcyl_match(job, db, scraper, collection_name, uuid, league_ctx)
+            if job["done"] % 10 == 0:
+                gc.collect()
 
         job["status"] = "done"
         job["current_match"] = None

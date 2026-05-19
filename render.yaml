@@ -37,3 +37,34 @@ services:
       #   sync: false
       # - key: GROQ_API_KEY
       #   sync: false
+
+      # Prevent OOM during scraping — the dedicated scraper service handles ingestion
+      - key: DISABLE_SCRAPING
+        value: "1"
+
+  # ---------------------------------------------------------------------------
+  # Scraper service — minimal app (scrape + collections only, no ML deps loaded)
+  # Runs on a separate Render instance to keep RAM usage low during ingestion.
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: basketlab-scraper
+    runtime: python
+    region: frankfurt
+    plan: free
+
+    buildCommand: pip install -r requirements.txt
+
+    startCommand: python run_scraper.py
+
+    healthCheckPath: /docs
+
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+
+      - key: MONGODB_CONNECTION_STRING
+        sync: false   # must be set manually in Render dashboard
+
+      - key: ALLOWED_ORIGINS
+        sync: false   # set to Vercel URL after first deploy
+
