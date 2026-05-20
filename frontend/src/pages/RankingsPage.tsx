@@ -260,10 +260,10 @@ export default function RankingsPage() {
         ) : (
           <div className="space-y-1.5">
             {filteredRanked.slice(0, 30).map((player, idx) => {
-              // Composite key: player_id may be null/0 for some players — fall back to
+              // Composite key: player_id may be empty/null for some entries — fall back to
               // name+team to avoid React key collisions that cause DOM nodes to persist.
-              const rowKey    = player.player_id != null && player.player_id !== 0
-                ? String(player.player_id)
+              const rowKey    = player.player_id
+                ? player.player_id
                 : `${player.player_name}__${player.team_name}__${idx}`
               const rank      = globalRankMap.get(player.player_id) ?? 0
               const val       = (player[stat.key] as number) ?? 0
