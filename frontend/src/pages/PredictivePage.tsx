@@ -25,7 +25,7 @@ import {
   type ElasticityModelMeta,
   type ElasticityPrediction, type MonteCarloResult,
   type HistoricalTeamEntry, type BacktestingResult, type GamePredictionResult,
-  type PlayerPredictionResult, type SeasonProjectionEntry,
+  type PlayerPredictionResult, type SeasonProjectionEntry, type TeamEntry,
 } from '@/api/client'
 import { STAT_LABELS } from '@/lib/statLabels'
 import { Loader2, Dices, Target, User, Trophy } from 'lucide-react'
@@ -306,8 +306,8 @@ export function ElasticityTab() {
                       onChange={e => setLiveTeam(e.target.value)}
                     >
                       <option value="">Seleccionar equipo…</option>
-                      {(liveTeams as string[]).map(name => (
-                        <option key={name} value={name}>{name}</option>
+                      {liveTeams.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                     </select>
                   )
@@ -450,7 +450,7 @@ function MonteCarloTab() {
       ? {
           ...commonParams,
           live_collection: collection!.name,
-          live_team_name:  liveTeam,
+          live_team_id:    liveTeam,
           live_is_fbcyl:   isLiveFbcyl,
         }
       : { ...commonParams, season }
@@ -518,7 +518,7 @@ function MonteCarloTab() {
                       onChange={e => setLiveTeam(e.target.value)}
                     >
                       <option value="">Seleccionar equipo…</option>
-                      {liveTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                      {liveTeams.map((t: TeamEntry) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   )
               }
@@ -643,7 +643,7 @@ function GamePredictionTab() {
   const [season, setSeason]       = useState('')
   const [teamId, setTeamId]       = useState('')
 
-  const [liveTeams, setLiveTeams] = useState<string[]>([])
+  const [liveTeams, setLiveTeams] = useState<TeamEntry[]>([])
   const [liveTeam, setLiveTeam]   = useState('')
 
   const [isHome, setIsHome]       = useState(true)
@@ -671,7 +671,7 @@ function GamePredictionTab() {
     if (mode !== 'live' || !collection) return
     getLiveTeamNames(collection.name).then(t => {
       setLiveTeams(t)
-      if (t.length) setLiveTeam(t[0])
+      if (t.length) setLiveTeam(t[0].id)
     }).catch(() => {})
   }, [mode, collection])
 
@@ -684,7 +684,7 @@ function GamePredictionTab() {
       const r = await postGamePrediction(
         mode === 'live' ? '_live' : teamId,
         mode === 'live'
-          ? { live_collection: collection!.name, live_team_name: liveTeam, live_is_fbcyl: isLiveFbcyl, is_home: isHome, opp_net_rtg: Number.isFinite(opp) ? opp : 0 }
+          ? { live_collection: collection!.name, live_team_id: liveTeam, live_is_fbcyl: isLiveFbcyl, is_home: isHome, opp_net_rtg: Number.isFinite(opp) ? opp : 0 }
           : { season, is_home: isHome, opp_net_rtg: Number.isFinite(opp) ? opp : 0 },
       )
       setResult(r)
@@ -753,7 +753,7 @@ function GamePredictionTab() {
             {collection
               ? (
                 <select className={inputCls + ' w-64'} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
-                  {liveTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                  {(liveTeams as TeamEntry[]).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               )
               : <p className="text-xs text-slate-500 italic">Selecciona una colección primero</p>
@@ -878,7 +878,7 @@ export function ValidationTab() {
   const [teamId, setTeamId]     = useState('')
 
   // live mode state
-  const [liveTeams, setLiveTeams] = useState<string[]>([])
+  const [liveTeams, setLiveTeams] = useState<TeamEntry[]>([])
   const [liveTeam, setLiveTeam]   = useState('')
 
   const [result, setResult]     = useState<BacktestingResult | null>(null)
@@ -908,7 +908,7 @@ export function ValidationTab() {
     if (mode !== 'live' || !collection?.name) return
     getLiveTeamNames(collection.name).then(names => {
       setLiveTeams(names)
-      if (names.length) setLiveTeam(names[0])
+      if (names.length) setLiveTeam(names[0].id)
     }).catch(() => {})
   }, [mode, collection?.name])
 
@@ -988,7 +988,7 @@ export function ValidationTab() {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400">Equipo — {collection?.name ?? '…'}</label>
             <select className={inputCls} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
-              {liveTeams.map(t => <option key={t} value={t}>{t}</option>)}
+              {liveTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
         )}

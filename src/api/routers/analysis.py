@@ -153,8 +153,8 @@ def predict_next_game(
     live_collection: Optional[str] = Query(
         None, description="Colección live para modo temporada actual (e.g. FEB_2526_Liga)"
     ),
-    live_team_name: Optional[str] = Query(
-        None, description="Nombre exacto del equipo en la colección live"
+    live_team_id: Optional[str] = Query(
+        None, description="ID estable del equipo en la colección live"
     ),
     live_is_fbcyl: Optional[bool] = Query(
         False, description="True si la colección live es formato FBCYL"
@@ -165,17 +165,22 @@ def predict_next_game(
 
     Supports two modes:
     - **Histórico**: provide ``team_id`` (URL) + ``season`` query param.
-    - **Live** (temporada actual): provide ``live_collection`` + ``live_team_name``.
+    - **Live** (temporada actual): provide ``live_collection`` + ``live_team_id``.
       The ``team_id`` URL param is ignored in live mode.
     """
     from src.services.elasticity_service import ElasticityService
+    from src.utils.team_utils import resolve_team_by_id
     leagues_list = [leagues] if leagues else None
     comps_list   = [competitions] if competitions else None
     svc = ElasticityService(db.connection)
 
     if live_collection:
-        if not live_team_name:
-            raise HTTPException(status_code=422, detail="live_team_name es obligatorio en modo live")
+        if not live_team_id:
+            raise HTTPException(status_code=422, detail="live_team_id es obligatorio en modo live")
+        # Resolve display name from stable ID
+        live_coll = db.connection.get_collection(live_collection)
+        team_info = resolve_team_by_id(live_coll, live_team_id, bool(live_is_fbcyl))
+        live_team_name = team_info["name"] if team_info else live_team_id
         result = svc.predict_next_game_live(
             live_collection=live_collection,
             team_name=live_team_name,
@@ -208,7 +213,7 @@ class MonteCarloRequest(BaseModel):
     season: Optional[str] = Field(None, description='Temporada normalizada, e.g. "2024-25". Requerida en modo histÃ³rico.')
     # Live mode (reads current season from the active collection)
     live_collection: Optional[str] = Field(None, description="Nombre de la colecciÃ³n activa (modo temporada actual)")
-    live_team_name: Optional[str] = Field(None, description="Nombre exacto del equipo en la colecciÃ³n activa")
+    live_team_id: Optional[str] = Field(None, description="ID estable del equipo en la colección activa")
     live_is_fbcyl: bool = Field(False, description="True si la colecciÃ³n es formato FBCYL")
     # Shared simulation params
     n_games: int = Field(5, ge=1, le=10, description="Partidos a proyectar")
@@ -238,7 +243,7 @@ def run_monte_carlo(
 
     Supports two modes:
     - **HistÃ³rico**: supply ``season``. Uses HISTORICAL collection (trained data).
-    - **Temporada actual**: supply ``live_collection``, ``live_team_name``, ``live_is_fbcyl``.
+    - **Temporada actual**: supply ``live_collection``, ``live_team_id``, ``live_is_fbcyl``.
       Normalises live docs on-the-fly â€” does not affect elasticity training.
 
     Args:
@@ -252,11 +257,15 @@ def run_monte_carlo(
     svc = MonteCarloService(db.connection)
 
     if req.live_collection:
-        if not req.live_team_name:
-            raise HTTPException(status_code=422, detail="live_team_name es obligatorio en modo temporada actual.")
+        if not req.live_team_id:
+            raise HTTPException(status_code=422, detail="live_team_id es obligatorio en modo temporada actual.")
+        from src.utils.team_utils import resolve_team_by_id
+        live_coll = db.connection.get_collection(req.live_collection)
+        team_info = resolve_team_by_id(live_coll, req.live_team_id, req.live_is_fbcyl)
+        live_team_name = team_info["name"] if team_info else req.live_team_id
         result = svc.simulate_from_live(
             live_collection=req.live_collection,
-            team_name=req.live_team_name,
+            team_name=live_team_name,
             is_fbcyl=req.live_is_fbcyl,
             n_games=req.n_games,
             n_simulations=req.n_simulations,

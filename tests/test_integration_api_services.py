@@ -41,6 +41,7 @@ def _make_mock_db(**kwargs) -> MagicMock:
     handler.get_league_stats.return_value = kwargs.get("league_stats", {})
     handler.get_player_stats.return_value = kwargs.get("player_stats", [])
     handler.get_all_teams.return_value = kwargs.get("all_teams", [])
+    handler.get_teams_with_ids.return_value = kwargs.get("teams_with_ids", [])
     handler.get_opponent_stats.return_value = []
     handler.get_aggregated_team_stats.return_value = {}
     handler.get_aggregated_opponent_stats.return_value = {}
@@ -159,7 +160,7 @@ class TestAIStreamEndpoint:
         with patch("src.ai.config.AnalysisConfig.has_api_key", return_value=False):
             r = client_with_team.get(
                 f"{V1}/ai/analyze/stream",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC",
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC",
                         "provider": "groq"},
             )
         # SSE returns 200 but body contains error data
@@ -170,7 +171,7 @@ class TestAIStreamEndpoint:
         with patch("src.ai.config.AnalysisConfig.has_api_key", return_value=False):
             r = client_with_team.get(
                 f"{V1}/ai/analyze/stream",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 200
 
@@ -178,7 +179,7 @@ class TestAIStreamEndpoint:
         with patch("src.ai.config.AnalysisConfig.has_api_key", return_value=False):
             r = client_with_team.get(
                 f"{V1}/ai/analyze/stream",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert "text/event-stream" in r.headers.get("content-type", "")
 
@@ -199,7 +200,7 @@ class TestAIIndividualScoutingDocx:
             MockBuilder.return_value.build.return_value = None
             r = client.get(
                 f"{V1}/ai/individual-scouting/docx",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 404
 
@@ -209,7 +210,7 @@ class TestAIIndividualScoutingDocx:
             MockBuilder.return_value.build.return_value = docx_fake
             r = client.get(
                 f"{V1}/ai/individual-scouting/docx",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 200
 
@@ -219,7 +220,7 @@ class TestAIIndividualScoutingDocx:
             MockBuilder.return_value.build.return_value = docx_fake
             r = client.get(
                 f"{V1}/ai/individual-scouting/docx",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert "wordprocessingml" in r.headers.get("content-type", "")
 
@@ -228,7 +229,7 @@ class TestAIIndividualScoutingDocx:
             MockBuilder.return_value.build.side_effect = RuntimeError("Build failed")
             r = client.get(
                 f"{V1}/ai/individual-scouting/docx",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 500
 
@@ -238,7 +239,7 @@ class TestAIIndividualScoutingDocx:
             MockBuilder.return_value.build.return_value = docx_fake
             r = client.get(
                 f"{V1}/ai/individual-scouting/docx",
-                params={"collection": "FEB_LF2_2025", "team": "Alpha FC"},
+                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         cd = r.headers.get("content-disposition", "")
         assert "Scouting_" in cd

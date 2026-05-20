@@ -343,7 +343,7 @@ class TestGamePredictionAPIEndpoint:
                 "/api/v1/analysis/game-prediction/_live",
                 json={
                     "live_collection": "FBCYL_test",
-                    "live_team_name":  "Equipo A",
+                    "live_team_id":    "Equipo A",
                     "live_is_fbcyl":   True,
                     "is_home":         True,
                     "opp_net_rtg":     1.5,

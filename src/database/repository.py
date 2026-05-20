@@ -309,6 +309,51 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
         except PyMongoError as e:
             return []
 
+    def get_teams_with_ids(self, collection_name: str) -> List[Dict]:
+        """Return a deduplicated list of teams as ``{"id": str, "name": str}`` dicts.
+
+        Uses an aggregation pipeline that groups by the stable team ID, so a team
+        that changed sponsor mid-season appears only once with its most-recent name.
+        Supports both FEB (``HEADER.TEAM.id``) and FBCYL (``stats.teams.teamIdExtern``).
+
+        Args:
+            collection_name: MongoDB collection name.
+
+        Returns:
+            Sorted list of ``{"id": str, "name": str}`` dicts, or ``[]`` on error.
+        """
+        if not self.connection.is_connected():
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            is_fbcyl = _is_fbcyl(collection_name)
+
+            if is_fbcyl:
+                pipeline = [
+                    {"$unwind": "$stats.teams"},
+                    {"$group": {
+                        "_id": "$stats.teams.teamIdExtern",
+                        "name": {"$last": "$stats.teams.name"},
+                    }},
+                    {"$project": {"_id": 0, "id": {"$toString": "$_id"}, "name": 1}},
+                    {"$sort": {"name": 1}},
+                ]
+            else:
+                pipeline = [
+                    {"$unwind": "$HEADER.TEAM"},
+                    {"$group": {
+                        "_id": "$HEADER.TEAM.id",
+                        "name": {"$last": "$HEADER.TEAM.name"},
+                    }},
+                    {"$project": {"_id": 0, "id": {"$toString": "$_id"}, "name": 1}},
+                    {"$sort": {"name": 1}},
+                ]
+
+            return list(collection.aggregate(pipeline))
+        except Exception:
+            return []
+
     def get_player_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None, team_filter: str = None) -> List[Dict]:
         """
         Get aggregated player statistics from all matches in the collection.

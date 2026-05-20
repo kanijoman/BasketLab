@@ -349,7 +349,7 @@ class TestExtractShotsFbcylE2E:
         mock_db = MagicMock()
         mock_db.connection.get_collection.return_value = mock_coll
 
-        shots, player_map, is_fbcyl = _extract_shots(mock_db, "FBCYL_SE_2025", "Alpha FC")
+        shots, player_map, is_fbcyl = _extract_shots(mock_db, "FBCYL_SE_2025", "T001")
 
         # 2 made 2s + 1 missed 2 + 1 made 3 = 4 shots
         assert len(shots) == 4
@@ -364,7 +364,7 @@ class TestExtractShotsFbcylE2E:
         mock_db = MagicMock()
         mock_db.connection.get_collection.return_value = mock_coll
 
-        shots, _, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "Alpha FC")
+        shots, _, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "T001")
         made = [s for s in shots if s["m"] == 1]
         missed = [s for s in shots if s["m"] == 0]
         assert len(made) == 3   # 2 made 2s + 1 made 3
@@ -379,7 +379,7 @@ class TestExtractShotsFbcylE2E:
         mock_db = MagicMock()
         mock_db.connection.get_collection.return_value = mock_coll
 
-        _, player_map, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "Alpha FC")
+        _, player_map, _ = _extract_shots(mock_db, "FBCYL_SE_2025", "T001")
         assert "player-uuid-1" in player_map
 
     def test_extract_shots_empty_collection_returns_empty(self):

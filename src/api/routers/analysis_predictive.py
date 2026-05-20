@@ -47,18 +47,22 @@ def get_backtesting(
 
 
 @router.get(
-    "/backtesting-live/{collection}/{team_name}",
+    "/backtesting-live/{collection}/{team_id}",
     summary="Validación walk-forward en temporada actual (sin HISTORICAL)",
 )
 def get_backtesting_live(
     collection: str,
-    team_name: str,
+    team_id: str,
     is_fbcyl: bool = Query(False, description="True si la colección es formato FBCYL"),
     db=Depends(get_db),
 ) -> Dict[str, Any]:
     """Run walk-forward backtesting on current-season live data."""
     from src.services.backtesting_service import BacktestingService
+    from src.utils.team_utils import resolve_team_by_id
     svc = BacktestingService(db.connection)
+    coll = db.connection.get_collection(collection)
+    team_info = resolve_team_by_id(coll, team_id, is_fbcyl)
+    team_name = team_info["name"] if team_info else team_id
     return svc.run_backtest_live(collection, team_name, is_fbcyl)
 
 
@@ -71,7 +75,7 @@ class GamePredictionRequest(BaseModel):
     is_home:         bool                 = Field(..., description="¿El equipo juega en casa?")
     opp_net_rtg:     float                = Field(0.0, description="Net rating del rival en la temporada")
     live_collection: Optional[str]        = Field(None, description="Nombre de la colección en vivo (modo temporada actual)")
-    live_team_name:  Optional[str]        = Field(None, description="Nombre del equipo en la colección en vivo")
+    live_team_id:    Optional[str]        = Field(None, description="ID estable del equipo en la colección en vivo")
     live_is_fbcyl:   bool                 = Field(False, description="True si la colección en vivo es formato FBCYL")
     leagues:         Optional[List[str]]  = None
     competitions:    Optional[List[str]]  = None
@@ -91,10 +95,14 @@ def predict_game(
     svc = GamePredictionService(db.connection)
 
     # Live mode: use current-season collection directly
-    if req.live_collection and req.live_team_name:
+    if req.live_collection and req.live_team_id:
+        from src.utils.team_utils import resolve_team_by_id
+        live_coll = db.connection.get_collection(req.live_collection)
+        team_info = resolve_team_by_id(live_coll, req.live_team_id, req.live_is_fbcyl)
+        live_team_name = team_info["name"] if team_info else req.live_team_id
         result = svc.predict_live(
             live_collection=req.live_collection,
-            live_team_name=req.live_team_name,
+            live_team_name=live_team_name,
             is_fbcyl=req.live_is_fbcyl,
             is_home=req.is_home,
             opp_net_rtg=req.opp_net_rtg,
@@ -108,7 +116,7 @@ def predict_game(
             competitions=req.competitions,
         )
     else:
-        raise HTTPException(status_code=422, detail="Debes indicar 'season' (modo histórico) o 'live_collection' + 'live_team_name' (modo actual)")
+        raise HTTPException(status_code=422, detail="Debes indicar 'season' (modo hist\u00f3rico) o 'live_collection' + 'live_team_id' (modo actual)")
 
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])

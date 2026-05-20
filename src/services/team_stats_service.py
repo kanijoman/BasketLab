@@ -138,6 +138,17 @@ class TeamStatsService:
         """
         return self._db.get_all_teams(collection_name) or []
 
+    def get_teams_with_ids(self, collection_name: str) -> List[Dict]:
+        """Return deduplicated [{id, name}] dicts — sponsor-change safe.
+
+        Args:
+            collection_name: MongoDB collection name.
+
+        Returns:
+            Sorted list of ``{"id": str, "name": str}`` dicts (may be empty).
+        """
+        return self._db.get_teams_with_ids(collection_name) or []
+
     def get_consistency(self, collection_name: str) -> Dict[str, Dict[str, Any]]:
         """Compute intra-team per-game variability (std dev + CV) for key stats.
 

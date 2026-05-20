@@ -70,6 +70,12 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 // ── Collections ──────────────────────────────────────────────────────────────
 
+/** Stable team entry — ID survives sponsor renames. */
+export interface TeamEntry {
+  id: string
+  name: string
+}
+
 export const getTeamsInCollection = (collection: string) =>
   get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`)
 
@@ -139,12 +145,12 @@ export const getPlayerConsistency = (collection: string) =>
 
 export const getTeamEvolution = (
   collection: string,
-  teamName: string,
+  teamId: string,
   stat: string,
   window = 5,
 ) =>
   get<EvolutionPoint[]>(
-    `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamName)}?stat=${encodeURIComponent(stat)}&window=${window}`,
+    `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamId)}?stat=${encodeURIComponent(stat)}&window=${window}`,
   )
 
 export const getCompetitionEvolution = (
@@ -247,22 +253,22 @@ export const getLineupAnalysis = (
 
 export const getShotZones = (
   collection: string,
-  params: { team?: string; player?: string },
+  params: { team_id?: string; player?: string },
 ) => {
   const qs = new URLSearchParams()
-  if (params.team)   qs.set('team', params.team)
-  if (params.player) qs.set('player', params.player)
+  if (params.team_id) qs.set('team_id', params.team_id)
+  if (params.player)  qs.set('player', params.player)
   return get<ShotZoneData[]>(`/shots/${encodeURIComponent(collection)}?${qs}`)
 }
 
 export const getShotRaw = (
   collection: string,
-  params: { team?: string; player?: string; limit?: number },
+  params: { team_id?: string; player?: string; limit?: number },
 ) => {
   const qs = new URLSearchParams()
-  if (params.team)   qs.set('team', params.team)
-  if (params.player) qs.set('player', params.player)
-  if (params.limit)  qs.set('limit', String(params.limit))
+  if (params.team_id) qs.set('team_id', params.team_id)
+  if (params.player)  qs.set('player', params.player)
+  if (params.limit)   qs.set('limit', String(params.limit))
   return get<ShotRawData[]>(`/shots/${encodeURIComponent(collection)}/raw?${qs}`)
 }
 
@@ -277,7 +283,7 @@ export const getPossessionStats = (collection: string, params?: TeamFilters) =>
 
 export interface AIAnalysisRequest {
   collection: string
-  team: string
+  team_id: string
   analysis_type: 'own' | 'scouting' | 'individual'
   opponent_team?: string
   provider: 'gemini' | 'openai' | 'groq'
@@ -295,12 +301,12 @@ export const getAIAnalysisStreamUrl = (req: AIAnalysisRequest): string =>
 /** Download the individual scouting DOCX for an entire team. */
 export const downloadIndividualScoutingDocx = async (
   collection: string,
-  team: string,
+  teamId: string,
   includeAiNotes = true,
 ): Promise<Blob> => {
   const params = new URLSearchParams({
     collection,
-    team,
+    team_id: teamId,
     include_ai_notes: String(includeAiNotes),
   })
   const res = await fetch(`${BASE}/ai/individual-scouting/docx?${params}`)
@@ -961,7 +967,7 @@ export const getElasticityPredict = (
 
 export const getElasticityPredictLive = (
   liveCollection: string,
-  liveTeamName: string,
+  liveTeamId: string,
   liveIsFbcyl: boolean,
   isHome?: boolean,
   oppNetRtg?: number,
@@ -970,7 +976,7 @@ export const getElasticityPredictLive = (
 ) => {
   const qs = new URLSearchParams({
     live_collection: liveCollection,
-    live_team_name: liveTeamName,
+    live_team_id: liveTeamId,
     live_is_fbcyl: String(liveIsFbcyl),
   })
   if (isHome !== undefined) qs.set('is_home', String(isHome))
@@ -987,7 +993,7 @@ export interface MonteCarloRequest {
   season?: string
   // Live mode (current season)
   live_collection?: string
-  live_team_name?: string
+  live_team_id?: string
   live_is_fbcyl?: boolean
   // Shared
   n_games?: number
@@ -999,7 +1005,7 @@ export interface MonteCarloRequest {
 }
 
 export const getLiveTeamNames = (collection: string) =>
-  get<string[]>(`/teams/${encodeURIComponent(collection)}/teams`)
+  get<TeamEntry[]>(`/teams/${encodeURIComponent(collection)}/teams`)
 export interface SimulatedGameStat {
   mean:    number
   std:     number
@@ -1070,12 +1076,12 @@ export const getBacktesting = (
 
 export const getBacktestingLive = (
   collection: string,
-  teamName:   string,
+  teamId:     string,
   isFbcyl:    boolean,
 ) => {
   const params = new URLSearchParams({ is_fbcyl: String(isFbcyl) })
   return get<BacktestingResult>(
-    `/analysis/backtesting-live/${encodeURIComponent(collection)}/${encodeURIComponent(teamName)}?${params}`,
+    `/analysis/backtesting-live/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?${params}`,
   )
 }
 
@@ -1086,7 +1092,7 @@ export interface GamePredictionRequest {
   is_home:          boolean
   opp_net_rtg?:     number
   live_collection?: string
-  live_team_name?:  string
+  live_team_id?:    string
   live_is_fbcyl?:   boolean
   leagues?:         string[]
   competitions?:    string[]

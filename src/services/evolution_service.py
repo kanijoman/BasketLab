@@ -56,7 +56,7 @@ class EvolutionService:
     def get_team_evolution(
         self,
         collection_name: str,
-        team_name: str,
+        team_id: str,
         stat: str = "points",
         rolling_window: int = 5,
     ) -> List[Dict[str, Any]]:
@@ -64,7 +64,8 @@ class EvolutionService:
 
         Args:
             collection_name: MongoDB collection name.
-            team_name: Exact team name.
+            team_id: Stable team ID (``HEADER.TEAM.id`` for FEB,
+                ``stats.teams.teamIdExtern`` for FBCYL).
             stat: One of the keys in ``EVOLUTION_STAT_KEYS``.
             rolling_window: Window size in games for the rolling average.
 
@@ -75,7 +76,7 @@ class EvolutionService:
         is_fbcyl = _is_fbcyl(collection_name)
         try:
             coll = self._db.connection.get_collection(collection_name)
-            rows = self._evolution_fbcyl(coll, team_name) if is_fbcyl else self._evolution_feb(coll, team_name)
+            rows = self._evolution_fbcyl(coll, team_id) if is_fbcyl else self._evolution_feb(coll, team_id)
         except Exception:
             return []
 
@@ -132,14 +133,14 @@ class EvolutionService:
         """
         is_fbcyl = _is_fbcyl(collection_name)
         try:
-            all_teams = self._db.get_all_teams(collection_name) or []
+            all_teams = self._db.get_teams_with_ids(collection_name) or []
             if not all_teams:
                 return []
             coll = self._db.connection.get_collection(collection_name)
             if is_fbcyl:
-                team_rows = [self._evolution_fbcyl(coll, t) for t in all_teams]
+                team_rows = [self._evolution_fbcyl(coll, t["id"]) for t in all_teams]
             else:
-                team_rows = [self._evolution_feb(coll, t) for t in all_teams]
+                team_rows = [self._evolution_feb(coll, t["id"]) for t in all_teams]
         except Exception:
             return []
 
@@ -193,7 +194,7 @@ class EvolutionService:
     # FEB pipeline — all raw counting fields projected per game
     # ------------------------------------------------------------------
 
-    def _evolution_feb(self, coll, team_name: str) -> List[Dict]:
+    def _evolution_feb(self, coll, team_id: str) -> List[Dict]:
         """Return per-game raw stat rows for a FEB team.
 
         Each row contains all counting fields needed to compute any supported
@@ -216,8 +217,8 @@ class EvolutionService:
                     }
                 }
             },
-            # Early filter before expensive field additions
-            {"$match": {"HEADER.TEAM.name": team_name}},
+            # Early filter: only games involving this team (indexed)
+            {"$match": {"HEADER.TEAM.id": team_id}},
             # Pre-capture all team_0_* / team_1_* counting stats + localPoints/awayPoints
             mixin._add_match_level_fields(),
             # Capture opponent team name for display
@@ -228,7 +229,7 @@ class EvolutionService:
                 }
             },
             mixin._unwind_teams(),
-            {"$match": {"BOXSCORE.TEAM.name": team_name}},
+            {"$match": {"BOXSCORE.TEAM.TOTAL.id": team_id}},
             {
                 "$project": {
                     "game_date": {
@@ -321,8 +322,9 @@ class EvolutionService:
     # FBCYL pipeline — raw fields from stats.teams.data.*
     # ------------------------------------------------------------------
 
-    def _evolution_fbcyl(self, coll, team_name: str) -> List[Dict]:
+    def _evolution_fbcyl(self, coll, team_id: str) -> List[Dict]:
         """Return per-game raw stat rows for a FBCYL team."""
+        tid = int(team_id) if isinstance(team_id, str) and team_id.isdigit() else team_id
         pipeline = [
             {
                 "$addFields": {
@@ -339,9 +341,9 @@ class EvolutionService:
                     "t1_entry": {"$arrayElemAt": ["$stats.teams", 1]},
                 }
             },
-            {"$match": {"stats.teams.name": team_name}},
+            {"$match": {"stats.teams.teamIdExtern": tid}},
             {"$unwind": {"path": "$stats.teams", "includeArrayIndex": "teamIndex"}},
-            {"$match": {"stats.teams.name": team_name}},
+            {"$match": {"stats.teams.teamIdExtern": tid}},
             {
                 "$project": {
                     "game_date": {

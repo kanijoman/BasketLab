@@ -270,7 +270,7 @@ class TestPredictRouterDispatch:
                 "/analysis/elasticity/predict/_live",
                 params={
                     "live_collection": "FEB_2526_Liga",
-                    "live_team_name":  "Club Test",
+                    "live_team_id":    "Club Test",
                     "live_is_fbcyl":   "false",
                 },
             )

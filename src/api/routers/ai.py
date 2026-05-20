@@ -123,7 +123,7 @@ async def _stream_groq_openai(context: str, analysis_type: str, provider: str) -
 
 async def _sse_generator(
     collection: str,
-    team: str,
+    team_id: str,
     analysis_type: str,
     provider: str,
     include_recommendations: bool,
@@ -139,16 +139,26 @@ async def _sse_generator(
     try:
         from src.api.deps import _create_handler
         from src.services.team_stats_service import TeamStatsService
+        from src.utils.team_utils import resolve_team_by_id
+        from utils.collection_utils import is_fbcyl as _is_fbcyl
         db = _create_handler()
+        # Resolve display name from stable ID
+        coll = db.connection.get_collection(collection)
+        team_info = resolve_team_by_id(coll, team_id, _is_fbcyl(collection)) or {"name": team_id}
+        team_name = team_info["name"]
         svc_stats = db.get_team_stats(collection) or []
-        team_row = next((t for t in svc_stats if t.get("team_name") == team), {})
+        team_row = next(
+            (t for t in svc_stats if str(t.get("team_id", "")) == str(team_id)
+             or t.get("team_name") == team_name),
+            {},
+        )
         league_stats = db.get_league_stats(collection) or {}
 
         # Fetch consistency (CV) data; returns {} for FBCYL collections
         try:
             team_svc = TeamStatsService(db)
             consistency_raw = team_svc.get_consistency(collection) or {}
-            consistency = consistency_raw.get("own", {}).get(team, {})
+            consistency = consistency_raw.get("own", {}).get(team_name, {})
         except Exception:
             consistency = {}
 
@@ -158,7 +168,7 @@ async def _sse_generator(
             "consistency": consistency,
         }
         cb = ContextBuilder()
-        context = cb.build_team_context(team, stats_payload, include_recommendations, analysis_type)
+        context = cb.build_team_context(team_name, stats_payload, include_recommendations, analysis_type)
     except Exception as exc:
         yield {"data": json.dumps({"error": f"Error construyendo contexto: {exc}"})}
         return
@@ -185,7 +195,7 @@ async def _sse_generator(
 @router.get("/analyze/stream", summary="Stream AI team analysis via SSE")
 async def stream_team_analysis(
     collection: str,
-    team: str,
+    team_id: str,
     analysis_type: str = "own",
     provider: str = "groq",
     include_recommendations: bool = True,
@@ -194,7 +204,7 @@ async def stream_team_analysis(
 
     Args:
         collection: MongoDB collection name.
-        team: Exact team name as stored in the DB.
+        team_id: Stable team ID (``HEADER.TEAM.id`` for FEB, ``teamIdExtern`` for FBCYL).
         analysis_type: ``own`` (self-analysis), ``scouting`` (rival scouting),
             or ``individual`` (full roster scouting — see DOCX endpoint).
         provider: ``gemini``, ``openai``, or ``groq``.
@@ -209,7 +219,7 @@ async def stream_team_analysis(
     return EventSourceResponse(
         _sse_generator(
             collection=collection,
-            team=team,
+            team_id=team_id,
             analysis_type=analysis_type,
             provider=provider,
             include_recommendations=include_recommendations,
@@ -228,7 +238,7 @@ async def stream_team_analysis(
 )
 def download_individual_scouting_docx(
     collection: str,
-    team: str,
+    team_id: str,
     include_ai_notes: bool = True,
     db=Depends(get_db),
 ):
@@ -236,18 +246,26 @@ def download_individual_scouting_docx(
 
     Args:
         collection: MongoDB collection name.
-        team: Exact team name as stored in the DB.
+        team_id: Stable team ID (``HEADER.TEAM.id`` / ``teamIdExtern``).
         include_ai_notes: Whether to call the AI for brief per-player notes.
 
     Returns:
         Binary DOCX file as an attachment.
     """
+    from src.utils.team_utils import resolve_team_by_id
+    from utils.collection_utils import is_fbcyl as _is_fbcyl
+
+    # Resolve display name from stable ID
+    coll = db.connection.get_collection(collection)
+    team_info = resolve_team_by_id(coll, team_id, _is_fbcyl(collection))
+    team_name = team_info["name"] if team_info else team_id
+
     try:
         from src.services.individual_scouting_service import IndividualScoutingDocxBuilder
 
         builder = IndividualScoutingDocxBuilder(
             collection=collection,
-            team_name=team,
+            team_name=team_name,
             db=db,
             include_ai_notes=include_ai_notes,
         )
@@ -258,7 +276,7 @@ def download_individual_scouting_docx(
     if not docx_bytes:
         raise HTTPException(status_code=404, detail="No se encontraron jugadores para el equipo indicado.")
 
-    safe_team = "".join(c if c.isalnum() else "_" for c in team)
+    safe_team = "".join(c if c.isalnum() else "_" for c in team_name)
     filename = f"Scouting_{safe_team}.docx"
     return Response(
         content=docx_bytes,

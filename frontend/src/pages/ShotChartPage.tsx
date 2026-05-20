@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Target, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getShotZones, getShotRaw, getPlayerStats, type ShotZoneData, type PlayerStat, type ShotRawData } from '@/api/client'
+import { getShotZones, getShotRaw, getPlayerStats, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
 import ExportButton from '@/components/ui/ExportButton'
@@ -39,13 +39,16 @@ export default function ShotChartPage() {
   const isFbcyl = collection?.isFbcyl ?? false
 
   // Fetch team list for selector
-  const { data: teamList = [] } = useQuery<string[]>({
+  const { data: teamList = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', collection?.name],
     queryFn: () =>
       fetch(`/api/v1/teams/${encodeURIComponent(collection!.name)}/teams`).then(r => r.json()),
     enabled: Boolean(collection) && !isFbcyl,
     staleTime: 10 * 60_000,
   })
+
+  // Derive display name from selected team ID
+  const selectedTeamName = teamList.find(t => t.id === selectedTeam)?.name ?? ''
 
   // Load players whenever a team is selected (pre-caches for player mode)
   const { data: playerList = [] } = useQuery<PlayerStat[]>({
@@ -67,7 +70,7 @@ export default function ShotChartPage() {
     queryKey: ['shot-zones', collection?.name, viewMode, selectedTeam, selectedPlayer],
     queryFn: () =>
       viewMode === 'team'
-        ? getShotZones(collection!.name, { team: selectedTeam || undefined })
+        ? getShotZones(collection!.name, { team_id: selectedTeam || undefined })
         : getShotZones(collection!.name, { player: selectedPlayer || undefined }),
     enabled: Boolean(collection) && !isFbcyl && hasFilter,
     staleTime: 5 * 60_000,
@@ -78,7 +81,7 @@ export default function ShotChartPage() {
     queryKey: ['shot-raw', collection?.name, viewMode, selectedTeam, selectedPlayer],
     queryFn: () =>
       viewMode === 'team'
-        ? getShotRaw(collection!.name, { team: selectedTeam || undefined })
+        ? getShotRaw(collection!.name, { team_id: selectedTeam || undefined })
         : getShotRaw(collection!.name, { player: selectedPlayer || undefined }),
     enabled: Boolean(collection) && !isFbcyl && hasFilter && vizMode !== 'zones',
     staleTime: 5 * 60_000,
@@ -99,9 +102,9 @@ export default function ShotChartPage() {
   // Players of the selected team, sorted by PPG desc for easy scanning
   const teamPlayers = useMemo(() =>
     playerList
-      .filter(p => p.team_name === selectedTeam)
+      .filter(p => p.team_name === selectedTeamName)
       .sort((a, b) => b.points_per_game - a.points_per_game),
-  [playerList, selectedTeam])
+  [playerList, selectedTeamName])
 
   const courtRef = useRef<SVGSVGElement>(null)
 
@@ -117,8 +120,8 @@ export default function ShotChartPage() {
     if (viewMode === 'player' && selectedPlayer) {
       return playerList.find(p => p.player_id === selectedPlayer)?.player_name ?? selectedPlayer
     }
-    return selectedTeam
-  }, [viewMode, selectedPlayer, selectedTeam, playerList])
+    return selectedTeamName
+  }, [viewMode, selectedPlayer, selectedTeamName, playerList])
 
   if (isFbcyl) {
     return (
@@ -186,7 +189,7 @@ export default function ShotChartPage() {
               className="appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-1.5 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
             >
               <option value="">— Selecciona equipo —</option>
-              {teamList.map(t => <option key={t} value={t}>{t}</option>)}
+              {teamList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-secondary" />
           </div>
