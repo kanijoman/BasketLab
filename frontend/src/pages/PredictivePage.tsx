@@ -25,7 +25,7 @@ import {
   type ElasticityModelMeta,
   type ElasticityPrediction, type MonteCarloResult,
   type HistoricalTeamEntry, type BacktestingResult, type GamePredictionResult,
-  type PlayerPredictionResult, type SeasonProjectionEntry,
+  type PlayerPredictionResult, type SeasonProjectionEntry, type TeamEntry,
 } from '@/api/client'
 import { STAT_LABELS } from '@/lib/statLabels'
 import { Loader2, Dices, Target, User, Trophy } from 'lucide-react'
@@ -306,7 +306,7 @@ export function ElasticityTab() {
                       onChange={e => setLiveTeam(e.target.value)}
                     >
                       <option value="">Seleccionar equipo…</option>
-                      {(liveTeams as import('@/api/client').TeamEntry[]).map(t => (
+                      {liveTeams.map(t => (
                         <option key={t.id} value={t.id}>{t.name}</option>
                       ))}
                     </select>
@@ -518,7 +518,7 @@ function MonteCarloTab() {
                       onChange={e => setLiveTeam(e.target.value)}
                     >
                       <option value="">Seleccionar equipo…</option>
-                      {liveTeams.map((t: import('@/api/client').TeamEntry) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      {liveTeams.map((t: TeamEntry) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   )
               }
@@ -643,7 +643,7 @@ function GamePredictionTab() {
   const [season, setSeason]       = useState('')
   const [teamId, setTeamId]       = useState('')
 
-  const [liveTeams, setLiveTeams] = useState<string[]>([])
+  const [liveTeams, setLiveTeams] = useState<TeamEntry[]>([])
   const [liveTeam, setLiveTeam]   = useState('')
 
   const [isHome, setIsHome]       = useState(true)
@@ -753,7 +753,7 @@ function GamePredictionTab() {
             {collection
               ? (
                 <select className={inputCls + ' w-64'} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
-                  {(liveTeams as import('@/api/client').TeamEntry[]).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  {(liveTeams as TeamEntry[]).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               )
               : <p className="text-xs text-slate-500 italic">Selecciona una colección primero</p>
@@ -878,7 +878,7 @@ export function ValidationTab() {
   const [teamId, setTeamId]     = useState('')
 
   // live mode state
-  const [liveTeams, setLiveTeams] = useState<string[]>([])
+  const [liveTeams, setLiveTeams] = useState<TeamEntry[]>([])
   const [liveTeam, setLiveTeam]   = useState('')
 
   const [result, setResult]     = useState<BacktestingResult | null>(null)
@@ -988,7 +988,7 @@ export function ValidationTab() {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-slate-400">Equipo — {collection?.name ?? '…'}</label>
             <select className={inputCls} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
-              {(liveTeams as import('@/api/client').TeamEntry[]).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {liveTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
         )}
