@@ -55,10 +55,29 @@ class PossessionRepositoryMixin:
             from .playbyplay_analyzer import PossessionAnalyzer
 
             is_fbcyl = _is_fbcyl(collection_name)
+            # Narrow projections: only the fields PossessionAnalyzer actually reads
+            # from each array item — avoids loading 15-20 extra fields per move.
             projection = (
-                {"moves": 1, "stats.teams.teamIdIntern": 1, "stats.teams.teamIdExtern": 1, "_id": 0}
+                {
+                    "moves.move":   1,
+                    "moves.period": 1,
+                    "moves.min":    1,
+                    "moves.sec":    1,
+                    "moves.idTeam": 1,
+                    "stats.teams.teamIdIntern": 1,
+                    "stats.teams.teamIdExtern": 1,
+                    "_id": 0,
+                }
                 if is_fbcyl
-                else {"PLAYBYPLAY.LINES": 1, "HEADER.TEAM": 1, "_id": 0}
+                else {
+                    "PLAYBYPLAY.LINES.text":    1,
+                    "PLAYBYPLAY.LINES.quarter": 1,
+                    "PLAYBYPLAY.LINES.time":    1,
+                    "PLAYBYPLAY.LINES.action":  1,
+                    "PLAYBYPLAY.LINES.idTeam":  1,
+                    "HEADER.TEAM.id":           1,
+                    "_id": 0,
+                }
             )
             games = self.get_games_for_team(
                 collection_name, team_id,

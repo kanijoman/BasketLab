@@ -167,17 +167,24 @@ class TestPossessionProjection:
         proj = repo._get_games_calls[0]["projection"]
         assert proj is not None, "Projection must not be None for FBCYL possession query"
 
-    def test_feb_projection_includes_playbyplay_lines(self):
+    def test_feb_projection_includes_playbyplay_lines_subfields(self):
+        """Projection must use granular subfield keys (not bare PLAYBYPLAY.LINES)."""
         repo = self._make_fake_repo()
         repo.get_team_possession_stats("FEB_LF2_2025_A", "t1")
         proj = repo._get_games_calls[0]["projection"]
-        assert "PLAYBYPLAY.LINES" in proj, "FEB projection must include PLAYBYPLAY.LINES"
+        # Must include at least one PLAYBYPLAY.LINES subfield
+        assert any(k.startswith("PLAYBYPLAY.LINES.") for k in proj), (
+            f"FEB projection must include PLAYBYPLAY.LINES subfields, got: {proj}"
+        )
 
-    def test_fbcyl_projection_includes_moves(self):
+    def test_fbcyl_projection_includes_moves_subfields(self):
+        """Projection must use granular subfield keys (not bare moves)."""
         repo = self._make_fake_repo()
         repo.get_team_possession_stats("FBCYL_2025_A", "t1")
         proj = repo._get_games_calls[0]["projection"]
-        assert "moves" in proj, "FBCYL projection must include moves"
+        assert any(k.startswith("moves.") for k in proj), (
+            f"FBCYL projection must include moves subfields, got: {proj}"
+        )
 
 
 # ---------------------------------------------------------------------------

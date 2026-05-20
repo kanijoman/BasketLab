@@ -259,7 +259,12 @@ export default function RankingsPage() {
           </div>
         ) : (
           <div className="space-y-1.5">
-            {filteredRanked.slice(0, 30).map(player => {
+            {filteredRanked.slice(0, 30).map((player, idx) => {
+              // Composite key: player_id may be null/0 for some players — fall back to
+              // name+team to avoid React key collisions that cause DOM nodes to persist.
+              const rowKey    = player.player_id != null && player.player_id !== 0
+                ? String(player.player_id)
+                : `${player.player_name}__${player.team_name}__${idx}`
               const rank      = globalRankMap.get(player.player_id) ?? 0
               const val       = (player[stat.key] as number) ?? 0
               const barPct    = maxVal > 0 ? (val / maxVal) * 100 : 0
@@ -270,7 +275,7 @@ export default function RankingsPage() {
 
               return (
                 <div
-                  key={player.player_id}
+                  key={rowKey}
                   className={[
                     'relative flex items-center gap-3 px-4 py-3 rounded-card border overflow-hidden',
                     medal
