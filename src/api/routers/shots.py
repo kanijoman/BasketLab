@@ -161,21 +161,36 @@ def _build_dorsal_to_id_map(shotchart: dict) -> dict:
     return mapping
 
 
-def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional[str]) -> List[Dict]:
-    """Retrieve and classify FEB shots from a MongoDB collection."""
+def _extract_shots_feb(coll, team_id: Optional[str], player_filter: Optional[str]) -> List[Dict]:
+    """Retrieve and classify FEB shots from a MongoDB collection.
+
+    Filters by ``HEADER.TEAM.id`` (indexed, sponsor-change safe) when
+    ``team_id`` is provided, avoiding a full-collection scan.
+    """
     # Include SHOTCHART.TEAM so we can resolve dorsal → player_id per game
     projection = {
         "SHOTCHART.SHOTS": 1,
         "SHOTCHART.TEAM": 1,
-        "HEADER.TEAM.name": 1,
+        "HEADER.TEAM": 1,
     }
-    cursor = coll.find({"SHOTCHART.SHOTS": {"$exists": True}}, projection)
+    query: dict = {"SHOTCHART.SHOTS": {"$exists": True}}
+    if team_id:
+        query["HEADER.TEAM.id"] = team_id
+    cursor = coll.find(query, projection)
 
     all_shots: List[Dict] = []
     for doc in cursor:
         header_teams = doc.get("HEADER", {}).get("TEAM", [])
-        local_name = header_teams[0].get("name") if len(header_teams) > 0 else None
-        away_name  = header_teams[1].get("name") if len(header_teams) > 1 else None
+
+        # Determine which team slot (0 or 1) belongs to our team_id
+        team_idx_filter: Optional[int] = None
+        if team_id:
+            for idx, t in enumerate(header_teams):
+                if str(t.get("id", "")) == str(team_id):
+                    team_idx_filter = idx
+                    break
+            if team_idx_filter is None:
+                continue  # doc matched the index but id not found in array — skip
 
         shotchart = doc.get("SHOTCHART", {})
         # Build dorsal→player_id map for this game (needed for player filter)
@@ -185,28 +200,27 @@ def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional
         for s in shots_raw:
             # FEB scraper stores team as a string ("0" / "1") in MongoDB — cast to int
             try:
-                team_idx = int(s.get("team"))
+                t_idx = int(s.get("team"))
             except (TypeError, ValueError):
                 continue
-            if team_idx not in (0, 1):
+            if t_idx not in (0, 1):
                 continue
-            team_name = local_name if team_idx == 0 else away_name
 
-            # Apply team filter
-            if team_filter and team_name != team_filter:
+            # Apply team filter: only include our team's shots
+            if team_idx_filter is not None and t_idx != team_idx_filter:
                 continue
 
             # Apply player filter: resolve dorsal to actual player ID before comparing
             if player_filter:
                 dorsal = str(s.get("player", ""))
-                resolved_id = dorsal_map.get((team_idx, dorsal), "")
+                resolved_id = dorsal_map.get((t_idx, dorsal), "")
                 if resolved_id != player_filter:
                     continue
 
             x_pct = float(s.get("x", 0))
             y_pct = float(s.get("y", 0))
             made   = int(s.get("m", 0)) == 1
-            x_fiba, y_fiba = _feb_to_fiba(x_pct, y_pct, team_idx)
+            x_fiba, y_fiba = _feb_to_fiba(x_pct, y_pct, t_idx)
             zone = _classify_zone(x_fiba, y_fiba)
 
             all_shots.append({
@@ -218,20 +232,77 @@ def _extract_shots_feb(coll, team_filter: Optional[str], player_filter: Optional
     return all_shots
 
 
-def _aggregate_zones(shots: List[Dict]) -> List[Dict[str, Any]]:
-    """Sum shots per zone and compute FG%."""
-    accum: Dict[str, Dict[str, int]] = {z: {"fga": 0, "fgm": 0} for z in _ZONE_META}
-    for s in shots:
-        z = s["zone"]
-        if z in accum:
-            accum[z]["fga"] += 1
-            if s["made"]:
-                accum[z]["fgm"] += 1
+def _stream_zone_counts_feb(
+    coll, team_id: Optional[str], player_filter: Optional[str]
+) -> Dict[str, Dict[str, int]]:
+    """Count FEB shots per zone using O(1) memory (no ``all_shots`` list).
 
+    Streams the cursor and accumulates zone counters in-place.  The
+    zones endpoint uses this instead of building an intermediate list.
+
+    Returns:
+        Dict mapping zone key → ``{"fga": int, "fgm": int}``.
+    """
+    accum: Dict[str, Dict[str, int]] = {z: {"fga": 0, "fgm": 0} for z in _ZONE_META}
+
+    # Projection: skip SHOTCHART.TEAM unless we need the dorsal map
+    projection: Dict[str, int] = {"SHOTCHART.SHOTS": 1, "HEADER.TEAM": 1}
+    if player_filter:
+        projection["SHOTCHART.TEAM"] = 1
+
+    query: dict = {"SHOTCHART.SHOTS": {"$exists": True}}
+    if team_id:
+        query["HEADER.TEAM.id"] = team_id
+    cursor = coll.find(query, projection)
+
+    for doc in cursor:
+        header_teams = doc.get("HEADER", {}).get("TEAM", [])
+
+        team_idx_filter: Optional[int] = None
+        if team_id:
+            for idx, t in enumerate(header_teams):
+                if str(t.get("id", "")) == str(team_id):
+                    team_idx_filter = idx
+                    break
+            if team_idx_filter is None:
+                continue
+
+        shotchart = doc.get("SHOTCHART", {})
+        dorsal_map = _build_dorsal_to_id_map(shotchart) if player_filter else {}
+
+        for s in shotchart.get("SHOTS", []):
+            try:
+                t_idx = int(s.get("team"))
+            except (TypeError, ValueError):
+                continue
+            if t_idx not in (0, 1):
+                continue
+            if team_idx_filter is not None and t_idx != team_idx_filter:
+                continue
+            if player_filter:
+                dorsal = str(s.get("player", ""))
+                if dorsal_map.get((t_idx, dorsal), "") != player_filter:
+                    continue
+
+            x_pct = float(s.get("x", 0))
+            y_pct = float(s.get("y", 0))
+            made   = int(s.get("m", 0)) == 1
+            x_fiba, y_fiba = _feb_to_fiba(x_pct, y_pct, t_idx)
+            zone = _classify_zone(x_fiba, y_fiba)
+            if zone in accum:
+                accum[zone]["fga"] += 1
+                if made:
+                    accum[zone]["fgm"] += 1
+
+    return accum
+
+
+def _aggregate_zones(accum: Dict[str, Dict[str, int]]) -> List[Dict[str, Any]]:
+    """Build the zone-stats response list from a ``{zone: {fga, fgm}}`` accumulator."""
     result = []
     for zone_key, meta in _ZONE_META.items():
-        fga = accum[zone_key]["fga"]
-        fgm = accum[zone_key]["fgm"]
+        fga = accum.get(zone_key, {}).get("fga", 0)
+        fgm = accum.get(zone_key, {}).get("fgm", 0)
         result.append({
             "zone":       zone_key,
             "zone_label": meta["label"],
@@ -250,7 +321,7 @@ def _aggregate_zones(shots: List[Dict]) -> List[Dict[str, Any]]:
 @router.get("/{collection}", summary="Aggregated shot-zone stats for a collection")
 def get_shot_zones(
     collection: str,
-    team: Optional[str] = Query(None, description="Filter by exact team name"),
+    team_id: Optional[str] = Query(None, description="Filter by stable team ID"),
     player: Optional[str] = Query(None, description="Filter by player ID"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
@@ -261,7 +332,7 @@ def get_shot_zones(
 
     Args:
         collection: MongoDB collection name.
-        team: Optional exact team name filter.
+        team_id: Optional stable team ID (``HEADER.TEAM.id``).
         player: Optional player ID filter.
 
     Returns:
@@ -269,13 +340,12 @@ def get_shot_zones(
         ``fga``, ``fgm``, ``fg_pct``.
     """
     if _is_fbcyl(collection):
-        # FBCYL has no individual shot coordinates
         return []
 
     try:
         coll = db.connection.get_collection(collection)
-        shots = _extract_shots_feb(coll, team_filter=team, player_filter=player)
-        return _aggregate_zones(shots)
+        accum = _stream_zone_counts_feb(coll, team_id=team_id, player_filter=player)
+        return _aggregate_zones(accum)
     except Exception:
         return []
 
@@ -283,7 +353,7 @@ def get_shot_zones(
 @router.get("/{collection}/raw", summary="Individual shot coordinates for scatter/heatmap")
 def get_shot_raw(
     collection: str,
-    team: Optional[str] = Query(None, description="Filter by exact team name"),
+    team_id: Optional[str] = Query(None, description="Filter by stable team ID"),
     player: Optional[str] = Query(None, description="Filter by player ID"),
     limit: int = Query(5000, ge=1, le=10000),
     db=Depends(get_db),
@@ -295,7 +365,7 @@ def get_shot_raw(
 
     Args:
         collection: MongoDB collection name.
-        team: Optional exact team name filter.
+        team_id: Optional stable team ID (``HEADER.TEAM.id``).
         player: Optional player ID filter.
         limit: Maximum shots to return (default 5000, max 10000).
 
@@ -308,7 +378,7 @@ def get_shot_raw(
 
     try:
         coll = db.connection.get_collection(collection)
-        shots = _extract_shots_feb(coll, team_filter=team, player_filter=player)
+        shots = _extract_shots_feb(coll, team_id=team_id, player_filter=player)
         return [
             {"x": s["x"], "y": s["y"], "made": s["made"], "zone": s["zone"]}
             for s in shots[:limit]

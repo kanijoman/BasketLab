@@ -10,11 +10,12 @@ import { FileText, Download, CalendarDays } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import {
-  getTeamsInCollection,
+  getLiveTeamNames,
   postWeeklyReport,
   getWeeklyReportProgress,
   downloadWeeklyReport,
   type WeeklyReportProgress,
+  type TeamEntry,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 
@@ -68,9 +69,9 @@ export default function ReportPage() {
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyReportProgress | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const { data: teams = [] } = useQuery<string[]>({
+  const { data: teams = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', collection?.name],
-    queryFn:  () => getTeamsInCollection(collection!.name),
+    queryFn:  () => getLiveTeamNames(collection!.name),
     enabled:  Boolean(collection),
     staleTime: 10 * 60_000,
   })
@@ -110,7 +111,7 @@ export default function ReportPage() {
                     className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
                   >
                     <option value="">— Equipo propio (A) —</option>
-                    {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                   <ChevronDownIcon />
                 </div>
@@ -121,7 +122,7 @@ export default function ReportPage() {
                     className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
                   >
                     <option value="">— Equipo rival (B) —</option>
-                    {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                   <ChevronDownIcon />
                 </div>

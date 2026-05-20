@@ -10,6 +10,7 @@ import { useCollection } from '@/context/CollectionContext'
 import {
   getAIAnalysisStreamUrl,
   downloadIndividualScoutingDocx,
+  type TeamEntry,
   exportAIAnalysisPDF,
   type AIAnalysisRequest,
 } from '@/api/client'
@@ -76,13 +77,16 @@ export default function AIAnalysisPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Team list
-  const { data: teamList = [] } = useQuery<string[]>({
+  const { data: teamList = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', collection?.name],
     queryFn: () =>
       fetch(`/api/v1/teams/${encodeURIComponent(collection!.name)}/teams`).then(r => r.json()),
     enabled: Boolean(collection),
     staleTime: 10 * 60_000,
   })
+
+  // Derive display name from selected team ID
+  const teamDisplayName = teamList.find(t => t.id === team)?.name ?? team
 
   // Auto-scroll while streaming
   useEffect(() => {
@@ -113,7 +117,7 @@ export default function AIAnalysisPage() {
 
     const req: AIAnalysisRequest = {
       collection: collection.name,
-      team,
+      team_id: team,
       analysis_type: analysisType,
       provider,
       include_recommendations: includeRecs,
@@ -155,7 +159,7 @@ export default function AIAnalysisPage() {
     const url  = URL.createObjectURL(blob)
     const a    = Object.assign(document.createElement('a'), {
       href:     url,
-      download: `analisis_${team.replace(/\s+/g, '_')}_${Date.now()}.md`,
+      download: `analisis_${teamDisplayName.replace(/\s+/g, '_')}_${Date.now()}.md`,
     })
     a.click()
     URL.revokeObjectURL(url)
@@ -169,7 +173,7 @@ export default function AIAnalysisPage() {
       const url = URL.createObjectURL(blob)
       const a = Object.assign(document.createElement('a'), {
         href: url,
-        download: `Scouting_${team.replace(/\s+/g, '_')}.docx`,
+        download: `Scouting_${teamDisplayName.replace(/\s+/g, '_')}.docx`,
       })
       a.click()
       URL.revokeObjectURL(url)
@@ -223,7 +227,7 @@ export default function AIAnalysisPage() {
                 className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
               >
                 <option value="">— Selecciona equipo —</option>
-                {teamList.map(t => <option key={t} value={t}>{t}</option>)}
+                {teamList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-secondary" />
             </div>

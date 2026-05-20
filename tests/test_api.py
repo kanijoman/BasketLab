@@ -33,6 +33,7 @@ def _mock_db(
     handler.get_opponent_stats.return_value = opponent_stats or []
     handler.get_player_stats.return_value = player_stats or []
     handler.get_all_teams.return_value = all_teams or []
+    handler.get_teams_with_ids.return_value = []
     handler.get_aggregated_team_stats.return_value = {}
     handler.get_aggregated_opponent_stats.return_value = {}
     handler.get_league_stats.return_value = {}

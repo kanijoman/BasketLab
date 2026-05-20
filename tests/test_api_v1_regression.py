@@ -113,6 +113,7 @@ def _mock_db_with_data():
     handler.get_opponent_stats.return_value = [TEAM_ROW]
     handler.get_player_stats.return_value = [PLAYER_ROW]
     handler.get_all_teams.return_value = ["Basket Club A"]
+    handler.get_teams_with_ids.return_value = [{"id": "1", "name": "Basket Club A"}]
     mock_coll = MagicMock()
     mock_coll.count_documents.return_value = 18
     handler.connection.get_collection.return_value = mock_coll

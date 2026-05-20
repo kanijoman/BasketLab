@@ -68,14 +68,17 @@ def get_quartiles(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
     return svc.get_quartiles(collection)
 
 
-@router.get("/{collection}/teams", summary="List team names in a collection")
+@router.get("/{collection}/teams", summary="List teams with stable IDs in a collection")
 def list_teams(
     collection: str,
     skip: int = Query(0, ge=0, description="Number of teams to skip"),
     limit: int = Query(100, ge=1, le=500, description="Maximum teams to return"),
     db=Depends(get_db),
-) -> List[str]:
-    """Return a sorted list of all team names present in the collection.
+) -> List[Dict]:
+    """Return a deduplicated list of teams as ``{id, name}`` objects.
+
+    Uses the stable team ID as the key so a team that changed sponsor
+    mid-season appears only once with its most-recent name.
 
     Args:
         collection: MongoDB collection name.
@@ -83,10 +86,10 @@ def list_teams(
         limit: Max results per page (default 100, max 500).
 
     Returns:
-        Sorted list of name strings.
+        Sorted list of ``{"id": str, "name": str}`` objects.
     """
     svc = TeamStatsService(db)
-    teams = svc.get_all_teams(collection)
+    teams = svc.get_teams_with_ids(collection)
     return teams[skip: skip + limit]
 
 
@@ -140,12 +143,12 @@ def get_consistency(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
 
 
 @router.get(
-    "/{collection}/evolution/{team_name}",
+    "/{collection}/evolution/{team_id}",
     summary="Get game-by-game stat evolution for a team",
 )
 def get_team_evolution(
     collection: str,
-    team_name: str,
+    team_id: str,
     stat: str = Query("points", description="Stat key — see EVOLUTION_STAT_KEYS for full list"),
     window: int = Query(5, ge=2, le=15, description="Rolling-average window in games (2–15)"),
     db=Depends(get_db),
@@ -154,7 +157,7 @@ def get_team_evolution(
 
     Args:
         collection: MongoDB collection name.
-        team_name: Exact team name as stored in the DB.
+        team_id: Stable team ID (``HEADER.TEAM.id`` for FEB, ``teamIdExtern`` for FBCYL).
         stat: Any key from ``EVOLUTION_STAT_KEYS`` (30+ stats supported).
         window: Rolling-average window size (default 5 games).
 
@@ -164,7 +167,7 @@ def get_team_evolution(
     if stat not in _VALID_EVOLUTION_STATS:
         stat = "points"
     svc = EvolutionService(db)
-    return svc.get_team_evolution(collection, team_name, stat=stat, rolling_window=window)
+    return svc.get_team_evolution(collection, team_id, stat=stat, rolling_window=window)
 
 
 @router.get(

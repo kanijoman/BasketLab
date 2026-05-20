@@ -18,7 +18,7 @@ import {
 import { TrendingUp, X, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getTeamEvolution, getCompetitionEvolution, type EvolutionPoint, type CompetitionEvolutionPoint } from '@/api/client'
+import { getTeamEvolution, getCompetitionEvolution, type EvolutionPoint, type CompetitionEvolutionPoint, type TeamEntry } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import ExportButton from '@/components/ui/ExportButton'
 
@@ -137,10 +137,13 @@ export default function EvolutionPage() {
   const { data: teamList = [] } = useQuery({
     queryKey: ['team-list', collection?.name],
     queryFn: () => fetch(`/api/v1/teams/${encodeURIComponent(collection!.name)}/teams`)
-      .then(r => r.json()) as Promise<string[]>,
+      .then(r => r.json()) as Promise<TeamEntry[]>,
     enabled: Boolean(collection),
     staleTime: 10 * 60_000,
   })
+
+  // Helper: resolve display name from ID
+  const teamName = (id: string) => teamList.find(t => t.id === id)?.name ?? id
 
   // Fetch evolution data for each selected team in parallel
   const evolutionQueries = useQueries({
@@ -178,9 +181,9 @@ export default function EvolutionPage() {
   const csvHeaders = useMemo(() => {
     const cols: { key: string; label: string }[] = [{ key: 'game', label: 'Jornada' }]
     selectedTeams.forEach(team => {
-      if (showRaw)        cols.push({ key: `${team}_raw`, label: `${team} (partido)` })
-      if (showRolling)    cols.push({ key: `${team}_avg`, label: `${team} (media ${rollingWindow}J)` })
-      if (showCumulative) cols.push({ key: `${team}_cum`, label: `${team} (acumulado)` })
+      if (showRaw)        cols.push({ key: `${team}_raw`, label: `${teamName(team)} (partido)` })
+      if (showRolling)    cols.push({ key: `${team}_avg`, label: `${teamName(team)} (media ${rollingWindow}J)` })
+      if (showCumulative) cols.push({ key: `${team}_cum`, label: `${teamName(team)} (acumulado)` })
     })
     if (showCompetitionRolling)    cols.push({ key: 'comp_rolling',    label: `Liga (media ${rollingWindow}J)` })
     if (showCompetitionCumulative) cols.push({ key: 'comp_cumulative', label: 'Liga (acumulado)' })
@@ -289,7 +292,7 @@ export default function EvolutionPage() {
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white"
                 style={{ backgroundColor: TEAM_COLORS[idx % TEAM_COLORS.length] }}
               >
-                {team}
+                {teamName(team)}
                 <button onClick={() => toggleTeam(team)} className="hover:opacity-70">
                   <X className="w-3 h-3" />
                 </button>
@@ -304,13 +307,13 @@ export default function EvolutionPage() {
           {/* Team list */}
           {teamList.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2 border-t border-surface-border pt-2">
-              {teamList.filter(t => !selectedTeams.includes(t)).map(team => (
+              {teamList.filter(t => !selectedTeams.includes(t.id)).map(team => (
                 <button
-                  key={team}
-                  onClick={() => toggleTeam(team)}
+                  key={team.id}
+                  onClick={() => toggleTeam(team.id)}
                   className="px-2 py-0.5 rounded text-xs border border-surface-border text-ink-secondary hover:border-accent-400 hover:text-accent-400 transition-colors"
                 >
-                  + {team}
+                  + {team.name}
                 </button>
               ))}
             </div>

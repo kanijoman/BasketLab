@@ -32,7 +32,7 @@ import io
 import re
 import zipfile
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 from stats.stats_calculator import StatsCalculator
@@ -88,27 +88,39 @@ def _aggregate_fbcyl_players(players: List[Dict]) -> Dict:
 # ---------------------------------------------------------------------------
 
 def _extract_shots(
-    db: Any, collection_name: str, team_name: str,
+    db: Any, collection_name: str, team_id: str,
 ) -> Tuple[List[Dict], Dict, bool]:
-    """Return (all_shots, player_id_map, is_fbcyl) for a team across all games."""
-    from src.utils.team_utils import get_team_data_by_name, get_team_index_in_document
+    """Return (all_shots, player_id_map, is_fbcyl) for a team across all games.
+
+    Args:
+        db: MongoDBHandler instance.
+        collection_name: MongoDB collection name.
+        team_id: Stable team identifier — ``HEADER.TEAM.id`` for FEB,
+            ``stats.teams.teamIdExtern`` (as string) for FBCYL.
+            Filters are pushed into MongoDB; the collection is never fully loaded.
+    """
+    from src.utils.team_utils import resolve_team_by_id
 
     coll = db.connection.get_collection(collection_name)
     if coll is None:
         return [], {}, False
 
-    documents = list(coll.find({}))
     is_fbcyl  = _is_fbcyl(collection_name)
 
     all_shots:    List[Dict] = []
     player_id_map: Dict      = {}
 
     if is_fbcyl:
-        for doc in documents:
+        tid = int(team_id) if isinstance(team_id, str) and team_id.isdigit() else team_id
+        cursor = coll.find(
+            {"stats.teams.teamIdExtern": tid},
+            {"stats.teams": 1, "_id": 0},
+        )
+        for doc in cursor:
             if 'stats' not in doc or 'teams' not in doc['stats']:
                 continue
             for team_idx, team in enumerate(doc['stats']['teams']):
-                if team.get('name') != team_name:
+                if str(team.get('teamIdExtern', '')) != str(team_id):
                     continue
                 for player in team.get('players', []):
                     uuid   = player.get('uuid', '')
@@ -135,21 +147,33 @@ def _extract_shots(
                     if uuid:
                         player_id_map[uuid] = {'id': uuid, 'name': pname, 'uuid': uuid}
     else:
-        # FEB: discover team code first
-        team_code = None
-        for doc in documents:
-            td, _ = get_team_data_by_name(doc, team_name)
-            if td is not None:
-                team_code = td.get('teamCode') or td.get('code')
-                break
+        # FEB: resolve team_index once via a find_one, then stream only matching docs
+        team_idx_filter: Optional[int] = None
+        probe = coll.find_one(
+            {"HEADER.TEAM.id": team_id},
+            {"HEADER.TEAM": 1, "_id": 0},
+        )
+        if probe:
+            for idx, t in enumerate(probe.get("HEADER", {}).get("TEAM", [])):
+                if str(t.get("id", "")) == str(team_id):
+                    team_idx_filter = idx
+                    break
 
-        for doc in documents:
-            if 'SHOTCHART' not in doc or not doc.get('SHOTCHART'):
-                continue
-            shots_raw  = doc['SHOTCHART'].get('SHOTS', [])
-            team_index = get_team_index_in_document(doc, team_code)
+        cursor = coll.find(
+            {"HEADER.TEAM.id": team_id, "SHOTCHART.SHOTS": {"$exists": True}},
+            {"SHOTCHART": 1, "HEADER.TEAM": 1, "_id": 0},
+        )
+        for doc in cursor:
+            # Re-derive team_index per document (home/away can swap between games)
+            team_index: Optional[int] = None
+            for idx, t in enumerate(doc.get("HEADER", {}).get("TEAM", [])):
+                if str(t.get("id", "")) == str(team_id):
+                    team_index = idx
+                    break
             if team_index is None:
                 continue
+
+            shots_raw = doc['SHOTCHART'].get('SHOTS', [])
             shotchart = doc['SHOTCHART']
             if 'TEAM' in shotchart and team_index < len(shotchart['TEAM']):
                 for pl in shotchart['TEAM'][team_index].get('PLAYER', []):
@@ -207,29 +231,38 @@ class WeeklyReportService:
 
         Args:
             collection: MongoDB collection name.
-            team_a: Own team name.
-            team_b: Rival team name.
+            team_a: Own team stable ID (``HEADER.TEAM.id`` / ``teamIdExtern``).
+            team_b: Rival team stable ID.
             progress_callback: Optional callable(step, total, message) called
                 at each major stage to report progress (e.g. for a job tracker).
         """
+        from src.utils.team_utils import resolve_team_by_id
         _TOTAL = 5
 
         def _cb(step: int, msg: str) -> None:
             if progress_callback:
                 progress_callback(step, _TOTAL, msg)
 
+        # Resolve display names from stable IDs
+        is_fbcyl = _is_fbcyl(collection)
+        coll = self._db.connection.get_collection(collection)
+        team_a_info = resolve_team_by_id(coll, team_a, is_fbcyl) or {"name": team_a}
+        team_b_info = resolve_team_by_id(coll, team_b, is_fbcyl) or {"name": team_b}
+        team_a_name = team_a_info["name"]
+        team_b_name = team_b_info["name"]
+
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
             _cb(1, 'Estadísticas generales de competición')
             self._gen_general_stats(zf, collection)
-            _cb(2, f'Último partido — {team_a}')
-            self._gen_last_match(zf, collection, team_a)
-            _cb(3, f'Último partido — {team_b}')
-            self._gen_last_match(zf, collection, team_b)
-            _cb(4, f'Informe equipo — {team_a}')
-            self._gen_team_report(zf, collection, team_a)
-            _cb(5, f'Informe equipo — {team_b}')
-            self._gen_team_report(zf, collection, team_b)
+            _cb(2, f'Último partido — {team_a_name}')
+            self._gen_last_match(zf, collection, team_a_name)
+            _cb(3, f'Último partido — {team_b_name}')
+            self._gen_last_match(zf, collection, team_b_name)
+            _cb(4, f'Informe equipo — {team_a_name}')
+            self._gen_team_report(zf, collection, team_a, team_a_name)
+            _cb(5, f'Informe equipo — {team_b_name}')
+            self._gen_team_report(zf, collection, team_b, team_b_name)
         return buf.getvalue()
 
     # ------------------------------------------------------------------
@@ -405,11 +438,11 @@ class WeeklyReportService:
     # ------------------------------------------------------------------
 
     def _gen_team_report(
-        self, zf: zipfile.ZipFile, collection: str, team_name: str,
+        self, zf: zipfile.ZipFile, collection: str, team_id: str, team_name: str,
     ) -> None:
         safe = _sanitize(team_name)
         self._gen_player_tables(zf, collection, team_name, safe)
-        self._gen_shot_charts(zf, collection, team_name, safe)
+        self._gen_shot_charts(zf, collection, team_id, team_name, safe)
 
     def _gen_player_tables(
         self, zf: zipfile.ZipFile, collection: str, team_name: str, folder: str,
@@ -436,10 +469,10 @@ class WeeklyReportService:
             print(f'[WeeklyReportService] player_tables {team_name}: {exc}')
 
     def _gen_shot_charts(
-        self, zf: zipfile.ZipFile, collection: str, team_name: str, folder: str,
+        self, zf: zipfile.ZipFile, collection: str, team_id: str, team_name: str, folder: str,
     ) -> None:
         try:
-            shots, player_map, is_fbcyl = _extract_shots(self._db, collection, team_name)
+            shots, player_map, is_fbcyl = _extract_shots(self._db, collection, team_id)
             if not shots:
                 return
 

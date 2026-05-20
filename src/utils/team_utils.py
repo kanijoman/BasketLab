@@ -4,9 +4,50 @@ Moved from src/ui/team_utils.py (Qt UI layer removed).
 Used by services that need to identify teams within match documents.
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 from src.utils.collection_utils import is_fbcyl as _is_fbcyl
+
+
+def resolve_team_by_id(coll: Any, team_id: str, is_fbcyl: bool) -> Optional[Dict[str, str]]:
+    """Return ``{id, name}`` for a team given its stable ID, or ``None`` if not found.
+
+    Uses one indexed ``find_one`` query — safe to call per-request.
+
+    Args:
+        coll: PyMongo collection object.
+        team_id: Stable team identifier (``HEADER.TEAM.id`` for FEB,
+            ``stats.teams.teamIdExtern`` for FBCYL).
+        is_fbcyl: True for FBCYL collections.
+
+    Returns:
+        ``{"id": str, "name": str}`` or ``None``.
+    """
+    try:
+        if is_fbcyl:
+            tid = int(team_id) if isinstance(team_id, str) and team_id.isdigit() else team_id
+            doc = coll.find_one(
+                {"stats.teams.teamIdExtern": tid},
+                {"stats.teams": 1, "_id": 0},
+            )
+            if not doc:
+                return None
+            for t in doc.get("stats", {}).get("teams", []):
+                if str(t.get("teamIdExtern", "")) == str(team_id):
+                    return {"id": str(t["teamIdExtern"]), "name": t.get("name", "")}
+        else:
+            doc = coll.find_one(
+                {"HEADER.TEAM.id": team_id},
+                {"HEADER.TEAM": 1, "_id": 0},
+            )
+            if not doc:
+                return None
+            for t in doc.get("HEADER", {}).get("TEAM", []):
+                if str(t.get("id", "")) == str(team_id):
+                    return {"id": str(t["id"]), "name": t.get("name", "")}
+    except Exception:
+        pass
+    return None
 
 
 def get_available_teams_from_collection(db_handler, collection_name: str) -> List[Dict]:
