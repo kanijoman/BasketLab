@@ -30,7 +30,7 @@ class FakeRepo(PossessionRepositoryMixin):
         self.connection = connection
         self._games = games or []
 
-    def get_games_for_team(self, collection_name, team_id, only_with_playbyplay=False):
+    def get_games_for_team(self, collection_name, team_id, only_with_playbyplay=False, projection=None):
         return self._games
 
 

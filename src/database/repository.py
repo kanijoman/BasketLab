@@ -9,12 +9,13 @@ from .aggregation.fbcyl_pipeline import FBCYLPipelineBuilder
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
+from .repository_games import GamesRepositoryMixin
 from .repository_inout import InOutRepositoryMixin
 from .repository_possession import PossessionRepositoryMixin
 from .repository_lineup import LineupRepositoryMixin
 
 
-class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, LineupRepositoryMixin):
+class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, PossessionRepositoryMixin, LineupRepositoryMixin):
     """Repository for basketball data CRUD operations."""
 
     def __init__(self, connection: MongoDBConnection):
@@ -138,40 +139,8 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
             else:
                 pipeline = AggregationPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
 
-            result = list(collection.aggregate(pipeline))
-
-            if not result and is_fbcyl:
-                # Debug: Check if collection has data
-                doc_count = collection.count_documents({})
-                print(f"[Repository] FBCYL collection {collection_name} has {doc_count} documents")
-                if doc_count > 0:
-                    sample = collection.find_one()
-                    print(f"[Repository] Sample document keys: {list(sample.keys()) if sample else 'None'}")
-                    if sample and 'stats' in sample:
-                        print(f"[Repository] Sample stats keys: {list(sample['stats'].keys())}")
-                        if 'teams' in sample['stats']:
-                            print(f"[Repository] Number of teams in sample: {len(sample['stats']['teams'])}")
-                            if sample['stats']['teams']:
-                                print(f"[Repository] First team keys: {list(sample['stats']['teams'][0].keys())}")
-
-                    # Try a simple aggregation to see what's happening
-                    print(f"[Repository] Testing simple aggregation...")
-                    simple_result = list(collection.aggregate([
-                        {"$limit": 1},
-                        {"$project": {"teams": "$stats.teams"}}
-                    ]))
-                    print(f"[Repository] Simple aggregation result: {len(simple_result)} docs")
-
-            return result
-        except PyMongoError as e:
-            print(f"[Repository] Error in get_team_stats: {e}")
-            import traceback
-            traceback.print_exc()
-            return []
-        except Exception as e:
-            print(f"[Repository] Unexpected error in get_team_stats: {e}")
-            import traceback
-            traceback.print_exc()
+            return list(collection.aggregate(pipeline))
+        except PyMongoError:
             return []
 
     def get_opponent_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
@@ -207,76 +176,6 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
             return list(collection.aggregate(pipeline))
         except PyMongoError as e:
             return []
-
-    def get_last_match(self, collection_name: str, team_name: str) -> Dict:
-        """
-        Get the last match document for a specific team.
-
-        Args:
-            collection_name: Name of the collection
-            team_name: Name of the team to find
-
-        Returns:
-            Last match document or empty dict if not found
-        """
-        if not self.connection.is_connected():
-            return {}
-
-        try:
-            collection = self.connection.get_collection(collection_name)
-            is_fbcyl = _is_fbcyl(collection_name)
-
-            if is_fbcyl:
-                # FBCYL format: stats.teams[].name and stats.startDate
-                pipeline = [
-                    {
-                        "$addFields": {
-                            "parsedDate": {
-                                "$dateFromString": {
-                                    "dateString": "$stats.startDate",
-                                    "format": "%Y-%m-%dT%H:%M:%S.%LZ",
-                                    "onError": None,
-                                    "onNull": None
-                                }
-                            }
-                        }
-                    },
-                    {
-                        "$match": {
-                            "stats.teams.name": team_name
-                        }
-                    },
-                    {"$sort": {"parsedDate": -1}},
-                    {"$limit": 1}
-                ]
-            else:
-                # FEB format: HEADER.TEAM.name and HEADER.starttime
-                pipeline = [
-                    {
-                        "$addFields": {
-                            "parsedDate": {
-                                "$dateFromString": {
-                                    "dateString": "$HEADER.starttime",
-                                    "format": "%d-%m-%Y - %H:%M",
-                                    "onError": None,
-                                    "onNull": None
-                                }
-                            }
-                        }
-                    },
-                    {
-                        "$match": {
-                            "HEADER.TEAM.name": team_name
-                        }
-                    },
-                    {"$sort": {"parsedDate": -1}},
-                    {"$limit": 1}
-                ]
-
-            result = list(collection.aggregate(pipeline))
-            return result[0] if result else {}
-        except PyMongoError as e:
-            return {}
 
     def get_all_teams(self, collection_name: str) -> List[str]:
         """
@@ -553,142 +452,4 @@ class BasketballRepository(InOutRepositoryMixin, PossessionRepositoryMixin, Line
             return result[0] if result else {}
         except PyMongoError as e:
             return {}
-
-    def get_games_with_playbyplay(self, collection_name: str, date_filter: Dict = None) -> List[Dict]:
-        """
-        Get all game documents that contain PLAYBYPLAY data.
-
-        Args:
-            collection_name: Name of the collection
-            date_filter: Optional MongoDB date filter dict with datetime object
-
-        Returns:
-            List of game documents with PLAYBYPLAY data
-        """
-        if not self.connection.is_connected():
-            return []
-
-        try:
-            collection = self.connection.get_collection(collection_name)
-            
-            # Ensure indexes exist for optimal performance
-            self.connection.ensure_indexes(collection_name)
-
-            # Detect if this is a FBCYL collection
-            is_fbcyl = _is_fbcyl(collection_name)
-
-            if is_fbcyl:
-                # FBCYL: Check for 'moves' field
-                match_filter = {"moves": {"$exists": True, "$ne": None}}
-
-                if date_filter:
-                    # FBCYL uses stats.time field
-                    pipeline = [
-                        {
-                            "$addFields": {
-                                "parsedDate": {
-                                    "$dateFromString": {
-                                        "dateString": "$stats.time",
-                                        "format": "%b %d, %Y %I:%M:%S %p",
-                                        "onError": None,
-                                        "onNull": None
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "$match": {
-                                "parsedDate": date_filter,
-                                "moves": {"$exists": True, "$ne": None}
-                            }
-                        }
-                    ]
-                    return list(collection.aggregate(pipeline))
-                else:
-                    return list(collection.find(match_filter))
-            else:
-                # FEB: Check for PLAYBYPLAY.LINES
-                match_filter = {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}
-
-                if date_filter:
-                    # Add date parsing to the pipeline
-                    pipeline = [
-                        {
-                            "$addFields": {
-                                "parsedDate": {
-                                    "$dateFromString": {
-                                        "dateString": "$HEADER.starttime",
-                                        "format": "%d-%m-%Y - %H:%M",
-                                        "onError": None,
-                                        "onNull": None
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "$match": {
-                                "parsedDate": date_filter,
-                                "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}
-                            }
-                        }
-                    ]
-                    return list(collection.aggregate(pipeline))
-                else:
-                    return list(collection.find(match_filter))
-
-        except PyMongoError as e:
-            return []
-
-    def get_games_for_team(self, collection_name: str, team_id: str, 
-                           only_with_playbyplay: bool = False) -> List[Dict]:
-        """
-        Get all games for a specific team.
-
-        Args:
-            collection_name: Name of the collection
-            team_id: Team ID
-            only_with_playbyplay: If True, only return games with play-by-play data
-
-        Returns:
-            List of game documents where the team participated
-        """
-        if not self.connection.is_connected():
-            return []
-
-        try:
-            collection = self.connection.get_collection(collection_name)
-            
-            # Ensure indexes exist for optimal performance
-            self.connection.ensure_indexes(collection_name)
-            
-            is_fbcyl = _is_fbcyl(collection_name)
-
-            if is_fbcyl:
-                # FBCYL: Check in stats.teams array
-                match_filter = {
-                    "$or": [
-                        {"stats.teams.teamIdIntern": team_id},
-                        {"stats.teams.teamIdIntern": int(team_id) if team_id.isdigit() else team_id},
-                        {"stats.teams.teamIdExtern": team_id},
-                        {"stats.teams.teamIdExtern": int(team_id) if team_id.isdigit() else team_id}
-                    ]
-                }
-                
-                # Add play-by-play filter if requested
-                if only_with_playbyplay:
-                    match_filter["moves"] = {"$exists": True, "$ne": None}
-            else:
-                # FEB: Check in HEADER.TEAM array
-                match_filter = {
-                    "HEADER.TEAM.id": team_id
-                }
-                
-                # Add play-by-play filter if requested
-                if only_with_playbyplay:
-                    match_filter["PLAYBYPLAY.LINES"] = {"$exists": True, "$ne": None}
-
-            return list(collection.find(match_filter))
-
-        except PyMongoError as e:
-            return []
 
