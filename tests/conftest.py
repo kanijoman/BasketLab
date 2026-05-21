@@ -17,6 +17,27 @@ SAMPLES_DIR = Path(__file__).parent.parent / "src" / "JSON_samples"
 
 
 # ---------------------------------------------------------------------------
+# Cache isolation — clear module-level TTLCaches before every test to prevent
+# cross-test contamination.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _clear_module_caches():
+    """Clear all module-level TTLCaches before each test to prevent
+    cross-test cache contamination.
+
+    The same module may be registered under different aliases in sys.modules
+    depending on which sys.path entry resolves first — clear all known variants.
+    """
+    _cache_attr = "_player_stats_cache"
+    for _mod_path in ("services.player_stats_service", "src.services.player_stats_service"):
+        _mod = sys.modules.get(_mod_path)
+        if _mod is not None and hasattr(_mod, _cache_attr):
+            getattr(_mod, _cache_attr).clear()
+    yield
+
+
+# ---------------------------------------------------------------------------
 # Raw JSON fixtures (loaded once per session for speed)
 # ---------------------------------------------------------------------------
 

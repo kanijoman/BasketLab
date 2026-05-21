@@ -52,7 +52,8 @@ class AdvancedStatsCalculator:
         if team_plays == 0:
             return 0.0
 
-        return 100 * (player_plays * (team_mp / 5)) / (mp * team_plays)
+        usg = 100 * (player_plays * (team_mp / 5)) / (mp * team_plays)
+        return min(usg, 100.0)
 
     @staticmethod
     def calculate_true_shooting_percentage(player: Dict[str, Any]) -> float:

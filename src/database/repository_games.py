@@ -1,0 +1,241 @@
+"""Games-fetch repository mixin.
+
+Extracted from repository.py (FASE OOM / deuda técnica).
+Provides methods that retrieve full game documents from MongoDB.
+"""
+
+from typing import Dict, List, Optional
+from pymongo.errors import PyMongoError
+
+from utils.collection_utils import is_fbcyl as _is_fbcyl
+
+
+class GamesRepositoryMixin:
+    """Mixin providing game-document retrieval methods."""
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_team_match_filter(
+        team_id: str,
+        is_fbcyl: bool,
+        only_with_playbyplay: bool,
+    ) -> Dict:
+        """Build the MongoDB match filter for a specific team's games.
+
+        Args:
+            team_id: Team identifier string.
+            is_fbcyl: True for FBCYL collections, False for FEB.
+            only_with_playbyplay: When True, restrict to games that contain PBP data.
+
+        Returns:
+            MongoDB filter dict.
+        """
+        if is_fbcyl:
+            int_id = int(team_id) if team_id.isdigit() else team_id
+            match_filter: Dict = {
+                "$or": [
+                    {"stats.teams.teamIdIntern": team_id},
+                    {"stats.teams.teamIdIntern": int_id},
+                    {"stats.teams.teamIdExtern": team_id},
+                    {"stats.teams.teamIdExtern": int_id},
+                ]
+            }
+            if only_with_playbyplay:
+                match_filter["moves"] = {"$exists": True, "$ne": None}
+        else:
+            match_filter = {"HEADER.TEAM.id": team_id}
+            if only_with_playbyplay:
+                match_filter["PLAYBYPLAY.LINES"] = {"$exists": True, "$ne": None}
+
+        return match_filter
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def get_games_for_team(
+        self,
+        collection_name: str,
+        team_id: str,
+        only_with_playbyplay: bool = False,
+        projection: Optional[Dict] = None,
+    ) -> List[Dict]:
+        """Return all games where *team_id* participated.
+
+        Args:
+            collection_name: MongoDB collection name.
+            team_id: Team identifier.
+            only_with_playbyplay: When True, only return games containing PBP data.
+            projection: Optional MongoDB projection dict.  When provided, only
+                the specified fields are returned — useful to cap memory usage
+                when callers only need a subset of the document (e.g. possession
+                analysis needs PBP lines + team header, not box-score).
+
+        Returns:
+            List of game documents (possibly projected).
+        """
+        if not self.connection.is_connected():
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            self.connection.ensure_indexes(collection_name)
+            is_fbcyl = _is_fbcyl(collection_name)
+            match_filter = self._build_team_match_filter(team_id, is_fbcyl, only_with_playbyplay)
+            return list(collection.find(match_filter, projection))
+        except PyMongoError:
+            return []
+
+    def get_games_with_playbyplay(
+        self,
+        collection_name: str,
+        date_filter: Dict = None,
+    ) -> List[Dict]:
+        """Return game documents that contain play-by-play data.
+
+        Args:
+            collection_name: MongoDB collection name.
+            date_filter: Optional MongoDB date range dict applied to the game date.
+
+        Returns:
+            List of game documents with PBP data.
+        """
+        if not self.connection.is_connected():
+            return []
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            self.connection.ensure_indexes(collection_name)
+            is_fbcyl = _is_fbcyl(collection_name)
+
+            if is_fbcyl:
+                return self._games_with_playbyplay_fbcyl(collection, date_filter)
+            return self._games_with_playbyplay_feb(collection, date_filter)
+
+        except PyMongoError:
+            return []
+
+    def get_last_match(self, collection_name: str, team_name: str) -> Dict:
+        """Return the most recent game document for *team_name*.
+
+        Args:
+            collection_name: MongoDB collection name.
+            team_name: Team name string (FEB or FBCYL).
+
+        Returns:
+            Most recent game document, or empty dict when not found.
+        """
+        if not self.connection.is_connected():
+            return {}
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            is_fbcyl = _is_fbcyl(collection_name)
+            pipeline = (
+                self._last_match_pipeline_fbcyl(team_name)
+                if is_fbcyl
+                else self._last_match_pipeline_feb(team_name)
+            )
+            result = list(collection.aggregate(pipeline))
+            return result[0] if result else {}
+        except PyMongoError:
+            return {}
+
+    # ------------------------------------------------------------------
+    # Internal implementation helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _games_with_playbyplay_feb(collection, date_filter: Optional[Dict]) -> List[Dict]:
+        if date_filter:
+            pipeline = [
+                {
+                    "$addFields": {
+                        "parsedDate": {
+                            "$dateFromString": {
+                                "dateString": "$HEADER.starttime",
+                                "format": "%d-%m-%Y - %H:%M",
+                                "onError": None,
+                                "onNull": None,
+                            }
+                        }
+                    }
+                },
+                {
+                    "$match": {
+                        "parsedDate": date_filter,
+                        "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None},
+                    }
+                },
+            ]
+            return list(collection.aggregate(pipeline))
+        return list(collection.find({"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}))
+
+    @staticmethod
+    def _games_with_playbyplay_fbcyl(collection, date_filter: Optional[Dict]) -> List[Dict]:
+        if date_filter:
+            pipeline = [
+                {
+                    "$addFields": {
+                        "parsedDate": {
+                            "$dateFromString": {
+                                "dateString": "$stats.time",
+                                "format": "%b %d, %Y %I:%M:%S %p",
+                                "onError": None,
+                                "onNull": None,
+                            }
+                        }
+                    }
+                },
+                {
+                    "$match": {
+                        "parsedDate": date_filter,
+                        "moves": {"$exists": True, "$ne": None},
+                    }
+                },
+            ]
+            return list(collection.aggregate(pipeline))
+        return list(collection.find({"moves": {"$exists": True, "$ne": None}}))
+
+    @staticmethod
+    def _last_match_pipeline_feb(team_name: str) -> List[Dict]:
+        return [
+            {
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
+                            "onError": None,
+                            "onNull": None,
+                        }
+                    }
+                }
+            },
+            {"$match": {"HEADER.TEAM.name": team_name}},
+            {"$sort": {"parsedDate": -1}},
+            {"$limit": 1},
+        ]
+
+    @staticmethod
+    def _last_match_pipeline_fbcyl(team_name: str) -> List[Dict]:
+        return [
+            {
+                "$addFields": {
+                    "parsedDate": {
+                        "$dateFromString": {
+                            "dateString": "$stats.startDate",
+                            "format": "%Y-%m-%dT%H:%M:%S.%LZ",
+                            "onError": None,
+                            "onNull": None,
+                        }
+                    }
+                }
+            },
+            {"$match": {"stats.teams.name": team_name}},
+            {"$sort": {"parsedDate": -1}},
+            {"$limit": 1},
+        ]

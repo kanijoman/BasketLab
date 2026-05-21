@@ -8,6 +8,61 @@ from typing import List, Dict, Optional, Any
 
 from src.utils.collection_utils import is_fbcyl as _is_fbcyl
 
+# Minimal projections for team-discovery queries — exclude large PBP / box-score arrays.
+_TEAM_PROJECTION_FEB = {
+    "BOXSCORE.TEAM.TOTAL.teamCode": 1,
+    "BOXSCORE.TEAM.TOTAL.name": 1,
+    "BOXSCORE.TEAM.TOTAL.id": 1,
+    "HEADER.TEAM.teamCode": 1,
+    "HEADER.TEAM.name": 1,
+    "HEADER.TEAM.id": 1,
+    "_id": 0,
+}
+_TEAM_PROJECTION_FBCYL = {
+    "stats.teams.name": 1,
+    "stats.teams.teamIdExtern": 1,
+    "stats.teams.teamIdIntern": 1,
+    "_id": 0,
+}
+
+
+def _collect_fbcyl_teams(documents: List[Dict], teams_dict: Dict) -> None:
+    """Populate *teams_dict* from FBCYL-format game documents (in-place)."""
+    for doc in documents:
+        stats = doc.get("stats", {})
+        for team in stats.get("teams", []):
+            if not isinstance(team, dict):
+                continue
+            team_name = team.get("name", "")
+            team_id = team.get("teamIdExtern", team.get("teamIdIntern", ""))
+            if team_name and team_name not in teams_dict:
+                teams_dict[team_name] = {
+                    "name": team_name,
+                    "code": str(team_id),
+                    "id": team_id,
+                    "team_index": None,
+                }
+
+
+def _collect_feb_teams(documents: List[Dict], teams_dict: Dict) -> None:
+    """Populate *teams_dict* from FEB-format game documents (in-place)."""
+    for doc in documents:
+        if "BOXSCORE" in doc and "TEAM" in doc["BOXSCORE"]:
+            for team in doc["BOXSCORE"]["TEAM"]:
+                if not (isinstance(team, dict) and "TOTAL" in team):
+                    continue
+                td = team["TOTAL"]
+                code, name, tid = td.get("teamCode", ""), td.get("name", ""), td.get("id", "")
+                if code and name and code not in teams_dict:
+                    teams_dict[code] = {"name": name, "code": code, "id": tid, "team_index": None}
+        elif "HEADER" in doc and "TEAM" in doc["HEADER"]:
+            for team in doc["HEADER"]["TEAM"]:
+                if not isinstance(team, dict):
+                    continue
+                code, name, tid = team.get("teamCode", ""), team.get("name", ""), team.get("id", "")
+                if code and name and code not in teams_dict:
+                    teams_dict[code] = {"name": name, "code": code, "id": tid, "team_index": None}
+
 
 def resolve_team_by_id(coll: Any, team_id: str, is_fbcyl: bool) -> Optional[Dict[str, str]]:
     """Return ``{id, name}`` for a team given its stable ID, or ``None`` if not found.
@@ -51,8 +106,7 @@ def resolve_team_by_id(coll: Any, team_id: str, is_fbcyl: bool) -> Optional[Dict
 
 
 def get_available_teams_from_collection(db_handler, collection_name: str) -> List[Dict]:
-    """
-    Extract available teams from a MongoDB collection.
+    """Extract available teams from a MongoDB collection.
 
     Searches both BOXSCORE.TEAM and HEADER.TEAM nodes (FEB) or teams (FBCYL)
     to find unique teams in the collection.
@@ -66,60 +120,14 @@ def get_available_teams_from_collection(db_handler, collection_name: str) -> Lis
             return []
 
         is_fbcyl = _is_fbcyl(collection_name)
-        documents = list(collection.find({}))
-        teams_dict = {}
+        projection = _TEAM_PROJECTION_FBCYL if is_fbcyl else _TEAM_PROJECTION_FEB
+        documents = list(collection.find({}, projection))
+        teams_dict: Dict = {}
 
         if is_fbcyl:
-            for doc in documents:
-                if "stats" in doc and "teams" in doc["stats"]:
-                    teams = doc["stats"]["teams"]
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict):
-                                team_name = team.get("name", "")
-                                team_id = team.get(
-                                    "teamIdExtern", team.get("teamIdIntern", "")
-                                )
-                                if team_name and team_name not in teams_dict:
-                                    teams_dict[team_name] = {
-                                        "name": team_name,
-                                        "code": str(team_id),
-                                        "id": team_id,
-                                        "team_index": None,
-                                    }
+            _collect_fbcyl_teams(documents, teams_dict)
         else:
-            for doc in documents:
-                if "BOXSCORE" in doc and "TEAM" in doc["BOXSCORE"]:
-                    teams = doc["BOXSCORE"]["TEAM"]
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict) and "TOTAL" in team:
-                                team_data = team["TOTAL"]
-                                team_code = team_data.get("teamCode", "")
-                                team_name = team_data.get("name", "")
-                                team_id = team_data.get("id", "")
-                                if team_code and team_name and team_code not in teams_dict:
-                                    teams_dict[team_code] = {
-                                        "name": team_name,
-                                        "code": team_code,
-                                        "id": team_id,
-                                        "team_index": None,
-                                    }
-                elif "HEADER" in doc and "TEAM" in doc["HEADER"]:
-                    teams = doc["HEADER"]["TEAM"]
-                    if isinstance(teams, list):
-                        for team in teams:
-                            if isinstance(team, dict):
-                                team_code = team.get("teamCode", "")
-                                team_name = team.get("name", "")
-                                team_id = team.get("id", "")
-                                if team_code and team_name and team_code not in teams_dict:
-                                    teams_dict[team_code] = {
-                                        "name": team_name,
-                                        "code": team_code,
-                                        "id": team_id,
-                                        "team_index": None,
-                                    }
+            _collect_feb_teams(documents, teams_dict)
 
         return sorted(teams_dict.values(), key=lambda x: x["name"])
 

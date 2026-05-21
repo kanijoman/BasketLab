@@ -237,6 +237,106 @@ class TestNetRating:
 
 
 # ---------------------------------------------------------------------------
+# USG% cap regression — M. Betch scenario
+# A player with very few minutes but normal plays must not exceed 100%.
+# ---------------------------------------------------------------------------
+
+class TestUsagePercentageCap:
+    """calculate_usage_percentage must never return a value above 100.0."""
+
+    def _team_season(self, games=20):
+        return {
+            "total_games": games,
+            "fg2_attempted": 860, "fg3_attempted": 400,
+            "ft_attempted": 240,  "turnovers": 240,
+        }
+
+    def test_few_minutes_player_capped_at_100(self):
+        """Player with 1 minute total but 3 FGA — without cap USG% >> 100."""
+        p = {"total_minutes": 1.0, "total_p2a": 2, "total_p3a": 1, "total_p1a": 0, "total_to": 0}
+        result = ASC.calculate_usage_percentage(p, self._team_season())
+        assert result <= 100.0, f"USG% must be capped at 100, got {result}"
+
+    def test_star_player_normal_minutes_not_capped(self):
+        """A legitimate star (20 min/game × 20 games = 400 min) near 30–35% USG% is fine."""
+        p = {"total_minutes": 400.0, "total_p2a": 150, "total_p3a": 80, "total_p1a": 70, "total_to": 50}
+        result = ASC.calculate_usage_percentage(p, self._team_season())
+        assert 0.0 < result <= 100.0
+
+    def test_normal_player_not_artificially_capped(self):
+        """A player with solid minutes and moderate usage must land well under 100."""
+        p = {"total_minutes": 250.0, "total_p2a": 80, "total_p3a": 40, "total_p1a": 50, "total_to": 30}
+        result = ASC.calculate_usage_percentage(p, self._team_season())
+        assert result < 50.0, f"Normal player should not have USG% > 50, got {result}"
+
+
+# ---------------------------------------------------------------------------
+# Possession projection subfield regression
+# ---------------------------------------------------------------------------
+
+class TestPossessionProjectionSubfields:
+    """The possession projection must request specific LINES subfields, not the
+    whole array — to avoid loading all 15-20 fields per move."""
+
+    def _make_possession_repo(self, collection: str = "FEB_LF2_2025_A"):
+        from database.repository_possession import PossessionRepositoryMixin
+
+        class FakePossRepo(PossessionRepositoryMixin):
+            def __init__(self):
+                self.connection = __import__('unittest.mock', fromlist=['MagicMock']).MagicMock()
+                self.connection.is_connected.return_value = True
+                self._projection_used = None
+
+            def get_games_for_team(self, col, team_id, only_with_playbyplay=False, projection=None):
+                self._projection_used = projection
+                return []
+
+        return FakePossRepo()
+
+    def test_feb_projection_does_not_include_bare_playbyplay_lines(self):
+        """Bare 'PLAYBYPLAY.LINES' key must not appear — only subfield keys."""
+        repo = self._make_possession_repo()
+        repo.get_team_possession_stats("FEB_LF2_2025_A", "t1")
+        proj = repo._projection_used
+        assert proj is not None
+        # Should NOT have bare array key (loads all fields)
+        assert "PLAYBYPLAY.LINES" not in proj or any(
+            k.startswith("PLAYBYPLAY.LINES.") for k in proj
+        ), "Projection must request specific LINES subfields (e.g. PLAYBYPLAY.LINES.text)"
+
+    def test_feb_projection_includes_text_field(self):
+        """PLAYBYPLAY.LINES.text must be in the FEB projection."""
+        repo = self._make_possession_repo()
+        repo.get_team_possession_stats("FEB_LF2_2025_A", "t1")
+        proj = repo._projection_used
+        assert "PLAYBYPLAY.LINES.text" in proj
+
+    def test_feb_projection_includes_idteam_field(self):
+        """PLAYBYPLAY.LINES.idTeam must be in the FEB projection."""
+        repo = self._make_possession_repo()
+        repo.get_team_possession_stats("FEB_LF2_2025_A", "t1")
+        proj = repo._projection_used
+        assert "PLAYBYPLAY.LINES.idTeam" in proj
+
+    def test_fbcyl_projection_does_not_include_bare_moves(self):
+        """Bare 'moves' key must not appear — only subfield keys."""
+        repo = self._make_possession_repo()
+        repo.get_team_possession_stats("FBCYL_2025_A", "t1")
+        proj = repo._projection_used
+        assert proj is not None
+        assert "moves" not in proj or any(
+            k.startswith("moves.") for k in proj
+        ), "FBCYL projection must request specific moves subfields (e.g. moves.move)"
+
+    def test_fbcyl_projection_includes_move_text_field(self):
+        """moves.move must be in the FBCYL projection."""
+        repo = self._make_possession_repo()
+        repo.get_team_possession_stats("FBCYL_2025_A", "t1")
+        proj = repo._projection_used
+        assert "moves.move" in proj
+
+
+# ---------------------------------------------------------------------------
 # calculate_pie (lines 555-587)
 # ---------------------------------------------------------------------------
 

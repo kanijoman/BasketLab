@@ -7,14 +7,75 @@ decoupled from the PyQt6 UI layer.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
+from cachetools import TTLCache
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 if TYPE_CHECKING:
     from database import MongoDBHandler
+
+# Cache player stats per collection+filter combo for 5 minutes.
+# Same pattern as _possession_cache in team_stats_service.py.
+_player_stats_cache: TTLCache = TTLCache(maxsize=32, ttl=300)
+
+
+def _cache_key(
+    collection_name: str,
+    venue_filter: Optional[bool],
+    result_filter: Optional[str],
+    team_filter: Optional[str],
+    date_filter: Optional[Dict],
+) -> tuple:
+    date_key = str(sorted(date_filter.items())) if date_filter else None
+    return (collection_name, venue_filter, result_filter, team_filter, date_key)
+
+
+def _accumulate_cv_by_player(
+    rows: List[Dict], field_map: Dict[str, str]
+) -> Dict[str, Dict[str, Any]]:
+    """Compute per-player CV/std/mean for each stat in *field_map*.
+
+    Args:
+        rows: List of per-player per-game dicts from the aggregation pipeline.
+        field_map: Mapping of API stat key → raw pipeline field name.
+
+    Returns:
+        ``{player_id: {stat_key: {"mean": float, "std": float, "cv": float, "n": int}}}``
+    """
+    by_player: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
+    for row in rows:
+        pid = row.get("player_id")
+        if not pid:
+            continue
+        for stat_key, raw_field in field_map.items():
+            val = row.get(raw_field)
+            if val is not None:
+                try:
+                    by_player[pid][stat_key].append(float(val))
+                except (TypeError, ValueError):
+                    pass
+
+    result: Dict[str, Dict[str, Any]] = {}
+    for pid, stats in by_player.items():
+        result[pid] = {}
+        for stat_key, values in stats.items():
+            if len(values) < 3:
+                continue
+            arr = np.array(values)
+            mean = float(np.mean(arr))
+            std = float(np.std(arr))
+            cv = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
+            cv = min(cv, 200.0)
+            result[pid][stat_key] = {
+                "mean": round(mean, 2),
+                "std":  round(std, 2),
+                "cv":   round(cv, 1),
+                "n":    len(values),
+            }
+    return result
 
 
 class PlayerStatsService:
@@ -103,6 +164,9 @@ class PlayerStatsService:
     ) -> List[Dict]:
         """Load aggregated player stats for a collection.
 
+        Results are cached for 5 minutes (TTLCache) to avoid recomputing
+        the aggregation pipeline on each Rankings page request.
+
         Args:
             collection_name: MongoDB collection name.
             date_filter: Optional MongoDB date range dict.
@@ -113,12 +177,18 @@ class PlayerStatsService:
         Returns:
             List of player stat dicts (may be empty).
         """
+        key = _cache_key(collection_name, venue_filter, result_filter, team_filter, date_filter)
+        cached = _player_stats_cache.get(key)
+        if cached is not None:
+            return list(cached)  # shallow copy — prevent mutation of cached list
+
         players = self._db.get_player_stats(
             collection_name, date_filter, venue_filter, result_filter,
             team_filter=team_filter,
         ) or []
         if players:
             self._enrich_with_advanced_stats(collection_name, players)
+        _player_stats_cache[key] = players
         return players
 
     # ------------------------------------------------------------------
@@ -151,23 +221,7 @@ class PlayerStatsService:
         if not unique_teams:
             return players
 
-        # Fetch ALL team/opponent context in exactly 2 calls (fixes N+1 pattern).
-        # Previously get_aggregated_team_stats was called once per unique team,
-        # each call executing a full aggregation pipeline.
-        try:
-            all_team_stats = {
-                t['team_name']: t
-                for t in (self._db.get_team_stats(collection_name) or [])
-                if t.get('team_name')
-            }
-            all_opp_stats = {
-                t['team_name']: t
-                for t in (self._db.get_opponent_stats(collection_name) or [])
-                if t.get('team_name')
-            }
-        except Exception:
-            all_team_stats = {}
-            all_opp_stats = {}
+        all_team_stats, all_opp_stats = self._fetch_team_context(collection_name)
 
         team_context: Dict[str, Dict] = {}
         for team_name in unique_teams:
@@ -209,6 +263,30 @@ class PlayerStatsService:
                 player.update(_default_adv)
 
         return players
+
+    def _fetch_team_context(
+        self, collection_name: str
+    ) -> Tuple[Dict[str, Dict], Dict[str, Dict]]:
+        """Fetch team and opponent stats in exactly 2 DB calls.
+
+        Returns:
+            Tuple of (all_team_stats, all_opp_stats) keyed by team_name.
+        """
+        try:
+            all_team_stats = {
+                t['team_name']: t
+                for t in (self._db.get_team_stats(collection_name) or [])
+                if t.get('team_name')
+            }
+            all_opp_stats = {
+                t['team_name']: t
+                for t in (self._db.get_opponent_stats(collection_name) or [])
+                if t.get('team_name')
+            }
+        except Exception:
+            all_team_stats = {}
+            all_opp_stats = {}
+        return all_team_stats, all_opp_stats
 
     def get_consistency(self, collection_name: str) -> Dict[str, Dict[str, Any]]:
         """Compute intra-player per-game variability (std dev + CV) for key stats.
@@ -269,46 +347,13 @@ class PlayerStatsService:
             "stl_pct":                     "stl_pct_game",
             "blk_pct":                     "blk_pct_game",
         }
-
-        by_player: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
-        for row in rows:
-            pid = row.get("player_id")
-            if not pid:
-                continue
-            for stat_key, raw_field in FIELD_MAP.items():
-                val = row.get(raw_field)
-                if val is not None:
-                    try:
-                        by_player[pid][stat_key].append(float(val))
-                    except (TypeError, ValueError):
-                        pass
-
-        result: Dict[str, Dict[str, Any]] = {}
-        for pid, stats in by_player.items():
-            result[pid] = {}
-            for stat_key, values in stats.items():
-                if len(values) < 3:
-                    continue
-                arr = np.array(values)
-                mean = float(np.mean(arr))
-                std = float(np.std(arr))
-                cv = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
-                cv = min(cv, 200.0)
-                result[pid][stat_key] = {
-                    "mean": round(mean, 2),
-                    "std":  round(std, 2),
-                    "cv":   round(cv, 1),
-                    "n":    len(values),
-                }
-
-        return result
+        return _accumulate_cv_by_player(rows, FIELD_MAP)
 
     def _get_consistency_fbcyl(self, collection_name: str) -> Dict[str, Any]:
         """FBCYL per-game player consistency using the FBCYL player per-game pipeline."""
         from src.database.aggregation.fbcyl_per_game_pipeline import (
             build_fbcyl_player_per_game_pipeline, enrich_fbcyl_player_row,
         )
-        from collections import defaultdict
 
         try:
             collection = self._db.connection.get_collection(collection_name)
@@ -342,39 +387,7 @@ class PlayerStatsService:
             "three_point_rate":            "three_pr_game",
             "turnover_rate":               "tov_pct_game",
         }
-
-        by_player: Dict[str, Dict[str, list]] = defaultdict(lambda: defaultdict(list))
-        for row in rows:
-            pid = row.get("player_id")
-            if not pid:
-                continue
-            for stat_key, raw_field in FBCYL_FIELD_MAP.items():
-                val = row.get(raw_field)
-                if val is not None:
-                    try:
-                        by_player[pid][stat_key].append(float(val))
-                    except (TypeError, ValueError):
-                        pass
-
-        result: Dict[str, Any] = {}
-        for pid, stats in by_player.items():
-            result[pid] = {}
-            for stat_key, values in stats.items():
-                if len(values) < 3:
-                    continue
-                arr  = np.array(values)
-                mean = float(np.mean(arr))
-                std  = float(np.std(arr))
-                cv   = (std / abs(mean) * 100) if abs(mean) >= 1.0 else 0.0
-                cv   = min(cv, 200.0)
-                result[pid][stat_key] = {
-                    "mean": round(mean, 2),
-                    "std":  round(std, 2),
-                    "cv":   round(cv, 1),
-                    "n":    len(values),
-                }
-
-        return result
+        return _accumulate_cv_by_player(rows, FBCYL_FIELD_MAP)
 
     def get_in_out_analysis(
         self,
