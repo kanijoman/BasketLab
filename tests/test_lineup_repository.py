@@ -449,5 +449,133 @@ class TestLineupAnalysisEdgeCases(unittest.TestCase):
         self.assertTrue(should_include)
 
 
+# ---------------------------------------------------------------------------
+# Bug-3A: Batch player name lookup (regression guard for N+1 DB queries)
+# ---------------------------------------------------------------------------
+
+class TestBulkLoadPlayerNames(unittest.TestCase):
+    """_bulk_load_player_names must resolve all player IDs in ONE DB query.
+
+    Previously get_lineup_analysis called _get_player_names_for_lineup once
+    per qualifying lineup, causing N MongoDB round-trips.  The new helper
+    does a single query and returns a mapping {player_id_str: (name, photo)}.
+    """
+
+    def setUp(self):
+        self.mock_connection = Mock()
+        self.mock_connection.is_connected.return_value = True
+        self.repo = BasketballRepository(self.mock_connection)
+
+    def _make_collection(self, docs):
+        col = Mock()
+        col.find.return_value = iter(docs)
+        col.find_one.return_value = docs[0] if docs else None
+        self.mock_connection.get_collection.return_value = col
+        return col
+
+    def test_bulk_load_feb_returns_name_and_photo_per_player(self):
+        """FEB: returns {player_id: (name, photo_url)} for all requested IDs."""
+        doc = {
+            'BOXSCORE': {'TEAM': [{'PLAYER': [
+                {'id': 'P1', 'name': 'Ana López',    'logo': 'https://imagenes.feb.es/foto.aspx?c=P1'},
+                {'id': 'P2', 'name': 'Beatriz Ruiz', 'logo': 'https://imagenes.feb.es/foto.aspx?c=P2'},
+            ]}]}
+        }
+        col = self._make_collection([doc])
+
+        result = self.repo._bulk_load_player_names('col_feb', ['P1', 'P2'], is_fbcyl=False)
+
+        assert 'P1' in result, "P1 must be in result map"
+        assert 'P2' in result, "P2 must be in result map"
+        assert result['P1'][0] == 'Ana López'
+        assert result['P2'][0] == 'Beatriz Ruiz'
+        assert result['P1'][1] is not None  # photo URL present
+        # Only one DB call should have been made
+        assert col.find.call_count == 1, f"Expected 1 DB query, got {col.find.call_count}"
+
+    def test_bulk_load_fbcyl_returns_name_no_photo(self):
+        """FBCYL: photo_url is always None (no CDN)."""
+        doc = {
+            'moves': [
+                {'licenseId': 101, 'actorName': 'Carmen Torres'},
+                {'licenseId': 102, 'actorName': 'Diana Sanz'},
+            ]
+        }
+        col = self._make_collection([doc])
+
+        result = self.repo._bulk_load_player_names('col_fbcyl', ['101', '102'], is_fbcyl=True)
+
+        assert '101' in result
+        assert result['101'][0] == 'Carmen Torres'
+        assert result['101'][1] is None, "FBCYL photo must be None"
+        assert col.find.call_count == 1
+
+    def test_bulk_load_missing_player_returns_fallback(self):
+        """Unknown player IDs must get a 'Player {id}' fallback, not raise."""
+        col = self._make_collection([])  # empty collection
+
+        result = self.repo._bulk_load_player_names('col_feb', ['X99'], is_fbcyl=False)
+
+        assert 'X99' in result
+        assert 'X99' in result['X99'][0] or result['X99'][0].startswith('Player'), \
+            "Fallback name expected"
+
+
+# ---------------------------------------------------------------------------
+# Bug-3B: Date filter must be applied in MongoDB, not in Python
+# ---------------------------------------------------------------------------
+
+class TestDateFilterDelegatedToMongoDB(unittest.TestCase):
+    """get_lineup_analysis must delegate date filtering to get_games_for_team.
+
+    The old code did Python-side date filtering which was broken for FEB
+    documents (DD-MM-YYYY string vs ISO YYYY-MM-DD comparison).
+    """
+
+    def setUp(self):
+        self.mock_connection = Mock()
+        self.mock_connection.is_connected.return_value = True
+        self.repo = BasketballRepository(self.mock_connection)
+
+    @patch('src.database.lineup_stats_calculator.LineupStatsCalculator')
+    @patch('src.database.lineup_extractor.LineupExtractor')
+    @patch('src.database.playbyplay_analyzer.PlayByPlayAnalyzer')
+    def test_date_filter_passed_to_get_games_for_team(self, _pbp, _ext, _calc):
+        """When date_filter is supplied, get_games_for_team must receive it."""
+        date_f = {'$gte': '2024-01-01'}
+        self.repo.get_games_for_team = Mock(return_value=[])
+
+        self.repo.get_lineup_analysis(
+            'col',
+            'T1',
+            'Team',
+            date_filter=date_f,
+            is_fbcyl=False,
+        )
+
+        # get_games_for_team must have been called with date_filter keyword arg
+        call_kwargs = self.repo.get_games_for_team.call_args
+        kwargs = call_kwargs.kwargs if hasattr(call_kwargs, 'kwargs') else call_kwargs[1]
+        assert kwargs.get('date_filter') == date_f, (
+            "date_filter must be forwarded to get_games_for_team, "
+            "not applied in Python after loading all documents"
+        )
+
+    @patch('src.database.lineup_stats_calculator.LineupStatsCalculator')
+    @patch('src.database.lineup_extractor.LineupExtractor')
+    @patch('src.database.playbyplay_analyzer.PlayByPlayAnalyzer')
+    def test_projection_passed_to_get_games_for_team(self, _pbp, _ext, _calc):
+        """get_games_for_team must receive a projection to reduce memory usage."""
+        self.repo.get_games_for_team = Mock(return_value=[])
+
+        self.repo.get_lineup_analysis('col', 'T1', 'Team', is_fbcyl=False)
+
+        call_kwargs = self.repo.get_games_for_team.call_args
+        kwargs = call_kwargs.kwargs if hasattr(call_kwargs, 'kwargs') else call_kwargs[1]
+        assert kwargs.get('projection') is not None, (
+            "A projection must be forwarded to get_games_for_team to limit memory usage"
+        )
+
+
 if __name__ == '__main__':
     unittest.main()

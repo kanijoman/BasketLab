@@ -62,6 +62,7 @@ class GamesRepositoryMixin:
         team_id: str,
         only_with_playbyplay: bool = False,
         projection: Optional[Dict] = None,
+        date_filter: Optional[Dict] = None,
     ) -> List[Dict]:
         """Return all games where *team_id* participated.
 
@@ -73,6 +74,10 @@ class GamesRepositoryMixin:
                 the specified fields are returned — useful to cap memory usage
                 when callers only need a subset of the document (e.g. possession
                 analysis needs PBP lines + team header, not box-score).
+            date_filter: Optional MongoDB date range dict (e.g. ``{"$gte": <ISODate>}``).
+                When provided an aggregation pipeline is used to parse the stored
+                date string and apply the filter inside MongoDB, avoiding Python-side
+                filtering which was unreliable for FEB's DD-MM-YYYY string format.
 
         Returns:
             List of game documents (possibly projected).
@@ -85,6 +90,12 @@ class GamesRepositoryMixin:
             self.connection.ensure_indexes(collection_name)
             is_fbcyl = _is_fbcyl(collection_name)
             match_filter = self._build_team_match_filter(team_id, is_fbcyl, only_with_playbyplay)
+
+            if date_filter is not None:
+                return self._games_for_team_with_date_filter(
+                    collection, match_filter, date_filter, is_fbcyl, projection
+                )
+
             return list(collection.find(match_filter, projection))
         except PyMongoError:
             return []
@@ -239,3 +250,46 @@ class GamesRepositoryMixin:
             {"$sort": {"parsedDate": -1}},
             {"$limit": 1},
         ]
+
+    @staticmethod
+    def _games_for_team_with_date_filter(
+        collection,
+        team_match_filter: Dict,
+        date_filter: Dict,
+        is_fbcyl: bool,
+        projection: Optional[Dict],
+    ) -> List[Dict]:
+        """Use an aggregation pipeline to filter a team's games by date in MongoDB.
+
+        FEB dates are stored as DD-MM-YYYY strings which cannot be compared
+        lexicographically with ISO dates.  This helper parses them inside
+        MongoDB using ``$dateFromString`` so that the comparison is always
+        correct.
+        """
+        if is_fbcyl:
+            date_field = "$stats.time"
+            date_format = "%b %d, %Y %I:%M:%S %p"
+        else:
+            date_field = "$HEADER.starttime"
+            date_format = "%d-%m-%Y - %H:%M"
+
+        pipeline: List[Dict] = [
+            {"$match": team_match_filter},
+            {
+                "$addFields": {
+                    "_parsedDate": {
+                        "$dateFromString": {
+                            "dateString": date_field,
+                            "format": date_format,
+                            "onError": None,
+                            "onNull": None,
+                        }
+                    }
+                }
+            },
+            {"$match": {"_parsedDate": date_filter}},
+        ]
+        if projection:
+            pipeline.append({"$project": projection})
+
+        return list(collection.aggregate(pipeline))

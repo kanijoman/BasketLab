@@ -9,7 +9,7 @@ import { ArrowLeftRight, Users } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import {
   getPlayerStats,
-  getTeamsInCollection,
+  getTeamStats,
   getInOutAnalysis,
   getPlayersTogether,
   type InOutStatBlock,
@@ -121,24 +121,35 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
   )
 }
 
+type TeamOption = { id: string; name: string }
+
 function PlayerSelect({
   label, value, onChange, players, teams: teamsProp,
-}: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[]; teams?: string[] }) {
+}: { label: string; value: string; onChange: (v: string) => void; players: PlayerStat[]; teams?: TeamOption[] }) {
   const [nameFilter, setNameFilter] = useState('')
   const [teamFilter, setTeamFilter] = useState('')
 
-  const derivedTeams = useMemo(
-    () => Array.from(new Set(players.map(p => (p.team_name ?? '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
-    [players],
-  )
-  // Prefer independent team list (from getTeamsInCollection) to decouple dropdown
+  // Derive {id, name} pairs from the loaded players when no independent list is available
+  const derivedTeams = useMemo((): TeamOption[] => {
+    const map = new Map<string, string>()
+    for (const p of players) {
+      const id = String(p.team_id ?? '')
+      const name = (p.team_name ?? '').trim()
+      if (id && name) map.set(id, name)
+    }
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [players])
+
+  // Prefer independent team list (from getTeamStats) to decouple dropdown
   // availability from full player load
   const teams = teamsProp && teamsProp.length > 0 ? teamsProp : derivedTeams
 
   const filtered = useMemo(
     () => players.filter(p => {
-      const normalizedTeam = (p.team_name ?? '').trim()
-      const matchesTeam = teamFilter === '' || normalizedTeam === teamFilter
+      // Use team_id for stable matching — team names can change during the season
+      const matchesTeam = teamFilter === '' || String(p.team_id ?? '') === teamFilter
       const matchesName = nameFilter === '' || p.player_name.toLowerCase().includes(nameFilter.toLowerCase())
       return matchesTeam && matchesName
     }),
@@ -162,7 +173,7 @@ function PlayerSelect({
           className="bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
         >
           <option value="">Todos los equipos</option>
-          {teams.map(t => <option key={t} value={t}>{t}</option>)}
+          {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
       <select value={value} onChange={e => onChange(e.target.value)}
@@ -197,10 +208,15 @@ export default function InOutPage() {
     select: rows => [...rows].sort((a, b) => a.player_name.localeCompare(b.player_name)),
   })
 
-  // Independent team list — available before player data loads
-  const { data: teamList = [] } = useQuery<string[]>({
-    queryKey: ['team-list', collection?.name],
-    queryFn:  () => getTeamsInCollection(collection!.name),
+  // Independent team list — available before player data loads; use team_id for stable matching
+  const { data: teamList = [] } = useQuery<TeamOption[]>({
+    queryKey: ['team-list-lineups', collection?.name],
+    queryFn:  () => getTeamStats(collection!.name).then(d =>
+      (d.team_stats ?? [])
+        .filter(t => t.team_id != null)
+        .map(t => ({ id: String(t.team_id), name: t.team_name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    ),
     enabled:  Boolean(collection),
     staleTime: 10 * 60_000,
   })
@@ -244,7 +260,7 @@ export default function InOutPage() {
         {tab === 'IN/OUT' && (
           <div className="space-y-4">
             <div className="card p-4 max-w-xl">
-              <PlayerSelect label="Jugador" value={p1} onChange={setP1} players={players} teams={teamList} />
+              <PlayerSelect key={collection?.name ?? ''} label="Jugador" value={p1} onChange={setP1} players={players} teams={teamList} />
             </div>
 
             {inoutLoading && (
@@ -297,8 +313,8 @@ export default function InOutPage() {
         {tab === 'Juntos' && (
           <div className="space-y-4">
             <div className="card p-4 grid grid-cols-2 gap-4 max-w-3xl">
-              <PlayerSelect label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
-              <PlayerSelect label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} teams={teamList} />
+              <PlayerSelect key={`${collection?.name ?? ''}_1`} label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
+              <PlayerSelect key={`${collection?.name ?? ''}_2`} label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} teams={teamList} />
             </div>
 
             {togLoading && (

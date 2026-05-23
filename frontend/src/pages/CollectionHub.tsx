@@ -34,7 +34,7 @@ const MODULES: Module[] = [
   { icon: Trophy,         label: 'Rankings',                   description: 'Clasificación de jugadores por cualquier métrica', subPath: 'rankings',    accent: 'text-warn' },
   { icon: Activity,       label: 'Posesiones',                 description: 'Ritmo, OER/DER y análisis de posesiones',          subPath: 'possessions', accent: 'text-accent-400' },
   { icon: ArrowLeftRight, label: 'IN/OUT',                     description: 'Impacto por jugador dentro/fuera de la cancha',    subPath: 'inout',       accent: 'text-brand-400' },
-  { icon: Users2,         label: 'Combinaciones',              description: 'Mejores y peores combinaciones de jugadoras por estadística',    subPath: 'lineups',     accent: 'text-brand-400' },
+  { icon: Users2,         label: 'Combinaciones',              description: 'Mejores y peores combinaciones de jugadores por estadística',    subPath: 'lineups',     accent: 'text-brand-400' },
   { icon: FileText,       label: 'Informe Semanal',            description: 'Report builder con PDF/DOCX exportable',           subPath: 'report',      accent: 'text-warn' },
   { icon: BrainCircuit,   label: 'Análisis Predictivo',        description: 'Elasticidades Ridge · Monte Carlo · Predicción partido',   subPath: 'predictive',  accent: 'text-brand-400' },
 ]

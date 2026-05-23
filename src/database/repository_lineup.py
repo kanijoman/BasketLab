@@ -40,34 +40,22 @@ class LineupRepositoryMixin:
         from .lineup_stats_calculator import LineupStatsCalculator
 
         try:
-            # Get all games with play-by-play for this team
+            # Define a projection to avoid loading large BOXSCORE/stats.players fields —
+            # the lineup extractor only needs play-by-play data + team/date metadata.
+            if is_fbcyl:
+                projection = {"moves": 1, "stats.teams": 1, "stats.time": 1}
+            else:
+                projection = {"PLAYBYPLAY": 1, "HEADER": 1}
+
+            # Get all games with play-by-play for this team; apply date filter and
+            # projection inside MongoDB to avoid Python-side filtering and memory waste.
             games = self.get_games_for_team(
                 collection_name,
                 team_id,
-                only_with_playbyplay=True
+                only_with_playbyplay=True,
+                projection=projection,
+                date_filter=date_filter if date_filter else None,
             )
-
-            if not games:
-                return []
-
-            # Apply date filter if provided
-            if date_filter:
-                filtered_games = []
-                for game in games:
-                    # Extract date from game
-                    if is_fbcyl:
-                        game_date = game.get('date', '')
-                    else:
-                        game_date = game.get('HEADER', {}).get('starttime', '').split(' - ')[0]
-                    
-                    # Compare with filter (assuming filter is like {"$gte": "2024-01-01"})
-                    if '$gte' in date_filter:
-                        if game_date >= date_filter['$gte']:
-                            filtered_games.append(game)
-                    else:
-                        filtered_games.append(game)
-                
-                games = filtered_games
 
             if not games:
                 return []
@@ -157,7 +145,8 @@ class LineupRepositoryMixin:
 
             # Convert to list and add player names
             # Filter by total accumulated time and games played for representative lineups
-            lineup_list = []
+            qualifying = []
+            all_player_ids: set = set()
             min_total_minutes = 15  # 15 minutes minimum total
             min_games_played = 5    # At least 5 games
             
@@ -168,13 +157,23 @@ class LineupRepositoryMixin:
                 # Skip lineups that don't meet minimum thresholds
                 if total_minutes < min_total_minutes or games_played < min_games_played:
                     continue
-                
-                # Get player names and photo URLs (FEB: from BOXSCORE.logo; FBCYL: None)
-                player_names, player_photo_urls = self._get_player_names_for_lineup(
-                    collection_name,
-                    lineup_key,
-                    is_fbcyl
-                )
+
+                qualifying.append((lineup_key, stats))
+                all_player_ids.update(lineup_key)
+
+            # Bulk-load ALL player names in a single DB query
+            player_name_map = self._bulk_load_player_names(
+                collection_name, list(all_player_ids), is_fbcyl
+            )
+
+            lineup_list = []
+            for lineup_key, stats in qualifying:
+                player_names = []
+                player_photo_urls = []
+                for pid in lineup_key:
+                    name, photo = player_name_map.get(str(pid), (f"Player {pid}", None))
+                    player_names.append(name)
+                    player_photo_urls.append(photo)
 
                 stats['player_names'] = player_names
                 stats['players'] = player_names  # overwrite frozenset set by calculator
@@ -383,3 +382,77 @@ class LineupRepositoryMixin:
             photo_urls = [None] * len(player_ids_list)
 
         return names, photo_urls
+
+    def _bulk_load_player_names(
+        self,
+        collection_name: str,
+        player_ids: List[str],
+        is_fbcyl: bool,
+    ) -> Dict[str, tuple]:
+        """Return a mapping ``{player_id_str: (name, photo_url)}`` for all *player_ids*.
+
+        Resolves ALL requested IDs in a single MongoDB query, replacing the
+        previous N+1 pattern where ``_get_player_names_for_lineup`` was called
+        once per qualifying lineup.
+
+        Args:
+            collection_name: MongoDB collection name.
+            player_ids: List of player ID strings to look up.
+            is_fbcyl: True for FBCYL format, False for FEB.
+
+        Returns:
+            Dict mapping each player ID string to a ``(name, photo_url)`` tuple.
+            Unknown IDs get a fallback ``("Player {id}", None)`` entry.
+        """
+        result: Dict[str, tuple] = {}
+        if not player_ids:
+            return result
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            ids_str = [str(pid) for pid in player_ids]
+
+            if is_fbcyl:
+                ids_int = [int(pid) for pid in ids_str if pid.isdigit()]
+                ids_to_search = ids_int if ids_int else ids_str
+                for doc in collection.find(
+                    {"moves.licenseId": {"$in": ids_to_search}},
+                    {"moves": 1},
+                ):
+                    for move in doc.get("moves", []):
+                        lid = str(move.get("licenseId", ""))
+                        if lid in ids_str and lid not in result:
+                            result[lid] = (move.get("actorName", f"Player {lid}"), None)
+                    if len(result) == len(ids_str):
+                        break
+            else:
+                ids_mixed = []
+                for pid in player_ids:
+                    ids_mixed.append(pid)
+                    try:
+                        ids_mixed.append(int(pid))
+                    except (ValueError, TypeError):
+                        pass
+                for doc in collection.find(
+                    {"BOXSCORE.TEAM.PLAYER.id": {"$in": ids_mixed}},
+                    {"BOXSCORE.TEAM.PLAYER": 1},
+                ):
+                    for team in doc.get("BOXSCORE", {}).get("TEAM", []):
+                        for player in team.get("PLAYER", []):
+                            pid_str = str(player.get("id", ""))
+                            if pid_str in ids_str and pid_str not in result:
+                                logo = player.get("logo", "")
+                                photo = logo if logo and logo.startswith("http") else None
+                                result[pid_str] = (player.get("name", f"Player {pid_str}"), photo)
+                    if len(result) == len(ids_str):
+                        break
+
+        except Exception as e:
+            print(f"Error in _bulk_load_player_names: {e}")
+
+        # Fill in fallbacks for any IDs not found
+        for pid in ids_str:
+            if pid not in result:
+                result[pid] = (f"Player {pid}", None)
+
+        return result
