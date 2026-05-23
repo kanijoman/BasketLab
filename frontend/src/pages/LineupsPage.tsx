@@ -150,8 +150,6 @@ export default function LineupsPage() {
   const [progress, setProgress] = useState<number | null>(null)
   const streamHandle = useRef<{ cancelled: boolean }>({ cancelled: false })
 
-  const _onProgress = useCallback((pct: number) => setProgress(pct), [])
-
   useEffect(() => {
     if (!analysisParams || !collection) return
     const handle = { cancelled: false }
