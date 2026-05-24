@@ -31,19 +31,14 @@ class InOutRepositoryMixin(InOutHelpersMixin):
         try:
             from .playbyplay_analyzer import PlayByPlayAnalyzer, InOutStatsCalculator
 
-            # Report initial progress - fetching games
-            if progress_callback:
-                progress_callback(0, 100)  # Use percentage-based for this phase
-
-            # Get all games with play-by-play data (this can be slow)
-            games = self.get_games_with_playbyplay(collection_name, date_filter)
-
-            # Report that loading is complete
-            if progress_callback and len(games) > 0:
-                progress_callback(1, len(games))  # Signal that we have the data and starting analysis
-
             # Detect if this is a FBCYL collection
             is_fbcyl = _is_fbcyl(collection_name)
+
+            # Get total count for progress reporting (count_documents, no docs loaded)
+            total_games = self.count_games_with_playbyplay(collection_name, date_filter)
+
+            if progress_callback:
+                progress_callback(0, max(total_games, 1))
 
             # Convert player_id to appropriate type for comparison
             if is_fbcyl:
@@ -55,30 +50,37 @@ class InOutRepositoryMixin(InOutHelpersMixin):
                 player_id_compare = player_id  # Keep as string (UUID format)
                 player_team_id = None  # Not used for FBCYL (per-game extraction instead)
             else:
-                # FEB: player_id is consistent across games, find team ID from first appearance
+                # FEB: player_id is consistent across games.
+                # Find team_id via a single find_one() instead of iterating the cursor
+                # (iterating would exhaust it before the main processing loop).
                 player_id_compare = player_id
                 player_team_id = None
 
-                # Find player's team ID from first appearance
-                for game in games:
-                    # FEB structure: BOXSCORE.TEAM[].PLAYER[]
-                    boxscore = game.get('BOXSCORE', {})
-                    teams = boxscore.get('TEAM', [])
-
-                    for team in teams:
-                        players = team.get('PLAYER', [])
-                        for player in players:
-                            if player.get('id') == player_id_compare:
-                                player_team_id = team.get('id')
+                collection_obj = self.connection.get_collection(collection_name)
+                player_doc = collection_obj.find_one(
+                    {
+                        "BOXSCORE.TEAM.PLAYER.id": player_id,
+                        "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None},
+                    },
+                    {"BOXSCORE.TEAM.id": 1, "BOXSCORE.TEAM.PLAYER.id": 1},
+                )
+                if player_doc:
+                    for team in player_doc.get("BOXSCORE", {}).get("TEAM", []):
+                        for player in team.get("PLAYER", []):
+                            if player.get("id") == player_id_compare:
+                                player_team_id = team.get("id")
                                 break
                         if player_team_id:
                             break
 
-                    if player_team_id:
-                        break
-
                 if not player_team_id:
                     return {}
+
+            # Lazy cursor — one document in memory at a time
+            games = self.get_games_with_playbyplay(collection_name, date_filter)
+
+            if progress_callback and total_games > 0:
+                progress_callback(1, total_games)
 
             # Aggregate stats across all games
             total_stats_in = {
@@ -108,16 +110,15 @@ class InOutRepositoryMixin(InOutHelpersMixin):
             games_analyzed = 0
             debug_outputs = []
             games_participated = 0
-            total_games = len(games)
 
             # Report initial progress
             if progress_callback:
-                progress_callback(0, total_games)
+                progress_callback(0, max(total_games, 1))
 
             for game_index, game in enumerate(games):
                 # Report progress at the start of each game
                 if progress_callback:
-                    progress_callback(game_index + 1, total_games)
+                    progress_callback(game_index + 1, max(total_games, 1))
                 # Default per-game container (to avoid UnboundLocalError in finally)
                 game_stats = {}
                 game_was_skipped = False
@@ -381,7 +382,7 @@ class InOutRepositoryMixin(InOutHelpersMixin):
             from .playbyplay_analyzer import PlayByPlayAnalyzer, InOutStatsCalculator
             from .inout_repository_helper import InOutRepositoryHelper
 
-            games = self._fetch_games_with_progress(collection_name, date_filter, progress_callback)
+            games, total_games = self._fetch_games_with_progress(collection_name, date_filter, progress_callback)
             is_fbcyl = _is_fbcyl(collection_name)
             
             total_stats = self._initialize_together_stats()
@@ -389,7 +390,7 @@ class InOutRepositoryMixin(InOutHelpersMixin):
             games_participated = 0
 
             for game_index, game in enumerate(games):
-                self._report_progress(progress_callback, game_index + 1, len(games))
+                self._report_progress(progress_callback, game_index + 1, max(total_games, 1))
                 
                 player_info = InOutRepositoryHelper.find_players_in_game(
                     game, player1_id, player2_id, is_fbcyl
@@ -543,7 +544,7 @@ class InOutRepositoryMixin(InOutHelpersMixin):
             return {}
 
         try:
-            games = self._fetch_games_with_progress(collection_name, date_filter, progress_callback)
+            games, total_games = self._fetch_games_with_progress(collection_name, date_filter, progress_callback)
             is_fbcyl = _is_fbcyl(collection_name)
             
             total_stats = self._initialize_player_individual_stats()
@@ -552,7 +553,7 @@ class InOutRepositoryMixin(InOutHelpersMixin):
             games_participated = 0
 
             for game_index, game in enumerate(games):
-                self._report_progress(progress_callback, game_index + 1, len(games))
+                self._report_progress(progress_callback, game_index + 1, max(total_games, 1))
                 
                 game_result = self._process_game_with_teammate(
                     game, main_player_id, teammate_id, is_fbcyl, debug

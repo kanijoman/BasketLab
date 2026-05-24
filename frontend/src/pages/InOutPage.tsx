@@ -11,7 +11,6 @@ import {
   getPlayerStats,
   getTeamStats,
   getInOutAnalysis,
-  getPlayersTogether,
   type InOutStatBlock,
   type PlayerStat,
 } from '@/api/client'
@@ -191,7 +190,7 @@ function PlayerSelect({
 
 // -- Component ----------------------------------------------------------------
 
-const TABS = ['IN/OUT', 'Juntos'] as const
+const TABS = ['IN/OUT', 'IN vs IN'] as const
 
 export default function InOutPage() {
   const { collection } = useCollection()
@@ -227,10 +226,16 @@ export default function InOutPage() {
     enabled:  Boolean(collection) && Boolean(p1),
   })
 
-  const { data: tog, isFetching: togLoading } = useQuery({
-    queryKey: ['together', collection?.name, together1, together2],
-    queryFn:  () => getPlayersTogether(collection!.name, together1, together2),
-    enabled:  Boolean(collection) && Boolean(together1) && Boolean(together2),
+  // IN vs IN: independent ON-court queries for each player
+  const { data: inout1, isFetching: inout1Loading } = useQuery({
+    queryKey: ['inout', collection?.name, together1],
+    queryFn:  () => getInOutAnalysis(collection!.name, together1),
+    enabled:  Boolean(collection) && Boolean(together1),
+  })
+  const { data: inout2, isFetching: inout2Loading } = useQuery({
+    queryKey: ['inout', collection?.name, together2],
+    queryFn:  () => getInOutAnalysis(collection!.name, together2),
+    enabled:  Boolean(collection) && Boolean(together2),
   })
 
   return (
@@ -309,47 +314,69 @@ export default function InOutPage() {
           </div>
         )}
 
-        {/* Juntos Tab */}
-        {tab === 'Juntos' && (
+        {/* IN vs IN Tab */}
+        {tab === 'IN vs IN' && (
           <div className="space-y-4">
             <div className="card p-4 grid grid-cols-2 gap-4 max-w-3xl">
               <PlayerSelect key={`${collection?.name ?? ''}_1`} label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
               <PlayerSelect key={`${collection?.name ?? ''}_2`} label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} teams={teamList} />
             </div>
 
-            {togLoading && (
-              <div className="text-sm text-ink-secondary animate-pulse">Calculando…</div>
+            {(inout1Loading || inout2Loading) && (
+              <div className="text-sm text-ink-secondary animate-pulse">Calculando impacto…</div>
             )}
 
-            {tog && !togLoading && (
+            {inout1 && inout2 && !inout1Loading && !inout2Loading && (
               <>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-accent-400" />
-                  <span className="text-xs text-ink-secondary">Estadísticas del equipo</span>
+                  <span className="text-sm font-medium text-ink-primary">{inout1.player_name}</span>
+                  <span className="text-xs text-ink-secondary">vs</span>
+                  <span className="text-sm font-medium text-ink-primary">{inout2.player_name}</span>
+                  <span className="text-xs text-ink-secondary">— Impacto en pista (ON)</span>
                 </div>
+
+                {/* ON cards side by side */}
                 <div className="flex gap-3">
-                  <StatCard label="Juntos en cancha" block={tog.together} accent="border-accent-500" />
-                  <StatCard label="Al menos uno fuera" block={tog.apart}   accent="border-surface-border" />
+                  <StatCard label={`🟢 ${inout1.player_name} (ON)`} block={inout1.on} accent="border-accent-500" />
+                  <StatCard label={`🟢 ${inout2.player_name} (ON)`} block={inout2.on} accent="border-brand-500" />
                 </div>
+
+                {/* Differential P1 ON − P2 ON */}
                 <div className="card p-4">
                   <h3 className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-3">
-                    Impacto diferencial (Juntos − Separados)
+                    Impacto diferencial ({inout1.player_name} − {inout2.player_name})
                   </h3>
                   <div className="space-y-2">
-                    <DeltaBar value={delta(tog.together.net_rating, tog.apart.net_rating)} label="Net Rating" />
-                    <DeltaBar value={delta(tog.together.offensive_rating, tog.apart.offensive_rating)} label="ORtg" />
-                    <DeltaBar value={delta(tog.apart.defensive_rating, tog.together.defensive_rating)} label="DRtg (↓ mejor)" />
-                    <DeltaBar value={delta(tog.together.efg_percentage, tog.apart.efg_percentage)} label="eFG%" />
-                    <DeltaBar value={delta(tog.together.true_shooting, tog.apart.true_shooting)} label="TS%" />
+                    <DeltaBar value={delta(inout1.on.net_rating,            inout2.on.net_rating)}            label="Net Rating" />
+                    <DeltaBar value={delta(inout1.on.offensive_rating,      inout2.on.offensive_rating)}      label="ORtg" />
+                    <DeltaBar value={delta(inout2.on.defensive_rating,      inout1.on.defensive_rating)}      label="DRtg (↓ mejor)" />
+                    <DeltaBar value={delta(inout1.on.efg_percentage,        inout2.on.efg_percentage)}        label="eFG%" />
+                    <DeltaBar value={delta(inout1.on.true_shooting,         inout2.on.true_shooting)}         label="TS%" />
+                    <DeltaBar value={delta(inout1.on.offensive_rebound_rate,inout2.on.offensive_rebound_rate)} label="OR%" />
+                    <DeltaBar value={delta(inout1.on.defensive_rebound_rate,inout2.on.defensive_rebound_rate)} label="DR%" />
                   </div>
                 </div>
               </>
             )}
 
-            {(!together1 || !together2) && !tog && (
+            {/* Partial load: one player selected */}
+            {inout1 && !inout2 && !inout1Loading && together2 === '' && (
+              <>
+                <div className="flex items-center gap-2">
+                  <ArrowLeftRight className="w-4 h-4 text-accent-400" />
+                  <span className="text-sm font-medium text-ink-primary">{inout1.player_name} (ON)</span>
+                </div>
+                <div className="flex gap-3">
+                  <StatCard label={`🟢 ${inout1.player_name} (ON)`} block={inout1.on} accent="border-accent-500" />
+                </div>
+              </>
+            )}
+
+            {(!together1 && !together2) && (
               <div className="card p-10 flex flex-col items-center gap-2 text-center">
                 <Users className="w-8 h-8 text-brand-400 opacity-40" />
-                <p className="text-ink-secondary text-sm">Selecciona dos jugadores para comparar su impacto conjunto.</p>
+                <p className="text-ink-secondary text-sm">Selecciona dos jugadores para comparar su impacto en pista (ON).</p>
               </div>
             )}
           </div>

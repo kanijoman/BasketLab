@@ -4,7 +4,7 @@ Extracted from repository_inout.py to reduce its size.
 ``InOutRepositoryMixin`` inherits from this class.
 """
 
-from typing import Dict, List
+from typing import Dict, Iterable, List, Tuple
 
 
 class InOutHelpersMixin:
@@ -65,18 +65,36 @@ class InOutHelpersMixin:
     # Game fetching
     # ------------------------------------------------------------------
 
-    def _fetch_games_with_progress(self, collection_name: str, date_filter: Dict,
-                                   progress_callback) -> List[Dict]:
-        """Fetch games and report initial progress."""
+    def _fetch_games_with_progress(
+        self, collection_name: str, date_filter: Dict, progress_callback
+    ) -> Tuple[Iterable[Dict], int]:
+        """Fetch a lazy game cursor and report initial progress.
+
+        Returns a ``(cursor, total_count)`` tuple so callers can track progress
+        without calling ``len()`` on the cursor (which would materialise it).
+        ``total_count`` is obtained via ``count_documents()`` before the cursor
+        is opened.
+
+        Args:
+            collection_name: MongoDB collection name.
+            date_filter: Optional date range filter.
+            progress_callback: Optional ``(current, total) -> None`` callback.
+
+        Returns:
+            ``(cursor, total_count)`` — an iterable cursor and the total number
+            of matching game documents.
+        """
+        total = self.count_games_with_playbyplay(collection_name, date_filter)
+
         if progress_callback:
-            progress_callback(0, 100)
+            progress_callback(0, max(total, 1))
 
-        games = self.get_games_with_playbyplay(collection_name, date_filter)
+        cursor = self.get_games_with_playbyplay(collection_name, date_filter)
 
-        if progress_callback and len(games) > 0:
-            progress_callback(1, len(games))
+        if progress_callback and total > 0:
+            progress_callback(1, total)
 
-        return games
+        return cursor, total
 
     # ------------------------------------------------------------------
     # FBCYL action processing

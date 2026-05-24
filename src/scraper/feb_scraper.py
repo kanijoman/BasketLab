@@ -24,11 +24,11 @@ class FEBWebScraper:
             web_client: WebClient instance
         """
         self.web_client = web_client
-        # Maps group_id → Series.aspx URL, populated by _get_fases_groups.
-        # Used by _get_matches_via_series to find playoff match pages without
-        # re-fetching the calendar (which may not show fasesDataList after a
-        # group-select POST changes the ASP.NET session state).
-        self._series_url_by_group: Dict[str, str] = {}
+        # Maps group_id → list of Series.aspx URLs, populated by _get_fases_groups.
+        # A playoff phase (e.g. "1/2 FINAL") can have multiple brackets, each
+        # represented by a separate Series.aspx?f=XXXXX page.  All matching URLs
+        # are stored so _get_matches_via_series can visit every bracket.
+        self._series_url_by_group: Dict[str, List[str]] = {}
 
     def get_page_content(self, year: str) -> Tuple[BeautifulSoup, requests.Session]:
         """
@@ -191,7 +191,9 @@ class FEBWebScraper:
                 for g_label, g_id in groups:
                     norm_group = g_label.upper().strip()
                     if norm_fases in norm_group or norm_group in norm_fases:
-                        self._series_url_by_group[g_id] = fases_href
+                        urls = self._series_url_by_group.setdefault(g_id, [])
+                        if fases_href not in urls:
+                            urls.append(fases_href)
                         break
         except Exception:
             pass
@@ -280,7 +282,9 @@ class FEBWebScraper:
                 # appears in the standard dropdown (found via /resultados/).  The
                 # cache is the only reliable way to reach Series.aspx pages after
                 # a group-select POST taints the ASP.NET session state.
-                self._series_url_by_group[gid] = href
+                urls = self._series_url_by_group.setdefault(gid, [])
+                if href not in urls:
+                    urls.append(href)
                 if gid not in existing_ids:
                     extra.append((label, gid))
                     existing_ids.add(gid)
@@ -340,14 +344,10 @@ class FEBWebScraper:
         Returns:
             List of match code strings, or empty list if not found.
         """
-        # --- Fast path: cached Series URL from get_groups_for_season ----------
-        series_href = self._series_url_by_group.get(group_value)
-        if series_href:
-            resp = self.web_client.get(series_href, timeout=EXTENDED_TIMEOUT)
-            if resp:
-                return self._extract_match_codes(
-                    BeautifulSoup(resp.content, "html.parser")
-                )
+        # --- Fast path: cached Series URLs from get_groups_for_season ----------
+        series_hrefs = self._series_url_by_group.get(group_value, [])
+        if series_hrefs:
+            return self._fetch_codes_from_series_urls(series_hrefs)
 
         # --- Slow path: rebuild cache from /resultados/ + label matching ------
         # Used when _get_matches_via_series is called without a prior
@@ -363,18 +363,36 @@ class FEBWebScraper:
                         )
                         if groups:
                             self._build_series_cache(groups, calendar_url)
-                            series_href = self._series_url_by_group.get(group_value)
-                            if series_href:
-                                resp = self.web_client.get(
-                                    series_href, timeout=EXTENDED_TIMEOUT
-                                )
-                                if resp:
-                                    return self._extract_match_codes(
-                                        BeautifulSoup(resp.content, "html.parser")
-                                    )
+                            series_hrefs = self._series_url_by_group.get(group_value, [])
+                            if series_hrefs:
+                                return self._fetch_codes_from_series_urls(series_hrefs)
             except Exception:
                 pass
         return []
+
+    def _fetch_codes_from_series_urls(self, series_hrefs: List[str]) -> List[str]:
+        """Fetch and merge match codes from multiple Series.aspx URLs.
+
+        Visits every URL in *series_hrefs*, extracts match codes from each page,
+        and returns a deduplicated list preserving encounter order.
+
+        Args:
+            series_hrefs: One or more Series.aspx URLs for a playoff phase group.
+
+        Returns:
+            Deduplicated list of match code strings.
+        """
+        codes: List[str] = []
+        seen: set = set()
+        for href in series_hrefs:
+            resp = self.web_client.get(href, timeout=EXTENDED_TIMEOUT)
+            if not resp:
+                continue
+            for code in self._extract_match_codes(BeautifulSoup(resp.content, "html.parser")):
+                if code not in seen:
+                    codes.append(code)
+                    seen.add(code)
+        return codes
 
     @staticmethod
     def _aspx_to_pretty_calendar_url(aspx_url: str) -> str:
