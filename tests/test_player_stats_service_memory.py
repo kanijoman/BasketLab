@@ -208,3 +208,65 @@ class TestFBCYLPipelineTeamFilter:
         assert team_match_idx is not None, "$match on team_name not found"
         assert player_unwind_idx is not None, "$unwind on players not found"
         assert team_match_idx < player_unwind_idx
+
+
+# ---------------------------------------------------------------------------
+# Rankings — games_played contract (regression guard for min-games filter)
+# ---------------------------------------------------------------------------
+
+class TestLoadSeasonDataGamesPlayedContract:
+    """load_season_data must always return 'games_played' in every player row.
+
+    This guards the frontend min-games filter in RankingsPage which relies on
+    this field to exclude phantom players (e.g. M. BETCH, M. MUKENDI) that
+    played only 1-2 games and produce unrealistic per-game averages.
+
+    The backend intentionally returns ALL players including low-sample ones;
+    the frontend is responsible for applying min_games >= N filtering.
+    """
+
+    def _make_db(self, players: list) -> MagicMock:
+        db = MagicMock()
+        db.get_player_stats.return_value = players
+        db.get_team_stats.return_value = []
+        db.get_opponent_stats.return_value = []
+        return db
+
+    def test_games_played_present_for_all_players(self):
+        """Every player row must contain a numeric games_played field."""
+        players = [
+            {**_player("p1", "Team A"), "games_played": 20},
+            {**_player("p2", "Team A"), "games_played": 1},   # phantom player
+        ]
+        db = self._make_db(players)
+        svc = PlayerStatsService(db)
+        result = svc.load_season_data("COL")
+        assert all("games_played" in p for p in result), (
+            "games_played must be present in every player row for frontend filtering"
+        )
+
+    def test_single_game_player_not_filtered_by_backend(self):
+        """Backend must NOT remove players with games_played=1.
+        The frontend (RankingsPage minGames filter) is solely responsible."""
+        phantom = {**_player("phantom", "Team A"), "games_played": 1, "points_per_game": 40.0}
+        db = self._make_db([phantom])
+        svc = PlayerStatsService(db)
+        result = svc.load_season_data("COL")
+        ids = [p.get("player_id") for p in result]
+        assert "phantom" in ids, (
+            "Backend must not silently discard low-games-played players; "
+            "frontend is responsible for min_games filtering"
+        )
+
+    def test_games_played_value_preserved_unchanged(self):
+        """games_played value must not be mutated by enrichment."""
+        players = [
+            {**_player("p1", "Team A"), "games_played": 3},
+            {**_player("p2", "Team A"), "games_played": 17},
+        ]
+        db = self._make_db(players)
+        svc = PlayerStatsService(db)
+        result = svc.load_season_data("COL2")
+        by_id = {p["player_id"]: p for p in result}
+        assert by_id["p1"]["games_played"] == 3
+        assert by_id["p2"]["games_played"] == 17

@@ -7,7 +7,7 @@
  * Filtering by team/player preserves global league rank, not filtered rank.
  * Each row shows the delta relative to the league leader.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, Trophy, Medal, Award, Search } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -95,8 +95,19 @@ export default function RankingsPage() {
   const [groupIdx, setGroupIdx]         = useState(0)
   const [statIdx, setStatIdx]           = useState(0)
   const [minMin, setMinMin]             = useState(0)
+  const [minGames, setMinGames]         = useState(3)
   const [teamFilter, setTeamFilter]     = useState('')
   const [playerSearch, setPlayerSearch] = useState('')
+
+  // Reset all filters when the active collection changes
+  useEffect(() => {
+    setGroupIdx(0)
+    setStatIdx(0)
+    setMinMin(0)
+    setMinGames(3)
+    setTeamFilter('')
+    setPlayerSearch('')
+  }, [collection?.name])
 
   const { data: rawPlayers = [], isLoading } = useQuery({
     queryKey: ['player-stats', collection?.name],
@@ -115,16 +126,17 @@ export default function RankingsPage() {
     [rawPlayers],
   )
 
-  // Global ranking: only min-minutes filter, NO team/player filter → real league position
+  // Global ranking: min-minutes + min-games filters, NO team/player filter → real league position
   const allRanked = useMemo(() => {
     let list = rawPlayers
-    if (minMin > 0) list = list.filter(p => p.minutes_per_game >= minMin)
+    if (minMin > 0)   list = list.filter(p => p.minutes_per_game >= minMin)
+    if (minGames > 0) list = list.filter(p => (p.games_played ?? 0) >= minGames)
     return [...list].sort((a, b) => {
       const av = (a[stat.key] as number) ?? 0
       const bv = (b[stat.key] as number) ?? 0
       return stat.reverse ? av - bv : bv - av
     })
-  }, [rawPlayers, stat, minMin])
+  }, [rawPlayers, stat, minMin, minGames])
 
   // Map player_id → globally-ranked position (1-indexed)
   const globalRankMap = useMemo(
@@ -218,6 +230,21 @@ export default function RankingsPage() {
             min/partido
           </label>
 
+          {/* Min games */}
+          <label className="flex items-center gap-2 text-xs text-ink-muted">
+            PJ &ge;
+            <input
+              type="number"
+              min={1}
+              max={40}
+              step={1}
+              value={minGames}
+              onChange={e => setMinGames(Math.max(1, Number(e.target.value)))}
+              className="input w-14 py-1 text-xs text-center"
+            />
+            partidos
+          </label>
+
           {/* Team filter */}
           <div className="relative">
             <select
@@ -297,7 +324,10 @@ export default function RankingsPage() {
                   {/* Player info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-ink-primary truncate">{player.player_name}</p>
-                    <p className="text-xs text-ink-muted truncate">{player.team_name}</p>
+                    <p className="text-xs text-ink-muted truncate">
+                      {player.team_name}
+                      <span className="ml-2 opacity-50">{player.games_played}PJ</span>
+                    </p>
                   </div>
 
                   {/* Value + delta vs league leader */}

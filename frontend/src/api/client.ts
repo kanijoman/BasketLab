@@ -249,6 +249,58 @@ export const getLineupAnalysis = (
   )
 }
 
+/**
+ * Stream lineup analysis via SSE.
+ * Calls `onProgress(pct, current, total)` for each progress event,
+ * then resolves with the full LineupRow[] once the done event arrives.
+ */
+export function streamLineupAnalysis(
+  collection: string,
+  teamId: string,
+  teamName: string,
+  size = 5,
+  stat = 'net_rating',
+  period = 0,
+  includeGameLog = false,
+  onProgress?: (pct: number, current: number, total: number) => void,
+): Promise<LineupRow[]> {
+  const qs = new URLSearchParams({
+    team_name: teamName,
+    size: String(size),
+    stat,
+    period: String(period),
+    include_game_log: String(includeGameLog),
+  })
+  const url = `${BASE}/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
+
+  return new Promise((resolve, reject) => {
+    const es = new EventSource(url)
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.done) {
+          es.close()
+          if (data.error) {
+            reject(new Error(data.error))
+          } else {
+            resolve(data.result ?? [])
+          }
+        } else if (data.progress !== undefined && onProgress) {
+          onProgress(data.progress as number, data.current as number, data.total as number)
+        }
+      } catch {
+        // ignore malformed frames
+      }
+    }
+
+    es.onerror = () => {
+      es.close()
+      reject(new Error('SSE connection error'))
+    }
+  })
+}
+
 // ── Shot charts ───────────────────────────────────────────────────────────────
 
 export const getShotZones = (

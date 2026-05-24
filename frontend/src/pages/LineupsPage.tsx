@@ -9,7 +9,7 @@ import { useCollection } from '@/context/CollectionContext'
 import PageTransition from '@/components/ui/PageTransition'
 import ExportButton from '@/components/ui/ExportButton'
 import {
-  getLineupAnalysis, getTeamStats,
+  getTeamStats, streamLineupAnalysis,
   LINEUP_STAT_GROUPS,
   type LineupRow, type GameLogEntry,
 } from '@/api/client'
@@ -143,22 +143,37 @@ export default function LineupsPage() {
     if (teams.length > 0 && !selectedTeam) setSelectedTeam(teams[0])
   }, [teams, selectedTeam])
 
-  // Lineup analysis query
-  const { data: lineups = [], isFetching, error } = useQuery({
-    queryKey: ['lineups', collection?.name, analysisParams],
-    queryFn: () =>
-      getLineupAnalysis(
-        collection!.name,
-        analysisParams!.teamId,
-        analysisParams!.teamName,
-        analysisParams!.size,
-        analysisParams!.stat,
-        analysisParams!.period,
-        true, // always include game_log
-      ),
-    enabled: Boolean(collection && analysisParams),
-    staleTime: 5 * 60_000,
-  })
+  // Lineup analysis — driven by streaming SSE to show progress
+  const [lineups, setLineups]   = useState<LineupRow[]>([])
+  const [isFetching, setFetching] = useState(false)
+  const [error, setError]       = useState<Error | null>(null)
+  const [progress, setProgress] = useState<number | null>(null)
+  const streamHandle = useRef<{ cancelled: boolean }>({ cancelled: false })
+
+  useEffect(() => {
+    if (!analysisParams || !collection) return
+    const handle = { cancelled: false }
+    streamHandle.current = handle
+    setFetching(true)
+    setError(null)
+    setProgress(0)
+    setLineups([])
+
+    streamLineupAnalysis(
+      collection.name,
+      analysisParams.teamId,
+      analysisParams.teamName,
+      analysisParams.size,
+      analysisParams.stat,
+      analysisParams.period,
+      true, // always include game_log
+      (pct) => { if (!handle.cancelled) setProgress(pct) },
+    )
+      .then(data  => { if (!handle.cancelled) { setLineups(data); setFetching(false); setProgress(null) } })
+      .catch(err  => { if (!handle.cancelled) { setError(err instanceof Error ? err : new Error(String(err))); setFetching(false); setProgress(null) } })
+
+    return () => { handle.cancelled = true }
+  }, [analysisParams, collection])
 
   // Derived data
   const activeStat = analysisParams?.stat ?? stat
@@ -213,7 +228,7 @@ export default function LineupsPage() {
   const csvData = useMemo(
     () =>
       lineups.map(row => ({
-        jugadoras:    (row.players as string[]).join(' - '),
+        jugadores:    (row.players as string[]).join(' - '),
         min:          row.minutes?.toFixed(1),
         partidos:     row.games_played ?? '',
         pf:           row.points_for,
@@ -232,7 +247,7 @@ export default function LineupsPage() {
     [lineups],
   )
   const csvHeaders = [
-    { key: 'jugadoras',  label: 'Combinacion' },
+    { key: 'jugadores',  label: 'Combinacion' },
     { key: 'min',        label: 'MIN' },
     { key: 'partidos',   label: 'PJ' },
     { key: 'pf',         label: 'PF' },
@@ -350,7 +365,7 @@ export default function LineupsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">Jugadoras</label>
+            <label className="block text-xs font-medium text-ink-secondary mb-1">Jugadores</label>
             <select value={size} onChange={e => setSize(Number(e.target.value))} className={selectCls}>
               {[2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
             </select>
@@ -403,11 +418,24 @@ export default function LineupsPage() {
           </p>
         )}
 
-        {/* Loading indicator */}
+        {/* Loading indicator with progress bar */}
         {isFetching && (
-          <div className="flex items-center gap-3 text-ink-secondary text-sm card p-4">
-            <span className="inline-block w-4 h-4 border-2 border-accent-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            {`Analizando partidos\u2026 esto puede tardar hasta un minuto en temporadas largas.`}
+          <div className="flex flex-col gap-2 card p-4 text-ink-secondary text-sm">
+            <div className="flex items-center gap-3">
+              <span className="inline-block w-4 h-4 border-2 border-accent-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              {`Analizando partidos\u2026`}
+              {progress != null && (
+                <span className="ml-auto text-xs text-ink-muted font-mono">{progress}%</span>
+              )}
+            </div>
+            {progress != null && (
+              <div className="h-1.5 bg-surface-hover rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent-500 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -501,12 +529,12 @@ export default function LineupsPage() {
             {playerFrequency.length > 0 && (
               <div className="card p-4">
                 <h3 className="text-sm font-semibold text-ink-primary mb-3">
-                  Frecuencia de jugadoras en top / bottom {n}
+                  Frecuencia de jugadores en top / bottom {n}
                 </h3>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-xs text-ink-secondary border-b border-surface-border">
-                      <th className="text-left pb-2 font-medium">Jugadora</th>
+                      <th className="text-left pb-2 font-medium">Jugador</th>
                       <th className="text-right pb-2 font-medium w-8 pr-2">Top</th>
                       <th className="pb-2 w-36" />
                       <th className="text-right pb-2 font-medium w-8 pr-2">Bot.</th>
