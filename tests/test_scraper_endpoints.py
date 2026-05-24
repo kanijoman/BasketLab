@@ -447,9 +447,9 @@ class TestFebScraperFasesGroups:
         assert len(result) == 1
         assert result[0] == ("2\u00baA-1\u00baB Final", "89477")
         # Cache must be populated
-        assert scraper._series_url_by_group.get("89477") == (
+        assert scraper._series_url_by_group.get("89477") == [
             "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
-        )
+        ]
 
     def test_resolves_single_fases_link_to_group_id(self, scraper):
         from unittest.mock import MagicMock
@@ -806,7 +806,7 @@ class TestGetMatchesViaSeriesFallback:
         """Regression: when cache has series URL for the group, use it directly."""
         from unittest.mock import MagicMock
         series_url = "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
-        scraper._series_url_by_group["89477"] = series_url
+        scraper._series_url_by_group["89477"] = [series_url]
 
         series_resp = MagicMock()
         series_resp.content = str(
@@ -830,7 +830,7 @@ class TestGetMatchesViaSeriesFallback:
         """Only completed matches (score digits-digits) must be returned."""
         from unittest.mock import MagicMock
         series_url = "https://baloncestoenvivo.feb.es/Series.aspx?f=44785"
-        scraper._series_url_by_group["89477"] = series_url
+        scraper._series_url_by_group["89477"] = [series_url]
 
         series_resp = MagicMock()
         series_resp.content = str(
@@ -870,7 +870,7 @@ class TestGetMatchesViaSeriesFallback:
         cal_soup = BeautifulSoup(cal_html, "html.parser")
         scraper._get_fases_groups(cal_soup, existing_ids)
 
-        assert scraper._series_url_by_group.get("89477") == series_url, (
+        assert scraper._series_url_by_group.get("89477") == [series_url], (
             "_series_url_by_group must be populated with the series URL"
         )
 
@@ -941,5 +941,5 @@ class TestGetMatchesViaSeriesFallback:
         codes = scraper._get_matches_via_series(cal_url, "89477", season_value="2025")
 
         assert codes == ["2512420"]
-        assert scraper._series_url_by_group.get("89477") == series_url
+        assert scraper._series_url_by_group.get("89477") == [series_url]
 

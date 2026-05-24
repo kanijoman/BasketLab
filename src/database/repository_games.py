@@ -4,10 +4,37 @@ Extracted from repository.py (FASE OOM / deuda técnica).
 Provides methods that retrieve full game documents from MongoDB.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Optional
 from pymongo.errors import PyMongoError
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+
+# ---------------------------------------------------------------------------
+# Field projections for play-by-play queries
+# ---------------------------------------------------------------------------
+# Only fetch the fields actually consumed by PlayByPlayAnalyzer and
+# InOutStatsCalculator. This avoids loading large BOXSCORE totals, shot-chart
+# data, etc. into memory and is the primary defence against OOM errors when
+# processing a full season of games.
+
+_FEB_PBP_PROJECTION: Dict = {
+    "HEADER.TEAM": 1,           # team ID mapping (PlayByPlayAnalyzer._get_team_mapping)
+    "BOXSCORE.TEAM.id": 1,      # team ID lookup
+    "BOXSCORE.TEAM.PLAYER.id": 1,   # player identity
+    "BOXSCORE.TEAM.PLAYER.min": 1,  # minutes played check
+    "PLAYBYPLAY.LINES": 1,      # play-by-play actions (core of analysis)
+}
+
+_FBCYL_PBP_PROJECTION: Dict = {
+    "stats.teams.teamIdIntern": 1,       # team ID (game-scoped)
+    "stats.teams.teamIdExtern": 1,       # team ID (stable)
+    "stats.teams.players.uuid": 1,       # stable player identity
+    "stats.teams.players.actorId": 1,    # game-scoped player reference
+    "stats.teams.players.name": 1,       # name for normalised lookup
+    "stats.teams.players.timePlayed": 1, # minutes played check
+    "stats.teams.players.data": 1,       # phantom-guard detection
+    "moves": 1,                          # play-by-play actions
+}
 
 
 class GamesRepositoryMixin:
@@ -104,15 +131,21 @@ class GamesRepositoryMixin:
         self,
         collection_name: str,
         date_filter: Dict = None,
-    ) -> List[Dict]:
-        """Return game documents that contain play-by-play data.
+    ) -> Iterable[Dict]:
+        """Return a lazy cursor of game documents that contain play-by-play data.
+
+        Returns a pymongo cursor (not a materialised list) so callers can
+        iterate one document at a time without loading the full result set into
+        memory.  Each document is projected to only the fields required by
+        PlayByPlayAnalyzer and InOutStatsCalculator (see _FEB_PBP_PROJECTION /
+        _FBCYL_PBP_PROJECTION).
 
         Args:
             collection_name: MongoDB collection name.
             date_filter: Optional MongoDB date range dict applied to the game date.
 
         Returns:
-            List of game documents with PBP data.
+            Iterable of projected game documents (pymongo Cursor or CommandCursor).
         """
         if not self.connection.is_connected():
             return []
@@ -128,6 +161,38 @@ class GamesRepositoryMixin:
 
         except PyMongoError:
             return []
+
+    def count_games_with_playbyplay(
+        self,
+        collection_name: str,
+        date_filter: Dict = None,
+    ) -> int:
+        """Return the number of games with play-by-play data without loading docs.
+
+        Uses count_documents() to get the total count so callers can size
+        progress bars without materialising the cursor.
+
+        Args:
+            collection_name: MongoDB collection name.
+            date_filter: Optional MongoDB date range dict.
+
+        Returns:
+            Integer count of matching game documents.
+        """
+        if not self.connection.is_connected():
+            return 0
+
+        try:
+            collection = self.connection.get_collection(collection_name)
+            is_fbcyl = _is_fbcyl(collection_name)
+            match_filter = (
+                {"moves": {"$exists": True, "$ne": None}}
+                if is_fbcyl
+                else {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}
+            )
+            return collection.count_documents(match_filter)
+        except PyMongoError:
+            return 0
 
     def get_last_match(self, collection_name: str, team_name: str) -> Dict:
         """Return the most recent game document for *team_name*.
@@ -160,7 +225,7 @@ class GamesRepositoryMixin:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _games_with_playbyplay_feb(collection, date_filter: Optional[Dict]) -> List[Dict]:
+    def _games_with_playbyplay_feb(collection, date_filter: Optional[Dict]) -> Iterable[Dict]:
         if date_filter:
             pipeline = [
                 {
@@ -181,12 +246,16 @@ class GamesRepositoryMixin:
                         "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None},
                     }
                 },
+                {"$project": _FEB_PBP_PROJECTION},
             ]
-            return list(collection.aggregate(pipeline))
-        return list(collection.find({"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}))
+            return collection.aggregate(pipeline)
+        return collection.find(
+            {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}},
+            _FEB_PBP_PROJECTION,
+        )
 
     @staticmethod
-    def _games_with_playbyplay_fbcyl(collection, date_filter: Optional[Dict]) -> List[Dict]:
+    def _games_with_playbyplay_fbcyl(collection, date_filter: Optional[Dict]) -> Iterable[Dict]:
         if date_filter:
             pipeline = [
                 {
@@ -207,9 +276,13 @@ class GamesRepositoryMixin:
                         "moves": {"$exists": True, "$ne": None},
                     }
                 },
+                {"$project": _FBCYL_PBP_PROJECTION},
             ]
-            return list(collection.aggregate(pipeline))
-        return list(collection.find({"moves": {"$exists": True, "$ne": None}}))
+            return collection.aggregate(pipeline)
+        return collection.find(
+            {"moves": {"$exists": True, "$ne": None}},
+            _FBCYL_PBP_PROJECTION,
+        )
 
     @staticmethod
     def _last_match_pipeline_feb(team_name: str) -> List[Dict]:
