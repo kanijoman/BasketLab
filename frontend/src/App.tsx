@@ -14,6 +14,7 @@
  *   /:collection/possessions  → PossessionsPage
  *   /:collection/inout        → InOutPage
  *   /:collection/lineups      → LineupsPage
+ *   /:collection/rotaciones   → RotacionesPage
  *   /admin                    → AdminPage (requires admin role)
  *
  * AnimatePresence wraps routes for page transition animations.
@@ -41,6 +42,7 @@ import AdminPage from '@/pages/AdminPage'
 import PredictivePage from '@/pages/PredictivePage'
 import MatchAnalysisPage from '@/pages/MatchAnalysisPage'
 import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
+import RotacionesPage from '@/pages/RotacionesPage'
 
 export default function App() {
   const location = useLocation()
@@ -68,7 +70,8 @@ export default function App() {
               <Route path="lineups"     element={<LineupsPage />} />
               <Route path="predictive"  element={<PredictivePage />} />
               <Route path="matches"    element={<MatchAnalysisPage />} />
-              <Route path="multiphase" element={<MultiPhaseStatsPage />} />
+              <Route path="multiphase"  element={<MultiPhaseStatsPage />} />
+              <Route path="rotaciones" element={<RotacionesPage />} />
             </Route>
 
             {/* ── Admin ── */}

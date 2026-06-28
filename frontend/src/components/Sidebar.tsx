@@ -24,6 +24,7 @@ import {
   Settings,
   Swords,
   Layers,
+  RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: BrainCircuit,     label: 'Análisis Predictivo', subPath: 'predictive' },
   { icon: Swords,           label: 'Análisis de Partido',  subPath: 'matches' },
   { icon: Layers,           label: 'Multifase',            subPath: 'multiphase' },
+  { icon: RotateCcw,        label: 'Rotaciones',           subPath: 'rotaciones' },
 ]
 
 const STORAGE_KEY = 'sidebar-collapsed'

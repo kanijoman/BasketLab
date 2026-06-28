@@ -108,6 +108,23 @@ class MongoDBHandler:
             date_filter, is_fbcyl, include_game_log, progress_callback
         )
 
+    def get_games_for_team(
+        self,
+        collection_name: str,
+        team_id: str,
+        only_with_playbyplay: bool = False,
+        projection: dict = None,
+        date_filter: dict = None,
+    ) -> list:
+        """Return all games where team_id participated."""
+        return self.repository.get_games_for_team(
+            collection_name,
+            team_id,
+            only_with_playbyplay=only_with_playbyplay,
+            projection=projection,
+            date_filter=date_filter,
+        )
+
     @staticmethod
     def get_collection_name(competition: str, season: str, group: str) -> str:
         """Generate safe collection name."""
