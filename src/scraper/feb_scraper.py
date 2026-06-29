@@ -394,6 +394,34 @@ class FEBWebScraper:
                     seen.add(code)
         return codes
 
+    def _merge_with_series_codes(
+        self, codes: List[str], group_value: str, calendar_url: str, soup: BeautifulSoup
+    ) -> List[str]:
+        """Supplement *codes* with all codes from cached Series.aspx pages for this group.
+
+        For playoff phases /resultados/ only shows the current jornada; the full
+        series history lives on Series.aspx.  This helper populates the series URL
+        cache from *soup* if it is not yet present for *group_value*, then merges
+        any additional codes found on those pages (deduplicated, order preserved).
+
+        Returns *codes* unchanged when no Series.aspx URL is available.
+        """
+        if not self._series_url_by_group.get(group_value):
+            # Cache not yet populated for this group — try to build it from soup.
+            visible_groups = self.get_groups(soup)
+            if visible_groups:
+                self._build_series_cache(visible_groups, calendar_url)
+        series_hrefs = self._series_url_by_group.get(group_value, [])
+        if not series_hrefs:
+            return codes
+        series_codes = self._fetch_codes_from_series_urls(series_hrefs)
+        seen = set(codes)
+        for c in series_codes:
+            if c not in seen:
+                codes.append(c)
+                seen.add(c)
+        return codes
+
     @staticmethod
     def _aspx_to_pretty_calendar_url(aspx_url: str) -> str:
         """Convert ``calendario.aspx?g=G&t=T&nm=NM`` to ``/calendario/NM/G/T``.
@@ -588,17 +616,18 @@ class FEBWebScraper:
                         url = results_url
             soup = self.select_group(session, url, season_value, group_value, hidden_fields)
 
-        # Extract match codes — primary and /resultados/ fallback
+        # Extract match codes from the POST result page.
+        # Note: for playoff phases /resultados/ shows only the current jornada;
+        # Series.aspx carries the full series history.  Always merge both sources.
         codes = self._extract_match_codes(soup)
-        if codes:
-            return codes
+        merged = self._merge_with_series_codes(
+            codes, group_value, original_calendar_url, soup
+        )
+        if merged:
+            return merged
 
-        # Final fallback: some playoff phases (e.g. "2ºA-1ºB Final") render their
-        # matches exclusively on Series.aspx pages linked from the fasesDataList
-        # navigation element.  The /resultados/ page for those groups shows the
-        # group selected but no match rows.  Scan the original calendar page for
-        # Series.aspx links, find the one whose group dropdown matches group_value,
-        # and extract match codes from there.
+        # Final fallback: slow-path cache rebuild for groups where Series.aspx
+        # is the only source (e.g. a phase with no match rows on /resultados/).
         return self._get_matches_via_series(original_calendar_url, group_value, season_value)
 
     def _build_form_data(self, event_target: str, hidden_fields: Dict[str, str],

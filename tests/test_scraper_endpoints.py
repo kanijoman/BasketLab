@@ -943,3 +943,147 @@ class TestGetMatchesViaSeriesFallback:
         assert codes == ["2512420"]
         assert scraper._series_url_by_group.get("89477") == [series_url]
 
+
+# ---------------------------------------------------------------------------
+# get_matches — Series.aspx merge (current-jornada-only bug)
+# ---------------------------------------------------------------------------
+
+class TestGetMatchesMergesSeriesAspx:
+    """Regression: get_matches must return ALL completed series games, not just
+    the current jornada shown by the /resultados/ POST result.
+
+    Root cause: after select_group POST, /resultados/ shows only the current
+    jornada (e.g. game 2, May 23).  Game 1 (May 16) is only visible on the
+    full Series.aspx page.  The ``if codes: return codes`` early-exit
+    prevented Series.aspx from ever being consulted.
+    """
+
+    CALENDAR_URL = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025"
+    SERIES_URL = "https://baloncestoenvivo.feb.es/Series.aspx?f=11111"
+    GROUP_ID = "89477"
+    SEASON = "2025"
+
+    @pytest.fixture
+    def scraper(self):
+        with patch("src.scraper.feb_scraper.FEBWebScraper.__init__", return_value=None):
+            from src.scraper.feb_scraper import FEBWebScraper
+            s = FEBWebScraper.__new__(FEBWebScraper)
+            s.web_client = MagicMock()
+            s._series_url_by_group = {}
+            return s
+
+    def _calendar_html(self):
+        return (
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_temporadasDropDownList">'
+            f'  <option selected value="{self.SEASON}">{self.SEASON}/26</option>'
+            f'</select>'
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">'
+            f'  <option selected value="88868">Liga Regular</option>'
+            f'  <option value="{self.GROUP_ID}">2\u00baA-1\u00baB Final</option>'
+            f'</select>'
+            f'<input id="__VIEWSTATE" value="vs1"/>'
+        ).encode()
+
+    def _post_result_html(self):
+        """POST result: only current jornada — game 2 (May 23) only."""
+        return (
+            f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">'
+            f'  <option selected value="{self.GROUP_ID}">2\u00baA-1\u00baB Final</option>'
+            f'</select>'
+            f'<input id="__VIEWSTATE" value="vs2"/>'
+            f'<table id="jornadaDataGrid"><tr><th>Jornada</th></tr>'
+            f'<tr><td><a href="Partido.aspx?p=2512421">68 - 71</a></td></tr>'
+            f'</table>'
+        ).encode()
+
+    def _series_html(self):
+        """Series.aspx: both games in the series (game 1 May 16 + game 2 May 23)."""
+        return (
+            '<table id="jornadaDataGrid"><tr><th>Jornada</th></tr>'
+            '<tr><td><a href="Partido.aspx?p=2512420">58 - 71</a></td></tr>'
+            '<tr><td><a href="Partido.aspx?p=2512421">68 - 71</a></td></tr>'
+            '</table>'
+        ).encode()
+
+    def test_merges_series_codes_when_cache_pre_populated_regression(self, scraper):
+        """Regression: with cache pre-populated get_matches must return ALL series
+        games, not just the current jornada from the POST result.
+
+        Before fix: returns only ['2512421'] (current jornada early-exit).
+        After fix:  returns both ['2512421', '2512420'] (merged from Series.aspx).
+        """
+        import requests
+        scraper._series_url_by_group[self.GROUP_ID] = [self.SERIES_URL]
+
+        cal = MagicMock()
+        cal.content = self._calendar_html()
+        post = MagicMock()
+        post.content = self._post_result_html()
+        series = MagicMock()
+        series.content = self._series_html()
+
+        scraper.web_client.get.side_effect = (
+            lambda url, **kw: series if "Series.aspx" in url else cal
+        )
+        scraper.web_client.post.return_value = post
+
+        codes = scraper.get_matches(
+            self.SEASON, self.GROUP_ID, self.SEASON,
+            MagicMock(spec=requests.Session),
+            url=self.CALENDAR_URL,
+        )
+
+        assert "2512420" in codes, "Game 1 (May 16) from Series.aspx must be returned"
+        assert "2512421" in codes, "Game 2 (May 23) from POST result must be returned"
+        assert len(set(codes)) == 2, f"Expected 2 unique codes, got {codes}"
+
+    def test_deduplicates_codes_present_in_both_sources(self, scraper):
+        """Code 2512421 appears in both POST result and Series.aspx — must not duplicate."""
+        import requests
+        scraper._series_url_by_group[self.GROUP_ID] = [self.SERIES_URL]
+
+        cal = MagicMock()
+        cal.content = self._calendar_html()
+        post = MagicMock()
+        post.content = self._post_result_html()
+        series = MagicMock()
+        series.content = self._series_html()
+
+        scraper.web_client.get.side_effect = (
+            lambda url, **kw: series if "Series.aspx" in url else cal
+        )
+        scraper.web_client.post.return_value = post
+
+        codes = scraper.get_matches(
+            self.SEASON, self.GROUP_ID, self.SEASON,
+            MagicMock(spec=requests.Session),
+            url=self.CALENDAR_URL,
+        )
+
+        assert codes.count("2512421") == 1, f"Code 2512421 must not duplicate; got {codes}"
+
+    def test_no_series_url_returns_post_codes_unchanged(self, scraper):
+        """When no Series.aspx URL is cached for this group, codes from POST are returned."""
+        import requests
+        assert self.GROUP_ID not in scraper._series_url_by_group
+
+        cal = MagicMock()
+        cal.content = self._calendar_html()
+        post = MagicMock()
+        post.content = self._post_result_html()
+
+        scraper.web_client.get.return_value = cal
+        scraper.web_client.post.return_value = post
+
+        codes = scraper.get_matches(
+            self.SEASON, self.GROUP_ID, self.SEASON,
+            MagicMock(spec=requests.Session),
+            url=self.CALENDAR_URL,
+        )
+
+        assert "2512421" in codes
+        get_calls = [str(c) for c in scraper.web_client.get.call_args_list]
+        assert not any("Series.aspx" in c for c in get_calls), (
+            "Series.aspx must not be fetched when no cache entry exists for this group"
+        )
+
