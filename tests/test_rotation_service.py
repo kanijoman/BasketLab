@@ -198,6 +198,97 @@ class TestComputeCV:
         assert self.svc._compute_cv([5, 10, 15, 20, 30]) >= 0.0
 
 
+class TestComputePerGameGiniCV:
+    """_compute_per_game_gini / _compute_per_game_cv compute metric per game
+    then return (mean, population_std) across games — analogous to _compute_per_game_pct."""
+    svc = RotationService.__new__(RotationService)
+
+    # --- per-game Gini ---
+
+    def test_gini_empty_list_returns_zeros(self):
+        mean, std = self.svc._compute_per_game_gini([], {"p1", "p2"})
+        assert mean == 0.0 and std == 0.0
+
+    def test_gini_skips_games_where_player_set_has_no_sig_players(self):
+        # game has minutes for "p99" only; significant_ids = {"p1"} → no overlap → skip
+        games = [{"p99": 20.0}]
+        mean, std = self.svc._compute_per_game_gini(games, {"p1"})
+        assert mean == 0.0 and std == 0.0
+
+    def test_gini_perfect_equality_single_game(self):
+        # 4 players with equal minutes → Gini ≈ 0
+        games = [{"p1": 10.0, "p2": 10.0, "p3": 10.0, "p4": 10.0}]
+        sig = {"p1", "p2", "p3", "p4"}
+        mean, std = self.svc._compute_per_game_gini(games, sig)
+        assert mean == pytest.approx(0.0, abs=1e-4)
+        assert std == pytest.approx(0.0, abs=1e-4)
+
+    def test_gini_two_identical_games_std_zero(self):
+        game = {"p1": 35.0, "p2": 25.0, "p3": 20.0, "p4": 10.0, "p5": 10.0}
+        games = [game, game]
+        sig = set(game.keys())
+        mean, std = self.svc._compute_per_game_gini(games, sig)
+        assert std == pytest.approx(0.0, abs=1e-4)
+        assert 0.0 < mean < 1.0
+
+    def test_gini_uses_only_significant_players(self):
+        # marginal player "p99" has huge minutes; if included Gini changes
+        game = {"p1": 20.0, "p2": 20.0, "p3": 20.0, "p4": 20.0, "p99": 100.0}
+        sig_with = {"p1", "p2", "p3", "p4", "p99"}
+        sig_without = {"p1", "p2", "p3", "p4"}
+        mean_with, _ = self.svc._compute_per_game_gini([game], sig_with)
+        mean_without, _ = self.svc._compute_per_game_gini([game], sig_without)
+        # equal-minute players → Gini=0 without p99; with p99 → Gini>0
+        assert mean_without == pytest.approx(0.0, abs=1e-4)
+        assert mean_with > 0.05
+
+    def test_gini_result_in_range(self):
+        games = [
+            {"p1": 35.0, "p2": 28.0, "p3": 22.0, "p4": 15.0, "p5": 10.0, "p6": 5.0},
+            {"p1": 30.0, "p2": 30.0, "p3": 20.0, "p4": 18.0, "p5": 12.0, "p6": 5.0},
+        ]
+        sig = {"p1", "p2", "p3", "p4", "p5", "p6"}
+        mean, std = self.svc._compute_per_game_gini(games, sig)
+        assert 0.0 <= mean <= 1.0
+        assert std >= 0.0
+
+    # --- per-game CV ---
+
+    def test_cv_empty_list_returns_zeros(self):
+        mean, std = self.svc._compute_per_game_cv([], {"p1", "p2"})
+        assert mean == 0.0 and std == 0.0
+
+    def test_cv_perfect_equality_returns_zero_mean(self):
+        games = [{"p1": 10.0, "p2": 10.0, "p3": 10.0}]
+        sig = {"p1", "p2", "p3"}
+        mean, std = self.svc._compute_per_game_cv(games, sig)
+        assert mean == pytest.approx(0.0, abs=1e-4)
+
+    def test_cv_two_identical_games_std_zero(self):
+        game = {"p1": 40.0, "p2": 20.0, "p3": 10.0, "p4": 5.0}
+        games = [game, game]
+        sig = set(game.keys())
+        mean, std = self.svc._compute_per_game_cv(games, sig)
+        assert std == pytest.approx(0.0, abs=1e-4)
+        assert mean > 0.0
+
+    def test_cv_uses_only_significant_players(self):
+        game = {"p1": 10.0, "p2": 10.0, "p_marginal": 0.5}
+        sig_with = {"p1", "p2", "p_marginal"}
+        sig_without = {"p1", "p2"}
+        mean_with, _ = self.svc._compute_per_game_cv([game], sig_with)
+        mean_without, _ = self.svc._compute_per_game_cv([game], sig_without)
+        assert mean_without == pytest.approx(0.0, abs=1e-4)
+        assert mean_with > 0.0
+
+    def test_cv_result_non_negative(self):
+        games = [{"p1": 35.0, "p2": 10.0, "p3": 5.0}]
+        sig = {"p1", "p2", "p3"}
+        mean, std = self.svc._compute_per_game_cv(games, sig)
+        assert mean >= 0.0
+        assert std >= 0.0
+
+
 class TestComputePercentages:
     """_compute_percentages now only computes pct_minutes_starting_five.
     Top-5 and Top-8 percentages are per-game and covered by TestComputePerGamePct.
