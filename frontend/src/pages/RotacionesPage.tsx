@@ -18,11 +18,13 @@ const selectCls =
   'appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-1.5 text-sm ' +
   'text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400'
 
-function fmtPct(v: number) {
+function fmtPct(v: number | null | undefined) {
+  if (v == null) return '—'
   return `${v.toFixed(1)}%`
 }
 
-function fmtNum(v: number, decimals = 2) {
+function fmtNum(v: number | null | undefined, decimals = 2) {
+  if (v == null) return '—'
   return v.toFixed(decimals)
 }
 
@@ -392,7 +394,9 @@ export default function RotacionesPage() {
                       {result.rotation_label}
                     </span>
                   </div>
-                  <p className="text-xs text-ink-secondary">Índice de Gini</p>
+                  <p className="text-xs text-ink-secondary">
+                    Índice de Gini <span className="text-ink-muted">· media por partido, ±{fmtNum(result.gini_std, 3)} std</span>
+                  </p>
                   <p className="text-xs text-ink-muted">
                     {result.rotation_label === 'Rotación amplia'
                       ? 'Los minutos están muy repartidos entre todas las jugadoras.'
@@ -427,7 +431,9 @@ export default function RotacionesPage() {
                       {result.cv_label}
                     </span>
                   </div>
-                  <p className="text-xs text-ink-secondary">Coeficiente de variación</p>
+                  <p className="text-xs text-ink-secondary">
+                    Coeficiente de variación <span className="text-ink-muted">· media por partido, ±{fmtNum(result.cv_std, 1)}% std</span>
+                  </p>
                   <p className="text-xs text-ink-muted">
                     {result.cv_label === 'Muy homogéneo'
                       ? 'Las jugadoras tienen cargas de minutos muy similares entre sí.'

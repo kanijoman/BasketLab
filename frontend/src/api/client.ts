@@ -338,7 +338,9 @@ export interface RotationResult {
   avg_combined_subs_per_game: number
   avg_individual_subs_per_game: number
   gini_index: number
+  gini_std: number
   cv: number
+  cv_std: number
   rotation_label: string
   cv_label: string
   avg_stint_min_team: number | null

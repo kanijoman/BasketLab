@@ -195,10 +195,12 @@ class RotationService:
         avg_combined = round(total_combined / games_with_pbp, 2) if games_with_pbp else 0.0
         avg_individual = round(total_individual / games_with_pbp, 2) if games_with_pbp else 0.0
 
-        # Distribution metrics (significant players only)
-        all_minutes = [significant_stats[pid]["total_minutes"] for pid in sorted_ids]
-        gini = self._compute_gini(all_minutes)
-        cv = self._compute_cv(all_minutes)
+        # Distribution metrics — computed per-game then averaged across the season.
+        # Using significant_ids as a set so marginal players don't distort the metric
+        # game-by-game (same filter applied at every match, not just at season level).
+        significant_set = set(significant_ids)
+        gini, gini_std = self._compute_per_game_gini(per_game_minutes, significant_set)
+        cv, cv_std = self._compute_per_game_cv(per_game_minutes, significant_set)
 
         # Starter names
         starter_names = [
@@ -226,8 +228,10 @@ class RotationService:
             "total_individual_substitutions": total_individual,
             "avg_combined_subs_per_game": avg_combined,
             "avg_individual_subs_per_game": avg_individual,
-            "gini_index": round(gini, 4),
-            "cv": round(cv, 1),
+            "gini_index": gini,
+            "gini_std": gini_std,
+            "cv": cv,
+            "cv_std": cv_std,
             "rotation_label": self._rotation_label(gini),
             "cv_label": self._cv_label(cv),
             "avg_stint_min_team": team_avg_stint,
@@ -268,6 +272,57 @@ class RotationService:
             return 0.0, 0.0
         mean = sum(pcts) / len(pcts)
         variance = sum((p - mean) ** 2 for p in pcts) / len(pcts)
+        std = math.sqrt(variance)
+        return round(mean, 1), round(std, 1)
+
+    def _compute_per_game_gini(
+        self,
+        per_game_minutes: List[Dict[str, float]],
+        significant_ids: Set[str],
+    ) -> Tuple[float, float]:
+        """Compute Gini per game (significant players only), return (mean, pop_std).
+
+        Only minutes for players in *significant_ids* are considered; marginal
+        players are excluded game-by-game so they don't distort the measure.
+        Games where none of the significant players have minutes are skipped.
+
+        Returns:
+            (mean_gini, population_std_gini), both rounded to 4 decimal places.
+        """
+        values: List[float] = []
+        for game_min in per_game_minutes:
+            mins = [m for pid, m in game_min.items() if pid in significant_ids]
+            if not mins:
+                continue
+            values.append(self._compute_gini(mins))
+        if not values:
+            return 0.0, 0.0
+        mean = sum(values) / len(values)
+        variance = sum((v - mean) ** 2 for v in values) / len(values)
+        std = math.sqrt(variance)
+        return round(mean, 4), round(std, 4)
+
+    def _compute_per_game_cv(
+        self,
+        per_game_minutes: List[Dict[str, float]],
+        significant_ids: Set[str],
+    ) -> Tuple[float, float]:
+        """Compute CV per game (significant players only), return (mean%, pop_std%).
+
+        Analogous to _compute_per_game_gini but uses coefficient of variation.
+        Returns:
+            (mean_cv, population_std_cv), both rounded to 1 decimal place.
+        """
+        values: List[float] = []
+        for game_min in per_game_minutes:
+            mins = [m for pid, m in game_min.items() if pid in significant_ids]
+            if not mins:
+                continue
+            values.append(self._compute_cv(mins))
+        if not values:
+            return 0.0, 0.0
+        mean = sum(values) / len(values)
+        variance = sum((v - mean) ** 2 for v in values) / len(values)
         std = math.sqrt(variance)
         return round(mean, 1), round(std, 1)
 
@@ -423,7 +478,9 @@ class RotationService:
             "avg_combined_subs_per_game": 0.0,
             "avg_individual_subs_per_game": 0.0,
             "gini_index": 0.0,
+            "gini_std": 0.0,
             "cv": 0.0,
+            "cv_std": 0.0,
             "rotation_label": "Rotación amplia",
             "cv_label": "Muy homogéneo",
             "avg_stint_min_team": None,
