@@ -383,7 +383,7 @@ export default function PossessionsPage() {
             searchPlaceholder="Buscar equipo…"
             exportOptions={{
               filename: `posesiones_${collection?.name}`,
-              csvHeaders: cols.map(c => ({ label: c.header ?? String(c.accessorKey ?? ''), key: String(c.accessorKey ?? '') })),
+              csvHeaders: cols.map(c => ({ label: typeof c.header === 'string' ? c.header : (c.id ?? ''), key: c.id ?? '' })),
               csvData: stats,
             }}
           />
