@@ -179,8 +179,9 @@ class PossessionAnalyzer:
         opponent_id = self._get_opponent_team(team_id_str, self.moves)
         moves_sorted = sorted(self.moves, key=lambda m: self._get_timestamp(m))
         offensive_rebound_indices = self._detect_offensive_rebounds(moves_sorted)
+        shooting_foul_indices = self._detect_shooting_foul_indices(moves_sorted)
         possessions = self._run_possession_state_machine(
-            moves_sorted, team_id_str, opponent_id, offensive_rebound_indices
+            moves_sorted, team_id_str, opponent_id, offensive_rebound_indices, shooting_foul_indices
         )
         return self._aggregate_possession_stats(possessions)
 
@@ -228,21 +229,78 @@ class PossessionAnalyzer:
                         break
         return offensive_rebound_indices
 
+    def _detect_shooting_foul_indices(self, moves_sorted: List[Dict]) -> set:
+        """Pre-process moves to identify missed FGs that were shooting fouls.
+
+        A missed FG is a shooting foul when the same team has a FT event within
+        the next 3 moves (before any rebound, turnover, or made basket by either
+        team). These possessions must not be ended on the miss — the FTs belong
+        to the same possession.
+
+        Returns:
+            Set of indices into moves_sorted that are shooting-foul misses.
+        """
+        shooting_foul_indices: set = set()
+        for i, move in enumerate(moves_sorted):
+            move_text = move.get('move', '') if self.is_fbcyl else move.get('text', '')
+            move_text_upper = move_text.upper()
+            team = str(move.get('idTeam', ''))
+
+            is_missed_fg = False
+            if self.is_fbcyl:
+                if ('Intento fallado' in move_text or 'fallado' in move_text.lower()) and 'de 1' not in move_text.lower():
+                    is_missed_fg = True
+            else:
+                if ('TIRO DE 2' in move_text_upper or 'TIRO DE 3' in move_text_upper) and 'FALLADO' in move_text_upper:
+                    is_missed_fg = True
+
+            if not is_missed_fg:
+                continue
+
+            for j in range(i + 1, min(i + 4, len(moves_sorted))):
+                nxt = moves_sorted[j]
+                nxt_text = nxt.get('move', '') if self.is_fbcyl else nxt.get('text', '')
+                nxt_text_upper = nxt_text.upper()
+                nxt_team = str(nxt.get('idTeam', ''))
+
+                # Same team's FT → shooting foul confirmed
+                if nxt_team == team:
+                    if self.is_fbcyl and ('Canasta de 1' in nxt_text or 'Intento fallado de 1' in nxt_text):
+                        shooting_foul_indices.add(i)
+                        break
+                    if not self.is_fbcyl and 'TIRO LIBRE' in nxt_text_upper:
+                        shooting_foul_indices.add(i)
+                        break
+
+                # Possession-ending event → stop looking (it was a clean miss)
+                if 'REBOTE' in nxt_text_upper or 'ROBO' in nxt_text_upper:
+                    break
+                if not self.is_fbcyl and nxt.get('action', '').lower() in ('rebound', 'steal'):
+                    break
+                if ('CANASTA' in nxt_text_upper or 'ANOTADO' in nxt_text_upper) and 'FALLADO' not in nxt_text_upper:
+                    break
+                if 'PÉRDIDA' in nxt_text_upper or 'PERDIDA' in nxt_text_upper:
+                    break
+
+        return shooting_foul_indices
+
     def _run_possession_state_machine(
         self,
         moves_sorted: List[Dict],
         team_id_str: str,
         opponent_id: str,
         offensive_rebound_indices: set,
+        shooting_foul_indices: set,
     ) -> List[Dict]:
         """Execute the possession state machine over chronologically sorted moves.
 
         Tracks team-level possession changes event by event, recording each
         observed possession of *team_id_str* as a dict with duration and points.
+        Only trackable possessions are counted — no phantom insertions.
 
         Returns:
-            List of possession dicts, each with keys:
-            ``duration``, ``points``, ``start_time``, ``end_time``.
+            List of possession dicts, each with keys ``duration``, ``points``,
+            ``start_time``, ``end_time``.
         """
         possessions: List[Dict] = []
         current_possession_team = None
@@ -352,8 +410,8 @@ class PossessionAnalyzer:
                         is_missed_last_ft = True
             
             if is_missed_shot or is_missed_last_ft:
-                # Check if this miss will be followed by offensive rebound
-                if i not in offensive_rebound_indices:
+                # Possession ends on miss unless an offensive rebound or shooting foul follows
+                if i not in offensive_rebound_indices and i not in shooting_foul_indices:
                     # No offensive rebound = possession ends
                     possession_change = True
                     new_possession_team = self._get_opponent_team(move_team_id, moves_sorted)
@@ -446,32 +504,6 @@ class PossessionAnalyzer:
             
             # Handle possession change
             if possession_change and new_possession_team:
-                # Check for impossible sequence: same team ending possession twice
-                # This indicates missing play-by-play data
-                if current_possession_team == move_team_id:
-                    # IMPOSSIBLE: Same team can't end possession twice without opponent having ball
-                    # This happens when play-by-play is incomplete
-                    # Solution: Insert a phantom opponent possession to maintain count accuracy
-                    phantom_opponent = opponent_id if opponent_id else self._get_opponent_team(move_team_id, moves_sorted)
-                    
-                    # Save current team's possession first (if it was our team)
-                    if current_possession_team == team_id_str and possession_start_time < timestamp:
-                        duration = timestamp - possession_start_time
-                        if 0 < duration <= 90:
-                            possessions.append({
-                                'duration': duration,
-                                'points': possession_points,
-                                'start_time': possession_start_time,
-                                'end_time': timestamp
-                            })
-                    
-                    # Now force possession to opponent (phantom possession we didn't see)
-                    # The phantom possession had the ball but there's no record of what they did
-                    current_possession_team = phantom_opponent
-                    possession_start_time = timestamp
-                    possession_points = 0
-                    # Continue to process the current event normally below
-                
                 # Normal possession change processing
                 if current_possession_team is None or current_possession_team != new_possession_team:
                     # Save previous possession if it was our team

@@ -9,13 +9,10 @@ from utils.collection_utils import is_fbcyl as _is_fbcyl
 def _aggregate_game_possession(game_stats: Dict) -> Tuple[float, Dict, Dict, Dict]:
     """Extract per-game possession totals from a single game's calculate_possessions result.
 
-    Args:
-        game_stats: Dict returned by PossessionAnalyzer.calculate_possessions().
-
     Returns:
         Tuple of (weighted_duration_sum, short_stats, medium_stats, long_stats) where
         weighted_duration_sum = avg_duration * total_possessions for this game,
-        and each stats dict has keys 'count' and 'total_points'.
+        each stats dict has keys 'count' and 'total_points'.
     """
     by_dur = game_stats.get("possessions_by_duration", {})
     total = game_stats.get("total_possessions", 0)
@@ -88,7 +85,18 @@ class PossessionRepositoryMixin:
             if not games:
                 return _empty_possession_result()
 
-            return self._accumulate_possession_stats(games, team_id, is_fbcyl)
+            pbp_stats = self._accumulate_possession_stats(games, team_id, is_fbcyl)
+            
+            # Get boxscore stats for reconciliation
+            boxscore_stats = self._get_boxscore_possession_stats(collection_name, team_id, is_fbcyl)
+            
+            # Merge boxscore data into results
+            pbp_stats.update(boxscore_stats)
+            
+            # Add reconciliation metrics
+            pbp_stats.update(self._calculate_reconciliation_metrics(pbp_stats))
+            
+            return pbp_stats
 
         except PyMongoError:
             return {}
@@ -97,8 +105,98 @@ class PossessionRepositoryMixin:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _accumulate_possession_stats(games: list, team_id: str, is_fbcyl: bool) -> Dict:
+    def _get_boxscore_possession_stats(self, collection_name: str, team_id: str, 
+                                       is_fbcyl: bool) -> Dict:
+        """Calculate boxscore-based possession statistics (formula-based, not event-based).
+        
+        Uses formula: Possessions = FGA - ORB + TOV + 0.44*FTA
+        This is a statistical estimate not dependent on play-by-play data quality.
+        
+        Returns:
+            Dict with boxscore_possessions, boxscore_oer, total_games
+        """
+        try:
+            games = self.get_games_for_team(
+                collection_name, team_id,
+                only_with_playbyplay=False,  # Get all games, not just with play-by-play
+                projection=(
+                    {
+                        "stats.teams": 1,
+                        "_id": 0,
+                    }
+                    if is_fbcyl
+                    else {
+                        "BOXSCORE.TEAM": 1,
+                        "HEADER.TEAM.id": 1,
+                        "_id": 0,
+                    }
+                )
+            )
+            
+            if not games:
+                return {"boxscore_possessions": 0, "boxscore_oer": 0, "total_games": 0}
+            
+            total_possessions = 0.0
+            total_points = 0
+            total_games = 0
+            
+            for game in games:
+                try:
+                    if is_fbcyl:
+                        # FBCYL format
+                        stats = game.get("stats", {}).get("teams", [])
+                        for team in stats:
+                            team_id_check = team.get("teamIdIntern") or team.get("teamIdExtern")
+                            if str(team_id_check) == str(team_id):
+                                fga = team.get("FGA", 0)
+                                orb = team.get("REB_O", 0) or team.get("ORB", 0)
+                                tov = team.get("TO", 0)
+                                fta = team.get("FTA", 0)
+                                pts = team.get("PTS", 0)
+                                
+                                poss = fga - orb + tov + 0.44 * fta
+                                if poss > 0:
+                                    total_possessions += poss
+                                    total_points += pts
+                                    total_games += 1
+                                break
+                    else:
+                        # FEB format — stats live in BOXSCORE.TEAM[i].TOTAL with short names
+                        boxscore = game.get("BOXSCORE", {}).get("TEAM", [])
+                        header_teams = game.get("HEADER", {}).get("TEAM", [])
+                        for i, team_data in enumerate(boxscore):
+                            team_id_check = header_teams[i].get("id") if i < len(header_teams) else None
+                            if str(team_id_check) == str(team_id):
+                                total = team_data.get("TOTAL", {})
+                                fga = int(total.get("p2a", 0)) + int(total.get("p3a", 0))
+                                orb = int(total.get("ro", 0))
+                                tov = int(total.get("to", 0))
+                                fta = int(total.get("p1a", 0))
+                                pts = int(total.get("pts", 0))
+                                
+                                poss = fga - orb + tov + 0.44 * fta
+                                if poss > 0:
+                                    total_possessions += poss
+                                    total_points += pts
+                                    total_games += 1
+                                break
+                except Exception:
+                    continue
+            
+            if total_possessions > 0:
+                boxscore_oer = (total_points / total_possessions) * 100
+            else:
+                boxscore_oer = 0
+            
+            return {
+                "boxscore_possessions": round(total_possessions, 1),
+                "boxscore_oer": round(boxscore_oer, 2),
+                "total_games": total_games
+            }
+        except Exception:
+            return {"boxscore_possessions": 0, "boxscore_oer": 0, "total_games": 0}
+
+    def _accumulate_possession_stats(self, games: list, team_id: str, is_fbcyl: bool) -> Dict:
         """Aggregate possession stats across all games for a team."""
         from .playbyplay_analyzer import PossessionAnalyzer
 
@@ -147,6 +245,33 @@ class PossessionRepositoryMixin:
             "games_analyzed": games_analyzed,
         }
 
+    def _calculate_reconciliation_metrics(self, stats: Dict) -> Dict:
+        """Calculate data quality metrics comparing play-by-play vs boxscore OER."""
+        total_points = sum(
+            stats.get("possessions_by_duration", {}).get(k, {}).get("total_points", 0)
+            for k in ["<=8s", "8-16s", ">16s"]
+        )
+        total_poss = stats.get("total_possessions", 0)
+        pbp_oer = (total_points / total_poss * 100) if total_poss > 0 else 0
+
+        boxscore_oer = stats.get("boxscore_oer", 0)
+        mismatch_pct = abs(pbp_oer - boxscore_oer) / boxscore_oer * 100 if boxscore_oer > 0 else 0
+
+        data_quality_score = max(0, 100 - int(mismatch_pct * 2))
+
+        if mismatch_pct > 15:
+            recommendation = "use_boxscore"
+        elif mismatch_pct > 5:
+            recommendation = "use_hybrid"
+        else:
+            recommendation = "use_playbyplay"
+
+        return {
+            "mismatch_pct": round(mismatch_pct, 1),
+            "data_quality_score": data_quality_score,
+            "recommendation": recommendation,
+        }
+
 
 def _empty_possession_result() -> Dict:
     return {
@@ -158,5 +283,12 @@ def _empty_possession_result() -> Dict:
             ">16s":  {"count": 0, "total_points": 0, "oer": 0.0},
         },
         "games_analyzed": 0,
+        # Boxscore fields
+        "boxscore_possessions": 0,
+        "boxscore_oer": 0,
+        # Reconciliation fields
+        "mismatch_pct": 0.0,
+        "data_quality_score": 100,
+        "recommendation": "use_playbyplay",
     }
 

@@ -348,6 +348,11 @@ class TeamStatsService:
                     fast    = by_dur.get("<=8s",  {})
                     medium  = by_dur.get("8-16s", {})
                     slow    = by_dur.get(">16s",  {})
+                    
+                    # Reconciliation metadata — general OER is untouched (already boxscore-formula from pipeline)
+                    recommendation = poss.get("recommendation", "use_playbyplay")
+                    phantom_pct = poss.get("phantom_pct", 0)
+                    data_quality_score = poss.get("data_quality_score", 100)
 
                     def _pct(count: int) -> Optional[float]:
                         return round(count / total * 100, 1) if total > 0 else None
@@ -362,6 +367,12 @@ class TeamStatsService:
                     entry["est_possessions_per_game"] = (
                         round(2400 / avg_dur / 2, 1) if avg_dur and avg_dur > 0 else None
                     )
+                    
+                    # Add data quality fields
+                    entry["data_quality_score"]       = data_quality_score
+                    entry["phantom_pct"]              = phantom_pct
+                    entry["reconciliation"]           = recommendation
+                    entry["boxscore_oer"]             = poss.get("boxscore_oer", 0)
 
             result.append(entry)
 
