@@ -418,6 +418,9 @@ export const getPossessionStats = (collection: string, params?: TeamFilters) =>
     `/possessions/${encodeURIComponent(collection)}${buildTeamQs(params)}`,
   )
 
+export const getPossessionsExportUrl = (collection: string): string =>
+  `${BASE}/possessions/${encodeURIComponent(collection)}/export/csv`
+
 // ── AI Analysis ───────────────────────────────────────────────────────────────
 
 export interface AIAnalysisRequest {
