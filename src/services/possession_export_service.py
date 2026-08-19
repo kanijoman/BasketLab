@@ -264,16 +264,9 @@ class PossessionExportService:
                     is_period_start = True
                 continue
 
-            # Quarter / period boundary
-            if i > 0:
-                prev = moves[i - 1]
-                changed = (
-                    self.is_fbcyl and move.get("period") != prev.get("period")
-                ) or (
-                    not self.is_fbcyl
-                    and str(move.get("quarter")) != str(prev.get("quarter"))
-                )
-                if changed:
+            # Quarter / period boundary (FBCYL only — FEB uses action="period" events)
+            if self.is_fbcyl and i > 0:
+                if move.get("period") != moves[i - 1].get("period"):
                     if current_team is not None:
                         _close(i, move, poss_pts)
                     is_period_start = True
@@ -343,10 +336,12 @@ class PossessionExportService:
 
             if is_missed_fg(move, self.is_fbcyl) and i not in sfouls:
                 if i in orebs:
-                    # OReb: close possession and restart same team — tracks second-chance attempts
+                    # Only flag as OReb if a real possession was active; at period start
+                    # current_team can be None and the new possession is a fresh start.
+                    was_active = current_team is not None
                     _close(i, move, poss_pts)
                     _switch(tid, ts, i, 0)
-                    this_poss_is_orb = True
+                    this_poss_is_orb = was_active
                 else:
                     possession_change, new_team = True, opp
 
@@ -375,8 +370,9 @@ class PossessionExportService:
             if current_team == tid and pts_scored > 0:
                 poss_pts += pts_scored
 
-            # If no active possession yet, start one for the team that just acted
-            if current_team is None and tid in team_ids:
+            # If no active possession yet, start one — but not from neutral events
+            # (substitutions/fouls at period start would otherwise create fake possessions)
+            if current_team is None and tid in team_ids and action not in _NEUTRAL:
                 _switch(tid, ts, i, pts_scored)
                 pts_scored = 0  # already captured in poss_pts via _switch
 

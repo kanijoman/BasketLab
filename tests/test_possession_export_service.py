@@ -84,3 +84,9 @@ def test_feb_game_saque_fondo_only_after_score(feb_rows):
                 f"saque_fondo but rival's last ending was '{rival_last}' (not a score)"
             )
         prev_ending[r["Equipo_ID"]] = r["Tipo_finalizacion"]
+
+
+def test_feb_game_tipoff_count(feb_rows):
+    """Exactly one saque_inicial_periodo per quarter (4 in a standard game)."""
+    tipoffs = [r for r in feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
+    assert len(tipoffs) == 4, f"Expected 4 tip-offs (one per quarter), got {len(tipoffs)}"
