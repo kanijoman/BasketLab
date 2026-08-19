@@ -587,7 +587,33 @@ class FEBWebScraper:
 
         # Select season (only if different from current)
         if current_season != season_value:
-            soup, hidden_fields = self.select_season(session, url, season_value, hidden_fields)
+            # Before falling back to ASP.NET POST, try navigating directly to
+            # the year-substituted URL.  get_feb_competitions() returns URLs with
+            # the CURRENT season year embedded (e.g. /lfchallenge/67/2026 for
+            # the 2026/27 page).  The completed past season lives at /2025.
+            # A direct GET is simpler and avoids ASP.NET postback failures.
+            seasonal_url = self._derive_seasonal_url(url, season_value)
+            if seasonal_url != url:
+                resp = self.web_client.get(seasonal_url, timeout=EXTENDED_TIMEOUT)
+                if resp:
+                    soup = BeautifulSoup(resp.content, "html.parser")
+                    url = seasonal_url
+                    original_calendar_url = seasonal_url  # keep Series.aspx cache on correct year
+                    hidden_fields = self.get_hidden_fields(soup)
+                    s_dd = soup.find("select", {"id": SEASON_DROPDOWN_ID})
+                    s_sel = s_dd and s_dd.find("option", selected=True)
+                    current_season = s_sel.get("value") if s_sel else season_value
+                    g_dd = soup.find("select", {"id": GROUP_DROPDOWN_ID})
+                    g_sel = g_dd and g_dd.find("option", selected=True)
+                    current_group = g_sel.get("value") if g_sel else current_group
+                    # Early exit: if we landed on the right page and matches are
+                    # present, return immediately — no group-select POST needed.
+                    if current_season == season_value:
+                        early_matches = self._extract_match_codes(soup)
+                        if early_matches:
+                            return early_matches
+            if current_season != season_value:
+                soup, hidden_fields = self.select_season(session, url, season_value, hidden_fields)
 
         # Select group (only if different from current)
         if current_group != group_value:
@@ -629,6 +655,20 @@ class FEBWebScraper:
         # Final fallback: slow-path cache rebuild for groups where Series.aspx
         # is the only source (e.g. a phase with no match rows on /resultados/).
         return self._get_matches_via_series(original_calendar_url, group_value, season_value)
+
+    @staticmethod
+    def _derive_seasonal_url(url: str, season_value: str) -> str:
+        """Return a URL with the year component replaced by *season_value*.
+
+        Handles both pretty-URL format (/calendario/slug/group/YEAR) and ASPX
+        query-string format (?…&t=YEAR&…).  Returns *url* unchanged when neither
+        pattern is found or when the year is already correct.
+        """
+        if "/calendario/" in url:
+            return re.sub(r"/(\d{4})$", f"/{season_value}", url)
+        if "calendario.aspx" in url:
+            return re.sub(r"([?&]t=)\d+", rf"\g<1>{season_value}", url)
+        return url
 
     def _build_form_data(self, event_target: str, hidden_fields: Dict[str, str],
                         additional_fields: Dict[str, str]) -> Dict[str, str]:
