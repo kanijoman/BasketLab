@@ -28,6 +28,11 @@ _KNOWN_ENDINGS = frozenset((
     "tiros_libres", "tiro_fallado", "rebote_defensivo", "recuperacion", "otro",
 ))
 
+_VALID_ORIGINS = frozenset((
+    "inicio_partido", "saque_inicial_periodo", "saque_fondo",
+    "rebote_defensivo", "rebote_ofensivo", "recuperacion", "otro",
+))
+
 
 class PossessionExportService:
     """Extracts per-possession rows ready for CSV export from a single game document."""
@@ -134,7 +139,8 @@ class PossessionExportService:
             return "saque_fondo"
         if prev_ending in ("tiro_2", "triple", "tiros_libres", "bandeja", "mate"):
             return "saque_fondo"
-        return "otro"
+        # otro = unclassifiable close (tracker sync correction); treat as saque_fondo
+        return "saque_fondo"
 
     # ------------------------------------------------------------------
     # Core extraction
@@ -171,6 +177,7 @@ class PossessionExportService:
         prev_ending: Optional[str] = None
         last_quarter: Optional[Any] = None
         is_period_start: bool = True
+        this_poss_is_orb: bool = False
         poss_id: int = 0
 
         team_ids = list(self.team_info.keys())
@@ -183,7 +190,7 @@ class PossessionExportService:
         }
 
         def _close(end_idx: int, ending_move: Dict, ending_pts: int) -> None:
-            nonlocal current_team, start_ts, start_idx, poss_pts, prev_ending, poss_id, is_period_start
+            nonlocal current_team, start_ts, start_idx, poss_pts, prev_ending, poss_id, is_period_start, this_poss_is_orb
             if current_team is None:
                 return
             end_ts = get_timestamp(ending_move, self.is_fbcyl)
@@ -192,7 +199,10 @@ class PossessionExportService:
                 duration = 0
 
             ending_type = self._classify_ending(ending_move, ending_pts)
-            origin = self._classify_origin(prev_ending, moves[start_idx] if start_idx < len(moves) else None, is_period_start)
+            if this_poss_is_orb:
+                origin = "rebote_ofensivo"
+            else:
+                origin = self._classify_origin(prev_ending, moves[start_idx] if start_idx < len(moves) else None, is_period_start)
 
             score = self._running_score(moves, start_idx)
             my_pts = score.get(current_team, 0)
@@ -225,15 +235,17 @@ class PossessionExportService:
             })
             prev_ending = ending_type
             is_period_start = False
+            this_poss_is_orb = False
             current_team = None
             poss_pts = 0
 
         def _switch(new_team: str, ts: int, idx: int, starting_pts: int) -> None:
-            nonlocal current_team, start_ts, start_idx, poss_pts
+            nonlocal current_team, start_ts, start_idx, poss_pts, this_poss_is_orb
             current_team = new_team
             start_ts = ts
             start_idx = idx
             poss_pts = starting_pts
+            this_poss_is_orb = False
 
         for i, move in enumerate(moves):
             tid = str(move.get("idTeam") or "")
@@ -325,8 +337,14 @@ class PossessionExportService:
             if is_turnover(move, self.is_fbcyl):
                 possession_change, new_team = True, opp
 
-            if is_missed_fg(move, self.is_fbcyl) and i not in orebs and i not in sfouls:
-                possession_change, new_team = True, opp
+            if is_missed_fg(move, self.is_fbcyl) and i not in sfouls:
+                if i in orebs:
+                    # OReb: close possession and restart same team — tracks second-chance attempts
+                    _close(i, move, poss_pts)
+                    _switch(tid, ts, i, 0)
+                    this_poss_is_orb = True
+                else:
+                    possession_change, new_team = True, opp
 
             if is_rebound(move, self.is_fbcyl):
                 for lb in range(1, min(3, i + 1)):
