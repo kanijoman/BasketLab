@@ -34,7 +34,7 @@ class PossessionExportService:
 
     CSV_COLUMNS = [
         "ID_Partido", "Equipo", "Equipo_ID", "Rival", "Rival_ID",
-        "Local_Visitante", "Cuarto", "Tiempo_de_juego", "Timestamp_inicio",
+        "Local_Visitante", "Cuarto", "Tiempo_de_juego",
         "Diferencia_marcador", "Origen_posesion", "Duracion_posesion",
         "Tipo_finalizacion", "Puntos_obtenidos",
     ]
@@ -204,7 +204,8 @@ class PossessionExportService:
             rival_info = self.team_info.get(rival_id, {})
 
             q = moves[start_idx].get("period" if self.is_fbcyl else "quarter", "?") if start_idx < len(moves) else "?"
-            time_str = _format_time(start_ts)
+            start_move = moves[start_idx] if start_idx < len(moves) else None
+            time_str = _quarter_clock(start_move, self.is_fbcyl)
 
             poss_id += 1
             rows.append({
@@ -216,7 +217,6 @@ class PossessionExportService:
                 "Local_Visitante": info.get("home_away", ""),
                 "Cuarto": q,
                 "Tiempo_de_juego": time_str,
-                "Timestamp_inicio": start_ts,
                 "Diferencia_marcador": diff,
                 "Origen_posesion": origin,
                 "Duracion_posesion": max(0, duration),
@@ -414,6 +414,23 @@ class PossessionExportService:
             yield from col.find(pbp_filter)
         except Exception:
             return
+
+
+def _quarter_clock(move: Optional[Dict], is_fbcyl: bool) -> str:
+    """Game clock within the quarter, counting down (e.g. '08:34')."""
+    if move is None:
+        return "10:00"
+    if is_fbcyl:
+        period = int(move.get("period") or 1)
+        quarter_secs = 300 if period > 4 else 600
+        elapsed = int(move.get("min") or 0) * 60 + int(move.get("sec") or 0)
+        remaining = max(0, quarter_secs - elapsed)
+    else:
+        raw = str(move.get("time") or "10:00")
+        # FEB 'time' field is already a countdown clock string (e.g. '08:34')
+        return raw if ":" in raw else "10:00"
+    m, s = divmod(remaining, 60)
+    return f"{m:02d}:{s:02d}"
 
 
 def _format_time(seconds: int) -> str:
