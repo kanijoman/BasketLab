@@ -229,8 +229,8 @@ def detect_shooting_foul_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]:
 def detect_steal_turnover_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]:
     """Return indices of turnover moves accompanied by an opponent steal.
 
-    Covers both combined events (PÉRDIDA + ROBO in same text) and the
-    two-event pattern (separate turnover then steal from opponent).
+    Covers combined events, forward two-event pattern (turnover then steal),
+    and the FEB reverse pattern (steal stored before turnover at same timestamp).
     """
     steal_tovs: Set[int] = set()
     n = len(moves)
@@ -241,8 +241,8 @@ def detect_steal_turnover_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]
         if is_steal(move, is_fbcyl):
             steal_tovs.add(i)
             continue
-        # Two-event: next non-neutral move from a different team is a steal
         tid = str(move.get("idTeam") or "")
+        # Forward: next non-neutral move from a different team is a steal
         for j in range(i + 1, min(i + 5, n)):
             m = moves[j]
             if _action(m) in _NEUTRAL:
@@ -250,6 +250,19 @@ def detect_steal_turnover_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]
             if str(m.get("idTeam") or "") != tid and is_steal(m, is_fbcyl):
                 steal_tovs.add(i)
             break
+        if i in steal_tovs:
+            continue
+        # Backward: FEB stores the steal event before the turnover at the same timestamp
+        ts_i = get_timestamp(move, is_fbcyl)
+        for j in range(i - 1, max(i - 5, -1), -1):
+            m = moves[j]
+            if _action(m) in _NEUTRAL:
+                continue
+            if get_timestamp(m, is_fbcyl) < ts_i:
+                break
+            if str(m.get("idTeam") or "") != tid and is_steal(m, is_fbcyl):
+                steal_tovs.add(i)
+                break
     return steal_tovs
 
 

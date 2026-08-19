@@ -363,6 +363,13 @@ class PossessionExportService:
                     if str(prev_m.get("action") or "").lower() in ("rebound", "steal"):
                         break
 
+            # Steal pre-transfer: FEB sometimes records the steal before the turnover at the
+            # same timestamp, leaving the tracker with the stealer as current_team.
+            # Silently reassign to the opponent so the steal closes the right possession.
+            if is_steal(move, self.is_fbcyl) and current_team is not None and current_team == tid:
+                current_team = opp
+                poss_pts = 0
+
             if is_steal(move, self.is_fbcyl):
                 possession_change, new_team = True, tid
 

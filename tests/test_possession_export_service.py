@@ -26,8 +26,12 @@ _VALID_ORIGINS = {
 
 
 @pytest.fixture(scope="module")
-def feb_rows():
-    game_data = json.loads(_SAMPLE.read_text(encoding="utf-8"))
+def game_data():
+    return json.loads(_SAMPLE.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def feb_rows(game_data):
     game_id = str(game_data.get("_id", {}).get("$numberInt", "test"))
     svc = PossessionExportService(game_data, is_fbcyl=False, game_id=game_id)
     return svc.extract_possessions()
@@ -90,3 +94,52 @@ def test_feb_game_tipoff_count(feb_rows):
     """Exactly one saque_inicial_periodo per quarter (4 in a standard game)."""
     tipoffs = [r for r in feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
     assert len(tipoffs) == 4, f"Expected 4 tip-offs (one per quarter), got {len(tipoffs)}"
+
+
+def _boxscore_tov_st(game_data: dict) -> dict:
+    """Return {team_id: {to, st, tc}} from FEB boxscore TOTAL."""
+    result = {}
+    for team in game_data.get("BOXSCORE", {}).get("TEAM", []):
+        tot = team.get("TOTAL", {})
+        result[str(team["id"])] = {
+            "to": int(tot.get("to") or 0),
+            "st": int(tot.get("st") or 0),
+            "tc": int(tot.get("tc") or 0),  # technical fouls — may add hidden TOVs
+        }
+    return result
+
+
+def test_feb_game_turnovers_match_boxscore(feb_rows, game_data):
+    """possession-derived turnovers must match boxscore TO within TC+1 tolerance."""
+    bx = _boxscore_tov_st(game_data)
+    team_ids = list(bx.keys())
+    for tid in team_ids:
+        tov_poss = sum(
+            1 for r in feb_rows
+            if r["Equipo_ID"] == tid and r["Tipo_finalizacion"] in ("recuperacion", "violacion")
+        )
+        bx_to = bx[tid]["to"]
+        tc = bx[tid]["tc"]
+        # Allow TC dead-ball turnovers plus one further unit for tracker correction rows
+        tolerance = tc + 1
+        assert abs(tov_poss - bx_to) <= tolerance, (
+            f"TOV mismatch for {tid}: possession={tov_poss} boxscore={bx_to} "
+            f"(diff={tov_poss - bx_to}, allowed \u00b1{tolerance} due to TC={tc})"
+        )
+
+
+def test_feb_game_steals_match_boxscore(feb_rows, game_data):
+    """possession-derived steals (opp possession ending in recuperacion) must match boxscore ST exactly."""
+    bx = _boxscore_tov_st(game_data)
+    team_ids = list(bx.keys())
+    opp_map = {team_ids[0]: team_ids[1], team_ids[1]: team_ids[0]}
+    for tid in team_ids:
+        # steals by tid = opponent possessions that ended via steal
+        stl_poss = sum(
+            1 for r in feb_rows
+            if r["Equipo_ID"] == opp_map[tid] and r["Tipo_finalizacion"] == "recuperacion"
+        )
+        bx_st = bx[tid]["st"]
+        assert stl_poss == bx_st, (
+            f"STL mismatch for {tid}: possession={stl_poss} boxscore={bx_st}"
+        )
