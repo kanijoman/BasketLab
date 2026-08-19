@@ -226,6 +226,33 @@ def detect_shooting_foul_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]:
     return indices
 
 
+def detect_steal_turnover_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]:
+    """Return indices of turnover moves accompanied by an opponent steal.
+
+    Covers both combined events (PÉRDIDA + ROBO in same text) and the
+    two-event pattern (separate turnover then steal from opponent).
+    """
+    steal_tovs: Set[int] = set()
+    n = len(moves)
+    for i, move in enumerate(moves):
+        if not is_turnover(move, is_fbcyl):
+            continue
+        # Combined single event containing both turnover and steal markers
+        if is_steal(move, is_fbcyl):
+            steal_tovs.add(i)
+            continue
+        # Two-event: next non-neutral move from a different team is a steal
+        tid = str(move.get("idTeam") or "")
+        for j in range(i + 1, min(i + 5, n)):
+            m = moves[j]
+            if _action(m) in _NEUTRAL:
+                continue
+            if str(m.get("idTeam") or "") != tid and is_steal(m, is_fbcyl):
+                steal_tovs.add(i)
+            break
+    return steal_tovs
+
+
 def detect_and1_indices(moves: List[Dict], is_fbcyl: bool) -> Set[int]:
     """Indices of made FGs followed by a same-team FT (and-1 plays)."""
     indices: Set[int] = set()

@@ -9,6 +9,7 @@ from src.database._possession_helpers import (
     detect_and1_indices,
     detect_offensive_rebounds,
     detect_shooting_foul_indices,
+    detect_steal_turnover_indices,
     ft_sequence_info,
     get_opponent_team,
     get_timestamp,
@@ -24,13 +25,13 @@ from src.database._possession_helpers import (
 _NEUTRAL = frozenset(("subst", "foul", "timeout", "assist"))
 
 _KNOWN_ENDINGS = frozenset((
-    "perdida", "triple", "tiro_2", "bandeja", "mate",
-    "tiros_libres", "tiro_fallado", "rebote_defensivo", "recuperacion", "otro",
+    "violacion", "recuperacion", "triple", "tiro_2", "bandeja", "mate",
+    "tiros_libres", "tiro_fallado", "rebote_defensivo", "otro",
 ))
 
 _VALID_ORIGINS = frozenset((
     "inicio_partido", "saque_inicial_periodo", "saque_fondo",
-    "rebote_defensivo", "rebote_ofensivo", "recuperacion", "otro",
+    "rebote_defensivo", "rebote_ofensivo", "recuperacion", "violacion",
 ))
 
 
@@ -95,25 +96,27 @@ class PossessionExportService:
     # Classifiers
     # ------------------------------------------------------------------
 
-    def _classify_ending(self, move: Dict, points: int) -> str:
+    def _classify_ending(self, move: Dict, points: int, idx: int = 0, steal_tovs: frozenset = frozenset()) -> str:
         text = str(move.get("move") or "") if self.is_fbcyl else str(move.get("text") or "")
         text_u = text.upper()
         if is_turnover(move, self.is_fbcyl):
-            return "perdida"
+            return "recuperacion" if idx in steal_tovs else "violacion"
         if is_missed_fg(move, self.is_fbcyl):
             return "tiro_fallado"
         # Free-throw ending (1 or more FTs scored in this possession)
         if is_ft_event(move, self.is_fbcyl) or is_missed_ft(move, self.is_fbcyl):
             return "tiros_libres"
-        if points == 3:
+        # Use the move's own point value when accumulated pts are zero (pre-transfer correction).
+        effective_pts = points if points > 0 else points_from_move(move, self.is_fbcyl)
+        if effective_pts == 3:
             return "triple"
-        if points == 2:
+        if effective_pts == 2:
             if "BANDEJA" in text_u or "LAYUP" in text_u or "bandeja" in text.lower():
                 return "bandeja"
             if "MATE" in text_u or "SLAM" in text_u or "mate" in text.lower():
                 return "mate"
             return "tiro_2"
-        if points >= 1:
+        if effective_pts >= 1:
             return "tiros_libres"
         if is_rebound(move, self.is_fbcyl):
             return "rebote_defensivo"
@@ -135,11 +138,11 @@ class PossessionExportService:
             return "rebote_defensivo"
         if prev_ending == "recuperacion":
             return "recuperacion"
-        if prev_ending == "perdida":
-            return "saque_fondo"
+        if prev_ending == "violacion":
+            return "violacion"
         if prev_ending in ("tiro_2", "triple", "tiros_libres", "bandeja", "mate"):
             return "saque_fondo"
-        # otro = unclassifiable close (tracker sync correction); treat as saque_fondo
+        # tracker sync correction or unclassified score-like close
         return "saque_fondo"
 
     # ------------------------------------------------------------------
@@ -166,6 +169,7 @@ class PossessionExportService:
         orebs = detect_offensive_rebounds(moves, self.is_fbcyl)
         sfouls = detect_shooting_foul_indices(moves, self.is_fbcyl)
         and1s = detect_and1_indices(moves, self.is_fbcyl)
+        steal_tovs = detect_steal_turnover_indices(moves, self.is_fbcyl)
 
         rows: List[Dict] = []
 
@@ -198,7 +202,7 @@ class PossessionExportService:
             if duration < 0:
                 duration = 0
 
-            ending_type = self._classify_ending(ending_move, ending_pts)
+            ending_type = self._classify_ending(ending_move, ending_pts, end_idx, steal_tovs)
             if this_poss_is_orb:
                 origin = "rebote_ofensivo"
             else:
