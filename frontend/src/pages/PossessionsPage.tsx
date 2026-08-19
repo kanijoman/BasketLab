@@ -20,7 +20,7 @@ import {
 import { Activity } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getPossessionStats, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
+import { getPossessionStats, getPossessionsExportUrl, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
 import { fmt } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
@@ -337,6 +337,16 @@ export default function PossessionsPage() {
             <h1 className="text-2xl font-bold text-ink-primary">Análisis de Posesiones</h1>
             <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
           </div>
+          <div className="flex items-center gap-2">
+            {collection && (
+              <a
+                href={getPossessionsExportUrl(collection.name)}
+                download
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-border text-ink-secondary hover:bg-surface-hover transition-colors"
+              >
+                Exportar CSV
+              </a>
+            )}
           {/* Tab toggle */}
           <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm">
             {TABS.map(([key, lbl]) => (
@@ -350,6 +360,7 @@ export default function PossessionsPage() {
                 {lbl}
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -370,7 +381,11 @@ export default function PossessionsPage() {
             reverseColumns={REVERSE_COLS}
             searchable
             searchPlaceholder="Buscar equipo…"
-            exportOptions={{ filename: `posesiones_${collection?.name}` }}
+            exportOptions={{
+              filename: `posesiones_${collection?.name}`,
+              csvHeaders: cols.map(c => ({ label: c.header ?? String(c.accessorKey ?? ''), key: String(c.accessorKey ?? '') })),
+              csvData: stats,
+            }}
           />
         ) : tab === 'scatter' ? (
           <ScatterCard
