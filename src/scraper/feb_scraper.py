@@ -606,9 +606,9 @@ class FEBWebScraper:
                     g_dd = soup.find("select", {"id": GROUP_DROPDOWN_ID})
                     g_sel = g_dd and g_dd.find("option", selected=True)
                     current_group = g_sel.get("value") if g_sel else current_group
-                    # Early exit: if we landed on the right page and matches are
-                    # present, return immediately — no group-select POST needed.
-                    if current_season == season_value:
+                    # Early exit only when BOTH season and group already match —
+                    # otherwise the page shows the default group (usually A).
+                    if current_season == season_value and current_group == group_value:
                         early_matches = self._extract_match_codes(soup)
                         if early_matches:
                             return early_matches

@@ -374,6 +374,14 @@ class TeamStatsService:
                     entry["reconciliation"]           = recommendation
                     entry["boxscore_oer"]             = poss.get("boxscore_oer", 0)
 
+                    # Rival (opponent) possession breakdown
+                    entry["rival_pct_fast"]   = poss.get("rival_pct_fast")
+                    entry["rival_pct_medium"] = poss.get("rival_pct_medium")
+                    entry["rival_pct_slow"]   = poss.get("rival_pct_slow")
+                    entry["rival_oer_fast"]   = poss.get("rival_oer_fast")
+                    entry["rival_oer_medium"] = poss.get("rival_oer_medium")
+                    entry["rival_oer_slow"]   = poss.get("rival_oer_slow")
+
             result.append(entry)
 
         _possession_cache[collection_name] = result
