@@ -74,6 +74,7 @@ function buildCols(cv: CVMap | null): ColumnDef<PossessionStat, unknown>[] {
       id: 'team_name',
       accessorKey: 'team_name',
       header: 'Equipo',
+      size: 180,
       cell: ({ getValue }) => (
         <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span>
       ),
@@ -93,10 +94,17 @@ function buildCols(cv: CVMap | null): ColumnDef<PossessionStat, unknown>[] {
     numColOpt('oer_medium',               'OER Medias',   1),
     numColOpt('oer_slow',                 'OER Lentas',   1),
     numColOpt('est_possessions_per_game', 'Est. Pos/40',  1),
+    // Rival (opponent) possession breakdown
+    numColOpt('rival_pct_fast',   '% Rápidas Rival',  1),
+    numColOpt('rival_pct_medium', '% Medias Rival',   1),
+    numColOpt('rival_pct_slow',   '% Lentas Rival',   1),
+    numColOpt('rival_oer_fast',   'OER Rápidas Rival', 1),
+    numColOpt('rival_oer_medium', 'OER Medias Rival',  1),
+    numColOpt('rival_oer_slow',   'OER Lentas Rival',  1),
   ]
 }
 
-const REVERSE_COLS = ['der', 'pct_slow']
+const REVERSE_COLS = ['der', 'pct_slow', 'rival_pct_slow', 'rival_oer_fast', 'rival_oer_medium', 'rival_oer_slow']
 
 // -- Quartile computation from data (no separate endpoint for possessions) ----
 
@@ -120,6 +128,8 @@ function buildQuartileMap(data: PossessionStat[]): QuartileMap {
     'possessions_per_game', 'pace', 'oer', 'der', 'net_rating',
     'avg_duration', 'pct_fast', 'pct_medium', 'pct_slow',
     'oer_fast', 'oer_medium', 'oer_slow', 'est_possessions_per_game',
+    'rival_pct_fast', 'rival_pct_medium', 'rival_pct_slow',
+    'rival_oer_fast', 'rival_oer_medium', 'rival_oer_slow',
   ]
   const map: QuartileMap = {}
   keys.forEach(k => { map[k as string] = computeQuartiles(data, k) })
@@ -304,6 +314,7 @@ export default function PossessionsPage() {
     queryFn: () => getPossessionStats(collection!.name),
     enabled: Boolean(collection),
     staleTime: 5 * 60_000,
+    refetchOnMount: 'always',
   })
 
   const { data: consistencyRaw } = useQuery({

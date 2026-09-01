@@ -811,6 +811,12 @@ export interface PossessionStat {
   oer_medium: number | null
   oer_slow: number | null
   est_possessions_per_game: number | null
+  rival_pct_fast: number | null
+  rival_pct_medium: number | null
+  rival_pct_slow: number | null
+  rival_oer_fast: number | null
+  rival_oer_medium: number | null
+  rival_oer_slow: number | null
   [key: string]: unknown
 }
 

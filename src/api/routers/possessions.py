@@ -7,6 +7,7 @@ aggregation pipeline — no extra DB passes are needed.
 """
 
 from typing import Any, Dict, List, Optional
+import logging
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
@@ -15,6 +16,7 @@ from src.api.deps import get_db
 from src.services import TeamStatsService
 from src.services.possession_export_service import PossessionExportService
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -49,6 +51,7 @@ def get_possession_stats(
         fields: ``data_quality_score``, ``phantom_pct``, ``reconciliation``, ``boxscore_oer``.
     """
     svc = TeamStatsService(db)
+    logger.info("possessions: collection_name=%r", collection)
     return svc.get_possession_stats(collection)
 
 

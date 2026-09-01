@@ -386,3 +386,131 @@ class TestGetGroupsForSeasonYearNavigation:
         )
 
         assert groups == [("LF ENDESA Regular", "4")]
+
+
+# ---------------------------------------------------------------------------
+# Regression: group B returns group A data
+# ---------------------------------------------------------------------------
+
+def _two_group_calendar_html(season_value: str, selected_group: str, groups: dict, match_codes: list) -> str:
+    """Calendar page with two groups in the dropdown; *selected_group* is pre-selected."""
+    sel_attr = ' selected="selected"'
+    options = "".join(
+        f'<option value="{v}"{sel_attr if v == selected_group else ""}>{label}</option>'
+        for v, label in groups.items()
+    )
+    links = "".join(
+        f'<tr><td class="resultado"><a href="partido.aspx?p={c}">{60+i} - {50+i}</a></td></tr>'
+        for i, c in enumerate(match_codes)
+    )
+    return (
+        f'<html><body>'
+        f'<form>'
+        f'<input type="hidden" id="__VIEWSTATE" value="{_VIEWSTATE}" />'
+        f'<input type="hidden" id="__VIEWSTATEGENERATOR" value="XYZ" />'
+        f'<input type="hidden" id="__EVENTVALIDATION" value="EVV" />'
+        f'</form>'
+        f'<select id="_ctl0_MainContentPlaceHolderMaster_temporadasDropDownList">'
+        f'<option value="{season_value}" selected="selected">{season_value}</option>'
+        f'</select>'
+        f'<select id="_ctl0_MainContentPlaceHolderMaster_gruposDropDownList">{options}</select>'
+        f'<div class="tableLayout de dos columnas"><table><tr><th></th></tr>{links}</table></div>'
+        f'</body></html>'
+    )
+
+
+class TestGetMatchesGroupSelection:
+    """Regression: early-return after year navigation must not bypass group selection.
+
+    Bug: when the year-substituted URL loaded the correct season but defaulted to
+    Group A, the early-return condition only checked current_season == season_value.
+    Group B was requested but Group A match codes were returned and stored in the
+    Group B MongoDB collection.
+
+    Fix: early-return now requires BOTH current_season == season_value AND
+    current_group == group_value.
+    """
+
+    COMP_URL_2026 = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2026"
+    COMP_URL_2025 = "https://baloncestoenvivo.feb.es/calendario/lf2/9/2025"
+    GROUPS = {"88": "Grupo A", "89": "Grupo B"}
+    GROUP_A_CODES = ["100001", "100002", "100003"]
+    GROUP_B_CODES = ["200001", "200002", "200003"]
+
+    def _make_scraper_with_post(self, group_b_html: str) -> FEBWebScraper:
+        """Scraper whose GET returns the year URL (Group A) and POST returns Group B."""
+        url_map = {
+            self.COMP_URL_2026: _future_only_page_html("2026", "88"),
+            # Year-substituted URL defaults to Group A
+            self.COMP_URL_2025: _two_group_calendar_html(
+                "2025", "88", self.GROUPS, self.GROUP_A_CODES
+            ),
+        }
+        scraper = _make_scraper(url_map)
+        post_resp = MagicMock()
+        post_resp.content = group_b_html.encode()
+        scraper.web_client.post = MagicMock(return_value=post_resp)
+        return scraper
+
+    def test_group_b_returns_group_b_codes_not_group_a_regression(self):
+        """Requesting group B must NOT return group A match codes.
+
+        This is the primary regression: the year-substituted URL defaults to
+        Group A; the early-return was triggering before the group POST,
+        returning Group A data for the Group B collection.
+        """
+        group_b_html = _two_group_calendar_html("2025", "89", self.GROUPS, self.GROUP_B_CODES)
+        scraper = self._make_scraper_with_post(group_b_html)
+
+        codes = scraper.get_matches(
+            season_value="2025",
+            group_value="89",  # Group B
+            year="2025",
+            session=MagicMock(),
+            url=self.COMP_URL_2026,
+        )
+
+        assert not any(c in codes for c in self.GROUP_A_CODES), (
+            "Group A match codes must not appear when Group B is requested"
+        )
+        assert any(c in codes for c in self.GROUP_B_CODES), (
+            "Group B match codes must be returned"
+        )
+
+    def test_group_b_triggers_post_for_group_selection(self):
+        """A group-select POST must be issued when the year URL defaults to Group A."""
+        group_b_html = _two_group_calendar_html("2025", "89", self.GROUPS, self.GROUP_B_CODES)
+        scraper = self._make_scraper_with_post(group_b_html)
+
+        scraper.get_matches(
+            season_value="2025",
+            group_value="89",
+            year="2025",
+            session=MagicMock(),
+            url=self.COMP_URL_2026,
+        )
+
+        scraper.web_client.post.assert_called(), "group-select POST must be issued"
+
+    def test_group_a_does_not_trigger_extra_post(self):
+        """When year URL already shows Group A and Group A is requested, no POST needed."""
+        url_map = {
+            self.COMP_URL_2026: _future_only_page_html("2026", "88"),
+            self.COMP_URL_2025: _two_group_calendar_html(
+                "2025", "88", self.GROUPS, self.GROUP_A_CODES
+            ),
+        }
+        scraper = _make_scraper(url_map)
+        scraper.web_client.post = MagicMock()
+
+        codes = scraper.get_matches(
+            season_value="2025",
+            group_value="88",  # Group A — matches year-URL default
+            year="2025",
+            session=MagicMock(),
+            url=self.COMP_URL_2026,
+        )
+
+        scraper.web_client.post.assert_not_called()
+        assert any(c in codes for c in self.GROUP_A_CODES)
+

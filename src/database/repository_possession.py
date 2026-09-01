@@ -86,7 +86,11 @@ class PossessionRepositoryMixin:
                 return _empty_possession_result()
 
             pbp_stats = self._accumulate_possession_stats(games, team_id, is_fbcyl)
-            
+
+            # Rival (opponent) possession breakdown — reuses the same PBP games list
+            rival_stats = self._accumulate_rival_possession_stats(games, team_id, is_fbcyl)
+            pbp_stats.update(rival_stats)
+
             # Get boxscore stats for reconciliation
             boxscore_stats = self._get_boxscore_possession_stats(collection_name, team_id, is_fbcyl)
             
@@ -245,6 +249,71 @@ class PossessionRepositoryMixin:
             "games_analyzed": games_analyzed,
         }
 
+    @staticmethod
+    def _get_opponent_id_from_game(game: Dict, team_id: str, is_fbcyl: bool):
+        """Return the opponent team ID from a game document, or None if not found."""
+        team_id_str = str(team_id)
+        if is_fbcyl:
+            for team in game.get("stats", {}).get("teams", []):
+                tid = str(team.get("teamIdIntern") or team.get("teamIdExtern") or "")
+                if tid and tid != team_id_str:
+                    return tid
+        else:
+            for header_team in game.get("HEADER", {}).get("TEAM", []):
+                tid = str(header_team.get("id") or "")
+                if tid and tid != team_id_str:
+                    return tid
+        return None
+
+    def _accumulate_rival_possession_stats(self, games: list, team_id: str,
+                                           is_fbcyl: bool) -> Dict:
+        """Aggregate opponent possession stats for all games involving team_id."""
+        from .playbyplay_analyzer import PossessionAnalyzer
+
+        total_duration_sum = 0.0
+        total_weighted_count = 0
+        short_poss = {"count": 0, "total_points": 0}
+        medium_poss = {"count": 0, "total_points": 0}
+        long_poss = {"count": 0, "total_points": 0}
+
+        for game in games:
+            try:
+                opp_id = self._get_opponent_id_from_game(game, team_id, is_fbcyl)
+                if not opp_id:
+                    continue
+                analyzer = PossessionAnalyzer(game, is_fbcyl=is_fbcyl)
+                game_stats = analyzer.calculate_possessions(opp_id)
+                weighted, fast, med, slow = _aggregate_game_possession(game_stats)
+
+                total_duration_sum += weighted
+                total_weighted_count += game_stats.get("total_possessions", 0)
+
+                short_poss["count"]        += fast["count"]
+                short_poss["total_points"] += fast["total_points"]
+                medium_poss["count"]        += med["count"]
+                medium_poss["total_points"] += med["total_points"]
+                long_poss["count"]          += slow["count"]
+                long_poss["total_points"]   += slow["total_points"]
+            except Exception:
+                continue
+
+        total = short_poss["count"] + medium_poss["count"] + long_poss["count"]
+
+        def _pct(count: int) -> float:
+            return round(count / total * 100, 1) if total > 0 else 0.0
+
+        def _oer(count: int, points: int) -> float:
+            return round((points / count) * 100, 2) if count > 0 else 0.0
+
+        return {
+            "rival_pct_fast":   _pct(short_poss["count"]),
+            "rival_pct_medium": _pct(medium_poss["count"]),
+            "rival_pct_slow":   _pct(long_poss["count"]),
+            "rival_oer_fast":   _oer(short_poss["count"],  short_poss["total_points"]),
+            "rival_oer_medium": _oer(medium_poss["count"], medium_poss["total_points"]),
+            "rival_oer_slow":   _oer(long_poss["count"],   long_poss["total_points"]),
+        }
+
     def _calculate_reconciliation_metrics(self, stats: Dict) -> Dict:
         """Calculate data quality metrics comparing play-by-play vs boxscore OER."""
         total_points = sum(
@@ -290,5 +359,12 @@ def _empty_possession_result() -> Dict:
         "mismatch_pct": 0.0,
         "data_quality_score": 100,
         "recommendation": "use_playbyplay",
+        # Rival possession breakdown (None = no PBP data)
+        "rival_pct_fast": None,
+        "rival_pct_medium": None,
+        "rival_pct_slow": None,
+        "rival_oer_fast": None,
+        "rival_oer_medium": None,
+        "rival_oer_slow": None,
     }
 
