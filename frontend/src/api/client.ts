@@ -421,6 +421,9 @@ export const getPossessionStats = (collection: string, params?: TeamFilters) =>
 export const getPossessionsExportUrl = (collection: string): string =>
   `${BASE}/possessions/${encodeURIComponent(collection)}/export/csv`
 
+export const getPossessionQualityExportUrl = (collection: string): string =>
+  `${BASE}/possessions/${encodeURIComponent(collection)}/quality/csv`
+
 // ── AI Analysis ───────────────────────────────────────────────────────────────
 
 export interface AIAnalysisRequest {
@@ -817,6 +820,9 @@ export interface PossessionStat {
   rival_oer_fast: number | null
   rival_oer_medium: number | null
   rival_oer_slow: number | null
+  rival_avg_duration: number | null
+  rival_avg_duration_general: number | null
+  rival_pace_differential: number | null
   [key: string]: unknown
 }
 

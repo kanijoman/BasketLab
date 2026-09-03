@@ -4,22 +4,17 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from ._possession_helpers import (
-    detect_and1_indices,
-    detect_offensive_rebounds,
-    detect_shooting_foul_indices,
-    ft_sequence_info,
     get_opponent_team,
     get_timestamp,
-    is_ft_event,
-    is_missed_fg,
-    is_missed_ft,
-    is_rebound,
-    is_steal,
-    is_turnover,
     points_from_move,
 )
+from src.services.possession_core import extract_possession_rows
 
 _NEUTRAL = frozenset(("subst", "foul", "timeout", "assist"))
+_ZERO_DURATION_VALID_ENDINGS = frozenset((
+    "violacion",
+    "recuperacion",
+))
 
 
 class PossessionAnalyzer:
@@ -56,12 +51,12 @@ class PossessionAnalyzer:
     def calculate_possessions(self, team_id: str) -> Dict[str, Any]:
         """Return aggregated possession stats: total, avg duration, per-bucket OER."""
         team_id_str = str(team_id)
-        moves_sorted = sorted(self.moves, key=lambda m: get_timestamp(m, self.is_fbcyl))
-        orebs = detect_offensive_rebounds(moves_sorted, self.is_fbcyl)
-        sfouls = detect_shooting_foul_indices(moves_sorted, self.is_fbcyl)
-        and1s = detect_and1_indices(moves_sorted, self.is_fbcyl)
         possessions = self._run_possession_state_machine(
-            moves_sorted, team_id_str, orebs, sfouls, and1s
+            self.moves,
+            team_id_str,
+            orebs=set(),
+            sfouls=set(),
+            and1s=set(),
         )
         return self._aggregate_possession_stats(possessions)
 
@@ -77,137 +72,58 @@ class PossessionAnalyzer:
         sfouls: set,
         and1s: set,
     ) -> List[Dict]:
+        del moves, orebs, sfouls, and1s
+        team_info = self._core_team_info()
+        rows = extract_possession_rows(
+            game_data=self.game_data,
+            is_fbcyl=self.is_fbcyl,
+            game_id="ANALYZER",
+            team_info=team_info,
+        )
         possessions: List[Dict] = []
-        current_team = None
-        start_time = 0
-        points = 0
-
-        all_ids = {str(m.get("idTeam") or "") for m in moves if m.get("idTeam")} - {team_id_str, ""}
-        opp_id = all_ids.pop() if all_ids else team_id_str
-
-        def _flush(end_ts: int) -> None:
-            nonlocal current_team, start_time, points
-            if current_team != team_id_str:
-                current_team = None
-                points = 0
-                return
-            dur = end_ts - start_time
-            if 0 < dur <= 90:
-                possessions.append({"duration": dur, "points": points,
-                                    "start_time": start_time, "end_time": end_ts})
-            current_team = None
-            points = 0
-
-        for i, move in enumerate(moves):
-            tid = str(move.get("idTeam") or "")
-            ts = get_timestamp(move, self.is_fbcyl)
-            action = str(move.get("action") or "").lower()
-            text = str(move.get("move") or "") if self.is_fbcyl else str(move.get("text") or "")
-            text_u = text.upper()
-
-            # FEB period markers — flush on explicit period boundary
-            if action == "period" or not tid:
-                if action == "period":
-                    _flush(ts)
-                    start_time = 0
+        for row in rows:
+            if str(row.get("Equipo_ID") or "") != team_id_str:
                 continue
-
-            # Quarter / period boundary detected via attribute change
-            if i > 0:
-                prev = moves[i - 1]
-                changed = (
-                    self.is_fbcyl and move.get("period") != prev.get("period")
-                ) or (
-                    not self.is_fbcyl
-                    and str(move.get("quarter")) != str(prev.get("quarter"))
-                )
-                if changed:
-                    _flush(ts)
-                    start_time = 0
-
-            possession_change = False
-            new_team = None
-            pts_scored = 0
-            opp = opp_id if tid == team_id_str else team_id_str
-
-            # 1. Made field goals (FEB)
-            if not self.is_fbcyl:
-                if "TIRO DE 2" in text_u and "FALLADO" not in text_u and "FALLA" not in text_u:
-                    pts_scored = 2
-                    if i not in and1s:
-                        possession_change, new_team = True, opp
-                elif (("TIRO DE 3" in text_u or "TRIPLE" in text_u)
-                      and "FALLADO" not in text_u and "FALLA" not in text_u):
-                    pts_scored = 3
-                    if i not in and1s:
-                        possession_change, new_team = True, opp
-                elif is_ft_event(move, False):
-                    is_last, _ = ft_sequence_info(i, moves, False)
-                    if not is_missed_ft(move, False):
-                        pts_scored = 1
-                    if is_last and not (is_missed_ft(move, False) and i in orebs):
-                        possession_change, new_team = True, opp
-            else:
-                # 1. Made field goals (FBCYL)
-                if "Canasta de 2" in text:
-                    pts_scored = 2
-                    if i not in and1s:
-                        possession_change, new_team = True, opp
-                elif "Canasta de 3" in text:
-                    pts_scored = 3
-                    if i not in and1s:
-                        possession_change, new_team = True, opp
-                elif is_ft_event(move, True):
-                    is_last, _ = ft_sequence_info(i, moves, True)
-                    if not is_missed_ft(move, True):
-                        pts_scored = 1
-                    if is_last and not (is_missed_ft(move, True) and i in orebs):
-                        possession_change, new_team = True, opp
-
-            # 2. Turnovers
-            if is_turnover(move, self.is_fbcyl):
-                possession_change, new_team = True, opp
-
-            # 3. Missed field goals (not OReb continuations, not shooting fouls)
-            if is_missed_fg(move, self.is_fbcyl) and i not in orebs and i not in sfouls:
-                possession_change, new_team = True, opp
-
-            # 4. Defensive rebounds
-            if is_rebound(move, self.is_fbcyl):
-                for lb in range(1, min(3, i + 1)):
-                    prev = moves[i - lb]
-                    prev_act = str(prev.get("action") or "").lower()
-                    if prev_act in _NEUTRAL:
-                        continue
-                    prev_tid = str(prev.get("idTeam") or "")
-                    prev_txt = str(prev.get("move") or "") if self.is_fbcyl else str(prev.get("text") or "")
-                    prev_u = prev_txt.upper()
-                    if is_missed_fg(prev, self.is_fbcyl) or is_missed_ft(prev, self.is_fbcyl):
-                        if prev_tid != tid:
-                            possession_change, new_team = True, tid
-                        break
-                    if (("ANOTADO" in prev_u and "FALLADO" not in prev_u)
-                            or "PÉRDIDA" in prev_u or "PERDIDA" in prev_u):
-                        break
-                    if prev_act in ("rebound", "steal") or "REBOTE" in prev_u or "ROBO" in prev_u:
-                        break
-
-            # 5. Steals
-            if is_steal(move, self.is_fbcyl):
-                possession_change, new_team = True, tid
-
-            # Accumulate points for current possession owner
-            if current_team == tid and pts_scored > 0:
-                points += pts_scored
-
-            # Handle possession change
-            if possession_change and new_team and (current_team is None or current_team != new_team):
-                _flush(ts)
-                current_team = new_team
-                start_time = ts
-                points = pts_scored if new_team == tid else 0
-
+            duration = int(row.get("Duracion_posesion") or 0)
+            points = int(row.get("Puntos_obtenidos") or 0)
+            ending_type = str(row.get("Tipo_finalizacion") or "")
+            if ending_type == "otro" and points == 0:
+                continue
+            is_valid_duration = 0 < duration <= 90
+            # Duration=0 is often a labeling artifact, but the points are real and must not be dropped.
+            is_valid_zero_duration = duration == 0 and (
+                points > 0 or ending_type in _ZERO_DURATION_VALID_ENDINGS
+            )
+            if is_valid_duration or is_valid_zero_duration:
+                possessions.append({
+                    "duration": duration,
+                    "points": points,
+                    "start_time": 0,
+                    "end_time": 0,
+                })
         return possessions
+
+    def _core_team_info(self) -> Dict[str, Dict]:
+        """Build minimal team metadata required by the shared possession core."""
+        result: Dict[str, Dict] = {}
+        if self.is_fbcyl:
+            teams = self.game_data.get("stats", {}).get("teams", [])
+            for idx, team in enumerate(teams[:2]):
+                tid = str(team.get("teamIdIntern") or team.get("teamIdExtern") or "")
+                result[tid] = {
+                    "name": team.get("name") or team.get("shortName") or tid,
+                    "home_away": "Local" if idx == 0 else "Visitante",
+                }
+            return result
+
+        teams = self.game_data.get("HEADER", {}).get("TEAM", [])
+        for idx, team in enumerate(teams[:2]):
+            tid = str(team.get("id") or "")
+            result[tid] = {
+                "name": team.get("name") or tid,
+                "home_away": "Local" if idx == 0 else "Visitante",
+            }
+        return result
 
     # ------------------------------------------------------------------
     # Aggregation

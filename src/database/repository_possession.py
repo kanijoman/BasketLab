@@ -6,6 +6,35 @@ from pymongo.errors import PyMongoError
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 
+def _possession_projection(is_fbcyl: bool) -> Dict:
+    """Return the narrow Mongo projection used to load play-by-play for possession stats.
+
+    FEB must include 'num': order_possession_moves() uses it to break ties between
+    same-timestamp events, without it same-second sequences sort unpredictably.
+    """
+    if is_fbcyl:
+        return {
+            "moves.move":   1,
+            "moves.period": 1,
+            "moves.min":    1,
+            "moves.sec":    1,
+            "moves.idTeam": 1,
+            "stats.teams.teamIdIntern": 1,
+            "stats.teams.teamIdExtern": 1,
+            "_id": 0,
+        }
+    return {
+        "PLAYBYPLAY.LINES.num":     1,
+        "PLAYBYPLAY.LINES.text":    1,
+        "PLAYBYPLAY.LINES.quarter": 1,
+        "PLAYBYPLAY.LINES.time":    1,
+        "PLAYBYPLAY.LINES.action":  1,
+        "PLAYBYPLAY.LINES.idTeam":  1,
+        "HEADER.TEAM.id":           1,
+        "_id": 0,
+    }
+
+
 def _aggregate_game_possession(game_stats: Dict) -> Tuple[float, Dict, Dict, Dict]:
     """Extract per-game possession totals from a single game's calculate_possessions result.
 
@@ -52,30 +81,9 @@ class PossessionRepositoryMixin:
             from .playbyplay_analyzer import PossessionAnalyzer
 
             is_fbcyl = _is_fbcyl(collection_name)
-            # Narrow projections: only the fields PossessionAnalyzer actually reads
+            # Narrow projection: only the fields PossessionAnalyzer actually reads
             # from each array item — avoids loading 15-20 extra fields per move.
-            projection = (
-                {
-                    "moves.move":   1,
-                    "moves.period": 1,
-                    "moves.min":    1,
-                    "moves.sec":    1,
-                    "moves.idTeam": 1,
-                    "stats.teams.teamIdIntern": 1,
-                    "stats.teams.teamIdExtern": 1,
-                    "_id": 0,
-                }
-                if is_fbcyl
-                else {
-                    "PLAYBYPLAY.LINES.text":    1,
-                    "PLAYBYPLAY.LINES.quarter": 1,
-                    "PLAYBYPLAY.LINES.time":    1,
-                    "PLAYBYPLAY.LINES.action":  1,
-                    "PLAYBYPLAY.LINES.idTeam":  1,
-                    "HEADER.TEAM.id":           1,
-                    "_id": 0,
-                }
-            )
+            projection = _possession_projection(is_fbcyl)
             games = self.get_games_for_team(
                 collection_name, team_id,
                 only_with_playbyplay=True,
@@ -275,6 +283,9 @@ class PossessionRepositoryMixin:
         short_poss = {"count": 0, "total_points": 0}
         medium_poss = {"count": 0, "total_points": 0}
         long_poss = {"count": 0, "total_points": 0}
+        # Per-opponent possessions/duration — lets the caller compare this rival's
+        # pace against us to that same rival's own season-wide average pace.
+        opponent_breakdown: Dict[str, Dict[str, float]] = {}
 
         for game in games:
             try:
@@ -284,9 +295,10 @@ class PossessionRepositoryMixin:
                 analyzer = PossessionAnalyzer(game, is_fbcyl=is_fbcyl)
                 game_stats = analyzer.calculate_possessions(opp_id)
                 weighted, fast, med, slow = _aggregate_game_possession(game_stats)
+                game_poss = game_stats.get("total_possessions", 0)
 
                 total_duration_sum += weighted
-                total_weighted_count += game_stats.get("total_possessions", 0)
+                total_weighted_count += game_poss
 
                 short_poss["count"]        += fast["count"]
                 short_poss["total_points"] += fast["total_points"]
@@ -294,6 +306,12 @@ class PossessionRepositoryMixin:
                 medium_poss["total_points"] += med["total_points"]
                 long_poss["count"]          += slow["count"]
                 long_poss["total_points"]   += slow["total_points"]
+
+                opp_entry = opponent_breakdown.setdefault(
+                    opp_id, {"possessions": 0, "weighted_duration": 0.0}
+                )
+                opp_entry["possessions"] += game_poss
+                opp_entry["weighted_duration"] += weighted
             except Exception:
                 continue
 
@@ -312,6 +330,11 @@ class PossessionRepositoryMixin:
             "rival_oer_fast":   _oer(short_poss["count"],  short_poss["total_points"]),
             "rival_oer_medium": _oer(medium_poss["count"], medium_poss["total_points"]),
             "rival_oer_slow":   _oer(long_poss["count"],   long_poss["total_points"]),
+            "rival_avg_duration": (
+                round(total_duration_sum / total_weighted_count, 2)
+                if total_weighted_count > 0 else 0.0
+            ),
+            "rival_opponent_breakdown": opponent_breakdown,
         }
 
     def _calculate_reconciliation_metrics(self, stats: Dict) -> Dict:

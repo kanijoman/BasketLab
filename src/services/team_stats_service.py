@@ -34,6 +34,22 @@ _add_derived_indexes = add_derived_indexes
 _possession_cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
 
 
+def _rival_avg_duration_general(
+    breakdown: Dict[str, Dict[str, float]],
+    avg_duration_by_id: Dict[str, float],
+) -> Optional[float]:
+    """Weight each faced rival's own season avg_duration by possessions they played against us."""
+    weighted_sum = 0.0
+    total_weight = 0.0
+    for opp_id, data in breakdown.items():
+        opp_general = avg_duration_by_id.get(opp_id)
+        if opp_general is None:
+            continue
+        weighted_sum += opp_general * data["possessions"]
+        total_weight += data["possessions"]
+    return round(weighted_sum / total_weight, 2) if total_weight > 0 else None
+
+
 class TeamStatsService:
     """High-level service for team statistics.
 
@@ -313,6 +329,7 @@ class TeamStatsService:
         name_to_id = {t["name"]: t["id"] for t in teams_info}
 
         result = []
+        poss_by_team_id: Dict[str, Dict[str, Any]] = {}
         for t in raw:
             team_name = t.get("team_name", "")
             team_id = name_to_id.get(team_name)
@@ -341,6 +358,7 @@ class TeamStatsService:
                 poss = self._db.repository.get_team_possession_stats(
                     collection_name, team_id
                 )
+                poss_by_team_id[str(team_id)] = poss
                 total = poss.get("total_possessions", 0) if poss else 0
                 if total > 0:
                     avg_dur = poss["avg_duration"]
@@ -381,8 +399,27 @@ class TeamStatsService:
                     entry["rival_oer_fast"]   = poss.get("rival_oer_fast")
                     entry["rival_oer_medium"] = poss.get("rival_oer_medium")
                     entry["rival_oer_slow"]   = poss.get("rival_oer_slow")
+                    entry["rival_avg_duration"] = poss.get("rival_avg_duration")
 
             result.append(entry)
+
+        # Pace-impact: compare each team's rivals' pace against us to those same
+        # rivals' own season-wide pace (weighted by possessions played against us).
+        avg_duration_by_id = {
+            r["team_id"]: r["avg_duration"]
+            for r in result
+            if r.get("team_id") and r.get("avg_duration") is not None
+        }
+        for entry in result:
+            tid = entry.get("team_id")
+            poss = poss_by_team_id.get(tid) if tid else None
+            breakdown = poss.get("rival_opponent_breakdown") if poss else None
+            general = _rival_avg_duration_general(breakdown, avg_duration_by_id) if breakdown else None
+            entry["rival_avg_duration_general"] = general
+            rival_avg = entry.get("rival_avg_duration")
+            entry["rival_pace_differential"] = (
+                round(rival_avg - general, 2) if general is not None and rival_avg is not None else None
+            )
 
         _possession_cache[collection_name] = result
         return result

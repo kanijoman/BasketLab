@@ -76,9 +76,10 @@ def test_feb_game_violacion_origin_exists(feb_rows):
 
 
 def test_feb_game_saque_fondo_only_after_score(feb_rows):
-    """saque_fondo must only appear after the opponent scored in a previous possession."""
-    scored_endings = {"tiro_2", "triple", "tiros_libres", "bandeja", "mate"}
-    # Build sequence: for each possession, prev team's ending
+    """saque_fondo must only appear after the opponent scored or a tracker correction."""
+    scored_endings = {"tiro_2", "triple", "tiros_libres", "bandeja", "mate", "otro"}
+    # 'otro' is allowed because tracker-correction closes (RC2 fix) produce 'otro'
+    # and the next possession correctly starts via saque_fondo.
     prev_ending: dict = {}  # team_id -> last ending for that team
     for r in feb_rows:
         origin = r["Origen_posesion"]
@@ -143,3 +144,195 @@ def test_feb_game_steals_match_boxscore(feb_rows, game_data):
         assert stl_poss == bx_st, (
             f"STL mismatch for {tid}: possession={stl_poss} boxscore={bx_st}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Synthetic game helpers
+# ---------------------------------------------------------------------------
+
+def _make_feb_game(local_id="T1", visitor_id="T2", lines=None):
+    return {
+        "HEADER": {"TEAM": [
+            {"id": local_id, "name": "Local"},
+            {"id": visitor_id, "name": "Visitante"},
+        ]},
+        "PLAYBYPLAY": {"LINES": lines or []},
+    }
+
+
+def _feb_svc(lines, local_id="T1", visitor_id="T2"):
+    game = _make_feb_game(local_id, visitor_id, lines)
+    return PossessionExportService(game, is_fbcyl=False, game_id="TEST").extract_possessions()
+
+
+def _m(team, text, action="shoot", quarter=1, time="9:00"):
+    return {"action": action, "idTeam": team, "text": text, "quarter": str(quarter), "time": time}
+
+
+# ---------------------------------------------------------------------------
+# Feature A — Tiene_rebote_ofensivo column (FAIL before Phase 3 fix)
+# ---------------------------------------------------------------------------
+
+def test_tiene_rebote_ofensivo_column_present_in_all_rows(feb_rows):
+    """Every row must contain the Tiene_rebote_ofensivo key (Feature A)."""
+    missing = [r for r in feb_rows if "Tiene_rebote_ofensivo" not in r]
+    assert not missing, f"{len(missing)} rows missing Tiene_rebote_ofensivo column"
+
+
+def test_tiene_rebote_ofensivo_is_binary(feb_rows):
+    """Tiene_rebote_ofensivo must be 0 or 1 for every row."""
+    bad = [r for r in feb_rows if r.get("Tiene_rebote_ofensivo") not in (0, 1)]
+    assert not bad, f"{len(bad)} rows have invalid Tiene_rebote_ofensivo value"
+
+
+# ---------------------------------------------------------------------------
+# OReb continuity (FAIL before Phase 3 fix)
+# ---------------------------------------------------------------------------
+
+def test_no_rebote_ofensivo_in_origen(feb_rows):
+    """After the OReb continuity fix, no row may have Origen_posesion='rebote_ofensivo'."""
+    bad = [r for r in feb_rows if r.get("Origen_posesion") == "rebote_ofensivo"]
+    assert not bad, f"{len(bad)} rows still use removed 'rebote_ofensivo' origin"
+
+
+def test_orb_flag_set_for_orb_possession():
+    """Possession where OReb occurred must have Tiene_rebote_ofensivo=1 (not 0)."""
+    lines = [
+        # T2 scores → T1 starts (saque_fondo)
+        _m("T2", "TIRO DE 2 ANOTADO", "shoot", 1, "9:30"),
+        # T1 misses — T1 gets offensive rebound
+        _m("T1", "TIRO DE 2 FALLADO", "shoot", 1, "9:00"),
+        _m("T1", "REBOTE OFENSIVO", "rebound", 1, "8:55"),
+        # T1 scores on the putback
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "8:50"),
+    ]
+    rows = _feb_svc(lines)
+    t1_scoring_rows = [r for r in rows if r["Equipo_ID"] == "T1" and r["Puntos_obtenidos"] > 0]
+    assert len(t1_scoring_rows) == 1, f"Expected 1 T1 scoring possession, got {len(t1_scoring_rows)}"
+    assert t1_scoring_rows[0]["Tiene_rebote_ofensivo"] == 1, "OReb possession must have flag=1"
+
+
+def test_orb_possession_not_split():
+    """Missed FG + offensive rebound must NOT create a separate possession row."""
+    lines = [
+        _m("T2", "TIRO DE 2 ANOTADO", "shoot", 1, "9:30"),
+        _m("T1", "TIRO DE 2 FALLADO", "shoot", 1, "9:00"),   # miss — idx will be in orebs
+        _m("T1", "REBOTE OFENSIVO", "rebound", 1, "8:55"),
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "8:50"),
+    ]
+    rows = _feb_svc(lines)
+    t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
+    # Before fix: 2 T1 rows (0-pt OReb row + 2-pt score row)
+    # After fix:  1 T1 row  (single possession with pts=2 and flag=1)
+    assert len(t1_rows) == 1, (
+        f"OReb must not split possession; expected 1 T1 row, got {len(t1_rows)}"
+    )
+
+
+def test_orb_flag_zero_for_normal_possession():
+    """Possession without offensive rebound must have Tiene_rebote_ofensivo=0."""
+    lines = [
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:00"),
+    ]
+    rows = _feb_svc(lines)
+    t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
+    assert t1_rows, "T1 must have at least one possession"
+    assert all(r["Tiene_rebote_ofensivo"] == 0 for r in t1_rows), (
+        "Normal possession (no OReb) must have flag=0"
+    )
+
+
+# ---------------------------------------------------------------------------
+# RC2 — tracker-correction close must use 'otro' ending (FAIL before Phase 3)
+# ---------------------------------------------------------------------------
+
+def test_tracker_correction_uses_otro_ending():
+    """When scoring event forces a tracker correction, the closed possession ends as 'otro'."""
+    lines = [
+        # T1 starts possession (rebounds at Q1)
+        _m("T1", "REBOTE DEFENSIVO", "rebound", 1, "9:00"),
+        # T2 scores immediately — triggers _is_scoring_event with current_team=T1 != T2
+        _m("T2", "TIRO DE 2 ANOTADO", "shoot", 1, "8:30"),
+    ]
+    rows = _feb_svc(lines)
+    t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
+    assert t1_rows, "T1 possession must be closed by tracker correction"
+    forced_close = [r for r in t1_rows if r["Puntos_obtenidos"] == 0]
+    assert forced_close, "T1 must have a 0-pt row from tracker correction"
+    assert forced_close[0]["Tipo_finalizacion"] == "otro", (
+        f"Tracker correction must close with 'otro', got '{forced_close[0]['Tipo_finalizacion']}'"
+    )
+
+
+# ---------------------------------------------------------------------------
+# RC4 — FEB quarter boundary without action='period' event (FAIL before Phase 3)
+# ---------------------------------------------------------------------------
+
+def test_feb_quarter_change_closes_possession():
+    """FEB: possession start in Q1, score in Q2 with no 'period' event must yield Q2 attribution."""
+    lines = [
+        # T1 rebounds near end of Q1 → starts possession
+        _m("T1", "REBOTE DEFENSIVO", "rebound", 1, "0:20"),   # ts ≈ 580
+        # No action='period' event; T1 scores early Q2
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 2, "9:40"),    # ts ≈ 620
+    ]
+    rows = _feb_svc(lines)
+    t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
+    scoring_rows = [r for r in t1_rows if r["Puntos_obtenidos"] == 2]
+    assert scoring_rows, "T1 must have a 2pt possession"
+    # Before fix: the score is attributed to Q1 (possession started there)
+    # After fix:  the quarter-change closes Q1 possession; score goes to Q2
+    assert scoring_rows[0]["Cuarto"] == "2", (
+        f"Score in Q2 must be attributed to Q2, got Q{scoring_rows[0]['Cuarto']}"
+    )
+
+
+def test_zero_second_scoring_is_flagged_as_controversial():
+    """A scoreless same-timestamp turnover remains valid and unflagged."""
+    lines = [
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:05"),
+        _m("T2", "PÉRDIDA DE BALÓN", "turnover", 1, "9:05"),
+    ]
+    rows = _feb_svc(lines)
+    t2_rows = [r for r in rows if r["Equipo_ID"] == "T2"]
+    assert t2_rows, "T2 must have a possession row"
+    zero_zero = [r for r in t2_rows if r["Duracion_posesion"] == 0 and r["Puntos_obtenidos"] == 0]
+    assert zero_zero, "Expected a same-timestamp zero-second turnover row"
+    assert "Controversial_Possession" in zero_zero[0], "Controversial_Possession flag missing"
+    assert zero_zero[0]["Controversial_Possession"] is False, (
+        "Immediate turnover without points should remain non-controversial"
+    )
+
+
+def test_zero_second_score_is_flagged_as_controversial():
+    """A zero-second scored possession should be marked for review without being dropped."""
+    lines = [
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:00"),
+        _m("T2", "TIRO DE 2 ANOTADO", "shoot", 1, "9:00"),
+    ]
+    rows = _feb_svc(lines)
+    t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
+    assert t1_rows, "T1 must have a possession row"
+    scored = [r for r in t1_rows if r["Puntos_obtenidos"] > 0]
+    assert scored, "T1 must have a scored possession"
+    assert "Controversial_Possession" in scored[0], "Controversial_Possession flag missing"
+    assert scored[0]["Controversial_Possession"] is True, (
+        "A zero-second scored possession should be flagged as controversial"
+    )
+
+
+def test_period_opening_score_uses_period_boundary_and_updates_next_differential():
+    """The first score in a period begins at 10:00 and updates the inbound score."""
+    lines = [
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:42"),
+        _m("T2", "PÉRDIDA DE BALÓN", "turnover", 1, "9:42"),
+    ]
+
+    rows = _feb_svc(lines)
+
+    opening_score = next(row for row in rows if row["Equipo_ID"] == "T1")
+    inbound_possession = next(row for row in rows if row["Equipo_ID"] == "T2")
+    assert opening_score["Duracion_posesion"] == 18
+    assert inbound_possession["Diferencia_marcador"] == -2
+    assert inbound_possession["Duracion_posesion"] == 0
+    assert inbound_possession["Controversial_Possession"] is False
