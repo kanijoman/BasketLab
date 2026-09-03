@@ -229,7 +229,60 @@ class TestTeamStatsServiceReconciliation:
         assert team_data["data_quality_score"] == 99
 
 
-class TestReconciliationEdgeCases:
+class TestRivalPaceDifferential:
+    """rival_pace_differential compares a rival's pace against us to their own season pace."""
+
+    @pytest.fixture
+    def mock_db(self):
+        return Mock()
+
+    @patch('src.services.team_stats_service.get_available_teams_from_collection')
+    def test_pace_differential_matches_worked_example(self, mock_get_teams, mock_db):
+        """Rival normally plays at 15.3s/possession, but 12.9s against us -> -2.4 differential."""
+        mock_get_teams.return_value = [
+            {"id": "us", "name": "Us"},
+            {"id": "rival", "name": "Rival"},
+        ]
+        mock_db.get_team_stats.return_value = [
+            {"team_name": "Us", "possessions_per_game": 70.0, "offensive_rating": 100.0,
+             "defensive_rating": 100.0, "net_rating": 0.0, "total_games": 20},
+            {"team_name": "Rival", "possessions_per_game": 70.0, "offensive_rating": 100.0,
+             "defensive_rating": 100.0, "net_rating": 0.0, "total_games": 20},
+        ]
+
+        mock_db.repository = Mock()
+
+        def _poss_stats(collection_name, team_id):
+            if team_id == "us":
+                return {
+                    "total_possessions": 100, "avg_duration": 14.0,
+                    "possessions_by_duration": {
+                        "<=8s": {"count": 34, "total_points": 30, "oer": 88.24},
+                        "8-16s": {"count": 33, "total_points": 30, "oer": 90.91},
+                        ">16s": {"count": 33, "total_points": 30, "oer": 90.91},
+                    },
+                    "rival_avg_duration": 12.9,
+                    "rival_opponent_breakdown": {"rival": {"possessions": 100, "weighted_duration": 1290.0}},
+                }
+            return {
+                "total_possessions": 100, "avg_duration": 15.3,
+                "possessions_by_duration": {
+                    "<=8s": {"count": 34, "total_points": 30, "oer": 88.24},
+                    "8-16s": {"count": 33, "total_points": 30, "oer": 90.91},
+                    ">16s": {"count": 33, "total_points": 30, "oer": 90.91},
+                },
+                "rival_avg_duration": 14.0,
+                "rival_opponent_breakdown": {"us": {"possessions": 100, "weighted_duration": 1400.0}},
+            }
+
+        mock_db.repository.get_team_possession_stats.side_effect = _poss_stats
+
+        result = TeamStatsService(mock_db).get_possession_stats("test_collection_pace")
+        us_row = next(r for r in result if r["team_name"] == "Us")
+
+        assert us_row["rival_avg_duration"] == 12.9
+        assert us_row["rival_avg_duration_general"] == 15.3
+        assert us_row["rival_pace_differential"] == -2.4
     """Test edge cases and boundary conditions."""
 
     def test_mismatch_exactly_15_uses_hybrid(self):

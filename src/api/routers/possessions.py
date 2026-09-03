@@ -7,6 +7,8 @@ aggregation pipeline — no extra DB passes are needed.
 """
 
 from typing import Any, Dict, List, Optional
+import csv
+import io
 import logging
 
 from fastapi import APIRouter, Depends, Query
@@ -15,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from src.api.deps import get_db
 from src.services import TeamStatsService
 from src.services.possession_export_service import PossessionExportService
+from src.services.pbp_quality_service import PBPQualityService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -92,6 +95,45 @@ def export_possessions_csv(
             yield buf.getvalue().encode("utf-8-sig")
 
     filename = f"posesiones_{collection}.csv"
+    return StreamingResponse(
+        _generate(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{collection}/quality/csv", summary="Export PBP quality check CSV")
+def export_quality_csv(
+    collection: str,
+    db=Depends(get_db),
+) -> StreamingResponse:
+    """Stream one PBP quality audit row per game for research validation.
+
+    The score is the equal-weight mean of made/attempted field goals and free
+    throws, offensive/defensive rebounds, and turnovers for both teams. Each
+    row also shows the raw PBP-recovered and official boxscore values by team.
+    """
+    is_fbcyl = "FBCYL" in collection.upper()
+
+    def _generate():
+        header_sent = False
+        buf = None
+        for game_doc in PossessionExportService.iter_collection(db, collection, None):
+            raw_id = game_doc.get("_id", "")
+            if isinstance(raw_id, dict):
+                raw_id = raw_id.get("$numberInt") or raw_id.get("$oid") or str(raw_id)
+            game_id = str(raw_id)
+            svc = PBPQualityService(game_doc, is_fbcyl, collection, game_id)
+            rows = svc.compute()
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=PBPQualityService.CSV_COLUMNS, extrasaction="ignore")
+            if not header_sent:
+                writer.writeheader()
+                header_sent = True
+            writer.writerows(rows)
+            yield buf.getvalue().encode("utf-8-sig")
+
+    filename = f"calidad_pbp_{collection}.csv"
     return StreamingResponse(
         _generate(),
         media_type="text/csv",

@@ -250,3 +250,38 @@ class TestOpponentIdDetection:
         result = _run_with_mocks(repo, [own_stats], [rival_stats], team_id="t1")
         # own pct_fast ≈ 10%, rival pct_fast ≈ 80%
         assert (result.get("rival_pct_fast") or 0) > (result.get("pct_fast") or 0) + 50
+
+
+# ---------------------------------------------------------------------------
+# Rival avg_duration (pace rivals play at against us)
+# ---------------------------------------------------------------------------
+
+class TestRivalAvgDuration:
+    def test_rival_avg_duration_key_exists(self):
+        game = _feb_game("t1", "t2")
+        repo = FakeRepo(_connected(), games=[game])
+        result = _run_with_mocks(repo, [_make_poss_stats()], [_make_poss_stats()])
+        assert "rival_avg_duration" in result
+
+    def test_rival_avg_duration_matches_rival_game_pace(self):
+        """A single rival game at 12.9s/possession must report that exact pace."""
+        rival_stats = _make_poss_stats(avg_dur=12.9, total=10, fast_c=3, fast_pts=6,
+                                        med_c=4, med_pts=7, slow_c=3, slow_pts=4)
+        game = _feb_game("t1", "t2")
+        repo = FakeRepo(_connected(), games=[game])
+        result = _run_with_mocks(repo, [_make_poss_stats()], [rival_stats])
+        assert pytest.approx(result["rival_avg_duration"]) == 12.9
+
+    def test_rival_avg_duration_weighted_across_games(self):
+        """Two games at different rival paces must weight by possession count, not game count."""
+        rival_g1 = _make_poss_stats(avg_dur=10.0, total=8, fast_c=8, fast_pts=8,
+                                     med_c=0, med_pts=0, slow_c=0, slow_pts=0)
+        rival_g2 = _make_poss_stats(avg_dur=20.0, total=2, fast_c=0, fast_pts=0,
+                                     med_c=0, med_pts=0, slow_c=2, slow_pts=2)
+        game1 = _feb_game("t1", "t2")
+        game2 = _feb_game("t1", "t2")
+        own_g = _make_poss_stats()
+        repo = FakeRepo(_connected(), games=[game1, game2])
+        result = _run_with_mocks(repo, [own_g, own_g], [rival_g1, rival_g2])
+        # (10.0*8 + 20.0*2) / (8+2) = 12.0
+        assert pytest.approx(result["rival_avg_duration"]) == 12.0
