@@ -33,6 +33,32 @@ def test_order_possession_moves_sorts_feb_same_timestamp_by_event_number():
     assert [m["num"] for m in ordered] == ["44", "45"]
 
 
+def test_tracker_correction_still_produces_otro_row_at_core_level():
+    """The unfiltered core must still emit the 'otro' correction row — only the
+    CSV exporter (PossessionExportService) filters it out for end users."""
+    game = {
+        "HEADER": {"TEAM": [
+            {"id": "T1", "name": "Local"},
+            {"id": "T2", "name": "Visitante"},
+        ]},
+        "PLAYBYPLAY": {"LINES": [
+            _move(1, "T1", "REBOTE DEFENSIVO", "rebound", "9:00"),
+            _move(2, "T2", "TIRO DE 2 ANOTADO", "shoot", "8:30"),
+        ]},
+    }
+    team_info = {
+        "T1": {"name": "Local", "home_away": "Local"},
+        "T2": {"name": "Visitante", "home_away": "Visitante"},
+    }
+
+    rows = extract_possession_rows(
+        game_data=game, is_fbcyl=False, game_id="TEST", team_info=team_info,
+    )
+
+    forced_close = [r for r in rows if r["Tipo_finalizacion"] == "otro" and r["Puntos_obtenidos"] == 0]
+    assert forced_close, "Core extraction must still produce the 'otro' correction row"
+
+
 def test_extract_possession_rows_returns_export_columns_contract():
     game = {
         "HEADER": {"TEAM": [

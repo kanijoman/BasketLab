@@ -37,6 +37,23 @@ def feb_rows(game_data):
     return svc.extract_possessions()
 
 
+@pytest.fixture(scope="module")
+def unfiltered_feb_rows(game_data):
+    """Raw core rows, before the exporter drops 'otro'+0pts artifacts.
+
+    Used only for tests that validate the reconstruction engine's own internal
+    invariants (origin/ending sequencing), which the filtered CSV output is not
+    expected to preserve.
+    """
+    from src.services.possession_core import extract_possession_rows
+
+    game_id = str(game_data.get("_id", {}).get("$numberInt", "test"))
+    svc = PossessionExportService(game_data, is_fbcyl=False, game_id=game_id)
+    return extract_possession_rows(
+        game_data=game_data, is_fbcyl=False, game_id=game_id, team_info=svc.team_info,
+    )
+
+
 def test_feb_game_points_match_final_score(feb_rows):
     """Sum of Puntos_obtenidos per team must equal the game final score."""
     pts_sanfer = sum(r["Puntos_obtenidos"] for r in feb_rows if r["Equipo_ID"] == _TEAM_SANFER)
@@ -69,19 +86,28 @@ def test_feb_game_no_perdida_ending(feb_rows):
     assert not perdida, f"{len(perdida)} rows still use deprecated 'perdida' ending"
 
 
+def test_feb_game_no_otro_zero_point_rows_in_export(feb_rows, unfiltered_feb_rows):
+    """Ownership-correction artifacts ('otro'+0pts) must be dropped from the CSV export."""
+    exported = [r for r in feb_rows if r["Tipo_finalizacion"] == "otro" and r["Puntos_obtenidos"] == 0]
+    assert not exported, f"{len(exported)} 'otro'+0pts artifacts leaked into the export"
+    # Sanity check the fixture actually exercises the artifact (otherwise this test is vacuous).
+    raw = [r for r in unfiltered_feb_rows if r["Tipo_finalizacion"] == "otro" and r["Puntos_obtenidos"] == 0]
+    assert raw, "Sample game must contain at least one 'otro'+0pts row to test filtering"
+
+
 def test_feb_game_violacion_origin_exists(feb_rows):
     """At least one possession must originate from a non-steal turnover (violacion)."""
     viols = [r for r in feb_rows if r["Origen_posesion"] == "violacion"]
     assert viols, "No 'violacion' origins found — violation detection may be broken"
 
 
-def test_feb_game_saque_fondo_only_after_score(feb_rows):
+def test_feb_game_saque_fondo_only_after_score(unfiltered_feb_rows):
     """saque_fondo must only appear after the opponent scored or a tracker correction."""
     scored_endings = {"tiro_2", "triple", "tiros_libres", "bandeja", "mate", "otro"}
     # 'otro' is allowed because tracker-correction closes (RC2 fix) produce 'otro'
     # and the next possession correctly starts via saque_fondo.
     prev_ending: dict = {}  # team_id -> last ending for that team
-    for r in feb_rows:
+    for r in unfiltered_feb_rows:
         origin = r["Origen_posesion"]
         if origin == "saque_fondo":
             rival_last = prev_ending.get(r["Rival_ID"], None)
@@ -91,9 +117,9 @@ def test_feb_game_saque_fondo_only_after_score(feb_rows):
         prev_ending[r["Equipo_ID"]] = r["Tipo_finalizacion"]
 
 
-def test_feb_game_tipoff_count(feb_rows):
+def test_feb_game_tipoff_count(unfiltered_feb_rows):
     """Exactly one saque_inicial_periodo per quarter (4 in a standard game)."""
-    tipoffs = [r for r in feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
+    tipoffs = [r for r in unfiltered_feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
     assert len(tipoffs) == 4, f"Expected 4 tip-offs (one per quarter), got {len(tipoffs)}"
 
 
@@ -247,7 +273,7 @@ def test_orb_flag_zero_for_normal_possession():
 # ---------------------------------------------------------------------------
 
 def test_tracker_correction_uses_otro_ending():
-    """When scoring event forces a tracker correction, the closed possession ends as 'otro'."""
+    """Tracker-correction closes are 'otro'+0pts artifacts and must not reach the CSV export."""
     lines = [
         # T1 starts possession (rebounds at Q1)
         _m("T1", "REBOTE DEFENSIVO", "rebound", 1, "9:00"),
@@ -255,13 +281,11 @@ def test_tracker_correction_uses_otro_ending():
         _m("T2", "TIRO DE 2 ANOTADO", "shoot", 1, "8:30"),
     ]
     rows = _feb_svc(lines)
-    t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
-    assert t1_rows, "T1 possession must be closed by tracker correction"
-    forced_close = [r for r in t1_rows if r["Puntos_obtenidos"] == 0]
-    assert forced_close, "T1 must have a 0-pt row from tracker correction"
-    assert forced_close[0]["Tipo_finalizacion"] == "otro", (
-        f"Tracker correction must close with 'otro', got '{forced_close[0]['Tipo_finalizacion']}'"
+    forced_close = [r for r in rows if r["Tipo_finalizacion"] == "otro" and r["Puntos_obtenidos"] == 0]
+    assert not forced_close, (
+        f"Ownership-correction artifact ('otro'+0pts) leaked into the CSV export: {forced_close}"
     )
+
 
 
 # ---------------------------------------------------------------------------

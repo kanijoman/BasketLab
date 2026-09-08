@@ -107,11 +107,13 @@ def export_quality_csv(
     collection: str,
     db=Depends(get_db),
 ) -> StreamingResponse:
-    """Stream one PBP quality audit row per game for research validation.
+    """Stream a CSV with PBP vs. boxscore accuracy metrics per team per game.
 
-    The score is the equal-weight mean of made/attempted field goals and free
-    throws, offensive/defensive rebounds, and turnovers for both teams. Each
-    row also shows the raw PBP-recovered and official boxscore values by team.
+    Each row compares play-by-play derived counts (T2M/T2A/T3M/T3A/T1M/T1A,
+    OReb/DReb, AST, ST, TOV) against official boxscore totals, computing an
+    accuracy % per metric and an overall Precision_Equipo score.
+
+    Intended for research validation of PBP data quality.
     """
     is_fbcyl = "FBCYL" in collection.upper()
 

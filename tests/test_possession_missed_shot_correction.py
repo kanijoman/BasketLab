@@ -1,7 +1,7 @@
 """Regression coverage for possession ownership mismatches on missed shots."""
 from __future__ import annotations
 
-from src.services.possession_export_service import PossessionExportService
+from src.services.possession_core import extract_possession_rows
 
 
 def _move(number, team_id, text, action, clock):
@@ -16,7 +16,13 @@ def _move(number, team_id, text, action, clock):
 
 
 def test_missed_shot_by_other_team_closes_the_stale_possession():
-    """A missed shot must correct possession ownership before rebound handling."""
+    """A missed shot must correct possession ownership before rebound handling.
+
+    Uses the unfiltered core directly: the stale-possession correction closes as
+    an 'otro'+0pts artifact, which the CSV exporter now drops (see
+    test_possession_export_service.py) but the reconstruction engine must still
+    produce internally to keep ownership tracking correct.
+    """
     game = {
         "HEADER": {"TEAM": [
             {"id": "T1", "name": "Local"},
@@ -29,11 +35,18 @@ def test_missed_shot_by_other_team_closes_the_stale_possession():
             _move(148, "T2", "TIRO DE 2 ANOTADO", "shoot", "7:50"),
         ]},
     }
+    team_info = {
+        "T1": {"name": "Local", "home_away": "Local"},
+        "T2": {"name": "Visitante", "home_away": "Visitante"},
+    }
 
-    rows = PossessionExportService(game, is_fbcyl=False, game_id="TEST").extract_possessions()
+    rows = extract_possession_rows(
+        game_data=game, is_fbcyl=False, game_id="TEST", team_info=team_info,
+    )
 
     stale_possession = next(row for row in rows if row["Equipo_ID"] == "T2" and row["Tiempo_de_juego"] == "7:36")
     missed_shot = next(row for row in rows if row["Equipo_ID"] == "T1" and row["Tiempo_de_juego"] == "7:04")
     assert stale_possession["Duracion_posesion"] == 32
     assert missed_shot["Tipo_finalizacion"] == "tiro_fallado"
     assert missed_shot["Duracion_posesion"] == 0
+

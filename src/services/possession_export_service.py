@@ -23,8 +23,10 @@ class PossessionExportService:
     def is_controversial_possession(duration: int, points: int) -> bool:
         """Mark possessions that merit manual review in the raw export.
 
-        We intentionally do not drop rows here: the raw CSV stays faithful to the
-        source data, while the separate quality CSV is the review/purge layer.
+        Real but ambiguous possessions (e.g. 0-second scores, long durations) are kept
+        and flagged here; ownership-correction artifacts (Tipo_finalizacion='otro' with
+        0 points) never represent a real possession and are dropped entirely instead
+        (see extract_possessions).
         """
         return is_controversial_possession(duration, points)
 
@@ -67,13 +69,21 @@ class PossessionExportService:
     # ------------------------------------------------------------------
 
     def extract_possessions(self) -> List[Dict]:
-        """Return one dict per possession with all CSV columns populated."""
-        return extract_possession_rows(
+        """Return one dict per possession with all CSV columns populated.
+
+        Ownership-correction artifacts (Tipo_finalizacion='otro' with 0 points) are
+        dropped: they never represent a real possession and only confuse readers.
+        """
+        rows = extract_possession_rows(
             game_data=self.game_data,
             is_fbcyl=self.is_fbcyl,
             game_id=self.game_id,
             team_info=self.team_info,
         )
+        return [
+            row for row in rows
+            if not (row.get("Tipo_finalizacion") == "otro" and int(row.get("Puntos_obtenidos") or 0) == 0)
+        ]
 
     # ------------------------------------------------------------------
     # CSV rendering
