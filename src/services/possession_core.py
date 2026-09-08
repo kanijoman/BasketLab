@@ -327,7 +327,7 @@ class _PossessionExtractionEngine:
         origin = _classify_origin(self.prev_ending, start_move, self.is_period_start)
         row = self._build_row(ending_pts, ending_type, origin, duration)
         self.rows.append(row)
-        self._reset_after_close(ending_pts, ending_type)
+        self._reset_after_close(ending_pts, ending_type, is_correction)
 
     def _build_row(self, ending_pts: int, ending_type: str, origin: str, duration: int) -> Dict:
         rival_id = self.opp_map.get(self.current_team or "", "")
@@ -356,9 +356,12 @@ class _PossessionExtractionEngine:
             "Controversial_Possession": is_controversial_possession(duration, ending_pts),
         }
 
-    def _reset_after_close(self, ending_pts: int, ending_type: str) -> None:
+    def _reset_after_close(self, ending_pts: int, ending_type: str, is_correction: bool = False) -> None:
         self.prev_ending = ending_type
-        self.is_period_start = False
+        # A correction close is a phantom possession, not the period's real first
+        # possession — keep the flag so the following real possession gets it.
+        if not is_correction:
+            self.is_period_start = False
         self.this_poss_has_orb = False
         if self.current_team is not None:
             self.running_score[self.current_team] = self.running_score.get(self.current_team, 0) + ending_pts

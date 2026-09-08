@@ -117,9 +117,13 @@ def test_feb_game_saque_fondo_only_after_score(unfiltered_feb_rows):
         prev_ending[r["Equipo_ID"]] = r["Tipo_finalizacion"]
 
 
-def test_feb_game_tipoff_count(unfiltered_feb_rows):
-    """Exactly one saque_inicial_periodo per quarter (4 in a standard game)."""
-    tipoffs = [r for r in unfiltered_feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
+def test_feb_game_tipoff_count(feb_rows):
+    """Exactly one saque_inicial_periodo per quarter (4 in a standard game).
+
+    Uses the filtered (real-possession) view: ownership-correction phantoms can
+    also carry this origin tag internally but are dropped by the exporter.
+    """
+    tipoffs = [r for r in feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
     assert len(tipoffs) == 4, f"Expected 4 tip-offs (one per quarter), got {len(tipoffs)}"
 
 
