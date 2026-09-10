@@ -21,11 +21,16 @@ def _action(move: Dict) -> str:
 def get_timestamp(move: Dict, is_fbcyl: bool) -> int:
     if is_fbcyl:
         period = int(move.get("period") or 1)
-        return (period - 1) * 600 + int(move.get("min") or 0) * 60 + int(move.get("sec") or 0)
+        elapsed = int(move.get("min") or 0) * 60 + int(move.get("sec") or 0)
+        if period > 4:
+            return 4 * 600 + (period - 5) * 300 + elapsed
+        return (period - 1) * 600 + elapsed
     try:
         q = int(move.get("quarter") or 1)
         parts = str(move.get("time") or "10:00").split(":")
         m, s = int(parts[0]), int(parts[1])
+        if q > 4:
+            return 4 * 600 + (q - 5) * 300 + max(0, 300 - (m * 60 + s))
         return (q - 1) * 600 + max(0, 600 - (m * 60 + s))
     except (ValueError, TypeError, IndexError):
         return 0
@@ -145,15 +150,22 @@ def ft_sequence_info(idx: int, moves: List[Dict], is_fbcyl: bool) -> Tuple[bool,
 
     Scans backward and forward through consecutive FT events from the same team,
     skipping neutral events (subst/foul/timeout/assist) in between.
+    FT events from the opposing team at the exact same timestamp (e.g. technical
+    fouls during a FT sequence) are skipped rather than treated as sequence breaks.
     """
     team = str(moves[idx].get("idTeam") or "")
+    ts_current = get_timestamp(moves[idx], is_fbcyl)
     start = idx
     for j in range(idx - 1, -1, -1):
         m = moves[j]
         if _action(m) in _NEUTRAL:
             continue
-        if str(m.get("idTeam") or "") == team and is_ft_event(m, is_fbcyl):
+        m_team = str(m.get("idTeam") or "")
+        if m_team == team and is_ft_event(m, is_fbcyl):
             start = j
+        elif (get_timestamp(m, is_fbcyl) == ts_current
+              and m_team != team and is_ft_event(m, is_fbcyl)):
+            continue  # skip interleaved other-team FT at same timestamp
         else:
             break
     end = idx
@@ -161,13 +173,18 @@ def ft_sequence_info(idx: int, moves: List[Dict], is_fbcyl: bool) -> Tuple[bool,
         m = moves[j]
         if _action(m) in _NEUTRAL:
             continue
-        if str(m.get("idTeam") or "") == team and is_ft_event(m, is_fbcyl):
+        m_team = str(m.get("idTeam") or "")
+        if m_team == team and is_ft_event(m, is_fbcyl):
             end = j
+        elif (get_timestamp(m, is_fbcyl) == ts_current
+              and m_team != team and is_ft_event(m, is_fbcyl)):
+            continue  # skip interleaved other-team FT at same timestamp
         else:
             break
     made_pts = sum(
         1 for j in range(start, end + 1)
         if is_ft_event(moves[j], is_fbcyl) and not is_missed_ft(moves[j], is_fbcyl)
+        and str(moves[j].get("idTeam") or "") == team
     )
     return idx == end, made_pts
 

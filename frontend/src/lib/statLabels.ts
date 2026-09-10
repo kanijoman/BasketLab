@@ -75,6 +75,7 @@ export const STAT_LABELS: Record<string, StatLabel> = {
   Pos:     { label: 'Posesiones/Partido', description: 'Estimación del número de posesiones por partido.' },
   'Pos/P': { label: 'Posesiones/Partido', description: 'Estimación del número de posesiones por partido.' },
   Ritmo:   { label: 'Ritmo de Juego',     description: 'Posesiones de ambos equipos por partido normalizado a 40 min. Mide la velocidad del partido.' },
+  'Δ Ritmo Rival (s)': { label: 'Diferencial de Ritmo del Rival', description: 'Diferencia entre la duración media de posesión del rival contra nosotros y su media habitual. Negativo = jugamos más rápido que su ritmo normal; positivo = más lento.' },
 
   // ── Advanced shooting percentages ────────────────────────────────────────────
   'eFG%':   { label: 'eFG% — Tiro Efectivo',       description: 'Porcentaje de tiro ajustado: pondera los triples por su mayor valor.' },

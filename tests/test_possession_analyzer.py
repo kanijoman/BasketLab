@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from unittest.mock import patch
 
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
@@ -262,3 +263,105 @@ class TestCalculatePossessions:
         analyzer = PossessionAnalyzer(_feb_game(lines=lines), is_fbcyl=False)
         result = analyzer.calculate_possessions('T1')
         assert result['avg_duration'] >= 0
+
+    @patch('database.possession_analyzer.extract_possession_rows')
+    def test_zero_duration_scoring_possession_is_not_dropped(self, mock_extract_rows):
+        """0-second scoring possessions have an unreliable duration label but real points that must be kept."""
+        mock_extract_rows.return_value = [
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_2", "Duracion_posesion": 0, "Puntos_obtenidos": 2},
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_2", "Duracion_posesion": 8, "Puntos_obtenidos": 0},
+        ]
+
+        analyzer = PossessionAnalyzer(_feb_game(), is_fbcyl=False)
+        result = analyzer.calculate_possessions('T1')
+
+        assert result['total_possessions'] == 2
+        fast = result['possessions_by_duration']['<=8s']
+        assert fast['count'] == 2
+        assert fast['total_points'] == 2
+        assert fast['oer'] == 100.0
+
+    @patch('database.possession_analyzer.extract_possession_rows')
+    def test_zero_duration_without_points_is_excluded(self, mock_extract_rows):
+        """0-second rows with no points are transition artifacts and must not dilute OER."""
+        mock_extract_rows.return_value = [
+            {"Equipo_ID": "T1", "Duracion_posesion": 0, "Puntos_obtenidos": 0},
+            {"Equipo_ID": "T1", "Duracion_posesion": 8, "Puntos_obtenidos": 2},
+        ]
+
+        analyzer = PossessionAnalyzer(_feb_game(), is_fbcyl=False)
+        result = analyzer.calculate_possessions('T1')
+
+        assert result['total_possessions'] == 1
+        fast = result['possessions_by_duration']['<=8s']
+        assert fast['count'] == 1
+        assert fast['total_points'] == 2
+        assert fast['oer'] == 200.0
+
+    @patch('database.possession_analyzer.extract_possession_rows')
+    def test_non_scoring_otro_rows_are_excluded(self, mock_extract_rows):
+        """Correction rows (Tipo_finalizacion='otro') with 0 points must not count."""
+        mock_extract_rows.return_value = [
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "otro", "Duracion_posesion": 7, "Puntos_obtenidos": 0},
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_2", "Duracion_posesion": 10, "Puntos_obtenidos": 2},
+        ]
+
+        analyzer = PossessionAnalyzer(_feb_game(), is_fbcyl=False)
+        result = analyzer.calculate_possessions('T1')
+
+        assert result['total_possessions'] == 1
+        medium = result['possessions_by_duration']['8-16s']
+        assert medium['count'] == 1
+        assert medium['total_points'] == 2
+        assert medium['oer'] == 200.0
+
+    @patch('database.possession_analyzer.extract_possession_rows')
+    def test_zero_duration_turnover_is_included(self, mock_extract_rows):
+        """Legitimate 0-second turnovers must count as possessions in fast bucket."""
+        mock_extract_rows.return_value = [
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "violacion", "Duracion_posesion": 0, "Puntos_obtenidos": 0},
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_2", "Duracion_posesion": 8, "Puntos_obtenidos": 2},
+        ]
+
+        analyzer = PossessionAnalyzer(_feb_game(), is_fbcyl=False)
+        result = analyzer.calculate_possessions('T1')
+
+        assert result['total_possessions'] == 2
+        fast = result['possessions_by_duration']['<=8s']
+        assert fast['count'] == 2
+        assert fast['total_points'] == 2
+        assert fast['oer'] == 100.0
+
+    @patch('database.possession_analyzer.extract_possession_rows')
+    def test_zero_duration_steal_is_included(self, mock_extract_rows):
+        """Legitimate 0-second steal recoveries must count as possessions."""
+        mock_extract_rows.return_value = [
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "recuperacion", "Duracion_posesion": 0, "Puntos_obtenidos": 0},
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_2", "Duracion_posesion": 8, "Puntos_obtenidos": 2},
+        ]
+
+        analyzer = PossessionAnalyzer(_feb_game(), is_fbcyl=False)
+        result = analyzer.calculate_possessions('T1')
+
+        assert result['total_possessions'] == 2
+        fast = result['possessions_by_duration']['<=8s']
+        assert fast['count'] == 2
+        assert fast['total_points'] == 2
+        assert fast['oer'] == 100.0
+
+    @patch('database.possession_analyzer.extract_possession_rows')
+    def test_zero_duration_non_scoring_non_turnover_is_excluded(self, mock_extract_rows):
+        """0-second non-scoring endings other than turnover/steal should not inflate fast possessions."""
+        mock_extract_rows.return_value = [
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_fallado", "Duracion_posesion": 0, "Puntos_obtenidos": 0},
+            {"Equipo_ID": "T1", "Tipo_finalizacion": "tiro_2", "Duracion_posesion": 8, "Puntos_obtenidos": 2},
+        ]
+
+        analyzer = PossessionAnalyzer(_feb_game(), is_fbcyl=False)
+        result = analyzer.calculate_possessions('T1')
+
+        assert result['total_possessions'] == 1
+        fast = result['possessions_by_duration']['<=8s']
+        assert fast['count'] == 1
+        assert fast['total_points'] == 2
+        assert fast['oer'] == 200.0

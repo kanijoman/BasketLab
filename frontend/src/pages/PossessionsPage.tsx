@@ -20,7 +20,7 @@ import {
 import { Activity } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getPossessionStats, getPossessionsExportUrl, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
+import { getPossessionQualityExportUrl, getPossessionStats, getPossessionsExportUrl, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
 import { fmt } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
@@ -101,10 +101,12 @@ function buildCols(cv: CVMap | null): ColumnDef<PossessionStat, unknown>[] {
     numColOpt('rival_oer_fast',   'OER Rápidas Rival', 1),
     numColOpt('rival_oer_medium', 'OER Medias Rival',  1),
     numColOpt('rival_oer_slow',   'OER Lentas Rival',  1),
+    numColOpt('rival_avg_duration',     'Tpo. Pos. Rival (s)', 1),
+    numColOpt('rival_pace_differential', 'Δ Ritmo Rival (s)',  1),
   ]
 }
 
-const REVERSE_COLS = ['der', 'pct_slow', 'rival_pct_slow', 'rival_oer_fast', 'rival_oer_medium', 'rival_oer_slow']
+const REVERSE_COLS = ['der', 'pct_slow', 'rival_pct_slow', 'rival_oer_fast', 'rival_oer_medium', 'rival_oer_slow', 'rival_pace_differential']
 
 // -- Quartile computation from data (no separate endpoint for possessions) ----
 
@@ -130,6 +132,7 @@ function buildQuartileMap(data: PossessionStat[]): QuartileMap {
     'oer_fast', 'oer_medium', 'oer_slow', 'est_possessions_per_game',
     'rival_pct_fast', 'rival_pct_medium', 'rival_pct_slow',
     'rival_oer_fast', 'rival_oer_medium', 'rival_oer_slow',
+    'rival_avg_duration', 'rival_pace_differential',
   ]
   const map: QuartileMap = {}
   keys.forEach(k => { map[k as string] = computeQuartiles(data, k) })
@@ -350,13 +353,22 @@ export default function PossessionsPage() {
           </div>
           <div className="flex items-center gap-2">
             {collection && (
-              <a
-                href={getPossessionsExportUrl(collection.name)}
-                download
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-border text-ink-secondary hover:bg-surface-hover transition-colors"
-              >
-                Exportar CSV
-              </a>
+              <>
+                <a
+                  href={getPossessionsExportUrl(collection.name)}
+                  download
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-border text-ink-secondary hover:bg-surface-hover transition-colors"
+                >
+                  Exportar CSV
+                </a>
+                <a
+                  href={getPossessionQualityExportUrl(collection.name)}
+                  download
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-border text-ink-secondary hover:bg-surface-hover transition-colors"
+                >
+                  Calidad PBP CSV
+                </a>
+              </>
             )}
           {/* Tab toggle */}
           <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm">
