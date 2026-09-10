@@ -22,6 +22,7 @@ from src.database._possession_helpers import (
 
 _NEUTRAL = frozenset(("subst", "foul", "timeout", "assist"))
 QUALITY_METRICS = ("T2M", "T2A", "T3M", "T3A", "T1M", "T1A", "RebO", "RebD", "TOV")
+_ZERO_DURATION_VALID_ENDINGS = frozenset(("violacion", "recuperacion"))
 
 
 def is_controversial_possession(duration: int, points: int) -> bool:
@@ -33,6 +34,23 @@ def is_controversial_possession(duration: int, points: int) -> bool:
     if duration > 40:
         return True
     return False
+
+
+def is_tab_evaluated_possession(row: Dict) -> bool:
+    """Return True if the possessions tab includes this row in its OER/pace stats.
+
+    Mirrors PossessionAnalyzer's state machine: drops ownership-correction artifacts
+    (otro + 0pts) and possessions with an implausible duration, unless they scored or
+    ended in a way that is inherently duration-independent (violación/recuperación).
+    """
+    duration = int(row.get("Duracion_posesion") or 0)
+    points = int(row.get("Puntos_obtenidos") or 0)
+    ending_type = str(row.get("Tipo_finalizacion") or "")
+    if ending_type == "otro" and points == 0:
+        return False
+    if 0 < duration <= 90:
+        return True
+    return duration == 0 and (points > 0 or ending_type in _ZERO_DURATION_VALID_ENDINGS)
 
 
 def order_possession_moves(moves: List[Dict], is_fbcyl: bool) -> List[Dict]:

@@ -5,7 +5,11 @@ import csv
 import io
 from typing import Any, Dict, Iterator, List, Optional
 
-from src.services.possession_core import extract_possession_rows, is_controversial_possession
+from src.services.possession_core import (
+    extract_possession_rows,
+    is_controversial_possession,
+    is_tab_evaluated_possession,
+)
 
 
 class PossessionExportService:
@@ -24,9 +28,9 @@ class PossessionExportService:
         """Mark possessions that merit manual review in the raw export.
 
         Real but ambiguous possessions (e.g. 0-second scores, long durations) are kept
-        and flagged here; ownership-correction artifacts (Tipo_finalizacion='otro' with
-        0 points) never represent a real possession and are dropped entirely instead
-        (see extract_possessions).
+        and flagged here; rows the possessions tab itself excludes (ownership-correction
+        artifacts, implausible durations) are dropped entirely instead (see
+        extract_possessions / is_tab_evaluated_possession).
         """
         return is_controversial_possession(duration, points)
 
@@ -71,8 +75,8 @@ class PossessionExportService:
     def extract_possessions(self) -> List[Dict]:
         """Return one dict per possession with all CSV columns populated.
 
-        Ownership-correction artifacts (Tipo_finalizacion='otro' with 0 points) are
-        dropped: they never represent a real possession and only confuse readers.
+        Filtered to exactly the possessions the possessions tab evaluates for its
+        OER/pace stats, so the export and the tab are always in sync.
         """
         rows = extract_possession_rows(
             game_data=self.game_data,
@@ -80,10 +84,7 @@ class PossessionExportService:
             game_id=self.game_id,
             team_info=self.team_info,
         )
-        return [
-            row for row in rows
-            if not (row.get("Tipo_finalizacion") == "otro" and int(row.get("Puntos_obtenidos") or 0) == 0)
-        ]
+        return [row for row in rows if is_tab_evaluated_possession(row)]
 
     # ------------------------------------------------------------------
     # CSV rendering

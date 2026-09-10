@@ -8,13 +8,9 @@ from ._possession_helpers import (
     get_timestamp,
     points_from_move,
 )
-from src.services.possession_core import extract_possession_rows
+from src.services.possession_core import extract_possession_rows, is_tab_evaluated_possession
 
 _NEUTRAL = frozenset(("subst", "foul", "timeout", "assist"))
-_ZERO_DURATION_VALID_ENDINGS = frozenset((
-    "violacion",
-    "recuperacion",
-))
 
 
 class PossessionAnalyzer:
@@ -84,23 +80,14 @@ class PossessionAnalyzer:
         for row in rows:
             if str(row.get("Equipo_ID") or "") != team_id_str:
                 continue
-            duration = int(row.get("Duracion_posesion") or 0)
-            points = int(row.get("Puntos_obtenidos") or 0)
-            ending_type = str(row.get("Tipo_finalizacion") or "")
-            if ending_type == "otro" and points == 0:
+            if not is_tab_evaluated_possession(row):
                 continue
-            is_valid_duration = 0 < duration <= 90
-            # Duration=0 is often a labeling artifact, but the points are real and must not be dropped.
-            is_valid_zero_duration = duration == 0 and (
-                points > 0 or ending_type in _ZERO_DURATION_VALID_ENDINGS
-            )
-            if is_valid_duration or is_valid_zero_duration:
-                possessions.append({
-                    "duration": duration,
-                    "points": points,
-                    "start_time": 0,
-                    "end_time": 0,
-                })
+            possessions.append({
+                "duration": int(row.get("Duracion_posesion") or 0),
+                "points": int(row.get("Puntos_obtenidos") or 0),
+                "start_time": 0,
+                "end_time": 0,
+            })
         return possessions
 
     def _core_team_info(self) -> Dict[str, Dict]:

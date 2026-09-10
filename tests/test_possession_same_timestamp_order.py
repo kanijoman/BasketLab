@@ -1,7 +1,12 @@
 """Regression tests for FEB play-by-play events sharing the same clock tick."""
 from __future__ import annotations
 
-from src.services.possession_export_service import PossessionExportService
+from src.services.possession_core import extract_possession_rows
+
+_TEAM_INFO = {
+    "T1": {"name": "Local", "home_away": "Local"},
+    "T2": {"name": "Visitante", "home_away": "Visitante"},
+}
 
 
 def _move(number, team_id, text, action, clock):
@@ -16,7 +21,12 @@ def _move(number, team_id, text, action, clock):
 
 
 def test_same_timestamp_feb_miss_precedes_rebound_when_json_is_reverse_stored():
-    """A rebound stored before its same-clock miss must not merge possessions."""
+    """A rebound stored before its same-clock miss must not merge possessions.
+
+    Uses the unfiltered core directly: the trailing T2 possession at 5:32 has no
+    closing event in this fixture, so its 0-second duration is a fixture artifact
+    (not a real tab-evaluated possession) that the CSV/tab filter now excludes.
+    """
     game = {
         "HEADER": {"TEAM": [
             {"id": "T1", "name": "Local"},
@@ -31,7 +41,7 @@ def test_same_timestamp_feb_miss_precedes_rebound_when_json_is_reverse_stored():
         ]},
     }
 
-    rows = PossessionExportService(game, is_fbcyl=False, game_id="TEST").extract_possessions()
+    rows = extract_possession_rows(game_data=game, is_fbcyl=False, game_id="TEST", team_info=_TEAM_INFO)
 
     t2_at_603 = [row for row in rows if row["Equipo_ID"] == "T2" and row["Tiempo_de_juego"] == "6:03"]
     t1_at_551 = [row for row in rows if row["Equipo_ID"] == "T1" and row["Tiempo_de_juego"] == "5:51"]
