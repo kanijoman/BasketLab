@@ -1,4 +1,8 @@
-"""Event-classification helpers shared by PossessionAnalyzer and PossessionExportService."""
+"""Shared PBP event-classification helpers: timestamps, shot/turnover/rebound detection.
+
+Used by PossessionAnalyzer, PossessionExportService, and PlayByPlayAnalyzer
+(IN/OUT, Combinaciones, Rotaciones all depend on PlayByPlayAnalyzer).
+"""
 from __future__ import annotations
 
 from typing import Dict, List, Set, Tuple

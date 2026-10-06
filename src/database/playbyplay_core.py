@@ -4,6 +4,8 @@ from typing import Dict, List, Set, Tuple, Optional, Any
 from collections import defaultdict
 import re
 
+from ._pbp_event_helpers import get_timestamp
+
 
 class PlayByPlayAnalyzer:
     """Analyzes play-by-play data to determine when players are on/off court."""
@@ -77,25 +79,14 @@ class PlayByPlayAnalyzer:
         Convert quarter and time to absolute seconds from game start.
 
         Args:
-            quarter: Quarter number (1-4)
+            quarter: Quarter number (1-4, or 5+ for overtime)
             time_str: Time in format "mm:ss" (remaining in quarter)
 
         Returns:
             Absolute seconds from game start
         """
-        try:
-            quarter_num = int(quarter)
-            parts = time_str.split(':')
-            if len(parts) == 2:
-                minutes, seconds = int(parts[0]), int(parts[1])
-                # Each quarter is 10 minutes (600 seconds)
-                # Time is remaining in quarter, so we need to invert it
-                elapsed_in_quarter = 600 - (minutes * 60 + seconds)
-                total_seconds = (quarter_num - 1) * 600 + elapsed_in_quarter
-                return total_seconds
-        except (ValueError, AttributeError):
-            pass
-        return 0
+        # Delegates to the shared helper, which also handles OT periods (5min each).
+        return get_timestamp({"quarter": quarter, "time": time_str}, is_fbcyl=False)
 
     def _get_team_key(self, id_team: Optional[str]) -> Optional[str]:
         """Get team key (team1/team2) from team ID."""
@@ -108,22 +99,20 @@ class PlayByPlayAnalyzer:
         Convert FBCYL time to absolute seconds from game start.
 
         Args:
-            period: Period number (1-4)
+            period: Period number (1-4, or 5+ for overtime)
             min: Minutes elapsed in period
             sec: Seconds elapsed in minute
 
         Returns:
             Absolute seconds from game start
         """
+        # Delegates to the shared helper, which also handles OT periods (5min each).
+        # get_timestamp's FBCYL branch has no internal try/except, so guard here
+        # to preserve the old defensive contract (malformed input -> 0).
         try:
-            # Each period is 10 minutes (600 seconds)
-            # Time is elapsed in period
-            elapsed_in_period = min * 60 + sec
-            total_seconds = (period - 1) * 600 + elapsed_in_period
-            return total_seconds
+            return get_timestamp({"period": period, "min": min, "sec": sec}, is_fbcyl=True)
         except (ValueError, TypeError):
-            pass
-        return 0
+            return 0
 
     def parse_substitutions(self) -> Dict[str, List[Tuple[int, bool]]]:
         """

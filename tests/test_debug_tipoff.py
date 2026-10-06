@@ -6,7 +6,7 @@ from collections import Counter
 
 import pytest
 from src.services.possession_export_service import PossessionExportService
-from src.database._possession_helpers import (
+from src.database._pbp_event_helpers import (
     is_turnover, is_steal, detect_steal_turnover_indices, get_timestamp,
 )
 
