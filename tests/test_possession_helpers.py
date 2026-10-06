@@ -10,7 +10,7 @@ src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from database._possession_helpers import ft_sequence_info, get_timestamp
+from database._pbp_event_helpers import ft_sequence_info, get_timestamp
 
 
 # ---------------------------------------------------------------------------

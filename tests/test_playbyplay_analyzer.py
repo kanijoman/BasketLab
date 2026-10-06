@@ -169,6 +169,18 @@ class TestFebTimeConversion(unittest.TestCase):
     def test_malformed_time_returns_zero(self):
         self.assertEqual(self.analyzer._time_to_seconds("1", "abc"), 0)
 
+    def test_q5_ot_start_regression(self):
+        """Q5 (OT), 5:00 remaining (OT periods are 5min): elapsed=0 -> total = 2400."""
+        self.assertEqual(self.analyzer._time_to_seconds("5", "5:00"), 2400)
+
+    def test_q5_ot_end_regression(self):
+        """Q5 (OT), 0:00 remaining -> total = 2400 + 300 = 2700."""
+        self.assertEqual(self.analyzer._time_to_seconds("5", "0:00"), 2700)
+
+    def test_q6_second_ot_regression(self):
+        """Q6 (2nd OT), 0:00 remaining -> total = 2400 + 300 + 300 = 3000."""
+        self.assertEqual(self.analyzer._time_to_seconds("6", "0:00"), 3000)
+
 
 # ===========================================================================
 # _fbcyl_time_to_seconds
@@ -198,6 +210,18 @@ class TestFbcylTimeConversion(unittest.TestCase):
     def test_period4_end(self):
         """Period 4, 10:00 → 2400 seconds."""
         self.assertEqual(self.analyzer._fbcyl_time_to_seconds(4, 10, 0), 2400)
+
+    def test_period5_ot_start_regression(self):
+        """Period 5 (OT), 0:00 elapsed -> total = 2400."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(5, 0, 0), 2400)
+
+    def test_period5_ot_end_regression(self):
+        """Period 5 (OT periods are 5min), 5:00 elapsed -> total = 2400 + 300 = 2700."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(5, 5, 0), 2700)
+
+    def test_period6_second_ot_regression(self):
+        """Period 6 (2nd OT, 5min periods), 5:00 elapsed -> total = 2400 + 300 + 300 = 3000."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(6, 5, 0), 3000)
 
 
 # ===========================================================================

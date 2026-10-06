@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ._possession_helpers import (
+from ._pbp_event_helpers import (
     get_opponent_team,
     get_timestamp,
     points_from_move,
