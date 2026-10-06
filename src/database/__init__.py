@@ -101,11 +101,13 @@ class MongoDBHandler:
     def get_lineup_analysis(self, collection_name: str, team_id: str, team_name: str,
                            combination_size: int = 5, date_filter: dict = None,
                            is_fbcyl: bool = False, include_game_log: bool = False,
-                           progress_callback=None) -> list:
+                           progress_callback=None, min_minutes: float = 15,
+                           min_games: int = 5) -> list:
         """Get lineup analysis showing best and worst player combinations."""
         return self.repository.get_lineup_analysis(
             collection_name, team_id, team_name, combination_size,
-            date_filter, is_fbcyl, include_game_log, progress_callback
+            date_filter, is_fbcyl, include_game_log, progress_callback,
+            min_minutes=min_minutes, min_games=min_games,
         )
 
     def get_games_for_team(

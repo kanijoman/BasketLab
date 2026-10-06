@@ -8,6 +8,7 @@ import {
 import { useCollection } from '@/context/CollectionContext'
 import PageTransition from '@/components/ui/PageTransition'
 import ExportButton from '@/components/ui/ExportButton'
+import { EXPORT_HIDE_ATTR, EXPORT_ONLY_ATTR } from '@/lib/exportDom'
 import {
   getTeamStats, streamLineupAnalysis,
   LINEUP_STAT_GROUPS,
@@ -41,42 +42,53 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase()
 }
 
-/** Small circular avatar chip: shows player photo with initials fallback + name tooltip. */
-function PlayerAvatar({ name, photoUrl }: { name: string; photoUrl?: string }) {
-  const [imgFailed, setImgFailed] = useState(false)
-  const hue = nameHue(name)
-  const ini = initials(name)
-
-  if (photoUrl && !imgFailed) {
-    return (
-      <span
-        title={name}
-        className="inline-flex items-center justify-center rounded-full overflow-hidden flex-shrink-0 cursor-default border-2 border-surface-border"
-        style={{ width: 28, height: 28 }}
-      >
-        <img
-          src={photoUrl}
-          alt={name}
-          className="w-full h-full object-cover"
-          onError={() => setImgFailed(true)}
-        />
-      </span>
-    )
-  }
-
+/** Circular initials chip. `exportOnly` chips are hidden on screen and revealed in exports. */
+function InitialsChip({ name, exportOnly = false }: { name: string; exportOnly?: boolean }) {
   return (
     <span
       title={name}
-      className="inline-flex items-center justify-center rounded-full text-white font-semibold select-none cursor-default flex-shrink-0"
+      {...(exportOnly ? { [EXPORT_ONLY_ATTR]: '' } : {})}
+      className="items-center justify-center rounded-full text-white font-semibold select-none cursor-default flex-shrink-0"
       style={{
+        display: exportOnly ? 'none' : 'inline-flex',
         width: 28, height: 28, fontSize: 10,
-        background: `hsl(${hue},55%,45%)`,
+        background: `hsl(${nameHue(name)},55%,45%)`,
         border: '2px solid rgba(255,255,255,0.25)',
       }}
     >
-      {ini}
+      {initials(name)}
     </span>
   )
+}
+
+/** Small circular avatar chip: shows player photo with initials fallback + name tooltip.
+ *  Photos come from a cross-origin CDN and cannot be rasterised by html2canvas, so
+ *  a hidden initials chip is rendered next to the photo and swapped in on export. */
+function PlayerAvatar({ name, photoUrl }: { name: string; photoUrl?: string }) {
+  const [imgFailed, setImgFailed] = useState(false)
+
+  if (photoUrl && !imgFailed) {
+    return (
+      <>
+        <span
+          title={name}
+          {...{ [EXPORT_HIDE_ATTR]: '' }}
+          className="inline-flex items-center justify-center rounded-full overflow-hidden flex-shrink-0 cursor-default border-2 border-surface-border"
+          style={{ width: 28, height: 28 }}
+        >
+          <img
+            src={photoUrl}
+            alt={name}
+            className="w-full h-full object-cover"
+            onError={() => setImgFailed(true)}
+          />
+        </span>
+        <InitialsChip name={name} exportOnly />
+      </>
+    )
+  }
+
+  return <InitialsChip name={name} />
 }
 
 function fmtStat(val: number | undefined, key: string): string {
@@ -98,8 +110,20 @@ const selectCls =
   'appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-1.5 text-sm ' +
   'text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400'
 
+/** Empty-state text that reflects the minimums actually applied (0 = no minimum). */
+function emptyMessage(minMinutes: number, minGames: number): string {
+  const parts: string[] = []
+  if (minMinutes > 0) parts.push(`${minMinutes} min totales`)
+  if (minGames > 0) parts.push(`${minGames} partidos`)
+  const base = 'No se encontraron combinaciones con los filtros seleccionados'
+  return parts.length ? `${base} (mín. ${parts.join(' y ')}).` : `${base} (sin mínimos).`
+}
+
 interface Team { name: string; id: string }
-interface AnalysisParams { teamId: string; teamName: string; size: number; stat: string; period: number }
+interface AnalysisParams {
+  teamId: string; teamName: string; size: number; stat: string; period: number
+  minMinutes: number; minGames: number
+}
 
 /**
  * Player combination analysis page.
@@ -116,6 +140,8 @@ export default function LineupsPage() {
   const [stat, setStat] = useState('net_rating')
   const [period, setPeriod] = useState(0)
   const [topN, setTopN] = useState(5)
+  const [minMinutes, setMinMinutes] = useState(15)
+  const [minGames, setMinGames] = useState(5)
 
   // Trigger for the analysis query (set when user presses "Analizar")
   const [analysisParams, setAnalysisParams] = useState<AnalysisParams | null>(null)
@@ -167,6 +193,8 @@ export default function LineupsPage() {
       analysisParams.stat,
       analysisParams.period,
       true, // always include game_log
+      analysisParams.minMinutes,
+      analysisParams.minGames,
       (pct) => { if (!handle.cancelled) setProgress(pct) },
     )
       .then(data  => { if (!handle.cancelled) { setLineups(data); setFetching(false); setProgress(null) } })
@@ -275,6 +303,8 @@ export default function LineupsPage() {
       size,
       stat,
       period,
+      minMinutes,
+      minGames,
     })
   }
 
@@ -401,6 +431,36 @@ export default function LineupsPage() {
               className={`${selectCls} w-20`}
             />
           </div>
+
+          <div>
+            <label className="block text-xs font-medium text-ink-secondary mb-1">{`Mín. minutos`}</label>
+            <input
+              type="number" min={0} step={1} value={minMinutes}
+              title="0 = sin m&iacute;nimo"
+              onChange={e => setMinMinutes(Math.max(0, Number(e.target.value) || 0))}
+              className={`${selectCls} w-20`}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-ink-secondary mb-1">{`Mín. partidos`}</label>
+            <input
+              type="number" min={0} step={1} value={minGames}
+              title="0 = sin m&iacute;nimo"
+              onChange={e => setMinGames(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+              className={`${selectCls} w-20`}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => { setMinMinutes(0); setMinGames(0) }}
+            disabled={minMinutes === 0 && minGames === 0}
+            title={`Mostrar todas las combinaciones, sin mínimos`}
+            className="border border-surface-border text-ink-secondary hover:bg-surface-hover disabled:opacity-50 text-sm rounded-lg px-3 py-1.5 transition-colors"
+          >
+            {`Sin mínimos`}
+          </button>
 
           <button
             type="submit"
@@ -579,7 +639,7 @@ export default function LineupsPage() {
         {/* Empty states */}
         {!isFetching && lineups.length === 0 && analysisParams && !error && (
           <p className="text-ink-secondary text-sm text-center mt-8">
-            {`No se encontraron combinaciones con los filtros seleccionados (m\u00edn. 15 min totales y 5 partidos).`}
+            {emptyMessage(analysisParams.minMinutes, analysisParams.minGames)}
           </p>
         )}
         {!analysisParams && !isFetching && (

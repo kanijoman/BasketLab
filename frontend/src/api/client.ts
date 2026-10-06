@@ -236,6 +236,8 @@ export const getLineupAnalysis = (
   stat = 'net_rating',
   period = 0,
   includeGameLog = false,
+  minMinutes = 15,
+  minGames = 5,
 ) => {
   const qs = new URLSearchParams({
     team_name: teamName,
@@ -243,6 +245,8 @@ export const getLineupAnalysis = (
     stat,
     period: String(period),
     include_game_log: String(includeGameLog),
+    min_minutes: String(minMinutes),
+    min_games: String(minGames),
   })
   return get<LineupRow[]>(
     `/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?${qs}`,
@@ -262,6 +266,8 @@ export function streamLineupAnalysis(
   stat = 'net_rating',
   period = 0,
   includeGameLog = false,
+  minMinutes = 15,
+  minGames = 5,
   onProgress?: (pct: number, current: number, total: number) => void,
 ): Promise<LineupRow[]> {
   const qs = new URLSearchParams({
@@ -270,6 +276,8 @@ export function streamLineupAnalysis(
     stat,
     period: String(period),
     include_game_log: String(includeGameLog),
+    min_minutes: String(minMinutes),
+    min_games: String(minGames),
   })
   const url = `${BASE}/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
 

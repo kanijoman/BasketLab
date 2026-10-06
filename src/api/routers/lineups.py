@@ -30,6 +30,8 @@ def get_lineup_analysis(
     stat: str = Query("net_rating", description="Stat to sort by"),
     period: int = Query(0, ge=0, description="Days back filter (0 = full season)"),
     include_game_log: bool = Query(False, description="Include per-game breakdown in response"),
+    min_minutes: float = Query(15, ge=0, description="Min total minutes together (0 = no minimum)"),
+    min_games: int = Query(5, ge=0, description="Min games played together (0 = no minimum)"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Return player combinations sorted by the chosen stat.
@@ -42,6 +44,8 @@ def get_lineup_analysis(
         stat: Stat key to sort by (default ``net_rating``).
         period: Number of days to look back; 0 means the full season.
         include_game_log: When True, each lineup includes a ``game_log`` list.
+        min_minutes: Minimum total minutes the lineup played together (0 disables).
+        min_games: Minimum games the lineup played together (0 disables).
 
     Returns:
         List of lineup dicts sorted by ``stat`` (descending for higher-is-better
@@ -64,6 +68,8 @@ def get_lineup_analysis(
         stat=stat,
         date_filter=date_filter,
         include_game_log=include_game_log,
+        min_minutes=min_minutes,
+        min_games=min_games,
     )
 
 
@@ -76,6 +82,8 @@ async def stream_lineup_analysis(
     stat: str = Query("net_rating", description="Stat to sort by"),
     period: int = Query(0, ge=0, description="Days back filter (0 = full season)"),
     include_game_log: bool = Query(False, description="Include per-game breakdown in response"),
+    min_minutes: float = Query(15, ge=0, description="Min total minutes together (0 = no minimum)"),
+    min_games: int = Query(5, ge=0, description="Min games played together (0 = no minimum)"),
     db=Depends(get_db),
 ) -> StreamingResponse:
     """Server-Sent Events stream for lineup analysis.
@@ -115,6 +123,8 @@ async def stream_lineup_analysis(
                 date_filter=date_filter,
                 include_game_log=include_game_log,
                 progress_callback=_progress_cb,
+                min_minutes=min_minutes,
+                min_games=min_games,
             )
             result_holder["data"] = data
         except Exception as exc:  # noqa: BLE001
