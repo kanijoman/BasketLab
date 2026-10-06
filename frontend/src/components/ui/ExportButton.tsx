@@ -7,6 +7,7 @@
 import { useState, useRef, useEffect, RefObject } from 'react'
 import { Download, ChevronDown, FileText, Image, Table } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { prepareCloneForExport } from '@/lib/exportDom'
 
 export interface ExportOptions {
   /** Filename prefix (without extension) */
@@ -76,7 +77,9 @@ async function downloadPng(ref: RefObject<HTMLElement | SVGElement>, filename: s
   } else {
     // DOM element — use html2canvas
     const { default: html2canvas } = await import('html2canvas')
-    const canvas = await html2canvas(el as HTMLElement, { backgroundColor: '#0D1117', scale: 2 })
+    const canvas = await html2canvas(el as HTMLElement, {
+      backgroundColor: '#0D1117', scale: 2, onclone: prepareCloneForExport,
+    })
     canvas.toBlob(b => {
       if (!b) return
       const link = document.createElement('a')
@@ -127,7 +130,9 @@ async function downloadPdf(
       })
     } else {
       const { default: html2canvas } = await import('html2canvas')
-      const canvas = await html2canvas(el as HTMLElement, { backgroundColor: '#0D1117', scale: 2 })
+      const canvas = await html2canvas(el as HTMLElement, {
+        backgroundColor: '#0D1117', scale: 2, onclone: prepareCloneForExport,
+      })
       dataUrl = canvas.toDataURL('image/png')
     }
 

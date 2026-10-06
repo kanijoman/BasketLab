@@ -18,7 +18,9 @@ class LineupRepositoryMixin:
         date_filter: Dict = None,
         is_fbcyl: bool = False,
         include_game_log: bool = False,
-        progress_callback=None
+        progress_callback=None,
+        min_minutes: float = 15,
+        min_games: int = 5,
     ) -> List[Dict]:
         """
         Get lineup analysis for a team showing best and worst lineups by statistics.
@@ -31,6 +33,8 @@ class LineupRepositoryMixin:
             date_filter: Optional date filter dictionary
             is_fbcyl: Whether data is FBCYL format
             progress_callback: Optional callback function(current, total) for progress
+            min_minutes: Minimum accumulated minutes for a lineup to be returned (0 = no minimum)
+            min_games: Minimum games played together for a lineup to be returned (0 = no minimum)
 
         Returns:
             List of lineup dictionaries with statistics, sorted by net rating
@@ -42,10 +46,15 @@ class LineupRepositoryMixin:
         try:
             # Define a projection to avoid loading large BOXSCORE/stats.players fields —
             # the lineup extractor only needs play-by-play data + team/date metadata.
+            # FEB also needs the BOXSCORE roster (team ids + player ids): without it
+            # LineupExtractor._get_team_players() is empty and no lineups are found.
             if is_fbcyl:
                 projection = {"moves": 1, "stats.teams": 1, "stats.time": 1}
             else:
-                projection = {"PLAYBYPLAY": 1, "HEADER": 1}
+                projection = {
+                    "PLAYBYPLAY": 1, "HEADER": 1,
+                    "BOXSCORE.TEAM.id": 1, "BOXSCORE.TEAM.PLAYER.id": 1,
+                }
 
             # Get all games with play-by-play for this team; apply date filter and
             # projection inside MongoDB to avoid Python-side filtering and memory waste.
@@ -147,15 +156,12 @@ class LineupRepositoryMixin:
             # Filter by total accumulated time and games played for representative lineups
             qualifying = []
             all_player_ids: set = set()
-            min_total_minutes = 15  # 15 minutes minimum total
-            min_games_played = 5    # At least 5 games
-            
             for lineup_key, stats in lineup_stats_map.items():
                 total_minutes = stats.get('minutes', 0)
                 games_played = stats.get('games_played', 0)
-                
-                # Skip lineups that don't meet minimum thresholds
-                if total_minutes < min_total_minutes or games_played < min_games_played:
+
+                # Skip lineups that don't meet minimum thresholds (0 = no filter)
+                if total_minutes < min_minutes or games_played < min_games:
                     continue
 
                 qualifying.append((lineup_key, stats))
