@@ -86,6 +86,7 @@ class TestWeeklyReportServiceE2E:
         ]
         # All get_team_stats variants return same teams list
         handler.get_team_stats.return_value = teams
+        handler.get_opponent_stats.return_value = teams
         handler.get_player_stats.return_value = [
             _make_player_stat("Player 1", "Alpha FC"),
             _make_player_stat("Player 2", "Alpha FC"),

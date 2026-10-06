@@ -104,10 +104,17 @@ def render_table_png(
     n_cols = len(col_headers)
     has_cv = bool(text_colors)
     row_h  = 0.09 if has_cv else 0.07   # taller rows when σ badge wraps
-    fig_width  = max(16, n_cols * 1.4)
+    fig_width  = max(16, n_cols * 1.2)
     fig_height = max(3.0, n_rows * row_h * 10 + 1.8)
 
     fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    # Shrink the default matplotlib margins to near-zero and skip
+    # bbox_inches='tight' on save: tight-cropping ignores the table's actual
+    # cell sizes (matplotlib Table isn't measured correctly by get_tightbbox),
+    # which silently defeated every width tweak. Fixing the axes to (almost)
+    # the full figure makes the exported PNG deterministically match
+    # fig_width/fig_height — i.e. genuinely wide for landscape reading.
+    fig.subplots_adjust(left=0.005, right=0.995, top=0.90, bottom=0.01)
     fig.patch.set_facecolor(_FIG_BG)
     ax.set_facecolor(_FIG_BG)
     ax.axis('off')
@@ -117,7 +124,7 @@ def render_table_png(
         ax.text(0.5, 0.5, 'Sin datos', ha='center', va='center',
                 color=_CELL_TEXT, transform=ax.transAxes)
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor=_FIG_BG)
+        fig.savefig(buf, format='png', dpi=150, facecolor=_FIG_BG)
         plt.close(fig)
         return buf.getvalue()
 
@@ -126,7 +133,9 @@ def render_table_png(
         colLabels=col_headers,
         cellColours=cell_colors,
         colColours=[_HDR_BG] * n_cols,
-        loc='center',
+        # Fill the whole axes so the table stretches across the full
+        # landscape canvas instead of leaving unused side margins.
+        bbox=[0, 0, 1, 1],
     )
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(8)
@@ -152,9 +161,10 @@ def render_table_png(
             c.get_text().set_color(txt)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor=_FIG_BG)
+    fig.savefig(buf, format='png', dpi=150, facecolor=_FIG_BG)
     plt.close(fig)
     return buf.getvalue()
+
 
 
 def fig_to_png(fig: Any, dpi: int = 150) -> bytes:
@@ -276,6 +286,7 @@ def trend_arrow(delta: float, lower_is_better: bool) -> str:
 
 def build_basic_rows(
     team_stats: List[Dict],
+    invert_colors: bool = False,
 ) -> Tuple[List[List[str]], List[List[str]]]:
     if not team_stats:
         return [], []
@@ -288,7 +299,7 @@ def build_basic_rows(
         for field, rev in BASIC_FIELDS:
             v = float(team.get(field) or 0)
             rt.append(sf(v))
-            rc.append(q_color(v, qs[field], rev))
+            rc.append(q_color(v, qs[field], rev != invert_colors))
         texts.append(rt)
         colors.append(rc)
     return texts, colors
@@ -296,6 +307,7 @@ def build_basic_rows(
 
 def build_advanced_rows(
     team_stats: List[Dict],
+    invert_colors: bool = False,
 ) -> Tuple[List[List[str]], List[List[str]]]:
     if not team_stats:
         return [], []
@@ -307,7 +319,7 @@ def build_advanced_rows(
         for field, rev in ADV_FIELDS:
             v = float(team.get(field) or 0)
             rt.append(sf(v))
-            rc.append(q_color(v, qs[field], rev))
+            rc.append(q_color(v, qs[field], rev != invert_colors))
         texts.append(rt)
         colors.append(rc)
     return texts, colors
@@ -319,6 +331,7 @@ def build_advanced_rows(
 
 def build_comparative_basic_rows(
     comp_stats: List[Dict],
+    invert_colors: bool = False,
 ) -> Tuple[List[List[str]], List[List[str]]]:
     if not comp_stats:
         return [], []
@@ -334,9 +347,10 @@ def build_comparative_basic_rows(
             rc.append(_CELL_BG)
         for field, rev in BASIC_FIELDS:
             v = float(p1.get(field) or 0)
-            arrow = trend_arrow(float(deltas.get(field, 0)), rev)
+            eff_rev = rev != invert_colors
+            arrow = trend_arrow(float(deltas.get(field, 0)), eff_rev)
             rt.append(f'{sf(v)} {arrow}')
-            rc.append(q_color(v, qs[field], rev))
+            rc.append(q_color(v, qs[field], eff_rev))
         texts.append(rt)
         colors.append(rc)
     return texts, colors
@@ -344,6 +358,7 @@ def build_comparative_basic_rows(
 
 def build_comparative_advanced_rows(
     comp_stats: List[Dict],
+    invert_colors: bool = False,
 ) -> Tuple[List[List[str]], List[List[str]]]:
     if not comp_stats:
         return [], []
@@ -357,9 +372,10 @@ def build_comparative_advanced_rows(
         rc = [_CELL_BG, _CELL_BG]
         for field, rev in ADV_FIELDS:
             v = float(p1.get(field) or 0)
-            arrow = trend_arrow(float(deltas.get(field, 0)), rev)
+            eff_rev = rev != invert_colors
+            arrow = trend_arrow(float(deltas.get(field, 0)), eff_rev)
             rt.append(f'{sf(v)} {arrow}')
-            rc.append(q_color(v, qs[field], rev))
+            rc.append(q_color(v, qs[field], eff_rev))
         texts.append(rt)
         colors.append(rc)
     return texts, colors

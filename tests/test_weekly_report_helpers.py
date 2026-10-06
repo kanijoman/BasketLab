@@ -35,6 +35,10 @@ from services._weekly_report_helpers import (
     calc_quartiles,
     q_color,
     render_table_png,
+    build_basic_rows,
+    build_advanced_rows,
+    build_comparative_basic_rows,
+    build_comparative_advanced_rows,
     BASIC_FIELDS,
     ADV_FIELDS,
 )
@@ -230,6 +234,11 @@ def _png_signature(data: bytes) -> bool:
     return data[:8] == b'\x89PNG\r\n\x1a\n'
 
 
+def _png_dimensions(data: bytes) -> tuple[int, int]:
+    """Parse (width, height) from the PNG IHDR chunk."""
+    return struct.unpack('>II', data[16:24])
+
+
 class TestRenderTablePng:
     _HEADERS = ['Equipo', 'PJ', 'Pts', 'Reb']
     _ROWS    = [['Alpha', '10', '80.5', '35.0'], ['Beta', '10', '72.0', '30.0']]
@@ -276,6 +285,19 @@ class TestRenderTablePng:
         wide   = render_table_png(wide_headers, wide_rows, wide_colors, 'Wide')
         assert len(wide) > len(narrow)
 
+    def test_table_is_wide_enough_for_landscape_reading(self):
+        """Regression: tables must render with generous column spacing so the
+        PNG is comfortably wide when read in landscape (not just technically
+        wider than tall) — per-column pixel width must clear a readable
+        minimum, not just whatever the auto-fit text happens to need.
+        """
+        result = render_table_png(self._HEADERS, self._ROWS, self._COLORS, 'Test')
+        width_px, _height_px = _png_dimensions(result)
+        per_col_px = width_px / len(self._HEADERS)
+        assert per_col_px >= 550, (
+            f"Table columns too narrow for landscape reading: {per_col_px:.0f}px/col"
+        )
+
 
 # ---------------------------------------------------------------------------
 # q_color and calc_quartiles
@@ -301,6 +323,74 @@ class TestQColor:
         from services._weekly_report_helpers import _Q_COLORS
         assert color_best  == _Q_COLORS[3], "Low value (good) should get Q4 colour when reversed"
         assert color_worst == _Q_COLORS[0], "High value (bad) should get Q1 colour when reversed"
+
+
+# ---------------------------------------------------------------------------
+# invert_colors — rival tables must flip quartile/trend colouring direction
+# ---------------------------------------------------------------------------
+
+def _basic_team(name: str, turnovers: float) -> dict:
+    return {'team_name': name, 'total_games': 10, 'games_home': 5,
+            'games_away': 5, 'turnovers': turnovers}
+
+
+def _adv_team(name: str, turnover_rate: float) -> dict:
+    return {'team_name': name, 'total_games': 10, 'turnover_rate': turnover_rate}
+
+
+class TestInvertColors:
+    """Rival tables show what opponents did against each team, so a stat
+    that's normally good for the own team (e.g. few turnovers) is bad from
+    the rival's perspective — invert_colors=True must flip the colouring.
+    """
+
+    def _turnover_col(self) -> int:
+        return 4 + [f for f, _ in BASIC_FIELDS].index('turnovers')
+
+    def _turnover_rate_col(self) -> int:
+        return 2 + [f for f, _ in ADV_FIELDS].index('turnover_rate')
+
+    def test_build_basic_rows_invert_flips_quartile_colour(self):
+        teams = [_basic_team('A', 10.0), _basic_team('B', 50.0)]
+        col = self._turnover_col()
+        _, colors_normal  = build_basic_rows(teams, invert_colors=False)
+        _, colors_inverted = build_basic_rows(teams, invert_colors=True)
+        assert colors_normal[0][col] != colors_inverted[0][col]
+
+    def test_build_basic_rows_default_is_not_inverted(self):
+        """invert_colors defaults to False — no behaviour change for own-team tables."""
+        teams = [_basic_team('A', 10.0), _basic_team('B', 50.0)]
+        col = self._turnover_col()
+        _, explicit_false = build_basic_rows(teams, invert_colors=False)
+        _, default_call    = build_basic_rows(teams)
+        assert explicit_false[0][col] == default_call[0][col]
+
+    def test_build_advanced_rows_invert_flips_quartile_colour(self):
+        teams = [_adv_team('A', 10.0), _adv_team('B', 50.0)]
+        col = self._turnover_rate_col()
+        _, colors_normal   = build_advanced_rows(teams, invert_colors=False)
+        _, colors_inverted = build_advanced_rows(teams, invert_colors=True)
+        assert colors_normal[0][col] != colors_inverted[0][col]
+
+    def test_build_comparative_basic_rows_invert_flips_quartile_colour(self):
+        comp = [
+            {'monthly': _basic_team('A', 10.0), 'rest': _basic_team('A', 10.0), 'deltas': {}},
+            {'monthly': _basic_team('B', 50.0), 'rest': _basic_team('B', 50.0), 'deltas': {}},
+        ]
+        col = self._turnover_col()
+        _, colors_normal   = build_comparative_basic_rows(comp, invert_colors=False)
+        _, colors_inverted = build_comparative_basic_rows(comp, invert_colors=True)
+        assert colors_normal[0][col] != colors_inverted[0][col]
+
+    def test_build_comparative_advanced_rows_invert_flips_quartile_colour(self):
+        comp = [
+            {'monthly': _adv_team('A', 10.0), 'rest': _adv_team('A', 10.0), 'deltas': {}},
+            {'monthly': _adv_team('B', 50.0), 'rest': _adv_team('B', 50.0), 'deltas': {}},
+        ]
+        col = self._turnover_rate_col()
+        _, colors_normal   = build_comparative_advanced_rows(comp, invert_colors=False)
+        _, colors_inverted = build_comparative_advanced_rows(comp, invert_colors=True)
+        assert colors_normal[0][col] != colors_inverted[0][col]
 
 
 class TestCalcQuartiles:

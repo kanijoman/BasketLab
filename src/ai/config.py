@@ -15,13 +15,13 @@ class AnalysisConfig:
     DEFAULT_PROVIDER = 'groq'
 
     # API keys (load from environment or config file)
-    GEMINI_API_KEY: Optional[str] = 'AIzaSyBfPMeN3hUN4XOct4D5VpClgnCa-JW45X8'
+    GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = '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'
 
     # Model configurations
     GEMINI_MODELS = {
-        'flash': 'gemini-2.0-flash-exp',  # Gemini 2.0 Flash (experimental, high RPM)
+        'flash': 'gemini-3.6-flash',
         'pro': 'gemini-pro-latest'        # Use the stable -latest tag
     }
 

@@ -6,14 +6,14 @@ for all table rendering; ShotChartVisualizer / ZoneAnalyzer are already headless
 
 ZIP structure (mirrors Qt output folder):
     General/
-        01_Basicas_Toda_Competicion.png
-        01_Avanzadas_Toda_Competicion.png
-        02_Basicas_Ganados_vs_Perdidos.png
-        02_Avanzadas_Ganados_vs_Perdidos.png
-        03_Basicas_Local_vs_Visitante.png
-        03_Avanzadas_Local_vs_Visitante.png
-        04_Basicas_Ultimo_Mes.png
-        04_Avanzadas_Ultimo_Mes.png
+        01_Basicas_Toda_Competicion.png            (+ _Rival variant)
+        01_Avanzadas_Toda_Competicion.png           (+ _Rival variant)
+        02_Basicas_Ganados_vs_Perdidos.png           (+ _Rival variant)
+        02_Avanzadas_Ganados_vs_Perdidos.png        (+ _Rival variant)
+        03_Basicas_Local_vs_Visitante.png            (+ _Rival variant)
+        03_Avanzadas_Local_vs_Visitante.png         (+ _Rival variant)
+        04_Basicas_Ultimo_Mes.png                    (+ _Rival variant)
+        04_Avanzadas_Ultimo_Mes.png                  (+ _Rival variant)
         05_Ultimo_Partido_{team_a}.png
         05_Ultimo_Partido_{team_b}.png
     {team_a}/
@@ -47,8 +47,6 @@ from src.services._weekly_report_helpers import (
     build_comparative_basic_rows, build_comparative_advanced_rows,
     build_last_match_rows, build_player_rows,
     CONSISTENCY_HEADERS, build_consistency_rows,
-    apply_cv_overlay,
-    BASIC_FIELDS, ADV_FIELDS,
 )
 
 
@@ -271,6 +269,7 @@ class WeeklyReportService:
 
     def _gen_general_stats(self, zf: zipfile.ZipFile, collection: str) -> None:
         ts = self._db.get_team_stats(collection) or []
+        ts_rival = self._db.get_opponent_stats(collection) or []
 
         # Fetch CV data once for the whole general-stats section
         cv_own: Dict = {}
@@ -280,25 +279,39 @@ class WeeklyReportService:
         except Exception:
             pass
 
-        if ts:
-            rows, cols = build_basic_rows(ts)
-            rows, txt_colors = apply_cv_overlay(rows, cv_own, BASIC_FIELDS, n_meta=4)
-            zf.writestr('General/01_Basicas_Toda_Competicion.png',
-                        render_table_png(BASIC_HEADERS, rows, cols,
-                                        'Estadísticas Básicas - Toda la Competición',
-                                        text_colors=txt_colors or None))
-            rows, cols = build_advanced_rows(ts)
-            rows, txt_colors = apply_cv_overlay(rows, cv_own, ADV_FIELDS, n_meta=2)
-            zf.writestr('General/01_Avanzadas_Toda_Competicion.png',
-                        render_table_png(ADV_HEADERS, rows, cols,
-                                        'Estadísticas Avanzadas - Toda la Competición',
-                                        text_colors=txt_colors or None))
+        self._gen_toda_competicion_png(zf, ts, rival=False)
+        self._gen_toda_competicion_png(zf, ts_rival, rival=True)
 
         self._gen_compare_result(zf, collection, 'won', 'lost',
                                  'Ganados vs Perdidos', '02')
+        self._gen_compare_result(zf, collection, 'won', 'lost',
+                                 'Ganados vs Perdidos', '02', rival=True)
         self._gen_compare_venue(zf, collection, 'Local vs Visitante', '03')
+        self._gen_compare_venue(zf, collection, 'Local vs Visitante', '03', rival=True)
         self._gen_compare_month(zf, collection, 'Último Mes', '04')
+        self._gen_compare_month(zf, collection, 'Último Mes', '04', rival=True)
         self._gen_consistency_png(zf, collection, cv_own)
+
+    def _gen_toda_competicion_png(
+        self, zf: zipfile.ZipFile, ts: List[Dict], rival: bool = False,
+    ) -> None:
+        if not ts:
+            return
+        # No CV overlay here: keep the same plain look & feel as the
+        # comparative tables below (consistency has its own dedicated
+        # table — 06_Consistencia_Liga.png).
+        suffix = '_Rival' if rival else ''
+        label  = ' (Rival)' if rival else ''
+        # Rival tables show what opponents did against each team, so a
+        # "good" own-team value is bad here — flip the quartile colouring.
+        rows, cols = build_basic_rows(ts, invert_colors=rival)
+        zf.writestr(f'General/01_Basicas_Toda_Competicion{suffix}.png',
+                    render_table_png(BASIC_HEADERS, rows, cols,
+                                    f'Estadísticas Básicas - Toda la Competición{label}'))
+        rows, cols = build_advanced_rows(ts, invert_colors=rival)
+        zf.writestr(f'General/01_Avanzadas_Toda_Competicion{suffix}.png',
+                    render_table_png(ADV_HEADERS, rows, cols,
+                                    f'Estadísticas Avanzadas - Toda la Competición{label}'))
 
     def _gen_consistency_png(
         self, zf: zipfile.ZipFile, collection: str, cv_own: Dict = None,
@@ -324,51 +337,64 @@ class WeeklyReportService:
 
     def _gen_compare_result(
         self, zf: zipfile.ZipFile, collection: str,
-        res1: str, res2: str, label: str, prefix: str,
+        res1: str, res2: str, label: str, prefix: str, rival: bool = False,
     ) -> None:
-        ts1 = self._db.get_team_stats(collection, result_filter=res1) or []
-        ts2 = self._db.get_team_stats(collection, result_filter=res2) or []
-        self._write_comparative(zf, ts1, ts2, label, prefix)
+        getter = self._db.get_opponent_stats if rival else self._db.get_team_stats
+        ts1 = getter(collection, result_filter=res1) or []
+        ts2 = getter(collection, result_filter=res2) or []
+        self._write_comparative(zf, ts1, ts2, label, prefix, rival=rival)
 
     def _gen_compare_venue(
         self, zf: zipfile.ZipFile, collection: str, label: str, prefix: str,
+        rival: bool = False,
     ) -> None:
-        ts1 = self._db.get_team_stats(collection, venue_filter=True) or []
-        ts2 = self._db.get_team_stats(collection, venue_filter=False) or []
-        self._write_comparative(zf, ts1, ts2, label, prefix)
+        getter = self._db.get_opponent_stats if rival else self._db.get_team_stats
+        ts1 = getter(collection, venue_filter=True) or []
+        ts2 = getter(collection, venue_filter=False) or []
+        self._write_comparative(zf, ts1, ts2, label, prefix, rival=rival)
 
     def _gen_compare_month(
         self, zf: zipfile.ZipFile, collection: str, label: str, prefix: str,
+        rival: bool = False,
     ) -> None:
         one_month_ago = datetime.now() - timedelta(days=30)
-        ts1 = self._db.get_team_stats(collection, date_filter={'$gte': one_month_ago}) or []
-        ts2 = self._db.get_team_stats(collection, date_filter={'$lt': one_month_ago}) or []
-        self._write_comparative(zf, ts1, ts2, label, prefix)
+        getter = self._db.get_opponent_stats if rival else self._db.get_team_stats
+        ts1 = getter(collection, date_filter={'$gte': one_month_ago}) or []
+        ts2 = getter(collection, date_filter={'$lt': one_month_ago}) or []
+        self._write_comparative(zf, ts1, ts2, label, prefix, rival=rival)
 
     def _write_comparative(
         self, zf: zipfile.ZipFile,
         ts1: List[Dict], ts2: List[Dict],
-        label: str, prefix: str,
+        label: str, prefix: str, rival: bool = False,
     ) -> None:
-        if not (ts1 and ts2):
-            return
         # Use team_name as key (works for both FEB scalar _id and FBCYL dict _id)
         def _key(t: Dict) -> str:
             return str(t.get('team_name') or t.get('_id', ''))
 
-        d1 = {_key(t): t for t in ts1}
-        d2 = {_key(t): t for t in ts2}
-        comp = [self._calc.create_comparative_stat(d1[k], d2[k]) for k in (set(d1) & set(d2))]
+        comp: List[Dict] = []
+        if ts1 and ts2:
+            d1 = {_key(t): t for t in ts1}
+            d2 = {_key(t): t for t in ts2}
+            comp = [self._calc.create_comparative_stat(d1[k], d2[k]) for k in (set(d1) & set(d2))]
+
+        suffix = '_Rival' if rival else ''
+        rival_label = ' (Rival)' if rival else ''
+        # No team has both halves of the comparison yet (e.g. early season) —
+        # still emit a placeholder PNG instead of silently omitting the file.
+        basic_title = f'Estadísticas Básicas - {label}{rival_label}'
+        adv_title = f'Estadísticas Avanzadas - {label}{rival_label}'
         if not comp:
-            return
-        rows, cols = build_comparative_basic_rows(comp)
-        zf.writestr(f'General/{prefix}_Basicas_{label.replace(" ", "_")}.png',
-                    render_table_png(BASIC_HEADERS, rows, cols,
-                                    f'Estadísticas Básicas - {label}'))
-        rows, cols = build_comparative_advanced_rows(comp)
-        zf.writestr(f'General/{prefix}_Avanzadas_{label.replace(" ", "_")}.png',
-                    render_table_png(ADV_HEADERS, rows, cols,
-                                    f'Estadísticas Avanzadas - {label}'))
+            basic_title += ' (datos insuficientes)'
+            adv_title += ' (datos insuficientes)'
+        # Rival tables show what opponents did against each team, so a
+        # "good" own-team value is bad here — flip the quartile colouring.
+        rows, cols = build_comparative_basic_rows(comp, invert_colors=rival)
+        zf.writestr(f'General/{prefix}_Basicas_{label.replace(" ", "_")}{suffix}.png',
+                    render_table_png(BASIC_HEADERS, rows, cols, basic_title))
+        rows, cols = build_comparative_advanced_rows(comp, invert_colors=rival)
+        zf.writestr(f'General/{prefix}_Avanzadas_{label.replace(" ", "_")}{suffix}.png',
+                    render_table_png(ADV_HEADERS, rows, cols, adv_title))
 
     # ------------------------------------------------------------------
     # Last match (1 PNG per team in General/)
