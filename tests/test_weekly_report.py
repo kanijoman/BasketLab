@@ -31,6 +31,7 @@ def _make_db_handler(team_stats=None):
     """Return a minimal mock MongoDBHandler."""
     db = MagicMock()
     db.get_team_stats.return_value = team_stats or []
+    db.get_opponent_stats.return_value = team_stats or []
     # connection.get_collection returns an empty mock collection by default
     mock_coll = MagicMock()
     mock_coll.find.return_value = []
@@ -251,6 +252,171 @@ class TestWeeklyReportService:
         result = svc.generate_report_zip("FBCYL_TEST", "Alpha", "Beta")
         with _zf.ZipFile(_io.BytesIO(result)) as zf:
             names = zf.namelist()
-        # Comparative PNGs must be present (both basic and advanced)
+        # Comparative PNGs must be present (own basic+advanced, plus the
+        # rival variants — placeholders here since get_opponent_stats isn't
+        # configured for this test's mock).
         comparative = [n for n in names if "02_" in n and "Ganados" in n]
-        assert len(comparative) == 2, f"Expected 2 comparative PNGs, got: {names}"
+        own = [n for n in comparative if "_Rival" not in n]
+        assert len(own) == 2, f"Expected 2 own comparative PNGs, got: {names}"
+
+
+# ---------------------------------------------------------------------------
+# "Toda la Competición" look & feel must match comparative tables (no CV badge)
+# ---------------------------------------------------------------------------
+
+class TestGeneralStatsLookAndFeel:
+    """Regression: 'Toda la Competición' must render like the comparative
+    tables (Ganados vs Perdidos, Local vs Visitante, Último Mes) — no inline
+    CV (sigma) badge overlay, since consistency already has its own dedicated
+    table (06_Consistencia_Liga.png).
+    """
+
+    def test_toda_competicion_has_no_text_colors_overlay(self):
+        stats = [_minimal_team_stat("Team A"), _minimal_team_stat("Team B", 3, 5)]
+        db = _make_db_handler(team_stats=stats)
+        svc = WeeklyReportService(db)
+        # Non-empty CV data so apply_cv_overlay (if still called) would
+        # actually populate text_colors instead of short-circuiting to [].
+        fake_consistency = {
+            "own": {
+                "Team A": {"points_per_game": {"cv": 20.0, "mean": 75.0, "std": 15.0, "n": 5}},
+                "Team B": {"points_per_game": {"cv": 18.0, "mean": 70.0, "std": 12.6, "n": 5}},
+            }
+        }
+        with patch(
+            "src.services.weekly_report_service.render_table_png",
+            wraps=__import__(
+                "src.services._weekly_report_helpers", fromlist=["render_table_png"]
+            ).render_table_png,
+        ) as mock_render, patch(
+            "src.services.team_stats_service.TeamStatsService.get_consistency",
+            return_value=fake_consistency,
+        ):
+            svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        toda_competicion_calls = [
+            c for c in mock_render.call_args_list
+            if "Toda la Competición" in c.args[3]
+        ]
+        assert toda_competicion_calls, "No 'Toda la Competición' render calls captured"
+        for call in toda_competicion_calls:
+            assert call.kwargs.get("text_colors") is None, (
+                "'Toda la Competición' tables must not use the CV text_colors "
+                "overlay, to match the comparative tables' look & feel"
+            )
+
+
+# ---------------------------------------------------------------------------
+# Comparative sections (02/03/04) must still appear even with sparse data
+# ---------------------------------------------------------------------------
+
+class TestComparativeInsufficientData:
+    """Regression: early-season collections (teams without both a win AND a
+    loss yet, or without both home AND away games, or without games older
+    than 30 days) must still produce 02/03/04 PNGs — as a 'datos
+    insuficientes' placeholder — instead of silently omitting the files.
+    """
+
+    def _make_db_sparse(self):
+        """Only the unfiltered call returns data; every filtered call (used
+        by won/lost, home/away, last-month comparatives) returns an empty
+        list, simulating a competition too early in the season for any team
+        to have both halves of a comparison.
+        """
+        stats = [_minimal_team_stat("Team A"), _minimal_team_stat("Team B", 3, 5)]
+        db = _make_db_handler(team_stats=stats)
+        db.get_team_stats.side_effect = lambda coll, **kw: (
+            [] if kw else stats
+        )
+        return db
+
+    def test_zip_contains_won_lost_pngs(self):
+        db = self._make_db_sparse()
+        svc = WeeklyReportService(db)
+        result = svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        with zipfile.ZipFile(io.BytesIO(result)) as zf:
+            names = zf.namelist()
+        assert any("02_Basicas_Ganados_vs_Perdidos.png" in n for n in names), names
+        assert any("02_Avanzadas_Ganados_vs_Perdidos.png" in n for n in names), names
+
+    def test_zip_contains_venue_pngs(self):
+        db = self._make_db_sparse()
+        svc = WeeklyReportService(db)
+        result = svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        with zipfile.ZipFile(io.BytesIO(result)) as zf:
+            names = zf.namelist()
+        assert any("03_Basicas_Local_vs_Visitante.png" in n for n in names), names
+        assert any("03_Avanzadas_Local_vs_Visitante.png" in n for n in names), names
+
+    def test_zip_contains_month_pngs(self):
+        db = self._make_db_sparse()
+        svc = WeeklyReportService(db)
+        result = svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        with zipfile.ZipFile(io.BytesIO(result)) as zf:
+            names = zf.namelist()
+        assert any("04_Basicas_" in n and "Mes" in n for n in names), names
+        assert any("04_Avanzadas_" in n and "Mes" in n for n in names), names
+
+
+# ---------------------------------------------------------------------------
+# Rival (opponent) variants for reports 01-04
+# ---------------------------------------------------------------------------
+
+class TestRivalVariants:
+    """Regression: each of 01-04 must also produce a '_Rival' variant built
+    from get_opponent_stats() (what rivals did against each team) instead of
+    get_team_stats() (own team data).
+    """
+
+    def _make_db_with_rival_data(self):
+        own_stats = [_minimal_team_stat("Team A"), _minimal_team_stat("Team B", 3, 5)]
+        rival_stats = [_minimal_team_stat("Team A", 2, 6), _minimal_team_stat("Team B", 6, 2)]
+        db = _make_db_handler(team_stats=own_stats)
+        db.get_team_stats.side_effect = lambda coll, **kw: own_stats
+        db.get_opponent_stats.side_effect = lambda coll, **kw: rival_stats
+        return db
+
+    def _names(self, db) -> list:
+        svc = WeeklyReportService(db)
+        result = svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        with zipfile.ZipFile(io.BytesIO(result)) as zf:
+            return zf.namelist()
+
+    def test_zip_contains_rival_toda_competicion_pngs(self):
+        names = self._names(self._make_db_with_rival_data())
+        assert any("01_Basicas_Toda_Competicion_Rival.png" in n for n in names), names
+        assert any("01_Avanzadas_Toda_Competicion_Rival.png" in n for n in names), names
+        # Own (non-rival) variants must still be present alongside
+        assert any(n.endswith("01_Basicas_Toda_Competicion.png") for n in names), names
+
+    def test_zip_contains_rival_won_lost_pngs(self):
+        names = self._names(self._make_db_with_rival_data())
+        assert any("02_Basicas_Ganados_vs_Perdidos_Rival.png" in n for n in names), names
+        assert any("02_Avanzadas_Ganados_vs_Perdidos_Rival.png" in n for n in names), names
+
+    def test_zip_contains_rival_venue_pngs(self):
+        names = self._names(self._make_db_with_rival_data())
+        assert any("03_Basicas_Local_vs_Visitante_Rival.png" in n for n in names), names
+        assert any("03_Avanzadas_Local_vs_Visitante_Rival.png" in n for n in names), names
+
+    def test_zip_contains_rival_month_pngs(self):
+        names = self._names(self._make_db_with_rival_data())
+        assert any("04_Basicas_" in n and "Mes_Rival.png" in n for n in names), names
+        assert any("04_Avanzadas_" in n and "Mes_Rival.png" in n for n in names), names
+
+    def test_rival_toda_competicion_uses_opponent_stats_data(self):
+        """The rival '01' table must be built from get_opponent_stats(), not
+        get_team_stats() — assert the rendered title/content differs because
+        the underlying team rows differ (distinguishable via render args).
+        """
+        db = self._make_db_with_rival_data()
+        svc = WeeklyReportService(db)
+        with patch(
+            "src.services.weekly_report_service.render_table_png",
+            wraps=__import__(
+                "src.services._weekly_report_helpers", fromlist=["render_table_png"]
+            ).render_table_png,
+        ) as mock_render:
+            svc.generate_report_zip("FEB_LF2_2025_A", "Team A", "Team B")
+        rival_calls = [c for c in mock_render.call_args_list if "(Rival)" in c.args[3]]
+        assert rival_calls, "No rival-labelled render calls captured"
+

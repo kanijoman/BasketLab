@@ -33,6 +33,7 @@ MANIFEST
 
 # AI Configuration (contains API keys - DO NOT COMMIT)
 .metricsforall/
+.basketlab/
 *.key
 *.env
 
