@@ -5,7 +5,7 @@ import csv
 import io
 from typing import Dict, List
 
-from src.services.possession_core import count_quality_pbp_metrics
+from src.pbp.possession_core import count_quality_pbp_metrics
 
 
 class PBPQualityService:

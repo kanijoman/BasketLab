@@ -5,7 +5,7 @@ import csv
 import io
 from typing import Any, Dict, Iterator, List, Optional
 
-from src.services.possession_core import (
+from src.pbp.possession_core import (
     extract_possession_rows,
     is_controversial_possession,
     is_tab_evaluated_possession,
