@@ -303,6 +303,18 @@ def scrape_progress(job_id: str) -> Dict[str, Any]:
 # Background task implementations
 # ---------------------------------------------------------------------------
 
+FEB_STATUS_FINISHED = "3"
+
+
+def _is_in_progress(doc: Dict[str, Any]) -> bool:
+    """True when a FEB doc carries a status other than FINISHED ('3').
+
+    Docs without ``HEADER.status`` (older data) are treated as finished.
+    """
+    status = (doc.get("HEADER") or {}).get("status")
+    return status is not None and str(status) != FEB_STATUS_FINISHED
+
+
 def _store_feb_match(
     job: Dict[str, Any],
     db: Any,
@@ -318,7 +330,10 @@ def _store_feb_match(
             job["skipped"] += 1
             return
         doc = scraper.fetch_boxscore(code, session)
-        if doc:
+        if doc and _is_in_progress(doc):
+            # Storing a partial game would block the final one (document_exists).
+            job["skipped"] += 1
+        elif doc:
             db.insert_boxscore(collection_name, code, doc)
         else:
             job["errors"].append(f"No data for match {code}")
