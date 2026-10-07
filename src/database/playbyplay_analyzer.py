@@ -9,7 +9,7 @@ The three classes were split into dedicated modules for maintainability:
 All existing imports that target *this* module continue to work unchanged.
 """
 
-from .playbyplay_core import PlayByPlayAnalyzer
+from src.pbp.playbyplay_core import PlayByPlayAnalyzer
 from .inout_calculator import InOutStatsCalculator
 from .possession_analyzer import PossessionAnalyzer
 
