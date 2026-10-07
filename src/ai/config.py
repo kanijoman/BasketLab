@@ -17,7 +17,7 @@ class AnalysisConfig:
     # API keys (load from environment or config file)
     GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
-    GROQ_API_KEY: Optional[str] = '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'
+    GROQ_API_KEY: Optional[str] = None
 
     # Model configurations
     GEMINI_MODELS = {
