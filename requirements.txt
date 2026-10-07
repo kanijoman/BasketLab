@@ -21,6 +21,7 @@ beautifulsoup4>=4.12.0
 # Scraper utilities (Phase 2 DRY cleanup)
 cachetools>=5.3.0
 tenacity>=8.2.0
+cryptography>=42.0.0  # live_prep: encrypt preparation packages (AES-GCM)
 
 # Template engine — AI report generation + FastAPI (Phase 3/6)
 jinja2>=3.1.0
