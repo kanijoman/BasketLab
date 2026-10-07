@@ -1,7 +1,7 @@
 """IN/OUT statistics calculator -- extracted from playbyplay_analyzer.py."""
 
 from typing import Dict, List, Tuple, Optional
-from .playbyplay_core import PlayByPlayAnalyzer
+from src.pbp.playbyplay_core import PlayByPlayAnalyzer
 
 class InOutStatsCalculator:
     """Calculate team statistics when a player is on/off the court."""
