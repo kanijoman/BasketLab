@@ -211,3 +211,19 @@ def test_a_player_who_re_enters_after_the_break_starts_a_fresh_stint():
     ]
     p = LiveEngine().update(doc)["players"]["P1"]
     assert p["on_court"] and p["stint"] == 60  # in at 09:00 -> 60 s until 08:00, no credit
+
+
+def test_closed_stints_are_recorded_with_the_rest_adjusted_length():
+    """Baselines compare like with like: same stint measure as the live fatigue rule."""
+    doc = _doc(2, "08:00")
+    doc["PLAYBYPLAY"]["LINES"].append(
+        {"num": "2", "quarter": "2", "time": "09:50", "idTeam": "T1", "idPlayer": "P1", "action": "subst",
+         "text": "(A) UNO: Sustitución (Sale de pista)", "deleted": None})
+    p = LiveEngine().update(doc)["players"]["P1"]
+    assert p["stints_done"] == 1
+    assert p["stint_sum"] == 610 - 60  # 610 s on court, minus the Q1->Q2 break credit
+
+
+def test_open_stint_is_not_counted_as_done():
+    p = _p1(1, "05:00")
+    assert p["stints_done"] == 0 and p["stint_sum"] == 0 and p["stint"] == 300

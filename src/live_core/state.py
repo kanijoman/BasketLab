@@ -38,6 +38,8 @@ class _Player:
     pf_by_period: Dict[int, int] = field(default_factory=dict)
     pts: int = 0
     credit: int = 0  # rest credited to the current stint (see QUARTER_BREAK_CREDIT_S)
+    stints_done: int = 0  # finished stints and their rest-adjusted total length (for baselines)
+    stint_sum: int = 0
 
 
 @dataclass
@@ -114,7 +116,9 @@ class LiveGame:
     def _on_sub_out(self, ev: Event, player: Optional[_Player], team) -> None:
         if player and player.on_court:
             player.closed += max(0, ev.elapsed - player.stint_start)
-            player.on_court = False
+            player.stints_done += 1
+            player.stint_sum += max(0, ev.elapsed - player.stint_start - player.credit)
+            player.on_court, player.credit = False, 0
 
     def _shot(self, ev: Event, player: Optional[_Player], team: Optional[_Team], made_key: str, att_key: str) -> None:
         if team is None:
@@ -201,7 +205,9 @@ class LiveGame:
             stint = max(0, now - p.stint_start - p.credit) if p.on_court else 0
             players[pid] = {
                 "name": p.name, "team_id": p.team_id, "on_court": p.on_court,
-                "minutes": p.closed + (max(0, now - p.stint_start) if p.on_court else 0), "stint": stint, "pf": p.pf, "pts": p.pts,
+                "minutes": p.closed + (max(0, now - p.stint_start) if p.on_court else 0),
+                "stint": stint, "pf": p.pf, "pts": p.pts,
+                "stints_done": p.stints_done, "stint_sum": p.stint_sum,
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
             }
         teams = {
