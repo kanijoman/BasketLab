@@ -7,6 +7,7 @@ This module provides ElasticityRepository (DB layer) and ElasticityService (orch
 from __future__ import annotations
 
 from datetime import datetime
+from src.utils.time_utils import utc_now_naive
 from time import monotonic
 from typing import Any, Callable, Dict, List, Optional
 
@@ -132,7 +133,7 @@ class ElasticityService:
         summary: Dict[str, Any] = {}
         league_tag = ",".join(leagues) if leagues else "ALL"
         comp_tag   = ",".join(competitions) if competitions else "ALL"
-        trained_at = datetime.utcnow().isoformat()
+        trained_at = utc_now_naive().isoformat()
         opp_q33, opp_q67 = _compute_league_thresholds(records)
 
         total_steps = len(TARGET_STATS) * 4  # A + B + C + D per stat

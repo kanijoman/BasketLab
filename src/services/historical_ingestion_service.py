@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
+from src.utils.time_utils import utc_now_naive
 from typing import Any, Dict, List, Optional
 
 from src.services._feb_normalizer import normalize_feb_match as _normalize_feb
@@ -131,7 +132,7 @@ class HistoricalIngestionService:
         job["total"] = job.get("total", 0) + len(match_codes)
         job["status"] = "running"
 
-        scraped_at = datetime.utcnow()
+        scraped_at = utc_now_naive()
         for code in match_codes:
             job["current_match"] = code
             try:
@@ -231,7 +232,7 @@ class HistoricalIngestionService:
         job["total"] = job.get("total", 0) + len(match_uuids)
         job["status"] = "running"
 
-        scraped_at = datetime.utcnow()
+        scraped_at = utc_now_naive()
         gender_char = "F" if "f" in gender.lower() else "M" if gender else None
 
         for uuid in match_uuids:
@@ -334,7 +335,7 @@ class HistoricalIngestionService:
         job["total"] = job.get("total", 0) + len(match_uuids)
         job["status"] = "running"
 
-        scraped_at = datetime.utcnow()
+        scraped_at = utc_now_naive()
         gender_char = "F" if "f" in gender.lower() else "M" if gender else None
 
         for uuid in match_uuids:

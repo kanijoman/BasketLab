@@ -4,6 +4,7 @@ import asyncio
 import json
 import threading
 from datetime import datetime, timedelta
+from src.utils.time_utils import utc_now_naive
 from typing import List, Dict, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -56,7 +57,7 @@ def get_lineup_analysis(
 
     date_filter: Optional[Dict] = None
     if period > 0:
-        cutoff = datetime.utcnow() - timedelta(days=period)
+        cutoff = utc_now_naive() - timedelta(days=period)
         date_filter = {"$gte": cutoff.strftime("%Y-%m-%d")}
 
     svc = LineupService(db)
@@ -97,7 +98,7 @@ async def stream_lineup_analysis(
 
     date_filter: Optional[Dict] = None
     if period > 0:
-        cutoff = datetime.utcnow() - timedelta(days=period)
+        cutoff = utc_now_naive() - timedelta(days=period)
         date_filter = {"$gte": cutoff.strftime("%Y-%m-%d")}
 
     loop = asyncio.get_event_loop()

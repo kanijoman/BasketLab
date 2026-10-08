@@ -62,6 +62,10 @@ jobs:
         working-directory: frontend
         run: npm run type-check
 
+      - name: Lint (errors fail; warnings are tracked debt)
+        working-directory: frontend
+        run: npm run lint
+
       - name: Run tests
         working-directory: frontend
         run: npm run test:run

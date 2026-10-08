@@ -21,7 +21,19 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 ## Deuda técnica (>500 líneas; dividir al tocarlos)
 Python: `database/aggregation/fbcyl_pipeline.py` 1322 · `pipeline_team_stats.py` 949 · `scraper/feb_scraper.py` 800 · `shotcharts/court_zones.py` 772 · `services/rotation_service.py` 722 · `_weekly_report_helpers.py` 660 · `stats/advanced_stats_calculator.py` 632 · `shotcharts/detailed_zones.py` 629 · `database/inout_calculator.py` 613 · `lineup_stats_calculator.py` 609 · `shot_visualizer.py` 596 · `repository_inout.py` 595 · `pbp/possession_core.py` 592 · `fiba_court.py` 579 · `weekly_report_service.py` 557 · `fbcyl_scraper.py` 542 · `pipeline_player_stats.py` 505.
 Frontend: `PredictivePage.tsx` 1419 · `api/client.ts` 1321 · `AdminPage.tsx` 703 · `PlayerStatsPage.tsx` 674 · `LineupsPage.tsx` 653 · `RotacionesPage.tsx` 624.
-Otros: `database/indexes.py` indexa `HEADER.localTeam.teamName` (campo inexistente en FEB) · `datetime.utcnow()` obsoleto en `historical_ingestion_service` y `elasticity_service` · shims de `src/pbp` retirables cuando no queden importadores antiguos · la API no tiene autenticación.
+Otros: shims de `src/pbp` retirables cuando no queden importadores antiguos · la API no tiene autenticación · 6 avisos de ESLint (`exhaustive-deps`, `ts-ignore`, expresión sin efecto) a corregir y promover a `error` en `eslint.config.js` · en BDs ya creadas queda el índice antiguo `header_local_team_name_1` (inofensivo; `drop_index` si se quiere limpiar).
 
 ## Límites conocidos
 Esquinas casi vacías en el sistema de 10 zonas (dato de origen) · live solo FEB (FBCYL tiene minutos con precisión de 1 min y tiempo transcurrido) · colecciones pequeñas dan líneas base ruidosas (todo se encoge hacia la media de liga) · sin emparejamientos jugador-vs-jugador.
+
+## Backlog (un issue de GitHub por ítem; enlazar aquí al crearlo)
+| Id | Ítem | Tamaño |
+|---|---|---|
+| B1 | Contrato back↔front: `response_model` Pydantic + OpenAPI → tipos TS generados | grande |
+| B2 | Smoke e2e Playwright contra uvicorn + build, y health-check post-deploy (reutilizable por la app Android) | medio |
+| B3 | Dividir archivos >500 líneas (lista en Deuda técnica); hacerlo al tocarlos | continuo |
+| B4 | Tests de páginas del frontend / SSE de `client.ts` (bajo retorno; preferir B2) | medio |
+| B5 | Retirar shims de `src/pbp` cuando no queden importadores antiguos | pequeño |
+| B6 | Autenticación de la API (hoy solo protege `/admin` el frontend) | medio |
+| B7 | Corregir avisos ESLint y promoverlos a `error`; subir `--cov-fail-under` (base 72 %) | pequeño |
+| B8 | Reemplazar `mongomock.MongoClient()` ad hoc (6 archivos) por fixtures | pequeño |

@@ -98,7 +98,7 @@ python run_api.py                    # API :8000 (BASKETLAB_DEV=1 → reload)
 python run_scraper.py                # servicio scraper
 cd frontend && npm run dev           # Vite :5173
 pytest -q                            # backend (CI: requirements.txt)
-cd frontend && npm run type-check && npm run test:run && npm run build
+cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
 # creds: MONGODB_CONNECTION_STRING o src/database/db_credentials.txt · ejemplo en .env.example

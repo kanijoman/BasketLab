@@ -5,7 +5,7 @@ Regla de trabajo (TDD, regresión por bug): [CLAUDE.md](../CLAUDE.md). Este doc:
 ```bash
 pytest -q                                   # backend completo (cobertura sobre src/ por defecto, pytest.ini)
 pytest tests/test_live_core_*.py -q --no-cov
-cd frontend && npm run type-check && npm run test:run && npm run build
+cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py       # regenerar vectores live tras cambiar live_core
 cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 ```
@@ -20,7 +20,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`.
 
 ## CI (`.github/workflows`)
-`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; subir el umbral cuando la cobertura mejore), frontend (`npm ci`, type-check, vitest, `npm run build`), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
+`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; subir el umbral cuando la cobertura mejore), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
 
 ## Evaluación (estado actual) y mejoras
 | Hueco | Prioridad | Estado |
@@ -32,7 +32,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 | Frontend: sin tests de páginas ni del SSE de `client.ts` | media | pendiente (bajo retorno; preferir smoke e2e) |
 | Sin **contrato** back↔front (0 `response_model`; tipos TS a mano) | media (más trabajo) | hoja de ruta: modelos Pydantic + OpenAPI → tipos TS |
 | Sin e2e ni smoke contra servidor real; sin health-check post-deploy | media | hoja de ruta: Playwright contra uvicorn + build |
-| `npm run lint` roto (no hay config ESLint) | baja | decidir config antes de añadirlo a CI |
+| `npm run lint` roto (no había config) | baja | **hecho** (`eslint.config.js`, en CI: errores fallan, 6 avisos pendientes → B7) |
 | `mongomock.MongoClient()` ad hoc en ~20 tests pudiendo usar fixtures | baja | — |
 Frontend: compensa testear `client.ts` y helpers puros; testear páginas enteras con mocks rinde poco (mejor un smoke e2e).
 
