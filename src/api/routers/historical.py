@@ -15,6 +15,7 @@ import uuid as _uuid
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from src.api.security import require_admin
 from pydantic import BaseModel, Field
 
 from src.api.deps import get_db
@@ -100,7 +101,8 @@ class FEBCompetitionIngestRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
-@router.post("/ingest", summary="Start a background historical ingestion job")
+@router.post("/ingest", summary="Start a background historical ingestion job",
+             dependencies=[Depends(require_admin)])
 def start_ingest(
     req: HistoricalIngestRequest,
     background_tasks: BackgroundTasks,
@@ -278,6 +280,7 @@ def _run_fbcyl_ingest(
 @router.post(
     "/ingest_competition",
     summary="Ingestar temporadas FEB descubriendo grupos automáticamente",
+    dependencies=[Depends(require_admin)],
 )
 def start_competition_ingest(
     req: FEBCompetitionIngestRequest,

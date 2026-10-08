@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.deps import get_db
+from src.api.security import require_admin
 from src.services import CollectionService
 
 router = APIRouter()
@@ -32,7 +33,7 @@ def list_collections(
     return results[skip: skip + limit]
 
 
-@router.delete("/{name}", summary="Drop a basketball collection")
+@router.delete("/{name}", summary="Drop a basketball collection", dependencies=[Depends(require_admin)])
 def delete_collection(name: str, db=Depends(get_db)) -> Dict[str, str]:
     """Permanently drop the collection *name* from MongoDB.
 

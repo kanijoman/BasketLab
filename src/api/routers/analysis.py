@@ -24,6 +24,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from src.api.deps import get_db
+from src.api.security import require_admin
 
 router = APIRouter()
 
@@ -47,6 +48,7 @@ class ElasticityTrainRequest(BaseModel):
 @router.post(
     "/elasticity/train",
     summary="Entrenar modelos de elasticidad Ridge (Modelo A + B)",
+    dependencies=[Depends(require_admin)],
 )
 def train_elasticity(
     req: ElasticityTrainRequest,
@@ -71,6 +73,7 @@ def train_elasticity(
 @router.post(
     "/elasticity/train/stream",
     summary="Entrenar modelos de elasticidad con progreso SSE",
+    dependencies=[Depends(require_admin)],
 )
 async def train_elasticity_stream(
     req: ElasticityTrainRequest,

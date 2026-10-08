@@ -17,7 +17,8 @@ import os
 import uuid as _uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from src.api.security import require_admin
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -238,7 +239,7 @@ class ScrapeRequest(BaseModel):
     fbcyl: Optional[FBCYLScrapeParams] = None
 
 
-@router.post("/start", summary="Start a background scraping job")
+@router.post("/start", summary="Start a background scraping job", dependencies=[Depends(require_admin)])
 def start_scrape(
     req: ScrapeRequest,
     background_tasks: BackgroundTasks,
