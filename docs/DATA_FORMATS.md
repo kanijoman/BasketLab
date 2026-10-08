@@ -1,0 +1,20 @@
+# Formatos de datos (para Claude)
+Solo hechos **verificados** contra `src/JSON_samples/feb_game.json` y `fbcyl_game.json` (y el scraper). Fuente de verdad del mapeo entre formatos: `src/services/_feb_normalizer.py` y `_fbcyl_normalizer.py`. Detalle del motor live: [LIVE.md](LIVE.md).
+
+## FEB (colecciones sin prefijo `FBCYL_`; `_id` = código de partido)
+Claves raíz: `HEADER, SCOREBOARD, TEAMSTATS, TICKER, OVERVIEW, PLAYBYPLAY, BANNER, BOXSCORE, SHOTCHART, RANKING` (+ `_league`, `_comp_id`, `_competition`, `_group`, `_season` que añade el scraper).
+- **`HEADER`**: `TEAM[2]` (`id`, `name` —puede traer espacios finales: `strip()`—, `pts` str, `teamCode`, `clubCode`, `logo`), `starttime` `"dd-mm-YYYY - HH:MM"`, `status` (`'3'` = finalizado) y `statusText` (`FINISHED`), `quarter`, `time` (`"FINAL"` al acabar), `CompID`, `round`. **No existe `localTeam`/`visitorTeam`.**
+- **`BOXSCORE.TEAM[2]`**: `id`, `name`, `TOTAL` (strings: `p1m/p1a/p2m/p2a/p3m/p3a/fgm/fga/ro/rd/assist/st/to/bs/pf/pts`; `to` **excluye** pérdidas de equipo), `PLAYER[]` (`id`, `no` dorsal, `name`, `min` **en segundos**, `pts`, `pf`, `inn`, mismos contadores, `games_played` añadido).
+- **`PLAYBYPLAY.LINES[]`** (en el documento guardado, **orden descendente por `num`**): `num`, `quarter` (str), `time` = **tiempo RESTANTE** `mm:ss`, `team` `'1'`/`'2'` (= `HEADER.TEAM[0]`/`[1]`), `idTeam`, `idPlayer`, `action` ∈ `subst, shoot, fthrow, rebound, foul, assist, lose, recovery, blockshot, period, timeout`, `text` (español), `scoreA/B` (solo en canastas; A = `TEAM[0]`), `deleted`.
+  Textos: `Sustitución (Entra a pista|Sale de pista)`, `TIRO DE 2|3 ANOTADO (Puntos: n)|FALLADO`, `FALTA Personal|Antideportiva (Faltas: n. Faltas de equipo: m)`, `REBOTE (Rebotes: n)` (**sin distinguir ofensivo/defensivo**: se infiere por el último fallo), `PÉRDIDA`, `ROBO`, `ASISTENCIA`, `TAPÓN`, `Equipo: PÉRDIDA` (sin `idPlayer`), `Comienzo|Fin del Cuarto n`. La muestra guardada tiene tildes rotas (mojibake): no exigir acentos.
+- **`SHOTCHART`**: dict `{quarters, duration, TEAM[], SHOTS[]}`; cada tiro `{m '0'|'1', t = tiempo RESTANTE, x, y (0-100, % de la pista completa), team 0|1 (= TEAM[0]/[1]), player (dorsal), quarter}`. Los tiros son **exactamente** los tiros de campo del PBP (mismo multiconjunto cuarto/tiempo/acierto/equipo).
+- Periodos: 4×10 min; prórrogas 5 min. La muestra viene en Mongo extended JSON (`{"$numberInt": …}`): `src/live_core/vectors.unwrap_extended_json` o el fixture `feb_game_doc`.
+
+## FBCYL (colecciones `FBCYL_*`; `_id`/`uuid`)
+Claves: `uuid, moves[], stats` (+ `_league, _gender, _territory, _category, _competition, _season`).
+- **`stats.teams[]`**: `teamIdIntern` (propio del partido), `teamIdExtern` (estable, el que usa la app), `name`, `players[]` (`uuid`, `actorId`, `dorsal`, `timePlayed`, `inOutsList` con precisión de **1 minuto**, `data{…}` con contadores como `shotsOfTwoSuccessful`).
+- **`moves[]`** (cronológico): `idTeam` (**intern**), `actorId`, `actorName`, `move` (texto), `period`, `min`/`sec` = tiempo **TRANSCURRIDO** en el periodo (≠ FEB).
+- Resolver el id: `_resolve_fbcyl_team_id` (repository_lineup). Live es **solo FEB** por ahora.
+
+## Convenciones de cálculo
+Posesiones `FGA − ORB + TOV + 0.44·FTA` (las pérdidas de equipo cuentan: `tov_team` aparte en live) · TOV% `TOV/(FGA+0.44·FTA+TOV)` · FTr `FTA/FGA` · normalizar a 40 min. Zonas: 10 (ver `src/live_core/zones.py`, paridad con `src/shotcharts/detailed_zones.py`); en esta geometría la pintura (`zona`) concentra ~31 % de los tiros y las esquinas ~1,5 % (límite de los datos de origen).
