@@ -51,6 +51,18 @@ class TestRenderer:
         html = render_report_html(self._report("rival"))
         assert "Scouting" in html and "neutralizar" in html.lower()
 
+    def test_zone_section_is_rendered(self):
+        report = build_team_report("A", TEAM, QUARTILES, None, zones=ZONES)
+        html = render_report_html(report)
+        assert "Zonas de tiro" in html and "Pintura" in html and "+15.0" in html
+
+    def test_low_sample_report_shows_reliability_notice(self):
+        report = build_team_report("A", {**TEAM, "games_played": 2}, QUARTILES, None)
+        assert "muestra pequeña" in render_report_html(report).lower()
+
+    def test_normal_report_has_no_reliability_notice(self):
+        assert "muestra pequeña" not in render_report_html(self._report()).lower()
+
     def test_empty_report_renders_without_error(self):
         html = render_report_html(build_team_report("X", {}, {}, None))
         assert "X" in html
@@ -62,7 +74,23 @@ class TestRenderer:
         assert pdf.startswith(b"%PDF")
 
 
+ZONES = [{"zone": "paint", "zone_label": "Pintura", "points": 2, "fga": 40, "fgm": 24, "fg_pct": 60.0,
+          "league_pct": 45.0, "delta_pp": 15.0, "rating": "above", "low_sample": False}]
+
+
 class TestService:
+    def test_zones_are_loaded_for_the_team_and_included(self):
+        calls = []
+        svc = TeamReportService(MagicMock(), stats=FakeStats(), zones=lambda c, t: calls.append((c, t)) or ZONES)
+        r = svc.build("col", "7", "own")
+        assert calls == [("col", "7")] and r["zones"][0]["zone"] == "paint"
+
+    def test_zone_loading_failure_does_not_break_the_report(self):
+        def boom(c, t):
+            raise RuntimeError("db")
+        r = TeamReportService(MagicMock(), stats=FakeStats(), zones=boom).build("col", "7", "own")
+        assert r["zones"] == []
+
     def test_builds_report_for_a_team_id(self):
         r = TeamReportService(MagicMock(), stats=FakeStats()).build("col", "7", "own")
         assert r["team"] == "Equipo <A>" and r["games_played"] == 20

@@ -21,7 +21,7 @@ def build_cv_map(rows: List[Dict], field_map: Dict[str, str]) -> Dict[str, Dict[
 
     Returns:
         ``{team_name: {stat_key: {"mean", "std", "cv", "n"}}}``
-        Teams or stat keys with fewer than 3 observations are omitted.
+        Teams or stat keys with fewer than 2 observations are omitted (1 game has no variability).
     """
     by_team: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
@@ -40,7 +40,7 @@ def build_cv_map(rows: List[Dict], field_map: Dict[str, str]) -> Dict[str, Dict[
     for team, stats in by_team.items():
         result[team] = {}
         for stat_key, values in stats.items():
-            if len(values) < 3:
+            if len(values) < 2:
                 continue
             arr = np.array(values)
             mean = float(np.mean(arr))

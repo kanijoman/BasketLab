@@ -26,6 +26,21 @@ export interface ReportConsistency {
   label: string
   cv: number
   status: 'inconsistent' | 'consistent'
+  n: number
+  low_sample: boolean
+  text: string
+}
+
+export interface ReportZone {
+  zone: string
+  label: string
+  points: number | null
+  fga: number
+  fg_pct: number | null
+  league_pct: number | null
+  delta_pp: number | null
+  low_sample: boolean
+  kind: 'hot' | 'cold'
   text: string
 }
 
@@ -42,10 +57,13 @@ export interface TeamReport {
   team: string
   mode: ReportMode
   games_played: number
+  /** Few games played: values are indicative only (early season). */
+  low_sample: boolean
   strengths: ReportFinding[]
   weaknesses: ReportFinding[]
   differentials: ReportDifferential[]
   consistency: ReportConsistency[]
+  zones: ReportZone[]
   profile: string[]
   tactics: ReportAction[]
   training: ReportAction[]

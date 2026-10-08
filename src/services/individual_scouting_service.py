@@ -135,6 +135,8 @@ class IndividualScoutingDocxBuilder:
             except Exception:
                 pass
 
+        self._league_zones = self._load_league_zones(coll)
+
         doc = Document()
         for section in doc.sections:
             section.top_margin = Cm(1.5)
@@ -154,6 +156,16 @@ class IndividualScoutingDocxBuilder:
     # ------------------------------------------------------------------
     # Per-player sections
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _load_league_zones(coll):
+        """League zone stats used to colour each player's zones relative to the league."""
+        if coll is None:
+            return None
+        from src.shotcharts.league_zones import league_zone_stats
+        from src.shotcharts.zone_analysis import ZoneAnalyzer
+
+        return league_zone_stats(ZoneAnalyzer(), coll)
 
     def _add_player_page(self, doc, player, all_players, fetcher, coll, logo_bytes, team_id):
         name = player.get("player_name", "—")
@@ -376,7 +388,8 @@ class IndividualScoutingDocxBuilder:
         try:
             az = ZoneAnalyzer()
             zstats = az.analyze_zone_performance(shots)
-            zfig = az.plot_zone_analysis(zstats, title=f"{player_name} — Zonas", figsize=(12, 6))
+            zfig = az.plot_zone_analysis(zstats, title=f"{player_name} — Zonas", figsize=(12, 6),
+                                         league_stats=getattr(self, "_league_zones", None))
             zbuf = _fig_to_buf(zfig)
             plt.close(zfig)
             zp = row_t.rows[0].cells[1].paragraphs[0]

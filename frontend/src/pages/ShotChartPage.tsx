@@ -8,21 +8,15 @@ import { useQuery } from '@tanstack/react-query'
 import { Target, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getLiveTeamNames, getShotZones, getShotRaw, getPlayerStats, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
+import { getLiveTeamNames, getShotZones, getShotRaw, getPlayerStats, getPlayerQuartiles, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
 import ExportButton from '@/components/ui/ExportButton'
 import Tooltip from '@/components/ui/Tooltip'
 import { STAT_LABELS } from '@/lib/statLabels'
+import { ratingColor, ratingFromQuartiles, ratingTextClass } from '@/lib/zoneRating'
 
 // -- Helpers ------------------------------------------------------------------
-
-function clsForPct(pct: number): string {
-  if (pct >= 45) return 'text-green-400'
-  if (pct >= 35) return 'text-yellow-400'
-  if (pct >= 25) return 'text-orange-400'
-  return 'text-red-400'
-}
 
 // -- Component ----------------------------------------------------------------
 
@@ -57,6 +51,14 @@ export default function ShotChartPage() {
     staleTime: 10 * 60_000,
   })
 
+  // League quartiles: players' 2P% / 3P% are coloured against the league, not fixed thresholds
+  const { data: playerQuartiles } = useQuery({
+    queryKey: ['player-quartiles', collection?.name],
+    queryFn: () => getPlayerQuartiles(collection!.name),
+    enabled: Boolean(collection) && !isFbcyl,
+    staleTime: 30 * 60_000,
+  })
+
   // Changing mode never changes selectedTeam; only reset the player selection
   useEffect(() => {
     setSelectedPlayer('')
@@ -69,8 +71,8 @@ export default function ShotChartPage() {
     queryKey: ['shot-zones', collection?.name, viewMode, selectedTeam, selectedPlayer],
     queryFn: () =>
       viewMode === 'team'
-        ? getShotZones(collection!.name, { team_id: selectedTeam || undefined })
-        : getShotZones(collection!.name, { player: selectedPlayer || undefined }),
+        ? getShotZones(collection!.name, { team_id: selectedTeam || undefined, compare: 'league' })
+        : getShotZones(collection!.name, { player: selectedPlayer || undefined, compare: 'league' }),
     enabled: Boolean(collection) && !isFbcyl && hasFilter,
     staleTime: 5 * 60_000,
   })
@@ -354,12 +356,12 @@ export default function ShotChartPage() {
                               {p.points_per_game.toFixed(1)}
                             </td>
                             <td className={`px-3 py-2 text-right tabular-nums font-medium ${
-                              p.fg2_percentage != null ? clsForPct(p.fg2_percentage) : 'text-ink-secondary'
+                              p.fg2_percentage != null ? ratingTextClass(ratingFromQuartiles(p.fg2_percentage, playerQuartiles?.fg2_percentage)) : 'text-ink-secondary'
                             }`}>
                               {p.fg2_percentage != null ? `${p.fg2_percentage.toFixed(0)}%` : '—'}
                             </td>
                             <td className={`px-3 py-2 text-right tabular-nums font-medium ${
-                              p.fg3_percentage != null ? clsForPct(p.fg3_percentage) : 'text-ink-secondary'
+                              p.fg3_percentage != null ? ratingTextClass(ratingFromQuartiles(p.fg3_percentage, playerQuartiles?.fg3_percentage)) : 'text-ink-secondary'
                             }`}>
                               {p.fg3_percentage != null ? `${p.fg3_percentage.toFixed(0)}%` : '—'}
                             </td>
@@ -413,6 +415,9 @@ export default function ShotChartPage() {
                         <Tooltip text={`${STAT_LABELS['%TF'].label}: ${STAT_LABELS['%TF'].description}`}>%TF</Tooltip>
                       </th>
                       <th className="px-3 py-2 text-right font-medium">
+                        <Tooltip text="Diferencia en puntos porcentuales frente a la media de la liga en esta zona">vs liga</Tooltip>
+                      </th>
+                      <th className="px-3 py-2 text-right font-medium">
                         <Tooltip text={`${STAT_LABELS['Pts'].label}: ${STAT_LABELS['Pts'].description}`}>Pts</Tooltip>
                       </th>
                     </tr>
@@ -430,15 +435,21 @@ export default function ShotChartPage() {
                           <span className="flex items-center gap-1.5">
                             <span
                               className="w-2 h-2 rounded-full inline-block flex-shrink-0"
-                              style={{ backgroundColor: z.fga > 0 ? `hsl(${Math.min(Math.round(z.fg_pct / 40 * 120), 120)}, 85%, 42%)` : '#444' }}
+                              style={{ backgroundColor: z.fga > 0 ? ratingColor(z.rating) : '#444' }}
                             />
                             {z.zone_label}
                           </span>
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">{z.fgm}</td>
                         <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">{z.fga}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums font-medium ${z.fga > 0 ? clsForPct(z.fg_pct) : 'text-ink-secondary'}`}>
+                        <td className={`px-3 py-2 text-right tabular-nums font-medium ${z.fga > 0 ? ratingTextClass(z.rating) : 'text-ink-secondary'}`}>
                           {z.fga > 0 ? `${z.fg_pct.toFixed(1)}%` : '—'}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-ink-secondary"
+                            title={z.low_sample ? 'Muestra pequeña: valoración poco fiable' : undefined}>
+                          {z.delta_pp != null && z.fga > 0
+                            ? `${z.delta_pp > 0 ? '+' : ''}${z.delta_pp.toFixed(1)} pp${z.low_sample ? ' *' : ''}`
+                            : '—'}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">
                           {z.points === 3 ? '3P' : '2P'}

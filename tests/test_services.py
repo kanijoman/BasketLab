@@ -222,14 +222,20 @@ class TestTeamStatsServiceGetConsistency:
             assert team[key]["cv"] >= 0
 
     def test_min_sample_guard(self):
-        """Teams with fewer than 3 games must not produce a CV entry."""
+        """A single game has no variability, so it must not produce a CV entry."""
         from src.services import TeamStatsService
-        rows = _make_fake_rows(n=2)  # only 2 rows — below the minimum
-        handler = _make_consistency_handler(rows)
-        svc = TeamStatsService(handler)
-        result = svc.get_consistency("FEB_LF2_2025_A")
-        own = result.get("own", {})
+        rows = _make_fake_rows(n=1)
+        svc = TeamStatsService(_make_consistency_handler(rows))
+        own = svc.get_consistency("FEB_LF2_2025_A").get("own", {})
         assert own.get("Equipo A", {}) == {}
+
+    def test_two_games_already_produce_a_cv_entry(self):
+        """Early season (issue #144): CV is available from 2 games (flagged unreliable by the report)."""
+        from src.services import TeamStatsService
+        rows = _make_fake_rows(n=2)
+        svc = TeamStatsService(_make_consistency_handler(rows))
+        own = svc.get_consistency("FEB_LF2_2025_A").get("own", {})
+        assert own.get("Equipo A")
 
     def test_exception_returns_empty_dict(self):
         """Any exception during aggregation should be swallowed and return {}."""

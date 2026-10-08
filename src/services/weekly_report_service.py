@@ -38,6 +38,7 @@ from utils.collection_utils import is_fbcyl as _is_fbcyl
 from stats.stats_calculator import StatsCalculator
 from shotcharts import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
+from shotcharts.league_zones import league_zone_stats
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 
 from src.services._weekly_report_helpers import (
@@ -514,12 +515,14 @@ class WeeklyReportService:
             fig = self._vis.plot_heatmap(shots=shots, title=title, figsize=(10, 10), alpha=0.6)
             zf.writestr(f'{team_prefix}/{safe}_Mapa_Calor.png', fig_to_png(fig))
 
+            league = None if is_fbcyl else league_zone_stats(
+                self._zones, self._db.connection.get_collection(collection))
             processed = convert_shots_for_zone_analysis(shots)
             stats_z   = self._zones.analyze_zone_performance(processed)
             fig = self._zones.plot_zone_analysis(
                 stats=stats_z,
                 title=f'{team_name} - Análisis por Zonas\n{made}/{tot} ({acc:.1f}%)',
-                figsize=(10, 10))
+                figsize=(10, 10), league_stats=league)
             zf.writestr(f'{team_prefix}/{safe}_Zonas.png', fig_to_png(fig))
 
             # Per-player charts
@@ -550,7 +553,7 @@ class WeeklyReportService:
                 fig = self._zones.plot_zone_analysis(
                     stats=zstats,
                     title=f'{ptitle} - Análisis por Zonas\n{pm}/{pt} ({pa:.1f}%)',
-                    figsize=(10, 10))
+                    figsize=(10, 10), league_stats=league)
                 zf.writestr(f'{player_prefix}/{safe_p}/{safe_p}_Zonas.png', fig_to_png(fig))
 
         except Exception as exc:

@@ -114,8 +114,18 @@ class TestConsistency:
         r = build_team_report("A", _stats(), _quartiles(), self._cons(fg3_percentage=20))
         assert r["consistency"] == []
 
-    def test_few_games_are_ignored(self):
+    def test_cv_from_two_games_is_reported_but_flagged_unreliable(self):
+        """Early season (issue #144): no minimum number of games, just a reliability flag."""
         r = build_team_report("A", _stats(), _quartiles(), {"fg3_percentage": {"cv": 50, "n": 2}})
+        assert r["consistency"][0]["key"] == "fg3_percentage"
+        assert r["consistency"][0]["low_sample"] is True
+
+    def test_cv_with_enough_games_is_reliable(self):
+        r = build_team_report("A", _stats(), _quartiles(), {"fg3_percentage": {"cv": 50, "n": 20}})
+        assert r["consistency"][0]["low_sample"] is False
+
+    def test_single_game_has_no_variability_so_no_cv_finding(self):
+        r = build_team_report("A", _stats(), _quartiles(), {"fg3_percentage": {"cv": 0.0, "n": 1}})
         assert r["consistency"] == []
 
     def test_missing_consistency_data_is_fine(self):
@@ -179,6 +189,53 @@ class TestReportShape:
         stats = {k: v for k, v in _stats().items() if k != "games_played"}
         assert build_team_report("A", {**stats, "total_games": 7}, _quartiles(), None)["games_played"] == 7
 
+    @pytest.mark.parametrize("games, low", [(0, True), (1, True), (4, True), (5, False), (30, False)])
+    def test_low_sample_flag_depends_on_games_played(self, games, low):
+        r = build_team_report("A", _stats(games_played=games), _quartiles(), None)
+        assert r["low_sample"] is low
+
+    def test_report_is_generated_with_a_single_game(self):
+        r = build_team_report("A", _stats(games_played=1, points_per_game=95), _quartiles(), None)
+        assert r["games_played"] == 1 and r["low_sample"] is True
+        assert "points_per_game" in [f["key"] for f in r["strengths"]]
+
     def test_empty_stats_do_not_crash(self):
         r = build_team_report("A", {}, {}, None)
         assert r["games_played"] == 0
+
+
+def _zone(zone, rating, delta=10.0, fga=40, points=2, low=False):
+    return {"zone": zone, "zone_label": zone.replace("_", " ").title(), "points": points, "fga": fga,
+            "fgm": 20, "fg_pct": 50.0, "league_pct": 40.0, "delta_pp": delta, "rating": rating, "low_sample": low}
+
+
+class TestZones:
+    ZONES = [
+        _zone("paint", "above", 12.0),
+        _zone("mid_left", "below", -9.0),
+        _zone("top_three", "above", 4.0, points=3),
+        _zone("wing_left", "average", 1.0),
+        _zone("corner_left", "none", None, fga=0),
+        _zone("corner_right", "unknown", None),
+    ]
+
+    def _report(self, mode="own", **kw):
+        return build_team_report("A", _stats(), _quartiles(), None, mode=mode, zones=self.ZONES, **kw)
+
+    def test_only_hot_and_cold_zones_are_reported_ordered_by_gap(self):
+        z = self._report()["zones"]
+        assert [(x["zone"], x["kind"]) for x in z] == [("paint", "hot"), ("mid_left", "cold"), ("top_three", "hot")]
+
+    def test_zone_items_carry_values_and_low_sample_flag(self):
+        z = build_team_report("A", _stats(), _quartiles(), None, zones=[_zone("paint", "above", low=True)])["zones"][0]
+        assert z["label"] == "Paint" and z["fg_pct"] == 50.0 and z["league_pct"] == 40.0
+        assert z["delta_pp"] == 10.0 and z["fga"] == 40 and z["low_sample"] is True
+
+    def test_rival_mode_reframes_zone_text(self):
+        own = self._report("own")["zones"][0]["text"]
+        riv = self._report("rival")["zones"][0]["text"]
+        assert own != riv
+
+    def test_no_zone_data_gives_empty_section(self):
+        assert build_team_report("A", _stats(), _quartiles(), None)["zones"] == []
+        assert build_team_report("A", _stats(), _quartiles(), None, zones=[])["zones"] == []

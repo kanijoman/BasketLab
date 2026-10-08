@@ -91,6 +91,6 @@ def consistency(cv_map: Optional[Dict[str, Any]], mode: str, cfg: ReportConfig) 
             continue
         status = "inconsistent" if cv > cfg.cv_inconsistent else ("consistent" if cv < cfg.cv_consistent else None)
         if status:
-            out.append({"key": key, "label": stat.label, "cv": cv, "status": status,
-                        "text": CONSISTENCY[mode][status]})
+            out.append({"key": key, "label": stat.label, "cv": cv, "status": status, "n": n,
+                        "low_sample": n < cfg.low_sample_games, "text": CONSISTENCY[mode][status]})
     return sorted(out, key=lambda x: (x["status"] != "inconsistent", -x["cv"]))

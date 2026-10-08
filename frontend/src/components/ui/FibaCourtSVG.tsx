@@ -15,6 +15,7 @@
  */
 import { useMemo, type RefObject } from 'react'
 import type { ShotZoneData, ShotRawData } from '@/api/client'
+import { RATING_COLOR, RATING_LABEL, ratingColor } from '@/lib/zoneRating'
 
 // ---------------------------------------------------------------------------
 // Court geometry (all measurements in SVG pixels, 1 px = 1/30 m)
@@ -57,14 +58,6 @@ const ZONE_CENTERS: Record<string, { x: number; y: number; label: string }> = {
 // ---------------------------------------------------------------------------
 // Colour helpers
 // ---------------------------------------------------------------------------
-
-/** Map FG% (0-100) to an HSL colour (red → yellow → green). */
-function pctColor(pct: number): string {
-  const clamped = Math.max(0, Math.min(100, pct))
-  // 0 % → hue 0 (red), 40 % → hue 120 (green)
-  const hue = Math.round((clamped / 40) * 120)
-  return `hsl(${Math.min(hue, 120)}, 85%, 42%)`
-}
 
 /** Compute bubble radius based on shot volume. */
 function bubbleRadius(fga: number, maxFga: number): number {
@@ -227,17 +220,19 @@ export default function FibaCourtSVG({
         if (!zData || zData.fga === 0) return null
 
         const r  = bubbleRadius(zData.fga, maxFga)
-        const color = pctColor(zData.fg_pct)
+        const color = ratingColor(zData.rating)
         const isHighlighted = highlightZone === zoneKey
 
         return (
           <g key={zoneKey}
+            data-low-sample={zData.low_sample ? 'true' : undefined}
             onClick={() => onZoneClick?.(zoneKey)}
             className={onZoneClick ? 'cursor-pointer' : ''}
           >
             <circle
               cx={center.x} cy={center.y} r={r}
-              fill={color} fillOpacity={0.82}
+              fill={color} fillOpacity={zData.low_sample ? 0.5 : 0.82}
+              strokeDasharray={zData.low_sample ? '3 2' : undefined}
               stroke={isHighlighted ? '#fff' : 'rgba(255,255,255,0.15)'}
               strokeWidth={isHighlighted ? 2.5 : 1}
             />
@@ -252,6 +247,18 @@ export default function FibaCourtSVG({
           </g>
         )
       })}
+
+      {/* Legend: rating against the league average of each zone */}
+      {vizMode === 'zones' && zones && zones.length > 0 && (
+        <g fontSize={9} fill="rgba(255,255,255,0.8)">
+          {(['above', 'average', 'below'] as const).map((k, i) => (
+            <g key={k} transform={`translate(${8 + i * 142}, 14)`}>
+              <circle cx={4} cy={0} r={4} fill={RATING_COLOR[k]} />
+              <text x={12} y={3}>{RATING_LABEL[k]}</text>
+            </g>
+          ))}
+        </g>
+      )}
 
       {/* Empty-state zone placeholders — only in 'zones' mode when no data */}
       {vizMode === 'zones' && (!zones || zones.length === 0) && Object.entries(ZONE_CENTERS).map(([key, c]) => (
