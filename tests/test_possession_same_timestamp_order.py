@@ -1,7 +1,7 @@
 """Regression tests for FEB play-by-play events sharing the same clock tick."""
 from __future__ import annotations
 
-from src.services.possession_core import extract_possession_rows
+from src.pbp.possession_core import extract_possession_rows
 
 _TEAM_INFO = {
     "T1": {"name": "Local", "home_away": "Local"},

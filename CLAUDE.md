@@ -83,7 +83,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | asumir FEB (`PLAYER[0]["points"]`) | comprobar `is_fbcyl` (FEB `points`, FBCYL `PTS`) |
 | `create_index("f")` | `create_index("f", background=True)` |
 | ruta de credenciales fija | `get_mongodb_connection_string()` (`src/database/db_config.py`: env → `db_credentials.txt`) |
-| `import src.x` y `import x` mezclados | usa `src.…`; los alias antiguos son *shims* (ver ARCHITECTURE) |
+| `import src.x` y `import x` mezclados | usa siempre `src.…` |
 | texto de UI en inglés | UI en español |
 
 ## Decisiones tomadas (no re-debatir)

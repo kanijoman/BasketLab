@@ -2,7 +2,7 @@
 
 The three classes were split into dedicated modules for maintainability:
 
-- database.playbyplay_core     -> PlayByPlayAnalyzer
+- src.pbp.playbyplay_core      -> PlayByPlayAnalyzer
 - database.inout_calculator    -> InOutStatsCalculator
 - database.possession_analyzer -> PossessionAnalyzer
 
