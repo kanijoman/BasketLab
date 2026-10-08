@@ -170,3 +170,52 @@ def test_rival_package_drives_the_rival_alerts_without_crashing(feb_game_doc):
     engine = AdviceEngine.from_package(pkg)
     out = engine.evaluate(snap)
     assert all(a.evidence["team_id"] == RIVAL for a in out if a.id == "rival_hot_player")
+
+
+# --- shot-zone references -----------------------------------------------------------
+
+def test_zone_reference_for_the_rival_and_the_league(feb_game_doc):
+    pkg = _build([feb_game_doc])
+    zones = pkg.tables["zones"]
+    snap = LiveEngine().update(feb_game_doc)
+    rival_fga = snap["teams"][RIVAL]["stats"]["fg2a"] + snap["teams"][RIVAL]["stats"]["fg3a"]
+    assert sum(c["a"] for c in zones["rival"].values()) == rival_fga
+    assert sum(c["a"] for c in zones["league"].values()) == 121       # both teams of the only game
+    assert all(set(c) == {"a", "m", "pts"} for c in zones["rival"].values())
+
+
+def test_zone_reference_survives_serialisation_and_feeds_the_engine(feb_game_doc):
+    from src.live_core.advice import AdviceEngine
+
+    pkg = PreparationPackage.loads(_build([feb_game_doc]).dumps())
+    engine = AdviceEngine.from_package(pkg)
+    out = engine.evaluate(LiveEngine().update(feb_game_doc))
+    assert all(a.evidence["family"] for a in out if a.id == "rival_zone")
+
+
+# --- database source ----------------------------------------------------------------
+
+def test_db_source_asks_mongo_for_the_shotchart_too(feb_game_doc):
+    """The repository's PBP cursor does not project SHOTCHART; without it packages would have no zones."""
+    from unittest.mock import MagicMock
+
+    from src.live_prep.db_source import build_package_from_db
+
+    handler = MagicMock()
+    collection = handler.repository.connection.get_collection.return_value
+    collection.find.return_value = iter([feb_game_doc])
+    pkg = build_package_from_db(handler, "FEB_TEST", OWN, RIVAL, "2025-2026")
+
+    projection = collection.find.call_args[0][1]
+    assert projection.get("SHOTCHART.SHOTS") == 1 and projection.get("PLAYBYPLAY.LINES") == 1
+    assert sum(c["a"] for c in pkg.tables["zones"]["league"].values()) == 121
+
+
+def test_db_source_rejects_fbcyl_collections():
+    import pytest
+    from unittest.mock import MagicMock
+
+    from src.live_prep.db_source import build_package_from_db
+
+    with pytest.raises(NotImplementedError):
+        build_package_from_db(MagicMock(), "FBCYL_X", OWN, RIVAL, "2025")

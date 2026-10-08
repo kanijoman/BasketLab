@@ -103,6 +103,100 @@ class _PlayerAcc:
         }
 
 
+class _Season:
+    """Accumulates what the package needs while stored games are replayed through LiveEngine."""
+
+    def __init__(self, team_id: str, rival_id: str) -> None:
+        self.team_id, self.rival_id = team_id, rival_id
+        self.players: Dict[str, Dict[str, _PlayerAcc]] = {team_id: {}, rival_id: {}}
+        self.league_players: Dict[str, _PlayerAcc] = {}
+        self.names: Dict[str, str] = {}
+        self.diffs: Dict[str, List[Dict[str, float]]] = {team_id: [], rival_id: []}
+        self.league_diffs: List[Dict[str, float]] = []
+        self.paces: List[float] = []
+        self.played = {team_id: 0, rival_id: 0}
+        self.zones: Dict[str, Dict[str, Dict[str, int]]] = {"league": {}, "rival": {}}
+        self.total_games = 0
+
+    def add_game(self, game: Dict[str, Any]) -> None:
+        header = [(str(t["id"]), (t.get("name") or str(t["id"])).strip()) for t in game["HEADER"]["TEAM"]]
+        ids = [tid for tid, _ in header]
+        if len(ids) != 2:
+            return
+        self.total_games += 1
+        self.names.update(dict(header))
+        snap = LiveEngine().update(game)
+        stats = {tid: snap["teams"][tid]["stats"] for tid in ids}
+        self.league_diffs.append(differentials(stats[ids[0]], stats[ids[1]]))
+        for pid, p in snap["players"].items():
+            self.league_players.setdefault(pid, _PlayerAcc(p["name"], str(p["team_id"]))).add(p)
+        for tid in ids:
+            self._add_zones(self.zones["league"], snap["zones"].get(tid, {}))
+        for tid in (self.team_id, self.rival_id):
+            if tid in ids:
+                self._add_team(tid, ids[1] if ids[0] == tid else ids[0], snap, stats)
+
+    def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
+        self.played[tid] += 1
+        self.diffs[tid].append(differentials(stats[tid], stats[other]))
+        if snap["elapsed"]:
+            n = (possessions(stats[tid]) + possessions(stats[other])) / 2
+            self.paces.append(n / snap["elapsed"] * GAME_SECONDS)
+        for pid, p in snap["players"].items():
+            if p["team_id"] == tid:
+                self.players[tid].setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
+        if tid == self.rival_id:
+            self._add_zones(self.zones["rival"], snap["zones"].get(tid, {}))
+
+    @staticmethod
+    def _add_zones(target: Dict[str, Dict[str, int]], cells: Dict[str, Dict[str, int]]) -> None:
+        for zone, cell in cells.items():
+            total = target.setdefault(zone, {"a": 0, "m": 0, "pts": 0})
+            for key in total:
+                total[key] += cell[key]
+
+    def _team_baselines(self) -> Dict[str, Any]:
+        out: Dict[str, Any] = {
+            "four_factors_prior": matchup_prior(self.diffs[self.team_id], self.diffs[self.rival_id]),
+            "sample_games": {"own": self.played[self.team_id], "rival": self.played[self.rival_id],
+                             "league": self.total_games},
+        }
+        spread = league_spread(self.league_diffs)
+        if spread:
+            out["four_factors_sd"] = spread
+        if self.paces:
+            out["pace_per_40"] = round(sum(self.paces) / len(self.paces), 1)
+        return out
+
+    def _league_players_with_minutes(self) -> List[_PlayerAcc]:
+        return [a for a in self.league_players.values() if sum(a.minutes) >= MIN_LEAGUE_SECONDS]
+
+    def to_package(self, collection: str, season: str, competition_meta: Optional[Dict[str, Any]],
+                   created_at: Optional[str]) -> PreparationPackage:
+        qualified = self._league_players_with_minutes()
+        league_rates = league_distribution([raw_rates(a.stats, sum(a.minutes)) for a in qualified])
+        impact_means = impact_league([impact_rates(a.stats, sum(a.minutes)) for a in qualified])
+
+        baselines = self._team_baselines()
+        baselines["league_rates"] = {m: {k: round(v, 4) for k, v in d.items()} for m, d in league_rates.items()}
+        baselines["impact_league"] = {m: round(v, 3) for m, v in impact_means.items()}
+
+        def table(tid: str) -> Dict[str, Dict[str, Any]]:
+            return {pid: acc.baseline(league_rates, impact_means)
+                    for pid, acc in self.players[tid].items() if acc.minutes}
+
+        return PreparationPackage(
+            collection=collection, season=season,
+            team={"id": self.team_id, "name": self.names.get(self.team_id, self.team_id)},
+            rival={"id": self.rival_id, "name": self.names.get(self.rival_id, self.rival_id)},
+            tables={"players": table(self.team_id), "rival_players": table(self.rival_id),
+                    "lineups": [], "roles": [], "zones": self.zones},
+            created_at=created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            competition_meta=competition_meta or {},
+            baselines=baselines,
+        )
+
+
 def build_package(
     games: Iterable[Dict[str, Any]],
     collection: str,
@@ -112,73 +206,7 @@ def build_package(
     competition_meta: Optional[Dict[str, Any]] = None,
     created_at: Optional[str] = None,
 ) -> PreparationPackage:
-    team_id, rival_id = str(team_id), str(rival_id)
-    accs: Dict[str, Dict[str, _PlayerAcc]] = {team_id: {}, rival_id: {}}
-    names: Dict[str, str] = {}
-    diffs: Dict[str, List[Dict[str, float]]] = {team_id: [], rival_id: []}
-    league: List[Dict[str, float]] = []
-    paces: List[float] = []
-    played = {team_id: 0, rival_id: 0}
-    league_players: Dict[str, _PlayerAcc] = {}
-    total_games = 0
-
+    acc = _Season(str(team_id), str(rival_id))
     for game in games:
-        header_teams = [(str(t["id"]), (t.get("name") or str(t["id"])).strip()) for t in game["HEADER"]["TEAM"]]
-        ids = [tid for tid, _ in header_teams]
-        if len(ids) != 2:
-            continue
-        total_games += 1
-        names.update(dict(header_teams))
-        snap = LiveEngine().update(game)
-        stats = {tid: snap["teams"][tid]["stats"] for tid in ids}
-        league.append(differentials(stats[ids[0]], stats[ids[1]]))
-        for pid, p in snap["players"].items():
-            league_players.setdefault(pid, _PlayerAcc(p["name"], str(p["team_id"]))).add(p)
-
-        for tid in (team_id, rival_id):
-            if tid not in ids:
-                continue
-            other = ids[1] if ids[0] == tid else ids[0]
-            played[tid] += 1
-            diffs[tid].append(differentials(stats[tid], stats[other]))
-            if snap["elapsed"]:
-                n = (possessions(stats[tid]) + possessions(stats[other])) / 2
-                paces.append(n / snap["elapsed"] * GAME_SECONDS)
-            for pid, p in snap["players"].items():
-                if p["team_id"] == tid:
-                    accs[tid].setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
-
-    baselines: Dict[str, Any] = {
-        "four_factors_prior": matchup_prior(diffs[team_id], diffs[rival_id]),
-        "sample_games": {"own": played[team_id], "rival": played[rival_id], "league": total_games},
-    }
-    spread = league_spread(league)
-    if spread:
-        baselines["four_factors_sd"] = spread
-    if paces:
-        baselines["pace_per_40"] = round(sum(paces) / len(paces), 1)
-
-    population = [
-        raw_rates(a.stats, sum(a.minutes)) for a in league_players.values() if sum(a.minutes) >= MIN_LEAGUE_SECONDS
-    ]
-    league_rates = league_distribution(population)
-    baselines["league_rates"] = {m: {k: round(v, 4) for k, v in d.items()} for m, d in league_rates.items()}
-
-    impact_means = impact_league([
-        impact_rates(a.stats, sum(a.minutes)) for a in league_players.values() if sum(a.minutes) >= MIN_LEAGUE_SECONDS
-    ])
-    baselines["impact_league"] = {m: round(v, 3) for m, v in impact_means.items()}
-
-    def table(tid: str) -> Dict[str, Dict[str, Any]]:
-        return {pid: acc.baseline(league_rates, impact_means) for pid, acc in accs[tid].items() if acc.minutes}
-
-    return PreparationPackage(
-        collection=collection, season=season,
-        team={"id": team_id, "name": names.get(team_id, team_id)},
-        rival={"id": rival_id, "name": names.get(rival_id, rival_id)},
-        tables={"players": table(team_id), "rival_players": table(rival_id),
-                "lineups": [], "roles": [], "zones": {}},
-        created_at=created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        competition_meta=competition_meta or {},
-        baselines=baselines,
-    )
+        acc.add_game(game)
+    return acc.to_package(collection, season, competition_meta, created_at)

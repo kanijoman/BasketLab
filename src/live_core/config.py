@@ -51,6 +51,15 @@ class RuleConfig:
     rival_min_ast: int = 4
     rival_min_fg3m: int = 3
     rival_min_fta: int = 5
+    # Rival shot zones (by family): attempts/makes and points-per-shot excess for the efficiency
+    # alert; attempts, share and share excess for the volume alert; prior weight in attempts.
+    zone_min_attempts: int = 5
+    zone_min_makes: int = 3
+    zone_pps_excess: float = 0.5
+    zone_min_share_attempts: int = 8
+    zone_share: float = 0.35
+    zone_share_excess: float = 0.15
+    zone_shrink_n0: float = 20.0
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0

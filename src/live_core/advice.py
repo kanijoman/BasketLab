@@ -15,13 +15,13 @@ from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
-from .rules_rival import rival_player_rule
+from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, run_rule, team_fouls_rule, turnover_rule
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
 RULES: List[Rule] = [foul_rule, team_fouls_rule, run_rule, turnover_rule, fatigue_rule, four_factors_rule,
-                     rival_player_rule]
+                     rival_player_rule, rival_zone_rule]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
 # steals -> ball security. Scoring/assists/threes/FTA have no matchup data: tactical text only.
@@ -40,12 +40,13 @@ class AdviceEngine:
         team_baselines: Optional[Dict[str, Any]] = None,
         rival_baselines: Optional[Dict[str, Dict[str, Any]]] = None,
         impact_league: Optional[Dict[str, float]] = None,
+        zone_ref: Optional[Dict[str, Any]] = None,
     ) -> None:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
-                        rival_baselines or {}, impact_league or {})
+                        rival_baselines or {}, impact_league or {}, zone_ref or {})
             if own_team_id else None
         )
         self._recommender = Recommender(own_team_id, baselines, cfg) if own_team_id and baselines else None
@@ -61,6 +62,7 @@ class AdviceEngine:
             team_baselines=package.baselines,
             rival_baselines=(package.tables or {}).get("rival_players", {}),
             impact_league=(package.baselines or {}).get("impact_league"),
+            zone_ref=(package.tables or {}).get("zones"),
         )
 
     def analyze(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
