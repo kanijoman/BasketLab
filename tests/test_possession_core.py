@@ -8,7 +8,7 @@ src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from services.possession_core import extract_possession_rows, order_possession_moves
+from src.pbp.possession_core import extract_possession_rows, order_possession_moves
 
 
 def _move(number, team_id, text, action, clock):

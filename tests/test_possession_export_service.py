@@ -45,7 +45,7 @@ def unfiltered_feb_rows(game_data):
     invariants (origin/ending sequencing), which the filtered CSV output is not
     expected to preserve.
     """
-    from src.services.possession_core import extract_possession_rows
+    from src.pbp.possession_core import extract_possession_rows
 
     game_id = str(game_data.get("_id", {}).get("$numberInt", "test"))
     svc = PossessionExportService(game_data, is_fbcyl=False, game_id=game_id)
