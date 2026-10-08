@@ -30,6 +30,11 @@ services:
       - key: ALLOWED_ORIGINS
         sync: false   # set to Vercel URL after first Vercel deploy
 
+      # Protects DELETE collections / scrape / ingest / train. In production the
+      # endpoints answer 503 until this is set. Use the SAME value on both services.
+      - key: ADMIN_API_KEY
+        sync: false
+
       # Prevent OOM during scraping — the dedicated scraper service handles ingestion
       - key: DISABLE_SCRAPING
         value: "1"
@@ -60,3 +65,5 @@ services:
       - key: ALLOWED_ORIGINS
         sync: false   # set to Vercel URL after first deploy
 
+      - key: ADMIN_API_KEY
+        sync: false   # same value as basketlab-api (protects DELETE collections / scrape)

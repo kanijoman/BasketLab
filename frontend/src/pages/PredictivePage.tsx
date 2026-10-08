@@ -27,6 +27,7 @@ import {
   type HistoricalTeamEntry, type BacktestingResult, type GamePredictionResult,
   type PlayerPredictionResult, type SeasonProjectionEntry, type TeamEntry,
 } from '@/api/client'
+import { adminHeaders } from '@/lib/adminKey'
 import { STAT_LABELS } from '@/lib/statLabels'
 import { Loader2, Dices, Target, User, Trophy } from 'lucide-react'
 
@@ -148,9 +149,13 @@ export function ElasticityTab() {
       const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
       const res = await fetch(`${BASE}/analysis/elasticity/train/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminHeaders() },
         body: JSON.stringify({}),
       })
+      if (res.status === 401 || res.status === 503) {
+        const b = await res.json().catch(() => ({}))
+        throw new Error(b.detail ?? 'Se requiere la clave de administración (pestaña Admin)')
+      }
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`)
 
       const reader = res.body.getReader()

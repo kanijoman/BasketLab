@@ -22,6 +22,7 @@ import {
   type HistoricalJob, type HistoricalSummaryEntry,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import AdminKeyField from '@/components/AdminKeyField'
 import { ElasticityTab, ValidationTab } from './PredictivePage'
 
 // ── Simple tabs ───────────────────────────────────────────────────────────────
@@ -664,6 +665,8 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-ink-primary">Administración</h1>
           <p className="text-ink-secondary text-sm mt-1">Gestión de colecciones y descarga de datos</p>
         </div>
+
+        <AdminKeyField />
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-surface-border">

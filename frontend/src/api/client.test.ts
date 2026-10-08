@@ -49,4 +49,39 @@ describe('api client', () => {
     expect(api.getPlayerRankings).toBeUndefined()
     expect(api.getPlayerRadar).toBeUndefined()
   })
+
+  describe('admin key (#115)', () => {
+    afterEach(() => sessionStorage.clear())
+
+    it('sends X-Admin-Key when deleting a collection', async () => {
+      sessionStorage.setItem('basketlab-admin-key', 'k')
+      const api = await loadClient('')
+      await api.deleteCollection('FEB_X')
+      const [url, init] = fetchMock.mock.calls[0]
+      expect(url).toBe('/api/v1/collections/FEB_X')
+      expect(init.method).toBe('DELETE')
+      expect(init.headers).toMatchObject({ 'X-Admin-Key': 'k' })
+    })
+
+    it('sends X-Admin-Key when starting a scrape', async () => {
+      sessionStorage.setItem('basketlab-admin-key', 'k')
+      const api = await loadClient('')
+      await api.postScrapeStart({} as never)
+      expect(fetchMock.mock.calls[0][1].headers).toMatchObject({ 'X-Admin-Key': 'k', 'Content-Type': 'application/json' })
+    })
+
+    it('sends no admin header without a key', async () => {
+      const api = await loadClient('')
+      await api.deleteCollection('FEB_X')
+      expect(fetchMock.mock.calls[0][1].headers ?? {}).not.toHaveProperty('X-Admin-Key')
+    })
+
+    it('shows the server message when the key is missing or wrong', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false, status: 401, json: async () => ({ detail: 'Clave de administración requerida o incorrecta' }),
+      } as Response)
+      const api = await loadClient('')
+      await expect(api.deleteCollection('FEB_X')).rejects.toThrow('Clave de administración')
+    })
+  })
 })

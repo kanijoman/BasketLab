@@ -6,6 +6,7 @@
  * In production set VITE_API_BASE to the FastAPI server URL.
  */
 
+import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -40,7 +41,7 @@ async function scrapeGet<T>(path: string): Promise<T> {
 async function scrapePost<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${SCRAPER_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...adminHeaders() },
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -830,7 +831,7 @@ export const getCollectionList = () =>
   get<CollectionInfo[]>('/collections/list')
 
 export const deleteCollection = (name: string) =>
-  fetch(`${BASE}/collections/${encodeURIComponent(name)}`, { method: 'DELETE' })
+  fetch(`${BASE}/collections/${encodeURIComponent(name)}`, { method: 'DELETE', headers: adminHeaders() })
     .then(res => {
       if (!res.ok) return res.json().then(b => Promise.reject(new Error(b.detail ?? `HTTP ${res.status}`)))
     })

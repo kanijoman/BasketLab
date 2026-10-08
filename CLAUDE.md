@@ -72,6 +72,7 @@ Antes de dar una entrega por terminada y del commit/PR, revisa y **actualiza** (
 def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
     return MyService(db).get_data(collection)
 ```
+- **Endpoints de escritura** (borrar, ingerir, entrenar, persistir): `dependencies=[Depends(require_admin)]` (`src/api/security.py`); si es solo cómputo, añádelo conscientemente a `PUBLIC_WRITE_ROUTES` en `tests/test_admin_auth.py`.
 - Operaciones largas: `BackgroundTasks`, nunca bloquear el event loop. Imports perezosos (`from src.services.x import X` dentro de la función) para dependencias pesadas opcionales.
 - **MongoDB**: NUNCA `list(col.find({}))` y filtrar en Python → filtra en BD / `AggregationPipelineBuilder`. Índices siempre `background=True` y registrados en `IndexManager`.
 - **Posesiones**: `FGA - ORB + TOV + 0.44*FTA`; normalizar `(stat/posesiones)*40`.
