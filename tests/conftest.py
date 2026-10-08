@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import mongomock
+from db_helpers import new_mock_db  # noqa: E402
 import pytest
 
 # Add src/ to Python path so imports work correctly
@@ -65,8 +65,7 @@ def fbcyl_game_doc():
 @pytest.fixture
 def mock_feb_db(feb_game_doc):
     """In-memory MongoDB client with one FEB game inserted."""
-    client = mongomock.MongoClient()
-    db = client["basketlab_test"]
+    db = new_mock_db("basketlab_test")
     db["FEB_LF2_2025_A"].insert_one(dict(feb_game_doc))
     return db
 
@@ -74,8 +73,7 @@ def mock_feb_db(feb_game_doc):
 @pytest.fixture
 def mock_fbcyl_db(fbcyl_game_doc):
     """In-memory MongoDB client with one FBCYL game inserted."""
-    client = mongomock.MongoClient()
-    db = client["basketlab_test"]
+    db = new_mock_db("basketlab_test")
     db["FBCYL_SE_2025_A"].insert_one(dict(fbcyl_game_doc))
     return db
 

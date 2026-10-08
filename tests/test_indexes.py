@@ -12,7 +12,7 @@ Covers:
 import pytest
 from unittest.mock import MagicMock
 
-import mongomock
+from db_helpers import new_mock_db  # noqa: E402
 
 from src.database.indexes import IndexManager
 
@@ -23,8 +23,7 @@ from src.database.indexes import IndexManager
 
 def _make_connection(connected: bool = True, collection_name: str = "FEB_LF2_2025_A"):
     """Return a mock connection wrapping a mongomock collection."""
-    client = mongomock.MongoClient()
-    db = client["test_db"]
+    db = new_mock_db("test_db")
     coll = db[collection_name]
 
     conn = MagicMock()

@@ -8,7 +8,7 @@ Structural tests for get_team_stats / get_player_stats (verify they return lists
 import unittest
 from unittest.mock import MagicMock
 
-import mongomock
+from db_helpers import new_mock_db  # noqa: E402
 import pytest
 
 from src.database.repository import BasketballRepository
@@ -116,8 +116,7 @@ def _fbcyl_doc(uuid="abc123"):
 class TestDocumentExists(unittest.TestCase):
 
     def setUp(self):
-        client = mongomock.MongoClient()
-        self.db = client["test"]
+        self.db = new_mock_db("test")
         self.repo = BasketballRepository(_make_connection(self.db))
 
     def test_returns_false_for_missing_doc(self):
@@ -141,8 +140,7 @@ class TestDocumentExists(unittest.TestCase):
 class TestInsertBoxscore(unittest.TestCase):
 
     def setUp(self):
-        client = mongomock.MongoClient()
-        self.db = client["test"]
+        self.db = new_mock_db("test")
         self.repo = BasketballRepository(_make_connection(self.db))
         self.col = "FEB_LF2_2025_A"
 
@@ -185,8 +183,7 @@ class TestInsertBoxscore(unittest.TestCase):
 class TestInsertFbcylMatch(unittest.TestCase):
 
     def setUp(self):
-        client = mongomock.MongoClient()
-        self.db = client["test"]
+        self.db = new_mock_db("test")
         self.repo = BasketballRepository(_make_connection(self.db))
         self.col = "FBCYL_SE_2025_A"
 
@@ -215,8 +212,7 @@ class TestInsertFbcylMatch(unittest.TestCase):
 class TestGetAllTeams(unittest.TestCase):
 
     def setUp(self):
-        client = mongomock.MongoClient()
-        self.db = client["test"]
+        self.db = new_mock_db("test")
         self.col = "FEB_LF2_2025_A"
         self.repo = BasketballRepository(_make_connection(self.db))
 
@@ -246,8 +242,7 @@ class TestGetTeamStatsStructural(unittest.TestCase):
     """Verify get_team_stats returns a list (even if empty or without full pipeline support)."""
 
     def setUp(self):
-        client = mongomock.MongoClient()
-        self.db = client["test"]
+        self.db = new_mock_db("test")
         self.col = "FEB_LF2_2025_A"
         self.db[self.col].insert_one(_feb_doc(3001))
         self.repo = BasketballRepository(_make_connection(self.db))
@@ -275,8 +270,7 @@ class TestGetTeamStatsStructural(unittest.TestCase):
 class TestGetPlayerStatsStructural(unittest.TestCase):
 
     def setUp(self):
-        client = mongomock.MongoClient()
-        self.db = client["test"]
+        self.db = new_mock_db("test")
         self.col = "FEB_LF2_2025_A"
         self.db[self.col].insert_one(_feb_doc(4001))
         self.repo = BasketballRepository(_make_connection(self.db))
