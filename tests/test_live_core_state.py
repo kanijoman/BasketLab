@@ -227,3 +227,34 @@ def test_closed_stints_are_recorded_with_the_rest_adjusted_length():
 def test_open_stint_is_not_counted_as_done():
     p = _p1(1, "05:00")
     assert p["stints_done"] == 0 and p["stint_sum"] == 0 and p["stint"] == 300
+
+
+def test_per_player_stats_match_the_box_score(feb_game_doc):
+    """Every player's shooting, rebounds, assists, steals, turnovers and blocks equal the official box."""
+    _, snap = _final(feb_game_doc)
+    pairs = {"fg2m": "p2m", "fg2a": "p2a", "fg3m": "p3m", "fg3a": "p3a", "ftm": "p1m", "fta": "p1a",
+             "orb": "ro", "drb": "rd", "ast": "assist", "stl": "st", "tov": "to", "blk": "bs"}
+    for team in feb_game_doc["BOXSCORE"]["TEAM"]:
+        for p in team["PLAYER"]:
+            got = snap["players"].get(p["id"], {}).get("stats", {})
+            for ours, theirs in pairs.items():
+                assert got.get(ours, 0) == int(p.get(theirs) or 0), f"{p['name']} {ours}"
+
+
+def test_player_stats_add_up_to_the_team_stats_except_team_events(feb_game_doc):
+    _, snap = _final(feb_game_doc)
+    for tid, team in snap["teams"].items():
+        mine = [p["stats"] for p in snap["players"].values() if p["team_id"] == tid]
+        for key in ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "ast", "stl", "blk", "tov", "orb", "drb"):
+            assert sum(s[key] for s in mine) == team["stats"][key], key
+
+
+def test_names_are_trimmed_from_the_roster():
+    """FEB box-score names carry trailing spaces; they leak into UI messages otherwise."""
+    doc = _doc(1, "05:00")
+    doc["BOXSCORE"]["TEAM"][0]["PLAYER"][0]["name"] = "UNO PEREZ  "
+    doc["HEADER"]["TEAM"][0]["name"] = "EQUIPO A "
+    snap = LiveEngine().update(doc)
+    assert snap["players"]["P1"]["name"] in ("UNO PEREZ", "UNO")  # roster name or the PBP name
+    assert not snap["players"]["P1"]["name"].endswith(" ")
+    assert snap["teams"]["T1"]["name"] == "EQUIPO A"

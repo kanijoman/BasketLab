@@ -34,6 +34,13 @@ class RuleConfig:
     ff_beta: float = 9.0
     ff_lever_min_pts100: float = 3.0
     ff_lever_rearm_s: int = 600
+    # Recommender: widest role gap accepted, weight of that gap in the ranking, how much the
+    # quintet's rebounding/creation/spacing/interior may drop (sum of z), results per advice.
+    rec_max_role_distance: float = 3.0
+    rec_distance_weight: float = 0.5
+    rec_balance_tolerance: float = 1.5
+    rec_max_results: int = 3
+    rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0
