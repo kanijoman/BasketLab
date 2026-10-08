@@ -41,6 +41,16 @@ class RuleConfig:
     rec_balance_tolerance: float = 1.5
     rec_max_results: int = 3
     rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever
+    # Rival players producing far above their season rate: minutes needed, excess in Poisson
+    # standard deviations over the expected count, and the minimum count per metric.
+    rival_min_seconds: int = 240
+    rival_sigma: float = 2.0
+    rival_min_pts: int = 10
+    rival_min_orb: int = 3
+    rival_min_stl: int = 3
+    rival_min_ast: int = 4
+    rival_min_fg3m: int = 3
+    rival_min_fta: int = 5
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0

@@ -137,3 +137,36 @@ def test_a_player_who_barely_played_is_pulled_towards_the_league(feb_game_doc):
     spread = lambda b: sum(abs(v) for v in b["z"].values())
     assert small["seconds"] < big["seconds"]
     assert spread(small) <= spread(big) + 3  # shrinkage keeps tiny samples near zero
+
+
+# --- impact rates for rival scouting ------------------------------------------------
+
+def test_players_carry_impact_rates_and_the_league_means_are_published(feb_game_doc):
+    from src.live_core.profiles import IMPACT_METRICS
+
+    pkg = _build([feb_game_doc])
+    for base in list(pkg.tables["players"].values()) + list(pkg.tables["rival_players"].values()):
+        assert set(base["impact40"]) == set(IMPACT_METRICS)
+    assert set(pkg.baselines["impact_league"]) == set(IMPACT_METRICS)
+    assert all(v > 0 for v in pkg.baselines["impact_league"].values())
+
+
+def test_a_big_scorer_has_a_higher_impact_rate_than_a_minimal_one(feb_game_doc):
+    pkg = _build([feb_game_doc])
+    rivals = pkg.tables["rival_players"].values()
+    top = max(rivals, key=lambda b: b["seconds"])
+    small = min(rivals, key=lambda b: b["seconds"])
+    assert top["seconds"] > small["seconds"]
+    # shrinkage: little playing time stays near the league mean
+    league = pkg.baselines["impact_league"]
+    assert abs(small["impact40"]["pts"] - league["pts"]) <= abs(top["impact40"]["pts"] - league["pts"]) + league["pts"]
+
+
+def test_rival_package_drives_the_rival_alerts_without_crashing(feb_game_doc):
+    from src.live_core.advice import AdviceEngine
+
+    pkg = _build([feb_game_doc])
+    snap = LiveEngine().update(feb_game_doc)
+    engine = AdviceEngine.from_package(pkg)
+    out = engine.evaluate(snap)
+    assert all(a.evidence["team_id"] == RIVAL for a in out if a.id == "rival_hot_player")

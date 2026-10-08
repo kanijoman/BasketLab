@@ -15,11 +15,17 @@ from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
+from .rules_rival import rival_player_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, run_rule, team_fouls_rule, turnover_rule
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
-RULES: List[Rule] = [foul_rule, team_fouls_rule, run_rule, turnover_rule, fatigue_rule, four_factors_rule]
+RULES: List[Rule] = [foul_rule, team_fouls_rule, run_rule, turnover_rule, fatigue_rule, four_factors_rule,
+                     rival_player_rule]
+
+# Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
+# steals -> ball security. Scoring/assists/threes/FTA have no matchup data: tactical text only.
+_RIVAL_LEVER = {"orb": "def_reb", "stl": "tov"}
 
 __all__ = ["Advice", "AdviceEngine"]
 
@@ -32,11 +38,14 @@ class AdviceEngine:
         baselines: Optional[Dict[str, Dict[str, Any]]] = None,
         config: Optional[RuleConfig] = None,
         team_baselines: Optional[Dict[str, Any]] = None,
+        rival_baselines: Optional[Dict[str, Dict[str, Any]]] = None,
+        impact_league: Optional[Dict[str, float]] = None,
     ) -> None:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._ctx = (
-            RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model)
+            RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
+                        rival_baselines or {}, impact_league or {})
             if own_team_id else None
         )
         self._recommender = Recommender(own_team_id, baselines, cfg) if own_team_id and baselines else None
@@ -50,6 +59,8 @@ class AdviceEngine:
             baselines=(package.tables or {}).get("players", {}),
             config=RuleConfig.from_dict(package.rule_config),
             team_baselines=package.baselines,
+            rival_baselines=(package.tables or {}).get("rival_players", {}),
+            impact_league=(package.baselines or {}).get("impact_league"),
         )
 
     def analyze(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
@@ -80,6 +91,8 @@ class AdviceEngine:
             proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
         elif advice.id == "turnover_streak":
             proposal = self._recommender.suggest_for_lever(snapshot, "tov")
+        elif advice.id == "rival_hot_player" and advice.evidence["metric"] in _RIVAL_LEVER:
+            proposal = self._recommender.suggest_for_lever(snapshot, _RIVAL_LEVER[advice.evidence["metric"]])
         else:
             return advice
         return dataclasses.replace(advice, proposal=proposal)

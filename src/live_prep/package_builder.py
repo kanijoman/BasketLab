@@ -16,8 +16,11 @@ from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, posse
 from src.live_core.package import PreparationPackage
 from src.live_core.profiles import (
     League,
+    impact_league,
+    impact_rates,
     league_distribution,
     raw_rates,
+    shrink_impact,
     shrink_rates,
     z_scores,
 )
@@ -80,13 +83,15 @@ class _PlayerAcc:
         self.stint_sum += p["stint_sum"] + (p["stint"] if p["on_court"] else 0)
         self.stints += p["stints_done"] + (1 if p["on_court"] else 0)
 
-    def baseline(self, league: "League") -> Dict[str, Any]:
+    def baseline(self, league: "League", impact_means: Dict[str, float]) -> Dict[str, Any]:
         total = sum(self.minutes)
         rates = raw_rates(self.stats, total)
         fga = self.stats["fg2a"] + self.stats["fg3a"]
         shrunk = shrink_rates(rates, total, fga, league)
+        impact = shrink_impact(impact_rates(self.stats, total), total, impact_means)
         return {
             "rates": {k: round(v, 3) for k, v in shrunk.items()},
+            "impact40": {k: round(v, 3) for k, v in impact.items()},
             "z": {k: round(v, 3) for k, v in z_scores(shrunk, league).items()},
             "seconds": total, "fga": fga,
             "name": self.name, "team_id": self.team_id, "games": len(self.minutes),
@@ -159,8 +164,13 @@ def build_package(
     league_rates = league_distribution(population)
     baselines["league_rates"] = {m: {k: round(v, 4) for k, v in d.items()} for m, d in league_rates.items()}
 
+    impact_means = impact_league([
+        impact_rates(a.stats, sum(a.minutes)) for a in league_players.values() if sum(a.minutes) >= MIN_LEAGUE_SECONDS
+    ])
+    baselines["impact_league"] = {m: round(v, 3) for m, v in impact_means.items()}
+
     def table(tid: str) -> Dict[str, Dict[str, Any]]:
-        return {pid: acc.baseline(league_rates) for pid, acc in accs[tid].items() if acc.minutes}
+        return {pid: acc.baseline(league_rates, impact_means) for pid, acc in accs[tid].items() if acc.minutes}
 
     return PreparationPackage(
         collection=collection, season=season,
