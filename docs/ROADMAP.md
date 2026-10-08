@@ -11,11 +11,11 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 | Calidad | guarda de ingesta de partidos en curso, extracción de `src/pbp`, tests de docs | — |
 
 ## Pendiente
-1. (#118) **Live con datos reales** (bloqueante): capturar un partido en directo (`status`, refresco, JWT, `ShotChart`) y el HTML del calendario; calibrar umbrales con el staff.
-2. (#119) **Lista de partidos por equipo** (próximos/en curso): parser de calendario sin descartar `*-*`, metadatos de competición por colección (`competition_url`, `season_value`, `group_value`, `year`).
-3. (#120) **App Android independiente** (`apps/live-android/`, Capacitor): motor en Web Worker con Pyodide, FEB por HTTP nativa, paquete desde Drive (cifrado, API key de solo lectura). Probar Pyodide en una tablet real; versión mínima de Android/WebView.
-4. (#121) **Motor de informes por reglas** (sustituye al análisis LLM): registro de reglas sobre stats/cuartiles/consistencia → hallazgos con evidencia → plantillas → PDF/DOCX (`PDFGenerator`, `export-pdf`), reutilizando el patrón `Advice`/`RuleContext` de `live_core`. Debe cubrir "propio equipo" y "scouting rival" que tenía la página de IA.
-5. (#122) **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
+1. **Live con datos reales** (bloqueante): capturar un partido en directo (`status`, refresco, JWT, `ShotChart`) y el HTML del calendario; calibrar umbrales con el staff.
+2. **Lista de partidos por equipo** (próximos/en curso): parser de calendario sin descartar `*-*`, metadatos de competición por colección (`competition_url`, `season_value`, `group_value`, `year`).
+3. **App Android independiente** (`apps/live-android/`, Capacitor): motor en Web Worker con Pyodide, FEB por HTTP nativa, paquete desde Drive (cifrado, API key de solo lectura). Probar Pyodide en una tablet real; versión mínima de Android/WebView.
+4. **Motor de informes por reglas** (sustituye al análisis LLM): registro de reglas sobre stats/cuartiles/consistencia → hallazgos con evidencia → plantillas → PDF/DOCX (`PDFGenerator`, `export-pdf`), reutilizando el patrón `Advice`/`RuleContext` de `live_core`. Debe cubrir "propio equipo" y "scouting rival" que tenía la página de IA.
+5. **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
 6. Optimizador de quintetos, proyección multi-temporada de jugador (ideas antiguas, sin empezar).
 
 ## Deuda técnica (>500 líneas; dividir al tocarlos)
@@ -26,14 +26,5 @@ Otros: shims de `src/pbp` retirables cuando no queden importadores antiguos · l
 ## Límites conocidos
 Esquinas casi vacías en el sistema de 10 zonas (dato de origen) · live solo FEB (FBCYL tiene minutos con precisión de 1 min y tiempo transcurrido) · colecciones pequeñas dan líneas base ruidosas (todo se encoge hacia la media de liga) · sin emparejamientos jugador-vs-jugador.
 
-## Backlog (seguimiento en GitHub Issues; cerrar el issue y quitar la fila al terminar)
-| Id | Ítem | Tamaño |
-|---|---|---|
-| B1 (#110) | Contrato back↔front: `response_model` Pydantic + OpenAPI → tipos TS generados | grande |
-| B2 (#111) | Smoke e2e Playwright contra uvicorn + build, y health-check post-deploy (reutilizable por la app Android) | medio |
-| B3 (#112) | Dividir archivos >500 líneas (lista en Deuda técnica); hacerlo al tocarlos | continuo |
-| B4 (#113) | Tests de páginas del frontend / SSE de `client.ts` (bajo retorno; preferir B2) | medio |
-| B5 (#114) | Retirar shims de `src/pbp` cuando no queden importadores antiguos | pequeño |
-| B6 (#115) | Autenticación de la API (hoy solo protege `/admin` el frontend) | medio |
-| B7 (#116) | Corregir avisos ESLint y promoverlos a `error`; subir `--cov-fail-under` (base 72 %) | pequeño |
-| B8 (#117) | Reemplazar `mongomock.MongoClient()` ad hoc (6 archivos) por fixtures | pequeño |
+## Backlog
+Fuente única: **GitHub Issues** (`gh issue list`). Aquí no se duplica; solo contexto estratégico. Etiquetas: `bug`, `enhancement`, `tech-debt`, `testing`, `live`.
