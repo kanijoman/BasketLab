@@ -11,11 +11,13 @@ from typing import Any, Callable, Dict, List, Optional
 
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
+from .four_factors import FourFactorsModel
+from .rules_four_factors import four_factors_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, run_rule, team_fouls_rule, turnover_rule
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
-RULES: List[Rule] = [foul_rule, team_fouls_rule, run_rule, turnover_rule, fatigue_rule]
+RULES: List[Rule] = [foul_rule, team_fouls_rule, run_rule, turnover_rule, fatigue_rule, four_factors_rule]
 
 __all__ = ["Advice", "AdviceEngine"]
 
@@ -27,10 +29,12 @@ class AdviceEngine:
         rival_team_id: Optional[str] = None,
         baselines: Optional[Dict[str, Dict[str, Any]]] = None,
         config: Optional[RuleConfig] = None,
+        team_baselines: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._own = own_team_id
+        cfg = config or RuleConfig()
+        self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._ctx = (
-            RuleContext(own_team_id, rival_team_id, config or RuleConfig(), baselines or {})
+            RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model)
             if own_team_id else None
         )
         self._last: Dict[str, int] = {}
@@ -42,7 +46,13 @@ class AdviceEngine:
             rival_team_id=str(package.rival["id"]),
             baselines=(package.tables or {}).get("players", {}),
             config=RuleConfig.from_dict(package.rule_config),
+            team_baselines=package.baselines,
         )
+
+    def analyze(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
+        """Non-alert insights for the UI cards (Four Factors, lever, projection)."""
+        result = self._model.evaluate(snapshot) if self._model else None
+        return {"four_factors": result} if result else {}
 
     def evaluate(self, snapshot: Dict[str, Any]) -> List[Advice]:
         if self._ctx is None:

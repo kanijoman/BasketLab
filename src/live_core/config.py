@@ -28,6 +28,17 @@ class RuleConfig:
     fatigue_minutes_full_ratio: float = 1.5    # minutes / expected minutes at this point
     fatigue_projection_full_excess: float = 0.25  # projected minutes above the p90, as a fraction
     fatigue_min_elapsed_s: int = 600           # minutes-based components need this much game
+    # Four Factors (Oliver): enough possessions to trust the game, expected net rating per
+    # unit of the weighted score (placeholder until calibrated), smallest lever worth a call.
+    ff_min_possessions: float = 15.0
+    ff_beta: float = 9.0
+    ff_lever_min_pts100: float = 3.0
+    ff_lever_rearm_s: int = 600
+    # Prior weight (in possessions) of the season expectation per factor.
+    ff_n0_efg: float = 40.0
+    ff_n0_tov: float = 25.0
+    ff_n0_orb: float = 30.0
+    ff_n0_ftr: float = 40.0
 
     @classmethod
     def from_dict(cls, overrides: Optional[Dict[str, Any]]) -> "RuleConfig":

@@ -241,3 +241,70 @@ def test_sample_game_run_is_deterministic(feb_game_doc):
     first = [(a.key, a.severity, a.message) for a in _run_sample(feb_game_doc, own="982047")]
     second = [(a.key, a.severity, a.message) for a in _run_sample(feb_game_doc, own="982047")]
     assert first == second
+
+
+# --- Four Factors lever ------------------------------------------------------------
+
+def _stats(**kw):
+    base = dict(fg2m=20, fg2a=40, fg3m=6, fg3a=20, ftm=10, fta=14, orb=8, drb=25,
+                tov=10, tov_team=0, stl=5, ast=12, blk=2, pts=0)
+    base.update(kw)
+    return base
+
+
+def ff_snap(own, rival, elapsed=1200):
+    s = snap(elapsed=elapsed)
+    s["teams"][OWN]["stats"], s["teams"][RIVAL]["stats"] = own, rival
+    s["score"] = {OWN: 40, RIVAL: 40}
+    return s
+
+
+def test_main_lever_alert_names_the_factor_with_numbers():
+    out = engine().evaluate(ff_snap(_stats(tov=22), _stats()))
+    [a] = [a for a in out if a.id == "four_factors_lever"]
+    assert a.severity == "warning" and a.category == "four_factors"
+    assert a.evidence["lever"] == "tov" and a.evidence["pts100"] <= -3
+    assert "pérdidas" in a.message.lower() and "pts/100" in a.message
+
+
+def test_no_lever_alert_when_the_sample_is_too_small():
+    tiny = _stats(fg2m=2, fg2a=4, fg3m=0, fg3a=1, ftm=0, fta=0, orb=0, drb=2, tov=1)
+    assert "four_factors_lever" not in ids(engine().evaluate(ff_snap(tiny, tiny)))
+
+
+def test_no_lever_alert_when_the_deficit_is_small():
+    assert "four_factors_lever" not in ids(engine().evaluate(ff_snap(_stats(tov=11), _stats())))
+
+
+def test_lever_alert_is_not_repeated_until_it_re_arms():
+    eng = engine()
+    first = ff_snap(_stats(tov=22), _stats(), elapsed=1200)
+    assert "four_factors_lever" in ids(eng.evaluate(first))
+    assert "four_factors_lever" not in ids(eng.evaluate(ff_snap(_stats(tov=22), _stats(), elapsed=1260)))
+    assert "four_factors_lever" in ids(
+        eng.evaluate(ff_snap(_stats(tov=22), _stats(), elapsed=1200 + RuleConfig().ff_lever_rearm_s)))
+
+
+def test_analyze_exposes_the_model_result_for_the_ui():
+    res = engine().analyze(ff_snap(_stats(tov=22), _stats()))
+    assert res["four_factors"]["lever"] == "tov"
+    assert "projection" in res["four_factors"]
+
+
+def test_analyze_without_a_perspective_is_empty():
+    assert AdviceEngine(own_team_id=None).analyze(ff_snap(_stats(), _stats())) == {}
+
+
+def test_engine_built_from_a_package_uses_its_config_and_baselines():
+    from src.live_core.package import PreparationPackage
+
+    def pkg(rule_config):
+        return PreparationPackage(
+            collection="C", season="2025", team={"id": OWN, "name": "A"}, rival={"id": RIVAL, "name": "B"},
+            tables={"players": BASE}, created_at="2026-10-08T00:00:00Z", rule_config=rule_config,
+            baselines={"four_factors_prior": {"tov": 0.0}},
+        )
+
+    assert "four_factors_lever" in ids(AdviceEngine.from_package(pkg({})).evaluate(ff_snap(_stats(tov=22), _stats())))
+    strict = AdviceEngine.from_package(pkg({"ff_lever_min_pts100": 99}))
+    assert "four_factors_lever" not in ids(strict.evaluate(ff_snap(_stats(tov=22), _stats())))

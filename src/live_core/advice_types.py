@@ -28,3 +28,4 @@ class RuleContext:
     rival_team_id: Optional[str]
     config: RuleConfig
     baselines: Dict[str, Dict[str, Any]]   # player id -> season baselines (from the package)
+    model: Optional[Any] = None            # FourFactorsModel (None without a rival)
