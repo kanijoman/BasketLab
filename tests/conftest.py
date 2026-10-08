@@ -128,3 +128,16 @@ def _unwrap_extended_json(obj):
         for i, item in enumerate(obj):
             obj[i] = _unwrap_extended_json(item)
     return obj
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip tests marked ``ml`` when scikit-learn is not installed (runs in CI)."""
+    try:
+        import sklearn  # noqa: F401
+        return
+    except ImportError:
+        pass
+    skip = pytest.mark.skip(reason="scikit-learn not installed")
+    for item in items:
+        if "ml" in item.keywords:
+            item.add_marker(skip)

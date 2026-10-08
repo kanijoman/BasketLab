@@ -24,16 +24,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-${{ hashFiles('requirements.txt') }}
+          key: pip-${{ hashFiles('requirements*.txt') }}
           restore-keys: pip-
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
 
       - name: Run tests
         # Override addopts to skip HTML coverage report in CI (saves ~15s).
         # Use single-quoted override-ini to avoid bash quoting issues.
-        run: python -m pytest tests/ --cov=src --cov-report=term-missing --tb=short -q --override-ini='addopts='
+        run: python -m pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=70 --tb=short -q --override-ini='addopts='
         env:
           # Tests use mongomock — no real DB needed.
           # Set ENVIRONMENT to development so db_config doesn't raise on missing Atlas URL.
@@ -65,6 +65,10 @@ jobs:
       - name: Run tests
         working-directory: frontend
         run: npm run test:run
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
 
   # ── Deploy to Render (backend) ─────────────────────────────────────────────
   deploy-backend:

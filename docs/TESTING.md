@@ -9,9 +9,9 @@ cd frontend && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py       # regenerar vectores live tras cambiar live_core
 cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 ```
-Local sin `scikit-learn`: fallan ~51 tests de ML (`test_backtesting`, `test_game_prediction`, `test_player_prediction`, `test_predictive`, 2 de `test_regression_formulas`); en CI se instala y corren. Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
+Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requirements.txt`). Tests con marker `ml` (`test_backtesting`, `test_game_prediction`, `test_player_prediction`, `test_predictive`, 2 de `test_regression_formulas`) se **saltan** solos sin `scikit-learn`; en CI corren. Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
 
-## Mapa de tests (≈ 94 archivos, ~1.970 tests backend; frontend 7 archivos / 60 tests)
+## Mapa de tests (≈ 95 archivos, 1.986 tests backend, cobertura 72 %; frontend 8 archivos / 64 tests)
 - API (`TestClient`, `dependency_overrides[get_db]`): `test_api*.py`, `test_*_router.py`, `test_integration_api_services.py`, `test_lineups_sse.py`, `test_scraper_endpoints.py`.
 - Servicios y BD con `mongomock` (sin red ni Mongo real): `test_services.py`, `test_rotation_service.py`, `test_repository_*`, `test_pipeline_builder.py`, `test_indexes.py`.
 - PBP/posesiones: `test_possession_*`, `test_playbyplay_analyzer.py`, `test_pbp_*`. Predictivo (necesita sklearn): ver arriba. Informes/export: `test_pdf_generator.py`, `test_weekly_report*`, `test_individual_scouting.py`.
@@ -20,20 +20,20 @@ Local sin `scikit-learn`: fallan ~51 tests de ML (`test_backtesting`, `test_game
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`.
 
 ## CI (`.github/workflows`)
-`ci.yml`: backend (`pytest --cov`, Python 3.11, instala `requirements.txt`), frontend (`npm ci`, type-check, vitest), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
+`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; subir el umbral cuando la cobertura mejore), frontend (`npm ci`, type-check, vitest, `npm run build`), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
 
 ## Evaluación (estado actual) y mejoras
 | Hueco | Prioridad | Estado |
 |---|---|---|
-| Tests de ML fallan en vez de saltarse sin sklearn; dependencias de test mezcladas en `requirements.txt` (Render las instala) | alta, barato | pendiente |
-| Sin `vite build` en CI ni gate de cobertura (no hay línea base fiable; `--cov=src` incluye código legado) | alta, barato | pendiente |
-| Router `rotaciones` sin test (ni SSE); endpoints de `analysis_predictive` sin cubrir | alta | pendiente |
-| Tres páginas (`EvolutionPage`, `ShotChartPage`, y la antigua de IA ya eliminada) llamaban a la API con `fetch` crudo → rompe con `VITE_API_BASE` en producción; `getPlayerRankings/Radar` apuntan a rutas inexistentes | media | pendiente |
-| Frontend: solo componentes sueltos; sin tests de `client.ts` (URLs, errores, SSE) ni de la lógica de las páginas | media | pendiente |
-| Sin **contrato** back↔front (0 `response_model`; tipos TS escritos a mano) | media (más trabajo) | hoja de ruta: modelos Pydantic + OpenAPI → tipos TS |
-| Sin e2e ni smoke contra un servidor real; sin health-check post-deploy | media | hoja de ruta: Playwright contra uvicorn + build |
+| Tests de ML y deps de test mezcladas con runtime | alta | **hecho** (marker `ml`, `requirements-dev.txt`) |
+| Sin `vite build` ni gate de cobertura en CI | alta | **hecho** (build + `--cov-fail-under=70`, base 72 %) |
+| Router `rotaciones` sin test; `analysis_predictive` | alta | **hecho** (`test_rotaciones_router.py`; predictive ya estaba cubierto) |
+| `fetch` crudo en páginas ignoraba `VITE_API_BASE`; `getPlayerRankings/Radar` a rutas inexistentes | media | **hecho** (todo vía `client.ts`; `client.test.ts`) |
+| Frontend: sin tests de páginas ni del SSE de `client.ts` | media | pendiente (bajo retorno; preferir smoke e2e) |
+| Sin **contrato** back↔front (0 `response_model`; tipos TS a mano) | media (más trabajo) | hoja de ruta: modelos Pydantic + OpenAPI → tipos TS |
+| Sin e2e ni smoke contra servidor real; sin health-check post-deploy | media | hoja de ruta: Playwright contra uvicorn + build |
 | `npm run lint` roto (no hay config ESLint) | baja | decidir config antes de añadirlo a CI |
-| `mongomock.MongoClient()` creado ad hoc en ~20 tests pudiendo usar fixtures | baja | — |
+| `mongomock.MongoClient()` ad hoc en ~20 tests pudiendo usar fixtures | baja | — |
 Frontend: compensa testear `client.ts` y helpers puros; testear páginas enteras con mocks rinde poco (mejor un smoke e2e).
 
 ## Marco cloud para la app Android (previsto)

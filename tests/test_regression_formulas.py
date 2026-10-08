@@ -293,6 +293,7 @@ class TestElasticityModelDataQuality:
         assert all(v is not None for v in y)
 
 
+@pytest.mark.ml
 class TestRidgeFitDataQuality:
     """SMOTE-style: _fit_ridge_with_bootstrap handles imbalanced/small datasets."""
 
