@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, Optional, Tuple
 
+from .clock import period_start
 from .events import Event
 
 STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "tov_team",
@@ -19,6 +20,11 @@ STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", 
 _PLAYER_KINDS = {"sub_in", "sub_out", "fg2", "fg3", "ft", "rebound", "turnover", "steal",
                  "assist", "block", "foul"}
 _TEAM_FOUL_TYPES = {"personal", "unsportsmanlike", "technical"}
+
+# Recovery credited to a player who stays on court through a break (game-seconds of the
+# current stint; real minutes are never discounted). Halftime resets the stint completely.
+QUARTER_BREAK_CREDIT_S = 60
+HALFTIME_PERIOD = 3
 
 
 @dataclass
@@ -31,6 +37,9 @@ class _Player:
     pf: int = 0
     pf_by_period: Dict[int, int] = field(default_factory=dict)
     pts: int = 0
+    credit: int = 0  # rest credited to the current stint (see QUARTER_BREAK_CREDIT_S)
+    stints_done: int = 0  # finished stints and their rest-adjusted total length (for baselines)
+    stint_sum: int = 0
 
 
 @dataclass
@@ -55,10 +64,14 @@ class LiveGame:
         self.elapsed = 0
         self.last_num = 0
         self._last_miss_team: Optional[str] = None
+        self._rested_through = 1  # last period whose opening break has been credited
+        # Chronological [elapsed, team_id, kind, value] for runs and streaks: pts, tov, orb.
+        self.log: list = []
 
     # -- event application -------------------------------------------------------
 
     def apply(self, ev: Event) -> None:
+        self._enter_period(ev.period)
         self.period, self.remaining, self.elapsed, self.last_num = ev.period, ev.remaining, ev.elapsed, ev.num
         player = self._player_for(ev)
         team = self.teams.get(ev.team_id) if ev.team_id else None
@@ -83,14 +96,29 @@ class LiveGame:
             player.stint_start = 0 if ev.period == 1 else ev.elapsed
         return player
 
+    def _enter_period(self, period: int) -> None:
+        """Credit the break before ``period`` to players who stay on court through it."""
+        while self._rested_through < period:
+            self._rested_through += 1
+            opening = self._rested_through
+            for player in self.players.values():
+                if not player.on_court:
+                    continue
+                if opening == HALFTIME_PERIOD:
+                    player.credit = max(0, period_start(HALFTIME_PERIOD) - player.stint_start)
+                else:
+                    player.credit += QUARTER_BREAK_CREDIT_S
+
     def _on_sub_in(self, ev: Event, player: Optional[_Player], team) -> None:
         if player and not player.on_court:
-            player.on_court, player.stint_start = True, ev.elapsed
+            player.on_court, player.stint_start, player.credit = True, ev.elapsed, 0
 
     def _on_sub_out(self, ev: Event, player: Optional[_Player], team) -> None:
         if player and player.on_court:
             player.closed += max(0, ev.elapsed - player.stint_start)
-            player.on_court = False
+            player.stints_done += 1
+            player.stint_sum += max(0, ev.elapsed - player.stint_start - player.credit)
+            player.on_court, player.credit = False, 0
 
     def _shot(self, ev: Event, player: Optional[_Player], team: Optional[_Team], made_key: str, att_key: str) -> None:
         if team is None:
@@ -100,6 +128,7 @@ class LiveGame:
             team.stats[made_key] += 1
             team.stats["pts"] += ev.points
             self.score[ev.team_id] += ev.points
+            self.log.append([ev.elapsed, ev.team_id, "pts", ev.points])
             if player:
                 player.pts += ev.points
             if ev.kind != "ft":
@@ -119,7 +148,10 @@ class LiveGame:
     def _on_rebound(self, ev, player, team):
         if team is None:
             return
-        team.stats["orb" if self._last_miss_team == ev.team_id else "drb"] += 1
+        offensive = self._last_miss_team == ev.team_id
+        team.stats["orb" if offensive else "drb"] += 1
+        if offensive:
+            self.log.append([ev.elapsed, ev.team_id, "orb", 1])
         self._last_miss_team = None
 
     def _count(self, key: str, team: Optional[_Team]) -> None:
@@ -130,6 +162,8 @@ class LiveGame:
         # FEB logs team turnovers ("Equipo: PERDIDA") without a player; the official
         # box-score TO column excludes them, so keep them apart (possessions add both).
         self._count("tov" if ev.player_id else "tov_team", team)
+        if team is not None:
+            self.log.append([ev.elapsed, ev.team_id, "tov", 1])
 
     def _on_steal(self, ev, player, team):
         self._count("stl", team)
@@ -158,6 +192,7 @@ class LiveGame:
 
         elapsed = elapsed_seconds(period, remaining)
         if elapsed >= self.elapsed:
+            self._enter_period(period)
             self.period, self.remaining, self.elapsed = period, remaining, elapsed
 
     # -- output -----------------------------------------------------------------
@@ -167,10 +202,12 @@ class LiveGame:
         now = self.elapsed
         players = {}
         for pid, p in self.players.items():
-            stint = max(0, now - p.stint_start) if p.on_court else 0
+            stint = max(0, now - p.stint_start - p.credit) if p.on_court else 0
             players[pid] = {
                 "name": p.name, "team_id": p.team_id, "on_court": p.on_court,
-                "minutes": p.closed + stint, "stint": stint, "pf": p.pf, "pts": p.pts,
+                "minutes": p.closed + (max(0, now - p.stint_start) if p.on_court else 0),
+                "stint": stint, "pf": p.pf, "pts": p.pts,
+                "stints_done": p.stints_done, "stint_sum": p.stint_sum,
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
             }
         teams = {
@@ -184,4 +221,5 @@ class LiveGame:
         return {
             "period": self.period, "remaining": self.remaining, "elapsed": self.elapsed,
             "last_num": self.last_num, "score": dict(self.score), "teams": teams, "players": players,
+            "log": [list(e) for e in self.log],
         }
