@@ -79,6 +79,43 @@ def test_invalid_compare_value_is_422(client):
     assert client.get(f"{URL}?compare=other").status_code == 422
 
 
-def test_fbcyl_returns_empty_even_with_compare(client):
-    r = client.get("/api/v1/shots/FBCYL_U16_2025_A?compare=league")
-    assert r.status_code == 200 and r.json() == []
+def _fbcyl_db():
+    from db_helpers import new_mock_db
+
+    coll = new_mock_db()["FBCYL_U16_2025_A"]
+    pt = lambda x, y: {"xnormalize": x, "ynormalize": y}  # noqa: E731
+    coll.insert_one({"stats": {"teams": [
+        {"teamIdExtern": 1, "players": [{"uuid": "a", "data": {
+            "shootingOfTwoSuccessfulPoint": [pt(11.6, 50.0)] * 8, "shootingOfTwoFailedPoint": [pt(11.6, 50.0)] * 2}}]},
+        {"teamIdExtern": 2, "players": [{"uuid": "b", "data": {
+            "shootingOfTwoSuccessfulPoint": [pt(11.6, 50.0)] * 2, "shootingOfTwoFailedPoint": [pt(11.6, 50.0)] * 8}}]},
+    ]}})
+    db = MagicMock()
+    db.connection.get_collection.return_value = coll
+    return db
+
+
+@pytest.fixture()
+def fbcyl_client():
+    app.dependency_overrides[get_db] = lambda: _fbcyl_db()
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+def test_fbcyl_collections_now_return_zones(fbcyl_client):
+    r = fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=1")
+    zones = _by_zone(r)
+    assert len(zones) == 10 and zones["paint"]["fga"] == 10 and zones["paint"]["fgm"] == 8
+
+
+def test_fbcyl_compare_league_rates_against_all_fbcyl_teams(fbcyl_client):
+    r = fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=1&compare=league")
+    paint = _by_zone(r)["paint"]
+    assert paint["league_pct"] == pytest.approx(50.0) and paint["rating"] == "above"
+    r2 = fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=2&compare=league")
+    assert _by_zone(r2)["paint"]["rating"] == "below"
+
+
+def test_fbcyl_raw_shots_are_returned(fbcyl_client):
+    r = fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A/raw?team_id=1")
+    assert len(r.json()) == 10 and {"x", "y", "made", "zone"} <= set(r.json()[0])

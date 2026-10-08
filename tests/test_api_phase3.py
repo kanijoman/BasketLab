@@ -313,12 +313,12 @@ class TestShotZonesEndpoint:
             assert "fgm" in zone
             assert "fg_pct" in zone
 
-    def test_shots_returns_empty_for_fbcyl(self, client_fbcyl):
-        """FBCYL collection returns an empty list (no shot coordinates)."""
+    def test_shots_returns_10_zones_for_fbcyl(self, client_fbcyl):
+        """FBCYL collections now expose zones too (coordinates come from the player shooting data)."""
         with patch("utils.collection_utils.is_fbcyl", return_value=True):
             resp = client_fbcyl.get(f"{V1}/shots/FBCYL_U16_2025_A")
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert len(resp.json()) == 10
 
     def test_shots_no_negative_fg_pct(self, client):
         """FG% is never negative."""

@@ -14,6 +14,7 @@ Claves raíz: `HEADER, SCOREBOARD, TEAMSTATS, TICKER, OVERVIEW, PLAYBYPLAY, BANN
 Claves: `uuid, moves[], stats` (+ `_league, _gender, _territory, _category, _competition, _season`).
 - **`stats.teams[]`**: `teamIdIntern` (propio del partido), `teamIdExtern` (estable, el que usa la app), `name`, `players[]` (`uuid`, `actorId`, `dorsal`, `timePlayed`, `inOutsList` con precisión de **1 minuto**, `data{…}` con contadores como `shotsOfTwoSuccessful`).
 - **`moves[]`** (cronológico): `idTeam` (**intern**), `actorId`, `actorName`, `move` (texto), `period`, `min`/`sec` = tiempo **TRANSCURRIDO** en el periodo (≠ FEB).
+- **Tiros**: `players[].data.shootingOf{Two,Three}{Successful,Failed}Point[]` con `xnormalize`/`ynormalize` (0-100 %). Verificado con la BD real: todos los tiros de **ambos** equipos caen en una sola mitad (x≈8-43), es decir, ya vienen "plegados" a una media pista; por eso se convierten siempre con `team=0` (el índice de equipo de FEB los espejaría). Zonas/ratings: `shotcharts/fbcyl_zones`.
 - Resolver el id: `_resolve_fbcyl_team_id` (repository_lineup). Live es **solo FEB** por ahora.
 
 ## Convenciones de cálculo

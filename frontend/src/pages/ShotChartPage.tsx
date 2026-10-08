@@ -1,11 +1,11 @@
 /**
  * ShotChartPage — Fase 3
  * Cancha FIBA SVG interactiva con heatmap de zonas por eficiencia.
- * Solo disponible para colecciones FEB (FBCYL no dispone de coordenadas de tiro).
+ * Colecciones FEB (SHOTCHART) y FBCYL (coordenadas por jugador). Colores relativos a la liga.
  */
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Target, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, getShotZones, getShotRaw, getPlayerStats, getPlayerQuartiles, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
@@ -30,13 +30,11 @@ export default function ShotChartPage() {
   const [vizMode, setVizMode] = useState<'zones' | 'scatter' | 'heatmap'>('zones')
   const [shotFilter, setShotFilter] = useState<'all' | 'made' | 'missed'>('all')
 
-  const isFbcyl = collection?.isFbcyl ?? false
-
   // Fetch team list for selector
   const { data: teamList = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', collection?.name],
     queryFn: () => getLiveTeamNames(collection!.name),
-    enabled: Boolean(collection) && !isFbcyl,
+    enabled: Boolean(collection),
     staleTime: 10 * 60_000,
   })
 
@@ -47,7 +45,7 @@ export default function ShotChartPage() {
   const { data: playerList = [] } = useQuery<PlayerStat[]>({
     queryKey: ['shot-player-list', collection?.name],
     queryFn: () => getPlayerStats(collection!.name),
-    enabled: Boolean(collection) && !isFbcyl && Boolean(selectedTeam),
+    enabled: Boolean(collection) && Boolean(selectedTeam),
     staleTime: 10 * 60_000,
   })
 
@@ -55,7 +53,7 @@ export default function ShotChartPage() {
   const { data: playerQuartiles } = useQuery({
     queryKey: ['player-quartiles', collection?.name],
     queryFn: () => getPlayerQuartiles(collection!.name),
-    enabled: Boolean(collection) && !isFbcyl,
+    enabled: Boolean(collection),
     staleTime: 30 * 60_000,
   })
 
@@ -73,7 +71,7 @@ export default function ShotChartPage() {
       viewMode === 'team'
         ? getShotZones(collection!.name, { team_id: selectedTeam || undefined, compare: 'league' })
         : getShotZones(collection!.name, { player: selectedPlayer || undefined, compare: 'league' }),
-    enabled: Boolean(collection) && !isFbcyl && hasFilter,
+    enabled: Boolean(collection) && hasFilter,
     staleTime: 5 * 60_000,
   })
 
@@ -84,7 +82,7 @@ export default function ShotChartPage() {
       viewMode === 'team'
         ? getShotRaw(collection!.name, { team_id: selectedTeam || undefined })
         : getShotRaw(collection!.name, { player: selectedPlayer || undefined }),
-    enabled: Boolean(collection) && !isFbcyl && hasFilter && vizMode !== 'zones',
+    enabled: Boolean(collection) && hasFilter && vizMode !== 'zones',
     staleTime: 5 * 60_000,
   })
 
@@ -123,27 +121,6 @@ export default function ShotChartPage() {
     }
     return selectedTeamName
   }, [viewMode, selectedPlayer, selectedTeamName, playerList])
-
-  if (isFbcyl) {
-    return (
-      <PageTransition>
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-ink-primary">Gráficos de Tiro</h1>
-            <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          <div className="card p-10 flex flex-col items-center gap-3 text-center">
-            <Target className="w-10 h-10 text-ink-secondary opacity-40" />
-            <p className="text-ink-primary font-medium">No disponible para FBCYL</p>
-            <p className="text-ink-secondary text-sm max-w-sm">
-              Las colecciones FBCYL no incluyen coordenadas individuales de tiro.
-              Esta función está disponible únicamente en colecciones FEB.
-            </p>
-          </div>
-        </div>
-      </PageTransition>
-    )
-  }
 
   return (
     <PageTransition>

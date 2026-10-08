@@ -8,7 +8,7 @@ import { useState, useRef, useEffect, RefObject } from 'react'
 import { Download, ChevronDown, FileText, Image, Table } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { prepareCloneForExport } from '@/lib/exportDom'
-import { computePdfSlices } from '@/lib/pdfLayout'
+import { collectBreakPoints, computePdfSlices } from '@/lib/pdfLayout'
 
 export interface ExportOptions {
   /** Filename prefix (without extension) */
@@ -90,12 +90,14 @@ async function downloadPng(ref: RefObject<HTMLElement | SVGElement>, filename: s
 }
 
 // ── PDF export ───────────────────────────────────────────────────────────────
+const PDF_CAPTURE_SCALE = 2
 const PDF_LAYOUT = { pageW: 297, pageH: 210, margin: 14, firstTop: 28 }
 
 /** Add a (possibly very tall) capture across as many pages as needed. */
 async function addPaginatedImage(
   pdf: import('jspdf').jsPDF,
   dataUrl: string,
+  breakPoints: number[] = [],
 ) {
   const img = new window.Image()
   await new Promise<void>((resolve, reject) => {
@@ -103,7 +105,7 @@ async function addPaginatedImage(
     img.onerror = () => reject(new Error('No se pudo leer la captura'))
     img.src = dataUrl
   })
-  const slices = computePdfSlices(img.naturalWidth, img.naturalHeight, PDF_LAYOUT)
+  const slices = computePdfSlices(img.naturalWidth, img.naturalHeight, PDF_LAYOUT, breakPoints)
   const { pageW, margin, pageH } = PDF_LAYOUT
   slices.forEach((sl, i) => {
     if (i > 0) {
@@ -139,6 +141,7 @@ async function downloadPdf(
   if (ref?.current) {
     const el = ref.current
     let dataUrl: string | null = null
+    let breakPoints: number[] = []
 
     if (el instanceof SVGElement) {
       const serializer = new XMLSerializer()
@@ -161,12 +164,14 @@ async function downloadPdf(
     } else {
       const { default: html2canvas } = await import('html2canvas')
       const canvas = await html2canvas(el as HTMLElement, {
-        backgroundColor: '#0D1117', scale: 2, onclone: prepareCloneForExport,
+        backgroundColor: '#0D1117', scale: PDF_CAPTURE_SCALE, onclone: prepareCloneForExport,
       })
       dataUrl = canvas.toDataURL('image/png')
+      // pages end between table rows / cards instead of through them
+      breakPoints = collectBreakPoints(el as HTMLElement, PDF_CAPTURE_SCALE)
     }
 
-    if (dataUrl) await addPaginatedImage(pdf, dataUrl)
+    if (dataUrl) await addPaginatedImage(pdf, dataUrl, breakPoints)
   }
 
   pdf.save(`${filename}.pdf`)

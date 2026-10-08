@@ -14,7 +14,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 1. **Live con datos reales** (bloqueante): capturar un partido en directo (`status`, refresco, JWT, `ShotChart`) y el HTML del calendario; calibrar umbrales con el staff.
 2. **Lista de partidos por equipo** (próximos/en curso): parser de calendario sin descartar `*-*`, metadatos de competición por colección (`competition_url`, `season_value`, `group_value`, `year`).
 3. **App Android independiente** (`apps/live-android/`, Capacitor): motor en Web Worker con Pyodide, FEB por HTTP nativa, paquete desde Drive (cifrado, API key de solo lectura). Probar Pyodide en una tablet real; versión mínima de Android/WebView.
-4. Informes por reglas: v1, zonas, valoración de zonas vs liga y sin mínimo de partidos hechos (épica #145; resta #134). v2 diferida (#146).
+4. Informes por reglas v1 completa (épica #145: zonas vs liga en FEB y FBCYL, sin mínimo de partidos, PDF sin cortes de fila). v2 diferida (#146).
 5. **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
 6. Optimizador de quintetos, proyección multi-temporada de jugador (ideas antiguas, sin empezar).
 
@@ -24,7 +24,7 @@ Frontend: `PredictivePage.tsx` 1419 · `api/client.ts` 1321 · `AdminPage.tsx` 7
 Otros: la API no tiene autenticación · en BDs ya creadas queda el índice antiguo `header_local_team_name_1` (inofensivo; `drop_index` si se quiere limpiar).
 
 ## Límites conocidos
-Esquinas casi vacías en el sistema de 10 zonas (dato de origen) · live solo FEB (FBCYL tiene minutos con precisión de 1 min y tiempo transcurrido) · colecciones pequeñas dan líneas base ruidosas (todo se encoge hacia la media de liga) · sin emparejamientos jugador-vs-jugador · el informe semanal en colecciones FBCYL colorea las zonas con los umbrales fijos antiguos (la base de liga solo existe para FEB).
+Esquinas casi vacías en el sistema de 10 zonas (dato de origen) · live solo FEB (FBCYL tiene minutos con precisión de 1 min y tiempo transcurrido) · colecciones pequeñas dan líneas base ruidosas (todo se encoge hacia la media de liga) · sin emparejamientos jugador-vs-jugador. El scouting individual (DOCX) sigue sin perfil de tiro en FBCYL (solo FEB).
 
 ## Backlog
 Fuente única: **GitHub Issues** (`gh issue list`). Aquí no se duplica; solo contexto estratégico. Etiquetas: `bug`, `enhancement`, `tech-debt`, `testing`, `live`.

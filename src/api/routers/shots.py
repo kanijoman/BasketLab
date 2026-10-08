@@ -35,9 +35,18 @@ from src.shotcharts.feb_zones import (  # noqa: F401  (private aliases kept for 
     extract_shots_feb as _extract_shots_feb,
     stream_zone_counts_feb as _stream_zone_counts_feb,
 )
+from src.shotcharts.fbcyl_zones import extract_shots_fbcyl, stream_zone_counts_fbcyl
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 router = APIRouter()
+
+
+def _readers(collection: str):
+    """(zone counter, shot extractor) for the collection's format (FEB or FBCYL)."""
+    if _is_fbcyl(collection):
+        return stream_zone_counts_fbcyl, extract_shots_fbcyl
+    return _stream_zone_counts_feb, _extract_shots_feb
+
 
 @router.get("/{collection}", summary="Aggregated shot-zone stats for a collection")
 def get_shot_zones(
@@ -50,13 +59,12 @@ def get_shot_zones(
 ) -> List[Dict[str, Any]]:
     """Return shooting percentages by court zone.
 
-    Only FEB collections contain individual shot coordinates.
-    FBCYL collections return an empty list.
+    Works for FEB (``SHOTCHART``) and FBCYL (per-player shooting coordinates).
 
     Args:
         collection: MongoDB collection name.
-        team_id: Optional stable team ID (``HEADER.TEAM.id``).
-        player: Optional player ID filter.
+        team_id: Optional stable team ID (FEB ``HEADER.TEAM.id`` / FBCYL ``teamIdExtern``).
+        player: Optional player ID filter (FEB id / FBCYL uuid).
         compare: ``league`` rates each zone against the league average for that zone.
 
     Returns:
@@ -64,17 +72,15 @@ def get_shot_zones(
         ``fga``, ``fgm``, ``fg_pct`` (+ ``rating``, ``league_pct``, ``delta_pp``,
         ``low_sample`` when ``compare=league``).
     """
-    if _is_fbcyl(collection):
-        return []
-
     try:
+        stream, _ = _readers(collection)
         coll = db.connection.get_collection(collection)
-        accum = _stream_zone_counts_feb(coll, team_id=team_id, player_filter=player)
+        accum = stream(coll, team_id=team_id, player_filter=player)
         zones = _aggregate_zones(accum)
         if compare != "league":
             return zones
         if team_id or player:
-            accum = _stream_zone_counts_feb(coll, team_id=None, player_filter=None)
+            accum = stream(coll, team_id=None, player_filter=None)
         return rate_zones(zones, _aggregate_zones(accum))
     except Exception:
         return []
@@ -90,12 +96,11 @@ def get_shot_raw(
 ) -> List[Dict[str, Any]]:
     """Return individual shot coordinates in FIBA metres.
 
-    Only FEB collections contain individual shot coordinates.
-    FBCYL collections return an empty list.
+    Works for FEB and FBCYL collections.
 
     Args:
         collection: MongoDB collection name.
-        team_id: Optional stable team ID (``HEADER.TEAM.id``).
+        team_id: Optional stable team ID.
         player: Optional player ID filter.
         limit: Maximum shots to return (default 5000, max 10000).
 
@@ -103,12 +108,10 @@ def get_shot_raw(
         List of shot dicts each with ``x`` (0-15), ``y`` (0-14),
         ``made`` (bool) and ``zone`` (str).
     """
-    if _is_fbcyl(collection):
-        return []
-
     try:
+        _, extract = _readers(collection)
         coll = db.connection.get_collection(collection)
-        shots = _extract_shots_feb(coll, team_id=team_id, player_filter=player)
+        shots = extract(coll, team_id=team_id, player_filter=player)
         return [
             {"x": s["x"], "y": s["y"], "made": s["made"], "zone": s["zone"]}
             for s in shots[:limit]

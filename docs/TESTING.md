@@ -11,12 +11,12 @@ cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 ```
 Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requirements.txt`). Tests con marker `ml` (`test_backtesting`, `test_game_prediction`, `test_player_prediction`, `test_predictive`, 2 de `test_regression_formulas`) se **saltan** solos sin `scikit-learn`; en CI corren. Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
 
-## Mapa de tests (≈ 101 archivos, 2.081 tests backend, cobertura ≈72 %; frontend 13 archivos / 87 tests)
+## Mapa de tests (≈ 103 archivos, 2.093 tests backend, cobertura ≈72 %; frontend 14 archivos / 96 tests)
 - API (`TestClient`, `dependency_overrides[get_db]`): `test_api*.py`, `test_*_router.py`, `test_integration_api_services.py`, `test_lineups_sse.py`, `test_scraper_endpoints.py`.
 - Servicios y BD con `mongomock` (sin red ni Mongo real): `test_services.py`, `test_rotation_service.py`, `test_repository_*`, `test_pipeline_builder.py`, `test_indexes.py`.
 - PBP/posesiones: `test_possession_*`, `test_playbyplay_analyzer.py`, `test_pbp_*`. Predictivo (necesita sklearn): ver arriba. Informes/export: `test_pdf_generator.py`, `test_weekly_report*`, `test_individual_scouting.py`.
 - Live: `test_live_core_*`, `test_live_prep_*`, `test_live_vectors.py`, `test_live_pyodide.py` (salta sin Node), frontera de imports sin BD (`test_live_core_boundary.py`).
-- Informes por reglas: `test_report_engine.py` (motor puro), `test_team_report_service_and_api.py` (renderer, servicio, endpoints JSON/PDF). Zonas vs liga: `test_zone_rating.py`, `test_shots_zone_compare.py`, `test_zone_analysis_relative.py`.
+- Informes por reglas: `test_report_engine.py` (motor puro), `test_team_report_service_and_api.py` (renderer, servicio, endpoints JSON/PDF). Zonas vs liga: `test_zone_rating.py`, `test_shots_zone_compare.py`, `test_zone_analysis_relative.py`. FBCYL: `test_fbcyl_zones.py`, `test_fbcyl_zone_pipeline.py`.
 - Guardas: `test_no_llm_dependencies.py`, `test_no_hardcoded_secrets.py`, **`test_docs_consistency.py`** (docs sincronizados con el código).
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`, `tests/db_helpers.py` (`new_mock_db`: única forma de crear una BD mongomock).
 
