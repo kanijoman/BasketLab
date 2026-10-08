@@ -12,7 +12,7 @@ Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**.
 | `src/report_engine` | informes por reglas (sin LLM, funciones puras): `catalog` (estadísticas), `rules` (cuartiles, diferencial vs mediana, CV), `zones` (zonas calientes/frías), `templates` (frases por tema), `engine.build_team_report`, `html_renderer` (para PDF), `config.ReportConfig` (umbrales por confirmar) |
 | `src/live_core` | motor de partido en vivo, biblioteca estándar (corre en la tablet con Pyodide) |
 | `src/live_prep` | generación y cifrado de paquetes de preparación (usa Mongo) |
-| `src/shotcharts` | cancha FIBA, zonas (shapely), visualizadores; `feb_zones` (geometría de 10 zonas + conteo por zona, usado por el router y los informes), `zone_rating` (valoración de zona vs media de liga), `league_zones` (base de liga para los PNG de `ZoneAnalyzer`) |
+| `src/shotcharts` | cancha FIBA, zonas (shapely), visualizadores; `feb_zones` (geometría de 10 zonas + conteo por zona, usado por el router y los informes), `fbcyl_zones` (mismos conteos desde las coordenadas por jugador de FBCYL), `zone_rating` (valoración de zona vs media de liga), `league_zones` (base de liga para los PNG de `ZoneAnalyzer`) |
 | `src/stats` | calculadoras (StatsCalculator, avanzadas, jugador) |
 | `src/utils` | `collection_utils` (`is_fbcyl`), `numeric_utils`, `team_utils` |
 | `src/visualization` | radar chart |

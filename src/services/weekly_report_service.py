@@ -125,7 +125,9 @@ def _extract_shots(
                     uuid   = player.get('uuid', '')
                     pname  = player.get('name', '')
                     data   = player.get('data', {})
-                    common = {'team': str(team_idx), 'player': uuid,
+                    # FBCYL coordinates are already folded into one half court for every team: a
+                    # team index of 1 would mirror them (FEB convention), so always use 0.
+                    common = {'team': '0', 'player': uuid,
                               'player_uuid': uuid, 'player_name': pname}
                     for coord in data.get('shootingOfTwoSuccessfulPoint', []):
                         if isinstance(coord, dict) and 'xnormalize' in coord:
@@ -515,8 +517,8 @@ class WeeklyReportService:
             fig = self._vis.plot_heatmap(shots=shots, title=title, figsize=(10, 10), alpha=0.6)
             zf.writestr(f'{team_prefix}/{safe}_Mapa_Calor.png', fig_to_png(fig))
 
-            league = None if is_fbcyl else league_zone_stats(
-                self._zones, self._db.connection.get_collection(collection))
+            league = league_zone_stats(
+                self._zones, self._db.connection.get_collection(collection), fbcyl=is_fbcyl)
             processed = convert_shots_for_zone_analysis(shots)
             stats_z   = self._zones.analyze_zone_performance(processed)
             fig = self._zones.plot_zone_analysis(
