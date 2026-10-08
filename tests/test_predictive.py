@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
-import mongomock
+from db_helpers import new_mock_db  # noqa: E402
 import numpy as np
 import pytest
 
@@ -470,8 +470,7 @@ class TestPredictWithCI:
 class TestElasticityServiceTrain:
     def _make_service_with_data(self, n_teams=5, n_games=25):
         """Build an ElasticityService backed by mongomock HISTORICAL data."""
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
 
         for i in range(n_teams):
             for rec in _fake_historical_records(f"team-{i}", n_games, start_net=i * 2.0):
@@ -491,8 +490,7 @@ class TestElasticityServiceTrain:
         assert len(result) > 0
 
     def test_train_no_data_returns_error(self):
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
         conn = MagicMock()
         conn.is_connected.return_value = True
         conn.get_collection.side_effect = lambda name: db[name]
@@ -523,8 +521,7 @@ class TestElasticityServiceTrain:
 
 class TestMonteCarloService:
     def _make_service_with_historical(self, n_teams=4, n_games=30):
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
         for i in range(n_teams):
             for rec in _fake_historical_records(f"team-{i}", n_games, start_net=i * 2.0):
                 db["HISTORICAL"].insert_one(rec)
@@ -550,8 +547,7 @@ class TestMonteCarloService:
             assert 0.0 <= game["win_prob"] <= 1.0
 
     def test_no_historical_returns_error(self):
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
         for rec in _fake_model_docs():
             db["ELASTICITIES"].insert_one(rec)
         conn = MagicMock()
@@ -563,8 +559,7 @@ class TestMonteCarloService:
         assert "error" in result
 
     def test_no_models_returns_error(self):
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
         for rec in _fake_historical_records("team-X", 20):
             db["HISTORICAL"].insert_one(rec)
         # No ELASTICITIES docs
@@ -630,8 +625,7 @@ class TestMonteCarloRegressions:
 
     def _make_service(self, net_rtg_mean: float = 4.0) -> object:
         import mongomock
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
         for i in range(3):
             for rec in _fake_historical_records(f"team-{i}", 25, start_net=net_rtg_mean):
                 db["HISTORICAL"].insert_one(rec)
@@ -721,8 +715,7 @@ def api_client_analysis(feb_game_doc):
     from src.api.app import app
     from src.api.deps import get_db
 
-    client = mongomock.MongoClient()
-    db_mock = client["basketlab_test"]
+    db_mock = new_mock_db("basketlab_test")
     db_mock["FEB_LF2_2025_A"].insert_one(dict(feb_game_doc))
 
     conn_mock = MagicMock()

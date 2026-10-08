@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import mongomock
+from db_helpers import new_mock_db  # noqa: E402
 import pytest
 
 # Ensure src/ is on path
@@ -282,8 +282,7 @@ class TestParseDate:
 
 class TestHistoricalRepository:
     def setup_method(self):
-        client = mongomock.MongoClient()
-        self.db = client["basketlab_test"]
+        self.db = new_mock_db("basketlab_test")
         self.conn = _make_mock_connection(self.db)
         self.repo = HistoricalRepository(self.conn)
 
@@ -385,8 +384,7 @@ def api_client():
     from src.api.app import app
     from src.api.deps import get_db
 
-    client = mongomock.MongoClient()
-    db_mock = client["basketlab_test"]
+    db_mock = new_mock_db("basketlab_test")
     conn_mock = _make_mock_connection(db_mock)
 
     handler = MagicMock()

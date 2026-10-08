@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import mongomock
+from db_helpers import new_mock_db
 
 from src.database.indexes import IndexManager
 from src.utils.time_utils import utc_now_naive
@@ -20,8 +20,7 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 
 
 def test_feb_team_name_index_uses_header_team_name_regression():
-    client = mongomock.MongoClient()
-    coll = client["db"]["FEB_LF2_2025_A"]
+    coll = new_mock_db("db")["FEB_LF2_2025_A"]
     conn = MagicMock()
     conn.is_connected.return_value = True
     conn.get_collection.return_value = coll

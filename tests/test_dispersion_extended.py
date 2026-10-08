@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import mongomock
+from db_helpers import new_mock_db  # noqa: E402
 import pytest
 
 # Ensure src/ is on the path
@@ -96,8 +96,7 @@ def _fbcyl_game(team_a_name: str, team_b_name: str,
 
 def _make_fbcyl_db_with_games(n: int, collection: str = "FBCYL_SE_2025_A") -> MagicMock:
     """Insert n near-identical FBCYL games into a mongomock/mock handler."""
-    client = mongomock.MongoClient()
-    db = client["basketlab_test"]
+    db = new_mock_db("basketlab_test")
     for i in range(n):
         doc = _fbcyl_game("Equipo A", "Equipo B",
                           a_pts=60 + i, b_pts=55 + i,
@@ -508,8 +507,7 @@ class TestPhantomPlayerFilterRegression:
     """
 
     def _run_player_per_game(self, doc: dict, collection: str = "FBCYL_SE_2025_A"):
-        client = mongomock.MongoClient()
-        db = client["basketlab_test"]
+        db = new_mock_db("basketlab_test")
         db[collection].insert_one(doc)
         pipeline = build_fbcyl_player_per_game_pipeline()
         return list(db[collection].aggregate(pipeline))
@@ -551,8 +549,7 @@ def consistency_api_client(feb_game_doc):
     from src.api.app import app
     from src.api.deps import get_db
 
-    client = mongomock.MongoClient()
-    db_mock = client["basketlab_test"]
+    db_mock = new_mock_db("basketlab_test")
     db_mock["FEB_LF2_2025_A"].insert_one(dict(feb_game_doc))
 
     conn_mock = MagicMock()
