@@ -13,6 +13,7 @@ Sin LLMs externos (eliminados): los informes automáticos serán por reglas, ver
 | [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md) | parseas FEB/FBCYL, play-by-play, SHOTCHART, campos |
 | [docs/LIVE.md](docs/LIVE.md) | `src/live_core`, `live_prep`, `pbp`, scraper en vivo, vectores Pyodide |
 | [docs/TESTING.md](docs/TESTING.md) | escribes/ejecutas tests, CI, cobertura, checklist manual |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Render/Vercel, variables de entorno, `ADMIN_API_KEY` (guía para activarla), errores 401/503 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | fases, pendientes, deuda técnica, límites conocidos |
 
 ## ❌ TDD ES OBLIGATORIO — NUNCA SALTAR ESTE PASO
