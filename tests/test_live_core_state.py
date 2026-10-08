@@ -152,3 +152,62 @@ def test_current_stint_grows_for_players_on_court(feb_game_doc):
     on_court = [p for p in snap["players"].values() if p["on_court"]]
     assert on_court and all(p["stint"] > 0 for p in on_court)
     assert all(p["minutes"] >= p["stint"] for p in on_court)
+
+
+def test_event_log_feeds_runs_and_streaks(feb_game_doc):
+    """[elapsed, team_id, kind, value]: scoring, turnovers (player + team) and offensive rebounds."""
+    _, snap = _final(feb_game_doc)
+    log = snap["log"]
+    assert log == sorted(log, key=lambda e: e[0]), "log must be chronological"
+    for tid, team in snap["teams"].items():
+        s = team["stats"]
+        assert sum(v for t, team_id, k, v in [(e[0], e[1], e[2], e[3]) for e in log] if team_id == tid and k == "pts") == s["pts"]
+        assert sum(1 for e in log if e[1] == tid and e[2] == "tov") == s["tov"] + s["tov_team"]
+        assert sum(1 for e in log if e[1] == tid and e[2] == "orb") == s["orb"]
+
+
+# --- rest between periods ----------------------------------------------------------
+
+def _doc(quarter, clock):
+    """P1 (team T1) is a starter that never leaves the court; one early event reveals him."""
+    line = {"num": "1", "quarter": "1", "time": "09:00", "idTeam": "T1", "idPlayer": "P1",
+            "action": "shoot", "text": "(A) UNO: TIRO DE 2 FALLADO", "deleted": None}
+    return {
+        "HEADER": {"TEAM": [{"id": "T1", "name": "A", "pts": "0"}, {"id": "T2", "name": "B", "pts": "0"}],
+                   "quarter": str(quarter), "time": clock, "status": "2"},
+        "BOXSCORE": {"TEAM": [{"id": "T1", "PLAYER": [{"id": "P1", "name": "UNO"}]},
+                              {"id": "T2", "PLAYER": []}]},
+        "PLAYBYPLAY": {"LINES": [line]},
+    }
+
+
+def _p1(quarter, clock):
+    return LiveEngine().update(_doc(quarter, clock))["players"]["P1"]
+
+
+def test_minutes_are_never_discounted_for_rest():
+    assert _p1(3, "09:30")["minutes"] == 1230
+
+
+def test_quarter_break_gives_partial_recovery_to_the_current_stint():
+    # Q2 starts at 600 s of play; the 2-minute break credits 60 s.
+    assert _p1(1, "05:00")["stint"] == 300
+    assert _p1(2, "08:00")["stint"] == 720 - 60
+
+
+def test_halftime_resets_the_stint_completely():
+    assert _p1(3, "09:30")["stint"] == 30
+    # Q4: 600 s of the second half minus the Q3->Q4 break credit.
+    assert _p1(4, "09:00")["stint"] == 660 - 60
+
+
+def test_a_player_who_re_enters_after_the_break_starts_a_fresh_stint():
+    doc = _doc(2, "08:00")
+    doc["PLAYBYPLAY"]["LINES"] += [
+        {"num": "2", "quarter": "2", "time": "09:50", "idTeam": "T1", "idPlayer": "P1", "action": "subst",
+         "text": "(A) UNO: Sustitución (Sale de pista)", "deleted": None},
+        {"num": "3", "quarter": "2", "time": "09:00", "idTeam": "T1", "idPlayer": "P1", "action": "subst",
+         "text": "(A) UNO: Sustitución (Entra a pista)", "deleted": None},
+    ]
+    p = LiveEngine().update(doc)["players"]["P1"]
+    assert p["on_court"] and p["stint"] == 60  # in at 09:00 -> 60 s until 08:00, no credit
