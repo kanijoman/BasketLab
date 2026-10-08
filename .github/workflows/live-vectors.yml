@@ -1,0 +1,65 @@
+name: Live engine (vectors + Pyodide)
+
+# The live engine (src/live_core) is standard-library Python that runs on the Android tablet
+# inside Pyodide. These checks keep the Python reference, the committed test vectors and the
+# Pyodide runtime in agreement.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/live_core/**"
+      - "src/live_prep/**"
+      - "tests/live_vectors/**"
+      - "tests/live_helpers.py"
+      - "tests/pyodide/**"
+      - "tests/test_live_*.py"
+      - ".github/workflows/live-vectors.yml"
+  pull_request:
+    paths:
+      - "src/live_core/**"
+      - "src/live_prep/**"
+      - "tests/live_vectors/**"
+      - "tests/live_helpers.py"
+      - "tests/pyodide/**"
+      - "tests/test_live_*.py"
+      - ".github/workflows/live-vectors.yml"
+
+jobs:
+  vectors:
+    name: Vectors (CPython reference + Pyodide)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tests/pyodide/package-lock.json
+
+      - name: Install test tooling (live_core needs nothing else)
+        run: python -m pip install pytest
+
+      - name: Committed vectors are up to date with the reference
+        run: |
+          python tests/live_vectors/generate.py
+          git diff --exit-code -- tests/live_vectors/vectors.json
+
+      - name: Reference tests (no conftest: live_core is standard library only)
+        run: |
+          python -m pytest tests/test_live_vectors.py tests/test_live_core_boundary.py \
+            --noconftest -o addopts="" -q
+
+      - name: Install Pyodide runner
+        working-directory: tests/pyodide
+        run: npm ci
+
+      - name: Vectors inside Pyodide
+        working-directory: tests/pyodide
+        run: node run_vectors.mjs

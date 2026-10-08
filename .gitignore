@@ -96,3 +96,6 @@ frontend/dist/
 frontend/.vite/
 frontend/.env.local
 frontend/.env.*.local
+
+# Pyodide vector runner
+tests/pyodide/node_modules/
