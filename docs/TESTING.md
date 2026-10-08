@@ -20,7 +20,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`, `tests/db_helpers.py` (`new_mock_db`: única forma de crear una BD mongomock).
 
 ## CI (`.github/workflows`)
-`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; subir el umbral cuando la cobertura mejore), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
+`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; base medida 71,8 %; subir el umbral solo cuando la cobertura mejore de forma estable), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
 
 ## Evaluación (estado actual) y mejoras
 | Hueco | Prioridad | Estado |
@@ -32,7 +32,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 | Frontend: sin tests de páginas ni del SSE de `client.ts` | media | pendiente (bajo retorno; preferir smoke e2e) |
 | Sin **contrato** back↔front (0 `response_model`; tipos TS a mano) | media (más trabajo) | hoja de ruta: modelos Pydantic + OpenAPI → tipos TS |
 | Sin e2e ni smoke contra servidor real; sin health-check post-deploy | media | hoja de ruta: Playwright contra uvicorn + build |
-| `npm run lint` roto (no había config) | baja | **hecho** (`eslint.config.js`, en CI: errores fallan, 6 avisos pendientes → B7) |
+| `npm run lint` roto (no había config) | baja | **hecho** (`eslint.config.js`, `--max-warnings 0` en CI: sin avisos) |
 | `mongomock.MongoClient()` ad hoc en ~20 tests | baja | **hecho** (`tests/db_helpers.new_mock_db`, vigilado por `test_mongomock_usage.py`) |
 Frontend: compensa testear `client.ts` y helpers puros; testear páginas enteras con mocks rinde poco (mejor un smoke e2e).
 

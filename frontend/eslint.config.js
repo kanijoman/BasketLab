@@ -12,13 +12,10 @@ export default tseslint.config(
     plugins: { 'react-hooks': reactHooks },
     rules: {
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/exhaustive-deps': 'error',
       // Non-breaking spaces are intentional in UI strings.
       'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true, skipJSXText: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
-      // Known debt, tracked in docs/ROADMAP.md: fix then promote to error.
-      '@typescript-eslint/no-unused-expressions': 'warn',
-      '@typescript-eslint/ban-ts-comment': 'warn',
     },
   },
 )

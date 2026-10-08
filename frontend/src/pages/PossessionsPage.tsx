@@ -295,7 +295,6 @@ function ScatterCard({ xKey, yKey, xLabel, yLabel, description, data, mode }: Sc
           {medY > 0 && <ReferenceLine y={medY} stroke="#555" strokeDasharray="5 4" />}
           <Scatter
             data={data}
-            // @ts-ignore — recharts shape prop accepts render function
             shape={(props: DotProps) => <TeamLogoDot {...props} />}
           />
         </ScatterChart>
