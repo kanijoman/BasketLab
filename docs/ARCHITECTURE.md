@@ -43,4 +43,4 @@ Vite + React + TS + TanStack Query + Tailwind + Recharts/D3; `api/client.ts` (to
 Código y tests importan `src.x` y, a veces, `x` (con `src/` en `sys.path`). `src/database/playbyplay_core.py`, `src/database/_pbp_event_helpers.py` y `src/services/possession_core.py` son **shims** que reexportan `src/pbp/*` (mismos objetos; `tests/test_pbp_shims.py`). `tests/conftest.py` limpia cachés bajo ambos alias.
 
 ## Deuda conocida de arquitectura
-`src/database/indexes.py` indexa `HEADER.localTeam.teamName`, campo que no existe en documentos FEB (usan `HEADER.TEAM[]`). Más en [ROADMAP.md](ROADMAP.md).
+Ver [ROADMAP.md](ROADMAP.md).

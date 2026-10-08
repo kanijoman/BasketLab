@@ -149,8 +149,8 @@ class IndexManager:
 
             # Index 5: Team name for name-based lookups
             collection.create_index(
-                [("HEADER.localTeam.teamName", pymongo.ASCENDING)],
-                name="header_local_team_name_1",
+                [("HEADER.TEAM.name", pymongo.ASCENDING)],
+                name="header_team_name_1",
                 background=True
             )
 

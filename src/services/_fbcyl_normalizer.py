@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from src.utils.time_utils import utc_now_naive
 from typing import Any, Dict, List, Optional
 
 from utils.numeric_utils import safe_int
@@ -142,7 +143,7 @@ def normalize_fbcyl_match(
             "diff_oreb_100": round(diff_oreb_100, 3),
             "diff_ftr": round(diff_ftr, 3),
             "source_collection": source_collection,
-            "scraped_at": scraped_at or datetime.utcnow(),
+            "scraped_at": scraped_at or utc_now_naive(),
         }
         docs.append(hdoc)
     return docs

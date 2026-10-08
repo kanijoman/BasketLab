@@ -50,7 +50,9 @@ describe('cn', () => {
   })
 
   it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden')).not.toContain('hidden')
-    expect(cn('base', true && 'visible')).toContain('visible')
+    const hide: boolean = Boolean(0)
+    const show: boolean = Boolean(1)
+    expect(cn('base', hide && 'hidden')).not.toContain('hidden')
+    expect(cn('base', show && 'visible')).toContain('visible')
   })
 })
