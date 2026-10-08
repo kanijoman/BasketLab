@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, RefObject } from 'react'
 import { Download, ChevronDown, FileText, Image, Table } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { prepareCloneForExport } from '@/lib/exportDom'
+import { computePdfSlices } from '@/lib/pdfLayout'
 
 export interface ExportOptions {
   /** Filename prefix (without extension) */
@@ -89,6 +90,35 @@ async function downloadPng(ref: RefObject<HTMLElement | SVGElement>, filename: s
 }
 
 // ── PDF export ───────────────────────────────────────────────────────────────
+const PDF_LAYOUT = { pageW: 297, pageH: 210, margin: 14, firstTop: 28 }
+
+/** Add a (possibly very tall) capture across as many pages as needed. */
+async function addPaginatedImage(
+  pdf: import('jspdf').jsPDF,
+  dataUrl: string,
+) {
+  const img = new window.Image()
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = () => reject(new Error('No se pudo leer la captura'))
+    img.src = dataUrl
+  })
+  const slices = computePdfSlices(img.naturalWidth, img.naturalHeight, PDF_LAYOUT)
+  const { pageW, margin, pageH } = PDF_LAYOUT
+  slices.forEach((sl, i) => {
+    if (i > 0) {
+      pdf.addPage()
+      pdf.setFillColor(13, 17, 23)
+      pdf.rect(0, 0, pageW, pageH, 'F')
+    }
+    const c = document.createElement('canvas')
+    c.width = img.naturalWidth
+    c.height = Math.max(1, Math.round(sl.srcH))
+    c.getContext('2d')!.drawImage(img, 0, sl.srcY, img.naturalWidth, sl.srcH, 0, 0, c.width, c.height)
+    pdf.addImage(c.toDataURL('image/png'), 'PNG', margin, sl.destY, pageW - 2 * margin, sl.destH)
+  })
+}
+
 async function downloadPdf(
   ref: RefObject<HTMLElement | SVGElement> | undefined,
   title: string,
@@ -136,9 +166,7 @@ async function downloadPdf(
       dataUrl = canvas.toDataURL('image/png')
     }
 
-    if (dataUrl) {
-      pdf.addImage(dataUrl, 'PNG', 14, 28, 269, 0)
-    }
+    if (dataUrl) await addPaginatedImage(pdf, dataUrl)
   }
 
   pdf.save(`${filename}.pdf`)
