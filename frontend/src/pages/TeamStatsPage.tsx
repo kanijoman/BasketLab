@@ -350,7 +350,7 @@ export default function TeamStatsPage() {
   const ownCV:   CVMap | null = consistencyRaw?.own   ?? null
   const rivalCV: CVMap | null = consistencyRaw?.rival ?? null
 
-  const teamRows    = statsData?.team_stats ?? []
+  const teamRows    = useMemo(() => statsData?.team_stats ?? [], [statsData])
   const rivalRows   = statsData?.opponent_stats ?? []
 
   // Map team name → full-season row for comparison

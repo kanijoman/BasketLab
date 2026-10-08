@@ -69,19 +69,20 @@ export default function CollectionHub() {
   const [loading, setLoading] = useState(true)
   const [highlights, setHighlights] = useState<Highlights | null>(null)
 
+  const collectionName = collection?.name
   useEffect(() => {
-    if (!collection) return
+    if (!collectionName) return
     setLoading(true)
     Promise.all([
-      getTeamStats(collection.name),
-      getPlayerStats(collection.name),
+      getTeamStats(collectionName),
+      getPlayerStats(collectionName),
     ])
       .then(([teamData, playerData]) => {
         setHighlights(deriveHighlights(teamData.team_stats, playerData))
       })
       .catch(() => setHighlights(null))
       .finally(() => setLoading(false))
-  }, [collection?.name])
+  }, [collectionName])
 
   const goTo = (subPath: string) => navigateTo(subPath)
 

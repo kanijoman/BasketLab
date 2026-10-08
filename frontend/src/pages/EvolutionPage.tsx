@@ -2,7 +2,7 @@
  * EvolutionPage — Fase 3
  * Evolución temporal de métricas con Recharts multi-equipo/multi-stat + rolling average + brush zoom.
  */
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import {
   ResponsiveContainer,
@@ -142,7 +142,10 @@ export default function EvolutionPage() {
   })
 
   // Helper: resolve display name from ID
-  const teamName = (id: string) => teamList.find(t => t.id === id)?.name ?? id
+  const teamName = useCallback(
+    (id: string) => teamList.find(t => t.id === id)?.name ?? id,
+    [teamList],
+  )
 
   // Fetch evolution data for each selected team in parallel
   const evolutionQueries = useQueries({
@@ -187,7 +190,7 @@ export default function EvolutionPage() {
     if (showCompetitionRolling)    cols.push({ key: 'comp_rolling',    label: `Liga (media ${rollingWindow}J)` })
     if (showCompetitionCumulative) cols.push({ key: 'comp_cumulative', label: 'Liga (acumulado)' })
     return cols
-  }, [selectedTeams, showRaw, showRolling, showCumulative, showCompetitionRolling, showCompetitionCumulative, rollingWindow])
+  }, [selectedTeams, showRaw, showRolling, showCumulative, showCompetitionRolling, showCompetitionCumulative, rollingWindow, teamName])
 
   function toggleTeam(team: string) {
     setSelectedTeams(prev =>

@@ -461,7 +461,8 @@ function HistoricalTab() {
   function toggleSeason(value: string) {
     setChecked(prev => {
       const next = new Set(prev)
-      next.has(value) ? next.delete(value) : next.add(value)
+      if (next.has(value)) next.delete(value)
+      else next.add(value)
       return next
     })
   }

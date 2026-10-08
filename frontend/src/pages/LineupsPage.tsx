@@ -210,8 +210,8 @@ export default function LineupsPage() {
 
   // Cap topN to avoid top/bottom overlap
   const n = Math.min(topN, Math.floor(lineups.length / 2))
-  const topRows = lineups.slice(0, n)
-  const bottomRows = lineups.length > n ? lineups.slice(-n) : []
+  const topRows = useMemo(() => lineups.slice(0, n), [lineups, n])
+  const bottomRows = useMemo(() => (lineups.length > n ? lineups.slice(-n) : []), [lineups, n])
 
   // Reference values for the "Dif." column
   const topRef = topRows[0]?.[activeStat] as number | undefined
