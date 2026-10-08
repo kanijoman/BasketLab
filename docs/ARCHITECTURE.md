@@ -9,17 +9,17 @@ Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**.
 | `src/database` | conexión, repositorios, pipelines de agregación, índices |
 | `src/scraper` | clientes FEB/FBCYL: token JWT, API, calendario HTML |
 | `src/pbp` | parsers de play-by-play y posesiones **sin BD** (los reutiliza el motor live) |
-| `src/report_engine` | informes por reglas (sin LLM, funciones puras): `catalog` (estadísticas), `rules` (cuartiles, diferencial vs mediana, CV), `templates` (frases por tema), `engine.build_team_report`, `html_renderer` (para PDF), `config.ReportConfig` (umbrales por confirmar) |
+| `src/report_engine` | informes por reglas (sin LLM, funciones puras): `catalog` (estadísticas), `rules` (cuartiles, diferencial vs mediana, CV), `zones` (zonas calientes/frías), `templates` (frases por tema), `engine.build_team_report`, `html_renderer` (para PDF), `config.ReportConfig` (umbrales por confirmar) |
 | `src/live_core` | motor de partido en vivo, biblioteca estándar (corre en la tablet con Pyodide) |
 | `src/live_prep` | generación y cifrado de paquetes de preparación (usa Mongo) |
-| `src/shotcharts` | cancha FIBA, zonas (shapely), visualizadores |
+| `src/shotcharts` | cancha FIBA, zonas (shapely), visualizadores; `feb_zones` (geometría de 10 zonas + conteo por zona, usado por el router y los informes), `zone_rating` (valoración de zona vs media de liga), `league_zones` (base de liga para los PNG de `ZoneAnalyzer`) |
 | `src/stats` | calculadoras (StatsCalculator, avanzadas, jugador) |
 | `src/utils` | `collection_utils` (`is_fbcyl`), `numeric_utils`, `team_utils` |
 | `src/visualization` | radar chart |
 `src/JSON_samples/` = documentos reales de ejemplo (FEB y FBCYL) para tests.
 
 ## Routers (`src/api/routers`, prefijo `/api/v1/<x>`)
-`collections` · `teams` · `players` (incluye IN/OUT y `together`) · `lineups` (REST + SSE `/stream`) · `scrape` (también en el servicio scraper) · `shots` · `possessions` · `team_report` (informe automático por reglas JSON/PDF, modos `own`/`rival`; en `/reports/team-report/{collection}`) · `reports` (informe semanal ZIP, PDF/DOCX, `export-pdf`, `individual-scouting/docx`) · `historical` · `analysis` + `analysis_predictive` (ambos bajo `/analysis`: ajuste por rival, elasticidades, Monte Carlo, backtesting, predicción) · `matches` · `multi_phase` (`/multi`) · `rotaciones` (REST + SSE). La API **no tiene autenticación** (el frontend protege `/admin` con `AuthContext`/`PrivateRoute`).
+`collections` · `teams` · `players` (incluye IN/OUT y `together`) · `lineups` (REST + SSE `/stream`) · `scrape` (también en el servicio scraper) · `shots` (zonas; `?compare=league` añade `rating`/`league_pct`/`delta_pp`/`low_sample`) · `possessions` · `team_report` (informe automático por reglas JSON/PDF, modos `own`/`rival`; en `/reports/team-report/{collection}`) · `reports` (informe semanal ZIP, PDF/DOCX, `export-pdf`, `individual-scouting/docx`) · `historical` · `analysis` + `analysis_predictive` (ambos bajo `/analysis`: ajuste por rival, elasticidades, Monte Carlo, backtesting, predicción) · `matches` · `multi_phase` (`/multi`) · `rotaciones` (REST + SSE). La API **no tiene autenticación** (el frontend protege `/admin` con `AuthContext`/`PrivateRoute`).
 
 ## Servicios (`src/services`)
 - Stats: `team_stats_service`, `player_stats_service`, `evolution_service`, `match_analysis_service`, `multi_phase_service`, `lineup_service`, `rotation_service`, `rival_adjusted_service`, `collection_service`, `_consistency_calculator`.
@@ -34,7 +34,7 @@ Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**.
 - Calculadoras PBP de BD: `inout_calculator`, `lineup_extractor`, `lineup_stats_calculator`, `possession_analyzer`.
 
 ## Frontend (`frontend/src`)
-Vite + React + TS + TanStack Query + Tailwind + Recharts/D3; `api/client.ts` (todas las llamadas; `BASE` = `VITE_API_BASE`+`/api/v1`, scraper = `VITE_SCRAPER_BASE`), SSE con `EventSource` en lineups y rotaciones, `context/` (`CollectionContext`, `AuthContext`), `components/ui` (StatCard, FilterBar, DataTable, ExportButton…), `lib/` (utils, statLabels, exportDom). Rutas `/:collection/{teams,players,evolution,shots,rankings,report,team-report,possessions,inout,lineups,rotaciones,…}` y `/admin`. Proxy dev `/api` → `localhost:8000`.
+Vite + React + TS + TanStack Query + Tailwind + Recharts/D3; `api/client.ts` (todas las llamadas; `BASE` = `VITE_API_BASE`+`/api/v1`, scraper = `VITE_SCRAPER_BASE`), SSE con `EventSource` en lineups y rotaciones, `context/` (`CollectionContext`, `AuthContext`), `components/ui` (StatCard, FilterBar, DataTable, ExportButton…), `lib/` (utils, statLabels, exportDom, pdfLayout, zoneRating). Rutas `/:collection/{teams,players,evolution,shots,rankings,report,team-report,possessions,inout,lineups,rotaciones,…}` y `/admin`. Proxy dev `/api` → `localhost:8000`.
 
 ## Despliegue y config
 - `render.yaml`: `basketlab-api` (`python run_api.py`, `DISABLE_SCRAPING=1`) y `basketlab-scraper` (`python run_scraper.py`), plan free, Frankfurt. Frontend en Vercel (`vercel.json`: rewrite SPA). CI (`.github/workflows/ci.yml`): tests + deploy hook de Render en push a `main`.

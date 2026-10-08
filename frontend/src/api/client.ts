@@ -6,6 +6,8 @@
  * In production set VITE_API_BASE to the FastAPI server URL.
  */
 
+import type { ZoneRating } from '@/lib/zoneRating'
+
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 /** For API modules split out of this (already oversized) file. */
 export const API_BASE = BASE
@@ -394,9 +396,10 @@ export function streamRotacionesAnalysis(
 
 export const getShotZones = (
   collection: string,
-  params: { team_id?: string; player?: string },
+  params: { team_id?: string; player?: string; compare?: 'league' },
 ) => {
   const qs = new URLSearchParams()
+  if (params.compare) qs.set('compare', params.compare)
   if (params.team_id) qs.set('team_id', params.team_id)
   if (params.player)  qs.set('player', params.player)
   return get<ShotZoneData[]>(`/shots/${encodeURIComponent(collection)}?${qs}`)
@@ -761,6 +764,12 @@ export interface ShotZoneData {
   fgm: number
   fg_pct: number
   polygon?: [number, number][]
+  /** Present with `compare=league`: rating against the league average of this zone. */
+  rating?: ZoneRating
+  league_pct?: number | null
+  delta_pp?: number | null
+  /** True when there are too few attempts for the rating to be reliable. */
+  low_sample?: boolean
 }
 
 /** Individual shot coordinate for scatter/heatmap modes. */

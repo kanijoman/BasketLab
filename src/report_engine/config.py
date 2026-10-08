@@ -9,8 +9,11 @@ class ReportConfig:
     # coefficient of variation (%) above / below which a stat is (in)consistent
     cv_inconsistent: float = 30.0
     cv_consistent: float = 15.0
-    # minimum number of games behind a CV to trust it
-    min_games_cv: int = 5
+    # a CV needs at least 2 games (1 game has no variability); no other minimum, so the
+    # report is useful from the first matchdays
+    min_games_cv: int = 2
+    # below this many games everything is flagged as low reliability (early season)
+    low_sample_games: int = 5
     max_training_items: int = 5
     max_tactics: int = 6
     # rival game plan: items per kind (neutralize / exploit)

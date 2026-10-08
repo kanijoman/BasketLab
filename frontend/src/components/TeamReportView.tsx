@@ -1,7 +1,7 @@
 /** Presentational view of a rule-based team report. */
 import type { ReactNode } from 'react'
 import Badge from '@/components/ui/Badge'
-import type { ReportAction, ReportFinding, TeamReport } from '@/api/teamReport'
+import type { ReportAction, ReportFinding, ReportZone, TeamReport } from '@/api/teamReport'
 
 const TITLES = {
   own: {
@@ -45,6 +45,27 @@ function Findings({ rows, variant }: { rows: ReportFinding[]; variant: 'brand' |
   )
 }
 
+const UNRELIABLE = 'poco fiable (muestra pequeña)'
+
+function Zones({ rows }: { rows: ReportZone[] }) {
+  if (!rows.length) return <Empty />
+  return (
+    <ul className="space-y-2">
+      {rows.map(z => (
+        <li key={z.zone} className="text-sm text-ink-secondary">
+          <Badge variant={z.kind === 'hot' ? 'brand' : 'red'} className="mr-2">{z.kind === 'hot' ? 'Caliente' : 'Fría'}</Badge>
+          <span className="font-medium text-ink-primary">{z.label}: {z.fg_pct?.toFixed(0)}% en {z.fga} tiros</span>
+          <span className="ml-1 text-xs">
+            (liga {z.league_pct?.toFixed(0)}%, {(z.delta_pp ?? 0) > 0 ? '+' : ''}{z.delta_pp?.toFixed(1)} pp)
+            {z.low_sample && <> · {UNRELIABLE}</>}
+          </span>
+          <p className="mt-0.5">{z.text}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function Actions({ rows }: { rows: ReportAction[] }) {
   if (!rows.length) return <p className="text-sm text-ink-secondary">Sin recomendaciones destacadas.</p>
   return (
@@ -68,6 +89,12 @@ export default function TeamReportView({ report }: { report: TeamReport }) {
       <p className="text-sm text-ink-secondary">
         {report.games_played} partidos analizados · comparado con los cuartiles de la competición.
       </p>
+      {report.low_sample && (
+        <p className="text-sm text-warn">
+          Aviso: muestra pequeña ({report.games_played} partidos). Los resultados son orientativos y pueden cambiar
+          mucho en las próximas jornadas.
+        </p>
+      )}
       <Section title="Perfil de equipo">
         {report.profile.length
           ? <ul className="list-disc ml-5 text-sm text-ink-secondary space-y-1">{report.profile.map(p => <li key={p}>{p}</li>)}</ul>
@@ -87,6 +114,7 @@ export default function TeamReportView({ report }: { report: TeamReport }) {
           </ul>
         ) : <Empty />}
       </Section>
+      <Section title="Zonas de tiro"><Zones rows={report.zones} /></Section>
       <Section title="Consistencia partido a partido">
         {report.consistency.length ? (
           <ul className="space-y-1 text-sm text-ink-secondary">
@@ -96,6 +124,7 @@ export default function TeamReportView({ report }: { report: TeamReport }) {
                   {c.status === 'inconsistent' ? 'Inconsistente' : 'Consistente'}
                 </Badge>
                 {c.label} (CV {c.cv.toFixed(0)}%). {c.text}
+                {c.low_sample && <span className="text-xs"> · {UNRELIABLE}</span>}
               </li>
             ))}
           </ul>

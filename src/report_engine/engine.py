@@ -2,6 +2,7 @@
 from typing import Any, Dict, List, Optional
 
 from . import rules
+from .zones import zone_findings
 from .config import ReportConfig
 from .templates import FLIP, THEMES
 
@@ -85,22 +86,29 @@ def build_team_report(
     consistency_map: Optional[Dict[str, Any]],
     mode: str = "own",
     config: Optional[ReportConfig] = None,
+    zones: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
-    """Rule-based report for ``team`` (``mode``: ``own`` analysis or ``rival`` scouting)."""
+    """Rule-based report for ``team`` (``mode``: ``own`` analysis or ``rival`` scouting).
+
+    ``zones`` are zone rows already rated against the league (``shotcharts.zone_rating``).
+    """
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
     cfg = config or ReportConfig()
     stats, quartiles = team_stats or {}, quartiles or {}
     found = rules.quartile_findings(stats, quartiles, mode)
     strengths, weaknesses = found["strength"], found["weakness"]
+    games = int(stats.get("total_games") or stats.get("games_played") or 0)
     return {
         "team": team,
         "mode": mode,
-        "games_played": int(stats.get("total_games") or stats.get("games_played") or 0),
+        "games_played": games,
+        "low_sample": games < cfg.low_sample_games,
         "strengths": strengths,
         "weaknesses": weaknesses,
         "differentials": rules.differentials(stats, quartiles, cfg),
         "consistency": rules.consistency(consistency_map, mode, cfg),
+        "zones": zone_findings(zones, mode),
         "profile": _profile(stats, quartiles),
         "tactics": _tactics(strengths, weaknesses, mode, cfg),
         "training": _training(strengths, weaknesses, mode, cfg),

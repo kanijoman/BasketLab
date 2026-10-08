@@ -24,6 +24,10 @@ from .data_loaders import load_feb_game_data
 from .court_renderer import CourtRenderer
 
 
+# Colours of the league-relative rating (above / average / below the league's zone average)
+RATING_COLORS = {'above': '#2E9E4F', 'average': '#E0A800', 'below': '#D64545'}
+
+
 class ZoneAnalyzer:
     """Analyzes shot data by court zones with performance visualization."""
 
@@ -123,6 +127,17 @@ class ZoneAnalyzer:
         hex_color = f"#{int(rgba_color[0]*255):02x}{int(rgba_color[1]*255):02x}{int(rgba_color[2]*255):02x}"
 
         return hex_color, 0.8
+
+    @staticmethod
+    def get_relative_color(zone: Dict, league_zone: Optional[Dict]) -> Tuple[str, float]:
+        """Colour for a zone rated against the league's average in that zone."""
+        from src.shotcharts.zone_rating import rate_zone
+
+        ref = league_zone or {}
+        rating = rate_zone(zone['made'], zone['total'], ref.get('made', 0), ref.get('total', 0))['rating']
+        if rating in RATING_COLORS:
+            return RATING_COLORS[rating], 0.8
+        return '#E0E0E0', 0.5  # no data (unknown league baseline)
 
     def calculate_optimal_label_positions(self, zone_stats: Dict) -> Dict[str, Tuple[float, float]]:
         """
@@ -245,7 +260,8 @@ class ZoneAnalyzer:
         }
 
     def plot_zone_analysis(self, stats: Dict, title: str = "Zone Performance Analysis",
-                          figsize: Tuple[int, int] = (12, 10)) -> plt.Figure:
+                          figsize: Tuple[int, int] = (12, 10),
+                          league_stats: Optional[Dict] = None) -> plt.Figure:
         """
         Create visualization of zone performance with color coding and optimized label positioning.
 
@@ -257,6 +273,10 @@ class ZoneAnalyzer:
             Plot title
         figsize : Tuple[int, int]
             Figure size
+        league_stats : Dict, optional
+            League ``zone_stats`` (same structure). When given, zones are coloured as
+            above / around / below the league average for that zone instead of the
+            legacy fixed thresholds.
 
         Returns:
         --------
@@ -288,7 +308,10 @@ class ZoneAnalyzer:
             if stats_data['total'] > 0:
                 # Zone has shots - color by basketball-realistic performance
                 percentage = stats_data['percentage']
-                color, alpha = self.get_performance_color(percentage, zone_points)
+                if league_stats is not None:
+                    color, alpha = self.get_relative_color(stats_data, league_stats.get(zone_key))
+                else:
+                    color, alpha = self.get_performance_color(percentage, zone_points)
 
                 # Get optimized label position
                 label_x, label_y = label_positions[zone_key]
@@ -326,6 +349,9 @@ class ZoneAnalyzer:
         # Draw court elements using unified renderer
         self.court_renderer.draw_court_elements(ax, line_color='black', line_width=2, zorder=10)
 
+        if league_stats is not None:
+            self._add_rating_legend(ax)
+
         # Set title only
         if title:
             ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
@@ -342,6 +368,14 @@ class ZoneAnalyzer:
 
         plt.tight_layout()
         return fig
+
+    @staticmethod
+    def _add_rating_legend(ax) -> None:
+        from matplotlib.patches import Patch
+
+        names = {'above': 'Por encima de la liga', 'average': 'En el promedio', 'below': 'Por debajo de la liga'}
+        ax.legend(handles=[Patch(facecolor=c, label=names[k]) for k, c in RATING_COLORS.items()],
+                  loc='lower center', ncol=3, fontsize=8, frameon=True, bbox_to_anchor=(0.5, -0.04))
 
     def print_zone_summary(self, stats: Dict):
         """Print detailed zone performance summary with basketball context."""
