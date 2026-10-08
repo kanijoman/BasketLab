@@ -6,7 +6,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 |---|---|---|
 | Limpieza | capa de escritorio PyQt eliminada (FASE 0); LLMs externos eliminados | — |
 | Predictivo | ajuste por rival · elasticidades Ridge (modelos A/B) · Monte Carlo · backtesting walk-forward · clasificador victoria/derrota (logística + Platt) · predicción por jugador · proyección de clasificación | `src/services/*_service.py`, `analysis*.py` |
-| Informes | informe semanal (ZIP de PNG), scouting individual DOCX (sin IA), export PDF | `reports.py`, `weekly_report_service`, `individual_scouting_service` |
+| Informes | informe semanal (ZIP de PNG), scouting individual DOCX (sin IA), export PDF, **informe de equipo por reglas** (propio/rival, JSON+PDF, página `team-report`) | `reports.py`, `team_report.py`, `src/report_engine`, `weekly_report_service`, `individual_scouting_service` |
 | Live (motor) | estado incremental, alertas, Four Factors, recomendador, alertas del rival (jugador y zonas), paquete cifrado, vectores Python↔Pyodide | `src/live_core`, `src/live_prep` |
 | Calidad | guarda de ingesta de partidos en curso, extracción de `src/pbp`, tests de docs | — |
 
@@ -14,7 +14,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 1. **Live con datos reales** (bloqueante): capturar un partido en directo (`status`, refresco, JWT, `ShotChart`) y el HTML del calendario; calibrar umbrales con el staff.
 2. **Lista de partidos por equipo** (próximos/en curso): parser de calendario sin descartar `*-*`, metadatos de competición por colección (`competition_url`, `season_value`, `group_value`, `year`).
 3. **App Android independiente** (`apps/live-android/`, Capacitor): motor en Web Worker con Pyodide, FEB por HTTP nativa, paquete desde Drive (cifrado, API key de solo lectura). Probar Pyodide en una tablet real; versión mínima de Android/WebView.
-4. **Motor de informes por reglas** (sustituye al análisis LLM): registro de reglas sobre stats/cuartiles/consistencia → hallazgos con evidencia → plantillas → PDF/DOCX (`PDFGenerator`, `export-pdf`), reutilizando el patrón `Advice`/`RuleContext` de `live_core`. Debe cubrir "propio equipo" y "scouting rival" que tenía la página de IA.
+4. Informes por reglas v1 hecho (#121, #126). Pendiente en issues: zonas de tiro, umbrales configurables, informes de jugador.
 5. **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
 6. Optimizador de quintetos, proyección multi-temporada de jugador (ideas antiguas, sin empezar).
 
