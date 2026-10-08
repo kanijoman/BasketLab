@@ -41,6 +41,25 @@ class RuleConfig:
     rec_balance_tolerance: float = 1.5
     rec_max_results: int = 3
     rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever
+    # Rival players producing far above their season rate: minutes needed, excess in Poisson
+    # standard deviations over the expected count, and the minimum count per metric.
+    rival_min_seconds: int = 240
+    rival_sigma: float = 2.0
+    rival_min_pts: int = 10
+    rival_min_orb: int = 3
+    rival_min_stl: int = 3
+    rival_min_ast: int = 4
+    rival_min_fg3m: int = 3
+    rival_min_fta: int = 5
+    # Rival shot zones (by family): attempts/makes and points-per-shot excess for the efficiency
+    # alert; attempts, share and share excess for the volume alert; prior weight in attempts.
+    zone_min_attempts: int = 5
+    zone_min_makes: int = 3
+    zone_pps_excess: float = 0.5
+    zone_min_share_attempts: int = 8
+    zone_share: float = 0.35
+    zone_share_excess: float = 0.15
+    zone_shrink_n0: float = 20.0
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0

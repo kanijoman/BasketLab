@@ -22,6 +22,7 @@ LEVER_METRIC = {
     "orb": ("orb40", 1.0, "el rebote ofensivo"),
     "efg": ("efg", 1.0, "el acierto de tiro"),
     "ftr": ("ftr", 1.0, "los tiros libres"),
+    "def_reb": ("drb40", 1.0, "el rebote defensivo"),
 }
 
 _CLAIM_GAIN = 0.2  # below this the lever gain is noise: do not mention it

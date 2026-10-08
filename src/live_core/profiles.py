@@ -85,3 +85,36 @@ def league_distribution(players: List[Dict[str, float]]) -> Dict[str, Dict[str, 
 def role_distance(a: Dict[str, float], b: Dict[str, float]) -> float:
     """Euclidean distance between two z-profiles over the role dimensions."""
     return math.sqrt(sum((a[d] - b[d]) ** 2 for d in ROLE_DIMS))
+
+
+# --- impact rates (rival scouting: who is producing far above their usual) ------------
+
+IMPACT_METRICS = ("pts", "orb", "stl", "ast", "fg3m", "fta")
+
+# Per-40 league means used when the league population is too small (placeholders).
+DEFAULT_IMPACT_LEAGUE: Dict[str, float] = {
+    "pts": 14.0, "orb": 1.5, "stl": 1.4, "ast": 3.5, "fg3m": 1.7, "fta": 3.5,
+}
+
+
+def impact_rates(stats: Dict[str, int], seconds: float) -> Optional[Dict[str, float]]:
+    """Per-40 production (points, offensive rebounds, steals, assists, threes made, FTA)."""
+    if seconds <= 0:
+        return None
+    scale = GAME_SECONDS / seconds
+    points = 2 * stats["fg2m"] + 3 * stats["fg3m"] + stats["ftm"]
+    return {"pts": points * scale, "orb": stats["orb"] * scale, "stl": stats["stl"] * scale,
+            "ast": stats["ast"] * scale, "fg3m": stats["fg3m"] * scale, "fta": stats["fta"] * scale}
+
+
+def shrink_impact(rates: Dict[str, float], seconds: float, league: Dict[str, float]) -> Dict[str, float]:
+    """Blend a player's per-40 production with the league mean by playing time."""
+    w = seconds / (seconds + SHRINK_SECONDS) if seconds > 0 else 0.0
+    return {m: w * rates[m] + (1 - w) * league[m] for m in IMPACT_METRICS}
+
+
+def impact_league(players: List[Dict[str, float]]) -> Dict[str, float]:
+    """League mean per metric (defaults when there are too few players)."""
+    if len(players) < MIN_PLAYERS_FOR_DISTRIBUTION:
+        return dict(DEFAULT_IMPACT_LEAGUE)
+    return {m: sum(p[m] for p in players) / len(players) for m in IMPACT_METRICS}

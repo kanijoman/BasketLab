@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .clock import parse_clock
 from .events import Event, parse_line
+from .shots import ShotTracker
 from .state import LiveGame
 
 
@@ -40,6 +41,7 @@ class LiveEngine:
 
     def _reset(self) -> None:
         self._game: Optional[LiveGame] = None
+        self._shots: Optional[ShotTracker] = None
         self._applied: Set[int] = set()
         self._deleted: Set[int] = set()
 
@@ -58,13 +60,16 @@ class LiveEngine:
         self._deleted = deleted_now
 
         if self._game is None:
-            self._game = LiveGame(_teams(doc), _roster(doc))
+            teams = _teams(doc)
+            self._game = LiveGame(teams, _roster(doc))
+            self._shots = ShotTracker([tid for tid, _ in teams])
         for event in live:
             if event.num not in self._applied:
                 self._game.apply(event)
                 self._applied.add(event.num)
         self._sync_clock(doc)
-        return self._game.snapshot()
+        self._shots.update(doc.get("SHOTCHART"))
+        return {**self._game.snapshot(), "zones": self._shots.snapshot()}
 
     def _sync_clock(self, doc: Dict[str, Any]) -> None:
         """The header is fresher than the last event; "FINAL" and the like are ignored."""

@@ -29,3 +29,6 @@ class RuleContext:
     config: RuleConfig
     baselines: Dict[str, Dict[str, Any]]   # player id -> season baselines (from the package)
     model: Optional[Any] = None            # FourFactorsModel (None without a rival)
+    rival_baselines: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # rival player id -> baselines
+    impact_league: Dict[str, float] = field(default_factory=dict)             # league per-40 means
+    zone_ref: Dict[str, Any] = field(default_factory=dict)                    # {"rival": {zone: cell}, "league": {...}}

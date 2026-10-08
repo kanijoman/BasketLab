@@ -10,7 +10,7 @@ import copy
 import time
 from typing import Any, Callable, Dict, Optional
 
-from .clock import elapsed_seconds
+from .clock import elapsed_seconds, parse_clock
 from .events import parse_line
 
 LIVE_STATUS = "2"
@@ -21,6 +21,20 @@ _TEAM_FIELDS = ("id", "name", "logo", "teamCode", "clubCode")
 
 def _clock_text(remaining: int) -> str:
     return f"{remaining // 60:02d}:{remaining % 60:02d}"
+
+
+def _cut_shotchart(feed: Any, cut: int) -> Any:
+    """Shots up to the clock ("t" is time remaining); the final per-team stats are dropped."""
+    if not isinstance(feed, dict) or not isinstance(feed.get("SHOTS"), list):
+        return []
+    kept = []
+    for shot in feed["SHOTS"]:
+        try:
+            if elapsed_seconds(int(shot["quarter"]), parse_clock(shot["t"])) <= cut:
+                kept.append(copy.deepcopy(shot))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return {"quarters": feed.get("quarters"), "duration": feed.get("duration"), "TEAM": [], "SHOTS": kept}
 
 
 def truncate_doc(doc: Dict[str, Any], period: int, remaining: int) -> Dict[str, Any]:
@@ -54,7 +68,7 @@ def truncate_doc(doc: Dict[str, Any], period: int, remaining: int) -> Dict[str, 
             for team in doc["BOXSCORE"]["TEAM"]
         ]
     }
-    out["SHOTCHART"] = []
+    out["SHOTCHART"] = _cut_shotchart(doc.get("SHOTCHART"), cut)
     for key in ("SCOREBOARD", "TEAMSTATS", "TICKER", "OVERVIEW", "BANNER", "RANKING"):
         out.pop(key, None)
     return out
