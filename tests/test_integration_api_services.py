@@ -2,12 +2,11 @@
 
 Tests the full API → Service → (mocked) Repository chain using FastAPI TestClient.
 Covers three router modules with low/medium coverage:
-  - ai.py (59% → +15%)     : SSE stream, export-pdf, individual-scouting/docx
+  - reports.py (PDF export, individual scouting DOCX)
   - reports.py (partial)   : weekly-report job lifecycle, progress, download
   - collections + teams    : end-to-end pagination, dependency chain
 
-INTEGRATION pattern: TestClient with ``app.dependency_overrides[get_db]``;
-AI provider calls patched with unittest.mock to avoid real network calls.
+INTEGRATION pattern: TestClient with ``app.dependency_overrides[get_db]``.
 """
 
 from __future__ import annotations
@@ -74,11 +73,11 @@ def _make_team_stat(name: str = "Alpha FC", ppg: float = 78.0) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# AI Router integration tests
+# Reports router: PDF export + individual scouting DOCX
 # ---------------------------------------------------------------------------
 
-class TestAIExportPDF:
-    """Integration: POST /api/v1/ai/export-pdf covers PDFGenerator pipeline."""
+class TestExportPDF:
+    """Integration: POST /api/v1/reports/export-pdf covers PDFGenerator pipeline."""
 
     @pytest.fixture(autouse=True)
     def setup_client(self):
@@ -96,7 +95,7 @@ class TestAIExportPDF:
         app.dependency_overrides.clear()
 
     def test_export_pdf_returns_200(self, client):
-        r = client.post(f"{V1}/ai/export-pdf", json={
+        r = client.post(f"{V1}/reports/export-pdf", json={
             "html": "<p>Análisis del equipo Alpha FC</p>",
             "team": "Alpha FC",
             "analysis_type": "own",
@@ -104,88 +103,39 @@ class TestAIExportPDF:
         assert r.status_code == 200
 
     def test_export_pdf_content_type_is_pdf(self, client):
-        r = client.post(f"{V1}/ai/export-pdf", json={
+        r = client.post(f"{V1}/reports/export-pdf", json={
             "html": "<p>Stats</p>",
             "team": "Beta BC",
         })
         assert "pdf" in r.headers.get("content-type", "")
 
     def test_export_pdf_body_is_non_empty(self, client):
-        r = client.post(f"{V1}/ai/export-pdf", json={
+        r = client.post(f"{V1}/reports/export-pdf", json={
             "html": "<h1>Alpha FC</h1><p>PPG: 78.5</p>",
             "team": "Alpha FC",
         })
         assert len(r.content) > 0
 
     def test_export_pdf_empty_html(self, client):
-        r = client.post(f"{V1}/ai/export-pdf", json={"html": "", "team": ""})
+        r = client.post(f"{V1}/reports/export-pdf", json={"html": "", "team": ""})
         assert r.status_code == 200
 
     def test_export_pdf_with_emojis_no_500(self, client):
-        r = client.post(f"{V1}/ai/export-pdf", json={
+        r = client.post(f"{V1}/reports/export-pdf", json={
             "html": "<p>🔥 Fortaleza ⚠️ Aviso ✅ OK</p>",
             "team": "Alpha FC",
         })
         assert r.status_code == 200
 
     def test_export_pdf_content_disposition_header(self, client):
-        r = client.post(f"{V1}/ai/export-pdf", json={
+        r = client.post(f"{V1}/reports/export-pdf", json={
             "html": "<p>Text</p>", "team": "Alpha FC",
         })
         assert "attachment" in r.headers.get("content-disposition", "")
 
 
-class TestAIStreamEndpoint:
-    """Integration: GET /api/v1/ai/analyze/stream with mocked AI provider."""
-
-    @pytest.fixture
-    def client_with_team(self):
-        db = _make_mock_db(
-            team_stats=[_make_team_stat("Alpha FC")],
-            league_stats={"avg_points": 74.0},
-        )
-
-        # Mock TeamStatsService.get_consistency to avoid DB calls
-        def _mock_get_consistency(coll):
-            return {"own": {"Alpha FC": {"cv_ppg": 8.5}}}
-
-        with patch("src.services.team_stats_service.TeamStatsService.get_consistency",
-                   side_effect=_mock_get_consistency):
-            app.dependency_overrides[get_db] = lambda: db
-            yield TestClient(app)
-            app.dependency_overrides.clear()
-
-    def test_stream_no_api_key_returns_error_event(self, client_with_team):
-        """Without a configured API key, SSE emits error JSON."""
-        with patch("src.ai.config.AnalysisConfig.has_api_key", return_value=False):
-            r = client_with_team.get(
-                f"{V1}/ai/analyze/stream",
-                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC",
-                        "provider": "groq"},
-            )
-        # SSE returns 200 but body contains error data
-        assert r.status_code == 200
-        assert "error" in r.text
-
-    def test_stream_returns_200(self, client_with_team):
-        with patch("src.ai.config.AnalysisConfig.has_api_key", return_value=False):
-            r = client_with_team.get(
-                f"{V1}/ai/analyze/stream",
-                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
-            )
-        assert r.status_code == 200
-
-    def test_stream_content_type_sse(self, client_with_team):
-        with patch("src.ai.config.AnalysisConfig.has_api_key", return_value=False):
-            r = client_with_team.get(
-                f"{V1}/ai/analyze/stream",
-                params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
-            )
-        assert "text/event-stream" in r.headers.get("content-type", "")
-
-
-class TestAIIndividualScoutingDocx:
-    """Integration: GET /api/v1/ai/individual-scouting/docx."""
+class TestIndividualScoutingDocx:
+    """Integration: GET /api/v1/reports/individual-scouting/docx."""
 
     @pytest.fixture
     def client(self):
@@ -199,7 +149,7 @@ class TestAIIndividualScoutingDocx:
         with patch("src.services.individual_scouting_service.IndividualScoutingDocxBuilder") as MockBuilder:
             MockBuilder.return_value.build.return_value = None
             r = client.get(
-                f"{V1}/ai/individual-scouting/docx",
+                f"{V1}/reports/individual-scouting/docx",
                 params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 404
@@ -209,7 +159,7 @@ class TestAIIndividualScoutingDocx:
         with patch("src.services.individual_scouting_service.IndividualScoutingDocxBuilder") as MockBuilder:
             MockBuilder.return_value.build.return_value = docx_fake
             r = client.get(
-                f"{V1}/ai/individual-scouting/docx",
+                f"{V1}/reports/individual-scouting/docx",
                 params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 200
@@ -219,7 +169,7 @@ class TestAIIndividualScoutingDocx:
         with patch("src.services.individual_scouting_service.IndividualScoutingDocxBuilder") as MockBuilder:
             MockBuilder.return_value.build.return_value = docx_fake
             r = client.get(
-                f"{V1}/ai/individual-scouting/docx",
+                f"{V1}/reports/individual-scouting/docx",
                 params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert "wordprocessingml" in r.headers.get("content-type", "")
@@ -228,7 +178,7 @@ class TestAIIndividualScoutingDocx:
         with patch("src.services.individual_scouting_service.IndividualScoutingDocxBuilder") as MockBuilder:
             MockBuilder.return_value.build.side_effect = RuntimeError("Build failed")
             r = client.get(
-                f"{V1}/ai/individual-scouting/docx",
+                f"{V1}/reports/individual-scouting/docx",
                 params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         assert r.status_code == 500
@@ -238,7 +188,7 @@ class TestAIIndividualScoutingDocx:
         with patch("src.services.individual_scouting_service.IndividualScoutingDocxBuilder") as MockBuilder:
             MockBuilder.return_value.build.return_value = docx_fake
             r = client.get(
-                f"{V1}/ai/individual-scouting/docx",
+                f"{V1}/reports/individual-scouting/docx",
                 params={"collection": "FEB_LF2_2025", "team_id": "Alpha FC"},
             )
         cd = r.headers.get("content-disposition", "")

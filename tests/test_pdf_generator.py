@@ -190,6 +190,12 @@ class TestGenerateBytesFromHtml:
 # generate_from_html (file output)
 # ---------------------------------------------------------------------------
 
+    def test_pdf_bytes_increase_with_longer_content(self):
+        short_pdf = PDFGenerator.generate_bytes_from_html("<p>Hi</p>")
+        long_pdf = PDFGenerator.generate_bytes_from_html("<p>" + "Análisis detallado de estadísticas. " * 100 + "</p>")
+        assert len(long_pdf) >= len(short_pdf)
+
+
 class TestGenerateFromHtmlFile:
     def test_writes_file(self):
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:

@@ -1,12 +1,11 @@
 /**
  * ReportPage — Informe Semanal
- * Scouting individual → AIAnalysisPage · Scouting rival → AIAnalysisPage
+ * Informe semanal (ZIP de PNGs) y scouting individual del equipo (DOCX).
  * Stats de temporada → TeamStatsPage
- * Aquí: solo el informe semanal completo (ZIP de PNGs).
  */
 import { useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, Download, CalendarDays } from 'lucide-react'
+import { FileText, Download, CalendarDays, ClipboardList } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import {
@@ -14,6 +13,7 @@ import {
   postWeeklyReport,
   getWeeklyReportProgress,
   downloadWeeklyReport,
+  downloadIndividualScoutingDocx,
   type WeeklyReportProgress,
   type TeamEntry,
 } from '@/api/client'
@@ -68,6 +68,9 @@ export default function ReportPage() {
   const [weeklyLoading, setWeeklyLoading] = useState(false)
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyReportProgress | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [scoutTeam,    setScoutTeam]    = useState('')
+  const [scoutLoading, setScoutLoading] = useState(false)
+  const [scoutError,   setScoutError]   = useState<string | null>(null)
 
   const { data: teams = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', collection?.name],
@@ -194,6 +197,53 @@ export default function ReportPage() {
                     )}
                   </div>
                 )}
+              </div>
+            </ReportCard>
+
+            {/* Individual scouting DOCX */}
+            <ReportCard
+              icon={<ClipboardList className="w-5 h-5" />}
+              title="Scouting Individual"
+              description="Una página por jugador del equipo: identidad, estadísticas, perfil de tiro y radar, con espacio para las notas del cuerpo técnico."
+              badge="DOCX"
+            >
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <select
+                    value={scoutTeam}
+                    onChange={e => setScoutTeam(e.target.value)}
+                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  >
+                    <option value="">— Equipo —</option>
+                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  <ChevronDownIcon />
+                </div>
+                <button
+                  disabled={!scoutTeam || scoutLoading}
+                  onClick={async () => {
+                    setScoutLoading(true)
+                    setScoutError(null)
+                    try {
+                      const blob = await downloadIndividualScoutingDocx(col, scoutTeam)
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = `scouting_${scoutTeam}.docx`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    } catch (err) {
+                      setScoutError(err instanceof Error ? err.message : 'Error descargando el DOCX')
+                    } finally {
+                      setScoutLoading(false)
+                    }
+                  }}
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  {scoutLoading ? 'Generando documento…' : 'Descargar DOCX'}
+                </button>
+                {scoutError && <p className="text-xs text-warn">{scoutError}</p>}
               </div>
             </ReportCard>
           </div>

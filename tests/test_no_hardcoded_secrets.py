@@ -1,14 +1,9 @@
 """Regression: no API key may be hardcoded in the source tree.
 
-Bug: ``AnalysisConfig.GROQ_API_KEY`` shipped with a literal Groq key as its class
-default, so the secret lived in the repository (and its git history). Keys must come
-from the environment (``GROQ_API_KEY``) or ``~/.basketlab/config.txt`` only.
-
-The class defaults are checked statically (AST) because ``config.py`` loads the keys
-at import time, so runtime values depend on the machine running the tests.
+History: a Groq API key was once committed as a class default (since rotated and the LLM
+code removed). Secrets must never be literals in source: they come from the environment.
 """
 
-import ast
 import re
 from pathlib import Path
 
@@ -30,15 +25,3 @@ def test_no_api_key_literals_in_source_regression():
         if any(p.search(text) for p in SECRET_PATTERNS):
             offenders.append(str(path.relative_to(ROOT)))
     assert not offenders, f"Hardcoded API key literal found in: {sorted(offenders)}"
-
-
-def test_analysis_config_key_defaults_are_none():
-    tree = ast.parse((SRC / "ai" / "config.py").read_text(encoding="utf-8"))
-    cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "AnalysisConfig")
-    defaults = {}
-    for node in cls.body:
-        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            if node.target.id.endswith("_API_KEY"):
-                defaults[node.target.id] = ast.literal_eval(node.value)
-    assert set(defaults) == {"GEMINI_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY"}
-    assert all(v is None for v in defaults.values()), defaults.keys()

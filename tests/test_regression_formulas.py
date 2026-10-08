@@ -68,7 +68,7 @@ class TestPDFGeneratorRegressions:
     """Regression: PDFGenerator edge cases that previously could raise."""
 
     def test_replace_emojis_does_not_raise_on_unicode_r2_symbol(self):
-        """Regression: R² symbol in AI output must not crash PDF generation."""
+        """Regression: R² symbol in report text must not crash PDF generation."""
         from services.pdf_generator import PDFGenerator
         text = "Modelo R² = 0.85 con bootstrap"
         result = PDFGenerator._replace_emojis(text)
@@ -95,13 +95,13 @@ class TestPDFGeneratorRegressions:
     def test_generate_bytes_very_long_html_no_truncation_regression(self):
         """Regression: Very long HTML content should produce a complete PDF."""
         from services.pdf_generator import PDFGenerator
-        # Simulate a full AI analysis report (~5000 chars)
+        # Simulate a full report (~5000 chars)
         html = "<p>Análisis.</p>" * 200
         result = PDFGenerator.generate_bytes_from_html(html, team_name="Team")
         assert result[:4] == b"%PDF"
 
     def test_xss_html_content_stripped_regression(self):
-        """Regression: XSS content in AI-generated HTML must not pass through to PDF output."""
+        """Regression: XSS content in report HTML must not pass through to PDF output."""
         from services.pdf_generator import PDFGenerator
         html = '<script>alert("xss")</script><p>Safe</p>'
         cleaned = PDFGenerator._clean_html(html)

@@ -31,9 +31,7 @@ MANIFEST
 *.dmg
 *.tar.gz
 
-# AI Configuration (contains API keys - DO NOT COMMIT)
-.metricsforall/
-.basketlab/
+# Secrets - DO NOT COMMIT
 *.key
 *.env
 

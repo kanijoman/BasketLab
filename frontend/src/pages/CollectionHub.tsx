@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BarChart2, Users, TrendingUp, Target, Bot, Trophy,
+  BarChart2, Users, TrendingUp, Target, Trophy,
   FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit,
 } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
@@ -30,7 +30,6 @@ const MODULES: Module[] = [
   { icon: Users,          label: 'Estadísticas Individuales',  description: 'Jugadores con radar, comparativa y trends',        subPath: 'players',     accent: 'text-brand-400' },
   { icon: TrendingUp,     label: 'Evolución Temporal',         description: 'Progresión de métricas a lo largo de la temporada', subPath: 'evolution',   accent: 'text-accent-400' },
   { icon: Target,         label: 'Gráficos de Tiro',           description: 'Mapa de calor FIBA interactivo por zonas',         subPath: 'shots',       accent: 'text-accent-400' },
-  { icon: Bot,            label: 'Análisis IA',                description: 'Scouting y análisis con Gemini / OpenAI / Groq',   subPath: 'ai',          accent: 'text-warn' },
   { icon: Trophy,         label: 'Rankings',                   description: 'Clasificación de jugadores por cualquier métrica', subPath: 'rankings',    accent: 'text-warn' },
   { icon: Activity,       label: 'Posesiones',                 description: 'Ritmo, OER/DER y análisis de posesiones',          subPath: 'possessions', accent: 'text-accent-400' },
   { icon: ArrowLeftRight, label: 'IN/OUT',                     description: 'Impacto por jugador dentro/fuera de la cancha',    subPath: 'inout',       accent: 'text-brand-400' },

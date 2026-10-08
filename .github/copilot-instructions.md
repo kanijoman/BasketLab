@@ -19,8 +19,8 @@
 ---
 
 ## Project Identity
-**BasketLab** - PyQt6 basketball statistics analyzer (Spanish leagues: FEB/FBCYL). MongoDB + matplotlib + multi-provider AI. PoC phase (LF2).
-**Stack:** Python 3.8+ | PyQt6 | MongoDB | matplotlib | fpdf2 | python-docx | Gemini/OpenAI/Groq
+**BasketLab** - PyQt6 basketball statistics analyzer (Spanish leagues: FEB/FBCYL). MongoDB + matplotlib. PoC phase (LF2).
+**Stack:** Python 3.8+ | PyQt6 | MongoDB | matplotlib | fpdf2 | python-docx
 
 ## ❌ TDD ES OBLIGATORIO — NUNCA SALTAR ESTE PASO
 
@@ -100,7 +100,6 @@ No fix is complete without its regression test.
 ## Architecture
 - **UI → Repository → MongoDB**: Never direct DB access from UI
 - **Complex queries**: Aggregation pipelines (NOT Python filtering)
-- **AI flow**: Stats → `ContextBuilder` → `TeamAnalyzer` (multi-provider)
 - **Viz**: matplotlib → QLabel/file
 
 ## Mandatory Patterns
@@ -143,7 +142,6 @@ class NewStatsWindow(QMainWindow):
 | Stats calc | [stats_calculator.py](src/ui/stats_calculator.py) | [stats_config.py](src/ui/stats_config.py) |
 | DB query | [repository.py](src/database/repository.py) | [aggregation/](src/database/aggregation/) |
 | Pipeline | [pipeline_builder.py](src/database/aggregation/pipeline_builder.py) | [advanced_stats.py](src/database/aggregation/advanced_stats.py) |
-| AI analysis | [prompts.py](src/ai/prompts.py) | [context_builder.py](src/ai/context_builder.py) |
 | Shot chart | [shot_visualizer.py](src/shotcharts/shot_visualizer.py) | [zone_analysis.py](src/shotcharts/zone_analysis.py) |
 | Scraper | [src/scraper/](src/scraper/) new file | [api_client.py](src/scraper/api_client.py), [web_client.py](src/scraper/web_client.py) |
 
@@ -173,18 +171,6 @@ def populate_table(self, data):
     StatsTableManager.apply_quartile_coloring(self.table, 1, points_vals, reverse=False)
 ```
 
-**AI Analysis:**
-```python
-from src.ai.team_analyzer import TeamAnalyzer
-from src.ai.context_builder import ContextBuilder
-from src.ai.config import AnalysisConfig
-
-formatted = ContextBuilder.format_team_statistics(stats, quartiles, is_comparative=False)
-config = AnalysisConfig(); config.load_api_keys()
-analyzer = TeamAnalyzer(config)
-analysis = analyzer.analyze_team("Team", formatted, "own", provider="groq")
-```
-
 **Trends:** `TrendCalculator.calculate_trend(recent, season, reverse=False)` → ⇈(>10%) ↑(5-10%) ≈(<5%) ↓(5-10%) ⇊(>10%)
 
 ## Common Pitfalls
@@ -194,14 +180,13 @@ analysis = analyzer.analyze_team("Team", formatted, "own", provider="groq")
 | `doc["BOXSCORE"]["TEAM"][0]["PLAYER"][0]["points"]` (assumes FEB) | Check `is_fbcyl`: FEB=`points`, FBCYL=`PTS` |
 | `collection.create_index("field")` (blocks DB) | `collection.create_index("field", background=True)` |
 | `QTableWidgetItem(str(10.5))` (wrong sort) | `NumericTableWidgetItem(10.5)` |
-| `import openai; openai.ChatCompletion.create(...)` (vendor lock) | `TeamAnalyzer(config).analyze_team(..., provider="groq")` |
 | `config_path = "src/database/db_credentials.txt"` (hardcoded) | `config = find_db_config()` (env → local → packaged) |
 | `self.setWindowTitle("Team Statistics")` | `self.setWindowTitle("Estadísticas de Equipo")` (Spanish UI) |
 
 ## Decisions Already Made (Don't Re-debate)
 - **PyQt6** (not PyQt5): Modern, future-proof | **MongoDB** (not SQL): JSON-native, flexible
 - **Aggregation pipelines** (not ORM): Performance | **fpdf2** (not WeasyPrint/ReportLab): HTML support, lightweight
-- **Multi-provider AI** (not single): No lock-in | **Matplotlib** (not Plotly): FIBA precision
+- **Matplotlib** (not Plotly): FIBA precision
 - **pymongo** (not motor): Sync fits PyQt | **python-docx**: Native DOCX
 
 ## Business Logic
@@ -230,7 +215,6 @@ analysis = analyzer.analyze_team("Team", formatted, "own", provider="groq")
 .\build_windows.ps1               # Build EXE
 python src/main.py                # Run dev
 # DB creds: src/database/db_credentials.txt (format: mongodb+srv://user:pass@cluster/db)
-# AI keys: ~/.basketlab/config.txt
 ```
 
 ---
