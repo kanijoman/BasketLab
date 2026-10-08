@@ -1,7 +1,7 @@
 """Regression coverage for possession ownership mismatches on missed shots."""
 from __future__ import annotations
 
-from src.services.possession_core import extract_possession_rows
+from src.pbp.possession_core import extract_possession_rows
 
 
 def _move(number, team_id, text, action, clock):

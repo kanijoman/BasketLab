@@ -39,8 +39,8 @@ Vite + React + TS + TanStack Query + Tailwind + Recharts/D3; `api/client.ts` (to
 - `render.yaml`: `basketlab-api` (`python run_api.py`, `DISABLE_SCRAPING=1`) y `basketlab-scraper` (`python run_scraper.py`), plan free, Frankfurt. Frontend en Vercel (`vercel.json`: rewrite SPA). CI (`.github/workflows/ci.yml`): tests + deploy hook de Render en push a `main`.
 - Env backend: `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ENVIRONMENT`, `DISABLE_SCRAPING`, `BASKETLAB_DEV`, `PORT`. Frontend: `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Ejemplo en `.env.example`.
 
-## Rutas de import duales y shims
-Código y tests importan `src.x` y, a veces, `x` (con `src/` en `sys.path`). `src/database/playbyplay_core.py`, `src/database/_pbp_event_helpers.py` y `src/services/possession_core.py` son **shims** que reexportan `src/pbp/*` (mismos objetos; `tests/test_pbp_shims.py`). `tests/conftest.py` limpia cachés bajo ambos alias.
+## Rutas de import
+Usa siempre `src.…`. Los parsers PBP viven en `src/pbp` (sin BD); los antiguos shims se eliminaron (`tests/test_pbp_isolation.py` lo vigila). `tests/conftest.py` limpia cachés bajo ambos alias por compatibilidad con tests antiguos.
 
 ## Deuda conocida de arquitectura
 Ver [ROADMAP.md](ROADMAP.md).
