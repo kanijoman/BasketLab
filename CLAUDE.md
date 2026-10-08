@@ -48,7 +48,7 @@ Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests
 El usuario añade ahí necesidades y bugs de pruebas manuales. **Antes de proponer o elegir la siguiente tarea**: `gh issue list --state open --json number,title,labels,createdAt` (y `gh issue view N` de los candidatos); prioridad: `bug` > bloqueantes del trabajo en curso > resto; avisa si hay issues nuevos. Referencia el issue en rama/commit/PR (`Closes #N`) y ciérralo al integrar. Nuevo hallazgo propio → crear issue en vez de apuntarlo en docs.
 
 ## Flujo git
-`git fetch && git checkout main && git merge --ff-only origin/main` **antes de crear cualquier rama**; una rama por PR, independiente. `main` protegido: solo PRs. Commit/push solo cuando se pide. Pie de commit: `Co-Authored-By: Claude …`. Ver también [docs/TESTING.md](docs/TESTING.md) para CI.
+`git fetch && git checkout main && git merge --ff-only origin/main` **antes de crear cualquier rama**; una rama por PR, independiente. `main` protegido: solo PRs. **Un bloque de funcionalidad = un único PR.** Si hay que dividir, no abras el siguiente mientras haya PRs pendientes que toquen los mismos ficheros (sobre todo `docs/*` y `CLAUDE.md`): encadena o espera a la integración para evitar conflictos. Commit/push solo cuando se pide. Pie de commit: `Co-Authored-By: Claude …`. Ver también [docs/TESTING.md](docs/TESTING.md) para CI.
 
 ## Definición de hecho (sincronizar docs — obligatorio)
 Antes de dar una entrega por terminada y del commit/PR, revisa y **actualiza** (y borra lo que ya no sea cierto) los docs afectados. `tests/test_docs_consistency.py` lo hace cumplir en parte (paquetes, routers y módulos live sin documentar fallan).
