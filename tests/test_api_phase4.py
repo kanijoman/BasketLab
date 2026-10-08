@@ -1,5 +1,5 @@
 """
-Phase 4 quality-gate tests: AI SSE streaming + IN/OUT endpoints.
+Phase 4 quality-gate tests: IN/OUT and players-together endpoints.
 """
 from __future__ import annotations
 
@@ -24,55 +24,6 @@ def client():
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     app.dependency_overrides.pop(get_db, None)
-
-
-# ---------------------------------------------------------------------------
-# AI streaming endpoint (/api/v1/ai/analyze/stream)
-# ---------------------------------------------------------------------------
-
-class TestAIStreamEndpoint:
-    BASE = "/api/v1/ai/analyze/stream"
-
-    def test_missing_collection_returns_422(self, client):
-        r = client.get(self.BASE)
-        assert r.status_code == 422
-
-    def test_missing_team_returns_422(self, client):
-        r = client.get(self.BASE, params={"collection": "FEB_test"})
-        assert r.status_code == 422
-
-    def test_invalid_provider_returns_400_or_default(self, client):
-        """Unknown provider should either be rejected (400/422) or quietly fall back."""
-        r = client.get(
-            self.BASE,
-            params={"collection": "FEB_test", "team": "TeamA", "provider": "unknown_llm"},
-        )
-        assert r.status_code in (400, 422, 200, 500)  # implementation may reject or fallback
-
-    def test_valid_request_returns_event_stream_content_type(self, client):
-        """A well-formed request should return text/event-stream even if AI call fails."""
-        with patch("src.api.routers.ai.ContextBuilder.build_team_context", return_value="ctx"):
-            r = client.get(
-                self.BASE,
-                params={"collection": "FEB_test", "team": "TeamA", "provider": "groq"},
-            )
-        # SSE or error — must not be 404
-        assert r.status_code != 404
-
-    def test_sse_error_event_is_json(self, client):
-        """When AI fails the SSE body must contain a JSON error event."""
-        with patch("src.api.routers.ai.ContextBuilder.build_team_context", side_effect=RuntimeError("boom")):
-            r = client.get(
-                self.BASE,
-                params={"collection": "FEB_test", "team": "TeamA"},
-            )
-        # Status may be 200 (SSE) or 500 — both acceptable
-        if r.status_code == 200:
-            body = r.text
-            # The SSE body should contain a data: {...} line with "error" key
-            data_lines = [ln[6:] for ln in body.splitlines() if ln.startswith("data:")]
-            jsons = [json.loads(d) for d in data_lines if d.strip()]
-            assert any("error" in j for j in jsons), f"No error event in: {body}"
 
 
 # ---------------------------------------------------------------------------

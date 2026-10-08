@@ -1,7 +1,7 @@
 """Individual team scouting DOCX builder (web tier). Returns raw bytes for FastAPI download.
 
 Layout per player: header → identity → avg stats → totals → advanced stats →
-shot profile → radar → AI notes → page break. FEB only for shot data.
+shot profile → radar → blank notes section → page break. FEB only for shot data.
 """
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ import requests
 from src.services._scouting_formatters import safe as _safe, fmt_min as _fmt_min, prep_player_for_radar as _prep_player_for_radar
 from src.services._scouting_docx_helpers import (
     write_table as _write_table,
-    markdown_to_docx as _markdown_to_docx,
     set_cell_shading as _set_cell_shading,
     quartile_fill as _quartile_fill,
     write_player_stats_table as _write_player_stats_table,
@@ -101,15 +100,10 @@ class IndividualScoutingDocxBuilder:
         collection: str,
         team_name: str,
         db: Any,
-        *,
-        include_ai_notes: bool = True,
-        provider: str = "groq",
     ) -> None:
         self.collection = collection
         self.team_name = team_name
         self.db = db
-        self.include_ai_notes = include_ai_notes
-        self.provider = provider
         self.is_fbcyl = "FBCYL" in collection.upper()
 
     def build(self) -> bytes:
@@ -172,7 +166,7 @@ class IndividualScoutingDocxBuilder:
             shots = _extract_shots(coll, pid)
             self._add_shot_profile(doc, shots, name)
         self._add_radar_chart(doc, player, all_players, name)
-        self._add_ai_notes(doc, player)
+        self._add_notes_section(doc)
 
     def _add_doc_header(self, doc, logo_bytes):
         from docx.shared import Inches, Pt, RGBColor
@@ -412,57 +406,8 @@ class IndividualScoutingDocxBuilder:
         except Exception as exc:
             logger.warning("Radar chart generation failed: %s", exc)
 
-    def _add_ai_notes(self, doc, player: Dict) -> None:
+    def _add_notes_section(self, doc) -> None:
+        """Heading plus blank lines for the coaching staff to write by hand."""
         doc.add_heading('5. Notas del cuerpo técnico', level=1)
-        notes = self._call_ai(player) if self.include_ai_notes else None
-        if notes:
-            _markdown_to_docx(doc, notes)
-        else:
-            for _ in range(6):
-                doc.add_paragraph("_" * 80)
-
-    def _call_ai(self, player: Dict) -> Optional[str]:
-        """Synchronous Groq call for brief player scouting notes."""
-        try:
-            import openai as _oai
-            from src.ai.prompts import PROMPT_PLAYER_NOTES_BRIEF
-            from src.ai.config import AnalysisConfig
-
-            AnalysisConfig.load_api_keys()
-            if not AnalysisConfig.GROQ_API_KEY:
-                return None
-
-            ctx = (
-                f"{player.get('player_name', '')} ({player.get('team_name', '')})\n"
-                f"PJ={player.get('games_played', 0)} "
-                f"MIN={_safe(player.get('minutes_per_game'))} "
-                f"PTS={_safe(player.get('points_per_game'))} "
-                f"REB={_safe(player.get('rebounds_per_game'))} "
-                f"AST={_safe(player.get('assists_per_game'))}\n"
-                f"T2={_safe(player.get('fg2_percentage'))}% "
-                f"T3={_safe(player.get('fg3_percentage'))}% "
-                f"TL={_safe(player.get('fg1_percentage'))}%\n"
-                f"TS={_safe(player.get('true_shooting'))}% "
-                f"eFG={_safe(player.get('efg_percentage'))}% "
-                f"USG={_safe(player.get('usage_pct'))}%\n"
-                f"ORtg={_safe(player.get('orating'))} "
-                f"DRtg={_safe(player.get('drating'))} "
-                f"NetRtg={_safe(player.get('net_rtg'))}"
-            )
-            client = _oai.OpenAI(
-                api_key=AnalysisConfig.GROQ_API_KEY,
-                base_url="https://api.groq.com/openai/v1",
-            )
-            resp = client.chat.completions.create(
-                model=AnalysisConfig.GROQ_MODELS.get("fast", "llama-3.3-70b-versatile"),
-                messages=[
-                    {"role": "system", "content": PROMPT_PLAYER_NOTES_BRIEF},
-                    {"role": "user", "content": ctx},
-                ],
-                temperature=0.7,
-                max_tokens=400,
-            )
-            return resp.choices[0].message.content.strip()
-        except Exception as exc:
-            logger.warning("AI notes generation failed: %s", exc)
-            return None
+        for _ in range(6):
+            doc.add_paragraph("_" * 80)

@@ -30,14 +30,6 @@ services:
       - key: ALLOWED_ORIGINS
         sync: false   # set to Vercel URL after first Vercel deploy
 
-      # Optional AI providers (leave unset if not used)
-      # - key: OPENAI_API_KEY
-      #   sync: false
-      # - key: GOOGLE_API_KEY
-      #   sync: false
-      # - key: GROQ_API_KEY
-      #   sync: false
-
       # Prevent OOM during scraping — the dedicated scraper service handles ingestion
       - key: DISABLE_SCRAPING
         value: "1"

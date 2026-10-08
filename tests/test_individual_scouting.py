@@ -87,15 +87,10 @@ class TestIndividualScoutingDocxBuilderInit:
         b = IndividualScoutingDocxBuilder("FBCYL_SE_2025", "Team A", db)
         assert b.is_fbcyl is True
 
-    def test_stores_include_ai_notes_flag(self):
-        db = MagicMock()
-        b = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "T", db, include_ai_notes=False)
-        assert b.include_ai_notes is False
-
-    def test_default_provider_is_groq(self):
-        db = MagicMock()
-        b = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "T", db)
-        assert b.provider == "groq"
+    def test_has_no_llm_options(self):
+        """Notes are a blank section for handwriting: no provider, no AI flags."""
+        b = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "T", MagicMock())
+        assert not hasattr(b, "provider") and not hasattr(b, "include_ai_notes")
 
 
 # ---------------------------------------------------------------------------
@@ -142,9 +137,7 @@ class TestBuildWithPlayers:
 
     def test_returns_bytes(self):
         db = MagicMock()
-        builder = IndividualScoutingDocxBuilder(
-            "FEB_LF2_2025_A", "Team A", db, include_ai_notes=False
-        )
+        builder = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "Team A", db)
         players = [_make_player("Player One", "Team A")]
 
         with (
@@ -171,9 +164,7 @@ class TestBuildWithPlayers:
 
     def test_output_is_valid_docx_zip(self):
         db = MagicMock()
-        builder = IndividualScoutingDocxBuilder(
-            "FEB_LF2_2025_A", "Team A", db, include_ai_notes=False
-        )
+        builder = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "Team A", db)
         players = [_make_player("Player One", "Team A")]
 
         with (
@@ -256,3 +247,39 @@ class TestQuartileFill:
         # With reverse=True, lowest value (1.0) should be green (best)
         result = _quartile_fill(1.0, vals, reverse=True)
         assert result == "C6EFCE"
+
+
+class TestNotesSection:
+    """The "Notas del cuerpo técnico" section is blank lines for handwriting."""
+
+    def _build(self):
+        builder = IndividualScoutingDocxBuilder("FEB_LF2_2025_A", "Team A", MagicMock())
+        players = [_make_player("Player One", "Team A")]
+        with (
+            patch("src.services.player_stats_service.PlayerStatsService") as MockSvc,
+            patch("src.services.player_data_fetcher.PlayerDataFetcher") as MockFetch,
+            patch("src.services.individual_scouting_service._fetch_bytes", return_value=None),
+            patch("src.services.individual_scouting_service._extract_shots", return_value=[]),
+            patch("src.shotcharts.shot_visualizer.ShotChartVisualizer") as MockVis,
+            patch("src.shotcharts.zone_analysis.ZoneAnalyzer") as MockZones,
+        ):
+            MockSvc.return_value.load_season_data.return_value = players
+            MockFetch.return_value.get_player_dorsal_and_photo.return_value = ("7", None, None)
+            MockFetch.return_value.get_player_birth_info.return_value = (None, None, None)
+            fig = MagicMock()
+            MockVis.return_value.create_shot_chart.return_value = fig
+            MockZones.return_value.analyze_zones.return_value = {}
+            MockZones.return_value.create_zone_chart.return_value = fig
+            return builder.build()
+
+    def test_notes_section_is_six_blank_lines_and_needs_no_llm_sdk(self):
+        import io
+        import sys
+
+        from docx import Document
+
+        with patch.dict(sys.modules, {"openai": None}):  # importing it would raise
+            data = self._build()
+        paragraphs = [p.text for p in Document(io.BytesIO(data)).paragraphs]
+        assert any("Notas del cuerpo técnico" in t for t in paragraphs)
+        assert sum(1 for t in paragraphs if t == "_" * 80) == 6

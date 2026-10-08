@@ -6,7 +6,7 @@
  *
  * Usage:
  *   <PrivateRoute requiredRole="premium">
- *     <AIAnalysisPage />
+ *     <AdminPage />
  *   </PrivateRoute>
  */
 import { ReactNode } from 'react'

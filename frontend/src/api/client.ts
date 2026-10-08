@@ -432,61 +432,39 @@ export const getPossessionsExportUrl = (collection: string): string =>
 export const getPossessionQualityExportUrl = (collection: string): string =>
   `${BASE}/possessions/${encodeURIComponent(collection)}/quality/csv`
 
-// ── AI Analysis ───────────────────────────────────────────────────────────────
+// ── Reports (DOCX / PDF) ──────────────────────────────────────────────────────
 
-export interface AIAnalysisRequest {
-  collection: string
-  team_id: string
-  analysis_type: 'own' | 'scouting' | 'individual'
-  opponent_team?: string
-  provider: 'gemini' | 'openai' | 'groq'
-  model?: string
-  include_shot_chart?: boolean
-  include_recommendations?: boolean
+async function downloadBlob(res: Response, fallback: string): Promise<Blob> {
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new Error(err.detail ?? fallback)
+  }
+  return res.blob()
 }
 
-export const postAIAnalysis = (req: AIAnalysisRequest) =>
-  post<{ content: string; output_format: 'pdf' | 'docx' }>('/ai/analyze', req)
-
-export const getAIAnalysisStreamUrl = (req: AIAnalysisRequest): string =>
-  `${BASE}/ai/analyze/stream?${new URLSearchParams(req as unknown as Record<string, string>)}`
-
-/** Download the individual scouting DOCX for an entire team. */
+/** Individual scouting DOCX for an entire team (one page per player, blank notes section). */
 export const downloadIndividualScoutingDocx = async (
   collection: string,
   teamId: string,
-  includeAiNotes = true,
 ): Promise<Blob> => {
-  const params = new URLSearchParams({
-    collection,
-    team_id: teamId,
-    include_ai_notes: String(includeAiNotes),
-  })
-  const res = await fetch(`${BASE}/ai/individual-scouting/docx?${params}`)
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail ?? 'Error descargando DOCX')
-  }
-  return res.blob()
+  const params = new URLSearchParams({ collection, team_id: teamId })
+  return downloadBlob(await fetch(`${BASE}/reports/individual-scouting/docx?${params}`), 'Error descargando DOCX')
 }
 
-/** Convert streamed AI HTML to PDF and download it. */
-export const exportAIAnalysisPDF = async (
+/** Convert an HTML report to PDF (kept for the planned rule-based report engine). */
+export const exportReportPdf = async (
   html: string,
   team: string,
-  analysisType: string,
-): Promise<Blob> => {
-  const res = await fetch(`${BASE}/ai/export-pdf`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ html, team, analysis_type: analysisType }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail ?? 'Error generando PDF')
-  }
-  return res.blob()
-}
+  analysisType = 'own',
+): Promise<Blob> =>
+  downloadBlob(
+    await fetch(`${BASE}/reports/export-pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, team, analysis_type: analysisType }),
+    }),
+    'Error generando PDF',
+  )
 
 // ── Match Analysis ────────────────────────────────────────────────────────────
 

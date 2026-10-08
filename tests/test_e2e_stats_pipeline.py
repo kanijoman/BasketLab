@@ -7,8 +7,7 @@ No real MongoDB — mongomock or MagicMock at collection level only.
 Test groups:
   1. WeeklyReportService.generate_report_zip — ZIP structure & content (E2E)
   2. ElasticityService — predictive pipeline with synthetic historical data (E2E)
-  3. PDFGenerator + AI context builder — full document generation pipeline (E2E)
-  4. Full stats pipeline: StatsCalculator → TeamStatsAggregator → quartiles (E2E)
+  3. Full stats pipeline: StatsCalculator → TeamStatsAggregator → quartiles (E2E)
 """
 
 from __future__ import annotations
@@ -223,78 +222,6 @@ class TestStatsCalculatorToAggregatorE2E:
         agg = TeamStatsAggregator(handler, "FEB_LF2_2025")
         q = agg.calculate_league_quartiles()
         assert q["points_per_game"]["count"] == n
-
-
-# ---------------------------------------------------------------------------
-# E2E-3: Context Builder → PDF generation pipeline
-# ---------------------------------------------------------------------------
-
-class TestContextBuilderToPDFE2E:
-    """E2E: ContextBuilder builds text → PDFGenerator converts to bytes."""
-
-    def test_full_own_analysis_to_pdf(self):
-        from ai.context_builder import ContextBuilder
-        from services.pdf_generator import PDFGenerator
-
-        team_name = "Alpha FC"
-        stats_payload = {
-            "team_stats": _make_team_stat(team_name),
-            "league_stats": {"avg_points": 73.0, "avg_net_rating": 0.0},
-            "consistency": {"cv_ppg": 8.5, "cv_ortg": 6.2},
-        }
-        cb = ContextBuilder()
-        context = cb.build_team_context(team_name, stats_payload,
-                                         include_recommendations=True,
-                                         analysis_type="own")
-        assert isinstance(context, str)
-        assert team_name in context
-
-        # Convert context to HTML-ish string and generate PDF
-        html = f"<h1>Análisis: {team_name}</h1><pre>{context[:500]}</pre>"
-        pdf_bytes = PDFGenerator.generate_bytes_from_html(html, team_name=team_name)
-
-        assert isinstance(pdf_bytes, bytes)
-        assert pdf_bytes[:4] == b"%PDF"
-
-    def test_scouting_analysis_to_pdf(self):
-        from ai.context_builder import ContextBuilder
-        from services.pdf_generator import PDFGenerator
-
-        team_name = "Beta BC"
-        stats_payload = {
-            "team_stats": _make_team_stat(team_name, ppg=68.0),
-            "league_stats": {},
-            "consistency": {},
-        }
-        cb = ContextBuilder()
-        context = cb.build_team_context(team_name, stats_payload,
-                                         include_recommendations=False,
-                                         analysis_type="scouting")
-        html = f"<h1>Scouting: {team_name}</h1><p>{context[:200]}</p>"
-        pdf_bytes = PDFGenerator.generate_bytes_from_html(html, team_name=team_name)
-        assert pdf_bytes[:4] == b"%PDF"
-
-    def test_context_contains_key_stats(self):
-        from ai.context_builder import ContextBuilder
-
-        team_name = "Gamma GC"
-        stats_payload = {
-            "team_stats": _make_team_stat(team_name, ppg=80.0, ortg=115.0),
-            "league_stats": {},
-            "consistency": {},
-        }
-        cb = ContextBuilder()
-        context = cb.build_team_context(team_name, stats_payload,
-                                         include_recommendations=False)
-        assert team_name in context
-
-    def test_pdf_bytes_increase_with_longer_content(self):
-        from services.pdf_generator import PDFGenerator
-        short_pdf = PDFGenerator.generate_bytes_from_html("<p>Hi</p>")
-        long_html = "<p>" + "Análisis detallado de estadísticas. " * 100 + "</p>"
-        long_pdf = PDFGenerator.generate_bytes_from_html(long_html)
-        # Longer content should produce a larger PDF
-        assert len(long_pdf) >= len(short_pdf)
 
 
 # ---------------------------------------------------------------------------

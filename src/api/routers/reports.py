@@ -80,6 +80,66 @@ def weekly_report_download(job_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Individual scouting DOCX and HTML->PDF export (declared before /{collection}/...)
+# ---------------------------------------------------------------------------
+
+def _safe_filename_part(text: str) -> str:
+    return "".join(c if c.isalnum() else "_" for c in text)
+
+
+@router.get("/individual-scouting/docx", summary="Descargar el scouting individual del equipo (DOCX)")
+def download_individual_scouting_docx(collection: str, team_id: str, db=Depends(get_db)):
+    """One page per player: identity, stats, shot profile and radar, plus a blank notes section.
+
+    Args:
+        collection: MongoDB collection name.
+        team_id: Stable team ID (``HEADER.TEAM.id`` / ``teamIdExtern``).
+    """
+    from src.utils.collection_utils import is_fbcyl
+    from src.utils.team_utils import resolve_team_by_id
+
+    team_info = resolve_team_by_id(db.connection.get_collection(collection), team_id, is_fbcyl(collection))
+    team_name = team_info["name"] if team_info else team_id
+
+    try:
+        from src.services.individual_scouting_service import IndividualScoutingDocxBuilder
+
+        docx_bytes = IndividualScoutingDocxBuilder(collection=collection, team_name=team_name, db=db).build()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error generando DOCX: {exc}") from exc
+
+    if not docx_bytes:
+        raise HTTPException(status_code=404, detail="No se encontraron jugadores para el equipo indicado.")
+    return Response(
+        content=docx_bytes, media_type=_DOCX_MIME,
+        headers={"Content-Disposition": f'attachment; filename="Scouting_{_safe_filename_part(team_name)}.docx"'},
+    )
+
+
+class _ExportPDFRequest(BaseModel):
+    html: str
+    team: str = ""
+    analysis_type: str = "own"
+
+
+@router.post("/export-pdf", summary="Convertir un informe HTML a PDF")
+def export_report_pdf(req: _ExportPDFRequest):
+    """Render an HTML report (``req.html``) as a PDF titled with ``req.team``."""
+    try:
+        from src.services.pdf_generator import PDFGenerator
+
+        pdf_bytes = PDFGenerator.generate_bytes_from_html(html_content=req.html, team_name=req.team)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {exc}") from exc
+
+    label = "Scouting" if req.analysis_type == "scouting" else "Analisis"
+    return Response(
+        content=pdf_bytes, media_type=_PDF_MIME,
+        headers={"Content-Disposition": f'attachment; filename="{label}_{_safe_filename_part(req.team)}.pdf"'},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Per-collection report endpoints
 # ---------------------------------------------------------------------------
 

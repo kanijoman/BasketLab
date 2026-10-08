@@ -64,25 +64,6 @@ def write_table(
             _apply_cell(cell, False, col_widths_cm[c_idx] if col_widths_cm and c_idx < len(col_widths_cm) else None)
 
 
-def markdown_to_docx(doc: Any, text: str) -> None:
-    """Convert simple markdown (**bold**, bullets) into docx paragraphs."""
-    import re
-
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith(("- ", "• ", "* ")):
-            p = doc.add_paragraph(style="List Bullet")
-            line = line[2:]
-        else:
-            p = doc.add_paragraph()
-        for i, part in enumerate(re.split(r"\*\*(.+?)\*\*", line)):
-            run = p.add_run(part)
-            if i % 2 == 1:
-                run.font.bold = True
-
-
 def set_cell_shading(cell: Any, hex_fill: str) -> None:
     """Apply background fill colour to a python-docx table cell."""
     from docx.oxml.ns import qn

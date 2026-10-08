@@ -8,7 +8,6 @@
  *   /:collection/players      → PlayerStatsPage
  *   /:collection/evolution    → EvolutionPage
  *   /:collection/shots        → ShotChartPage
- *   /:collection/ai           → AIAnalysisPage
  *   /:collection/rankings     → RankingsPage
  *   /:collection/report       → ReportPage
  *   /:collection/possessions  → PossessionsPage
@@ -33,7 +32,6 @@ import PlayerStatsPage from '@/pages/PlayerStatsPage'
 import LineupsPage from '@/pages/LineupsPage'
 import EvolutionPage from '@/pages/EvolutionPage'
 import ShotChartPage from '@/pages/ShotChartPage'
-import AIAnalysisPage from '@/pages/AIAnalysisPage'
 import RankingsPage from '@/pages/RankingsPage'
 import ReportPage from '@/pages/ReportPage'
 import PossessionsPage from '@/pages/PossessionsPage'
@@ -62,7 +60,6 @@ export default function App() {
               <Route path="players"     element={<PlayerStatsPage />} />
               <Route path="evolution"   element={<EvolutionPage />} />
               <Route path="shots"       element={<ShotChartPage />} />
-              <Route path="ai"          element={<AIAnalysisPage />} />
               <Route path="rankings"    element={<RankingsPage />} />
               <Route path="report"      element={<ReportPage />} />
               <Route path="possessions" element={<PossessionsPage />} />
