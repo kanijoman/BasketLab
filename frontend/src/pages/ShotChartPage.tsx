@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Target, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getShotZones, getShotRaw, getPlayerStats, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
+import { getLiveTeamNames, getShotZones, getShotRaw, getPlayerStats, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
 import ExportButton from '@/components/ui/ExportButton'
@@ -41,8 +41,7 @@ export default function ShotChartPage() {
   // Fetch team list for selector
   const { data: teamList = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', collection?.name],
-    queryFn: () =>
-      fetch(`/api/v1/teams/${encodeURIComponent(collection!.name)}/teams`).then(r => r.json()),
+    queryFn: () => getLiveTeamNames(collection!.name),
     enabled: Boolean(collection) && !isFbcyl,
     staleTime: 10 * 60_000,
   })

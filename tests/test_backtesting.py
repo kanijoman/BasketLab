@@ -26,6 +26,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.ml  # needs scikit-learn (skipped when missing)
+
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))

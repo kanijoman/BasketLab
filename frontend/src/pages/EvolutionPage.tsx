@@ -18,7 +18,7 @@ import {
 import { TrendingUp, X, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getTeamEvolution, getCompetitionEvolution, type EvolutionPoint, type CompetitionEvolutionPoint, type TeamEntry } from '@/api/client'
+import { getLiveTeamNames, getTeamEvolution, getCompetitionEvolution, type EvolutionPoint, type CompetitionEvolutionPoint } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import ExportButton from '@/components/ui/ExportButton'
 
@@ -136,8 +136,7 @@ export default function EvolutionPage() {
   // Fetch team list
   const { data: teamList = [] } = useQuery({
     queryKey: ['team-list', collection?.name],
-    queryFn: () => fetch(`/api/v1/teams/${encodeURIComponent(collection!.name)}/teams`)
-      .then(r => r.json()) as Promise<TeamEntry[]>,
+    queryFn: () => getLiveTeamNames(collection!.name),
     enabled: Boolean(collection),
     staleTime: 10 * 60_000,
   })

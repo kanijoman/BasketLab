@@ -180,14 +180,6 @@ export const getPlayerQuartiles = (collection: string) =>
     `/players/${encodeURIComponent(collection)}/quartiles`,
   )
 
-export const getPlayerRankings = (collection: string, stat: string, minMinutes = 0) =>
-  get<PlayerStat[]>(
-    `/players/${encodeURIComponent(collection)}/rankings?stat=${encodeURIComponent(stat)}&min_minutes=${minMinutes}`,
-  )
-
-export const getPlayerRadar = (collection: string, playerId: string) =>
-  get<RadarData>(`/players/${encodeURIComponent(collection)}/radar/${encodeURIComponent(playerId)}`)
-
 export const getInOutAnalysis = (collection: string, playerId: string) =>
   get<InOutResult>(
     `/players/${encodeURIComponent(collection)}/inout/${encodeURIComponent(playerId)}`,
