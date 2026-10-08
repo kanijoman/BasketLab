@@ -15,7 +15,8 @@ from .state import LiveGame
 
 
 def _teams(doc: Dict[str, Any]) -> List[Tuple[str, str]]:
-    return [(str(t["id"]), t.get("name") or str(t["id"])) for t in (doc.get("HEADER") or {}).get("TEAM", [])]
+    return [(str(t["id"]), (t.get("name") or str(t["id"])).strip())
+            for t in (doc.get("HEADER") or {}).get("TEAM", [])]
 
 
 def _roster(doc: Dict[str, Any]) -> Dict[str, Tuple[str, str]]:
@@ -23,7 +24,7 @@ def _roster(doc: Dict[str, Any]) -> Dict[str, Tuple[str, str]]:
     for team in (doc.get("BOXSCORE") or {}).get("TEAM", []):
         for player in team.get("PLAYER", []):
             if player.get("id"):
-                roster[str(player["id"])] = (player.get("name") or str(player["id"]), str(team.get("id")))
+                roster[str(player["id"])] = ((player.get("name") or str(player["id"])).strip(), str(team.get("id")))
     return roster
 
 

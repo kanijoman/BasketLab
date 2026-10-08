@@ -17,6 +17,8 @@ from .events import Event
 STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "tov_team",
              "stl", "ast", "blk", "pts")
 
+PLAYER_STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "stl", "ast", "blk")
+
 _PLAYER_KINDS = {"sub_in", "sub_out", "fg2", "fg3", "ft", "rebound", "turnover", "steal",
                  "assist", "block", "foul"}
 _TEAM_FOUL_TYPES = {"personal", "unsportsmanlike", "technical"}
@@ -40,6 +42,7 @@ class _Player:
     credit: int = 0  # rest credited to the current stint (see QUARTER_BREAK_CREDIT_S)
     stints_done: int = 0  # finished stints and their rest-adjusted total length (for baselines)
     stint_sum: int = 0
+    stats: Dict[str, int] = field(default_factory=lambda: {k: 0 for k in PLAYER_STAT_KEYS})
 
 
 @dataclass
@@ -124,6 +127,8 @@ class LiveGame:
         if team is None:
             return
         team.stats[att_key] += 1
+        if player:
+            player.stats[att_key] += 1
         if ev.made:
             team.stats[made_key] += 1
             team.stats["pts"] += ev.points
@@ -131,6 +136,7 @@ class LiveGame:
             self.log.append([ev.elapsed, ev.team_id, "pts", ev.points])
             if player:
                 player.pts += ev.points
+                player.stats[made_key] += 1
             if ev.kind != "ft":
                 self._last_miss_team = None
         else:
@@ -149,30 +155,35 @@ class LiveGame:
         if team is None:
             return
         offensive = self._last_miss_team == ev.team_id
-        team.stats["orb" if offensive else "drb"] += 1
+        key = "orb" if offensive else "drb"
+        team.stats[key] += 1
+        if player:
+            player.stats[key] += 1
         if offensive:
             self.log.append([ev.elapsed, ev.team_id, "orb", 1])
         self._last_miss_team = None
 
-    def _count(self, key: str, team: Optional[_Team]) -> None:
+    def _count(self, key: str, team: Optional[_Team], player: Optional[_Player] = None) -> None:
         if team is not None:
             team.stats[key] += 1
+        if player is not None and key in player.stats:
+            player.stats[key] += 1
 
     def _on_turnover(self, ev, player, team):
         # FEB logs team turnovers ("Equipo: PERDIDA") without a player; the official
         # box-score TO column excludes them, so keep them apart (possessions add both).
-        self._count("tov" if ev.player_id else "tov_team", team)
+        self._count("tov" if ev.player_id else "tov_team", team, player)
         if team is not None:
             self.log.append([ev.elapsed, ev.team_id, "tov", 1])
 
     def _on_steal(self, ev, player, team):
-        self._count("stl", team)
+        self._count("stl", team, player)
 
     def _on_assist(self, ev, player, team):
-        self._count("ast", team)
+        self._count("ast", team, player)
 
     def _on_block(self, ev, player, team):
-        self._count("blk", team)
+        self._count("blk", team, player)
 
     def _on_timeout(self, ev, player, team):
         if team is not None:
@@ -207,7 +218,7 @@ class LiveGame:
                 "name": p.name, "team_id": p.team_id, "on_court": p.on_court,
                 "minutes": p.closed + (max(0, now - p.stint_start) if p.on_court else 0),
                 "stint": stint, "pf": p.pf, "pts": p.pts,
-                "stints_done": p.stints_done, "stint_sum": p.stint_sum,
+                "stints_done": p.stints_done, "stint_sum": p.stint_sum, "stats": dict(p.stats),
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
             }
         teams = {

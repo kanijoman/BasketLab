@@ -47,7 +47,8 @@ def fatigue_index(
             parts["projection"] = _clamp((projected - p90) / (cfg.fatigue_projection_full_excess * p90))
             weights["projection"] = cfg.fatigue_weight_projection
 
-    index = sum(weights[k] * parts[k] for k in parts) / sum(weights.values()) * 100
+    total_weight = sum(weights.values())
+    index = sum(weights[k] * parts[k] for k in parts) / total_weight * 100 if total_weight else 0.0
     return round(index, 2), {k: round(v, 3) for k, v in parts.items()}
 
 

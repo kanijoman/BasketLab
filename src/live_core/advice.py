@@ -7,11 +7,13 @@ conditions such as fatigue are repeated after that many game-seconds).
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any, Callable, Dict, List, Optional
 
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
+from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, run_rule, team_fouls_rule, turnover_rule
@@ -37,6 +39,7 @@ class AdviceEngine:
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model)
             if own_team_id else None
         )
+        self._recommender = Recommender(own_team_id, baselines, cfg) if own_team_id and baselines else None
         self._last: Dict[str, int] = {}
 
     @classmethod
@@ -63,5 +66,24 @@ class AdviceEngine:
                 last = self._last.get(advice.key)
                 if last is None or (advice.rearm_s is not None and now - last >= advice.rearm_s):
                     self._last[advice.key] = now
-                    emitted.append(advice)
+                    emitted.append(self._with_proposal(advice, snapshot))
         return sorted(emitted, key=lambda a: SEVERITY_RANK[a.severity])  # stable: critical first
+
+    def _with_proposal(self, advice: Advice, snapshot: Dict[str, Any]) -> Advice:
+        """Attach the recommender's substitution proposals to the advice that calls for them."""
+        if self._recommender is None:
+            return advice
+        if advice.id in ("foul_trouble", "fatigue_high"):
+            proposal = self._recommender.suggest_swaps(
+                snapshot, advice.evidence["player_id"], lever=self._current_lever(snapshot))
+        elif advice.id == "four_factors_lever":
+            proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
+        elif advice.id == "turnover_streak":
+            proposal = self._recommender.suggest_for_lever(snapshot, "tov")
+        else:
+            return advice
+        return dataclasses.replace(advice, proposal=proposal)
+
+    def _current_lever(self, snapshot: Dict[str, Any]) -> Optional[str]:
+        result = self._model.evaluate(snapshot) if self._model else None
+        return result["lever"] if result and result["reliable"] else None

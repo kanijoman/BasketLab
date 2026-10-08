@@ -100,3 +100,40 @@ def test_package_drives_the_advice_engine_end_to_end(feb_game_doc):
     assert engine.analyze(snap)["four_factors"]["reliable"] is True
     long_stint_player = max(pkg.tables["players"], key=lambda p: pkg.tables["players"][p]["avg_stint"])
     assert long_stint_player in pkg.tables["players"]
+
+
+# --- rates and role profiles --------------------------------------------------------
+
+def test_players_carry_rates_and_a_z_profile(feb_game_doc):
+    from src.live_core.profiles import METRICS
+
+    pkg = _build([feb_game_doc])
+    for base in list(pkg.tables["players"].values()) + list(pkg.tables["rival_players"].values()):
+        assert set(base["rates"]) == set(METRICS) and set(base["z"]) == set(METRICS)
+        assert base["seconds"] > 0
+
+
+def test_league_distribution_is_published(feb_game_doc):
+    from src.live_core.profiles import METRICS
+
+    league = _build([feb_game_doc]).baselines["league_rates"]
+    assert set(league) == set(METRICS)
+    assert all(v["sd"] > 0 for v in league.values())
+
+
+def test_the_best_rebounder_has_a_positive_rebounding_profile(feb_game_doc):
+    pkg = _build([feb_game_doc])
+    box = {p["id"]: int(p["ro"] or 0) + int(p["rd"] or 0)
+           for t in feb_game_doc["BOXSCORE"]["TEAM"] if t["id"] == OWN for p in t["PLAYER"]}
+    top = max((pid for pid in box if pid in pkg.tables["players"]), key=lambda pid: box[pid])
+    z = pkg.tables["players"][top]["z"]
+    assert z["orb40"] + z["drb40"] > 0
+
+
+def test_a_player_who_barely_played_is_pulled_towards_the_league(feb_game_doc):
+    pkg = _build([feb_game_doc])
+    small = min(pkg.tables["players"].values(), key=lambda b: b["seconds"])
+    big = max(pkg.tables["players"].values(), key=lambda b: b["seconds"])
+    spread = lambda b: sum(abs(v) for v in b["z"].values())
+    assert small["seconds"] < big["seconds"]
+    assert spread(small) <= spread(big) + 3  # shrinkage keeps tiny samples near zero
