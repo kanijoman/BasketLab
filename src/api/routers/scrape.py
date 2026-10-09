@@ -304,91 +304,23 @@ def scrape_progress(job_id: str) -> Dict[str, Any]:
 # Background task implementations
 # ---------------------------------------------------------------------------
 
-FEB_STATUS_FINISHED = "3"
-
-
-def _is_in_progress(doc: Dict[str, Any]) -> bool:
-    """True when a FEB doc carries a status other than FINISHED ('3').
-
-    Docs without ``HEADER.status`` (older data) are treated as finished.
-    """
-    status = (doc.get("HEADER") or {}).get("status")
-    return status is not None and str(status) != FEB_STATUS_FINISHED
-
-
-def _store_feb_match(
-    job: Dict[str, Any],
-    db: Any,
-    scraper: Any,
-    session: Any,
-    collection_name: str,
-    code: str,
-) -> None:
-    """Fetch and store a single FEB match; update job counters."""
-    job["current_match"] = code
-    try:
-        if db.document_exists(collection_name, int(code)):
-            job["skipped"] += 1
-            return
-        doc = scraper.fetch_boxscore(code, session)
-        if doc and _is_in_progress(doc):
-            # Storing a partial game would block the final one (document_exists).
-            job["skipped"] += 1
-        elif doc:
-            db.insert_boxscore(collection_name, code, doc)
-        else:
-            job["errors"].append(f"No data for match {code}")
-    except Exception as exc:
-        job["errors"].append(f"Match {code}: {exc}")
-    finally:
-        job["done"] += 1
-
-
-def _save_collection_meta(db: Any, collection_name: str, params: FEBScrapeParams) -> None:
-    """Remember the calendar URL/selection of the collection (used by the live match list)."""
-    try:
-        from src.services.collection_meta import save_feb_meta
-
-        save_feb_meta(db, collection_name, params)
-    except Exception:  # noqa: BLE001 - metadata is optional, never fail the scrape for it
-        pass
+from src.services.feb_match_ingest import (  # noqa: E402 - shared with the Atlas refresh job
+    FEB_STATUS_FINISHED,
+    is_in_progress as _is_in_progress,
+    save_collection_meta as _save_collection_meta,
+    scrape_feb_collection,
+    store_feb_match as _store_feb_match,
+)
 
 
 def _run_feb_scrape(job_id: str, params: FEBScrapeParams) -> None:
     """Background task: download all FEB matches for the given selection."""
     job = SCRAPE_JOBS[job_id]
     job["status"] = "running"
-
     try:
-        from src.scraper import FEBWebScraper
-        from src.database import MongoDBHandler, get_collection_name
+        from src.database import MongoDBHandler
 
-        scraper = FEBWebScraper()
-        db = MongoDBHandler()
-
-        collection_name = get_collection_name(
-            params.competition_label, params.season_label, params.group_label,
-        )
-        job["collection"] = collection_name
-        _save_collection_meta(db, collection_name, params)
-
-        job["status"] = "discovering"
-        _, session = scraper.get_page_content(params.year)
-        match_codes = scraper.get_matches(
-            params.season_value, params.group_value, params.year,
-            session, url=params.competition_url,
-        )
-        job["total"] = len(match_codes)
-        job["status"] = "running"
-
-        for code in match_codes:
-            _store_feb_match(job, db, scraper, session, collection_name, code)
-            if job["done"] % 10 == 0:
-                gc.collect()
-
-        job["status"] = "done"
-        job["current_match"] = None
-
+        scrape_feb_collection(MongoDBHandler(), params, job=job)
     except Exception as exc:
         job["status"] = "error"
         job["errors"].append(f"Fatal: {exc}")
