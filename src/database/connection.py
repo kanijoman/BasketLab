@@ -1,7 +1,7 @@
 """MongoDB connection management."""
 
 import pymongo
-from pymongo.errors import ConnectionFailure
+from pymongo.errors import PyMongoError
 from .db_config import get_mongodb_connection_string
 from typing import Optional
 
@@ -16,6 +16,7 @@ class MongoDBConnection:
         Args:
             connection_string: MongoDB connection URI (optional, uses config if not provided)
         """
+        self.last_error_kind: Optional[str] = None
         if connection_string is None:
             connection_string = get_mongodb_connection_string()
 
@@ -30,8 +31,11 @@ class MongoDBConnection:
             self.client.server_info()  # Test connection
             self.db = self.client["BASKETBALL"]
             self._connected = True
-        except ConnectionFailure as e:
-            print(f"[MongoDBConnection] Failed to connect to MongoDB: {e}")
+        except PyMongoError as e:
+            from src.api.db_health import classify_db_error
+
+            self.last_error_kind = classify_db_error(e)
+            print(f"[MongoDBConnection] Failed to connect to MongoDB ({self.last_error_kind}): {type(e).__name__}")
             self.client = None
             self.db = None
             self._connected = False

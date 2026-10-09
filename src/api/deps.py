@@ -37,10 +37,16 @@ def get_db():
     Raises ``HTTP 503`` when the database is not reachable so callers
     receive a clean JSON error instead of an unhandled exception.
     """
-    handler = _create_handler()
+    from src.api.db_health import classify_db_error, hint_for
+
+    try:
+        handler = _create_handler()
+    except Exception as exc:  # noqa: BLE001 - never a bare 500: say what is wrong (no secrets)
+        raise HTTPException(status_code=503, detail=f"Base de datos no disponible: {hint_for(classify_db_error(exc))}") from exc
     if not handler.is_connected():
+        kind = getattr(getattr(handler, "connection", None), "last_error_kind", None)
         raise HTTPException(
             status_code=503,
-            detail="Database not connected. Check MongoDB credentials.",
+            detail=f"Database not connected. {hint_for(kind) if kind else 'Check MongoDB credentials.'}",
         )
     return handler
