@@ -46,6 +46,8 @@ interface Props<TData> {
   exportOptions?: Omit<ExportOptions, 'captureRef'>
   /** Optional row click handler */
   onRowClick?: (row: Row<TData>) => void
+  /** Width (px) of the columns that do not set their own ``size`` (default 80) */
+  defaultColumnSize?: number
   className?: string
 }
 
@@ -92,6 +94,7 @@ export default function DataTable<TData>({
   loading = false,
   exportOptions,
   onRowClick,
+  defaultColumnSize = 80,
   className,
 }: Props<TData>) {
   const tableRef = useRef<HTMLTableElement>(null)
@@ -110,7 +113,7 @@ export default function DataTable<TData>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     columnResizeMode: 'onChange',
-    defaultColumn: { size: 80, minSize: 40 },
+    defaultColumn: { size: defaultColumnSize, minSize: 40 },
   })
 
   const csvData = useMemo(
@@ -155,31 +158,46 @@ export default function DataTable<TData>({
           <thead>
             {table.getHeaderGroups().map(hg => (
               <tr key={hg.id}>
-                {hg.headers.map((header, i) => (
-                  <th
-                    key={header.id}
-                    colSpan={header.colSpan}
-                    style={{ width: header.getSize() }}
-                    className={cn(
-                      'px-2 py-2.5 text-left text-xs font-medium text-ink-secondary',
-                      'bg-surface-raised border-b border-surface-border select-none',
-                      i === 0 && 'sticky left-0 z-10 bg-surface-raised',
-                      header.column.getCanSort() && 'cursor-pointer hover:text-ink-primary',
-                    )}
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <span className="flex items-center gap-1">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && (
-                        <span className="text-ink-muted">
-                          {header.column.getIsSorted() === 'asc'  && <ArrowUp className="w-3 h-3" />}
-                          {header.column.getIsSorted() === 'desc' && <ArrowDown className="w-3 h-3" />}
-                          {!header.column.getIsSorted()           && <ArrowUpDown className="w-3 h-3 opacity-30" />}
-                        </span>
+                {hg.headers.map((header, i) => {
+                  // an empty cell above a leaf column (mixed grouped / plain columns): its label sits in the last row
+                  if (header.isPlaceholder) {
+                    return (
+                      <th
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        style={{ width: header.getSize() }}
+                        className={cn('bg-surface-raised', i === 0 && 'sticky left-0 z-10')}
+                      />
+                    )
+                  }
+                  const isGroup = header.subHeaders.length > 0
+                  return (
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      style={{ width: header.getSize() }}
+                      className={cn(
+                        'px-2 py-2.5 text-xs font-medium text-ink-secondary',
+                        'bg-surface-raised border-b border-surface-border select-none',
+                        isGroup ? 'text-center border-l border-surface-border' : 'text-left',
+                        i === 0 && 'sticky left-0 z-10 bg-surface-raised',
+                        header.column.getCanSort() && 'cursor-pointer hover:text-ink-primary',
                       )}
-                    </span>
-                  </th>
-                ))}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <span className={cn('flex items-center gap-1', isGroup && 'justify-center')}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <span className="text-ink-muted">
+                            {header.column.getIsSorted() === 'asc'  && <ArrowUp className="w-3 h-3" />}
+                            {header.column.getIsSorted() === 'desc' && <ArrowDown className="w-3 h-3" />}
+                            {!header.column.getIsSorted()           && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                  )
+                })}
               </tr>
             ))}
           </thead>
