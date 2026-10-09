@@ -51,6 +51,12 @@ El usuario añade ahí necesidades y bugs de pruebas manuales. **Antes de propon
 ## Flujo git
 `git fetch && git checkout main && git merge --ff-only origin/main` **antes de crear cualquier rama**; una rama por PR, independiente. `main` protegido: solo PRs. **Un bloque de funcionalidad = un único PR.** Si hay que dividir, no abras el siguiente mientras haya PRs pendientes que toquen los mismos ficheros (sobre todo `docs/*` y `CLAUDE.md`): encadena o espera a la integración para evitar conflictos. Commit/push solo cuando se pide. Pie de commit: `Co-Authored-By: Claude …`. Ver también [docs/TESTING.md](docs/TESTING.md) para CI.
 
+## Tras integrar un PR: limpieza obligatoria (antes de seguir con nada más)
+1. **Git**: `git fetch --prune`, ff de `main`, borrar ramas locales fusionadas (`git branch --merged main`); comprobar que no quedan ramas remotas ni PRs sin integrar (`git branch -r`, `gh pr list`).
+2. **Issues**: cerrar los resueltos, comentar los parciales (`Refs #N`), actualizar épicas/sub-issues y ROADMAP/docs si cambió el estado, crear **issues** para hallazgos nuevos o trabajo diferido (no solo en el chat), revisar duplicados/obsoletos y issues nuevos del usuario.
+3. **CI en `main`**: `gh run list --branch main` (deploy, vectores, APK); un fallo = arreglo o issue.
+4. Resumir al usuario (ramas, issues, CI) y proponer la siguiente tarea.
+
 ## Definición de hecho (sincronizar docs — obligatorio)
 Antes de dar una entrega por terminada y del commit/PR, revisa y **actualiza** (y borra lo que ya no sea cierto) los docs afectados. `tests/test_docs_consistency.py` lo hace cumplir en parte (paquetes, routers y módulos live sin documentar fallan).
 | Si cambias… | actualiza |
