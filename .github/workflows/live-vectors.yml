@@ -53,7 +53,7 @@ jobs:
 
       - name: Reference tests (no conftest: live_core is standard library only)
         run: |
-          python -m pytest tests/test_live_vectors.py tests/test_live_core_boundary.py \
+          python -m pytest tests/test_live_vectors.py tests/test_live_core_boundary.py tests/test_live_core_session.py \
             --noconftest -o addopts="" -q
 
       - name: Install Pyodide runner

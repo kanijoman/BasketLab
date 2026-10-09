@@ -1,0 +1,44 @@
+{
+  "name": "basketlab-live-android",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "BasketLab live: tablet/phone app (React + Vite + Capacitor) running src/live_core in Pyodide.",
+  "scripts": {
+    "sync-engine": "node scripts/sync-engine.mjs",
+    "dev": "npm run sync-engine && vite",
+    "build": "npm run sync-engine && tsc --noEmit && vite build",
+    "type-check": "tsc --noEmit",
+    "test": "npm run sync-engine && vitest",
+    "test:run": "npm run sync-engine && vitest run",
+    "cap:sync": "npm run build && cap sync android",
+    "preview": "vite preview",
+    "e2e": "npm run build && playwright test",
+    "e2e:ci": "playwright test"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "pyodide": "314.0.7",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@playwright/test": "^1.64.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^25.4.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "jsdom": "^29.0.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0",
+    "vitest": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

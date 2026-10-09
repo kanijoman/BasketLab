@@ -106,5 +106,6 @@ pytest -q                            # backend (CI: requirements.txt)
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
+cd apps/live-android && npm ci && npm run test:run   # app live: tests con Pyodide real (e2e: npm run e2e)
 # creds: MONGODB_CONNECTION_STRING o src/database/db_credentials.txt · ejemplo en .env.example
 ```

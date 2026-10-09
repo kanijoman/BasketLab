@@ -1,5 +1,5 @@
 # Operaciones: despliegue y clave de administración
-Léelo cuando toques Render/Vercel, variables de entorno o veas un 401/503 en Admin, scrape, ingesta o entrenamiento. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
+Léelo cuando toques Render/Vercel, variables de entorno, veas un 401/503 en Admin/scrape/ingesta/entrenamiento, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Estado actual (decisión consciente)
 `ADMIN_API_KEY` **no está definida en producción**, a propósito: la aplicación no es pública y se prefiere que esas rutas queden cerradas. Consecuencia en Render (`ENVIRONMENT=production`):
@@ -49,6 +49,35 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
 
 ## Variables de entorno (resumen)
 Backend (Render): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional hasta que se decida activarla), `DISABLE_SCRAPING=1` (solo api). Frontend (Vercel): `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Plantilla: `.env.example`.
+
+## App Android (BasketLab Live): APK, firma y publicación
+La app (`apps/live-android`) se compila **en GitHub Actions** (`.github/workflows/live-android.yml`); no hace falta Android Studio ni Java en local. Cada PR/push que toque la app deja el APK como artefacto del workflow (requiere sesión de GitHub para descargarlo). Para tener un **enlace directo** (el repo es público) se publica una Release con una etiqueta.
+
+### Publicar una versión
+```bash
+git tag live-android-v0.1.0
+git push origin live-android-v0.1.0
+```
+El workflow compila, firma y crea la Release con `basketlab-live-0.1.0.apk`. Enlace estable a la última: `https://github.com/kanijoman/BasketLab/releases/latest` (o el de la Release concreta). El `versionCode` sube solo (número de ejecución del workflow), así que cada APK puede instalarse **encima** del anterior.
+
+### Instalar en el móvil / tablet (una vez por dispositivo)
+1. Abrir el enlace de la Release en el navegador del dispositivo y descargar el `.apk`.
+2. Android pedirá permitir **"Instalar apps desconocidas"** para ese navegador (o gestor de archivos): *Ajustes → Apps → [navegador] → Instalar apps desconocidas → Permitir*. No hace falta modo desarrollador ni depuración USB.
+3. Abrir el APK y pulsar *Instalar*. Si Play Protect avisa de "app no verificada", elegir *Instalar de todos modos*.
+4. Actualizar = descargar el APK nuevo e instalarlo encima (misma clave de firma, `versionCode` mayor). Si el dispositivo es de un MDM del club, puede tener bloqueadas las fuentes desconocidas.
+
+### Clave de firma propia (recomendado antes de la primera tablet "de verdad")
+Sin los secretos de abajo el workflow firma con una clave de depuración **efímera**: el APK se instala, pero el siguiente build no podrá actualizarlo (habría que desinstalar la app y se pierden sus datos). Con la clave propia, todas las versiones son actualizaciones válidas.
+1. Generar el almacén (necesita un JDK; `keytool` viene con él, p. ej. `winget install Microsoft.OpenJDK.21`):
+   ```bash
+   keytool -genkeypair -v -keystore basketlab-release.keystore -alias basketlab -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   Anota las contraseñas. **Guarda una copia del `.keystore` y las contraseñas en un sitio seguro: si se pierden no se podrá actualizar la app instalada.** No lo commitees (`*.keystore` está en `.gitignore`).
+2. Codificarlo en base64 (PowerShell): `[Convert]::ToBase64String([IO.File]::ReadAllBytes("basketlab-release.keystore")) | Set-Clipboard`
+3. GitHub → *Settings → Secrets and variables → Actions → New repository secret*, cuatro secretos:
+   `ANDROID_KEYSTORE_BASE64` (el base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`basketlab`), `ANDROID_KEY_PASSWORD`.
+4. Publicar una versión nueva (etiqueta). Si ya había una app instalada con la clave efímera: desinstalarla una vez.
+Rotar la clave implica desinstalar y reinstalar en todos los dispositivos.
 
 ## Futuro
 La gestión real de usuarios y roles (sustituir la clave única) está planificada y aplazada en la épica #153.

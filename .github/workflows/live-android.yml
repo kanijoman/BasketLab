@@ -1,0 +1,146 @@
+name: Live Android app
+
+# apps/live-android: React + Vite app (src/live_core running in Pyodide inside a Web Worker)
+# packaged with Capacitor. Everything is built and tested in the cloud: nothing needs to be
+# installed locally. Tag `live-android-vX.Y.Z` to publish the APK as a GitHub Release.
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["live-android-v*"]
+    paths:
+      - "apps/live-android/**"
+      - "src/live_core/**"
+      - "tests/live_vectors/**"
+      - "src/JSON_samples/feb_game.json"
+      - ".github/workflows/live-android.yml"
+  pull_request:
+    paths:
+      - "apps/live-android/**"
+      - "src/live_core/**"
+      - "tests/live_vectors/**"
+      - "src/JSON_samples/feb_game.json"
+      - ".github/workflows/live-android.yml"
+
+defaults:
+  run:
+    working-directory: apps/live-android
+
+jobs:
+  web:
+    name: Web app (types, unit + Pyodide tests, build, e2e on a phone viewport)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/live-android/package-lock.json
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Unit tests (engine on real Pyodide vs the reference vectors, worker client, UI)
+        run: npm run test:run
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium for the e2e tests
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (real browser, Web Worker, Pyodide, Pixel 7 viewport)
+        run: npm run e2e:ci
+
+      - name: Keep the failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failures
+          path: apps/live-android/test-results
+          if-no-files-found: ignore
+
+  apk:
+    name: Android APK
+    needs: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/live-android/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      - name: Build the web app and sync it into the Android project
+        run: npm run cap:sync
+
+      - name: Signing key
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "mode=release-key" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set: signing with a throw-away debug key (the APK installs, but a later build cannot update it; see docs/OPERATIONS.md)"
+            mkdir -p ~/.android
+            keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "mode=debug-key" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Version
+        run: |
+          echo "APP_VERSION_CODE=${{ github.run_number }}" >> "$GITHUB_ENV"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            echo "APP_VERSION_NAME=${GITHUB_REF_NAME#live-android-v}" >> "$GITHUB_ENV"
+          else
+            echo "APP_VERSION_NAME=0.1.0-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Assemble the release APK
+        working-directory: apps/live-android/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+
+      - name: Name the APK
+        run: |
+          mkdir -p dist-apk
+          cp android/app/build/outputs/apk/release/*.apk "dist-apk/basketlab-live-${APP_VERSION_NAME}.apk"
+          ls -la dist-apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: basketlab-live-apk
+          path: apps/live-android/dist-apk/*.apk
+
+      - name: Publish a GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/live-android-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apps/live-android/dist-apk/*.apk
+          body: |
+            BasketLab Live ${{ env.APP_VERSION_NAME }} (${{ steps.signing.outputs.mode }}).
+            Instalar: descargar el APK en el dispositivo y permitir "Instalar apps desconocidas" para el navegador/gestor de archivos.
