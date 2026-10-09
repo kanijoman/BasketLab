@@ -611,6 +611,15 @@ class TestCollectionServiceListAvailable:
         results = svc.list_available()
         assert results == []
 
+    def test_collection_meta_is_internal_and_never_listed_or_dropped_regression(self):
+        """Bug: the internal COLLECTION_META (per-collection scrape metadata) showed up in the user's list."""
+        from src.services import CollectionService
+        handler = _make_db_handler_with_collections(["COLLECTION_META", "L_F_-2_2025_2026_Liga_Regular_B"])
+        svc = CollectionService(handler)
+        assert [r["name"] for r in svc.list_available()] == ["L_F_-2_2025_2026_Liga_Regular_B"]
+        with pytest.raises(ValueError):
+            svc.drop_collection("COLLECTION_META")
+
     def test_returns_empty_when_disconnected(self):
         from src.services import CollectionService
         handler = _make_db_handler_with_collections([])
