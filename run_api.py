@@ -37,6 +37,8 @@ if sys.platform == "win32":
 
 import uvicorn  # noqa: E402 (import after path + patch)
 
+from src.api.runtime import uvicorn_workers  # noqa: E402
+
 
 if __name__ == "__main__":
     dev_mode = os.environ.get("BASKETLAB_DEV", "0") == "1"
@@ -44,12 +46,12 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     # Windows does not support uvicorn's multiprocessing socket sharing
     # (WinError 10022 on sock.listen).  Always use a single worker.
-    _workers = 1 if sys.platform == "win32" else (1 if dev_mode else 4)
+    _workers = uvicorn_workers(os.environ, sys.platform, dev_mode)
     uvicorn.run(
         "src.api.app:app",
         host="0.0.0.0",
         port=port,
         reload=dev_mode,
-        workers=_workers if not dev_mode else None,
+        workers=_workers,
         log_level="info",
     )

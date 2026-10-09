@@ -4,7 +4,7 @@ FBCYL stores ``xnormalize``/``ynormalize`` (0-100 % of the court) already folded
 single half court for every team, so - unlike FEB, where each team attacks its own
 basket - the team index must NOT mirror the court: every shot is converted as ``team=0``.
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from src.shotcharts.feb_zones import ZONE_META, classify_zone, feb_to_fiba
 
@@ -45,12 +45,15 @@ def iter_shots_fbcyl(coll, team_id: Optional[str], player_filter: Optional[str])
                             yield x, y, made
 
 
+def iter_shot_dicts_fbcyl(coll, team_id: Optional[str], player_filter: Optional[str]) -> Iterator[Dict[str, Any]]:
+    """Lazily yield shots in the shape of ``feb_zones.iter_shots_feb`` (zone, made, FIBA x/y)."""
+    for x, y, made in iter_shots_fbcyl(coll, team_id, player_filter):
+        yield {"zone": classify_zone(x, y), "made": made, "x": x, "y": y}
+
+
 def extract_shots_fbcyl(coll, team_id: Optional[str], player_filter: Optional[str]) -> List[Dict[str, Any]]:
-    """Shots in the same shape as ``feb_zones.extract_shots_feb`` (zone, made, FIBA x/y)."""
-    return [
-        {"zone": classify_zone(x, y), "made": made, "x": x, "y": y}
-        for x, y, made in iter_shots_fbcyl(coll, team_id, player_filter)
-    ]
+    """Shots as a list (use ``iter_shot_dicts_fbcyl`` for league-wide scans)."""
+    return list(iter_shot_dicts_fbcyl(coll, team_id, player_filter))
 
 
 def stream_zone_counts_fbcyl(coll, team_id: Optional[str], player_filter: Optional[str]) -> Dict[str, Dict[str, int]]:

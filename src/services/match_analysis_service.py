@@ -44,6 +44,11 @@ _LABELS: Dict[str, str] = {
 }
 
 
+_FEB_SUMMARY_PROJECTION = {"HEADER.starttime": 1, "HEADER.round": 1, "HEADER.place": 1,
+                           "HEADER.TEAM.name": 1, "HEADER.TEAM.pts": 1}
+_FBCYL_SUMMARY_PROJECTION = {"stats.time": 1, "stats.score": 1, "stats.teams.name": 1}
+
+
 class MatchAnalysisService:
     """Analyse a single match document, comparing both teams' stats."""
 
@@ -58,10 +63,11 @@ class MatchAnalysisService:
     def get_match_list(self, is_fbcyl: bool) -> List[Dict]:
         """Return a lightweight list of all matches in the collection."""
         col = self._db.connection.get_collection(self._collection)
-        docs = list(col.find({}))
-        if is_fbcyl:
-            return [self._summary_fbcyl(d) for d in docs]
-        return [self._summary_feb(d) for d in docs]
+        # Only the summary fields: whole documents weigh ~1 MB each in memory (box score,
+        # play-by-play, shot chart) and a league has hundreds of them.
+        projection = _FBCYL_SUMMARY_PROJECTION if is_fbcyl else _FEB_SUMMARY_PROJECTION
+        summarise = self._summary_fbcyl if is_fbcyl else self._summary_feb
+        return [summarise(d) for d in col.find({}, projection)]
 
     def get_match_analysis(
         self, match_id: Any, is_fbcyl: bool

@@ -218,7 +218,9 @@ class ZoneAnalyzer:
 
         # Classify shots by zones
         unclassified_shots = 0
+        total_shots = 0
         for shot in shots:
+            total_shots += 1
             x, y = shot['x'], shot['y']
 
             # Get zone for this shot
@@ -255,7 +257,7 @@ class ZoneAnalyzer:
 
         return {
             'zone_stats': zone_stats,
-            'total_shots': len(shots),
+            'total_shots': total_shots,
             'unclassified_shots': unclassified_shots
         }
 

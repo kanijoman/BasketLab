@@ -11,8 +11,9 @@ Endpoints:
 """
 from __future__ import annotations
 
+import time
 import uuid as _uuid
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import Response
@@ -32,6 +33,17 @@ _PDF_MIME  = "application/pdf"
 
 # In-memory job store (process-scoped, same pattern as SCRAPE_JOBS)
 REPORT_JOBS: Dict[str, Dict[str, Any]] = {}
+
+# A finished weekly report holds its ZIP in memory until downloaded; drop forgotten ones.
+JOB_TTL_S = 15 * 60
+
+
+def purge_expired_jobs(now: Optional[float] = None) -> None:
+    """Remove finished/failed jobs older than ``JOB_TTL_S`` (running jobs are kept)."""
+    now = time.time() if now is None else now
+    for job_id in [j for j, job in REPORT_JOBS.items()
+                   if job.get("status") != "running" and now - job.get("created_at", now) > JOB_TTL_S]:
+        REPORT_JOBS.pop(job_id, None)
 
 
 # ---------------------------------------------------------------------------
@@ -202,8 +214,10 @@ def weekly_report_start(
         ``{job_id}`` — poll ``GET /reports/weekly-report-progress/{job_id}``
         then download via ``GET /reports/weekly-report-download/{job_id}``.
     """
+    purge_expired_jobs()
     job_id = str(_uuid.uuid4())
     REPORT_JOBS[job_id] = {
+        "created_at": time.time(),
         "status":    "running",
         "step":      0,
         "total":     5,

@@ -65,6 +65,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from src.api import memory as _memory  # noqa: E402
+
+_memory.install(app)  # logs RSS per request when LOG_MEMORY=1
+
 # ---------------------------------------------------------------------------
 # Routers — only scrape + collections (no ML, no analytics)
 # ---------------------------------------------------------------------------
