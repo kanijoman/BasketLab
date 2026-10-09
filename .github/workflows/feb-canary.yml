@@ -1,0 +1,74 @@
+name: FEB canary
+
+# Daily check that FEB's data still has the shape the live engine expects (src/live_prep/canary.py).
+# Drift or a broken invariant opens (or updates) an issue labelled `canary`; an unreachable FEB is
+# retried and, if it persists, fails the job (a blocked runner IP must not go unnoticed).
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/live_prep/canary.py"
+      - "src/live_core/**"
+      - "src/JSON_samples/feb_game.json"
+      - ".github/workflows/feb-canary.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  canary:
+    name: FEB data format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install the scraper dependencies only
+        run: python -m pip install requests beautifulsoup4 cachetools tenacity
+
+      - name: Run the canary (3 attempts when FEB cannot be reached)
+        id: canary
+        run: |
+          code=0
+          for attempt in 1 2 3; do
+            set +e
+            python -m src.live_prep.canary | tee canary.md
+            code=${PIPESTATUS[0]}
+            set -e
+            [ "$code" != "2" ] && break
+            echo "::warning::FEB unreachable (attempt $attempt/3)"
+            sleep 60
+          done
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Open or update the canary issue (format drift)
+        if: steps.canary.outputs.code == '1' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body="$(cat canary.md)
+
+          Ejecución: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          existing=$(gh issue list --label canary --state open --json number -q '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --label "bug,live,area:live,canary" \
+              --title "Canario FEB: el formato de datos ha cambiado" --body "$body"
+          fi
+
+      - name: Result
+        run: |
+          code="${{ steps.canary.outputs.code }}"
+          if [ "$code" = "0" ]; then echo "FEB format OK"; exit 0; fi
+          if [ "$code" = "1" ]; then echo "::error::FEB format drift or broken invariant (see the summary / issue)"; exit 1; fi
+          echo "::error::FEB could not be reached after 3 attempts"; exit 1
