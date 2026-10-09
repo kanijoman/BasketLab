@@ -25,6 +25,7 @@ import {
   Layers,
   RotateCcw,
   ClipboardList,
+  Radio,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: Trophy,           label: 'Rankings',             subPath: 'rankings' },
   { icon: FileText,         label: 'Informe semanal',      subPath: 'report' },
   { icon: ClipboardList,    label: 'Informe de equipo',    subPath: 'team-report' },
+  { icon: Radio,            label: 'Preparación live',     subPath: 'live-prep' },
   { icon: Activity,         label: 'Posesiones',           subPath: 'possessions' },
   { icon: ArrowLeftRight,   label: 'IN/OUT',               subPath: 'inout' },
   { icon: Users2,           label: 'Combinaciones',        subPath: 'lineups' },

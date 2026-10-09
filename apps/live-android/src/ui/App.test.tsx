@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { EngineApi } from '../engine/client'
 import type { EngineOutput } from '../engine/types'
+import type { PackageStore, StoredPackage } from '../package/storage'
 
 const META = {
   package_id: 'p', schema_version: 1, created_at: '', collection: 'c', season: '2025',
@@ -30,6 +31,25 @@ function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
     dispose: vi.fn(),
     ...over,
   }
+}
+
+const PKG_TEXT = JSON.stringify({
+  checksum: 'x',
+  package: {
+    team: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' }, season: '2025-2026',
+    collection: 'c', created_at: '2026-10-08T12:00:00Z',
+    tables: { players: { a: {} }, rival_players: { b: {} } }, baselines: { sample_games: { own: 5, rival: 4, league: 50 } },
+  },
+})
+
+function memoryStore(initial: StoredPackage | null = null): PackageStore & { saved: StoredPackage | null } {
+  const s = {
+    saved: initial,
+    load: async () => s.saved,
+    save: async (r: StoredPackage) => { s.saved = r },
+    clear: async () => { s.saved = null },
+  }
+  return s
 }
 
 const loadDemo = () => Promise.resolve({ package: 'PKG', game: 'GAME' })
@@ -94,5 +114,34 @@ describe('App', () => {
     const calls = replayCalls(engine).length
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(replayCalls(engine).length).toBe(calls)
+  })
+
+  describe('with an imported package', () => {
+    const saved = { plaintext: PKG_TEXT, savedAt: '2026-10-09T10:00:00Z' }
+
+    it('uses the stored package instead of the demo and shows its summary', async () => {
+      const engine = fakeEngine()
+      render(<App engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
+      expect(await screen.findByText(/partidos: 5 propios/)).toBeTruthy()
+      expect(engine.start).toHaveBeenCalledWith(PKG_TEXT)
+      expect(engine.loadReplay).not.toHaveBeenCalled()
+      expect(screen.queryByRole('button', { name: /reproducir/i })).toBeNull()
+      expect(screen.getByText(/en directo/i)).toBeTruthy()
+    })
+
+    it('goes back to the demo when the package is removed', async () => {
+      const store = memoryStore(saved)
+      render(<App engine={fakeEngine()} loadDemo={loadDemo} store={store} />)
+      fireEvent.click(await screen.findByRole('button', { name: /quitar paquete/i }))
+      expect(await screen.findByRole('button', { name: /reproducir/i })).toBeTruthy()
+      expect(store.saved).toBeNull()
+    })
+
+    it('reports a stored package the engine rejects and offers to remove it', async () => {
+      const engine = fakeEngine({ start: vi.fn().mockRejectedValue(new Error('Package schema version 9 is not supported')) })
+      render(<App engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
+      expect(await screen.findByText(/schema version 9/)).toBeTruthy()
+      expect(screen.getByRole('button', { name: /quitar paquete/i })).toBeTruthy()
+    })
   })
 })
