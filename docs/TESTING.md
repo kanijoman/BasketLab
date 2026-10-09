@@ -11,7 +11,7 @@ cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 ```
 Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requirements.txt`). Tests con marker `ml` (`test_backtesting`, `test_game_prediction`, `test_player_prediction`, `test_predictive`, 2 de `test_regression_formulas`) se **saltan** solos sin `scikit-learn`; en CI corren. Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
 
-## Mapa de tests (≈ 104 archivos, 2.130 tests backend, cobertura ≈72 %; frontend 16 archivos / 107 tests)
+## Mapa de tests (≈ 106 archivos, 2.140 tests backend, cobertura ≈72 %; frontend 16 archivos / 107 tests)
 - API (`TestClient`, `dependency_overrides[get_db]`): `test_api*.py`, `test_*_router.py`, `test_integration_api_services.py`, `test_lineups_sse.py`, `test_scraper_endpoints.py`.
 - Servicios y BD con `mongomock` (sin red ni Mongo real): `test_services.py`, `test_rotation_service.py`, `test_repository_*`, `test_pipeline_builder.py`, `test_indexes.py`.
 - PBP/posesiones: `test_possession_*`, `test_playbyplay_analyzer.py`, `test_pbp_*`. Predictivo (necesita sklearn): ver arriba. Informes/export: `test_pdf_generator.py`, `test_weekly_report*`, `test_individual_scouting.py`.
@@ -38,7 +38,10 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 | `mongomock.MongoClient()` ad hoc en ~20 tests | baja | **hecho** (`tests/db_helpers.new_mock_db`, vigilado por `test_mongomock_usage.py`) |
 Frontend: compensa testear `client.ts` y helpers puros; testear páginas enteras con mocks rinde poco (mejor un smoke e2e).
 
-## Marco cloud para la app Android (previsto)
+## App Android (`apps/live-android`): ya montado en `live-android.yml`
+Job `web` (type-check, vitest con Pyodide real vs vectores, build, Playwright Pixel 7) y job `apk` (Gradle, APK firmado, artefacto; release en tags `live-android-v*`). Local: `cd apps/live-android && npm ci && npm run test:run`; e2e local con Chrome instalado: `npm run e2e`. Pendiente del marco original: emulador Android (Maestro), Firebase Test Lab y canario diario (#136).
+
+## Marco cloud para la app Android (diseño original)
 Capas gratuitas en GitHub Actions/Google: pytest del motor → motor en Pyodide (hecho) → UI en perfiles Android de Playwright con FEB y Drive simulados (`fake_feb`) → APK en emulador con Maestro → Firebase Test Lab → App Distribution. Fluidez: motor en Web Worker; con reproducción ×30 y CPU ×4 más lenta contar tareas largas del hilo principal. Canario diario contra un partido FEB finalizado.
 
 ## Checklist manual (rescatado del plan antiguo)

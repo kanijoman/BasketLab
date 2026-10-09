@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 
-CORE_DOCS = ["ARCHITECTURE.md", "DATA_FORMATS.md", "LIVE.md", "TESTING.md", "ROADMAP.md"]
+CORE_DOCS = ["ARCHITECTURE.md", "DATA_FORMATS.md", "LIVE.md", "TESTING.md", "ROADMAP.md", "OPERATIONS.md"]
 CLAUDE = ROOT / "CLAUDE.md"
 ALL_DOCS = [CLAUDE, ROOT / "README.md"] + [DOCS / name for name in CORE_DOCS]
 

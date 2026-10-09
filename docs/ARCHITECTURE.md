@@ -1,5 +1,5 @@
 # Arquitectura (para Claude)
-Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**. Nada de BD en el frontend. Detalle de datos: [DATA_FORMATS.md](DATA_FORMATS.md); motor live: [LIVE.md](LIVE.md).
+Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**. Nada de BD en el frontend. Operaciones y clave de admin: [OPERATIONS.md](OPERATIONS.md). Detalle de datos: [DATA_FORMATS.md](DATA_FORMATS.md); motor live: [LIVE.md](LIVE.md).
 
 ## Paquetes `src/`
 | Paquete | Qué hay |
@@ -16,10 +16,10 @@ Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**.
 | `src/stats` | calculadoras (StatsCalculator, avanzadas, jugador) |
 | `src/utils` | `collection_utils` (`is_fbcyl`), `numeric_utils`, `team_utils` |
 | `src/visualization` | radar chart |
-`src/JSON_samples/` = documentos reales de ejemplo (FEB y FBCYL) para tests.
+`src/JSON_samples/` = documentos reales de ejemplo (FEB y FBCYL) para tests. `apps/live-android/` = app móvil/tablet del motor live (fuera de `src/`; ver [LIVE.md](LIVE.md)).
 
 ## Routers (`src/api/routers`, prefijo `/api/v1/<x>`)
-`collections` · `teams` · `players` (incluye IN/OUT y `together`) · `lineups` (REST + SSE `/stream`) · `scrape` (también en el servicio scraper) · `shots` (zonas; `?compare=league` añade `rating`/`league_pct`/`delta_pp`/`low_sample`) · `possessions` · `team_report` (informe automático por reglas JSON/PDF, modos `own`/`rival`; en `/reports/team-report/{collection}`) · `reports` (informe semanal ZIP, PDF/DOCX, `export-pdf`, `individual-scouting/docx`) · `historical` · `analysis` + `analysis_predictive` (ambos bajo `/analysis`: ajuste por rival, elasticidades, Monte Carlo, backtesting, predicción) · `matches` · `multi_phase` (`/multi`) · `rotaciones` (REST + SSE). **Seguridad**: no hay usuarios ni roles; las rutas destructivas, de ingesta y de entrenamiento (`DELETE collections`, `scrape/start`, `historical/ingest*`, `elasticity/train*`) exigen la cabecera `X-Admin-Key` = `ADMIN_API_KEY` (`src/api/security.require_admin`; en producción sin la variable responden 503, en desarrollo quedan abiertas). `tests/test_admin_auth.py` obliga a clasificar todo endpoint de escritura nuevo (protegido o en la lista pública explícita). El resto de la API es de lectura/cómputo y público.
+`collections` · `teams` · `players` (incluye IN/OUT y `together`) · `lineups` (REST + SSE `/stream`) · `scrape` (también en el servicio scraper) · `shots` (zonas; `?compare=league` añade `rating`/`league_pct`/`delta_pp`/`low_sample`) · `possessions` · `team_report` (informe automático por reglas JSON/PDF, modos `own`/`rival`; en `/reports/team-report/{collection}`) · `reports` (informe semanal ZIP, PDF/DOCX, `export-pdf`, `individual-scouting/docx`) · `historical` · `analysis` + `analysis_predictive` (ambos bajo `/analysis`: ajuste por rival, elasticidades, Monte Carlo, backtesting, predicción) · `matches` · `multi_phase` (`/multi`) · `rotaciones` (REST + SSE). **Seguridad**: no hay usuarios ni roles; las rutas destructivas, de ingesta y de entrenamiento (`DELETE collections`, `scrape/start`, `historical/ingest*`, `elasticity/train*`) exigen la cabecera `X-Admin-Key` = `ADMIN_API_KEY` (guía de activación en [OPERATIONS.md](OPERATIONS.md); `src/api/security.require_admin`; en producción sin la variable responden 503, en desarrollo quedan abiertas). `tests/test_admin_auth.py` obliga a clasificar todo endpoint de escritura nuevo (protegido o en la lista pública explícita). El resto de la API es de lectura/cómputo y público.
 
 ## Servicios (`src/services`)
 - Stats: `team_stats_service`, `player_stats_service`, `evolution_service`, `match_analysis_service`, `multi_phase_service`, `lineup_service`, `rotation_service`, `rival_adjusted_service`, `collection_service`, `_consistency_calculator`.

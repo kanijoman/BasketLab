@@ -13,6 +13,7 @@ Sin LLMs externos (eliminados): los informes automáticos serán por reglas, ver
 | [docs/DATA_FORMATS.md](docs/DATA_FORMATS.md) | parseas FEB/FBCYL, play-by-play, SHOTCHART, campos |
 | [docs/LIVE.md](docs/LIVE.md) | `src/live_core`, `live_prep`, `pbp`, scraper en vivo, vectores Pyodide |
 | [docs/TESTING.md](docs/TESTING.md) | escribes/ejecutas tests, CI, cobertura, checklist manual |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Render/Vercel, variables de entorno, `ADMIN_API_KEY` (guía para activarla), errores 401/503 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | fases, pendientes, deuda técnica, límites conocidos |
 
 ## ❌ TDD ES OBLIGATORIO — NUNCA SALTAR ESTE PASO
@@ -105,5 +106,6 @@ pytest -q                            # backend (CI: requirements.txt)
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
+cd apps/live-android && npm ci && npm run test:run   # app live: tests con Pyodide real (e2e: npm run e2e)
 # creds: MONGODB_CONNECTION_STRING o src/database/db_credentials.txt · ejemplo en .env.example
 ```
