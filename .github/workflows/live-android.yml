@@ -68,6 +68,8 @@ jobs:
     name: Android APK
     needs: web
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # create the GitHub Release on tags
     steps:
       - uses: actions/checkout@v4
 
