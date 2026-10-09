@@ -82,12 +82,28 @@ jobs:
     # Only deploy on push to main (not PRs, not develop)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
+    # Each hook is optional: a missing secret skips that deploy with a warning instead of
+    # failing the pipeline (see docs/OPERATIONS.md for how to create them).
     steps:
-      - name: Trigger Render deploy hook
-        # Add RENDER_DEPLOY_HOOK_URL as a GitHub repository secret.
-        # Get it from: Render dashboard → your service → Settings → Deploy Hook.
+      - name: Trigger Render deploy hook (api)
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_URL secret not set: skipping the basketlab-api deploy"
+            exit 0
+          fi
+          curl -fsSL -X POST "$HOOK"
+
+      - name: Trigger Render deploy hook (scraper)
+        env:
+          HOOK: ${{ secrets.RENDER_SCRAPER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_SCRAPER_DEPLOY_HOOK_URL secret not set: skipping the basketlab-scraper deploy"
+            exit 0
+          fi
+          curl -fsSL -X POST "$HOOK"
 
   # ── Deploy to Vercel (frontend) ────────────────────────────────────────────
   # Vercel auto-deploys via its native GitHub integration.

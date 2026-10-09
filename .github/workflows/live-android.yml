@@ -131,18 +131,35 @@ jobs:
         run: |
           mkdir -p dist-apk
           cp android/app/build/outputs/apk/release/*.apk "dist-apk/basketlab-live-${APP_VERSION_NAME}.apk"
+          # fixed name for the moving "live-android-latest" release (stable download link)
+          cp android/app/build/outputs/apk/release/*.apk dist-apk/basketlab-live.apk
           ls -la dist-apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: basketlab-live-apk
-          path: apps/live-android/dist-apk/*.apk
+          path: apps/live-android/dist-apk/basketlab-live-*.apk
 
       - name: Publish a GitHub Release (tags only)
         if: startsWith(github.ref, 'refs/tags/live-android-v')
         uses: softprops/action-gh-release@v2
         with:
-          files: apps/live-android/dist-apk/*.apk
+          files: apps/live-android/dist-apk/basketlab-live-*.apk
+          name: BasketLab Live ${{ env.APP_VERSION_NAME }}
+          # Prereleases are never the repo's "latest release" (make_latest:false alone is not enough:
+          # GitHub would still pick the newest one); see docs/OPERATIONS.md
+          prerelease: true
           body: |
             BasketLab Live ${{ env.APP_VERSION_NAME }} (${{ steps.signing.outputs.mode }}).
             Instalar: descargar el APK en el dispositivo y permitir "Instalar apps desconocidas" para el navegador/gestor de archivos.
+
+      - name: Update the stable "live-android-latest" release (tags only)
+        if: startsWith(github.ref, 'refs/tags/live-android-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete live-android-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
+          gh release create live-android-latest dist-apk/basketlab-live.apk \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "BasketLab Live (última versión)" \
+            --notes "Enlace fijo al APK más reciente: versión ${APP_VERSION_NAME} (${{ steps.signing.outputs.mode }}). Releases por versión: etiquetas live-android-v*."
