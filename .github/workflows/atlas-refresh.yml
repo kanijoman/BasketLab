@@ -1,0 +1,47 @@
+name: Atlas refresh
+
+# Keeps the production database (Atlas) up to date with FEB (issue #177): scrapes the competitions in
+# config/atlas_refresh.json (incremental, only finished matches not stored yet) and checks each
+# collection against FEB's calendar. Fails (red run) if a competition errors or still lacks played matches.
+# Needs the repository secret ATLAS_WRITE_URI (Atlas user with readWrite on BASKETBALL); see docs/OPERATIONS.md.
+
+on:
+  schedule:
+    - cron: "30 5,13,21 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "run_atlas_refresh.py"
+      - "src/services/atlas_refresh.py"
+      - "src/services/feb_match_ingest.py"
+      - "config/atlas_refresh.json"
+      - ".github/workflows/atlas-refresh.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Scrape FEB into Atlas
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate the configuration (pull requests)
+        if: github.event_name == 'pull_request'
+        run: python -c "import run_atlas_refresh; from src.services.atlas_refresh import load_config; print(len(load_config()), 'competitions configured')"
+      - name: Refresh Atlas
+        if: github.event_name != 'pull_request'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_WRITE_URI }}
+        run: python run_atlas_refresh.py --require-env

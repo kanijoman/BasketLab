@@ -19,6 +19,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Informes por reglas: `test_report_engine.py` (motor puro), `test_team_report_service_and_api.py` (renderer, servicio, endpoints JSON/PDF). Zonas vs liga: `test_zone_rating.py`, `test_shots_zone_compare.py`, `test_zone_analysis_relative.py`. FBCYL: `test_fbcyl_zones.py`, `test_fbcyl_zone_pipeline.py`.
 - Seguridad: `test_admin_auth.py` (clave de admin, 503 en producción sin clave, clasificación de rutas de escritura).
 - Memoria: `test_memory_mitigations.py` (workers, proyección del listado de partidos, zonas de liga en streaming, caducidad de jobs, log de RSS, render.yaml).
+- Refresco de Atlas: `test_atlas_refresh.py` (scrape incremental, errores por competición, informe, configuración, import limpio del CLI) y `test_data_freshness.py`/`test_db_health.py`.
 - Workflows: `test_workflows_yaml.py` (todos los `.github/workflows/*.yml` son YAML válido).
 - Paquete live: `test_live_package_api.py` (generación, límites, contraseña), `test_live_prep_crypto.py` (+ fixture `demo.bpkg`); web `LivePrepPage`/`livePackage`; app `package/*` (WebCrypto sobre el fixture de Python, IndexedDB), `PackagePanel` y un e2e de importación en Chrome real.
 - Canario FEB: `test_feb_canary.py` (esquema, invariantes, CLI y códigos de salida) y `feb-canary.yml` (diario; descarga real de FEB, abre issue `canary` ante deriva).
