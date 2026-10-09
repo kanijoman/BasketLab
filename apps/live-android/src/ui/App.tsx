@@ -8,22 +8,26 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
 import { loadDemoData, type DemoData } from '../engine/demo'
 import type { Alert, EngineOutput, ReplayInfo, SessionMeta } from '../engine/types'
+import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import AlertCard, { clockLabel } from './AlertCard'
 import PackagePanel from './PackagePanel'
+import RemotePackages from './RemotePackages'
 
 interface Props {
   engine?: EngineApi
   loadDemo?: () => Promise<DemoData>
   store?: PackageStore
+  /** Network access of the published-packages list (injected in tests). */
+  remoteFetcher?: Fetcher
 }
 
 const SPEEDS = [1, 10, 30, 60]
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 interface Entry { alert: Alert; at: string }
 
-export default function App({ engine: injected, loadDemo = loadDemoData, store: injectedStore }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, store: injectedStore, remoteFetcher }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -130,9 +134,12 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
     if (demo) void beginDemo(demo)
   }, [demo, beginDemo])
 
+  const onLoaded = (s: PackageSummary) => { setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panel = (
-    <PackagePanel engine={engine} store={store} loaded={pkg} onLoaded={s => { setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }}
-      onRemoved={removePackage} />
+    <>
+      <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={remoteFetcher} />
+      <PackagePanel engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} />
+    </>
   )
 
   if (phase.kind === 'loading') return <main className="screen"><p className="status">Cargando motor…</p></main>

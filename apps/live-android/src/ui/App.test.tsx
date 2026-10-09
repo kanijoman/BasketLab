@@ -55,7 +55,11 @@ function memoryStore(initial: StoredPackage | null = null): PackageStore & { sav
 const loadDemo = () => Promise.resolve({ package: 'PKG', game: 'GAME' })
 const replayCalls = (e: EngineApi) => (e.replay as ReturnType<typeof vi.fn>).mock.calls
 
-beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }))
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  // the published-packages list must never reach the network from these tests
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ v: 1, packages: [] }) }))
+})
 afterEach(() => vi.useRealTimers())
 
 describe('App', () => {

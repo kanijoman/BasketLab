@@ -47,6 +47,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 Frontend: compensa testear `client.ts` y helpers puros; testear páginas enteras con mocks rinde poco (mejor un smoke e2e).
 
 ## App Android (`apps/live-android`): ya montado en `live-android.yml`
+Descarga de paquetes publicados: `remote.test.ts` (índice, SHA-256, offline), `passphrase.test.ts`, `RemotePackages.test.tsx`; los tests de `App` y el e2e interceptan la red de la lista. `test-setup.ts` aporta un `localStorage` en memoria.
 Job `web` (type-check, vitest con Pyodide real vs vectores, build, Playwright Pixel 7) y job `apk` (Gradle, APK firmado, artefacto; release en tags `live-android-v*`). Local: `cd apps/live-android && npm ci && npm run test:run`; e2e local con Chrome instalado: `npm run e2e`. Pendiente del marco original: emulador Android (Maestro) y Firebase Test Lab. El canario diario de FEB (#136) ya existe (`feb-canary.yml`).
 
 ## Marco cloud para la app Android (diseño original)

@@ -1,6 +1,11 @@
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 
+// the published-packages list must not depend on the real network (an offline error would add a second alert)
+test.beforeEach(async ({ page }) => {
+  await page.route('**/live-packages/**', route => route.fulfill({ json: { v: 1, packages: [] } }))
+})
+
 test('the demo runs on a phone viewport: Pyodide boots in a worker and alerts show up', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
