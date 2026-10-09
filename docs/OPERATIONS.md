@@ -57,6 +57,7 @@ Al integrar en `main`, `ci.yml` ejecuta los tests y luego llama a los *Deploy Ho
 1. Render → servicio `basketlab-api` → *Settings → Deploy Hook* → copiar la URL.
 2. GitHub → *Settings → Secrets and variables → Actions → New repository secret* → `RENDER_DEPLOY_HOOK_URL` = esa URL.
 3. Repetir con `basketlab-scraper` → secreto `RENDER_SCRAPER_DEPLOY_HOOK_URL`.
+**Comprobación posterior (#111)**: tras los hooks, `scripts/post_deploy_check.py --sha $GITHUB_SHA` espera (hasta 15 min, el plan gratuito arranca en frío) a que `GET /api/v1/health` informe del commit empujado (`RENDER_GIT_COMMIT`; el deploy es asíncrono y hasta entonces responde la versión anterior) y exige que `GET /api/v1/health/db` esté conectado. Un fallo deja `main` en rojo con la causa clasificada (`auth_failed`, `unreachable`…). Necesita la **variable** (no secreto) de GitHub `RENDER_API_URL` = URL pública de `basketlab-api` (*Settings → Secrets and variables → Actions → Variables*); sin ella se omite con un aviso.
 Si Render ya despliega solo en cada push (*Auto-Deploy* activado en el servicio), los hooks son redundantes y se pueden dejar sin definir: elige una sola vía para no desplegar dos veces.
 
 ## Grabar partidos de FEB en directo (feb-record.yml)

@@ -13,7 +13,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 ## Pendiente
 1. **Live con datos reales** (bloqueante): capturar un partido en directo (`status`, refresco, JWT, `ShotChart`) y el HTML del calendario; calibrar umbrales con el staff.
 2. Lista de partidos por equipo (#119) hecha para competiciones de un grupo; pendiente multi-grupo y confirmar con un partido real cómo se ve uno en juego (#118).
-3. **App Android** (#120, `apps/live-android`): esqueleto hecho (motor en Web Worker con Pyodide, modo demo, CI con e2e y APK, release por etiqueta). Paquete de extremo a extremo hecho (#133: generar en la web, importar en la app). Pendiente: fuente real FEB (#118/#119), paquete desde Drive (#162), prueba en tablet real (versión mínima de WebView, fluidez medida en dispositivo).
+3. **App Android** (#120, `apps/live-android`): esqueleto hecho (motor en Web Worker con Pyodide, modo demo, CI con e2e y APK, release por etiqueta). Paquete de extremo a extremo hecho (#133: generar en la web, importar en la app) y automático (#175: publicado en la rama `live-packages` y descargable en la app; sin Drive, #162 descartado). Pendiente: fuente real FEB (#118/#119), prueba en tablet real (versión mínima de WebView, fluidez medida en dispositivo).
 4. Informes por reglas v1 completa (épica #145: zonas vs liga en FEB y FBCYL, sin mínimo de partidos, PDF sin cortes de fila). v2 diferida (#146).
 5. **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
 6. Optimizador de quintetos, proyección multi-temporada de jugador (ideas antiguas, sin empezar).
