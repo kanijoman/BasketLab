@@ -1,6 +1,7 @@
 """Public health endpoints (no secrets): is the database reachable from this server?"""
 from __future__ import annotations
 
+import os
 import time
 from typing import Any, Dict
 
@@ -15,6 +16,12 @@ router = APIRouter()
 
 def _failure(kind: str) -> JSONResponse:
     return JSONResponse(status_code=503, content={"connected": False, "error": kind, "hint": hint_for(kind)})
+
+
+@router.get("", summary="Liveness and deployed commit (public, no database needed)")
+def liveness() -> Dict[str, Any]:
+    """``commit`` = Render's ``RENDER_GIT_COMMIT``: the post-deploy check waits until it is the pushed one."""
+    return {"status": "ok", "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("GIT_COMMIT") or None}
 
 
 @router.get("/db", summary="Database connectivity (public, no credentials)")

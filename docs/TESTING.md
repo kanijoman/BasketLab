@@ -31,7 +31,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`, `tests/db_helpers.py` (`new_mock_db`: única forma de crear una BD mongomock).
 
 ## CI (`.github/workflows`)
-`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; base medida 71,8 %; subir el umbral solo cuando la cobertura mejore de forma estable), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), deploy a Render solo en push a `main`. `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
+`ci.yml`: backend (`pytest --cov --cov-fail-under=70`, Python 3.11, instala `requirements-dev.txt`; base medida 71,8 %; subir el umbral solo cuando la cobertura mejore de forma estable), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), job `e2e-web` (smoke Playwright, ver abajo), deploy a Render solo en push a `main` (necesita `e2e-web`) con comprobación posterior (`scripts/post_deploy_check.py`, ver OPERATIONS). `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
 
 ## Evaluación (estado actual) y mejoras
 | Hueco | Prioridad | Estado |
@@ -42,13 +42,16 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 | `fetch` crudo en páginas ignoraba `VITE_API_BASE`; `getPlayerRankings/Radar` a rutas inexistentes | media | **hecho** (todo vía `client.ts`; `client.test.ts`) |
 | Frontend: sin tests de páginas ni del SSE de `client.ts` | media | pendiente (bajo retorno; preferir smoke e2e) |
 | Sin **contrato** back↔front (0 `response_model`; tipos TS a mano) | media (más trabajo) | hoja de ruta: modelos Pydantic + OpenAPI → tipos TS |
-| Sin e2e ni smoke contra servidor real; sin health-check post-deploy | media | hoja de ruta: Playwright contra uvicorn + build |
+| Sin e2e ni smoke contra servidor real; sin health-check post-deploy | media | **hecho** (#111: `frontend/e2e/smoke.spec.ts` + `scripts/post_deploy_check.py`) |
 | `npm run lint` roto (no había config) | baja | **hecho** (`eslint.config.js`, `--max-warnings 0` en CI: sin avisos) |
 | `mongomock.MongoClient()` ad hoc en ~20 tests | baja | **hecho** (`tests/db_helpers.new_mock_db`, vigilado por `test_mongomock_usage.py`) |
 Frontend: compensa testear `client.ts` y helpers puros; testear páginas enteras con mocks rinde poco (mejor un smoke e2e).
 
 ## App Android (`apps/live-android`): ya montado en `live-android.yml`
 Descarga de paquetes publicados: `remote.test.ts` (índice, SHA-256, offline), `passphrase.test.ts`, `RemotePackages.test.tsx`; los tests de `App` y el e2e interceptan la red de la lista. `test-setup.ts` aporta un `localStorage` en memoria.
+## Smoke e2e de la web (#111)
+`frontend/e2e/smoke.spec.ts` (Playwright, Chromium escritorio 1280×800): inicio (lista la competición, **no** muestra `COLLECTION_META`), tabla de equipos, posesiones (vista Resumen por defecto, vista Estilo propio con cabeceras agrupadas, nombre completo del equipo, sin scroll horizontal) y salud de la API. Corre contra el **build de producción** (`vite preview`, que proxea `/api`) y la **API real sobre mongomock** (`tests/e2e_web/serve_api.py`: parchea `pymongo.MongoClient`, siembra el partido de ejemplo ×3 y sirve con uvicorn en :8010; `test_e2e_web_server.py` evita que se pudra). Local: `cd frontend && E2E_PYTHON="<ruta a python>" npm run e2e` (reutiliza Chrome; en CI `npm run e2e:ci` tras `npx playwright install --with-deps chromium`). El job `e2e-web` de `ci.yml` es requisito del deploy; al fallar sube `frontend/test-results` como artefacto. Ampliar con un flujo nuevo = una prueba más en ese fichero (la semilla es una sola competición).
+
 Job `web` (type-check, vitest con Pyodide real vs vectores, build, Playwright Pixel 7) y job `apk` (Gradle, APK firmado, artefacto; release en tags `live-android-v*`). Local: `cd apps/live-android && npm ci && npm run test:run`; e2e local con Chrome instalado: `npm run e2e`. Pendiente del marco original: emulador Android (Maestro) y Firebase Test Lab. El canario diario de FEB (#136) ya existe (`feb-canary.yml`).
 
 ## Marco cloud para la app Android (diseño original)

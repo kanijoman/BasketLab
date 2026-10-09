@@ -20,6 +20,15 @@ export default defineConfig({
       },
     },
   },
+  // `vite preview` (smoke e2e, issue #111) proxies /api to the e2e API server instead of a real backend
+  preview: {
+    proxy: {
+      '/api': {
+        target: process.env.E2E_API_URL ?? 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     outDir: 'dist',
   },
