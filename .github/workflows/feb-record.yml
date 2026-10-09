@@ -1,0 +1,110 @@
+name: FEB live recorder
+
+# Records the live feed of the matches in config/feb_watchlist.json from their kick-off (issue #171).
+# A cheap planner runs every 15 minutes; when a watched match is about to start (or is already being
+# played) it launches one recorder job for it, which waits for the start, polls FEB until the match
+# finishes and uploads the recording as an artifact together with a report (cadence, delay, status
+# transitions, how the engine digests the real documents). Manual run: "Run workflow" + match codes.
+
+on:
+  schedule:
+    - cron: "*/15 6-22 * * *"
+  # validates the planner (imports, watchlist, calendar) on PRs; the record job only runs when a match is due
+  pull_request:
+    paths:
+      - "src/live_prep/recorder.py"
+      - "src/live_prep/recording_report.py"
+      - "src/scraper/**"
+      - "config/feb_watchlist.json"
+      - ".github/workflows/feb-record.yml"
+  workflow_dispatch:
+    inputs:
+      codes:
+        description: "Match codes to record right now (comma separated), in addition to the watchlist"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Which matches are starting
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install the scraper dependencies only
+        run: python -m pip install requests beautifulsoup4 cachetools tenacity
+
+      - name: Plan
+        id: plan
+        env:
+          CODES: ${{ github.event.inputs.codes }}
+        run: |
+          extra=""
+          for c in ${CODES//,/ }; do extra="$extra --extra $c"; done
+          python -m src.live_prep.recorder plan --watchlist config/feb_watchlist.json $extra | tail -1 > plan.json
+          cat plan.json
+          echo "matrix=$(cat plan.json)" >> "$GITHUB_OUTPUT"
+
+  record:
+    name: Record ${{ matrix.label || matrix.code }}
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 260
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    # a second trigger for the same match queues behind the running one and, when it starts, finds
+    # the match finished (--skip-if-finished) and exits at once
+    concurrency:
+      group: feb-record-${{ matrix.code }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install the scraper dependencies only
+        run: python -m pip install requests beautifulsoup4 cachetools tenacity
+
+      - name: Record
+        env:
+          CODE: ${{ matrix.code }}
+          START_AT: ${{ matrix.start_at }}
+        run: |
+          calendar=$(python -c "import json; print(json.load(open('config/feb_watchlist.json'))['calendar'])")
+          args="--match $CODE --calendar $calendar --skip-if-finished --max-minutes 215 --interval 10"
+          if [ -n "$START_AT" ] && [ "$START_AT" != "None" ]; then args="$args --start-at $START_AT"; fi
+          python -m src.live_prep.recorder record $args
+
+      - name: Report
+        if: always()
+        env:
+          CODE: ${{ matrix.code }}
+        run: |
+          if [ -d "recordings/$CODE" ]; then
+            python -m src.live_prep.recording_report "recordings/$CODE" --replay
+          else
+            echo "Nothing recorded (match already finished when the run started)."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recording-${{ matrix.code }}
+          path: recordings/${{ matrix.code }}
+          retention-days: 90
+          if-no-files-found: ignore

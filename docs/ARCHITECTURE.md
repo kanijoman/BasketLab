@@ -7,11 +7,11 @@ Flujo: **frontend → API (routers) → servicios → repositorio → MongoDB**.
 | `src/api` | FastAPI: `app.py` (todos los routers, CORS), `scraper_app.py` (solo scrape+collections), `deps.py` (`get_db`, handler único con `lru_cache`, 503 si no hay Mongo), `routers/` |
 | `src/services` | lógica de negocio (ver abajo) |
 | `src/database` | conexión, repositorios, pipelines de agregación, índices |
-| `src/scraper` | clientes FEB/FBCYL: token JWT, API, calendario HTML; `calendar_parser` (conserva los partidos aún no jugados) |
+| `src/scraper` | clientes FEB/FBCYL: token JWT, API, calendario HTML; `calendar_parser` (conserva los partidos aún no jugados), `schedule_client` (calendario/estado en directo de FEB; solo depende de requests/bs4/cachetools/tenacity) |
 | `src/pbp` | parsers de play-by-play y posesiones **sin BD** (los reutiliza el motor live) |
 | `src/report_engine` | informes por reglas (sin LLM, funciones puras): `catalog` (estadísticas), `rules` (cuartiles, diferencial vs mediana, CV), `zones` (zonas calientes/frías), `templates` (frases por tema), `engine.build_team_report`, `html_renderer` (para PDF), `config.ReportConfig` (umbrales por confirmar) |
 | `src/live_core` | motor de partido en vivo, biblioteca estándar (corre en la tablet con Pyodide) |
-| `src/live_prep` | generación y cifrado de paquetes de preparación (usa Mongo) y `canary` (comprobación diaria del formato de datos de FEB, ver [LIVE.md](LIVE.md)) |
+| `src/live_prep` | generación y cifrado de paquetes de preparación (usa Mongo) `canary` (comprobación diaria del formato de datos de FEB) y `recorder`/`recording_report` (grabación y análisis del feed en directo), ver [LIVE.md](LIVE.md) |
 | `src/shotcharts` | cancha FIBA, zonas (shapely), visualizadores; `feb_zones` (geometría de 10 zonas + conteo por zona, usado por el router y los informes), `fbcyl_zones` (mismos conteos desde las coordenadas por jugador de FBCYL), `zone_rating` (valoración de zona vs media de liga), `league_zones` (base de liga para los PNG de `ZoneAnalyzer`) |
 | `src/stats` | calculadoras (StatsCalculator, avanzadas, jugador) |
 | `src/utils` | `collection_utils` (`is_fbcyl`), `numeric_utils`, `team_utils` |

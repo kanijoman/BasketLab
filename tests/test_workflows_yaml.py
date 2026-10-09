@@ -88,3 +88,40 @@ class TestFebCanaryWorkflow:
         text = (ROOT / ".github" / "workflows" / "feb-canary.yml").read_text(encoding="utf-8")
         assert "requests beautifulsoup4 cachetools tenacity" in text and "requirements.txt" not in text
 
+
+
+class TestFebRecorderWorkflow:
+    def _path(self):
+        return ROOT / ".github" / "workflows" / "feb-record.yml"
+
+    def _data(self):
+        return yaml.safe_load(self._path().read_text(encoding="utf-8"))
+
+    def test_a_cheap_planner_runs_every_few_minutes_and_on_demand(self):
+        on = self._data()[True]
+        assert on["schedule"][0]["cron"].startswith("*/15") and "workflow_dispatch" in on
+        assert "codes" in on["workflow_dispatch"]["inputs"]
+        assert "pull_request" in on  # the planner is exercised on PRs
+
+    def test_recorder_jobs_come_from_the_plan_matrix_one_per_match(self):
+        job = self._data()["jobs"]["record"]
+        assert job["needs"] == "plan" and "fromJSON(needs.plan.outputs.matrix)" in job["strategy"]["matrix"]
+        assert job["strategy"]["fail-fast"] is False
+
+    def test_each_match_is_recorded_once_even_if_triggered_twice(self):
+        job = self._data()["jobs"]["record"]
+        assert "matrix.code" in job["concurrency"]["group"] and job["concurrency"]["cancel-in-progress"] is False
+        record = next(s for s in job["steps"] if s.get("name") == "Record")
+        assert "--skip-if-finished" in record["run"]
+
+    def test_the_recording_and_report_are_uploaded_even_if_the_recorder_fails(self):
+        steps = self._data()["jobs"]["record"]["steps"]
+        upload = next(s for s in steps if "upload-artifact" in str(s.get("uses", "")))
+        assert upload["if"] == "always()" and upload["with"]["retention-days"] >= 30
+        assert next(s for s in steps if s.get("name") == "Report")["if"] == "always()"
+
+    def test_the_job_is_long_enough_for_a_whole_match(self):
+        assert self._data()["jobs"]["record"]["timeout-minutes"] >= 240
+
+    def test_only_the_scraper_dependencies_are_installed(self):
+        assert "requests beautifulsoup4 cachetools tenacity" in self._path().read_text(encoding="utf-8")

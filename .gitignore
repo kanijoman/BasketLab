@@ -97,3 +97,6 @@ frontend/.env.*.local
 
 # Pyodide vector runner
 tests/pyodide/node_modules/
+
+# FEB live recordings (artifacts of feb-record.yml; run locally with src.live_prep.recorder)
+recordings/

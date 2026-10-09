@@ -57,6 +57,9 @@ Al integrar en `main`, `ci.yml` ejecuta los tests y luego llama a los *Deploy Ho
 3. Repetir con `basketlab-scraper` → secreto `RENDER_SCRAPER_DEPLOY_HOOK_URL`.
 Si Render ya despliega solo en cada push (*Auto-Deploy* activado en el servicio), los hooks son redundantes y se pueden dejar sin definir: elige una sola vía para no desplegar dos veces.
 
+## Grabar partidos de FEB en directo (feb-record.yml)
+Para registrar el feed real de un partido (datos para calibrar el motor live, #118): añade su código a `config/feb_watchlist.json` (`"matches": ["2524470"]`; o `"teams": ["<id de equipo>"]` para todos los de un equipo) y haz PR a `main`. El código está en el calendario de FEB (`Partido.aspx?p=<código>`) o en la lista de *Preparación live*. Desde entonces el workflow lo graba solo: lanza el job entre 45 min antes y 30 min después del inicio. Resultado: GitHub → *Actions* → *FEB live recorder* → la ejecución → **Artifacts** `recording-<código>` (y el informe en *Summary*). **Grabar ya** (sin tocar la lista): *Actions → FEB live recorder → Run workflow* con el código. Local: `python -m src.live_prep.recorder record --match <código> --start-at <ISO UTC>` y `python -m src.live_prep.recording_report recordings/<código> --replay`. Consejo: añadir el partido a la lista con **más de una hora de antelación** (el planner lo ve en la siguiente pasada de 15 min).
+
 ## Memoria (límite de 512 MB en Render free)
 Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: scikit-learn +125 MB al primer uso predictivo, matplotlib +45, pandas +50). Medidas tomadas (issue #163):
 - **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4). Antes `run_api.py` lanzaba 4 en Linux → ~500-700 MB en reposo y OOM intermitente al desplegar.
