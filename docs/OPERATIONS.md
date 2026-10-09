@@ -50,6 +50,13 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
 ## Variables de entorno (resumen)
 Backend (Render): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional hasta que se decida activarla), `DISABLE_SCRAPING=1` (solo api). Frontend (Vercel): `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Plantilla: `.env.example`.
 
+## Despliegue automático (CI → Render)
+Al integrar en `main`, `ci.yml` ejecuta los tests y luego llama a los *Deploy Hooks* de Render. Cada hook es un secreto de GitHub **opcional**: si falta, ese paso avisa (`::warning`) y se omite, no rompe el pipeline. (Antes, con el secreto sin definir, `curl` fallaba con *URL rejected: Malformed input to a URL function*.)
+1. Render → servicio `basketlab-api` → *Settings → Deploy Hook* → copiar la URL.
+2. GitHub → *Settings → Secrets and variables → Actions → New repository secret* → `RENDER_DEPLOY_HOOK_URL` = esa URL.
+3. Repetir con `basketlab-scraper` → secreto `RENDER_SCRAPER_DEPLOY_HOOK_URL`.
+Si Render ya despliega solo en cada push (*Auto-Deploy* activado en el servicio), los hooks son redundantes y se pueden dejar sin definir: elige una sola vía para no desplegar dos veces.
+
 ## Memoria (límite de 512 MB en Render free)
 Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: scikit-learn +125 MB al primer uso predictivo, matplotlib +45, pandas +50). Medidas tomadas (issue #163):
 - **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4). Antes `run_api.py` lanzaba 4 en Linux → ~500-700 MB en reposo y OOM intermitente al desplegar.
@@ -67,7 +74,10 @@ La app (`apps/live-android`) se compila **en GitHub Actions** (`.github/workflow
 git tag live-android-v0.1.0
 git push origin live-android-v0.1.0
 ```
-El workflow compila, firma y crea la Release con `basketlab-live-0.1.0.apk`. Enlace estable a la última: `https://github.com/kanijoman/BasketLab/releases/latest` (o el de la Release concreta). El `versionCode` sube solo (número de ejecución del workflow), así que cada APK puede instalarse **encima** del anterior.
+El workflow compila, firma y publica **dos** releases:
+- **Por versión** (histórico): `https://github.com/kanijoman/BasketLab/releases/tag/live-android-v0.1.0`, con `basketlab-live-0.1.0.apk`. Ambas se publican como *prerelease*: así nunca son la "latest" del repo (`make_latest:false` no basta: GitHub elegiría la más reciente).
+- **Enlace fijo a la última** (`live-android-latest`, se recrea en cada etiqueta): `https://github.com/kanijoman/BasketLab/releases/download/live-android-latest/basketlab-live.apk`. Es el que conviene guardar en el móvil/tablet.
+No uses `releases/latest` para la app: apunta a la última release **de todo el repo** (hoy solo hay releases del APK, pero si se publicara otra cosa dejaría de servir). Convención: etiquetas `live-android-vX.Y.Z` para el APK (y `web-v*` si algún día hay releases de la web); listado solo del APK: `https://github.com/kanijoman/BasketLab/releases?q=live-android`. El `versionCode` sube solo (número de ejecución del workflow), así que cada APK puede instalarse **encima** del anterior.
 
 ### Instalar en el móvil / tablet (una vez por dispositivo)
 1. Abrir el enlace de la Release en el navegador del dispositivo y descargar el `.apk`.
