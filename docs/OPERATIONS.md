@@ -71,6 +71,9 @@ Puesta en marcha (una vez):
 4. Lanzar el workflow a mano y revisar el resumen. Sin el secreto, el run falla con un mensaje claro (código 2).
 Añadir una competición/temporada: nueva entrada en `config/atlas_refresh.json` (mismos campos que el scrape de la página Admin: `competition_url`, `season_value`, `group_value`, `year` y las tres etiquetas que forman el nombre de la colección). Si Atlas estuvo **pausado** por inactividad, hay que reanudarlo en Atlas (los síntomas son `unreachable` en `/api/v1/health/db`).
 
+## Publicar los paquetes live (live-packages.yml)
+Tras cada refresco de Atlas, `live-packages.yml` construye los paquetes cifrados de los próximos partidos del club (`config/package_publish.json`) y los publica en la rama `live-packages` (un solo commit forzado, ver [LIVE.md](LIVE.md)). Puesta en marcha (una vez): secreto `PACKAGE_PASSWORD` (≥ 8 caracteres, el mismo que se escribe una vez en la app; el repo es público, usa una contraseña larga) y, mejor, `ATLAS_READ_URI` con un usuario de Atlas de **solo lectura** (si no existe se usa `ATLAS_WRITE_URI`). Sin ellos el run falla con código 2. Si el workflow no se dispara tras el refresco, lanzarlo a mano (*Run workflow*).
+
 ## Memoria (límite de 512 MB en Render free)
 Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: scikit-learn +125 MB al primer uso predictivo, matplotlib +45, pandas +50). Medidas tomadas (issue #163):
 - **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4). Antes `run_api.py` lanzaba 4 en Linux → ~500-700 MB en reposo y OOM intermitente al desplegar.

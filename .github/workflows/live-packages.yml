@@ -1,0 +1,65 @@
+name: Live packages
+
+# Builds the encrypted live preparation packages of the club's upcoming matches and publishes them to the
+# `live-packages` branch (issue #175), which the app downloads through raw.githubusercontent.com
+# (CORS open, no credentials). The branch is rewritten with a single commit on every run (no history growth).
+# Runs after each Atlas refresh (fresh data), and by hand. Needs the repository secrets PACKAGE_PASSWORD
+# (>= 8 characters; the same password is typed once in the app) and ATLAS_READ_URI (read-only Atlas user;
+# ATLAS_WRITE_URI is used as fallback). See docs/OPERATIONS.md.
+
+on:
+  workflow_run:
+    workflows: ["Atlas refresh"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "run_package_publish.py"
+      - "src/live_prep/publisher.py"
+      - "src/live_prep/package_builder.py"
+      - "src/live_prep/db_source.py"
+      - "config/package_publish.json"
+      - ".github/workflows/live-packages.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-packages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish packages
+    # a red Atlas refresh (missing matches) must not block the packages; a cancelled one does
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate the configuration (pull requests)
+        if: github.event_name == 'pull_request'
+        run: python -c "import run_package_publish; from src.live_prep.publisher import load_config, _collections; print(load_config(), _collections())"
+      - name: Build the packages
+        if: github.event_name != 'pull_request'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
+          PACKAGE_PASSWORD: ${{ secrets.PACKAGE_PASSWORD }}
+        run: python run_package_publish.py --out packages-out
+      - name: Publish to the live-packages branch
+        if: ${{ !cancelled() && github.event_name != 'pull_request' && hashFiles('packages-out/index.json') != '' }}
+        run: |
+          cd packages-out
+          git init -q -b live-packages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Live packages $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" live-packages
