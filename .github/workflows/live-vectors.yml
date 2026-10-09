@@ -51,7 +51,7 @@ jobs:
           python tests/live_vectors/generate.py
           git diff --exit-code -- tests/live_vectors/vectors.json
 
-      - name: Reference tests (no conftest: live_core is standard library only)
+      - name: "Reference tests (no conftest, live_core is standard library only)"
         run: |
           python -m pytest tests/test_live_vectors.py tests/test_live_core_boundary.py tests/test_live_core_session.py \
             --noconftest -o addopts="" -q
