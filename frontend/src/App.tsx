@@ -11,6 +11,7 @@
  *   /:collection/rankings     → RankingsPage
  *   /:collection/report       → ReportPage
  *   /:collection/team-report  → TeamReportPage
+ *   /:collection/live-prep    → LivePrepPage
  *   /:collection/possessions  → PossessionsPage
  *   /:collection/inout        → InOutPage
  *   /:collection/lineups      → LineupsPage
@@ -36,6 +37,7 @@ import ShotChartPage from '@/pages/ShotChartPage'
 import RankingsPage from '@/pages/RankingsPage'
 import ReportPage from '@/pages/ReportPage'
 import TeamReportPage from '@/pages/TeamReportPage'
+import LivePrepPage from '@/pages/LivePrepPage'
 import PossessionsPage from '@/pages/PossessionsPage'
 import InOutPage from '@/pages/InOutPage'
 import AdminPage from '@/pages/AdminPage'
@@ -65,6 +67,7 @@ export default function App() {
               <Route path="rankings"    element={<RankingsPage />} />
               <Route path="report"      element={<ReportPage />} />
               <Route path="team-report" element={<TeamReportPage />} />
+              <Route path="live-prep"   element={<LivePrepPage />} />
               <Route path="possessions" element={<PossessionsPage />} />
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />

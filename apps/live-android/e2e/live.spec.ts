@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 
 test('the demo runs on a phone viewport: Pyodide boots in a worker and alerts show up', async ({ page }) => {
@@ -38,4 +39,27 @@ test('the engine update stays fluid (well under a second per update on this mach
   await expect(perf).toBeVisible({ timeout: 30_000 })
   const ms = Number((await perf.textContent())!.replace(/\D/g, ''))
   expect(ms).toBeLessThan(1000)
+})
+
+test('importing an encrypted package in a real browser: WebCrypto + engine validation + persistence', async ({ page }) => {
+  const bpkg = fileURLToPath(new URL('../../../tests/live_vectors/demo.bpkg', import.meta.url))
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+
+  // wrong password first: a clear error and nothing stored
+  await page.getByLabel('Fichero del paquete (.bpkg)').setInputFiles(bpkg)
+  await page.getByLabel('Contraseña del paquete').fill('contraseña-incorrecta')
+  await page.getByRole('button', { name: 'Importar' }).click()
+  await expect(page.getByRole('alert')).toContainText('contraseña')
+
+  await page.getByLabel('Contraseña del paquete').fill('clave-de-prueba-1')
+  await page.getByRole('button', { name: 'Importar' }).click()
+  await expect(page.getByText('Paquete cargado')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText(/partidos: 1 propios/)).toBeVisible()
+
+  // survives a reload (IndexedDB) and can be removed
+  await page.reload()
+  await expect(page.getByText('Paquete cargado')).toBeVisible({ timeout: 90_000 })
+  await page.getByRole('button', { name: 'Quitar paquete' }).click()
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 30_000 })
 })

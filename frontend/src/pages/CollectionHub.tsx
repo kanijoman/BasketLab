@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart2, Users, TrendingUp, Target, Trophy,
-  FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit, ClipboardList,
+  FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit, ClipboardList, Radio,
 } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getPlayerStats, type TeamStat, type PlayerStat } from '@/api/client'
@@ -36,6 +36,7 @@ const MODULES: Module[] = [
   { icon: Users2,         label: 'Combinaciones',              description: 'Mejores y peores combinaciones de jugadores por estadística',    subPath: 'lineups',     accent: 'text-brand-400' },
   { icon: FileText,       label: 'Informe Semanal',            description: 'Report builder con PDF/DOCX exportable',           subPath: 'report',      accent: 'text-warn' },
   { icon: ClipboardList,  label: 'Informe de Equipo',          description: 'Análisis propio y scouting rival por reglas · PDF', subPath: 'team-report', accent: 'text-warn' },
+  { icon: Radio,          label: 'Preparación live',           description: 'Paquete cifrado para la app BasketLab Live (equipo + rival)', subPath: 'live-prep', accent: 'text-accent-400' },
   { icon: BrainCircuit,   label: 'Análisis Predictivo',        description: 'Elasticidades Ridge · Monte Carlo · Predicción partido',   subPath: 'predictive',  accent: 'text-brand-400' },
 ]
 

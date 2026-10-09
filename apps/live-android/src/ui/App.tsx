@@ -1,29 +1,36 @@
 /**
- * BasketLab Live: demo screen. The engine (Python in a Web Worker) replays a finished FEB
- * game second by second so alerts and substitution proposals can be seen working on the
- * device. Real feeds plug into the same EngineApi (issues #118/#119).
+ * BasketLab Live. The engine (Python in a Web Worker) works from a preparation package imported
+ * from BasketLab ("Preparación live"). Without a package the demo replays a finished FEB game
+ * second by second so alerts and substitution proposals can be seen working on the device. Real
+ * feeds plug into the same EngineApi (issues #118/#119).
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
 import { loadDemoData, type DemoData } from '../engine/demo'
 import type { Alert, EngineOutput, ReplayInfo, SessionMeta } from '../engine/types'
+import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
+import { summarizePackage, type PackageSummary } from '../package/summary'
 import AlertCard, { clockLabel } from './AlertCard'
+import PackagePanel from './PackagePanel'
 
 interface Props {
   engine?: EngineApi
   loadDemo?: () => Promise<DemoData>
+  store?: PackageStore
 }
 
 const SPEEDS = [1, 10, 30, 60]
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 interface Entry { alert: Alert; at: string }
 
-export default function App({ engine: injected, loadDemo = loadDemoData }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, store: injectedStore }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
+  const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [meta, setMeta] = useState<SessionMeta | null>(null)
   const [info, setInfo] = useState<ReplayInfo | null>(null)
   const [demo, setDemo] = useState<DemoData | null>(null)
+  const [pkg, setPkg] = useState<PackageSummary | null>(null)
   const [out, setOut] = useState<EngineOutput | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
   const [elapsed, setElapsed] = useState(0)
@@ -34,11 +41,16 @@ export default function App({ engine: injected, loadDemo = loadDemoData }: Props
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
 
-  const begin = useCallback(async (data: DemoData) => {
-    setPhase({ kind: 'loading' })
+  const reset = useCallback(() => {
     seen.current.clear()
-    setEntries([]); setOut(null); setElapsed(0); setPlaying(false)
     elapsedRef.current = 0
+    setEntries([]); setOut(null); setElapsed(0); setPlaying(false); setInfo(null)
+  }, [])
+
+  const beginDemo = useCallback(async (data: DemoData) => {
+    setPhase({ kind: 'loading' })
+    reset()
+    setPkg(null)
     try {
       setMeta(await engine.start(data.package))
       setInfo(await engine.loadReplay(data.game))
@@ -46,15 +58,36 @@ export default function App({ engine: injected, loadDemo = loadDemoData }: Props
     } catch (e) {
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     }
-  }, [engine])
+  }, [engine, reset])
+
+  const beginPackage = useCallback(async (plaintext: string) => {
+    setPhase({ kind: 'loading' })
+    reset()
+    try {
+      setMeta(await engine.start(plaintext))
+      setPkg(summarizePackage(plaintext))
+      setPhase({ kind: 'ready' })
+    } catch (e) {
+      setPkg(summarizePackage(plaintext))
+      setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
+    }
+  }, [engine, reset])
 
   useEffect(() => {
     let cancelled = false
-    loadDemo()
-      .then(data => { if (!cancelled) { setDemo(data); void begin(data) } })
-      .catch(e => { if (!cancelled) setPhase({ kind: 'error', message: String(e) }) })
+    ;(async () => {
+      try {
+        const [data, saved] = await Promise.all([loadDemo(), store.load()])
+        if (cancelled) return
+        setDemo(data)
+        if (saved) await beginPackage(saved.plaintext)
+        else await beginDemo(data)
+      } catch (e) {
+        if (!cancelled) setPhase({ kind: 'error', message: String(e) })
+      }
+    })()
     return () => { cancelled = true }
-  }, [loadDemo, begin])
+  }, [loadDemo, store, beginDemo, beginPackage])
 
   useEffect(() => () => { if (!injected) engine.dispose() }, [engine, injected])
 
@@ -92,13 +125,23 @@ export default function App({ engine: injected, loadDemo = loadDemoData }: Props
     return () => clearInterval(timer)
   }, [playing, speed, info, step])
 
+  const removePackage = useCallback(() => {
+    setPkg(null)
+    if (demo) void beginDemo(demo)
+  }, [demo, beginDemo])
+
+  const panel = (
+    <PackagePanel engine={engine} store={store} loaded={pkg} onLoaded={s => { setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }}
+      onRemoved={removePackage} />
+  )
+
   if (phase.kind === 'loading') return <main className="screen"><p className="status">Cargando motor…</p></main>
   if (phase.kind === 'error') {
     return (
       <main className="screen">
         <p className="status error">No se pudo iniciar el motor</p>
         <p className="detail">{phase.message}</p>
-        {demo && <button onClick={() => void begin(demo)}>Reintentar</button>}
+        {pkg ? panel : demo && <button onClick={() => void beginDemo(demo)}>Reintentar</button>}
       </main>
     )
   }
@@ -114,26 +157,34 @@ export default function App({ engine: injected, loadDemo = loadDemoData }: Props
         <div className="team"><span className="name">{rival.name}</span><span className="pts">{snap?.score[rival.id] ?? 0}</span></div>
       </header>
 
-      <section className="controls">
-        <button onClick={() => setPlaying(p => !p)} disabled={finished}>{playing ? 'Pausa' : 'Reproducir'}</button>
-        <label>
-          Velocidad
-          <select value={speed} onChange={e => setSpeed(Number(e.target.value))}>
-            {SPEEDS.map(s => <option key={s} value={s}>{s}×</option>)}
-          </select>
-        </label>
-        <button className="secondary" onClick={() => demo && void begin(demo)}>Reiniciar</button>
-        {ms !== null && <span className="perf">{ms} ms</span>}
-      </section>
+      {pkg ? (
+        <p className="status">Paquete cargado. La app queda a la espera del partido en directo (próximamente).</p>
+      ) : (
+        <>
+          <section className="controls">
+            <button onClick={() => setPlaying(p => !p)} disabled={finished}>{playing ? 'Pausa' : 'Reproducir'}</button>
+            <label>
+              Velocidad
+              <select value={speed} onChange={e => setSpeed(Number(e.target.value))}>
+                {SPEEDS.map(s => <option key={s} value={s}>{s}×</option>)}
+              </select>
+            </label>
+            <button className="secondary" onClick={() => demo && void beginDemo(demo)}>Reiniciar</button>
+            {ms !== null && <span className="perf">{ms} ms</span>}
+          </section>
 
-      {finished && <p className="status">Partido finalizado</p>}
+          {finished && <p className="status">Partido finalizado</p>}
 
-      <section>
-        <h2>Alertas</h2>
-        {entries.length === 0
-          ? <p className="detail">Sin alertas todavía. Pulsa Reproducir para simular el partido.</p>
-          : <ul className="alerts">{entries.map(e => <AlertCard key={e.alert.key} alert={e.alert} at={e.at} />)}</ul>}
-      </section>
+          <section>
+            <h2>Alertas</h2>
+            {entries.length === 0
+              ? <p className="detail">Sin alertas todavía. Pulsa Reproducir para simular el partido.</p>
+              : <ul className="alerts">{entries.map(e => <AlertCard key={e.alert.key} alert={e.alert} at={e.at} />)}</ul>}
+          </section>
+        </>
+      )}
+
+      {panel}
     </main>
   )
 }

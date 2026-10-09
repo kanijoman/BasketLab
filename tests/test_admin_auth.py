@@ -121,6 +121,8 @@ PUBLIC_WRITE_ROUTES = {
     ("POST", "/api/v1/reports/{collection}/weekly-report"),
     ("POST", "/api/v1/analysis/montecarlo/{team_id}"),
     ("POST", "/api/v1/analysis/game-prediction/{team_id}"),
+    # builds + encrypts a live preparation package: compute only, single-flight (src/api/routers/live_package.py)
+    ("POST", "/api/v1/live/package"),
 }
 
 

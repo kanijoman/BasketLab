@@ -95,3 +95,14 @@ def test_webcrypto_in_node_can_decrypt_python_envelope():
     )
     assert out.returncode == 0, out.stderr
     assert out.stdout == '{"equipo": "Peñas"}'
+
+
+def test_committed_demo_bpkg_decrypts_to_the_demo_package():
+    """The fixture the app (WebCrypto) is tested against must stay decryptable by the Python side."""
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    envelope = json.loads((root / "tests/live_vectors/demo.bpkg").read_text(encoding="utf-8"))
+    vectors = json.loads((root / "tests/live_vectors/vectors.json").read_text(encoding="utf-8"))
+    assert decrypt_package(envelope, "clave-de-prueba-1") == vectors["engine"]["package"]
