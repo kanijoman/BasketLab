@@ -118,6 +118,14 @@ def _check_totals(snapshot: Dict[str, Any], doc: Dict[str, Any]) -> List[str]:
     return errors
 
 
+def check_totals_for_final_document(doc: Dict[str, Any]) -> List[str]:
+    """Score / shooting / fouls of a FINISHED document against its official box score (used on recordings)."""
+    try:
+        return _check_totals(LiveEngine().update(doc), doc)
+    except Exception as exc:  # noqa: BLE001
+        return [f"El motor live falló con el documento final: {type(exc).__name__}: {exc}"]
+
+
 def _check_replay(doc: Dict[str, Any]) -> List[str]:
     """Build a one-game package and replay the game through the live session."""
     from src.live_prep.package_builder import build_package

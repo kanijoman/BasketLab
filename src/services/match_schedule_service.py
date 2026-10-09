@@ -8,89 +8,23 @@ live, ``3`` = finished); only a few such rows are checked per request.
 
 from __future__ import annotations
 
-import re
-import sys
-import unicodedata
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from cachetools import TTLCache
-
-from src.scraper.calendar_parser import CalendarMatch, parse_calendar
+from src.scraper.calendar_parser import CalendarMatch
+from src.scraper.schedule_client import (  # noqa: F401  (re-exported for callers and tests)
+    CALENDAR_URL,
+    feb_competitions,
+    feb_status,
+    http_calendar,
+    madrid_now as _madrid_now,
+    normalize_name,
+)
 from src.utils.collection_utils import is_fbcyl
 
-CALENDAR_URL = "https://baloncestoenvivo.feb.es/calendario.aspx?g={g}&t={season}&nm={nm}"
 STALE_AFTER = timedelta(hours=3)   # a dated match older than this has surely been played
 MAX_STATUS_CHECKS = 3
-_CALENDAR_CACHE: TTLCache = TTLCache(maxsize=16, ttl=60)
-_COMPETITIONS_CACHE: TTLCache = TTLCache(maxsize=1, ttl=3600)
-
-
-def normalize_name(name: str) -> str:
-    """"LF Challenge" / "lf  CHALLENGE" -> "lfchallenge" (accents and non-alphanumerics removed)."""
-    text = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode()
-    return re.sub(r"[^a-z0-9]", "", text.lower())
-
-
-def feb_competitions() -> List[Dict[str, str]]:
-    """FEB's competition list (``name``, ``results_url`` with ``g=<competition id>&nm=<slug>``), cached 1 h."""
-    if "all" not in _COMPETITIONS_CACHE:
-        _legacy_path()
-        from src.scraper import FEBWebScraper
-
-        _COMPETITIONS_CACHE["all"] = FEBWebScraper().get_feb_competitions()
-    return _COMPETITIONS_CACHE["all"]
-
-
-def _legacy_path() -> None:
-    """The scraper still imports some helpers un-prefixed (``utils...``): put ``src`` on the path."""
-    src = str(Path(__file__).resolve().parents[1])
-    if src not in sys.path:
-        sys.path.insert(0, src)
-
-
-def http_calendar(url: str) -> List[CalendarMatch]:
-    """Download and parse the calendar page (cached for a minute)."""
-    if url in _CALENDAR_CACHE:
-        return _CALENDAR_CACHE[url]
-    import requests
-
-    from src.scraper.constants import EXTENDED_TIMEOUT, HTML_HEADERS
-
-    response = requests.get(url, headers=HTML_HEADERS, timeout=EXTENDED_TIMEOUT)
-    response.raise_for_status()
-    matches = parse_calendar(response.content)
-    _CALENDAR_CACHE[url] = matches
-    return matches
-
-
-def feb_status(code: str) -> str:
-    """``scheduled`` | ``live`` | ``finished`` | ``unknown`` from FEB's live API."""
-    import requests
-
-    _legacy_path()
-    from src.scraper.constants import BOXSCORE_API_URL, DEFAULT_TIMEOUT
-    from src.scraper.token_manager import TokenManager
-
-    session = requests.Session()
-    token = TokenManager().get_token(code, session)
-    if not token:
-        return "unknown"
-    response = session.get(BOXSCORE_API_URL.format(match_code=code), timeout=DEFAULT_TIMEOUT,
-                           headers={"Authorization": f"Bearer {token}"})
-    if response.status_code == 404:
-        return "scheduled"
-    response.raise_for_status()
-    status = str((response.json().get("HEADER") or {}).get("status"))
-    return {"3": "finished", "2": "live", "1": "live"}.get(status, "unknown")
-
-
-def _madrid_now() -> datetime:
-    from zoneinfo import ZoneInfo
-
-    return datetime.now(ZoneInfo("Europe/Madrid")).replace(tzinfo=None)
 
 
 class MatchScheduleService:
