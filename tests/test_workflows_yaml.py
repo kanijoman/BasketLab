@@ -64,3 +64,27 @@ class TestLiveAndroidReleases:
         text = self._text()
         assert "live-android-latest" in text and "basketlab-live.apk" in text
         assert "--prerelease" in text
+
+
+class TestFebCanaryWorkflow:
+    def _data(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "feb-canary.yml").read_text(encoding="utf-8"))
+
+    def test_runs_daily_and_on_demand(self):
+        on = self._data()[True]  # PyYAML parses the bare key `on` as boolean True
+        assert on["schedule"][0]["cron"] and "workflow_dispatch" in on
+
+    def test_drift_opens_one_labelled_issue_not_one_per_run(self):
+        text = (ROOT / ".github" / "workflows" / "feb-canary.yml").read_text(encoding="utf-8")
+        assert "--label canary" in text and "gh issue comment" in text and "gh issue create" in text
+        assert "github.event_name != 'pull_request'" in text
+
+    def test_unreachable_feb_is_retried_and_does_not_open_a_drift_issue(self):
+        text = (ROOT / ".github" / "workflows" / "feb-canary.yml").read_text(encoding="utf-8")
+        assert "for attempt in 1 2 3" in text
+        assert "outputs.code == '1'" in text  # only drift (1) creates an issue, not "unreachable" (2)
+
+    def test_needs_only_the_scraper_dependencies(self):
+        text = (ROOT / ".github" / "workflows" / "feb-canary.yml").read_text(encoding="utf-8")
+        assert "requests beautifulsoup4 cachetools tenacity" in text and "requirements.txt" not in text
+
