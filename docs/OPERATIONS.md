@@ -44,6 +44,8 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
 |---|---|---|
 | 503 "ADMIN_API_KEY no está configurada" | variable sin definir en ese servicio (producción) | Estado actual esperado; pasos de arriba para activarla |
 | 401 "Clave de administración requerida o incorrecta" | sin clave en Admin, clave distinta o variable distinta entre `api` y `scraper` | Re-guardar la clave en Admin; comprobar que el valor es idéntico en ambos servicios |
+| 503 "Base de datos no disponible: …" (o 500 en versiones antiguas) en cualquier endpoint con datos | `MONGODB_CONNECTION_STRING` sin definir, credenciales de Atlas rechazadas, usuario sin permisos o IP no permitida | Abrir `/api/v1/health/db`: `error` = `missing_config` / `auth_failed` / `not_authorized` / `unreachable` / `invalid_config` y `hint`. Revisar Render → Environment y Atlas → Database Access / Network Access (`0.0.0.0/0` para Render free) |
+| Atlas desactualizado respecto a local | el scrape se hizo solo contra la BD local | `GET /api/v1/collections/{name}/freshness` lista `missing_codes` (jugados en FEB y ausentes) |
 | CORS / `OPTIONS` bloqueado | `ALLOWED_ORIGINS` no incluye la URL de Vercel | Ajustar `ALLOWED_ORIGINS` (la cabecera `X-Admin-Key` está permitida) |
 | Funciona en local pero no en producción | en local no hay guarda (sin `ENVIRONMENT=production`) | Esperado |
 

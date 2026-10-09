@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 
 from src.api.routers import collections, teams, players, lineups, scrape
 from src.api.routers import shots, possessions, reports, historical, analysis
-from src.api.routers import analysis_predictive, matches, multi_phase, rotaciones, team_report, live_package
+from src.api.routers import analysis_predictive, matches, multi_phase, rotaciones, team_report, live_package, health
 
 
 class UTF8JSONResponse(JSONResponse):
@@ -86,6 +86,7 @@ _memory.install(app)  # logs RSS per request when LOG_MEMORY=1
 # ---------------------------------------------------------------------------
 # Routers — all under /api/v1/ for forward-compatibility with auth layers
 # ---------------------------------------------------------------------------
+app.include_router(health.router,      prefix="/api/v1/health",      tags=["health"])
 app.include_router(collections.router, prefix="/api/v1/collections", tags=["collections"])
 app.include_router(teams.router,       prefix="/api/v1/teams",       tags=["teams"])
 app.include_router(players.router,     prefix="/api/v1/players",     tags=["players"])
