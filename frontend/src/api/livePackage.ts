@@ -6,6 +6,8 @@ export interface LivePackageRequest {
   team_id: string
   rival_id: string
   passphrase: string
+  /** FEB match the package is prepared for (from the calendar list). */
+  match_code?: string
 }
 
 export interface LivePackageProgress {
@@ -45,4 +47,31 @@ export async function downloadLivePackage(jobId: string): Promise<Blob> {
   const res = await fetch(`${API_BASE}/live/package/download/${encodeURIComponent(jobId)}`)
   if (!res.ok) throw await failure(res)
   return res.blob()
+}
+
+export interface LiveMatch {
+  code: string
+  status: 'scheduled' | 'live'
+  /** Madrid local time "YYYY-MM-DDTHH:MM"; null for a match already in progress. */
+  start: string | null
+  round: number
+  is_home: boolean
+  opponent: { id: string; name: string } | null
+  home: { id: string; name: string }
+  away: { id: string; name: string }
+  starts_in_min: number | null
+}
+
+export interface LiveMatches {
+  matches: LiveMatch[]
+  calendar_url: string | null
+  warning: string | null
+}
+
+/** Upcoming and in-progress matches of a team, from the FEB calendar. */
+export async function getLiveMatches(collection: string, teamId: string, limit = 5): Promise<LiveMatches> {
+  const params = new URLSearchParams({ team_id: teamId, limit: String(limit) })
+  const res = await fetch(`${API_BASE}/live/matches/${encodeURIComponent(collection)}?${params}`)
+  if (!res.ok) throw await failure(res)
+  return res.json() as Promise<LiveMatches>
 }

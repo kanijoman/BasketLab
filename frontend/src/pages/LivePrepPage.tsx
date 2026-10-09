@@ -10,12 +10,18 @@ import { Download, Loader2, Radio } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
 import {
-  downloadLivePackage, getLivePackageProgress, startLivePackage,
-  type LivePackageProgress,
+  downloadLivePackage, getLiveMatches, getLivePackageProgress, startLivePackage,
+  type LiveMatch, type LivePackageProgress,
 } from '@/api/livePackage'
 import PageTransition from '@/components/ui/PageTransition'
 
 const MIN_PASSPHRASE = 8
+
+function formatStart(start: string | null): string {
+  if (!start) return 'Fecha por confirmar'
+  const d = new Date(start)
+  return d.toLocaleString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
 type Phase = { kind: 'idle' } | { kind: 'running'; progress: LivePackageProgress | null } | { kind: 'done'; file: string } | { kind: 'error'; message: string }
 
 function saveBlob(blob: Blob, filename: string) {
@@ -32,6 +38,7 @@ export default function LivePrepPage() {
   const [rival, setRival] = useState('')
   const [pass, setPass] = useState('')
   const [repeat, setRepeat] = useState('')
+  const [matchCode, setMatchCode] = useState('')
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -42,7 +49,31 @@ export default function LivePrepPage() {
     staleTime: 10 * 60_000,
   })
 
+  const { data: schedule } = useQuery({
+    queryKey: ['live-matches', col, team],
+    queryFn: () => getLiveMatches(col, team, 5),
+    enabled: Boolean(col && team) && !collection?.isFbcyl,
+    staleTime: 60_000,
+    retry: false,
+  })
+
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+
+  function chooseMatch(m: LiveMatch) {
+    setMatchCode(m.code)
+    if (m.opponent) setRival(m.opponent.id)
+  }
+
+  function chooseRival(id: string) {
+    setRival(id)
+    const chosen = schedule?.matches.find(m => m.code === matchCode)
+    if (chosen && chosen.opponent?.id !== id) setMatchCode('')
+  }
+
+  function chooseTeam(id: string) {
+    setTeam(id)
+    setMatchCode('')
+  }
 
   const mismatch = repeat !== '' && pass !== repeat
   const shortPass = pass !== '' && pass.length < MIN_PASSPHRASE
@@ -74,7 +105,7 @@ export default function LivePrepPage() {
   async function generate() {
     setPhase({ kind: 'running', progress: null })
     try {
-      const { job_id } = await startLivePackage({ collection: col, team_id: team, rival_id: rival, passphrase: pass })
+      const { job_id } = await startLivePackage({ collection: col, team_id: team, rival_id: rival, passphrase: pass, ...(matchCode ? { match_code: matchCode } : {}) })
       void poll(job_id)
     } catch (e) {
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
@@ -109,14 +140,14 @@ export default function LivePrepPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <label className="flex flex-col gap-1 text-xs text-ink-secondary">
                 Equipo propio
-                <select value={team} onChange={e => setTeam(e.target.value)} className={select} disabled={running}>
+                <select value={team} onChange={e => chooseTeam(e.target.value)} className={select} disabled={running}>
                   <option value="">— Selecciona —</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-xs text-ink-secondary">
                 Rival
-                <select value={rival} onChange={e => setRival(e.target.value)} className={select} disabled={running}>
+                <select value={rival} onChange={e => chooseRival(e.target.value)} className={select} disabled={running}>
                   <option value="">— Selecciona —</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
@@ -132,6 +163,22 @@ export default function LivePrepPage() {
                   autoComplete="new-password" disabled={running} />
               </label>
             </div>
+            {team && schedule && (
+              <fieldset className="space-y-2" disabled={running}>
+                <legend className="text-xs text-ink-secondary">Próximos partidos de este equipo (opcional: fija el rival y el partido)</legend>
+                {schedule.warning && <p className="text-xs text-warn">{schedule.warning}</p>}
+                {schedule.matches.map(m => (
+                  <label key={m.code} data-match className="flex items-center gap-2 text-sm text-ink-secondary cursor-pointer">
+                    <input type="radio" name="live-match" checked={matchCode === m.code} onChange={() => chooseMatch(m)} />
+                    <span>
+                      {m.status === 'live' ? <strong className="text-up">En directo</strong> : formatStart(m.start)}
+                      {' · '}{m.is_home ? 'vs' : '@'} <strong className="text-ink-primary">{m.opponent?.name.trim()}</strong>
+                      {' '}(jornada {m.round})
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
             {sameTeam && <p className="text-xs text-warn">El equipo propio y el rival deben ser distintos.</p>}
             {shortPass && <p className="text-xs text-warn">La contraseña debe tener al menos {MIN_PASSPHRASE} caracteres.</p>}
             {mismatch && <p className="text-xs text-warn">Las contraseñas no coinciden.</p>}

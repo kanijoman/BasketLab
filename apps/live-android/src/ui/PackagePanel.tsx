@@ -18,6 +18,11 @@ function formatDate(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('es-ES')
 }
 
+function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? iso : `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+}
+
 export default function PackagePanel({ engine, store, loaded, onLoaded, onRemoved }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [pass, setPass] = useState('')
@@ -53,6 +58,12 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
       {loaded ? (
         <div className="package-summary">
           <p><strong>{loaded.team}</strong> vs <strong>{loaded.rival}</strong></p>
+          {loaded.match && (
+            <p className="detail">
+              Partido: {loaded.match.home && loaded.match.away ? `${loaded.match.home.name.trim()} vs ${loaded.match.away.name.trim()}` : 'sin detalles'}
+              {loaded.match.start ? ` · ${formatDateTime(loaded.match.start)}` : ''} (código {loaded.match.code})
+            </p>
+          )}
           <p className="detail">
             Temporada {loaded.season} · creado el {formatDate(loaded.createdAt)} · {loaded.ownPlayers} jugadores propios,
             {' '}{loaded.rivalPlayers} rivales · partidos: {loaded.games.own} propios, {loaded.games.rival} rival,

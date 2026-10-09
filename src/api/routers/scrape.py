@@ -344,6 +344,16 @@ def _store_feb_match(
         job["done"] += 1
 
 
+def _save_collection_meta(db: Any, collection_name: str, params: FEBScrapeParams) -> None:
+    """Remember the calendar URL/selection of the collection (used by the live match list)."""
+    try:
+        from src.services.collection_meta import save_feb_meta
+
+        save_feb_meta(db, collection_name, params)
+    except Exception:  # noqa: BLE001 - metadata is optional, never fail the scrape for it
+        pass
+
+
 def _run_feb_scrape(job_id: str, params: FEBScrapeParams) -> None:
     """Background task: download all FEB matches for the given selection."""
     job = SCRAPE_JOBS[job_id]
@@ -360,6 +370,7 @@ def _run_feb_scrape(job_id: str, params: FEBScrapeParams) -> None:
             params.competition_label, params.season_label, params.group_label,
         )
         job["collection"] = collection_name
+        _save_collection_meta(db, collection_name, params)
 
         job["status"] = "discovering"
         _, session = scraper.get_page_content(params.year)

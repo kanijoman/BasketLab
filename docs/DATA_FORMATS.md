@@ -11,6 +11,9 @@ Claves raíz: `HEADER, SCOREBOARD, TEAMSTATS, TICKER, OVERVIEW, PLAYBYPLAY, BANN
 - **`SHOTCHART`**: dict `{quarters, duration, TEAM[], SHOTS[]}`; cada tiro `{m '0'|'1', t = tiempo RESTANTE, x, y (0-100, % de la pista completa), team 0|1 (= TEAM[0]/[1]), player (dorsal), quarter}`. Los tiros son **exactamente** los tiros de campo del PBP (mismo multiconjunto cuarto/tiempo/acierto/equipo).
 - Periodos: 4×10 min; prórrogas 5 min. La muestra viene en Mongo extended JSON (`{"$numberInt": …}`): `src/live_core/vectors.unwrap_extended_json` o el fixture `feb_game_doc`.
 
+## Calendario público de FEB (para la lista de partidos)
+`calendario.aspx?g=<competición>&t=<temporada>&nm=<slug>` (equivale a `/calendario/<slug>/<g>/<t>`): un `<table>` por jornada dentro de `div.tableLayout de dos columnas`; fila = `td.equipo.local` (`Equipo.aspx?i=<id>`) | `td.resultado` (enlace `Partido.aspx?p=<código>`, texto `71-64`) **o** `td.fecha` (`SÁBADO<br>17/04/2027<br>19:00`, hora de Madrid) | `td.equipo.visitante`. La lista de competiciones (`FEBWebScraper.get_feb_competitions`) da `g` y `nm`. API en directo: `GET intrafeb.feb.es/LiveStats.API/api/v1/BoxScore/<código>` con JWT de la página del partido → 404 si el partido no ha empezado.
+
 ## FBCYL (colecciones `FBCYL_*`; `_id`/`uuid`)
 Claves: `uuid, moves[], stats` (+ `_league, _gender, _territory, _category, _competition, _season`).
 - **`stats.teams[]`**: `teamIdIntern` (propio del partido), `teamIdExtern` (estable, el que usa la app), `name`, `players[]` (`uuid`, `actorId`, `dorsal`, `timePlayed`, `inOutsList` con precisión de **1 minuto**, `data{…}` con contadores como `shotsOfTwoSuccessful`).
