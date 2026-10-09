@@ -19,6 +19,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Informes por reglas: `test_report_engine.py` (motor puro), `test_team_report_service_and_api.py` (renderer, servicio, endpoints JSON/PDF). Zonas vs liga: `test_zone_rating.py`, `test_shots_zone_compare.py`, `test_zone_analysis_relative.py`. FBCYL: `test_fbcyl_zones.py`, `test_fbcyl_zone_pipeline.py`.
 - Seguridad: `test_admin_auth.py` (clave de admin, 503 en producción sin clave, clasificación de rutas de escritura).
 - Memoria: `test_memory_mitigations.py` (workers, proyección del listado de partidos, zonas de liga en streaming, caducidad de jobs, log de RSS, render.yaml).
+- Workflows: `test_workflows_yaml.py` (todos los `.github/workflows/*.yml` son YAML válido).
 - Guardas: `test_no_llm_dependencies.py`, `test_no_hardcoded_secrets.py`, **`test_docs_consistency.py`** (docs sincronizados con el código).
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`, `tests/db_helpers.py` (`new_mock_db`: única forma de crear una BD mongomock).
 
