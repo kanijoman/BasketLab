@@ -79,6 +79,54 @@ class TestPlan:
         assert out[0]["code"] == "999" and out[0]["start_at"] is None
 
 
+class TestWatchlistSchema:
+    """Any match, a club's matches or a whole competition can be recorded (issue #171)."""
+
+    def test_a_club_is_recorded_in_all_its_matches(self):
+        out = _plan(at("2026-10-10T14:30"), watch={"calendars": [URL], "teams": ["11"]})
+        assert [m["code"] for m in out] == ["2524470"]  # team 11 is the away side of the 17:00 match
+
+    def test_a_whole_competition_records_every_match_that_is_about_to_start(self):
+        cal = CAL + [_m("2524468", "2026-10-10T17:00", "16", "17")]
+        out = _plan(at("2026-10-10T15:00"), watch={"calendars": [URL], "competitions": [URL]}, cal=cal)
+        assert {m["code"] for m in out} == {"2524470", "2524468"} and all(m["calendar"] == URL for m in out)
+
+    def test_several_calendars_are_scanned_and_each_match_keeps_its_own(self):
+        other = "https://baloncestoenvivo.feb.es/calendario.aspx?g=4&t=2026&nm=lfendesa"
+        cals = {URL: CAL, other: [_m("55", "2026-10-10T17:00", "30", "31")]}
+        out = plan({"calendars": [URL, other], "teams": ["10", "30"]}, at("2026-10-10T15:00"),
+                   fetch_calendar=lambda u: cals[u], match_status=lambda c: "scheduled")
+        assert {(m["code"], m["calendar"]) for m in out} == {("2524470", URL), ("55", other)}
+
+    def test_explicit_codes_work_when_the_match_is_in_a_scanned_calendar(self):
+        out = _plan(at("2026-10-10T15:00"), watch={"calendars": [URL], "matches": ["2524470"]})
+        assert [m["code"] for m in out] == ["2524470"]
+
+    def test_the_old_single_calendar_format_still_works(self):
+        out = _plan(at("2026-10-10T15:00"), watch={"calendar": URL, "matches": ["2524470"]})
+        assert [m["code"] for m in out] == ["2524470"]
+
+    def test_a_broken_calendar_does_not_hide_the_others(self):
+        other = "https://x/other"
+
+        def fetch(url):
+            if url == other:
+                raise ConnectionError("down")
+            return CAL
+
+        out = plan({"calendars": [other, URL], "teams": ["10"]}, at("2026-10-10T15:00"), fetch_calendar=fetch,
+                   match_status=lambda c: "scheduled")
+        assert [m["code"] for m in out] == ["2524470"]
+
+    def test_manual_runs_can_add_teams_and_competitions_without_touching_the_list(self):
+        out = plan({"calendars": [URL]}, at("2026-10-10T15:00"), fetch_calendar=lambda u: CAL,
+                   match_status=lambda c: "scheduled", extra_teams=["10"])
+        assert [m["code"] for m in out] == ["2524470"]
+        out = plan({"calendars": []}, at("2026-10-10T15:00"), fetch_calendar=lambda u: CAL,
+                   match_status=lambda c: "scheduled", extra_competitions=[URL])
+        assert [m["code"] for m in out] == ["2524470"]
+
+
 class TestCli:
     def test_plan_prints_a_matrix_for_github_actions(self, tmp_path, capsys):
         wl = tmp_path / "wl.json"
@@ -87,7 +135,17 @@ class TestCli:
                     fetch_calendar=lambda u: CAL, match_status=lambda c: "scheduled")
         assert code == 0
         out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-        assert out["include"][0]["code"] == "2524470"
+        assert out["include"][0]["code"] == "2524470" and out["include"][0]["calendar"] == URL
+
+    def test_plan_accepts_extra_teams_and_competitions_from_manual_runs(self, tmp_path, capsys):
+        wl = tmp_path / "wl.json"
+        wl.write_text(json.dumps({"calendars": [URL]}), encoding="utf-8")
+        main(["plan", "--watchlist", str(wl), "--now", "2026-10-10T15:00:00+00:00", "--extra-team", "10"],
+             fetch_calendar=lambda u: CAL, match_status=lambda c: "scheduled")
+        assert json.loads(capsys.readouterr().out.strip().splitlines()[-1])["include"][0]["code"] == "2524470"
+        main(["plan", "--watchlist", str(wl), "--now", "2026-10-10T15:00:00+00:00", "--extra-competition", URL],
+             fetch_calendar=lambda u: CAL, match_status=lambda c: "scheduled")
+        assert json.loads(capsys.readouterr().out.strip().splitlines()[-1])["include"][0]["code"] == "2524470"
 
     def test_plan_with_nothing_prints_an_empty_matrix(self, tmp_path, capsys):
         wl = tmp_path / "wl.json"
@@ -98,7 +156,8 @@ class TestCli:
 
     def test_the_committed_watchlist_is_valid_and_has_the_requested_match(self):
         wl = json.loads((Path(__file__).resolve().parents[1] / "config" / "feb_watchlist.json").read_text(encoding="utf-8"))
-        assert "2524470" in wl["matches"] and wl["calendar"].startswith("https://baloncestoenvivo.feb.es/calendario")
+        assert "1008631" in wl["teams"]  # MIPELLETYMAS B.F. LEON: every match of the club
+        assert all(c.startswith("https://baloncestoenvivo.feb.es/calendario") for c in wl["calendars"]) and wl["calendars"]
 
 
 def test_the_cli_imports_cleanly_outside_pytest_regression():

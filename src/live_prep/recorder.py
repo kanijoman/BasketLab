@@ -246,29 +246,44 @@ def _madrid_to_utc(local_iso: str) -> datetime:
     return datetime.fromisoformat(local_iso).replace(tzinfo=ZoneInfo("Europe/Madrid")).astimezone(timezone.utc)
 
 
-def plan(watch: Dict[str, Any], now: datetime, fetch_calendar: Callable[[str], list], match_status: Callable[[str], str],
-         extra_codes: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-    """Matches of the watchlist that should be recorded now (kick-off within the window, or live).
+def _listed(value: Any) -> List[str]:
+    return [str(v) for v in (value or [])]
 
-    ``watch``: ``{"calendar": URL, "matches": [codes], "teams": [ids]}``. Kick-off times come from the
-    calendar (Madrid local time). Codes in ``extra_codes`` (manual runs) are recorded immediately.
+
+def plan(watch: Dict[str, Any], now: datetime, fetch_calendar: Callable[[str], list], match_status: Callable[[str], str],
+         extra_codes: Optional[List[str]] = None, extra_teams: Optional[List[str]] = None,
+         extra_competitions: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    """Matches that should be recorded now (kick-off within the window, or being played).
+
+    Watchlist: ``calendars`` (FEB calendar URLs that are scanned; the old single ``calendar`` works too),
+    ``teams`` (record every match of these team ids), ``matches`` (explicit codes found in a scanned
+    calendar) and ``competitions`` (calendar URLs whose matches are ALL recorded). Kick-off times come
+    from the calendar (Madrid local time). ``extra_*`` come from manual runs; ``extra_codes`` are
+    recorded immediately, without needing a calendar.
     """
-    out: List[Dict[str, Any]] = [{"code": str(c), "start_at": None, "label": str(c)} for c in extra_codes or []]
-    try:
-        calendar = fetch_calendar(watch["calendar"])
-    except Exception:  # noqa: BLE001 - no calendar, no start times: the next scheduled run tries again
-        return out
-    codes, teams = set(map(str, watch.get("matches", []))), set(map(str, watch.get("teams", [])))
-    for m in calendar:
-        if m.code not in codes and not any(m.involves(t) for t in teams):
+    calendar_urls = _listed(watch.get("calendars")) + _listed(watch.get("calendar") and [watch["calendar"]])
+    competitions = set(_listed(watch.get("competitions")) + _listed(extra_competitions))
+    calendar_urls += sorted(competitions)
+    codes = set(_listed(watch.get("matches")))
+    teams = set(_listed(watch.get("teams")) + _listed(extra_teams))
+    default_calendar = calendar_urls[0] if calendar_urls else None
+    out: List[Dict[str, Any]] = [{"code": c, "start_at": None, "label": c, "calendar": default_calendar}
+                                 for c in _listed(extra_codes)]
+    for url in dict.fromkeys(calendar_urls):
+        try:
+            calendar = fetch_calendar(url)
+        except Exception:  # noqa: BLE001 - one unreachable calendar must not hide the others
             continue
-        label = f"{m.home_name.strip()} - {m.away_name.strip()}"
-        if m.kind == "scheduled" and m.start:
-            start = _madrid_to_utc(m.start)
-            if start - PLAN_BEFORE <= now <= start + PLAN_AFTER:
-                out.append({"code": m.code, "start_at": start.isoformat(), "label": label})
-        elif m.kind == "result" and match_status(m.code) == "live":
-            out.append({"code": m.code, "start_at": None, "label": label})
+        for m in calendar:
+            if url not in competitions and m.code not in codes and not any(m.involves(t) for t in teams):
+                continue
+            label = f"{m.home_name.strip()} - {m.away_name.strip()}"
+            if m.kind == "scheduled" and m.start:
+                start = _madrid_to_utc(m.start)
+                if start - PLAN_BEFORE <= now <= start + PLAN_AFTER:
+                    out.append({"code": m.code, "start_at": start.isoformat(), "label": label, "calendar": url})
+            elif m.kind == "result" and match_status(m.code) == "live":
+                out.append({"code": m.code, "start_at": None, "label": label, "calendar": url})
     seen, unique = set(), []
     for item in out:
         if item["code"] not in seen:
@@ -325,6 +340,9 @@ def main(argv: Optional[List[str]] = None, fetch_calendar=None, match_status=Non
     p_plan.add_argument("--watchlist", required=True)
     p_plan.add_argument("--now", help="ISO time (UTC) instead of the current time (tests)")
     p_plan.add_argument("--extra", action="append", default=[], help="match code to record immediately (repeatable)")
+    p_plan.add_argument("--extra-team", action="append", default=[], help="also record every match of this team id")
+    p_plan.add_argument("--extra-competition", action="append", default=[],
+                        help="also record ALL matches of this calendar URL")
     p_rec = sub.add_parser("record", help="record one match")
     p_rec.add_argument("--match", required=True)
     p_rec.add_argument("--start-at", help="ISO kick-off time (UTC); polling is quiet until 5 min before")
@@ -338,7 +356,7 @@ def main(argv: Optional[List[str]] = None, fetch_calendar=None, match_status=Non
     if args.cmd == "plan":
         now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
         watch = json.loads(Path(args.watchlist).read_text(encoding="utf-8"))
-        include = plan(watch, now, fetch_calendar, match_status, args.extra)
+        include = plan(watch, now, fetch_calendar, match_status, args.extra, args.extra_team, args.extra_competition)
         print(json.dumps({"include": include}))
         return 0
 

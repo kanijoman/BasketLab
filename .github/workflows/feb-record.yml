@@ -23,6 +23,14 @@ on:
         description: "Match codes to record right now (comma separated), in addition to the watchlist"
         required: false
         default: ""
+      teams:
+        description: "Team ids whose matches are recorded when they start (comma separated), in addition to the watchlist"
+        required: false
+        default: ""
+      competition:
+        description: "FEB calendar URL: record ALL its matches when they start, in addition to the watchlist"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -48,9 +56,13 @@ jobs:
         id: plan
         env:
           CODES: ${{ github.event.inputs.codes }}
+          TEAMS: ${{ github.event.inputs.teams }}
+          COMPETITION: ${{ github.event.inputs.competition }}
         run: |
           extra=""
           for c in ${CODES//,/ }; do extra="$extra --extra $c"; done
+          for t in ${TEAMS//,/ }; do extra="$extra --extra-team $t"; done
+          if [ -n "$COMPETITION" ]; then extra="$extra --extra-competition $COMPETITION"; fi
           python -m src.live_prep.recorder plan --watchlist config/feb_watchlist.json $extra | tail -1 > plan.json
           cat plan.json
           echo "matrix=$(cat plan.json)" >> "$GITHUB_OUTPUT"
@@ -84,9 +96,10 @@ jobs:
         env:
           CODE: ${{ matrix.code }}
           START_AT: ${{ matrix.start_at }}
+          CALENDAR: ${{ matrix.calendar }}
         run: |
-          calendar=$(python -c "import json; print(json.load(open('config/feb_watchlist.json'))['calendar'])")
-          args="--match $CODE --calendar $calendar --skip-if-finished --max-minutes 215 --interval 10"
+          args="--match $CODE --skip-if-finished --max-minutes 215 --interval 10"
+          if [ -n "$CALENDAR" ]; then args="$args --calendar $CALENDAR"; fi
           if [ -n "$START_AT" ] && [ "$START_AT" != "None" ]; then args="$args --start-at $START_AT"; fi
           python -m src.live_prep.recorder record $args
 

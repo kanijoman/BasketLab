@@ -100,7 +100,7 @@ class TestFebRecorderWorkflow:
     def test_a_cheap_planner_runs_every_few_minutes_and_on_demand(self):
         on = self._data()[True]
         assert on["schedule"][0]["cron"].startswith("*/15") and "workflow_dispatch" in on
-        assert "codes" in on["workflow_dispatch"]["inputs"]
+        assert {"codes", "teams", "competition"} <= set(on["workflow_dispatch"]["inputs"])
         assert "pull_request" in on  # the planner is exercised on PRs
 
     def test_recorder_jobs_come_from_the_plan_matrix_one_per_match(self):
@@ -119,6 +119,11 @@ class TestFebRecorderWorkflow:
         upload = next(s for s in steps if "upload-artifact" in str(s.get("uses", "")))
         assert upload["if"] == "always()" and upload["with"]["retention-days"] >= 30
         assert next(s for s in steps if s.get("name") == "Report")["if"] == "always()"
+
+    def test_each_match_snapshots_its_own_calendar(self):
+        steps = self._data()["jobs"]["record"]["steps"]
+        record = next(s for s in steps if s.get("name") == "Record")
+        assert record["env"]["CALENDAR"] == "${{ matrix.calendar }}" and "--calendar" in record["run"]
 
     def test_the_job_is_long_enough_for_a_whole_match(self):
         assert self._data()["jobs"]["record"]["timeout-minutes"] >= 240
