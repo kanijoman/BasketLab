@@ -38,7 +38,7 @@ Vite + React + TS + TanStack Query + Tailwind + Recharts/D3; `api/client.ts` (to
 
 ## Despliegue y config
 - `render.yaml`: `basketlab-api` (`python run_api.py`, `DISABLE_SCRAPING=1`) y `basketlab-scraper` (`python run_scraper.py`), plan free, Frankfurt. Frontend en Vercel (`vercel.json`: rewrite SPA). CI (`.github/workflows/ci.yml`): tests + deploy hook de Render en push a `main`.
-- Env backend: `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (misma en api y scraper), `ENVIRONMENT`, `DISABLE_SCRAPING`, `BASKETLAB_DEV`, `PORT`. Frontend: `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Ejemplo en `.env.example`.
+- Env backend: `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (misma en api y scraper), `WEB_CONCURRENCY` (workers, 1 por defecto), `MALLOC_ARENA_MAX`, `LOG_MEMORY` (ver [OPERATIONS.md](OPERATIONS.md#memoria-límite-de-512-mb-en-render-free)), `ENVIRONMENT`, `DISABLE_SCRAPING`, `BASKETLAB_DEV`, `PORT`. Frontend: `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Ejemplo en `.env.example`.
 
 ## Rutas de import
 Usa siempre `src.…`. Los parsers PBP viven en `src/pbp` (sin BD); los antiguos shims se eliminaron (`tests/test_pbp_isolation.py` lo vigila). `tests/conftest.py` limpia cachés bajo ambos alias por compatibilidad con tests antiguos.

@@ -11,7 +11,7 @@ services:
     region: frankfurt  # closest to Spain
     plan: free
 
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --no-cache-dir -r requirements.txt
 
     # run_api.py reads PORT from env (injected by Render) and ENVIRONMENT
     startCommand: python run_api.py
@@ -36,6 +36,17 @@ services:
       - key: ADMIN_API_KEY
         sync: false
 
+      # --- Memory (Render free plan = 512 MB) ---
+      # One uvicorn worker: each one imports the whole app (~170 MB at idle).
+      - key: WEB_CONCURRENCY
+        value: "1"
+      # Fewer glibc malloc arenas: far less memory fragmentation in a threaded app.
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      # Set to 1 temporarily to log requests that grow RSS (see docs/OPERATIONS.md).
+      - key: LOG_MEMORY
+        value: "0"
+
       # Prevent OOM during scraping — the dedicated scraper service handles ingestion
       - key: DISABLE_SCRAPING
         value: "1"
@@ -50,7 +61,7 @@ services:
     region: frankfurt
     plan: free
 
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --no-cache-dir -r requirements.txt
 
     startCommand: python run_scraper.py
 
@@ -68,3 +79,6 @@ services:
 
       - key: ADMIN_API_KEY
         sync: false   # same value as basketlab-api (protects DELETE collections / scrape)
+
+      - key: MALLOC_ARENA_MAX
+        value: "2"

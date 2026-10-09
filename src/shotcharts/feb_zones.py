@@ -8,7 +8,7 @@ FBCYL collections carry no shot coordinates.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 # ---------------------------------------------------------------------------
 # FIBA half-court geometry constants (metres)
@@ -139,8 +139,8 @@ def build_dorsal_to_id_map(shotchart: dict) -> dict:
     return mapping
 
 
-def extract_shots_feb(coll, team_id: Optional[str], player_filter: Optional[str]) -> List[Dict]:
-    """Retrieve and classify FEB shots from a MongoDB collection.
+def iter_shots_feb(coll, team_id: Optional[str], player_filter: Optional[str]) -> Iterator[Dict]:
+    """Lazily yield the classified FEB shots of a collection (O(1) memory per game).
 
     Filters by ``HEADER.TEAM.id`` (indexed, sponsor-change safe) when
     ``team_id`` is provided, avoiding a full-collection scan.
@@ -156,7 +156,6 @@ def extract_shots_feb(coll, team_id: Optional[str], player_filter: Optional[str]
         query["HEADER.TEAM.id"] = team_id
     cursor = coll.find(query, projection)
 
-    all_shots: List[Dict] = []
     for doc in cursor:
         header_teams = doc.get("HEADER", {}).get("TEAM", [])
 
@@ -201,13 +200,17 @@ def extract_shots_feb(coll, team_id: Optional[str], player_filter: Optional[str]
             x_fiba, y_fiba = feb_to_fiba(x_pct, y_pct, t_idx)
             zone = classify_zone(x_fiba, y_fiba)
 
-            all_shots.append({
+            yield {
                 "zone": zone,
                 "made": made,
                 "x":    x_fiba,
                 "y":    y_fiba,
-            })
-    return all_shots
+            }
+
+
+def extract_shots_feb(coll, team_id: Optional[str], player_filter: Optional[str]) -> List[Dict]:
+    """All classified FEB shots as a list (use ``iter_shots_feb`` for league-wide scans)."""
+    return list(iter_shots_feb(coll, team_id, player_filter))
 
 
 def stream_zone_counts_feb(
