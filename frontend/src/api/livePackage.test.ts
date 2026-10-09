@@ -58,4 +58,17 @@ describe('live package api', () => {
     const api = await load()
     await expect(api.startLivePackage(req)).rejects.toThrow(/at least 8 characters/)
   })
+
+  it('lists the upcoming matches of a team', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ matches: [{ code: '1' }], calendar_url: 'u', warning: null }) })
+    const api = await load()
+    await expect(api.getLiveMatches('FEB 25/26', '7', 3)).resolves.toMatchObject({ matches: [{ code: '1' }] })
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/live/matches/FEB%2025%2F26?team_id=7&limit=3')
+  })
+
+  it('sends the chosen match code with the package request', async () => {
+    const api = await load()
+    await api.startLivePackage({ ...req, match_code: '2524465' })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).match_code).toBe('2524465')
+  })
 })

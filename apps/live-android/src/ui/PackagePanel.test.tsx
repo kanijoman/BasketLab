@@ -81,12 +81,22 @@ describe('PackagePanel', () => {
     const onRemoved = vi.fn()
     render(<PackagePanel engine={engineStub()} store={store} loaded={{
       team: 'ACEITES ABRIL ADBA SANFER', rival: 'MANRESA CBF A', season: '2025-2026', collection: 'c',
-      createdAt: '2026-01-01T00:00:00Z', ownPlayers: 12, rivalPlayers: 9, games: { own: 1, rival: 1, league: 1 },
+      createdAt: '2026-01-01T00:00:00Z', ownPlayers: 12, rivalPlayers: 9, games: { own: 1, rival: 1, league: 1 }, match: null,
     }} onLoaded={vi.fn()} onRemoved={onRemoved} />)
     expect(screen.getByText(/ACEITES ABRIL ADBA SANFER/)).toBeTruthy()
     expect(screen.getByText(/MANRESA CBF A/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /quitar paquete/i }))
     await waitFor(() => expect(onRemoved).toHaveBeenCalled())
     expect(store.saved).toBeNull()
+  })
+
+  it('shows the match the package is for', () => {
+    render(<PackagePanel engine={engineStub()} store={memoryStore()} loaded={{
+      team: 'A', rival: 'B', season: '2026', collection: 'c', createdAt: '2026-10-08T12:00:00Z', ownPlayers: 1, rivalPlayers: 1,
+      games: { own: 1, rival: 1, league: 1 },
+      match: { code: '2524465', start: '2026-10-10T19:00', home: { id: '1', name: 'A' }, away: { id: '2', name: 'B' } },
+    }} onLoaded={vi.fn()} />)
+    expect(screen.getByText(/código 2524465/i)).toBeTruthy()
+    expect(screen.getByText(/10\/10\/2026/)).toBeTruthy()
   })
 })

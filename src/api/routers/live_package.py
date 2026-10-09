@@ -2,6 +2,7 @@
 
 Prefixed at /api/v1/live
 
+GET  /matches/{collection}        -> upcoming / live matches of a team (FEB calendar)
 POST /package                     -> 202 {job_id}   start the (CPU heavy) build in the background
 GET  /package/progress/{job_id}   -> status, games processed
 GET  /package/download/{job_id}   -> the encrypted .bpkg file (one-shot)
@@ -17,11 +18,12 @@ import time
 import uuid
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from src.api.deps import get_db
+from src.services.match_schedule_service import MatchScheduleService
 
 router = APIRouter()
 
@@ -36,6 +38,8 @@ class PackageRequest(BaseModel):
     rival_id: str = Field(min_length=1)
     passphrase: str = Field(min_length=MIN_PASSPHRASE, description="Encrypts the package; not recoverable")
     season: Optional[str] = None
+    # FEB match the package is prepared for (digits); its details are looked up in the calendar
+    match_code: Optional[str] = Field(default=None, pattern=r"^\d+$")
 
 
 def purge_expired_jobs(now: Optional[float] = None) -> None:
@@ -48,6 +52,21 @@ def _team_names(db, collection: str) -> Dict[str, str]:
     return {str(t["id"]): t["name"] for t in (db.get_teams_with_ids(collection) or [])}
 
 
+def _match_meta(db, req: PackageRequest) -> Optional[Dict[str, Any]]:
+    """``{"match": {...}}`` for the chosen match: details from the calendar, else just the code."""
+    if not req.match_code:
+        return None
+    match: Dict[str, Any] = {"code": req.match_code}
+    try:
+        found = MatchScheduleService(db).upcoming(req.collection, req.team_id, limit=50)["matches"]
+        info = next((m for m in found if m["code"] == req.match_code), None)
+        if info:
+            match.update(start=info["start"], round=info["round"], home=info["home"], away=info["away"])
+    except Exception:  # noqa: BLE001 - the calendar is optional for building the package
+        pass
+    return {"match": match}
+
+
 def _run(job_id: str, req: PackageRequest, db) -> None:
     job = JOBS[job_id]
 
@@ -58,12 +77,24 @@ def _run(job_id: str, req: PackageRequest, db) -> None:
         from src.live_prep.db_source import build_package_from_db
         from src.live_prep.package_crypto import encrypt_package
 
-        package = build_package_from_db(db, req.collection, req.team_id, req.rival_id, req.season, progress=progress)
+        package = build_package_from_db(db, req.collection, req.team_id, req.rival_id, req.season,
+                                        competition_meta=_match_meta(db, req), progress=progress)
         envelope = encrypt_package(package.dumps(), req.passphrase)
         job["envelope"] = json.dumps(envelope, separators=(",", ":"))
         job["status"] = "done"
     except Exception as exc:  # noqa: BLE001 - reported through the progress endpoint
         job["status"], job["error"] = "error", str(exc)
+
+
+@router.get("/matches/{collection}", summary="Upcoming and live matches of a team (FEB calendar)")
+def team_matches(
+    collection: str,
+    team_id: str = Query(..., description="Stable team id"),
+    limit: int = Query(5, ge=1, le=20),
+    db=Depends(get_db),
+) -> Dict[str, Any]:
+    """``{matches, calendar_url, warning}``: dated matches not yet played plus those being played."""
+    return MatchScheduleService(db).upcoming(collection, team_id, limit=limit)
 
 
 @router.post("/package", status_code=202, summary="Start building an encrypted live preparation package")
