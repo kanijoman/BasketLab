@@ -3,7 +3,8 @@ import { useState } from 'react'
 import type { EngineApi } from '../engine/client'
 import { decryptEnvelope } from '../package/crypto'
 import type { PackageStore } from '../package/storage'
-import { summarizePackage, type PackageSummary } from '../package/summary'
+import { installPackage } from '../package/install'
+import type { PackageSummary } from '../package/summary'
 
 interface Props {
   engine: EngineApi
@@ -35,11 +36,10 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
     setError(null)
     try {
       const plaintext = await decryptEnvelope(await file.text(), pass)
-      await engine.start(plaintext) // the engine validates checksum and schema version
-      await store.save({ plaintext, savedAt: new Date().toISOString() })
+      const summary = await installPackage(engine, store, plaintext)
       setPass('')
       setFile(null)
-      onLoaded(summarizePackage(plaintext))
+      onLoaded(summary)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
