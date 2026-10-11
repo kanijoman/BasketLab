@@ -93,6 +93,16 @@ class TestPublishAll:
         assert not old.exists() and (tmp_path / OWN / f"{R1}.bpkg").exists()
 
 
+class TestVercelGuard:
+    def test_the_published_branch_tells_vercel_not_to_deploy_it_regression(self, tmp_path):
+        """Bug: Vercel's Git integration built the live-packages branch on every publish and failed
+        ('Root Directory "frontend" does not exist'), mailing the owner 3 times a day.
+        The branch carries frontend/vercel.json (so the root directory exists) that disables its deployments."""
+        publish_all(object(), tmp_path, PASSWORD, ["COL"], OWN, service=_schedule([]), build=_builder())
+        config = json.loads((tmp_path / "frontend" / "vercel.json").read_text(encoding="utf-8"))
+        assert config["git"]["deploymentEnabled"] is False
+
+
 class TestIndex:
     def test_index_carries_the_fields_the_app_lists(self):
         entry = {"team_id": OWN, "rival_id": R1, "rival": "X", "match": {"code": "1", "start": "s", "round": 1}, "file": "f", "sha256": "h"}

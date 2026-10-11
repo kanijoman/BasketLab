@@ -54,6 +54,18 @@ def _next_rivals(service: Any, collections: List[str], team_id: str, upcoming: i
     return chosen[:upcoming]
 
 
+# The branch is served by raw.githubusercontent.com, not by Vercel; its Git integration would otherwise try (and fail,
+# the project's root directory is ``frontend``) to build it on every publish. ``frontend/vercel.json`` makes that
+# directory exist and switches the branch's deployments off.
+VERCEL_GUARD = {"git": {"deploymentEnabled": False}}
+
+
+def _write_vercel_guard(out: Path) -> None:
+    guard = out / "frontend"
+    guard.mkdir(parents=True, exist_ok=True)
+    (guard / "vercel.json").write_text(json.dumps(VERCEL_GUARD, indent=1), encoding="utf-8")
+
+
 def _remove_stale(team_dir: Path) -> None:
     for old in team_dir.glob("*.bpkg"):
         old.unlink()
@@ -89,6 +101,7 @@ def publish_all(db: Any, out: Any, passphrase: str, collections: List[str], team
             "match": _match_meta(match), "file": f"{team_id}/{rival['id']}.bpkg",
             "sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(), "bytes": len(content.encode("utf-8")),
         })
+    _write_vercel_guard(out)
     (out / "index.json").write_text(json.dumps(build_index(entries), ensure_ascii=False, indent=1), encoding="utf-8")
     return entries
 
