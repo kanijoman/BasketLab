@@ -1,0 +1,72 @@
+{
+ "v": 1,
+ "generated_at": "2026-10-11T00:19:22.704462+00:00",
+ "packages": [
+  {
+   "team_id": "1008631",
+   "rival_id": "1008895",
+   "rival": "BOSONIT UNIBASKET",
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "match": {
+    "code": "2524475",
+    "start": "2026-10-17T20:30",
+    "round": 3,
+    "home": {
+     "id": "1008631",
+     "name": "MIPELLETYMAS B.F. LEON"
+    },
+    "away": {
+     "id": "1008895",
+     "name": "BOSONIT UNIBASKET"
+    }
+   },
+   "file": "1008631/1008895.bpkg",
+   "sha256": "2cafcd5a4414f09b59825eff1d16da7fe77683edeca24c51d451cd7b75951347",
+   "bytes": 21491
+  },
+  {
+   "team_id": "1008631",
+   "rival_id": "1008987",
+   "rival": "UNICAJA MIJAS",
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "match": {
+    "code": "2524482",
+    "start": "2026-10-24T17:30",
+    "round": 4,
+    "home": {
+     "id": "1008987",
+     "name": "UNICAJA MIJAS"
+    },
+    "away": {
+     "id": "1008631",
+     "name": "MIPELLETYMAS B.F. LEON"
+    }
+   },
+   "file": "1008631/1008987.bpkg",
+   "sha256": "a27eeb39f6b6790eb2fd82a911aaf3a6d7be0cf08a6c567cc0f2f2f3f5200702",
+   "bytes": 19167
+  },
+  {
+   "team_id": "1008631",
+   "rival_id": "1008377",
+   "rival": "OSES CONSTRUCCION",
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "match": {
+    "code": "2524489",
+    "start": "2026-11-01T13:00",
+    "round": 5,
+    "home": {
+     "id": "1008631",
+     "name": "MIPELLETYMAS B.F. LEON"
+    },
+    "away": {
+     "id": "1008377",
+     "name": "OSES CONSTRUCCION"
+    }
+   },
+   "file": "1008631/1008377.bpkg",
+   "sha256": "f38b0c5e1956f1076f5f347900c1e424985bd2e4faeb52d094edadddc3574977",
+   "bytes": 20071
+  }
+ ]
+}
