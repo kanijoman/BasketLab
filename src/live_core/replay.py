@@ -82,9 +82,13 @@ class ReplayClock:
         self._start, self._speed, self._end, self._time_fn = start_elapsed, speed, end_elapsed, time_fn
         self._t0 = time_fn()
 
-    def elapsed(self) -> int:
+    def seconds(self) -> float:
+        """Like ``elapsed`` but with sub-second precision (recorded feeds have frames at fractions of a second)."""
         value = self._start + (self._time_fn() - self._t0) * self._speed
-        return int(min(value, self._end) if self._end is not None else value)
+        return float(min(value, self._end) if self._end is not None else value)
+
+    def elapsed(self) -> int:
+        return int(self.seconds())
 
     def finished(self) -> bool:
         return self._end is not None and self.elapsed() >= self._end

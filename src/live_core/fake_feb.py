@@ -6,6 +6,10 @@ BoxScore / KeyFacts / ShotChart endpoints behind a Bearer token). Standard libra
 Run it for manual / app testing::
 
     python -m src.live_core.fake_feb --speed 30 --start-period 2 --port 8765
+    python -m src.live_core.fake_feb --recording tests/recordings/2524470.rec.json.gz --speed 60 --start-at 3000
+
+With ``--recording`` (issue #174) it replays a REAL recording (``recording_pack``) with its real timeline: the
+same documents FEB served at each second, including the per-endpoint 404 windows of the middle of the match.
 """
 
 from __future__ import annotations
@@ -20,6 +24,7 @@ from typing import Any, Dict, Optional
 
 from .clock import elapsed_seconds, period_and_remaining
 from .events import parse_line
+from .recorded_feed import RecordedFeed
 from .replay import ReplayClock, truncate_doc
 
 _API_RE = re.compile(r"^/LiveStats\.API/api/v1/(BoxScore|KeyFacts|ShotChart)/(\d+)$")
@@ -32,9 +37,11 @@ def game_end_elapsed(doc: Dict[str, Any]) -> int:
 
 
 class FakeFebServer:
-    def __init__(self, doc: Dict[str, Any], clock: ReplayClock, token: str = "eyJhbGciFAKE.replay.token",
-                 host: str = "127.0.0.1", port: int = 0) -> None:
-        self.doc, self.clock, self.token = doc, clock, token
+    def __init__(self, doc: Optional[Dict[str, Any]], clock: ReplayClock, token: str = "eyJhbGciFAKE.replay.token",
+                 host: str = "127.0.0.1", port: int = 0, feed: Optional[RecordedFeed] = None) -> None:
+        """``doc`` = a finished game cut at the clock's game second; ``feed`` = a recording replayed at the
+        clock's recording second (``doc`` is then unused)."""
+        self.doc, self.clock, self.token, self.feed = doc, clock, token, feed
         self._httpd = ThreadingHTTPServer((host, port), self._make_handler())
         self._thread: Optional[threading.Thread] = None
 
@@ -51,7 +58,10 @@ class FakeFebServer:
         self._httpd.shutdown()
         self._httpd.server_close()
 
-    def current_document(self) -> Dict[str, Any]:
+    def current_document(self, endpoint: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """The document being served now; None when the real feed had nothing (not started / a 404 window)."""
+        if self.feed is not None:
+            return self.feed.document_at(self.clock.seconds(), endpoint)
         if self.clock.finished():
             return self.doc
         period, remaining = period_and_remaining(self.clock.elapsed())
@@ -84,8 +94,10 @@ class FakeFebServer:
                 if self.headers.get("Authorization") != f"Bearer {server.token}":
                     return self._send(401, '{"error": "unauthorized"}', "application/json")
 
-                doc = server.current_document()
                 endpoint = match.group(1)
+                doc = server.current_document(endpoint.lower())
+                if doc is None:
+                    return self._send(404, "{}", "application/json")
                 payload = {"BoxScore": lambda: {k: v for k, v in doc.items() if k not in ("PLAYBYPLAY", "SHOTCHART")},
                            "KeyFacts": lambda: {"PLAYBYPLAY": doc["PLAYBYPLAY"]},
                            "ShotChart": lambda: {"SHOTCHART": doc.get("SHOTCHART") or []}}[endpoint]()
@@ -99,15 +111,24 @@ def main() -> None:  # pragma: no cover - manual tool
 
     parser = argparse.ArgumentParser(description="Replay a recorded FEB game as a live feed.")
     parser.add_argument("--game", default=str(Path(__file__).resolve().parents[1] / "JSON_samples" / "feb_game.json"))
+    parser.add_argument("--recording", help="replay a packed real recording (*.rec.json.gz) instead of --game")
+    parser.add_argument("--start-at", type=float, default=0.0, help="recording second to start from (with --recording)")
     parser.add_argument("--speed", type=float, default=30.0)
     parser.add_argument("--start-period", type=int, default=1)
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
-    doc = json.loads(Path(args.game).read_text(encoding="utf-8"))
-    clock = ReplayClock(elapsed_seconds(args.start_period, 600), args.speed, game_end_elapsed(doc), time.monotonic)
-    server = FakeFebServer(doc, clock, port=args.port)
-    print(f"Fake FEB replay on {server.base_url} (speed x{args.speed}); token: {server.token}")
+    if args.recording:
+        feed = RecordedFeed.load(args.recording)
+        clock = ReplayClock(args.start_at, args.speed, feed.duration, time.monotonic)
+        server = FakeFebServer(None, clock, port=args.port, feed=feed)
+        print(f"Fake FEB replaying the recording of match {feed.match} on {server.base_url} (speed x{args.speed}, "
+              f"{feed.duration / 60:.0f} min of feed); token: {server.token}")
+    else:
+        doc = json.loads(Path(args.game).read_text(encoding="utf-8"))
+        clock = ReplayClock(elapsed_seconds(args.start_period, 600), args.speed, game_end_elapsed(doc), time.monotonic)
+        server = FakeFebServer(doc, clock, port=args.port)
+        print(f"Fake FEB replay on {server.base_url} (speed x{args.speed}); token: {server.token}")
     server.start()
     try:
         while True:
