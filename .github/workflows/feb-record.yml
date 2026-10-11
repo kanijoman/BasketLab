@@ -9,6 +9,12 @@ name: FEB live recorder
 on:
   schedule:
     - cron: "*/15 6-22 * * *"
+  # GitHub runs the schedule above only a few times a day (issue #205): also plan after every Atlas refresh
+  # (3 reliable runs a day), which looks up to 3 h ahead
+  workflow_run:
+    workflows: ["Atlas refresh"]
+    types: [completed]
+    branches: [main]
   # validates the planner (imports, watchlist, calendar) on PRs; the record job only runs when a match is due
   pull_request:
     paths:
@@ -72,7 +78,7 @@ jobs:
     needs: plan
     if: ${{ fromJSON(needs.plan.outputs.matrix).include[0] != null }}
     runs-on: ubuntu-latest
-    timeout-minutes: 260
+    timeout-minutes: 355   # up to 3 h waiting for kick-off (PLAN_BEFORE) + 170 min recording; the hosted limit is 360
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
@@ -98,7 +104,7 @@ jobs:
           START_AT: ${{ matrix.start_at }}
           CALENDAR: ${{ matrix.calendar }}
         run: |
-          args="--match $CODE --skip-if-finished --max-minutes 215 --interval 10"
+          args="--match $CODE --skip-if-finished --max-minutes 170 --interval 10"
           if [ -n "$CALENDAR" ]; then args="$args --calendar $CALENDAR"; fi
           if [ -n "$START_AT" ] && [ "$START_AT" != "None" ]; then args="$args --start-at $START_AT"; fi
           python -m src.live_prep.recorder record $args

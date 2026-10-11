@@ -41,12 +41,25 @@ class TestPlan:
         assert [m["code"] for m in out] == ["2524470"]
         assert out[0]["start_at"] == "2026-10-10T15:00:00+00:00"  # Madrid local time converted to UTC
 
-    def test_the_window_is_generous_to_absorb_late_cron_runs(self):
-        assert _plan(at("2026-10-10T14:20"))  # 40 min before
-        assert _plan(at("2026-10-10T15:25"))  # 25 min after kick-off (GitHub schedules can lag)
+    def test_the_window_is_wide_because_github_runs_the_schedule_only_every_few_hours_regression(self):
+        """Issue #205: GitHub ran the 15-minute schedule 4-5 times a day, none in the 45 minutes before a match,
+        so the planner must look ahead hours and still catch a match that has already started."""
+        assert _plan(at("2026-10-10T12:10"))  # 2 h 50 before kick-off (15:00 UTC)
+        assert _plan(at("2026-10-10T16:40"))  # 100 min after kick-off, the match is still on (the calendar keeps "scheduled")
+
+    def test_the_planned_recording_waits_for_the_start_so_an_early_run_is_safe(self):
+        out = _plan(at("2026-10-10T12:10"))
+        assert out[0]["start_at"] == "2026-10-10T15:00:00+00:00"  # the job sleeps until then (see the workflow budget test)
+
+    def test_nothing_before_the_window(self):
+        assert _plan(at("2026-10-10T11:50")) == []  # 3 h 10 before
 
     def test_nothing_after_the_window(self):
-        assert _plan(at("2026-10-10T15:45")) == []
+        assert _plan(at("2026-10-10T17:05")) == []  # 2 h 05 after kick-off: over
+
+    def test_a_late_run_records_from_now_without_waiting(self):
+        out = _plan(at("2026-10-10T16:00"))  # one hour into the match
+        assert out and out[0]["start_at"] == "2026-10-10T15:00:00+00:00"  # in the past: the recorder starts at once
 
     def test_only_matches_on_the_watchlist_are_planned(self):
         out = _plan(at("2026-10-10T15:00"))
@@ -89,7 +102,8 @@ class TestWatchlistSchema:
     def test_a_whole_competition_records_every_match_that_is_about_to_start(self):
         cal = CAL + [_m("2524468", "2026-10-10T17:00", "16", "17")]
         out = _plan(at("2026-10-10T15:00"), watch={"calendars": [URL], "competitions": [URL]}, cal=cal)
-        assert {m["code"] for m in out} == {"2524470", "2524468"} and all(m["calendar"] == URL for m in out)
+        # every match of the competition that starts within the planner window: the 17:00 ones and the 18:00 one
+        assert {m["code"] for m in out} == {"2524470", "2524468", "2524464"} and all(m["calendar"] == URL for m in out)
 
     def test_several_calendars_are_scanned_and_each_match_keeps_its_own(self):
         other = "https://baloncestoenvivo.feb.es/calendario.aspx?g=4&t=2026&nm=lfendesa"
@@ -124,7 +138,7 @@ class TestWatchlistSchema:
         assert [m["code"] for m in out] == ["2524470"]
         out = plan({"calendars": []}, at("2026-10-10T15:00"), fetch_calendar=lambda u: CAL,
                    match_status=lambda c: "scheduled", extra_competitions=[URL])
-        assert [m["code"] for m in out] == ["2524470"]
+        assert {m["code"] for m in out} == {"2524470", "2524464"}  # both matches of the afternoon are inside the window
 
 
 class TestCli:
