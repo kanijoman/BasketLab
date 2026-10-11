@@ -72,6 +72,31 @@ def test_pace_and_sample_sizes_are_reported(feb_game_doc):
     assert pkg.baselines["sample_games"] == {"own": 1, "rival": 1, "league": 1}
 
 
+def test_each_team_gets_its_own_habitual_pace(feb_game_doc):
+    """Own and rival habitual pace are averaged over each team's own games (pace_per_40 mixes both)."""
+    import json
+
+    single = _build([feb_game_doc]).baselines
+    assert single["pace_own_per_40"] == single["pace_rival_per_40"] == single["pace_per_40"]
+
+    # a slower game that only the rival plays (own team replaced by a stranger, half of the shots dropped)
+    slow = json.loads(json.dumps(feb_game_doc).replace(f'"{OWN}"', '"1"'))
+    shots = [i for i, line in enumerate(slow["PLAYBYPLAY"]["LINES"]) if line.get("action") == "shoot"]
+    drop = set(shots[::2])
+    slow["PLAYBYPLAY"]["LINES"] = [line for i, line in enumerate(slow["PLAYBYPLAY"]["LINES"]) if i not in drop]
+    both = _build([feb_game_doc, slow]).baselines
+    assert both["pace_own_per_40"] == single["pace_own_per_40"]   # the own team only played the first game
+    assert both["pace_rival_per_40"] < single["pace_rival_per_40"]  # the rival also played the slow one
+    assert both["sample_games"]["own"] == 1 and both["sample_games"]["rival"] == 2
+
+
+def test_pace_habits_are_absent_when_the_team_has_no_games(feb_game_doc):
+    stranger = copy.deepcopy(feb_game_doc)
+    stranger["HEADER"]["TEAM"] = [{"id": "1", "name": "X", "pts": "0"}, {"id": "2", "name": "Y", "pts": "0"}]
+    baselines = _build([stranger]).baselines
+    assert "pace_own_per_40" not in baselines and "pace_rival_per_40" not in baselines
+
+
 def test_league_spread_needs_enough_games_and_has_a_floor():
     few = [{"efg": 0.05, "tov": 0.01, "orb": 0.02, "ftr": 0.03}] * (FEATURE_MIN_GAMES_FOR_SPREAD - 1)
     assert league_spread(few) == {}

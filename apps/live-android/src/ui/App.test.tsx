@@ -62,6 +62,11 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
+const PACE = {
+  reliable: true, possessions: 36, current40: 72, habit_own40: 70, habit_rival40: 62, expected40: 66,
+  delta_own: 2, delta_rival: 10, projected40: 69, projected_possessions: 70.5, sample_games: { own: 4, rival: 3 },
+}
+
 describe('App', () => {
   it('shows a loading state, then both teams once the engine is ready', async () => {
     render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
@@ -147,5 +152,16 @@ describe('App', () => {
       expect(await screen.findByText(/schema version 9/)).toBeTruthy()
       expect(screen.getByRole('button', { name: /quitar paquete/i })).toBeTruthy()
     })
+  })
+
+  it('shows the pace card under the scoreboard once the engine reports the pace', async () => {
+    const engine = fakeEngine({ replay: vi.fn(async (e: number) => ({ ...out(e), analysis: e >= 5 ? { pace: PACE } : {} })) })
+    render(<App engine={engine} loadDemo={loadDemo} />)
+    await screen.findByText('EQUIPO PROPIO')
+    expect(screen.getByText(/calculando/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    await waitFor(() => expect(screen.getByText('72,0')).toBeTruthy())
+    expect(screen.getByText(/EQUIPO RIVAL/, { selector: '.pace-name' })).toBeTruthy()
   })
 })

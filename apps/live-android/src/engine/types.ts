@@ -54,8 +54,25 @@ export interface Snapshot {
   [key: string]: unknown
 }
 
+/** Game pace (possessions per 40 min), from src/live_core/pace.py. Habits are null in packages that predate them. */
+export interface PaceAnalysis {
+  reliable: boolean
+  possessions: number
+  current40: number
+  habit_own40: number | null
+  habit_rival40: number | null
+  expected40: number | null
+  /** Current pace minus each team's habitual pace. */
+  delta_own: number | null
+  delta_rival: number | null
+  projected40: number
+  /** Expected possessions per team at the end of the game. */
+  projected_possessions: number
+  sample_games: { own: number | null; rival: number | null }
+}
+
 export interface EngineOutput {
   snapshot: Snapshot
   alerts: Alert[]
-  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown } }
+  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis }
 }

@@ -113,7 +113,8 @@ class _Season:
         self.names: Dict[str, str] = {}
         self.diffs: Dict[str, List[Dict[str, float]]] = {team_id: [], rival_id: []}
         self.league_diffs: List[Dict[str, float]] = []
-        self.paces: List[float] = []
+        self.paces: List[float] = []  # every game of either team (kept: ``pace_per_40``)
+        self.paces_by_team: Dict[str, List[float]] = {team_id: [], rival_id: []}
         self.played = {team_id: 0, rival_id: 0}
         self.zones: Dict[str, Dict[str, Dict[str, int]]] = {"league": {}, "rival": {}}
         self.total_games = 0
@@ -141,7 +142,9 @@ class _Season:
         self.diffs[tid].append(differentials(stats[tid], stats[other]))
         if snap["elapsed"]:
             n = (possessions(stats[tid]) + possessions(stats[other])) / 2
-            self.paces.append(n / snap["elapsed"] * GAME_SECONDS)
+            pace = n / snap["elapsed"] * GAME_SECONDS
+            self.paces.append(pace)
+            self.paces_by_team[tid].append(pace)
         for pid, p in snap["players"].items():
             if p["team_id"] == tid:
                 self.players[tid].setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
@@ -166,6 +169,10 @@ class _Season:
             out["four_factors_sd"] = spread
         if self.paces:
             out["pace_per_40"] = round(sum(self.paces) / len(self.paces), 1)
+        for key, tid in (("pace_own_per_40", self.team_id), ("pace_rival_per_40", self.rival_id)):
+            paces = self.paces_by_team[tid]
+            if paces:
+                out[key] = round(sum(paces) / len(paces), 1)
         return out
 
     def _league_players_with_minutes(self) -> List[_PlayerAcc]:

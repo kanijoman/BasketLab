@@ -60,6 +60,8 @@ class RuleConfig:
     zone_share: float = 0.35
     zone_share_excess: float = 0.15
     zone_shrink_n0: float = 20.0
+    # Game pace (possessions per 40 min): minimum game time before the pace and its +/- are trusted.
+    pace_min_elapsed_s: int = 180
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0
