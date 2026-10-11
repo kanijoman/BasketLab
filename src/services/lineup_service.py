@@ -52,6 +52,7 @@ class LineupService:
         progress_callback: Optional[Callable] = None,
         min_minutes: float = 15,
         min_games: int = 5,
+        last_game: bool = False,
     ) -> List[Dict]:
         """Return player combinations for a team sorted by the chosen stat.
 
@@ -65,7 +66,8 @@ class LineupService:
             include_game_log: Include per-game breakdown in each lineup dict.
             progress_callback: Optional ``(current, total) -> None`` callback.
             min_minutes: Minimum total minutes a lineup must have played (0 = no minimum).
-            min_games: Minimum games a lineup must have played together (0 = no minimum).
+            min_games: Minimum games a lineup must have played together (0 = no minimum; capped to the games analysed).
+            last_game: Analyse only the team's most recent game (``date_filter`` is ignored).
 
         Returns:
             List of lineup stat dicts sorted by ``stat``, or empty list on failure.
@@ -81,6 +83,7 @@ class LineupService:
             progress_callback=progress_callback,
             min_minutes=min_minutes,
             min_games=min_games,
+            last_game=last_game,
         ) or []
 
         # Re-sort by requested stat (repository always sorts by net_rating)

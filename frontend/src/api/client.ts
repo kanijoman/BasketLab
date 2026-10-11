@@ -225,6 +225,35 @@ export const LINEUP_STAT_GROUPS: Array<{
   },
 ]
 
+/** Period value that means "only the team's most recent game" (sent as `last_game=true`). */
+export const LAST_GAME = -1
+
+export const LINEUP_PERIODS: Array<{ value: number; label: string }> = [
+  { value: 0,         label: 'Temporada completa' },
+  { value: LAST_GAME, label: 'Último partido' },
+  { value: 7,         label: 'Últimos 7 días' },
+  { value: 15,        label: 'Últimos 15 días' },
+  { value: 30,        label: 'Últimos 30 días' },
+  { value: 60,        label: 'Últimos 60 días' },
+]
+
+function lineupQuery(
+  teamName: string, size: number, stat: string, period: number,
+  includeGameLog: boolean, minMinutes: number, minGames: number,
+): URLSearchParams {
+  const qs = new URLSearchParams({
+    team_name: teamName,
+    size: String(size),
+    stat,
+    period: String(period === LAST_GAME ? 0 : period),
+    include_game_log: String(includeGameLog),
+    min_minutes: String(minMinutes),
+    min_games: String(minGames),
+  })
+  if (period === LAST_GAME) qs.set('last_game', 'true')
+  return qs
+}
+
 export const getLineupAnalysis = (
   collection: string,
   teamId: string,
@@ -236,15 +265,7 @@ export const getLineupAnalysis = (
   minMinutes = 15,
   minGames = 5,
 ) => {
-  const qs = new URLSearchParams({
-    team_name: teamName,
-    size: String(size),
-    stat,
-    period: String(period),
-    include_game_log: String(includeGameLog),
-    min_minutes: String(minMinutes),
-    min_games: String(minGames),
-  })
+  const qs = lineupQuery(teamName, size, stat, period, includeGameLog, minMinutes, minGames)
   return get<LineupRow[]>(
     `/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?${qs}`,
   )
@@ -267,15 +288,7 @@ export function streamLineupAnalysis(
   minGames = 5,
   onProgress?: (pct: number, current: number, total: number) => void,
 ): Promise<LineupRow[]> {
-  const qs = new URLSearchParams({
-    team_name: teamName,
-    size: String(size),
-    stat,
-    period: String(period),
-    include_game_log: String(includeGameLog),
-    min_minutes: String(minMinutes),
-    min_games: String(minGames),
-  })
+  const qs = lineupQuery(teamName, size, stat, period, includeGameLog, minMinutes, minGames)
   const url = `${BASE}/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
 
   return new Promise((resolve, reject) => {
