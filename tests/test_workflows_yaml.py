@@ -130,3 +130,29 @@ class TestFebRecorderWorkflow:
 
     def test_only_the_scraper_dependencies_are_installed(self):
         assert "requests beautifulsoup4 cachetools tenacity" in self._path().read_text(encoding="utf-8")
+
+
+class TestRecorderWorkflowBudget:
+    """Issue #205: the record job sleeps until kick-off, so wait + recording must fit in the job timeout."""
+
+    @staticmethod
+    def _workflow():
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "feb-record.yml").read_text(encoding="utf-8"))
+
+    def test_the_job_timeout_covers_the_planner_window_plus_the_longest_recording(self):
+        import re
+
+        from src.live_prep.recorder import PLAN_BEFORE
+
+        job = self._workflow()["jobs"]["record"]
+        record_step = next(s for s in job["steps"] if s.get("name") == "Record")
+        max_minutes = int(re.search(r"--max-minutes\s+(\d+)", record_step["run"]).group(1))
+        wait = PLAN_BEFORE.total_seconds() / 60
+        assert job["timeout-minutes"] >= wait + max_minutes + 3  # + set-up
+        assert job["timeout-minutes"] <= 360  # GitHub-hosted runners stop at 6 h
+
+    def test_the_planner_also_runs_after_each_atlas_refresh(self):
+        triggers = self._workflow()[True]  # YAML reads the key `on` as True
+        assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]
+        assert "completed" in triggers["workflow_run"]["types"]
+        assert "schedule" in triggers and "workflow_dispatch" in triggers

@@ -236,8 +236,11 @@ class Recorder:
 
 # --- planning: which matches to record right now -------------------------------------------------
 
-PLAN_BEFORE = timedelta(minutes=45)   # start recording up to 45 min before kick-off ...
-PLAN_AFTER = timedelta(minutes=30)    # ... and still accept a late scheduler run 30 min after it
+# GitHub runs the "every 15 minutes" schedule only a few times a day (issue #205), so the planner looks far ahead:
+# a run up to 3 h before kick-off launches a job that sleeps until the start (the workflow's timeout budget covers
+# that wait plus the recording), and a run up to 2 h after it still records the rest of the match.
+PLAN_BEFORE = timedelta(hours=3)
+PLAN_AFTER = timedelta(hours=2)
 
 
 def _madrid_to_utc(local_iso: str) -> datetime:
