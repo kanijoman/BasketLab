@@ -18,7 +18,8 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 2. Lista de partidos por equipo (#119) hecha para competiciones de un grupo; pendiente multi-grupo y confirmar con un partido real cómo se ve uno en juego (#118).
 3. **App Android** (#120, `apps/live-android`): esqueleto hecho (motor en Web Worker con Pyodide, modo demo, CI con e2e y APK, release por etiqueta). Paquete de extremo a extremo hecho (#133: generar en la web, importar en la app) y automático (#175: publicado en la rama `live-packages` y descargable en la app; sin Drive, #162 descartado). Pendiente: fuente real FEB (#118/#119), prueba en tablet real (versión mínima de WebView, fluidez medida en dispositivo).
 4. Informes por reglas v1 completa (épica #145: zonas vs liga en FEB y FBCYL, sin mínimo de partidos, PDF sin cortes de fila). v2 diferida (#146).
-5. **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
+5. **Reglas live candidatas**: evaluación del motor con el primer partido real hecha; 9 reglas candidatas guardadas (sin implementar) en [LIVE_RULES_CANDIDATES.md](LIVE_RULES_CANDIDATES.md) hasta tener más partidos grabados.
+   **Modelos live**: evaluar win-prob/proyección con *replay* de histórico (Brier, MAE) antes de enseñar probabilidades; calibrar `ff_beta`, spreads y `n0`.
 6. Optimizador de quintetos, proyección multi-temporada de jugador (ideas antiguas, sin empezar).
 7. **Rework de UI** (épica #187, en backlog): sistema de diseño con tokens y tema claro/oscuro, marca nueva, componentes base, `TeamCell`/DataTable (#184), shell móvil y migración de todas las páginas. Detalle y fases en el issue; se arranca con U0 (#188).
 

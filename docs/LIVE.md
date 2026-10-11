@@ -49,6 +49,7 @@ Estado, faltas por jugador, totales de equipo (tiros, ORB/DRB, pérdidas, robos,
 `tests/test_live_core_*.py`, `test_live_prep_*.py`; vectores: `tests/live_vectors/generate.py` → `vectors.json` (Python = referencia) y `tests/pyodide/run_vectors.mjs` (mismo ejecutor en Pyodide); CI `live-vectors.yml` regenera y exige `git diff` vacío. Tras cambiar `live_core`: regenerar vectores y revisar el diff.
 
 ## Límites y pendientes
+- **Reglas candidatas** (no implementadas, a la espera de más partidos grabados): [LIVE_RULES_CANDIDATES.md](LIVE_RULES_CANDIDATES.md), con la evaluación del motor sobre Zamora–León en [evaluaciones/](evaluaciones/2026-10-10_zamora-leon_motor-de-reglas.md).
 - **Sin verificar con FEB real**: forma de `status/statusText` en directo, refresco de `BoxScore/KeyFacts/ShotChart`, vida del JWT, calendario de partidos futuros (hoy el scraper descarta partidos sin resultado).
 - Parámetros placeholder: `ff_beta`, spreads, `n0`, pesos de fatiga. Sin datos de emparejamiento ni de quintetos (el recomendador mira jugadores sueltos). Rol inferido sin posición. 3 triples sobre la línea caen como de 2. Esquinas casi vacías (dato de origen).
 - Decidido, **no implementado**: app Android independiente (Capacitor, motor en Web Worker con Pyodide, FEB vía HTTP nativa), modo local. Capas de prueba cloud previstas (Playwright/emulador/Firebase) en [TESTING.md](TESTING.md).
