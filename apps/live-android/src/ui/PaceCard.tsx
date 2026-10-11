@@ -45,7 +45,7 @@ export default function PaceCard({ pace, own, rival }: Props) {
     return (
       <section className="pace-card" aria-label="Ritmo">
         <h2>Ritmo</h2>
-        <p className="detail">Calculando el ritmo… disponible a partir de los 3 minutos de juego.</p>
+        <p className="detail">Calculando el ritmo… disponible a partir de los 5 minutos de juego.</p>
       </section>
     )
   }
@@ -58,7 +58,7 @@ export default function PaceCard({ pace, own, rival }: Props) {
           <span className="detail"> actual</span>
         </div>
         <div className="detail">
-          Proyección final {fmt(pace.projected40)} · ≈ {Math.round(pace.projected_possessions)} posesiones por equipo
+          Proyección final: ≈ {Math.round(pace.projected_possessions)} posesiones por equipo
         </div>
       </div>
       <ul className="pace-rows" aria-label="Ritmo frente al habitual">

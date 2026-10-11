@@ -63,8 +63,8 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 const PACE = {
-  reliable: true, possessions: 36, current40: 72, habit_own40: 70, habit_rival40: 62, expected40: 66,
-  delta_own: 2, delta_rival: 10, projected40: 69, projected_possessions: 70.5, sample_games: { own: 4, rival: 3 },
+  reliable: true, possessions: 36, current40: 72, habit_own40: 70, habit_rival40: 62,
+  delta_own: 2, delta_rival: 10, projected_possessions: 72.4, sample_games: { own: 4, rival: 3 },
 }
 
 describe('App', () => {

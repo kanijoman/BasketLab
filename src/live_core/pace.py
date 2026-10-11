@@ -2,9 +2,11 @@
 
 Pace = average possessions of both teams per 40 game-minutes (possessions = FGA - ORB + TOV + 0.44*FTA, the
 project-wide formula). It is compared with the HABITUAL pace of our team and of the rival (season means that
-travel in the package baselines: ``pace_own_per_40`` / ``pace_rival_per_40``) and projected to the end of the
-game by blending the pace seen so far with the expected one (the mean of both habits), giving the game more
-weight as it advances (the same scheme as the Four Factors final-margin projection).
+travel in the package baselines: ``pace_own_per_40`` / ``pace_rival_per_40``).
+The projection is a plain extrapolation: the possessions seen so far plus the pace so far times the game time
+left (so in regulation the projected total per team equals the current pace per 40 min). It does not use the
+habits, which keeps it transparent and valid with old packages; the first minutes are noisy, hence
+``RuleConfig.pace_min_elapsed_s``.
 Standard library only, O(1) over the snapshot.
 """
 
@@ -45,21 +47,15 @@ class PaceModel:
         current = n / elapsed * GAME_SECONDS
         habit_own = self._base.get("pace_own_per_40")
         habit_rival = self._base.get("pace_rival_per_40") if self._rival else None  # no rival, no comparison
-        habits = [h for h in (habit_own, habit_rival) if h]
-        expected = sum(habits) / len(habits) if habits else None
-
-        weight = min(1.0, elapsed / GAME_SECONDS)
-        projected = weight * current + (1 - weight) * expected if expected else current
         remaining = max(0, GAME_SECONDS - elapsed)
         sample = self._base.get("sample_games") or {}
         return {
             "reliable": elapsed >= self._cfg.pace_min_elapsed_s,
             "possessions": _round(n),
             "current40": _round(current),
-            "habit_own40": habit_own, "habit_rival40": habit_rival, "expected40": _round(expected),
+            "habit_own40": habit_own, "habit_rival40": habit_rival,
             "delta_own": _round(current - habit_own) if habit_own else None,
             "delta_rival": _round(current - habit_rival) if habit_rival else None,
-            "projected40": _round(projected),
-            "projected_possessions": _round(n + projected * remaining / GAME_SECONDS),
+            "projected_possessions": _round(n + current * remaining / GAME_SECONDS),
             "sample_games": {"own": sample.get("own"), "rival": sample.get("rival")},
         }

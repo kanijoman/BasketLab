@@ -61,12 +61,10 @@ export interface PaceAnalysis {
   current40: number
   habit_own40: number | null
   habit_rival40: number | null
-  expected40: number | null
   /** Current pace minus each team's habitual pace. */
   delta_own: number | null
   delta_rival: number | null
-  projected40: number
-  /** Expected possessions per team at the end of the game. */
+  /** Possessions per team at the end of the game, extrapolating the pace so far over the time left. */
   projected_possessions: number
   sample_games: { own: number | null; rival: number | null }
 }

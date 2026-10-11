@@ -7,8 +7,8 @@ const OWN = { id: '1', name: 'MIPELLETYMAS B.F. LEON' }
 const RIVAL = { id: '2', name: 'RECOLETAS ZAMORA' }
 
 const PACE: PaceAnalysis = {
-  reliable: true, possessions: 36, current40: 72, habit_own40: 70, habit_rival40: 62, expected40: 66,
-  delta_own: 2, delta_rival: 10, projected40: 69, projected_possessions: 70.4,
+  reliable: true, possessions: 36, current40: 72, habit_own40: 70, habit_rival40: 62,
+  delta_own: 2, delta_rival: 10, projected_possessions: 72.4,
   sample_games: { own: 4, rival: 3 },
 }
 
@@ -18,8 +18,7 @@ describe('PaceCard', () => {
   it('shows the current pace, the projection and the +/- against both habitual paces', () => {
     render(<PaceCard pace={PACE} own={OWN} rival={RIVAL} />)
     expect(screen.getByText('72,0')).toBeTruthy()
-    expect(screen.getByText(/69,0/)).toBeTruthy()
-    expect(screen.getByText(/70 posesiones/i)).toBeTruthy()
+    expect(screen.getByText(/Proyección final: ≈ 72 posesiones por equipo/i)).toBeTruthy()
     expect(within(row(/MIPELLETYMAS/)).getByText('+2,0')).toBeTruthy()
     expect(within(row(/RECOLETAS/)).getByText('+10,0')).toBeTruthy()
   })
@@ -58,6 +57,7 @@ describe('PaceCard', () => {
   it('waits while the first minutes are too noisy', () => {
     render(<PaceCard pace={{ ...PACE, reliable: false }} own={OWN} rival={RIVAL} />)
     expect(screen.getByText(/calculando/i)).toBeTruthy()
+    expect(screen.getByText(/5 minutos/i)).toBeTruthy()
     expect(screen.queryByText('72,0')).toBeNull()
   })
 

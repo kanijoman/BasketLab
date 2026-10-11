@@ -1,9 +1,9 @@
 """Game pace (possessions per 40 min): current pace, projection to the end and +/- against the habitual pace
 of our team and of the rival (issue #209).
 
-Pace = average possessions of both teams (FGA - ORB + TOV + 0.44*FTA) per 40 game-minutes. The projection
-blends the pace seen so far with the expected one (the mean of both teams' habitual paces), weighting the
-game more as it advances, like the final-margin projection of the Four Factors.
+Pace = average possessions of both teams (FGA - ORB + TOV + 0.44*FTA) per 40 game-minutes. The projection is a
+plain extrapolation: the possessions seen so far plus the pace so far times the game time left. It does not
+depend on the habitual paces (those only feed the +/-), so it is easy to check by hand.
 """
 import pytest
 
@@ -37,13 +37,16 @@ class TestCurrentPace:
         assert out["possessions"] == pytest.approx(35.0)
         assert out["current40"] == pytest.approx(70.0)  # 35 possessions in 20 min
 
-    def test_is_not_reliable_during_the_first_minutes(self):
-        out = model().evaluate(snap(elapsed=120, own=5, rival=5))
+    def test_is_not_reliable_during_the_first_five_minutes(self):
+        out = model().evaluate(snap(elapsed=299, own=8, rival=8))
         assert out["reliable"] is False
-        assert model().evaluate(snap(elapsed=180, own=5, rival=5))["reliable"] is True
+        assert model().evaluate(snap(elapsed=300, own=8, rival=8))["reliable"] is True
 
     def test_minimum_time_is_configurable(self):
         assert model(pace_min_elapsed_s=60).evaluate(snap(elapsed=60, own=2, rival=2))["reliable"] is True
+
+    def test_default_minimum_is_five_minutes(self):
+        assert RuleConfig().pace_min_elapsed_s == 300
 
     def test_nothing_before_tip_off(self):
         assert model().evaluate(snap(elapsed=0, own=0, rival=0)) is None
@@ -70,32 +73,32 @@ class TestPlusMinusAgainstTheHabit:
 
 
 class TestProjection:
-    def test_blends_the_current_pace_with_the_expected_one(self):
+    def test_adds_what_is_left_at_the_pace_seen_so_far(self):
         out = model().evaluate(snap(elapsed=1200, own=36, rival=36))
-        assert out["expected40"] == pytest.approx(66.0)  # mean of 70 and 62
-        # halfway: 50 % current (72) + 50 % expected (66)
-        assert out["projected40"] == pytest.approx(69.0)
+        # 36 possessions in 20 min -> 36 + 36/1200 * 1200 more
+        assert out["projected_possessions"] == pytest.approx(72.0)
 
-    def test_total_possessions_add_what_is_left_at_the_projected_pace(self):
-        out = model().evaluate(snap(elapsed=1200, own=36, rival=36))
-        assert out["projected_possessions"] == pytest.approx(36 + 69.0 * 1200 / 2400)
+    def test_by_hand_at_another_moment(self):
+        out = model().evaluate(snap(elapsed=600, own=20, rival=22))  # 21 possessions in 10 min
+        assert out["projected_possessions"] == pytest.approx(21 + 21 / 600 * 1800)
 
-    def test_without_baselines_the_projection_is_the_current_pace(self):
-        out = model({}).evaluate(snap(elapsed=1200, own=36, rival=36))
-        assert out["expected40"] is None and out["projected40"] == pytest.approx(72.0)
+    def test_in_regulation_the_projected_total_is_the_current_pace_per_40(self):
+        out = model().evaluate(snap(elapsed=900, own=26, rival=28))
+        assert out["projected_possessions"] == pytest.approx(out["current40"])
 
-    def test_with_one_habit_only_that_one_is_the_expectation(self):
-        out = model({"pace_own_per_40": 70.0}).evaluate(snap(elapsed=1200, own=36, rival=36))
-        assert out["expected40"] == pytest.approx(70.0)
+    def test_does_not_depend_on_the_habitual_paces(self):
+        with_habits = model().evaluate(snap(elapsed=1200, own=36, rival=36))
+        without = model({}).evaluate(snap(elapsed=1200, own=36, rival=36))
+        assert with_habits["projected_possessions"] == without["projected_possessions"]
+        assert "projected40" not in with_habits and "expected40" not in with_habits  # no blend any more
 
     def test_overtime_has_nothing_left_to_project(self):
         out = model().evaluate(snap(elapsed=2700, own=90, rival=90))
         assert out["projected_possessions"] == pytest.approx(90.0)
         assert out["current40"] == pytest.approx(90 / 2700 * 2400)
 
-    def test_late_in_the_game_the_observed_pace_dominates(self):
-        out = model().evaluate(snap(elapsed=2280, own=76, rival=76))  # 95 % played
-        assert out["projected40"] == pytest.approx(0.95 * out["current40"] + 0.05 * 66.0)
+    def test_works_with_old_packages_that_have_no_pace_baselines(self):
+        assert model({"pace_per_40": 66.0}).evaluate(snap(elapsed=1200, own=36, rival=36))["projected_possessions"] == pytest.approx(72.0)
 
 
 class TestRobustness:
