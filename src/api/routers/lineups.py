@@ -15,6 +15,17 @@ from src.services import LineupService
 
 router = APIRouter()
 
+
+def period_date_filter(period: int) -> Optional[Dict]:
+    """``{"$gte": <datetime>}`` for the last ``period`` days (None = full season).
+
+    Must be a datetime: the repository compares it with the game date parsed by MongoDB (a BSON date), and an
+    ISO string never matches a date there (that made "Últimos 7 días" always return no lineups).
+    """
+    if period <= 0:
+        return None
+    return {"$gte": utc_now_naive() - timedelta(days=period)}
+
 ALLOWED_STATS = {
     'net_rating', 'plus_minus', 'points_for', 'points_against',
     'ortg', 'drtg', 'efg_pct', 'tov_pct', 'orb_pct', 'ftr',
@@ -32,7 +43,8 @@ def get_lineup_analysis(
     period: int = Query(0, ge=0, description="Days back filter (0 = full season)"),
     include_game_log: bool = Query(False, description="Include per-game breakdown in response"),
     min_minutes: float = Query(15, ge=0, description="Min total minutes together (0 = no minimum)"),
-    min_games: int = Query(5, ge=0, description="Min games played together (0 = no minimum)"),
+    min_games: int = Query(5, ge=0, description="Min games played together (0 = no minimum; capped to the games analysed)"),
+    last_game: bool = Query(False, description="Analyse only the team's most recent game (ignores period)"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Return player combinations sorted by the chosen stat.
@@ -55,10 +67,7 @@ def get_lineup_analysis(
     if stat not in ALLOWED_STATS:
         raise HTTPException(status_code=400, detail=f"Invalid stat '{stat}'. Allowed: {sorted(ALLOWED_STATS)}")
 
-    date_filter: Optional[Dict] = None
-    if period > 0:
-        cutoff = utc_now_naive() - timedelta(days=period)
-        date_filter = {"$gte": cutoff.strftime("%Y-%m-%d")}
+    date_filter = None if last_game else period_date_filter(period)
 
     svc = LineupService(db)
     return svc.get_lineup_analysis(
@@ -71,6 +80,7 @@ def get_lineup_analysis(
         include_game_log=include_game_log,
         min_minutes=min_minutes,
         min_games=min_games,
+        last_game=last_game,
     )
 
 
@@ -84,7 +94,8 @@ async def stream_lineup_analysis(
     period: int = Query(0, ge=0, description="Days back filter (0 = full season)"),
     include_game_log: bool = Query(False, description="Include per-game breakdown in response"),
     min_minutes: float = Query(15, ge=0, description="Min total minutes together (0 = no minimum)"),
-    min_games: int = Query(5, ge=0, description="Min games played together (0 = no minimum)"),
+    min_games: int = Query(5, ge=0, description="Min games played together (0 = no minimum; capped to the games analysed)"),
+    last_game: bool = Query(False, description="Analyse only the team's most recent game (ignores period)"),
     db=Depends(get_db),
 ) -> StreamingResponse:
     """Server-Sent Events stream for lineup analysis.
@@ -96,10 +107,7 @@ async def stream_lineup_analysis(
     if stat not in ALLOWED_STATS:
         raise HTTPException(status_code=400, detail=f"Invalid stat '{stat}'. Allowed: {sorted(ALLOWED_STATS)}")
 
-    date_filter: Optional[Dict] = None
-    if period > 0:
-        cutoff = utc_now_naive() - timedelta(days=period)
-        date_filter = {"$gte": cutoff.strftime("%Y-%m-%d")}
+    date_filter = None if last_game else period_date_filter(period)
 
     loop = asyncio.get_event_loop()
     queue: asyncio.Queue = asyncio.Queue()
@@ -126,6 +134,7 @@ async def stream_lineup_analysis(
                 progress_callback=_progress_cb,
                 min_minutes=min_minutes,
                 min_games=min_games,
+                last_game=last_game,
             )
             result_holder["data"] = data
         except Exception as exc:  # noqa: BLE001

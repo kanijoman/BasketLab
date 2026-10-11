@@ -127,6 +127,32 @@ class GamesRepositoryMixin:
         except PyMongoError:
             return []
 
+    def get_last_game_for_team(
+        self,
+        collection_name: str,
+        team_id: str,
+        only_with_playbyplay: bool = False,
+        projection: Optional[Dict] = None,
+    ) -> List[Dict]:
+        """Return a one-element list with the team's most recent game (empty if none).
+
+        The newest game is chosen inside MongoDB: the stored date strings (FEB ``DD-MM-YYYY - HH:MM``) are
+        parsed with ``$dateFromString`` and sorted, so only one document is ever loaded (documents weigh
+        ~1 MB each) and games with an unparseable date are ignored.
+        """
+        if not self.connection.is_connected():
+            return []
+        try:
+            collection = self.connection.get_collection(collection_name)
+            is_fbcyl = _is_fbcyl(collection_name)
+            pipeline = self._parsed_date_pipeline(self._build_team_match_filter(team_id, is_fbcyl, only_with_playbyplay), is_fbcyl)
+            pipeline += [{"$match": {"_parsedDate": {"$ne": None}}}, {"$sort": {"_parsedDate": -1}}, {"$limit": 1}]
+            if projection:
+                pipeline.append({"$project": projection})
+            return list(collection.aggregate(pipeline))
+        except PyMongoError:
+            return []
+
     def get_games_with_playbyplay(
         self,
         collection_name: str,
@@ -325,6 +351,35 @@ class GamesRepositoryMixin:
         ]
 
     @staticmethod
+    def _parsed_date_pipeline(team_match_filter: Dict, is_fbcyl: bool) -> List[Dict]:
+        """``$match`` the team's games and add ``_parsedDate`` (the stored date string parsed by MongoDB).
+
+        FEB dates are stored as DD-MM-YYYY strings which cannot be compared lexicographically with ISO
+        dates, so they are parsed with ``$dateFromString``; unparseable ones become ``None``.
+        """
+        if is_fbcyl:
+            date_field = "$stats.time"
+            date_format = "%b %d, %Y %I:%M:%S %p"
+        else:
+            date_field = "$HEADER.starttime"
+            date_format = "%d-%m-%Y - %H:%M"
+        return [
+            {"$match": team_match_filter},
+            {
+                "$addFields": {
+                    "_parsedDate": {
+                        "$dateFromString": {
+                            "dateString": date_field,
+                            "format": date_format,
+                            "onError": None,
+                            "onNull": None,
+                        }
+                    }
+                }
+            },
+        ]
+
+    @staticmethod
     def _games_for_team_with_date_filter(
         collection,
         team_match_filter: Dict,
@@ -339,29 +394,8 @@ class GamesRepositoryMixin:
         MongoDB using ``$dateFromString`` so that the comparison is always
         correct.
         """
-        if is_fbcyl:
-            date_field = "$stats.time"
-            date_format = "%b %d, %Y %I:%M:%S %p"
-        else:
-            date_field = "$HEADER.starttime"
-            date_format = "%d-%m-%Y - %H:%M"
-
-        pipeline: List[Dict] = [
-            {"$match": team_match_filter},
-            {
-                "$addFields": {
-                    "_parsedDate": {
-                        "$dateFromString": {
-                            "dateString": date_field,
-                            "format": date_format,
-                            "onError": None,
-                            "onNull": None,
-                        }
-                    }
-                }
-            },
-            {"$match": {"_parsedDate": date_filter}},
-        ]
+        pipeline = GamesRepositoryMixin._parsed_date_pipeline(team_match_filter, is_fbcyl)
+        pipeline.append({"$match": {"_parsedDate": date_filter}})
         if projection:
             pipeline.append({"$project": projection})
 

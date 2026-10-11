@@ -22,6 +22,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Refresco de Atlas: `test_atlas_refresh.py` (scrape incremental, errores por competición, informe, configuración, import limpio del CLI) y `test_data_freshness.py`/`test_db_health.py`.
 - Publicación de paquetes: `test_package_publisher.py` (un paquete descifrable por rival, índice, rivales repetidos, fallos aislados, limpieza, configuración, CLI sin credenciales).
 - Tabla de posesiones: `possessions/columns.test.tsx` (vistas Resumen / Estilo propio / Rival, CSV completo, nombre de equipo no recortado), `PossessionsPage.test.tsx`, `DataTable.test.tsx` (cabeceras de grupo).
+- Combinaciones: `test_lineups_time_filters.py` (regresión del filtro «Últimos N días» —el corte era una cadena y Mongo no la casa con una fecha— , filtro «Último partido» con `$sort`/`$limit` en Mongo y mínimo de partidos acotado a los analizados) y `client.test.ts` (opciones de período).
 - Workflows: `test_workflows_yaml.py` (todos los `.github/workflows/*.yml` son YAML válido).
 - Paquete live: `test_live_package_api.py` (generación, límites, contraseña), `test_live_prep_crypto.py` (+ fixture `demo.bpkg`); web `LivePrepPage`/`livePackage`; app `package/*` (WebCrypto sobre el fixture de Python, IndexedDB), `PackagePanel` y un e2e de importación en Chrome real.
 - Canario FEB: `test_feb_canary.py` (esquema, invariantes, CLI y códigos de salida) y `feb-canary.yml` (diario; descarga real de FEB, abre issue `canary` ante deriva).

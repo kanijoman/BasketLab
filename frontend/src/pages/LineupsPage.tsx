@@ -11,6 +11,7 @@ import ExportButton from '@/components/ui/ExportButton'
 import { EXPORT_HIDE_ATTR, EXPORT_ONLY_ATTR } from '@/lib/exportDom'
 import {
   getTeamStats, streamLineupAnalysis,
+  LINEUP_PERIODS,
   LINEUP_STAT_GROUPS,
   type LineupRow, type GameLogEntry,
 } from '@/api/client'
@@ -415,11 +416,7 @@ export default function LineupsPage() {
           <div>
             <label className="block text-xs font-medium text-ink-secondary mb-1">{`Per\u00edodo`}</label>
             <select value={period} onChange={e => setPeriod(Number(e.target.value))} className={selectCls}>
-              <option value={0}>Temporada completa</option>
-              <option value={7}>{`\u00daltimos 7 d\u00edas`}</option>
-              <option value={15}>{`\u00daltimos 15 d\u00edas`}</option>
-              <option value={30}>{`\u00daltimos 30 d\u00edas`}</option>
-              <option value={60}>{`\u00daltimos 60 d\u00edas`}</option>
+              {LINEUP_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
 

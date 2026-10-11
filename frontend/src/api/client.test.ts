@@ -84,4 +84,30 @@ describe('api client', () => {
       await expect(api.deleteCollection('FEB_X')).rejects.toThrow('Clave de administración')
     })
   })
+
+  describe('lineup period filter', () => {
+    it('sends the number of days as `period` and no `last_game`', async () => {
+      const api = await loadClient('')
+      await api.getLineupAnalysis('C', '1', 'Team', 5, 'net_rating', 7)
+      const url = new URL(String(fetchMock.mock.calls[0][0]), 'http://x')
+      expect(url.searchParams.get('period')).toBe('7')
+      expect(url.searchParams.has('last_game')).toBe(false)
+    })
+
+    it('the last-game option asks for `last_game=true` instead of a number of days', async () => {
+      const api = await loadClient('')
+      await api.getLineupAnalysis('C', '1', 'Team', 5, 'net_rating', api.LAST_GAME)
+      const url = new URL(String(fetchMock.mock.calls[0][0]), 'http://x')
+      expect(url.searchParams.get('last_game')).toBe('true')
+      expect(url.searchParams.get('period')).toBe('0')
+    })
+
+    it('offers the full season, the last game and the day ranges', async () => {
+      const api = await loadClient('')
+      expect(api.LINEUP_PERIODS.map(p => p.label)).toEqual([
+        'Temporada completa', 'Último partido', 'Últimos 7 días', 'Últimos 15 días', 'Últimos 30 días', 'Últimos 60 días',
+      ])
+      expect(api.LINEUP_PERIODS.find(p => p.label === 'Último partido')?.value).toBe(api.LAST_GAME)
+    })
+  })
 })

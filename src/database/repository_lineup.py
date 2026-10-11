@@ -21,6 +21,7 @@ class LineupRepositoryMixin:
         progress_callback=None,
         min_minutes: float = 15,
         min_games: int = 5,
+        last_game: bool = False,
     ) -> List[Dict]:
         """
         Get lineup analysis for a team showing best and worst lineups by statistics.
@@ -34,7 +35,10 @@ class LineupRepositoryMixin:
             is_fbcyl: Whether data is FBCYL format
             progress_callback: Optional callback function(current, total) for progress
             min_minutes: Minimum accumulated minutes for a lineup to be returned (0 = no minimum)
-            min_games: Minimum games played together for a lineup to be returned (0 = no minimum)
+            min_games: Minimum games played together for a lineup to be returned (0 = no minimum).
+                Capped to the games analysed when a period or ``last_game`` narrows them: a lineup
+                cannot have played 5 games together in a 2-game window.
+            last_game: Analyse only the team's most recent game (``date_filter`` is ignored)
 
         Returns:
             List of lineup dictionaries with statistics, sorted by net rating
@@ -58,16 +62,24 @@ class LineupRepositoryMixin:
 
             # Get all games with play-by-play for this team; apply date filter and
             # projection inside MongoDB to avoid Python-side filtering and memory waste.
-            games = self.get_games_for_team(
-                collection_name,
-                team_id,
-                only_with_playbyplay=True,
-                projection=projection,
-                date_filter=date_filter if date_filter else None,
-            )
+            if last_game:
+                games = self.get_last_game_for_team(
+                    collection_name, team_id, only_with_playbyplay=True, projection=projection,
+                )
+            else:
+                games = self.get_games_for_team(
+                    collection_name,
+                    team_id,
+                    only_with_playbyplay=True,
+                    projection=projection,
+                    date_filter=date_filter if date_filter else None,
+                )
 
             if not games:
                 return []
+
+            if last_game or date_filter:
+                min_games = min(min_games, len(games))
 
             # Track lineup statistics across all games
             lineup_stats_map = {}  # frozenset -> stats dict
