@@ -1,0 +1,37 @@
+# Reglas candidatas del motor live (NO implementadas)
+Documento vivo. **Decisión (2026-10-11)**: no se añade ninguna regla al motor hasta tener más partidos grabados de León; aquí se guardan las candidatas con su evidencia para revisarlas en las próximas semanas. Origen: [evaluación Zamora–León](evaluaciones/2026-10-10_zamora-leon_motor-de-reglas.md) (1 partido, resultado muy desfavorable) más el comportamiento de los entrenadores en los 16 partidos de LF Challenge disputados hasta entonces. Motor actual: [LIVE.md](LIVE.md); umbrales: `RuleConfig` en `src/live_core/config.py`. El seguimiento en GitHub es el issue «Live: validar reglas candidatas…» (épica #147).
+
+## Candidatas
+Estado: **candidata** (sin validar) · **validada** (cumple los criterios de abajo, pendiente de confirmar con el staff) · **descartada**. Los umbrales son puntos de partida.
+
+| ID | Regla propuesta | Evidencia (1 partido + 16 de la competición) | Cómo validarla con más datos | Estado |
+|---|---|---|---|---|
+| R1 | **Parcial rival por niveles**: info a +6 neto en 150 s, aviso a +8 neto, crítica con el 0-8 actual | 0-8 actual precede al 5 % de los tiempos muertos (6/118) y no saltó nunca en el partido; +6 neto cubre el 21 % (2,1 avisos/equipo y partido, 37 % seguidos de tiempo muerto ≤ 2 min) | Repetir la simulación (script 3) con todos los partidos disponibles; buscar el umbral con mejor equilibrio avisos/aciertos | candidata |
+| R2 | **Sequía anotadora propia** ≥ 4:00 sin anotar → sugerir tiempo muerto/cambio de sistema; rival ≥ 3:30 sin anotar → ventana para correr | León: sequías de 6:19, 4:31 y 4:24; el primer tiempo muerto llegó a los 4:50 de la primera | Medir en todos los partidos qué fracción de sequías ≥ 4:00 acaba en tiempo muerto y si cambia el siguiente parcial | candidata |
+| R3 | **Pérdidas → tiempo muerto**: el aviso de racha de pérdidas propone tiempo muerto y se calla si acaba de pedirse | 31/118 tiempos muertos (26 %) siguen a ≥ 4 pérdidas propias en 5 min; la 1.ª alerta llegó 42 s después de un tiempo muerto | Contar cuántas rachas ya tenían tiempo muerto previo; efecto en pérdidas siguientes | candidata |
+| R4 | **Faltas por riesgo de eliminación** = faltas × tiempo restante (p. ej. 3 faltas con > 6:00), priorizando 3.º/4.º cuarto; no avisar de 2 faltas en el 1.º-2.º cuarto | Retirada en ≤ 2 min: 2.ª falta 82 % (1.º-2.º) / 47 % (3.º) / 40 % (4.º); 3.ª falta 89 % / 68 % / 42 %; 4.ª 100 % / 68 % | Más partidos para ver si el patrón se mantiene y si hay eliminaciones evitables | candidata |
+| R5 | **Fatiga escalada** (info → aviso → crítica) sin repetir el mismo aviso; primer aviso por stint antes de los 10 min | Relevos del entrenador: mediana 5:00, p75 7:01, p90 9:23; el motor avisó a 6:47-10:55; A. Martín recibió 3 avisos iguales y siguió 11 min más | Comparar stints reales con el índice de fatiga en todos los partidos (calibrar pesos) | candidata |
+| R6 | **Sin alertas de estado repetidas**: la palanca de Four Factors solo si cambia de palanca o empeora ≥ X pts/100 | 5 de 28 alertas eran el mismo eFG% (≈ 29 %) sin efecto medible | Contar duplicados por partido; X a definir con el staff | candidata |
+| R7 | **Modo «partido decidido»**: con \|diferencia\| ≥ 20 y < 8 min, bajar la severidad de alertas de rendimiento y priorizar minutos/faltas | −20 a 8:00; las 2 propuestas «no seguidas» fueron en ese tramo | Necesita partidos igualados y de resultado abierto para fijar el umbral | candidata |
+| R8 | **Explotar faltas del rival**: propuesta táctica concreta y medición de tiros libres obtenidos tras el aviso | 6 avisos sobre el rival con 3-4 faltas; León tiró 6 TL en los 5 min siguientes | Tasa de TL tras aviso en más partidos | candidata |
+| R9 | **Quinteto en negativo**: diferencia ≤ −6 en ≥ 3 min | Un quinteto jugó 4:38 con −7 (cálculo aproximado) | Necesita muchos partidos; usar la tabla de quintetos del paquete | candidata |
+
+## Criterios para promover una regla a «validada»
+1. Evidencia en **≥ 5 partidos de León** grabados (o ≥ 20 de la competición si es comportamiento de entrenadores), con resultados variados (no solo derrotas).
+2. **Precisión** medida con la simulación o el seguimiento: el aviso va seguido de la acción esperada o de una mejora medible en ≥ 40 % de los casos, o su valor está claro aunque la acción no se vea.
+3. **Ruido** aceptable: ≤ ~1 aviso por 10 min por regla y sin duplicados.
+4. Confirmación del **staff** (umbrales de negocio): se preguntan antes de implementar.
+5. Al implementar: TDD (`tests/test_live_core_*`), umbral en `RuleConfig`, regenerar vectores (`python tests/live_vectors/generate.py`) y actualizar LIVE.md y este documento.
+
+## Cómo repetir la evaluación tras cada partido grabado
+Scripts provisionales (se ejecutan desde la raíz del repo; sustituyen al futuro `python -m src.live_prep.rule_evaluation`, aún sin hacer) en [evaluaciones/scripts/](evaluaciones/scripts/):
+1. Descargar el artefacto `recording-<código>` de *FEB live recorder* y los partidos de la competición con el scraper (`FEBWebScraper.get_matches` + `fetch_boxscore`) a `<dir>/eval/games/<código>.json`.
+2. `1_replay_recording.py <dir> <grabación>`: construye el paquete con los partidos **anteriores** al partido, reproduce la grabación en `LiveSession` y guarda `alerts.json`.
+3. `2_adherence_and_coach_behaviour.py <dir>`: compara cada alerta con lo ocurrido (ventana de 5 min; se descuentan 40 s de retraso del feed) y calcula el comportamiento de los entrenadores (tiempos muertos, stints, faltas).
+4. `3_pattern_candidates.py <dir>`: tiempos muertos propios, sequías, quintetos y simulación de umbrales de parcial.
+Anotar los resultados en un nuevo fichero `docs/evaluaciones/<fecha>_<partido>.md` y actualizar la tabla de arriba (evidencia y estado). Los códigos de equipo/partido (`OWN`, `RIVAL`, `MATCH`) y la fecha del partido están fijos en los scripts: cambiarlos para cada partido.
+
+## Datos que faltan para decidir mejor
+- Más partidos grabados de León: depende de que el planner cubra la ventana previa (#205).
+- Saber si el staff **vio y usó** las alertas (botón «seguida / descartada» en la app), para pasar de coincidencia a obediencia.
+- Paquete con más partidos previos (líneas base de jugador menos ruidosas).
