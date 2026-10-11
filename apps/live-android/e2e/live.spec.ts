@@ -21,6 +21,9 @@ test('the demo runs on a phone viewport: Pyodide boots in a worker and alerts sh
   await expect(page.locator('.alert').first()).toBeVisible({ timeout: 90_000 })
   await expect(page.locator('.clock')).not.toHaveText('Q1 10:00')
 
+  // the pace card (issue #209) leaves "calculando" and shows the projected total computed by the real engine
+  await expect(page.locator('.pace-card')).toContainText('posesiones por equipo', { timeout: 30_000 })
+
   expect(errors).toEqual([])
 })
 

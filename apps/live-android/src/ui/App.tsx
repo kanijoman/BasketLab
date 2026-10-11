@@ -12,6 +12,7 @@ import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import AlertCard, { clockLabel } from './AlertCard'
+import PaceCard from './PaceCard'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
 
@@ -163,6 +164,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
         <div className="clock">{snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'}</div>
         <div className="team"><span className="name">{rival.name}</span><span className="pts">{snap?.score[rival.id] ?? 0}</span></div>
       </header>
+
+      <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
 
       {pkg ? (
         <p className="status">Paquete cargado. La app queda a la espera del partido en directo (próximamente).</p>

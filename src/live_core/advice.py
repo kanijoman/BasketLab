@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
+from .pace import PaceModel
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
@@ -44,6 +45,7 @@ class AdviceEngine:
     ) -> None:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
+        self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
                         rival_baselines or {}, impact_league or {}, zone_ref or {})
@@ -66,9 +68,15 @@ class AdviceEngine:
         )
 
     def analyze(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
-        """Non-alert insights for the UI cards (Four Factors, lever, projection)."""
+        """Non-alert insights for the UI cards (Four Factors, lever, projection, game pace)."""
+        analysis: Dict[str, Any] = {}
         result = self._model.evaluate(snapshot) if self._model else None
-        return {"four_factors": result} if result else {}
+        if result:
+            analysis["four_factors"] = result
+        pace = self._pace.evaluate(snapshot) if self._pace else None
+        if pace:
+            analysis["pace"] = pace
+        return analysis
 
     def evaluate(self, snapshot: Dict[str, Any]) -> List[Advice]:
         if self._ctx is None:
