@@ -17,7 +17,7 @@ export type FeedState =
   | { kind: 'live'; lastOkAt: number }
   | { kind: 'gap'; lastOkAt: number | null; message?: string }
   | { kind: 'finished' }
-  | { kind: 'stopped' }
+  | { kind: 'stopped' }  // set by the UI when the user disconnects (a stopped feed reports nothing)
 
 export interface LiveFeedOptions {
   client: FebClient
@@ -75,6 +75,7 @@ export class LiveFeed {
         PLAYBYPLAY: (facts.json as { PLAYBYPLAY?: unknown }).PLAYBYPLAY ?? {},
         SHOTCHART: (shots.json as { SHOTCHART?: unknown }).SHOTCHART ?? {},
       }
+      if (this.stopped) return { status: null, notStarted: false } // stopped while FEB was answering
       await onDocument(JSON.stringify(doc))
       return { status: String(header?.status ?? ''), notStarted: false }
     } catch (error) {
@@ -82,13 +83,18 @@ export class LiveFeed {
     }
   }
 
-  /** Runs until the match is over or ``stop()``; never rejects. */
+  /** Reports a state unless the feed was stopped: after ``stop()`` nothing is reported any more (the UI may be gone). */
+  private report(state: FeedState): void {
+    if (!this.stopped) this.o.onState(state)
+  }
+
+  /** Runs until the match is over or ``stop()`` (then it is silent: no state, no document); never rejects. */
   async start(): Promise<void> {
-    const { onState, now } = this.o
+    const { now } = this.o
     let lastOkAt: number | null = null
     let seenLive = false
     let tailLeft: number | null = null
-    onState({ kind: 'connecting' })
+    this.report({ kind: 'connecting' })
 
     while (!this.stopped) {
       const round = await this.round(seenLive)
@@ -96,21 +102,20 @@ export class LiveFeed {
       if (round.status !== null) {
         seenLive = true
         lastOkAt = now()
-        onState({ kind: 'live', lastOkAt })
+        this.report({ kind: 'live', lastOkAt })
         if (round.status === FINAL_STATUS) {
           tailLeft = tailLeft === null ? this.o.tailPolls : tailLeft - 1
           if (tailLeft <= 0) {
-            onState({ kind: 'finished' })
+            this.report({ kind: 'finished' })
             return
           }
         }
       } else if (round.notStarted) {
-        onState({ kind: 'waiting' })
+        this.report({ kind: 'waiting' })
       } else {
-        onState({ kind: 'gap', lastOkAt, message: round.failure })
+        this.report({ kind: 'gap', lastOkAt, message: round.failure })
       }
       await this.o.sleep(round.notStarted ? this.o.waitingIntervalMs : this.o.intervalMs)
     }
-    onState({ kind: 'stopped' })
   }
 }
