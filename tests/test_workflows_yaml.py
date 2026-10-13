@@ -201,3 +201,38 @@ class TestDeployJob:
     def test_the_check_can_ask_github_whether_a_newer_commit_contains_ours(self):
         step = next(s for s in self._job()["steps"] if "Post-deploy check" in s.get("name", ""))
         assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
+
+
+class TestAppVersionAndUpdate:
+    """Issues #226 and #227: the app knows its version and finds out about a newer APK through latest.json."""
+
+    def _steps(self):
+        data = yaml.safe_load((ROOT / ".github" / "workflows" / "live-android.yml").read_text(encoding="utf-8"))
+        return data["jobs"]["apk"]["steps"]
+
+    def _step(self, name):
+        return next(s for s in self._steps() if s.get("name", "").startswith(name))
+
+    def test_the_version_is_fixed_before_the_web_build_so_the_web_build_carries_it(self):
+        names = [s.get("name", "") for s in self._steps()]
+        assert names.index("Version") < next(i for i, n in enumerate(names) if n.startswith("Build the web app"))
+        run = self._step("Version")["run"]
+        for variable in ("APP_VERSION_NAME", "APP_VERSION_CODE", "VITE_APP_VERSION", "VITE_APP_BUILD", "VITE_BUILT_AT"):
+            assert variable in run
+
+    def test_the_build_number_is_the_workflow_run_number_which_only_grows(self):
+        assert "github.run_number" in self._step("Version")["run"]
+
+    def test_latest_json_says_what_the_app_needs_to_compare_and_to_download(self):
+        run = self._step("Name the APK")["run"]
+        for field in ("version:", "versionCode:", "apk:", "built_at:", "dist-apk/latest.json"):
+            assert field in run
+        assert "releases/download/live-android-latest/basketlab-live.apk" in run
+
+    def test_the_fixed_latest_release_publishes_latest_json_next_to_the_apk(self):
+        run = self._step("Update the stable")["run"]
+        assert "dist-apk/basketlab-live.apk dist-apk/latest.json" in run
+
+    def test_the_app_reads_latest_json_from_the_url_this_workflow_publishes(self):
+        source = (ROOT / "apps" / "live-android" / "src" / "about" / "update.ts").read_text(encoding="utf-8")
+        assert "releases/download/live-android-latest/latest.json" in source

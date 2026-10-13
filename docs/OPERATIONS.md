@@ -100,6 +100,10 @@ El workflow compila, firma y publica **dos** releases:
 - **Enlace fijo a la última** (`live-android-latest`, se recrea en cada etiqueta): `https://github.com/kanijoman/BasketLab/releases/download/live-android-latest/basketlab-live.apk`. Es el que conviene guardar en el móvil/tablet.
 No uses `releases/latest` para la app: apunta a la última release **de todo el repo** (hoy solo hay releases del APK, pero si se publicara otra cosa dejaría de servir). Convención: etiquetas `live-android-vX.Y.Z` para el APK (y `web-v*` si algún día hay releases de la web); listado solo del APK: `https://github.com/kanijoman/BasketLab/releases?q=live-android`. El `versionCode` sube solo (número de ejecución del workflow), así que cada APK puede instalarse **encima** del anterior.
 
+### Ciclo de publicación: cada viernes por la mañana
+Decisión del 13/10: **cada viernes por la mañana** se publica una versión con todo lo integrado hasta ese momento (puede haber partidos el viernes por la tarde o noche, así que no más tarde) y el staff se actualiza con el **botón de la propia app** (*Actualizar* en el aviso superior o *Buscar actualización* en *Acerca de*). La versión sube el número menor (0.2.0 → 0.3.0 → 0.4.0…). Hoy se publica empujando la etiqueta como arriba; la publicación automática semanal es el issue #279. Con cada versión el workflow sube además `latest.json` a la release fija `live-android-latest`: es lo que lee la app para saber si hay una más nueva (ver [LIVE.md](LIVE.md)).
+**La primera vez** (la versión que trae el botón, la 0.3.0): la 0.2.0 instalada no sabe actualizarse, así que se instala a mano como abajo; las siguientes, con el botón. Android siempre pide confirmar la instalación y, la primera vez, permitir apps desconocidas.
+
 ### Instalar en el móvil / tablet (una vez por dispositivo)
 1. Abrir el enlace de la Release en el navegador del dispositivo y descargar el `.apk`.
 2. Android pedirá permitir **"Instalar apps desconocidas"** para ese navegador (o gestor de archivos): *Ajustes → Apps → [navegador] → Instalar apps desconocidas → Permitir*. No hace falta modo desarrollador ni depuración USB.

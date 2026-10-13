@@ -23,10 +23,14 @@ import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
 import FormationStatus from './FormationStatus'
+import AboutPanel, { UpdateBanner, buildDiagnostics } from './AboutPanel'
+import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
 import FeedbackPanel from './FeedbackPanel'
 import { useFeedback } from '../feedback/useFeedback'
+
+export type { AppUpdateDeps }
 
 interface Props {
   engine?: EngineApi
@@ -42,12 +46,14 @@ interface Props {
   store?: PackageStore
   /** Network access of the published-packages list (injected in tests). */
   remoteFetcher?: Fetcher
+  /** Version and update check (injected in tests; the defaults use the app's own plugins and GitHub). */
+  appUpdate?: AppUpdateDeps
 }
 
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming, appUpdate }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -165,6 +171,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     if (saved) setMeta(await engine.start(saved.plaintext))
   }, [engine, store])
   const live = useLiveFeed({ engine, http: febHttp, timing: feedTiming, onOutput: handleOutput, restart: restartLive })
+  const update = useAppUpdate(appUpdate)
 
   const step = useCallback(async (to: number) => {
     if (busy.current) return
@@ -236,6 +243,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }
   return (
     <main className="screen">
+      {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
@@ -272,6 +280,10 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       )}
 
       {panel}
+
+      <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
+        onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
+          packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind })} />
     </main>
   )
 }

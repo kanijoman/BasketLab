@@ -311,7 +311,7 @@ def _leon_alerts(tmp_rule_config=None):
 
     recordings = Path(__file__).parent / "recordings"
     package = PreparationPackage.loads((recordings / "2524470.package.json").read_text(encoding="utf-8"))
-    not_formacion = {"2651124", "2892632"}            # Boquete and Castro in the real roster of 14/10/2026
+    not_formacion = {"2651124", "2892632"}            # Boquete and Castro in the real roster of 13/10/2026
     own = package.team["id"]
     roster = {pid: entry(pid not in not_formacion, team=own) for pid in package.tables["players"]}
     package = dc.replace(package, tables={**package.tables, "roster": roster},
