@@ -12,18 +12,26 @@ RULE_IDS: Tuple[str, ...] = (
     "foul_trouble", "rival_foul_trouble", "team_fouls", "rival_run", "turnover_streak",
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone",
 )
+# Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
+FEATURE_IDS: Tuple[str, ...] = ("game_context",)
 
 
 def unknown_rule_ids(rule_ids: Iterable[str]) -> Tuple[str, ...]:
-    """Ids that are not rules of this engine. The engine ignores them (a package written for a newer engine
-    must not crash the app); tools that write a package or a configuration use this to reject typos."""
-    return tuple(r for r in rule_ids if r not in RULE_IDS)
+    """Ids that are neither rules nor switchable features of this engine. The engine ignores them (a package written
+    for a newer engine must not crash the app); tools that write a package or a configuration use this to reject typos."""
+    return tuple(r for r in rule_ids if r not in RULE_IDS and r not in FEATURE_IDS)
 
 
 @dataclass(frozen=True)
 class RuleConfig:
-    # Rules switched off (ids in RULE_IDS). Nothing is off by default.
+    # Rules and features switched off (ids in RULE_IDS and FEATURE_IDS). Nothing is off by default.
     rules_off: Tuple[str, ...] = ()
+    # Game context: a game is "decided" with this margin and less time left of the 4th period, and "close_late" within
+    # this margin and this much time left of the 4th period (or in overtime). Alerts change one level (game_context).
+    decided_margin: int = 20
+    decided_remaining_s: int = 480
+    close_margin: int = 6
+    close_remaining_s: int = 240
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

@@ -51,7 +51,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "408e6f7500fbc8fcf3e7850ca1cc2999eebbc26a00e3faad33d5afb58539f94f",
+      "analysis": "430e2f3325339cf414b71a7a00cc2937b1cc1422df51453f468573f48c104752",
       "snapshot": "17f75c32c5c25f992670b052e1800716e1c74f69de0a2b4c1a914f1a859c9b8a"
      },
      "elapsed": 300,
@@ -67,7 +67,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "8956aaec2a4f5e079d5a022285799e33d69becb36d2528bc6b77cee766fbff46",
+      "analysis": "756c0639173b05c67ccd342eacb840054e9742b522df6d7cfcce8a472641dd2b",
       "snapshot": "856d3483fa8c9bdd8c0b5fadf3f1cdeb087ea303bda3d249ddf22b75e7b597a1"
      },
      "elapsed": 600,
@@ -83,7 +83,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "e64ce1f4d5e3b9a4bc71810102fae7f36c1128c8aa36aaaa8c7006875a6aeb91",
+      "analysis": "5ea49c1d8c9c3f7498d68baf6d5b59341b1f5f6b4a1b65f3657a2081639acc97",
       "snapshot": "984e566bee2c5dd0567804fb28382e64a5c52ff2d238c076314997d9b683b52c"
      },
      "elapsed": 900,
@@ -102,7 +102,7 @@
      ],
      "digests": {
       "alerts": "1b582e8b1f10426d65c0371a3cad86d5130cb37f3dc05044bd3af13fb3ec3d6e",
-      "analysis": "a013697a280d0bc8bf304c5c2be03f02f294d9257819db9aa8b980f5cc4d4507",
+      "analysis": "52c138d68b7fef3224bc7106ec18fd2d45cf42f46b732f2bcc38f40c4db15222",
       "snapshot": "e62be1e7b6d358469ddc8a66b047410ab67fb3c251e6004f98e2ad9a2b88e52b"
      },
      "elapsed": 1200,
@@ -118,7 +118,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "09b3813b873b626b16001babf18cba690be9cd537e44ab3e75d91f56a85fecf6",
+      "analysis": "363e6017ae2561e166a6aa2f2b2335b05cb2ee54e35efd7eed9f1b4c54b99e2a",
       "snapshot": "7011eda0ea2cc9d04200c350ac6c7eb00e2282d9ff7d010a1fe84a86df3dc9c2"
      },
      "elapsed": 1350,
@@ -137,7 +137,7 @@
      ],
      "digests": {
       "alerts": "781c3f35405aefead72611b59cb037d4c3d5c81e9865ae57e90bf1c78ccb955d",
-      "analysis": "49e8382976051e4521f3fcfad3b8f8d7b3449d1864df14e5dfb7c01bec9d25f0",
+      "analysis": "e49de5ba0eb5fb73f330efbcbd2529c1a0affb689e50311b224c084c15ba9c22",
       "snapshot": "de5f5cddba744407fa462d1a567e6d722472f269500791c15dc1dd0729b88b32"
      },
      "elapsed": 1800,
@@ -153,7 +153,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "49e8382976051e4521f3fcfad3b8f8d7b3449d1864df14e5dfb7c01bec9d25f0",
+      "analysis": "d044b997e22ca79d8e8d4e8bd91317ad823dff721c8e2520939fa60bee79c34a",
       "snapshot": "77bbb7176630850551ca9cdc5647f32d680e6d294c1084a685f2137580ccccd5"
      },
      "elapsed": 1800,
@@ -173,7 +173,7 @@
      ],
      "digests": {
       "alerts": "dccf826e5788cb50e71a2570e17cd963057d7d13551b576cf6760ddb37f4ef33",
-      "analysis": "f62d818fef3ea58a641e5d8790522da89a66e3c133b1ddac0b68a7f7b9145d13",
+      "analysis": "0a37146a5d592d4d117484d7e0793b43731e8c2f01774155d13b51377db2530b",
       "snapshot": "aa4371c5f1ad47c7f1ac368e4a9a7f09758817533a1511d57524c4c71715bfd3"
      },
      "elapsed": 2100,
@@ -195,7 +195,7 @@
      ],
      "digests": {
       "alerts": "b0522c10cae21861a50f3837e251f4b6a50055aac245c7b39578c5d89526e6dc",
-      "analysis": "df96af8d097cb399ccf328b270f10b91634a0305d3cf3129ee408637fce38a39",
+      "analysis": "e1dc805415e7ca562f38ae614d5b41ece62d98b83f55d1e102a50d37ce2f6e54",
       "snapshot": "933a2dbc8d212aebf51446ef615f582971748b38a81fa037bd17eb4873e8d975"
      },
      "elapsed": 2340,
@@ -213,7 +213,7 @@
      ],
      "digests": {
       "alerts": "c89eff28eefcf785081d666b872f74d66273810dac2f99dff6b4cf7bfd70502c",
-      "analysis": "11c65cccd14e77fee8591a795d02e42d5d497a649fcec16ff94db73d39063baa",
+      "analysis": "c23f2ddbbb8a6176c62f68832b1a8704b07a9404935de1f36fcb0abae09df066",
       "snapshot": "0dccaf22e1a4a6740466c4cda37295d1a28c7d5749b08532144bcebae91c59f5"
      },
      "elapsed": 2400,
@@ -3396,7 +3396,569 @@
      "tov": 0,
      "tov_by_player": {}
     }
-   }
+   },
+   {
+    "episode": "1:0",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "1:0",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "1:0",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "2:600",
+    "last": 300,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "2:600",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "2:600",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "2:800",
+    "last": 800,
+    "left": 0,
+    "within60": false
+   },
+   {
+    "episode": "2:600",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "2:600",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "3:1200",
+    "last": 800,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "3:1200",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "3:1200",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "3:1400",
+    "last": 1400,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "3:1200",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "3:1200",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:2290",
+    "last": 2290,
+    "left": 1,
+    "within60": true
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:2310",
+    "last": 2310,
+    "left": 0,
+    "within60": true
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "4:1900",
+    "last": 1900,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "4:2300",
+    "last": 2300,
+    "left": 1,
+    "within60": true
+   },
+   {
+    "episode": "4:1800",
+    "last": null,
+    "left": 2,
+    "within60": false
+   },
+   {
+    "episode": "5:2400",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "5:2400",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "5:2400",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "5:2500",
+    "last": 2500,
+    "left": 0,
+    "within60": false
+   },
+   {
+    "episode": "5:2400",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "5:2400",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "6:2700",
+    "last": 2500,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "6:2700",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "6:2700",
+    "last": null,
+    "left": 1,
+    "within60": false
+   },
+   {
+    "episode": "3:1300",
+    "last": 1300,
+    "left": 2,
+    "within60": true
+   },
+   {
+    "episode": "3:1200",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "episode": "3:1200",
+    "last": null,
+    "left": 3,
+    "within60": false
+   },
+   {
+    "margin": 20,
+    "phase": "decided",
+    "remaining_s": 479
+   },
+   {
+    "margin": 20,
+    "phase": "decided",
+    "remaining_s": 479
+   },
+   {
+    "margin": 25,
+    "phase": "normal",
+    "remaining_s": 480
+   },
+   {
+    "margin": 25,
+    "phase": "normal",
+    "remaining_s": 480
+   },
+   {
+    "margin": -19,
+    "phase": "normal",
+    "remaining_s": 100
+   },
+   {
+    "margin": -19,
+    "phase": "decided",
+    "remaining_s": 100
+   },
+   {
+    "margin": 6,
+    "phase": "close_late",
+    "remaining_s": 240
+   },
+   {
+    "margin": 6,
+    "phase": "normal",
+    "remaining_s": 240
+   },
+   {
+    "margin": 2,
+    "phase": "normal",
+    "remaining_s": 241
+   },
+   {
+    "margin": 2,
+    "phase": "normal",
+    "remaining_s": 241
+   },
+   {
+    "margin": 7,
+    "phase": "normal",
+    "remaining_s": 100
+   },
+   {
+    "margin": 7,
+    "phase": "normal",
+    "remaining_s": 100
+   },
+   {
+    "margin": 30,
+    "phase": "normal",
+    "remaining_s": 100
+   },
+   {
+    "margin": 30,
+    "phase": "normal",
+    "remaining_s": 100
+   },
+   {
+    "margin": 0,
+    "phase": "close_late",
+    "remaining_s": 300
+   },
+   {
+    "margin": 0,
+    "phase": "close_late",
+    "remaining_s": 300
+   },
+   {
+    "margin": 10,
+    "phase": "normal",
+    "remaining_s": 200
+   },
+   {
+    "margin": 10,
+    "phase": "normal",
+    "remaining_s": 200
+   },
+   {
+    "margin": -22,
+    "phase": "decided",
+    "remaining_s": 100
+   },
+   {
+    "margin": -22,
+    "phase": "decided",
+    "remaining_s": 100
+   },
+   {
+    "margin": -30,
+    "phase": "normal",
+    "remaining_s": 300
+   },
+   {
+    "margin": -30,
+    "phase": "normal",
+    "remaining_s": 300
+   },
+   {
+    "margin": 0,
+    "phase": "normal",
+    "remaining_s": 100
+   },
+   [
+    [
+     {
+      "category": "gestion",
+      "evidence": {
+       "base_severity": "critical",
+       "own_points": 0,
+       "phase": "decided",
+       "rival_points": 8,
+       "window_s": 150
+      },
+      "id": "rival_run",
+      "key": "rival_run~decided",
+      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "warning"
+     }
+    ],
+    [],
+    [
+     {
+      "category": "gestion",
+      "evidence": {
+       "own_points": 0,
+       "rival_points": 8,
+       "window_s": 150
+      },
+      "id": "rival_run",
+      "key": "rival_run",
+      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "critical"
+     }
+    ],
+    [
+     {
+      "category": "gestion",
+      "evidence": {
+       "base_severity": "critical",
+       "own_points": 0,
+       "phase": "decided",
+       "rival_points": 8,
+       "window_s": 150
+      },
+      "id": "rival_run",
+      "key": "rival_run~decided#2",
+      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "warning"
+     }
+    ]
+   ],
+   [
+    [
+     {
+      "category": "gestion",
+      "evidence": {
+       "own_points": 0,
+       "rival_points": 8,
+       "window_s": 150
+      },
+      "id": "rival_run",
+      "key": "rival_run",
+      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "critical"
+     }
+    ],
+    [],
+    [],
+    [
+     {
+      "category": "gestion",
+      "evidence": {
+       "own_points": 0,
+       "rival_points": 8,
+       "window_s": 150
+      },
+      "id": "rival_run",
+      "key": "rival_run#2",
+      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "critical"
+     }
+    ]
+   ],
+   [
+    [],
+    [
+     {
+      "category": "faltas",
+      "evidence": {
+       "base_severity": "warning",
+       "period": 4,
+       "pf": 3,
+       "phase": "close_late",
+       "player_id": "x",
+       "team_id": "T1"
+      },
+      "id": "foul_trouble",
+      "key": "foul:x:3~close_late",
+      "message": "Ana: 3 faltas personales en el periodo 4. Valorar cambio.",
+      "proposal": [],
+      "rearm_s": null,
+      "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "evidence": {
+       "base_severity": "warning",
+       "phase": "close_late",
+       "turnovers": 4,
+       "window_s": 300
+      },
+      "id": "turnover_streak",
+      "key": "tov_streak~close_late",
+      "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "critical"
+     }
+    ],
+    [
+     {
+      "category": "faltas",
+      "evidence": {
+       "period": 4,
+       "pf": 4,
+       "player_id": "x",
+       "team_id": "T1"
+      },
+      "id": "foul_trouble",
+      "key": "foul:x:4",
+      "message": "Ana: 4 faltas personales, a una de la eliminación. Gestionar sus minutos.",
+      "proposal": [],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ]
+   ],
+   [
+    [],
+    [
+     {
+      "category": "faltas",
+      "evidence": {
+       "period": 4,
+       "pf": 3,
+       "player_id": "x",
+       "team_id": "T1"
+      },
+      "id": "foul_trouble",
+      "key": "foul:x:3",
+      "message": "Ana: 3 faltas personales en el periodo 4. Valorar cambio.",
+      "proposal": [],
+      "rearm_s": null,
+      "severity": "warning"
+     },
+     {
+      "category": "gestion",
+      "evidence": {
+       "turnovers": 4,
+       "window_s": 300
+      },
+      "id": "turnover_streak",
+      "key": "tov_streak",
+      "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
+      "proposal": [],
+      "rearm_s": 300,
+      "severity": "warning"
+     }
+    ],
+    [
+     {
+      "category": "faltas",
+      "evidence": {
+       "period": 4,
+       "pf": 4,
+       "player_id": "x",
+       "team_id": "T1"
+      },
+      "id": "foul_trouble",
+      "key": "foul:x:4",
+      "message": "Ana: 4 faltas personales, a una de la eliminación. Gestionar sus minutos.",
+      "proposal": [],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ]
+   ]
   ]
  },
  "unit": [
@@ -22892,6 +23454,3146 @@
     "start": 0
    },
    "fn": "windows.causes"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 0,
+     "last_num": 1,
+     "log": [],
+     "period": 1,
+     "players": {},
+     "remaining": 600,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 0,
+     "last_num": 1,
+     "log": [],
+     "period": 1,
+     "players": {},
+     "remaining": 600,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 0,
+     "last_num": 1,
+     "log": [],
+     "period": 1,
+     "players": {},
+     "remaining": 600,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1100,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1100,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1100,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1100,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300,
+        800
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1100,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300,
+        800
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1100,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300,
+        800
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1200,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 600,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300,
+        800
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1200,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 600,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300,
+        800
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1200,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 600,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        300,
+        800
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1500,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1400
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1500,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1400
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1500,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1400
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2270,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 130,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2270,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 130,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2270,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 130,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2280,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 120,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2280,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 120,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2280,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 120,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2290
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2290
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2290
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2290,
+        2310
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2290,
+        2310
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2290,
+        2310
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1500,
+        1900
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2300
+       ]
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1500,
+        1900
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2300
+       ]
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2340,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 60,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1500,
+        1900
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2300
+       ]
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2400,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2400,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2400,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2600,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2500
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2600,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2500
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2600,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2500
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2700,
+     "last_num": 1,
+     "log": [],
+     "period": 6,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2500
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2700,
+     "last_num": 1,
+     "log": [],
+     "period": 6,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2500
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 2700,
+     "last_num": 1,
+     "log": [],
+     "period": 6,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        2500
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1320,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 480,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1300
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1400
+       ]
+      }
+     }
+    },
+    "team": "T1"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1320,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 480,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1300
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1400
+       ]
+      }
+     }
+    },
+    "team": "T2"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "snapshot": {
+     "elapsed": 1320,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 480,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1300
+       ]
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": [
+        1400
+       ]
+      }
+     }
+    },
+    "team": "nobody"
+   },
+   "fn": "timeouts.state"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 1921,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 479,
+     "score": {
+      "T1": 80,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 1921,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 479,
+     "score": {
+      "T1": 80,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 1920,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 480,
+     "score": {
+      "T1": 85,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 1920,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 480,
+     "score": {
+      "T1": 85,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 41,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 41,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2160,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 240,
+     "score": {
+      "T1": 66,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2160,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 240,
+     "score": {
+      "T1": 66,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2159,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 241,
+     "score": {
+      "T1": 62,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2159,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 241,
+     "score": {
+      "T1": 62,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 67,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 67,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 1700,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 90,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 1700,
+     "last_num": 1,
+     "log": [],
+     "period": 3,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 90,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2400,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2400,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 60,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2500,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 200,
+     "score": {
+      "T1": 70,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2500,
+     "last_num": 1,
+     "log": [],
+     "period": 5,
+     "players": {},
+     "remaining": 200,
+     "score": {
+      "T1": 70,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 38,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 38,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 900,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 30,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": {
+     "close_margin": 2,
+     "close_remaining_s": 60,
+     "decided_margin": 10
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshot": {
+     "elapsed": 900,
+     "last_num": 1,
+     "log": [],
+     "period": 2,
+     "players": {},
+     "remaining": 300,
+     "score": {
+      "T1": 30,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "config": null,
+    "own": "T1",
+    "rival": null,
+    "snapshot": {
+     "elapsed": 2300,
+     "last_num": 1,
+     "log": [],
+     "period": 4,
+     "players": {},
+     "remaining": 100,
+     "score": {
+      "T1": 90,
+      "T2": 60
+     },
+     "teams": {
+      "T1": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      },
+      "T2": {
+       "fouls_by_period": {},
+       "fouls_game": 0,
+       "name": "x",
+       "stats": {},
+       "timeouts": []
+      }
+     }
+    }
+   },
+   "fn": "context.phase"
+  },
+  {
+   "args": {
+    "own": "T1",
+    "rival": "T2",
+    "snapshots": [
+     {
+      "elapsed": 2100,
+      "last_num": 1,
+      "log": [
+       [
+        2000,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2040,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2090,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 300,
+      "score": {
+       "T1": 38,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2110,
+      "last_num": 1,
+      "log": [
+       [
+        2000,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2040,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2090,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 290,
+      "score": {
+       "T1": 38,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2150,
+      "last_num": 1,
+      "log": [
+       [
+        2000,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2040,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2090,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 250,
+      "score": {
+       "T1": 51,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2400,
+      "last_num": 1,
+      "log": [
+       [
+        2300,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2340,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2390,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 0,
+      "score": {
+       "T1": 38,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     }
+    ]
+   },
+   "fn": "advice.sequence"
+  },
+  {
+   "args": {
+    "config": {
+     "rules_off": [
+      "game_context"
+     ]
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshots": [
+     {
+      "elapsed": 2100,
+      "last_num": 1,
+      "log": [
+       [
+        2000,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2040,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2090,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 300,
+      "score": {
+       "T1": 38,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2110,
+      "last_num": 1,
+      "log": [
+       [
+        2000,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2040,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2090,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 290,
+      "score": {
+       "T1": 38,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2150,
+      "last_num": 1,
+      "log": [
+       [
+        2000,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2040,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2090,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 250,
+      "score": {
+       "T1": 51,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2400,
+      "last_num": 1,
+      "log": [
+       [
+        2300,
+        "T2",
+        "pts",
+        3
+       ],
+       [
+        2340,
+        "T2",
+        "pts",
+        2
+       ],
+       [
+        2390,
+        "T2",
+        "pts",
+        3
+       ]
+      ],
+      "period": 4,
+      "players": {},
+      "remaining": 0,
+      "score": {
+       "T1": 38,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     }
+    ]
+   },
+   "fn": "advice.sequence"
+  },
+  {
+   "args": {
+    "own": "T1",
+    "rival": "T2",
+    "snapshots": [
+     {
+      "elapsed": 1700,
+      "last_num": 1,
+      "log": [],
+      "period": 3,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 2,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 100,
+      "score": {
+       "T1": 62,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2200,
+      "last_num": 1,
+      "log": [
+       [
+        2100,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2120,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2140,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2160,
+        "T1",
+        "tov",
+        1
+       ]
+      ],
+      "period": 4,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 3,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 200,
+      "score": {
+       "T1": 62,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2250,
+      "last_num": 1,
+      "log": [
+       [
+        2100,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2120,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2140,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2160,
+        "T1",
+        "tov",
+        1
+       ]
+      ],
+      "period": 4,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 4,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 150,
+      "score": {
+       "T1": 63,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     }
+    ]
+   },
+   "fn": "advice.sequence"
+  },
+  {
+   "args": {
+    "config": {
+     "rules_off": [
+      "game_context"
+     ]
+    },
+    "own": "T1",
+    "rival": "T2",
+    "snapshots": [
+     {
+      "elapsed": 1700,
+      "last_num": 1,
+      "log": [],
+      "period": 3,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 2,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 100,
+      "score": {
+       "T1": 62,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2200,
+      "last_num": 1,
+      "log": [
+       [
+        2100,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2120,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2140,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2160,
+        "T1",
+        "tov",
+        1
+       ]
+      ],
+      "period": 4,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 3,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 200,
+      "score": {
+       "T1": 62,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     },
+     {
+      "elapsed": 2250,
+      "last_num": 1,
+      "log": [
+       [
+        2100,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2120,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2140,
+        "T1",
+        "tov",
+        1
+       ],
+       [
+        2160,
+        "T1",
+        "tov",
+        1
+       ]
+      ],
+      "period": 4,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 4,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 150,
+      "score": {
+       "T1": 63,
+       "T2": 60
+      },
+      "teams": {
+       "T1": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       },
+       "T2": {
+        "fouls_by_period": {},
+        "fouls_game": 0,
+        "name": "x",
+        "stats": {},
+        "timeouts": []
+       }
+      }
+     }
+    ]
+   },
+   "fn": "advice.sequence"
   }
  ],
  "version": 1

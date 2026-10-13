@@ -17,7 +17,7 @@ import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from . import clock, events, four_factors, profiles, rules_fouls, windows, zones
+from . import clock, events, four_factors, game_context, profiles, rules_fouls, timeouts, windows, zones
 from .advice import AdviceEngine
 from .config import RuleConfig
 from .engine import LiveEngine
@@ -92,6 +92,16 @@ def _windows_causes(a: Dict[str, Any]) -> Any:
             "causes": windows.run_causes(own, rival, a.get("names", {}), RuleConfig.from_dict(a.get("config")))}
 
 
+def _timeouts_state(a: Dict[str, Any]) -> Dict[str, Any]:
+    snap, team = a["snapshot"], a["team"]
+    return {"left": timeouts.timeouts_left(snap, team), "last": timeouts.last_timeout(snap, team),
+            "within60": timeouts.timeout_within(snap, team, 60), "episode": timeouts.episode(snap, team)}
+
+
+def _context_phase(a: Dict[str, Any]) -> Dict[str, Any]:
+    return game_context.game_phase(a["snapshot"], a["own"], a["rival"], RuleConfig.from_dict(a.get("config")))
+
+
 def _four_factors_evaluate(a: Dict[str, Any]) -> Any:
     model = four_factors.FourFactorsModel(a["own"], a["rival"], a.get("baselines"),
                                           RuleConfig.from_dict(a.get("config")))
@@ -135,6 +145,8 @@ UNIT_FUNCTIONS: Dict[str, Callable[[Any], Any]] = {
     "windows.gaps": _windows_gaps,
     "windows.shots": _windows_shots,
     "windows.causes": _windows_causes,
+    "timeouts.state": _timeouts_state,
+    "context.phase": _context_phase,
 }
 
 

@@ -12,7 +12,7 @@ Estado: **candidata** (sin integrar) · **integrada** (activa en el motor, pendi
 | R4 | **Faltas por riesgo de eliminación** = faltas × tiempo restante (p. ej. 3 faltas con > 6:00), priorizando 3.º/4.º cuarto; no avisar de 2 faltas en el 1.º-2.º cuarto | Retirada en ≤ 2 min: 2.ª falta 82 % (1.º-2.º) / 47 % (3.º) / 40 % (4.º); 3.ª falta 89 % / 68 % / 42 %; 4.ª 100 % / 68 % | Más partidos para ver si el patrón se mantiene y si hay eliminaciones evitables | candidata |
 | R5 | **Fatiga escalada** (info → aviso → crítica) sin repetir el mismo aviso; primer aviso por stint antes de los 10 min | Relevos del entrenador: mediana 5:00, p75 7:01, p90 9:23; el motor avisó a 6:47-10:55; A. Martín recibió 3 avisos iguales y siguió 11 min más | Comparar stints reales con el índice de fatiga en todos los partidos (calibrar pesos) | candidata |
 | R6 | **Sin alertas de estado repetidas**: la palanca de Four Factors solo si cambia de palanca o empeora ≥ X pts/100 | 5 de 28 alertas eran el mismo eFG% (≈ 29 %) sin efecto medible | Contar duplicados por partido; X a definir con el staff | candidata |
-| R7 | **Modo «partido decidido»**: con \|diferencia\| ≥ 20 y < 8 min, bajar la severidad de alertas de rendimiento y priorizar minutos/faltas | −20 a 8:00; las 2 propuestas «no seguidas» fueron en ese tramo | Necesita partidos igualados y de resultado abierto para fijar el umbral | candidata |
+| R7 | **Modo «partido decidido»**: con \|diferencia\| ≥ 20 y < 8 min, bajar la severidad de alertas de rendimiento y priorizar minutos/faltas | −20 a 8:00; las 2 propuestas «no seguidas» fueron en ese tramo | Necesita partidos igualados y de resultado abierto para fijar el umbral | integrada (#239; falta medirla) |
 | R8 | **Explotar faltas del rival**: propuesta táctica concreta y medición de tiros libres obtenidos tras el aviso | 6 avisos sobre el rival con 3-4 faltas; León tiró 6 TL en los 5 min siguientes | Tasa de TL tras aviso en más partidos | candidata |
 | R9 | **Quinteto en negativo**: diferencia ≤ −6 en ≥ 3 min | Un quinteto jugó 4:38 con −7 (cálculo aproximado) | Necesita muchos partidos; usar la tabla de quintetos del paquete | candidata |
 
@@ -28,7 +28,7 @@ Todas con acción propuesta y horizonte mayor que la latencia del feed (mediana 
 | Cierre y pausas (#246) | C1 briefing de cierre igualado · C3 resumen de fin de cuarto y descanso · C4 gestión de ventaja (+10 con < 5 min) · G1 el rival impone su ritmo |
 | Zonas (#247) | Z1 zona caliente propia · Z2 zona fría o mala selección de tiro · Z3 zona que concede el rival · Z4 rival caliente en una zona · Z5 diferencia en la pintura ≥ 10 |
 | Quintetos (#248) | R9 quinteto en negativo · J7 +/- individual |
-| Base | tiempos muertos FIBA y contexto del partido (#239), propuestas de tiempo muerto y táctica (#240), registro de eventos y ventanas (#237) |
+| Base | tiempos muertos FIBA y contexto del partido (#239, **hecho**: R7 y la base de F2 y C1), propuestas de tiempo muerto y táctica (#240), registro de eventos y ventanas (#237) |
 
 **Aplazadas** (prioridad C): P5 (#249), P6 (#250), J8 (#251), G4 (#252), C2 (#253). **Descartadas** por latencia o falta de datos: 2×1, última posesión, falta intencionada en el último minuto, «falta que dar», detectar la defensa del rival, emparejamientos, quién provoca la falta (la línea de falta solo identifica al infractor) y contraataque.
 
