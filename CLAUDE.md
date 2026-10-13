@@ -96,7 +96,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | texto de UI en inglés | UI en español |
 
 ## Decisiones tomadas (no re-debatir)
-MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · matplotlib (precisión FIBA) · pymongo síncrono · FastAPI + React/Vite · motor live en biblioteca estándar ejecutado en la tablet con Pyodide (ver LIVE) · sin LLMs.
+MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · matplotlib (precisión FIBA) · pymongo síncrono · FastAPI + React/Vite · motor live en biblioteca estándar ejecutado en la tablet con Pyodide (ver LIVE) · sin LLMs · **app live: release cada viernes por la mañana (puede haber partidos viernes tarde/noche) con todo lo integrado; el staff actualiza con el botón de la app** (ver OPERATIONS) · **caminos no felices (reconexión, suspensión, apagado de pantalla: #219, #220) se prevén técnicamente pero no se priorizan hasta el uso real**.
 
 ## Lógica de negocio
 - **Cuartiles (Mongo 7+)**: `{"$percentile": {"input": "$m", "p": [0.25], "method": "approximate"}}`.

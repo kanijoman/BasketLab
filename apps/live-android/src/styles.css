@@ -132,3 +132,14 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .formation-status[data-state='limit'] { border-left-color: var(--sev-warning); }
 .formation-status[data-state='bad'] { border-left-color: var(--sev-critical); background: rgb(var(--sev-critical-rgb) / 0.12); color: var(--sev-critical); }
 .formation-status[data-state='pending'], .formation-status[data-state='unknown'] { border-left-color: var(--line); color: var(--muted); font-weight: 400; }
+
+/* Version and update (issues #226 and #227) */
+.update-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0; padding: 8px 12px;
+  border: 1px solid var(--accent); border-radius: 10px; background: rgb(var(--accent-rgb) / 0.12); font-weight: 600; }
+.update-banner button { flex: none; }
+.about-panel { display: grid; gap: 6px; }
+.about-panel h2 { margin: 0; }
+.about-panel p { margin: 0; }
+.update-available { display: grid; gap: 6px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgb(var(--accent-rgb) / 0.08); }
+.about-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.about-actions button { flex: 1 1 0; min-width: 140px; }

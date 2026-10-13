@@ -88,6 +88,24 @@ jobs:
 
       - run: npm ci
 
+      # The version is fixed BEFORE the web build: the app shows it and compares it with the published one (issues #226,
+      # #227). versionCode only has to grow with every release; the run number of the workflow does.
+      - name: Version
+        run: |
+          code="${{ github.run_number }}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            name="${GITHUB_REF_NAME#live-android-v}"
+          else
+            name="0.1.0-${GITHUB_SHA::7}"
+          fi
+          {
+            echo "APP_VERSION_CODE=$code"
+            echo "APP_VERSION_NAME=$name"
+            echo "VITE_APP_VERSION=$name"
+            echo "VITE_APP_BUILD=$code"
+            echo "VITE_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } >> "$GITHUB_ENV"
+
       - name: Build the web app and sync it into the Android project
         run: npm run cap:sync
 
@@ -108,15 +126,6 @@ jobs:
             echo "mode=debug-key" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Version
-        run: |
-          echo "APP_VERSION_CODE=${{ github.run_number }}" >> "$GITHUB_ENV"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            echo "APP_VERSION_NAME=${GITHUB_REF_NAME#live-android-v}" >> "$GITHUB_ENV"
-          else
-            echo "APP_VERSION_NAME=0.1.0-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
-          fi
-
       - name: Assemble the release APK
         working-directory: apps/live-android/android
         env:
@@ -133,6 +142,11 @@ jobs:
           cp android/app/build/outputs/apk/release/*.apk "dist-apk/basketlab-live-${APP_VERSION_NAME}.apk"
           # fixed name for the moving "live-android-latest" release (stable download link)
           cp android/app/build/outputs/apk/release/*.apk dist-apk/basketlab-live.apk
+          # what the app reads to know whether a newer version is published (issue #227)
+          jq -n --arg version "$APP_VERSION_NAME" --argjson code "$APP_VERSION_CODE" --arg built "$VITE_BUILT_AT" \
+            --arg apk "https://github.com/${GITHUB_REPOSITORY}/releases/download/live-android-latest/basketlab-live.apk" \
+            '{version: $version, versionCode: $code, apk: $apk, notes: null, built_at: $built}' > dist-apk/latest.json
+          cat dist-apk/latest.json
           ls -la dist-apk
 
       - uses: actions/upload-artifact@v4
@@ -159,7 +173,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete live-android-latest --yes --cleanup-tag --repo "$GITHUB_REPOSITORY" || true
-          gh release create live-android-latest dist-apk/basketlab-live.apk \
+          gh release create live-android-latest dist-apk/basketlab-live.apk dist-apk/latest.json \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "BasketLab Live (última versión)" \
             --notes "Enlace fijo al APK más reciente: versión ${APP_VERSION_NAME} (${{ steps.signing.outputs.mode }}). Releases por versión: etiquetas live-android-v*."
