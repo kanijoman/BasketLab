@@ -13,6 +13,9 @@ import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import AlertCard, { clockLabel } from './AlertCard'
 import DemoControls, { type DemoSource } from './DemoControls'
+import LiveConnect from './LiveConnect'
+import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
+import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
@@ -22,6 +25,10 @@ interface Props {
   loadDemo?: () => Promise<DemoData>
   /** The real recorded match of the demo (injected in tests). */
   loadRealDemo?: () => Promise<RealDemoData>
+  /** Network access to FEB for the live mode (native HTTP on the tablet; injected in tests). */
+  febHttp?: HttpGet
+  /** Polling timing of the live mode (defaults: 10 s; injected in tests). */
+  feedTiming?: FeedTiming
   store?: PackageStore
   /** Network access of the published-packages list (injected in tests). */
   remoteFetcher?: Fetcher
@@ -30,7 +37,7 @@ interface Props {
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 interface Entry { alert: Alert; at: string }
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadRealDemo = fetchRealDemo, store: injectedStore, remoteFetcher }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadRealDemo = fetchRealDemo, store: injectedStore, remoteFetcher, febHttp, feedTiming }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -121,6 +128,23 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
 
   const finished = info !== null && elapsed >= info.duration
 
+  /** What the screen shows for an engine output: the snapshot and the alerts not seen before. */
+  const handleOutput = useCallback((result: EngineOutput) => {
+    setOut(result)
+    const at = clockLabel(result.snapshot.period, result.snapshot.remaining)
+    const fresh = result.alerts.filter(a => !seen.current.has(a.key))
+    fresh.forEach(a => seen.current.add(a.key))
+    if (fresh.length) setEntries(prev => [...fresh.map(alert => ({ alert, at })), ...prev])
+  }, [])
+
+  const restartLive = useCallback(async () => {
+    seen.current.clear()
+    setEntries([]); setOut(null)
+    const saved = await store.load()
+    if (saved) setMeta(await engine.start(saved.plaintext))
+  }, [engine, store])
+  const live = useLiveFeed({ engine, http: febHttp, timing: feedTiming, onOutput: handleOutput, restart: restartLive })
+
   const step = useCallback(async (to: number) => {
     if (busy.current) return
     busy.current = true
@@ -136,18 +160,14 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
       }
       setMs(Math.round(performance.now() - t0))
       if (!result) return // the feed answered nothing: the last state stays
-      setOut(result)
-      const at = clockLabel(result.snapshot.period, result.snapshot.remaining)
-      const fresh = result.alerts.filter(a => !seen.current.has(a.key))
-      fresh.forEach(a => seen.current.add(a.key))
-      if (fresh.length) setEntries(prev => [...fresh.map(alert => ({ alert, at })), ...prev])
+      handleOutput(result)
     } catch (e) {
       setPlaying(false)
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     } finally {
       busy.current = false
     }
-  }, [engine, source])
+  }, [engine, source, handleOutput])
 
   useEffect(() => {
     if (!playing || !info) return
@@ -199,7 +219,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
 
       {pkg ? (
-        <p className="status">Paquete cargado. La app queda a la espera del partido en directo (próximamente).</p>
+        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running}
+          onStart={code => void live.connect(code)} onStop={live.disconnect} />
       ) : (
         <>
           <DemoControls
@@ -211,15 +232,15 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
           {notice && <p role="alert" className="status error">{notice}</p>}
 
           {finished && <p className="status">Partido finalizado</p>}
-
-          <section>
-            <h2>Alertas</h2>
-            {entries.length === 0
-              ? <p className="detail">Sin alertas todavía. Pulsa Reproducir para simular el partido.</p>
-              : <ul className="alerts">{entries.map(e => <AlertCard key={e.alert.key} alert={e.alert} at={e.at} />)}</ul>}
-          </section>
         </>
       )}
+
+      <section>
+        <h2>Alertas</h2>
+        {entries.length === 0
+          ? <p className="detail">{pkg ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
+          : <ul className="alerts">{entries.map(e => <AlertCard key={e.alert.key} alert={e.alert} at={e.at} />)}</ul>}
+      </section>
 
       {panel}
     </main>
