@@ -1,5 +1,7 @@
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+import { FakeFeb } from '../src/feed/fakeFeb'
 
 // the published-packages list must not depend on the real network (an offline error would add a second alert)
 test.beforeEach(async ({ page }) => {
@@ -90,6 +92,48 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('59')
   await expect(page.locator('.alert').first()).toBeVisible()
   await expect(page.locator('.pace-card')).toContainText('posesiones por equipo')
+
+  expect(errors).toEqual([])
+})
+
+test('live mode: connects to a (fake) FEB serving the real recording and follows the match in a real browser (issue #217)', async ({ page }) => {
+  test.setTimeout(180_000)
+  const errors: string[] = []
+  page.on('pageerror', e => errors.push(e.message))
+
+  // the package of the match is already on the device (what "Importar" / "Descargar" leave in IndexedDB)
+  const pkg = fs.readFileSync(fileURLToPath(new URL('../../../tests/recordings/2524470.package.json', import.meta.url)), 'utf8')
+  await page.addInitScript(plaintext => {
+    const open = indexedDB.open('basketlab-live', 1)
+    open.onupgradeneeded = () => open.result.createObjectStore('package')
+    open.onsuccess = () => open.result.transaction('package', 'readwrite').objectStore('package')
+      .put({ plaintext, savedAt: new Date().toISOString() }, 'current')
+  }, pkg)
+
+  // a fake FEB: the real recording played 240x faster, behind the same addresses, token and CORS rules
+  const recording = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../public/demo/recording.json', import.meta.url)), 'utf8'))
+  const feb = new FakeFeb(recording)
+  const startedAt = Date.now()
+  const SPEED = 240
+  await page.route(/https:\/\/(baloncestoenvivo|intrafeb)\.feb\.es\/.*/, async route => {
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, accept, accept-language' }
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
+    feb.at = 5 + ((Date.now() - startedAt) / 1000) * SPEED
+    const auth = route.request().headers().authorization
+    const response = await feb.get(route.request().url(), auth ? { Authorization: auth } : {})
+    await route.fulfill({ status: response.status, headers: { ...cors, 'content-type': 'application/json' }, body: response.text })
+  })
+
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Conectar con FEB' }).click({ timeout: 90_000 })
+  await expect(page.getByText(/En directo · último dato/)).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible()
+
+  // the whole match (7156 s of feed at 240x = 30 s) and the late final status: the official result
+  await expect(page.getByText('Partido finalizado')).toBeVisible({ timeout: 120_000 })
+  await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('38')
+  await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('59')
+  await expect(page.locator('.alert').first()).toBeVisible()
 
   expect(errors).toEqual([])
 })
