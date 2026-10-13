@@ -2,7 +2,9 @@
 
 Perspective is the OWN team (``own_team_id``); without it nothing team-specific can be
 said. An advice key is emitted once, unless the rule sets ``rearm_s`` (persistent
-conditions such as fatigue are repeated after that many game-seconds).
+conditions such as fatigue are repeated after that many game-seconds). A repeat is emitted
+as ``key#n`` so every emission of a game has a distinct key: the app drops keys it has
+already shown (#234).
 """
 
 from __future__ import annotations
@@ -53,6 +55,7 @@ class AdviceEngine:
         )
         self._recommender = Recommender(own_team_id, baselines, cfg) if own_team_id and baselines else None
         self._last: Dict[str, int] = {}
+        self._count: Dict[str, int] = {}
 
     @classmethod
     def from_package(cls, package: Any) -> "AdviceEngine":
@@ -87,8 +90,13 @@ class AdviceEngine:
                 last = self._last.get(advice.key)
                 if last is None or (advice.rearm_s is not None and now - last >= advice.rearm_s):
                     self._last[advice.key] = now
-                    emitted.append(self._with_proposal(advice, snapshot))
+                    emitted.append(self._with_proposal(self._numbered(advice), snapshot))
         return sorted(emitted, key=lambda a: SEVERITY_RANK[a.severity])  # stable: critical first
+
+    def _numbered(self, advice: Advice) -> Advice:
+        """The first emission keeps its key; the n-th repeat of a re-armed alert becomes ``key#n``."""
+        n = self._count[advice.key] = self._count.get(advice.key, 0) + 1
+        return advice if n == 1 else dataclasses.replace(advice, key=f"{advice.key}#{n}")
 
     def _with_proposal(self, advice: Advice, snapshot: Dict[str, Any]) -> Advice:
         """Attach the recommender's substitution proposals to the advice that calls for them."""

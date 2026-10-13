@@ -2607,7 +2607,7 @@
        "team_id": "T1"
       },
       "id": "fatigue_high",
-      "key": "fatigue:p",
+      "key": "fatigue:p#2",
       "message": "Ana: riesgo de fatiga alto (índice 92/100), 16:00 seguidos en pista y 23 min jugados. Valorar descanso.",
       "proposal": [],
       "rearm_s": 240,
@@ -2835,7 +2835,7 @@
        "window_s": 300
       },
       "id": "turnover_streak",
-      "key": "tov_streak",
+      "key": "tov_streak#2",
       "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
       "proposal": [
        {
@@ -2906,7 +2906,7 @@
        "pts100": -10.1222
       },
       "id": "four_factors_lever",
-      "key": "lever:tov",
+      "key": "lever:tov#2",
       "message": "Balón: pérdidas (TOV%) 27% vs 13% (-10.1 pts/100 posesiones). Pérdidas: asegurar el balón.",
       "proposal": [
        {
