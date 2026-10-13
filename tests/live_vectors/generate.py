@@ -131,7 +131,37 @@ def unit_cases():
             cases.append(case("recommender.suggest_for_lever", {"own": OWN, "table": TABLE, "snapshot": s, "lever": lever}))
     # advice sequences (dedupe, re-arm, proposals, rival scouting)
     cases += advice_sequences()
+    cases += windows_cases()
     return cases
+
+
+def windows_cases():
+    """Event-log windows (#237): statistics, gaps, shooting streaks and the causes of a bad window."""
+    log = [
+        [100, OWN, "fg2", 1, "a1"], [100, OWN, "pts", 2, "a1"], [110, OWN, "fg3", 0, "a2"],
+        [115, RIVAL, "orb", 1, "r1"], [120, RIVAL, "fg3", 1, "r1"], [120, RIVAL, "pts", 3, "r1"],
+        [125, RIVAL, "fg3", 1, "r1"], [125, RIVAL, "pts", 3, "r1"], [127, RIVAL, "fg3", 1, "r2"], [127, RIVAL, "pts", 3, "r2"],
+        [130, OWN, "tov", 1, "a1"], [140, OWN, "tov", 1, "a1"], [150, OWN, "tov", 1, None], [150, RIVAL, "stl", 1, "r2"],
+        [160, OWN, "ft", 1, "a1"], [160, OWN, "pts", 1, "a1"], [160, OWN, "ft", 0, "a1"], [162, OWN, "ft", 0, "a2"],
+        [165, RIVAL, "orb", 1, "r1"], [168, RIVAL, "orb", 1, "r2"], [170, OWN, "timeout", 1, None],
+        [180, OWN, "fg2", 0, "a1"], [185, OWN, "fg2", 0, "a2"], [190, OWN, "fg3", 0, "a2"],
+        [195, RIVAL, "ft", 1, "r1"], [195, RIVAL, "pts", 1, "r1"], [196, RIVAL, "ft", 1, "r1"], [196, RIVAL, "pts", 1, "r1"],
+        [200, OWN, "fg2", 1, "a1", ][:4],  # an entry from an older engine, without player
+    ]
+    names = {"a1": "Ana", "a2": "Aida", "r1": "Rita", "r2": "Rosa"}
+    out = []
+    for team in (OWN, RIVAL):
+        for start, end in ((0, 1000), (100, 170), (171, 199), (300, 400)):
+            out.append(case("windows.stats", {"log": log, "team": team, "start": start, "end": end}))
+        for now, since in ((200, 0), (130, 0), (400, 250)):
+            out.append(case("windows.gaps", {"log": log, "team": team, "now": now, "since": since}))
+    out.append(case("windows.shots", {"log": log, "team": OWN, "n": 4}))
+    out.append(case("windows.shots", {"log": log, "team": RIVAL, "n": 3, "kinds": ["fg3"], "player": "r1", "start": 0, "end": 300}))
+    out.append(case("windows.shots", {"log": log, "team": OWN, "n": 0}))
+    for start, end, cfg in ((100, 170, None), (171, 200, None), (100, 200, {"cause_min_count": 3, "cause_max": 2}), (0, 50, None)):
+        out.append(case("windows.causes", {"log": log, "own": OWN, "rival": RIVAL, "start": start, "end": end,
+                                           "names": names, "config": cfg}))
+    return out
 
 
 def advice_sequences():

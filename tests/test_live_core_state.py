@@ -155,7 +155,7 @@ def test_current_stint_grows_for_players_on_court(feb_game_doc):
 
 
 def test_event_log_feeds_runs_and_streaks(feb_game_doc):
-    """[elapsed, team_id, kind, value]: scoring, turnovers (player + team) and offensive rebounds."""
+    """[elapsed, team_id, kind, value, player_id]: scoring, turnovers (player + team) and offensive rebounds, among others (see test_live_core_event_log)."""
     _, snap = _final(feb_game_doc)
     log = snap["log"]
     assert log == sorted(log, key=lambda e: e[0]), "log must be chronological"

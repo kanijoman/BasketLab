@@ -4,6 +4,7 @@ Regla de trabajo (TDD, regresión por bug): [CLAUDE.md](../CLAUDE.md). Este doc:
 ## Ejecutar
 ```bash
 pytest -q                                   # backend completo (cobertura sobre src/ por defecto, pytest.ini)
+# En local solo se ejecutan los tests de lo que se ha tocado (p. ej. `pytest -q --no-cov tests/test_live_core_*.py`); la suite completa tarda ≈ 6 min y la ejecuta el CI de GitHub en cada PR (regla de CLAUDE.md).
 pytest tests/test_live_core_*.py -q --no-cov
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py       # regenerar vectores live tras cambiar live_core
@@ -30,6 +31,7 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Partido por defecto, local/visitante y logos (#223, #228, #230): `test_live_core_state.py` (`home_id`, también tras el JSON que ordena claves y en la grabación real), `test_live_core_session_recording.py` (`meta.home_id`), app: `ui/teams.test.ts`, `ui/TeamLogo.test.tsx`, `ui/Scoreboard.test.tsx`, `engine/demo.test.ts`, `ui/App.test.tsx` (el último partido grabado por defecto, reserva al ejemplo, cambio de partido, error de carga), `apps/live-android/scripts/lib/manifest.test.mjs` y `apps/live-android/scripts/lib/logos.test.mjs` (manifiesto ordenado, descarga y redimensionado de escudos con red simulada) y los e2e en móvil (abre en Zamora–León con el local a la izquierda).
 - Jerarquía de alertas (#229): `test_live_core_alert_severity.py` (severidad por regla y umbral, reparto 1/10/16 sobre la grabación real), app: `ui/AlertList.test.tsx` y el e2e de la grabación real (contador, informativas colapsadas).
 - Claves únicas por emisión (#234): `test_live_core_rearm_keys.py` (una alerta re-armada sale como `key#n`; las 27 alertas de la grabación real tienen claves distintas) y, en la app, `feed/liveFeed.recording.test.ts` comprueba lo mismo con Pyodide real.
+- Registro de eventos y ventanas (#237): `test_live_core_event_log.py` (cada evento deja su entrada con jugador; el registro del partido real cuadra con los totales de equipo: intentos, aciertos, puntos, robos, tiempos muertos y pérdidas de equipo) y `test_live_core_windows.py` (estadísticas de ventana, sequías, rachas, causas ordenadas y entradas antiguas de 4 elementos); en los vectores, `windows.*`.
 - Registro de reglas y `rules_off` (#236): `test_live_core_rule_registry.py` (ids únicos, cada regla se apaga sola sin tocar las demás, `rules_off` desde el JSON del paquete, ids desconocidos ignorados) y un caso `advice.sequence` con `rules_off` en los vectores (Pyodide lo reproduce igual).
 - Feedback del staff (#235), app: `feedback/store.test.ts` (registro, veredicto, persistencia por partido, almacenamiento roto), `ui/AlertCard.test.tsx` (botones), `ui/FeedbackPanel.test.tsx` (copiar, descargar, borrar) y `ui/App.feedback.test.tsx` (de la alerta mostrada al JSON guardado).
 - Workflows: `test_workflows_yaml.py` (todos los `.github/workflows/*.yml` son YAML válido).

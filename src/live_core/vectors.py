@@ -17,7 +17,7 @@ import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from . import clock, events, four_factors, profiles, rules_fouls, zones
+from . import clock, events, four_factors, profiles, rules_fouls, windows, zones
 from .advice import AdviceEngine
 from .config import RuleConfig
 from .engine import LiveEngine
@@ -74,6 +74,24 @@ def _advice_sequence(a: Dict[str, Any]) -> List[Any]:
     return [engine.evaluate(snap) for snap in a["snapshots"]]
 
 
+def _windows_gaps(a: Dict[str, Any]) -> Dict[str, int]:
+    return {"scoring": windows.scoring_gap(a["log"], a["team"], a["now"], a.get("since", 0)),
+            "field_goal": windows.field_goal_gap(a["log"], a["team"], a["now"], a.get("since", 0))}
+
+
+def _windows_shots(a: Dict[str, Any]) -> Dict[str, Any]:
+    shots = windows.last_shots(a["log"], a["team"], a["n"], tuple(a.get("kinds", ("fg2", "fg3"))), a.get("player"))
+    return {"shots": shots, "streak": windows.trailing_makes(shots),
+            "points": windows.player_points(a["log"], a.get("player") or "", a.get("start", 0), a.get("end", 10 ** 6))}
+
+
+def _windows_causes(a: Dict[str, Any]) -> Any:
+    own = windows.window_stats(a["log"], a["own"], a["start"], a["end"])
+    rival = windows.window_stats(a["log"], a["rival"], a["start"], a["end"])
+    return {"own": own, "rival": rival,
+            "causes": windows.run_causes(own, rival, a.get("names", {}), RuleConfig.from_dict(a.get("config")))}
+
+
 def _four_factors_evaluate(a: Dict[str, Any]) -> Any:
     model = four_factors.FourFactorsModel(a["own"], a["rival"], a.get("baselines"),
                                           RuleConfig.from_dict(a.get("config")))
@@ -113,6 +131,10 @@ UNIT_FUNCTIONS: Dict[str, Callable[[Any], Any]] = {
     "recommender.suggest_swaps": _recommender("swaps"),
     "recommender.suggest_for_lever": _recommender("lever"),
     "advice.sequence": _advice_sequence,
+    "windows.stats": lambda a: windows.window_stats(a["log"], a["team"], a["start"], a["end"]),
+    "windows.gaps": _windows_gaps,
+    "windows.shots": _windows_shots,
+    "windows.causes": _windows_causes,
 }
 
 
