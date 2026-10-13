@@ -22,6 +22,7 @@ import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
+import FormationStatus from './FormationStatus'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
 import FeedbackPanel from './FeedbackPanel'
@@ -237,6 +238,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     <main className="screen">
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
+
+      <FormationStatus formation={out?.analysis?.formation} />
 
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
 

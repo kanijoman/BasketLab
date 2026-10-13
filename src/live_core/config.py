@@ -9,7 +9,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 # Ids of the alert rules, in evaluation order (advice.RULES). A package can switch any of them off with
 # ``rule_config["rules_off"]``. ``team_fouls`` covers both team_fouls_bonus and rival_near_bonus.
 RULE_IDS: Tuple[str, ...] = (
-    "foul_trouble", "rival_foul_trouble", "team_fouls", "rival_run", "turnover_streak",
+    "foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
@@ -28,6 +28,10 @@ class RuleConfig:
     rules_off: Tuple[str, ...] = ()
     # Game context: a game is "decided" with this margin and less time left of the 4th period, and "close_late" within
     # this margin and this much time left of the 4th period (or in overtime). Alerts change one level (game_context).
+    # Illegal lineup: players of "formación" that must be on court at all times (0 = the competition has no such rule), and
+    # how many consecutive evaluations the violation must last before it is said (a substitution is two feed lines).
+    formation_min_on_court: int = 2
+    formation_confirm_polls: int = 2
     decided_margin: int = 20
     decided_remaining_s: int = 480
     close_margin: int = 6

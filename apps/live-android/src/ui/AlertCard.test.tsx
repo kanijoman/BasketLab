@@ -39,3 +39,14 @@ describe('AlertCard feedback (issue #235)', () => {
     expect(onVerdict).toHaveBeenCalledWith(null)
   })
 })
+
+describe('AlertCard category of the lineup rule (issue #272)', () => {
+  it('shows «Alineación» with its own icon and colour', () => {
+    const alert: Alert = { ...ALERT, key: 'formation:p1', id: 'formation_lineup', severity: 'critical', category: 'alineacion',
+      message: 'Alineación indebida: solo 1 de formación en pista (mínimo 2).' }
+    render(<ul><AlertCard alert={alert} at="Q3 05:00" /></ul>)
+    const tag = screen.getByText('Alineación').closest('[data-category]') as HTMLElement
+    expect(tag.getAttribute('data-category')).toBe('alineacion')
+    expect(tag.querySelector('svg')).toBeTruthy()
+  })
+})

@@ -62,7 +62,7 @@ describe('AlertList (issue #229)', () => {
   })
 
   it('knows the categories the engine emits and falls back for an unknown one', () => {
-    expect(Object.keys(CATEGORY_LABEL).sort()).toEqual(['faltas', 'four_factors', 'gestion', 'rival', 'rotacion'])
+    expect(Object.keys(CATEGORY_LABEL).sort()).toEqual(['alineacion', 'faltas', 'four_factors', 'gestion', 'rival', 'rotacion'])
     render(<AlertList entries={[entry('x', 'warning', 'nueva')]} />)
     expect(screen.getByText('nueva')).toBeTruthy()
   })

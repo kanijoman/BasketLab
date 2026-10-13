@@ -14,7 +14,7 @@ from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_sn
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
 from tests.test_live_core_rival_zones import zsnap
 
-EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "team_fouls", "rival_run", "turnover_streak",
+EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
                 "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone")
 
 
@@ -48,10 +48,18 @@ def _zone():
     return s
 
 
+def _formation():
+    players = {f"f{i}": _player(f"Jug {i}", OWN) for i in range(1, 6)}
+    return snap(period=3, players=players)
+
+
+FORMATION_ROSTER = {f"f{i}": {"team_id": OWN, "formacion": False} for i in range(1, 6)}
+
 # rule id -> (builder of a snapshot where it fires, advice ids it emits, extra engine kwargs)
 SCENARIOS = {
     "foul_trouble": (_fouls, {"foul_trouble"}, {}),
     "rival_foul_trouble": (_fouls, {"rival_foul_trouble"}, {}),
+    "formation_lineup": (_formation, {"formation_lineup"}, {"roster": FORMATION_ROSTER}),
     "team_fouls": (_bonus, {"team_fouls_bonus", "rival_near_bonus"}, {}),
     "rival_run": (_run, {"rival_run"}, {}),
     "turnover_streak": (_turnovers, {"turnover_streak"}, {}),
@@ -63,7 +71,8 @@ SCENARIOS = {
 
 
 def _ids(engine, snapshot):
-    return {a.id for a in engine.evaluate(snapshot)}
+    """Ids emitted by evaluating the snapshot twice (an alert that asks for confirmation needs two evaluations)."""
+    return {a.id for _ in range(2) for a in engine.evaluate(snapshot)}
 
 
 def test_every_rule_has_a_unique_id_and_the_registry_matches_the_known_ids():

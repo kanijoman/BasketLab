@@ -20,6 +20,7 @@ class Advice:
     evidence: Dict[str, Any] = field(default_factory=dict)
     proposal: List[Dict[str, Any]] = field(default_factory=list)
     rearm_s: Optional[int] = None  # None: once; N: may be emitted again after N game-seconds
+    confirm: int = 1               # consecutive evaluations the alert must appear in before it is emitted
 
 
 @dataclass(frozen=True)

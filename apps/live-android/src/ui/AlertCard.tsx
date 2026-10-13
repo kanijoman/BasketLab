@@ -1,4 +1,4 @@
-import { Activity, ChartColumn, Hand, Repeat, Swords, type LucideIcon } from 'lucide-react'
+import { Activity, ChartColumn, Hand, Repeat, Swords, Users, type LucideIcon } from 'lucide-react'
 import type { Alert, Proposal } from '../engine/types'
 import type { Verdict } from '../feedback/store'
 
@@ -9,10 +9,11 @@ export const CATEGORY_LABEL: Record<string, string> = {
   rival: 'Rival',
   four_factors: 'Juego',
   gestion: 'Ritmo',
+  alineacion: 'Alineación',
 }
 
 const CATEGORY_ICON: Record<string, LucideIcon> = {
-  faltas: Hand, rotacion: Repeat, rival: Swords, four_factors: ChartColumn, gestion: Activity,
+  faltas: Hand, rotacion: Repeat, rival: Swords, four_factors: ChartColumn, gestion: Activity, alineacion: Users,
 }
 
 const SEVERITY_LABEL = { critical: 'Crítica', warning: 'Aviso', info: 'Info' } as const

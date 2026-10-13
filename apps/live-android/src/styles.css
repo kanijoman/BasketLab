@@ -91,6 +91,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .alert-category[data-category='rival'] { --cat: var(--cat-rival); }
 .alert-category[data-category='four_factors'] { --cat: var(--cat-juego); }
 .alert-category[data-category='gestion'] { --cat: var(--cat-ritmo); }
+.alert-category[data-category='alineacion'] { --cat: var(--cat-alineacion); }
 .alert-message { margin: 6px 0 4px; }
 .proposals { margin: 4px 0 0; padding-left: 18px; color: var(--text); font-weight: 600; }
 
@@ -124,3 +125,10 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .feedback-panel h2 { margin: 0; }
 .feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .feedback-actions button { flex: 1 1 0; min-width: 96px; }
+
+/* Formación players on court against the minimum (issue #272) */
+.formation-status { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); font-weight: 600; }
+.formation-status[data-state='ok'] { border-left-color: var(--ok); }
+.formation-status[data-state='limit'] { border-left-color: var(--sev-warning); }
+.formation-status[data-state='bad'] { border-left-color: var(--sev-critical); background: rgb(var(--sev-critical-rgb) / 0.12); color: var(--sev-critical); }
+.formation-status[data-state='pending'], .formation-status[data-state='unknown'] { border-left-color: var(--line); color: var(--muted); font-weight: 400; }
