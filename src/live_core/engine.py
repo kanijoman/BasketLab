@@ -1,8 +1,10 @@
 """Incremental engine: feed it successive FEB documents, get the live snapshot.
 
 Each call processes only the play-by-play lines not seen before. A full rebuild happens
-when history changes under our feet (a previously applied line is deleted/corrected, or
-a line arrives out of order), so the result always equals a fresh one-shot computation.
+when history changes under our feet (a previously applied line is deleted or its content is
+corrected, or a line arrives out of order), so the result always equals a fresh one-shot
+computation. FEB does correct lines while a match is on (a 3-pointer turned into a 2-pointer,
+a substitution "Entra" into "Sale"; seen in the first real recording).
 """
 
 from __future__ import annotations
@@ -42,7 +44,7 @@ class LiveEngine:
     def _reset(self) -> None:
         self._game: Optional[LiveGame] = None
         self._shots: Optional[ShotTracker] = None
-        self._applied: Set[int] = set()
+        self._applied: Dict[int, int] = {}  # line number -> fingerprint of the content that was applied
         self._deleted: Set[int] = set()
 
     def update(self, doc: Dict[str, Any]) -> Dict[str, Any]:
@@ -52,8 +54,9 @@ class LiveEngine:
 
         last_applied = self._game.last_num if self._game else 0
         history_changed = bool(
-            (deleted_now - self._deleted) & self._applied
+            (deleted_now - self._deleted) & self._applied.keys()
             or any(e.num < last_applied and e.num not in self._applied for e in live)
+            or any(self._applied.get(e.num, hash(e)) != hash(e) for e in live)  # an applied line was corrected
         )
         if history_changed:
             self._reset()
@@ -66,7 +69,7 @@ class LiveEngine:
         for event in live:
             if event.num not in self._applied:
                 self._game.apply(event)
-                self._applied.add(event.num)
+                self._applied[event.num] = hash(event)
         self._sync_clock(doc)
         self._shots.update(doc.get("SHOTCHART"))
         return {**self._game.snapshot(), "zones": self._shots.snapshot()}

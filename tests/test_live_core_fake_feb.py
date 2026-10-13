@@ -36,6 +36,14 @@ def test_replay_clock_advances_with_speed_and_stops_at_the_end():
     assert clock.elapsed() == 1000 and clock.finished()
 
 
+def test_replay_clock_has_a_sub_second_reading_for_recorded_feeds():
+    now = [0.0]
+    clock = ReplayClock(start_elapsed=0, speed=1, end_elapsed=7155.691, time_fn=lambda: now[0])
+    now[0] = 99999.0
+    assert clock.seconds() == pytest.approx(7155.691)  # the final frame of a recording sits at a fraction of a second
+    assert clock.elapsed() == 7155  # the whole seconds the game replay uses
+
+
 @pytest.fixture()
 def server(feb_game_doc):
     now = [0.0]
