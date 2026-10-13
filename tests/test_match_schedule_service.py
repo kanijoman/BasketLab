@@ -127,6 +127,43 @@ class TestUpcoming:
         out = _service(_db(codes=()), calendar=cal, status=status).upcoming("LF_CHALLENGE_2026", TEAM)
         assert len(calls) <= 3 and out["matches"] == [] or all(m["status"] != "live" for m in out["matches"])
 
+    # -- issue #118: during the real Zamora - Leon match the calendar row stayed "scheduled" (no score) from kick-off
+    # until well after the final whistle, so a match in progress looked like an upcoming one with negative minutes.
+
+    def _started(self, minutes_after, status):
+        calls = []
+
+        def ask(code):
+            calls.append(code)
+            if isinstance(status, Exception):
+                raise status
+            return status
+
+        now = NOW + __import__("datetime").timedelta(minutes=minutes_after)
+        out = _service(now=now, status=ask).upcoming("LF_CHALLENGE_2026", TEAM)
+        return out["matches"], calls
+
+    def test_a_scheduled_row_that_already_kicked_off_is_live_when_febs_api_says_so_regression(self):
+        matches, calls = self._started(45, "live")
+        assert matches[0]["code"] == SCHED[0].code and matches[0]["status"] == "live"
+        assert calls == [SCHED[0].code]
+
+    def test_a_finished_match_that_the_calendar_still_shows_as_scheduled_is_dropped_regression(self):
+        matches, _ = self._started(150, "finished")
+        assert SCHED[0].code not in [m["code"] for m in matches]
+
+    def test_a_match_whose_start_is_delayed_stays_scheduled(self):
+        matches, _ = self._started(10, "scheduled")  # FEB answers 404: not started yet
+        assert matches[0]["code"] == SCHED[0].code and matches[0]["status"] == "scheduled"
+
+    def test_if_febs_api_fails_the_row_stays_scheduled_instead_of_disappearing(self):
+        matches, _ = self._started(45, ConnectionError("feb down"))
+        assert matches[0]["code"] == SCHED[0].code and matches[0]["status"] == "scheduled"
+
+    def test_matches_that_have_not_started_never_trigger_a_lookup(self):
+        matches, calls = self._started(-60, "live")
+        assert calls == [] and all(m["status"] == "scheduled" for m in matches)
+
     def test_calendar_failure_is_reported_as_a_warning_not_raised(self):
         def boom(url):
             raise ConnectionError("calendario no disponible")
