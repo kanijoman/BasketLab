@@ -262,7 +262,7 @@ def ff_snap(own, rival, elapsed=1200):
 def test_main_lever_alert_names_the_factor_with_numbers():
     out = engine().evaluate(ff_snap(_stats(tov=22), _stats()))
     [a] = [a for a in out if a.id == "four_factors_lever"]
-    assert a.severity == "warning" and a.category == "four_factors"
+    assert a.severity == "info" and a.category == "four_factors"
     assert a.evidence["lever"] == "tov" and a.evidence["pts100"] <= -3
     assert "pérdidas" in a.message.lower() and "pts/100" in a.message
 

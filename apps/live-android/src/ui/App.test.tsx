@@ -95,7 +95,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
     await waitFor(() => expect(screen.getByText(/4 faltas personales/)).toBeTruthy())
-    expect(screen.getByText(/crítica/i)).toBeTruthy()
+    expect(screen.getAllByText(/crítica/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/J\. PÉREZ → L\. GÓMEZ/)).toBeTruthy()
     expect(replayCalls(engine).length).toBeGreaterThan(0)
   })

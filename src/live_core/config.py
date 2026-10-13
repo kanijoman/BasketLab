@@ -19,6 +19,7 @@ class RuleConfig:
     turnover_window_s: int = 300
     # Fatigue index (0-100): weighted mix of stint length, minutes pace and projected minutes.
     fatigue_alert_index: float = 60.0
+    fatigue_warning_index: float = 80.0   # from here fatigue is a warning; between alert and warning it is context
     fatigue_rearm_s: int = 240
     fatigue_default_avg_stint_s: int = 420
     fatigue_weight_stint: float = 40.0
