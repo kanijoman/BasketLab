@@ -1,7 +1,9 @@
+/// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+// Read from disk: vitest returns an empty string for CSS imports.
 const css = readFileSync(join(__dirname, 'index.css'), 'utf8')
 
 function rule(name: string): string {
@@ -19,6 +21,6 @@ describe('button styles', () => {
     expect(r).toContain('disabled:opacity-50')
     expect(r).toContain('disabled:cursor-not-allowed')
     expect(r).toContain('[&:not(:disabled)]:hover:')
-    expect(r.replaceAll('[&:not(:disabled)]:hover:', '')).not.toContain('hover:')
+    expect(r.split('[&:not(:disabled)]:hover:').join('')).not.toContain('hover:')
   })
 })
