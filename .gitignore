@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!apps/live-android/scripts/lib/
 lib64/
 # Keep the frontend source lib directory tracked
 !frontend/src/lib/

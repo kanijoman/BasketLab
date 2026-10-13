@@ -85,3 +85,18 @@ class TestPyodideEntryPoints:
         assert info["match"] == "2524470"
         assert json.loads(play_recording_json(3000))["feed"] == "ok"
         assert json.loads(play_recording_json(6000)) == {"feed": "gap", "output": None}
+
+
+class TestHomeTeam:
+    """The scoreboard needs to know who plays at home before the first document arrives (issue #223)."""
+
+    def test_meta_carries_the_home_team_of_the_match_of_the_package(self):
+        assert LiveSession(PACKAGE).meta["home_id"] == "1008898"  # RECOLETAS ZAMORA hosts LEON
+
+    def test_meta_without_match_details_has_no_home_team(self):
+        from dataclasses import replace
+
+        from src.live_core.package import PreparationPackage
+
+        bare = replace(PreparationPackage.loads(PACKAGE), competition_meta={}).dumps()
+        assert LiveSession(bare).meta["home_id"] is None

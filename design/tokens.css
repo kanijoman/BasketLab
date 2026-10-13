@@ -1,0 +1,115 @@
+/*
+ * BasketLab design tokens — the single source of the look & feel of the suite (issues #228, #187).
+ * The Android live app is the testbed (apps/live-android imports this file); the web (frontend/) adopts it in U0.
+ *
+ *  - Dark is the default; light follows prefers-color-scheme, and `data-theme="light|dark"` on <html> forces one.
+ *  - Colors come in two forms: `--x` (a color) and `--x-rgb` (space-separated channels, for `rgb(var(--x-rgb) / .5)`
+ *    and Tailwind's `<alpha-value>`). Keep both in sync.
+ *  - Severity (how urgent) and category (what it is about) are separate scales: never reuse one for the other.
+ */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* surfaces and text */
+  --bg: #0d1117;            --bg-rgb: 13 17 23;
+  --surface: #161b22;       --surface-rgb: 22 27 34;
+  --surface-raised: #1c2128;
+  --line: #30363d;          --line-rgb: 48 54 61;
+  --text: #e6edf3;          --text-rgb: 230 237 243;
+  --text-muted: #8b949e;
+  --focus: #fdba74;
+
+  /* brand: basketball orange (actions, selection); green only for "good" data */
+  --accent: #f97316;        --accent-rgb: 249 115 22;
+  --accent-ink: #1a0f06;
+  --ok: #3fb950;
+
+  /* severity: how urgent an alert is */
+  --sev-critical: #f85149;  --sev-critical-rgb: 248 81 73;
+  --sev-warning: #d29922;   --sev-warning-rgb: 210 153 34;
+  --sev-info: #58a6ff;      --sev-info-rgb: 88 166 255;
+
+  /* category: what an alert is about (icon + accent) */
+  --cat-faltas: #f472b6;
+  --cat-rotacion: #a78bfa;
+  --cat-rival: #fb923c;
+  --cat-juego: #38bdf8;
+  --cat-ritmo: #34d399;
+
+  /* pace card: faster / slower than usual (neutral colors, not good/bad) */
+  --pace-fast: #f59e0b;
+  --pace-slow: #60a5fa;
+
+  /* shape and rhythm */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --touch: 44px;            /* minimum touch target */
+
+  /* type */
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.85rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 2rem;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f6f8fa;           --bg-rgb: 246 248 250;
+    --surface: #ffffff;      --surface-rgb: 255 255 255;
+    --surface-raised: #f0f3f6;
+    --line: #d0d7de;         --line-rgb: 208 215 222;
+    --text: #1f2328;         --text-rgb: 31 35 40;
+    --text-muted: #59636e;
+    --focus: #c2410c;
+    --accent: #ea580c;       --accent-rgb: 234 88 12;
+    --accent-ink: #ffffff;
+    --ok: #1a7f37;
+    --sev-critical: #cf222e; --sev-critical-rgb: 207 34 46;
+    --sev-warning: #9a6700;  --sev-warning-rgb: 154 103 0;
+    --sev-info: #0969da;     --sev-info-rgb: 9 105 218;
+    --cat-faltas: #bf3989;
+    --cat-rotacion: #6639ba;
+    --cat-rival: #bc4c00;
+    --cat-juego: #0a69a8;
+    --cat-ritmo: #1a7f4b;
+    --pace-fast: #b45309;
+    --pace-slow: #1d4ed8;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f8fa;           --bg-rgb: 246 248 250;
+  --surface: #ffffff;      --surface-rgb: 255 255 255;
+  --surface-raised: #f0f3f6;
+  --line: #d0d7de;         --line-rgb: 208 215 222;
+  --text: #1f2328;         --text-rgb: 31 35 40;
+  --text-muted: #59636e;
+  --focus: #c2410c;
+  --accent: #ea580c;       --accent-rgb: 234 88 12;
+  --accent-ink: #ffffff;
+  --ok: #1a7f37;
+  --sev-critical: #cf222e; --sev-critical-rgb: 207 34 46;
+  --sev-warning: #9a6700;  --sev-warning-rgb: 154 103 0;
+  --sev-info: #0969da;     --sev-info-rgb: 9 105 218;
+  --cat-faltas: #bf3989;
+  --cat-rotacion: #6639ba;
+  --cat-rival: #bc4c00;
+  --cat-juego: #0a69a8;
+  --cat-ritmo: #1a7f4b;
+  --pace-fast: #b45309;
+  --pace-slow: #1d4ed8;
+}

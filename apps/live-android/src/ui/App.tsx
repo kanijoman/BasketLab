@@ -6,13 +6,17 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
-import { loadDemoData, loadRealDemo as fetchRealDemo, type DemoData, type RealDemoData } from '../engine/demo'
+import {
+  loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch,
+  type DemoData, type DemoMatch, type RealDemoData,
+} from '../engine/demo'
 import type { Alert, EngineOutput, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
 import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import AlertCard, { clockLabel } from './AlertCard'
-import DemoControls, { type DemoSource } from './DemoControls'
+import DemoControls, { SAMPLE, type DemoSource, type SourceOption } from './DemoControls'
+import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
@@ -23,8 +27,10 @@ import RemotePackages from './RemotePackages'
 interface Props {
   engine?: EngineApi
   loadDemo?: () => Promise<DemoData>
-  /** The real recorded match of the demo (injected in tests). */
-  loadRealDemo?: () => Promise<RealDemoData>
+  /** Recorded matches the demo can replay, newest first (injected in tests). */
+  loadManifest?: () => Promise<DemoMatch[]>
+  /** The package and the recording of one of them (injected in tests). */
+  loadMatch?: (match: DemoMatch) => Promise<RealDemoData>
   /** Network access to FEB for the live mode (native HTTP on the tablet; injected in tests). */
   febHttp?: HttpGet
   /** Polling timing of the live mode (defaults: 10 s; injected in tests). */
@@ -37,20 +43,21 @@ interface Props {
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 interface Entry { alert: Alert; at: string }
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadRealDemo = fetchRealDemo, store: injectedStore, remoteFetcher, febHttp, feedTiming }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [meta, setMeta] = useState<SessionMeta | null>(null)
   const [info, setInfo] = useState<ReplayInfo | null>(null)
   const [demo, setDemo] = useState<DemoData | null>(null)
+  const [matches, setMatches] = useState<DemoMatch[]>([])
   const [pkg, setPkg] = useState<PackageSummary | null>(null)
   const [out, setOut] = useState<EngineOutput | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
   const [elapsed, setElapsed] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
-  const [source, setSource] = useState<DemoSource>('sample')
+  const [source, setSource] = useState<DemoSource>(SAMPLE)
   const [feed, setFeed] = useState<RecordingFrame['feed']>('ok')
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
@@ -71,29 +78,35 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
     try {
       setMeta(await engine.start(data.package))
       setInfo(await engine.loadReplay(data.game))
-      setSource('sample')
+      setSource(SAMPLE)
       setPhase({ kind: 'ready' })
     } catch (e) {
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     }
   }, [engine, reset])
 
-  /** The real recorded match: the engine is fed with what FEB served (404 windows included). */
-  const beginReal = useCallback(async (fallback: DemoData) => {
+  /** A recorded match: the engine is fed with what FEB served (404 windows included). */
+  const beginRecorded = useCallback(async (match: DemoMatch, fallback: DemoData) => {
     setPhase({ kind: 'loading' })
     reset()
     setPkg(null)
     try {
-      const real = await loadRealDemo()
+      const real = await loadMatch(match)
       setMeta(await engine.start(real.package))
       setInfo(await engine.loadRecording(real.recording))
-      setSource('real')
+      setSource(match.code)
       setPhase({ kind: 'ready' })
     } catch (e) {
       await beginDemo(fallback)
-      setNotice(`No se pudo cargar el partido real: ${e instanceof Error ? e.message : String(e)}`)
+      setNotice(`No se pudo cargar el partido ${match.title}: ${e instanceof Error ? e.message : String(e)}`)
     }
-  }, [engine, reset, loadRealDemo, beginDemo])
+  }, [engine, reset, loadMatch, beginDemo])
+
+  /** The default demo: the latest recorded match; the sample game when there are no recordings. */
+  const beginDefault = useCallback(async (data: DemoData, recorded: DemoMatch[]) => {
+    if (recorded.length) await beginRecorded(recorded[0], data)
+    else await beginDemo(data)
+  }, [beginRecorded, beginDemo])
 
   const beginPackage = useCallback(async (plaintext: string) => {
     setPhase({ kind: 'loading' })
@@ -112,17 +125,18 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
     let cancelled = false
     ;(async () => {
       try {
-        const [data, saved] = await Promise.all([loadDemo(), store.load()])
+        const [data, recorded, saved] = await Promise.all([loadDemo(), loadManifest().catch(() => [] as DemoMatch[]), store.load()])
         if (cancelled) return
         setDemo(data)
+        setMatches(recorded)
         if (saved) await beginPackage(saved.plaintext)
-        else await beginDemo(data)
+        else await beginDefault(data, recorded)
       } catch (e) {
         if (!cancelled) setPhase({ kind: 'error', message: String(e) })
       }
     })()
     return () => { cancelled = true }
-  }, [loadDemo, store, beginDemo, beginPackage])
+  }, [loadDemo, loadManifest, store, beginDefault, beginPackage])
 
   useEffect(() => () => { if (!injected) engine.dispose() }, [engine, injected])
 
@@ -151,7 +165,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
     try {
       const t0 = performance.now()
       let result: EngineOutput | null
-      if (source === 'real') {
+      if (source !== SAMPLE) {
         const frame = await engine.playRecording(to)
         setFeed(frame.feed)
         result = frame.output
@@ -183,8 +197,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
 
   const removePackage = useCallback(() => {
     setPkg(null)
-    if (demo) void beginDemo(demo)
-  }, [demo, beginDemo])
+    if (demo) void beginDefault(demo, matches)
+  }, [demo, matches, beginDefault])
 
   const onLoaded = (s: PackageSummary) => { setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panel = (
@@ -208,13 +222,15 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
   const own = meta!.team
   const rival = meta!.rival
   const snap = out?.snapshot
+  const sources: SourceOption[] = [...matches.map(m => ({ value: m.code, label: m.title })), { value: SAMPLE, label: 'Partido de ejemplo' }]
+  const pickSource = (value: DemoSource) => {
+    const match = matches.find(m => m.code === value)
+    if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
+  }
   return (
     <main className="screen">
-      <header className="scoreboard">
-        <div className="team"><span className="name">{own.name}</span><span className="pts">{snap?.score[own.id] ?? 0}</span></div>
-        <div className="clock">{snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'}</div>
-        <div className="team"><span className="name">{rival.name}</span><span className="pts">{snap?.score[rival.id] ?? 0}</span></div>
-      </header>
+      <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
+        clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
 
@@ -224,9 +240,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadRea
       ) : (
         <>
           <DemoControls
-            source={source} onSource={s => demo && void (s === 'real' ? beginReal(demo) : beginDemo(demo))}
+            source={source} sources={sources} onSource={pickSource}
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
-            speed={speed} onSpeed={setSpeed} onRestart={() => demo && void (source === 'real' ? beginReal(demo) : beginDemo(demo))}
+            speed={speed} onSpeed={setSpeed} onRestart={() => pickSource(source)}
             ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null}
           />
           {notice && <p role="alert" className="status error">{notice}</p>}

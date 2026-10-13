@@ -13,6 +13,8 @@ export interface SessionMeta {
   season: string
   team: TeamRef
   rival: TeamRef
+  /** Local team of the match of the package (null: the first document will say). */
+  home_id?: string | null
 }
 
 export interface ReplayInfo {
@@ -62,6 +64,8 @@ export interface Snapshot {
   /** Game-seconds since tip-off. */
   elapsed: number
   score: Record<string, number>
+  /** Local team (the first of FEB's header): the engine says it because the JSON boundary sorts keys. */
+  home_id?: string | null
   teams: Record<string, { name: string; fouls_game: number }>
   [key: string]: unknown
 }

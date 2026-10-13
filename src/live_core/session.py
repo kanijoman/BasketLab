@@ -36,6 +36,8 @@ class LiveSession:
         return {
             "package_id": p.package_id, "schema_version": p.schema_version, "created_at": p.created_at,
             "collection": p.collection, "season": p.season, "team": p.team, "rival": p.rival,
+            # who plays at home in the match the package was prepared for (None: the first document will say)
+            "home_id": ((p.competition_meta or {}).get("match") or {}).get("home", {}).get("id"),
         }
 
     def update(self, doc: Dict[str, Any]) -> Dict[str, Any]:
