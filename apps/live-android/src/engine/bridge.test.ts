@@ -12,8 +12,8 @@ const repoRoot = path.resolve(appRoot, '../..')
 const bundle: EngineBundle = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/engine/live_core.json'), 'utf8'))
 const demoPackage = fs.readFileSync(path.join(appRoot, 'public/demo/package.json'), 'utf8')
 const demoGame = fs.readFileSync(path.join(appRoot, 'public/demo/game.json'), 'utf8')
-const realPackage = fs.readFileSync(path.join(appRoot, 'public/demo/real_package.json'), 'utf8')
-const recording = fs.readFileSync(path.join(appRoot, 'public/demo/recording.json'), 'utf8')
+const realPackage = fs.readFileSync(path.join(appRoot, 'public/demo/2524470.package.json'), 'utf8')
+const recording = fs.readFileSync(path.join(appRoot, 'public/demo/2524470.recording.json'), 'utf8')
 const vectors = JSON.parse(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/vectors.json'), 'utf8'))
 const expected: { elapsed: number; score: Record<string, number>; alerts: string[] }[] = vectors.expected.engine.checkpoints
 

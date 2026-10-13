@@ -233,4 +233,6 @@ class LiveGame:
             "period": self.period, "remaining": self.remaining, "elapsed": self.elapsed,
             "last_num": self.last_num, "score": dict(self.score), "teams": teams, "players": players,
             "log": [list(e) for e in self.log],
+            # the first team of FEB's header is the local one; the session JSON sorts keys, so say it explicitly
+            "home_id": next(iter(self.teams), None),
         }

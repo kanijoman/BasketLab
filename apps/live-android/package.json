@@ -6,8 +6,9 @@
   "description": "BasketLab live: tablet/phone app (React + Vite + Capacitor) running src/live_core in Pyodide.",
   "scripts": {
     "sync-engine": "node scripts/sync-engine.mjs",
+    "fetch-logos": "node scripts/fetch-logos.mjs",
     "dev": "npm run sync-engine && vite",
-    "build": "npm run sync-engine && tsc --noEmit && vite build",
+    "build": "npm run sync-engine && npm run fetch-logos && tsc --noEmit && vite build",
     "type-check": "tsc --noEmit",
     "test": "npm run sync-engine && vitest",
     "test:run": "npm run sync-engine && vitest run",
@@ -35,6 +36,7 @@
     "@vitejs/plugin-react": "^4.3.0",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.0.1",
+    "sharp": "^0.35.5",
     "typescript": "^5.4.5",
     "vite": "^5.2.0",
     "vitest": "^4.1.0"

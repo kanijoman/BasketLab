@@ -1,18 +1,21 @@
 /** Controls of the demo: which match is replayed, play / pause, speed, restart, and what the (recorded) feed is doing. */
 import type { RecordingFrame } from '../engine/types'
 
-export type DemoSource = 'sample' | 'real'
+/** 'sample' = the bundled sample game; otherwise the code of a recorded match. */
+export type DemoSource = string
+export const SAMPLE = 'sample'
 export const SPEEDS = [1, 10, 30, 60, 300]
 
-export const SOURCES: { value: DemoSource; label: string }[] = [
-  { value: 'sample', label: 'Partido de ejemplo' },
-  { value: 'real', label: 'Partido real: Zamora – León' },
-]
+export interface SourceOption {
+  value: DemoSource
+  label: string
+}
 
 const mmss = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`
 
 interface Props {
   source: DemoSource
+  sources: SourceOption[]
   onSource: (source: DemoSource) => void
   playing: boolean
   onPlay: () => void
@@ -41,18 +44,18 @@ export default function DemoControls(p: Props) {
         <label className="demo-source">
           Partido de la demostración
           <select value={p.source} onChange={e => p.onSource(e.target.value as DemoSource)}>
-            {SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            {p.sources.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </label>
         <button className="secondary" onClick={p.onRestart}>Reiniciar</button>
         {p.ms !== null && <span className="perf">{p.ms} ms</span>}
       </section>
 
-      {p.source === 'real' && p.duration !== null && (
+      {p.source !== SAMPLE && p.duration !== null && (
         <p className="detail">Grabación real: {mmss(p.elapsed)} de {mmss(p.duration)}</p>
       )}
-      {p.source === 'real' && p.feed === 'waiting' && <p className="status">Esperando el inicio del partido…</p>}
-      {p.source === 'real' && p.feed === 'gap' && (
+      {p.source !== SAMPLE && p.feed === 'waiting' && <p className="status">Esperando el inicio del partido…</p>}
+      {p.source !== SAMPLE && p.feed === 'gap' && (
         <p className="status warn">FEB no responde (404): se mantiene el último estado.</p>
       )}
     </>

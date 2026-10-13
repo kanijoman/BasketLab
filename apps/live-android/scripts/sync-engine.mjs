@@ -1,13 +1,14 @@
 // Copies into public/ everything the app ships and that lives outside apps/live-android:
 //   public/engine/live_core.json  the Python sources of src/live_core (standard library only)
 //   public/pyodide/               the Pyodide runtime (offline: nothing is fetched from a CDN)
-//   public/demo/                  a preparation package + a finished FEB game for the demo replay, plus the
-//                                 package and the packed recording of a real match ("Partido real")
+//   public/demo/                  a preparation package + a finished FEB game for the demo replay, plus index.json
+//                                 and the package + packed recording of every recorded match (newest = default)
 // Generated files are git-ignored; this runs before dev / build / test.
 
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import { buildManifest } from "./lib/manifest.mjs";
 
 const appRoot = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(appRoot, "../..");
@@ -35,10 +36,15 @@ const vectors = JSON.parse(fs.readFileSync(path.join(repoRoot, "tests/live_vecto
 fs.writeFileSync(out("demo", "package.json"), vectors.engine.package);
 fs.copyFileSync(path.join(repoRoot, "src/JSON_samples/feb_game.json"), out("demo", "game.json"));
 
-// The real recorded match (issue #174): its package and the packed recording (gunzipped: ~330 KB, the APK
-// compresses it again), so the demo can feed the engine with what FEB really served.
+// The recorded matches (issues #174, #223): for every tests/recordings/<code>.rec.json.gz with its
+// <code>.package.json, the package and the packed recording (gunzipped: ~330 KB, the APK compresses it again), so
+// the demo can feed the engine with what FEB really served, plus index.json: the list, newest first (the default).
 const recordings = path.join(repoRoot, "tests/recordings");
-fs.copyFileSync(path.join(recordings, "2524470.package.json"), out("demo", "real_package.json"));
-fs.writeFileSync(out("demo", "recording.json"), zlib.gunzipSync(fs.readFileSync(path.join(recordings, "2524470.rec.json.gz"))));
+const matches = buildManifest(recordings);
+for (const match of matches) {
+  fs.copyFileSync(path.join(recordings, match.package), out("demo", match.package));
+  fs.writeFileSync(out("demo", match.recording), zlib.gunzipSync(fs.readFileSync(path.join(recordings, `${match.code}.rec.json.gz`))));
+}
+fs.writeFileSync(out("demo", "index.json"), JSON.stringify(matches));
 
-console.log(`sync-engine: ${Object.keys(files).length} live_core modules, Pyodide runtime, demo data`);
+console.log(`sync-engine: ${Object.keys(files).length} live_core modules, Pyodide runtime, demo data (${matches.length} recorded matches)`);

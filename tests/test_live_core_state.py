@@ -258,3 +258,32 @@ def test_names_are_trimmed_from_the_roster():
     assert snap["players"]["P1"]["name"] in ("UNO PEREZ", "UNO")  # roster name or the PBP name
     assert not snap["players"]["P1"]["name"].endswith(" ")
     assert snap["teams"]["T1"]["name"] == "EQUIPO A"
+
+
+# -- home team (issue #223): the scoreboard puts the local team on the left -------------------------------
+
+def test_the_snapshot_names_the_home_team_the_first_of_the_header(feb_game_doc):
+    _, snap = _final(feb_game_doc)
+    assert snap["home_id"] == str(feb_game_doc["HEADER"]["TEAM"][0]["id"])
+
+
+def test_home_id_survives_the_json_boundary_that_sorts_keys_regression(feb_game_doc):
+    """The order of the teams of the header was lost in the session JSON (keys are sorted), so the app could not
+    tell who plays at home."""
+    import json
+
+    from src.live_core.session import LiveSession
+    from src.live_core.vectors import to_jsonable
+
+    snap = LiveEngine().update(feb_game_doc)
+    assert json.loads(json.dumps(to_jsonable(snap), sort_keys=True))["home_id"] == snap["home_id"]
+
+
+def test_the_real_recording_has_zamora_at_home():
+    from pathlib import Path
+
+    from src.live_core.recorded_feed import RecordedFeed
+
+    feed = RecordedFeed.load(Path(__file__).parent / "recordings" / "2524470.rec.json.gz")
+    snap = LiveEngine().update(feed.document_at(feed.duration))
+    assert snap["home_id"] == "1008898"  # RECOLETAS ZAMORA hosted MIPELLETYMAS B.F. LEON

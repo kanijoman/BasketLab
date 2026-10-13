@@ -8,18 +8,22 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/live-packages/**', route => route.fulfill({ json: { v: 1, packages: [] } }))
 })
 
-test('the demo runs on a phone viewport: Pyodide boots in a worker and alerts show up', async ({ page }) => {
+test('the demo opens on the latest recorded match, local team on the left, and alerts show up (issue #223)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
 
   await page.goto('/')
-  await expect(page.getByText('ACEITES ABRIL ADBA SANFER')).toBeVisible({ timeout: 90_000 })
-  await expect(page.getByText('MANRESA CBF A')).toBeVisible()
+  await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible()
+  // Zamora hosted Leon: the local team goes on the left, ours is marked
+  await expect(page.locator('.scoreboard .team').nth(0)).toContainText('RECOLETAS ZAMORA')
+  await expect(page.locator('.scoreboard .team').nth(1)).toContainText('MIPELLETYMAS B.F. LEON')
+  await expect(page.locator('.scoreboard .team').nth(1)).toContainText('Tu equipo')
 
   await page.getByLabel('Velocidad').selectOption('60')
   await page.getByRole('button', { name: 'Reproducir' }).click()
 
-  // game second ~1200 (≈20 s at 60x) already has team-foul alerts in the reference game
+  // the first alerts of the real match come a few minutes after tip-off (about 10 s at 60x)
   await expect(page.locator('.alert').first()).toBeVisible({ timeout: 90_000 })
   await expect(page.locator('.clock')).not.toHaveText('Q1 10:00')
 
@@ -27,6 +31,14 @@ test('the demo runs on a phone viewport: Pyodide boots in a worker and alerts sh
   await expect(page.locator('.pace-card')).toContainText('posesiones por equipo', { timeout: 30_000 })
 
   expect(errors).toEqual([])
+})
+
+test('the sample game is still there as the last option of the selector', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+  await page.getByLabel('Partido de la demostración').selectOption('sample')
+  await expect(page.getByText('ACEITES ABRIL ADBA SANFER').first()).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByText('MANRESA CBF A').first()).toBeVisible()
 })
 
 test('layout fits a phone: no horizontal scroll and touch-sized controls', async ({ page }) => {
@@ -80,7 +92,6 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
-  await page.getByLabel('Partido de la demostración').selectOption('real')
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible()
 
@@ -88,8 +99,8 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await page.getByRole('button', { name: 'Reproducir' }).click()
   // 7156 s of feed at 300x: ~25 s. The official result, with the corrected lines of the real feed applied
   await expect(page.getByText('Partido finalizado')).toBeVisible({ timeout: 90_000 })
-  await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('38')
-  await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('59')
+  await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('59') // Zamora, local, on the left
+  await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('38') // Leon, visitor
   await expect(page.locator('.alert').first()).toBeVisible()
   await expect(page.locator('.pace-card')).toContainText('posesiones por equipo')
 
@@ -111,7 +122,7 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
   }, pkg)
 
   // a fake FEB: the real recording played 240x faster, behind the same addresses, token and CORS rules
-  const recording = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../public/demo/recording.json', import.meta.url)), 'utf8'))
+  const recording = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../public/demo/2524470.recording.json', import.meta.url)), 'utf8'))
   const feb = new FakeFeb(recording)
   const startedAt = Date.now()
   const SPEED = 240
@@ -131,8 +142,8 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
 
   // the whole match (7156 s of feed at 240x = 30 s) and the late final status: the official result
   await expect(page.getByText('Partido finalizado')).toBeVisible({ timeout: 120_000 })
-  await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('38')
-  await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('59')
+  await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('59') // Zamora, local, on the left
+  await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('38') // Leon, visitor
   await expect(page.locator('.alert').first()).toBeVisible()
 
   expect(errors).toEqual([])

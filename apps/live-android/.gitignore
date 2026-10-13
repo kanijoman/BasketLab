@@ -4,6 +4,8 @@ dist/
 public/pyodide/
 public/engine/
 public/demo/
+# team crests are downloaded during the build (club crests: not committed)
+public/logos/
 # Android build output / local config (the Gradle project itself is committed)
 android/.gradle/
 android/build/

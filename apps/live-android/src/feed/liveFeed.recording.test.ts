@@ -14,8 +14,8 @@ import { LiveFeed, type FeedState } from './liveFeed'
 
 const appRoot = path.resolve(import.meta.dirname, '../..')
 const bundle: EngineBundle = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/engine/live_core.json'), 'utf8'))
-const realPackage = fs.readFileSync(path.join(appRoot, 'public/demo/real_package.json'), 'utf8')
-const pack: Pack = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/demo/recording.json'), 'utf8'))
+const realPackage = fs.readFileSync(path.join(appRoot, 'public/demo/2524470.package.json'), 'utf8')
+const pack: Pack = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/demo/2524470.recording.json'), 'utf8'))
 
 let bridge: LiveBridge
 beforeAll(async () => {
