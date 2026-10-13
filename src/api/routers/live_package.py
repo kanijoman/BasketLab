@@ -23,11 +23,14 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from src.api.deps import get_db
+from src.live_prep.roster_fetcher import fetch_rosters
 from src.services.match_schedule_service import MatchScheduleService
 
 router = APIRouter()
 
 JOBS: Dict[str, Dict[str, Any]] = {}
+# Who is a "formación" player, from FEB's team pages (issue #271); tests replace it so they never reach the website
+ROSTER_SOURCE = fetch_rosters
 JOB_TTL_S = 15 * 60
 MIN_PASSPHRASE = 8
 
@@ -78,7 +81,8 @@ def _run(job_id: str, req: PackageRequest, db) -> None:
         from src.live_prep.package_crypto import encrypt_package
 
         package = build_package_from_db(db, req.collection, req.team_id, req.rival_id, req.season,
-                                        competition_meta=_match_meta(db, req), progress=progress)
+                                        competition_meta=_match_meta(db, req), progress=progress,
+                                        roster_source=ROSTER_SOURCE)
         envelope = encrypt_package(package.dumps(), req.passphrase)
         job["envelope"] = json.dumps(envelope, separators=(",", ":"))
         job["status"] = "done"

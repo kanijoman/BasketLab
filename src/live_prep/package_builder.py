@@ -193,8 +193,13 @@ class SeasonAccumulator:
         return [a for a in self.league_players.values() if sum(a.minutes) >= MIN_LEAGUE_SECONDS]
 
     def to_package(self, collection: str, season: str, team_id: str, rival_id: str,
-                   competition_meta: Optional[Dict[str, Any]], created_at: Optional[str]) -> PreparationPackage:
-        """The package of ``team_id`` against ``rival_id`` with the games added so far (nothing is modified)."""
+                   competition_meta: Optional[Dict[str, Any]], created_at: Optional[str],
+                   roster: Optional[Dict[str, Dict[str, Any]]] = None) -> PreparationPackage:
+        """The package of ``team_id`` against ``rival_id`` with the games added so far (nothing is modified).
+
+        ``roster`` (``roster_fetcher``: who is a "formación" player, for both teams) goes into ``tables.roster``;
+        without it the package has no such key and is exactly what it was before.
+        """
         team_id, rival_id = str(team_id), str(rival_id)
         if not (self.tracked(team_id) and self.tracked(rival_id)):
             raise ValueError("Both teams must be tracked by the accumulator")
@@ -210,13 +215,17 @@ class SeasonAccumulator:
             return {pid: acc.baseline(league_rates, impact_means)
                     for pid, acc in self.players.get(tid, {}).items() if acc.minutes}
 
+        tables: Dict[str, Any] = {
+            "players": table(team_id), "rival_players": table(rival_id), "lineups": [], "roles": [],
+            "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {})}),
+        }
+        if roster:
+            tables["roster"] = copy.deepcopy(roster)
         return PreparationPackage(
             collection=collection, season=season,
             team={"id": team_id, "name": self.names.get(team_id, team_id)},
             rival={"id": rival_id, "name": self.names.get(rival_id, rival_id)},
-            tables={"players": table(team_id), "rival_players": table(rival_id),
-                    "lineups": [], "roles": [],
-                    "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {})})},
+            tables=tables,
             created_at=created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             competition_meta=competition_meta or {},
             baselines=baselines,
@@ -231,8 +240,9 @@ def build_package(
     rival_id: str,
     competition_meta: Optional[Dict[str, Any]] = None,
     created_at: Optional[str] = None,
+    roster: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> PreparationPackage:
     acc = SeasonAccumulator(track=(str(team_id), str(rival_id)))
     for game in games:
         acc.add_game(game)
-    return acc.to_package(collection, season, team_id, rival_id, competition_meta, created_at)
+    return acc.to_package(collection, season, team_id, rival_id, competition_meta, created_at, roster=roster)
