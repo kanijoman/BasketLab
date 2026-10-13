@@ -39,15 +39,14 @@ Todas con acción propuesta y horizonte mayor que la latencia del feed (mediana 
 4. Confirmación del **staff** (umbrales de negocio): se preguntan antes de implementar.
 5. Al implementar: TDD (`tests/test_live_core_*`), umbral en `RuleConfig`, regenerar vectores (`python tests/live_vectors/generate.py`) y actualizar LIVE.md y este documento.
 
-## Cómo repetir la evaluación tras cada partido grabado
-Scripts provisionales (se ejecutan desde la raíz del repo; sustituyen al futuro `python -m src.live_prep.rule_evaluation`, aún sin hacer) en [evaluaciones/scripts/](evaluaciones/scripts/):
-1. Descargar el artefacto `recording-<código>` de *FEB live recorder* y los partidos de la competición con el scraper (`FEBWebScraper.get_matches` + `fetch_boxscore`) a `<dir>/eval/games/<código>.json`.
-2. `1_replay_recording.py <dir> <grabación>`: construye el paquete con los partidos **anteriores** al partido, reproduce la grabación en `LiveSession` y guarda `alerts.json`.
-3. `2_adherence_and_coach_behaviour.py <dir>`: compara cada alerta con lo ocurrido (ventana de 5 min; se descuentan 40 s de retraso del feed) y calcula el comportamiento de los entrenadores (tiempos muertos, stints, faltas).
-4. `3_pattern_candidates.py <dir>`: tiempos muertos propios, sequías, quintetos y simulación de umbrales de parcial.
-Anotar los resultados en un nuevo fichero `docs/evaluaciones/<fecha>_<partido>.md` y actualizar la tabla de arriba (evidencia y estado). Los códigos de equipo/partido (`OWN`, `RIVAL`, `MATCH`) y la fecha del partido están fijos en los scripts: cambiarlos para cada partido.
+## Cómo repetir la evaluación (evaluador de reglas, #238)
+`python -m src.live_prep.rule_evaluation --collection <colección FEB> [--recording tests/recordings/<código>.rec.json.gz] [--team <id>] [--config f.json ...] [--feedback f.json ...] --out rule-evaluation` (o `--games-dir <carpeta>` con partidos en JSON). Sin credenciales locales: GitHub → *Actions → Rule evaluation → Run workflow* con la colección; el informe sale en el *Summary* y en el artefacto `rule-evaluation` (`report.md`, `evaluation.json`, `alerts.jsonl`). Detalle del método y de las métricas en [LIVE.md](LIVE.md).
+1. Tras cada partido grabado de León: añadir su grabación a `tests/recordings/` (con `recording_pack`, ver LIVE.md) para que sustituya al feed simulado de su partido, y ejecutar el evaluador.
+2. Anotar los resultados en un nuevo fichero `docs/evaluaciones/<fecha>.md` (el informe generado, con las conclusiones) y actualizar la tabla de arriba (evidencia y estado).
+3. Para probar un umbral o apagar una regla sin tocar el código: un fichero `--config` con `{"name": "...", "rule_config": {"rules_off": ["rival_run"], "run_points": 6}}` se compara con la configuración de serie («base», siempre la línea base) sobre los **mismos** partidos.
+4. Con la exportación de feedback de la app (`--feedback`), la tabla «Respuesta del staff» muestra, por regla, cuántas alertas se siguieron, descartaron o ya estaban hechas, y la **obediencia** (seguidas entre seguidas y descartadas).
 
 ## Datos que faltan para decidir mejor
 - Más partidos grabados de León: depende de que el planner cubra la ventana previa (#205).
-- Saber si el staff **vio y usó** las alertas, para pasar de coincidencia a obediencia: la app ya tiene los botones «seguida / descartada / ya hecho» y exporta el resultado (#235, [LIVE.md](LIVE.md)); falta usarlo en partidos reales y que el evaluador lo lea (#238).
+- Saber si el staff **vio y usó** las alertas, para pasar de coincidencia a obediencia: la app ya tiene los botones «seguida / descartada / ya hecho» y exporta el resultado (#235, [LIVE.md](LIVE.md)); el evaluador ya lo lee (`--feedback`); falta usarlo en partidos reales.
 - Paquete con más partidos previos (líneas base de jugador menos ruidosas).

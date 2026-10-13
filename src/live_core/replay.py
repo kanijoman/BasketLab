@@ -37,6 +37,17 @@ def _cut_shotchart(feed: Any, cut: int) -> Any:
     return {"quarters": feed.get("quarters"), "duration": feed.get("duration"), "TEAM": [], "SHOTS": kept}
 
 
+def roster_only_boxscore(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """The box score without statistics (a live feed has none worth trusting): teams and who is on the roster."""
+    return {
+        "TEAM": [
+            {**{k: team[k] for k in _TEAM_FIELDS if k in team},
+             "PLAYER": [{k: p[k] for k in _ROSTER_FIELDS if k in p} for p in team.get("PLAYER", [])]}
+            for team in doc["BOXSCORE"]["TEAM"]
+        ]
+    }
+
+
 def truncate_doc(doc: Dict[str, Any], period: int, remaining: int) -> Dict[str, Any]:
     """Return a deep copy of ``doc`` as it would look at ``period`` / ``remaining`` seconds left."""
     cut = elapsed_seconds(period, remaining)
@@ -61,13 +72,7 @@ def truncate_doc(doc: Dict[str, Any], period: int, remaining: int) -> Dict[str, 
     for team in header.get("TEAM", []):
         team["pts"] = str(points.get(str(team["id"]), 0))
 
-    out["BOXSCORE"] = {
-        "TEAM": [
-            {**{k: team[k] for k in _TEAM_FIELDS if k in team},
-             "PLAYER": [{k: p[k] for k in _ROSTER_FIELDS if k in p} for p in team.get("PLAYER", [])]}
-            for team in doc["BOXSCORE"]["TEAM"]
-        ]
-    }
+    out["BOXSCORE"] = roster_only_boxscore(doc)
     out["SHOTCHART"] = _cut_shotchart(doc.get("SHOTCHART"), cut)
     for key in ("SCOREBOARD", "TEAMSTATS", "TICKER", "OVERVIEW", "BANNER", "RANKING"):
         out.pop(key, None)

@@ -72,6 +72,9 @@ Puesta en marcha (una vez):
 4. Lanzar el workflow a mano y revisar el resumen. Sin el secreto, el run falla con un mensaje claro (código 2).
 Añadir una competición/temporada: nueva entrada en `config/atlas_refresh.json` (mismos campos que el scrape de la página Admin: `competition_url`, `season_value`, `group_value`, `year` y las tres etiquetas que forman el nombre de la colección). Si Atlas estuvo **pausado** por inactividad, hay que reanudarlo en Atlas (los síntomas son `unreachable` en `/api/v1/health/db`).
 
+## Evaluar las reglas de alerta (rule-evaluation.yml)
+*Actions → Rule evaluation → Run workflow* con la colección de la competición (`team` y `min_prior_games` son opcionales). Lee Atlas con `ATLAS_READ_URI` (usuario de solo lectura; `ATLAS_WRITE_URI` de reserva), reproduce todos los partidos como en directo desde los dos equipos y usa las grabaciones de `tests/recordings/` en lugar del feed simulado de su partido. El informe sale en el *Summary* y en el artefacto `rule-evaluation` (30 días): `report.md`, `evaluation.json`, `alerts.jsonl`. Detalle: [LIVE.md](LIVE.md) y [LIVE_RULES_CANDIDATES.md](LIVE_RULES_CANDIDATES.md).
+
 ## Publicar los paquetes live (live-packages.yml)
 Tras cada refresco de Atlas, `live-packages.yml` construye los paquetes cifrados de los próximos partidos del club (`config/package_publish.json`) y los publica en la rama `live-packages` (un solo commit forzado, ver [LIVE.md](LIVE.md)). Puesta en marcha (una vez): secreto `PACKAGE_PASSWORD` (≥ 8 caracteres, el mismo que se escribe una vez en la app; el repo es público, usa una contraseña larga) y, mejor, `ATLAS_READ_URI` con un usuario de Atlas de **solo lectura** (si no existe se usa `ATLAS_WRITE_URI`). Sin ellos el run falla con código 2. Si el workflow no se dispara tras el refresco, lanzarlo a mano (*Run workflow*).
 
