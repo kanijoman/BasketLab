@@ -256,8 +256,13 @@ class TestWeeklyAndroidRelease:
         inputs = on["workflow_dispatch"]["inputs"]
         assert inputs["version"]["required"] is False and inputs["force"]["type"] == "boolean"
 
-    def test_it_may_start_other_workflows_but_not_write_to_the_repository(self):
-        assert self._data()["permissions"] == {"contents": "read", "actions": "write"}
+    def test_it_may_start_other_workflows_and_ask_for_generated_notes(self):
+        """Regression: the generate-notes API answers 403 (Resource not accessible by integration) with
+        ``contents: read``; it needs ``contents: write`` even though it creates nothing. The workflow itself
+        never pushes, tags or releases (live-android.yml does)."""
+        assert self._data()["permissions"] == {"contents": "write", "actions": "write"}
+        script = "\n".join(s.get("run", "") for s in self._steps())
+        assert "git push" not in script and "gh release create" not in script
 
     def test_two_runs_never_overlap(self):
         concurrency = self._data()["concurrency"]

@@ -33,8 +33,8 @@ on:
         default: false
 
 permissions:
-  contents: read
-  actions: write   # to start live-android.yml
+  contents: write   # generate-notes answers 403 with read only; this workflow never pushes, tags or releases
+  actions: write    # to start live-android.yml
 
 concurrency:
   group: live-android-release
