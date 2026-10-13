@@ -24,6 +24,8 @@ import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
+import FeedbackPanel from './FeedbackPanel'
+import { useFeedback } from '../feedback/useFeedback'
 
 interface Props {
   engine?: EngineApi
@@ -65,6 +67,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const busy = useRef(false)
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
+  // the staff's answers belong to the match being followed: the package's match, else the demo being replayed
+  const feedback = useFeedback(pkg ? `live:${pkg.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null)
+  const { register: registerAlert } = feedback
 
   const reset = useCallback(() => {
     seen.current.clear()
@@ -148,9 +153,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setOut(result)
     const at = clockLabel(result.snapshot.period, result.snapshot.remaining)
     const fresh = result.alerts.filter(a => !seen.current.has(a.key))
-    fresh.forEach(a => seen.current.add(a.key))
+    fresh.forEach(a => { seen.current.add(a.key); registerAlert(a, result.snapshot.elapsed) })
     if (fresh.length) setEntries(prev => [...fresh.map(alert => ({ alert, at })), ...prev])
-  }, [])
+  }, [registerAlert])
 
   const restartLive = useCallback(async () => {
     seen.current.clear()
@@ -256,8 +261,12 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
         <h2>Alertas</h2>
         {entries.length === 0
           ? <p className="detail">{pkg ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
-          : <AlertList entries={entries} />}
+          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
       </section>
+
+      {feedback.records.length > 0 && (
+        <FeedbackPanel records={feedback.records} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
+      )}
 
       {panel}
     </main>
