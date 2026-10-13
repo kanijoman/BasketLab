@@ -52,6 +52,8 @@ describe('live feed on the real recording', () => {
     expect(states[states.length - 1].kind).toBe('finished')
     expect(last.snapshot.score).toEqual({ '1008631': 38, '1008898': 59 })  // corrections of the real feed applied
     expect(alerts.length).toBeGreaterThanOrEqual(10)
+    // #234: the app drops keys it has already shown, so a re-armed alert must arrive with a new key
+    expect(new Set(alerts.map(a => a.key)).size).toBe(alerts.length)
     expect(last.analysis.pace?.reliable).toBe(true)
     expect(feb.at).toBeGreaterThan(7100)
   }, 180_000)
