@@ -2,9 +2,27 @@ name: Live Android app
 
 # apps/live-android: React + Vite app (src/live_core running in Pyodide inside a Web Worker)
 # packaged with Capacitor. Everything is built and tested in the cloud: nothing needs to be
-# installed locally. Tag `live-android-vX.Y.Z` to publish the APK as a GitHub Release.
+# installed locally. Tag `live-android-vX.Y.Z` to publish the APK as a GitHub Release. The weekly workflow
+# (live-android-release.yml, issue #279) publishes by starting this one by hand with a version: a tag created with
+# GITHUB_TOKEN would not start any workflow.
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (X.Y.Z): builds main, creates the tag live-android-vX.Y.Z and both releases"
+        required: true
+        type: string
+      notes:
+        description: "Short notes for the app's update notice (latest.json)"
+        required: false
+        type: string
+        default: ""
+      release_body:
+        description: "Notes (Markdown) of the version release"
+        required: false
+        type: string
+        default: ""
   push:
     branches: ["main"]
     tags: ["live-android-v*"]
@@ -91,9 +109,16 @@ jobs:
       # The version is fixed BEFORE the web build: the app shows it and compares it with the published one (issues #226,
       # #227). versionCode only has to grow with every release; the run number of the workflow does.
       - name: Version
+        env:
+          DISPATCH_VERSION: ${{ inputs.version }}
         run: |
           code="${{ github.run_number }}"
-          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            # only main is ever published, and the version must look like one (it ends up in a tag and a file name)
+            if [ "${GITHUB_REF}" != "refs/heads/main" ]; then echo "::error::Only main can be published"; exit 1; fi
+            if ! [[ "$DISPATCH_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::The version must be X.Y.Z"; exit 1; fi
+            name="$DISPATCH_VERSION"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             name="${GITHUB_REF_NAME#live-android-v}"
           else
             name="0.1.0-${GITHUB_SHA::7}"
@@ -137,6 +162,8 @@ jobs:
           ./gradlew --no-daemon assembleRelease
 
       - name: Name the APK
+        env:
+          NOTES: ${{ inputs.notes }}
         run: |
           mkdir -p dist-apk
           cp android/app/build/outputs/apk/release/*.apk "dist-apk/basketlab-live-${APP_VERSION_NAME}.apk"
@@ -145,7 +172,8 @@ jobs:
           # what the app reads to know whether a newer version is published (issue #227)
           jq -n --arg version "$APP_VERSION_NAME" --argjson code "$APP_VERSION_CODE" --arg built "$VITE_BUILT_AT" \
             --arg apk "https://github.com/${GITHUB_REPOSITORY}/releases/download/live-android-latest/basketlab-live.apk" \
-            '{version: $version, versionCode: $code, apk: $apk, notes: null, built_at: $built}' > dist-apk/latest.json
+            --arg notes "$NOTES" \
+            '{version: $version, versionCode: $code, apk: $apk, notes: (if $notes == "" then null else $notes end), built_at: $built}' > dist-apk/latest.json
           cat dist-apk/latest.json
           ls -la dist-apk
 
@@ -154,11 +182,14 @@ jobs:
           name: basketlab-live-apk
           path: apps/live-android/dist-apk/basketlab-live-*.apk
 
-      - name: Publish a GitHub Release (tags only)
-        if: startsWith(github.ref, 'refs/tags/live-android-v')
+      - name: Publish a GitHub Release (tags and manual releases)
+        if: startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           files: apps/live-android/dist-apk/basketlab-live-*.apk
+          # a manual release creates its tag here, at the commit that was built
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && format('live-android-v{0}', inputs.version) || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           name: BasketLab Live ${{ env.APP_VERSION_NAME }}
           # Prereleases are never the repo's "latest release" (make_latest:false alone is not enough:
           # GitHub would still pick the newest one); see docs/OPERATIONS.md
@@ -166,9 +197,12 @@ jobs:
           body: |
             BasketLab Live ${{ env.APP_VERSION_NAME }} (${{ steps.signing.outputs.mode }}).
             Instalar: descargar el APK en el dispositivo y permitir "Instalar apps desconocidas" para el navegador/gestor de archivos.
+            Si ya tienes la app con el botón de actualizar (desde la 0.3.0), basta con pulsarlo.
 
-      - name: Update the stable "live-android-latest" release (tags only)
-        if: startsWith(github.ref, 'refs/tags/live-android-v')
+            ${{ inputs.release_body }}
+
+      - name: Update the stable "live-android-latest" release (tags and manual releases)
+        if: startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

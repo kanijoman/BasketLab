@@ -236,3 +236,103 @@ class TestAppVersionAndUpdate:
     def test_the_app_reads_latest_json_from_the_url_this_workflow_publishes(self):
         source = (ROOT / "apps" / "live-android" / "src" / "about" / "update.ts").read_text(encoding="utf-8")
         assert "releases/download/live-android-latest/latest.json" in source
+
+
+class TestWeeklyAndroidRelease:
+    """Issue #279: every Friday morning the app is published with everything integrated since the last release."""
+
+    def _data(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "live-android-release.yml").read_text(encoding="utf-8"))
+
+    def _steps(self):
+        return self._data()["jobs"]["release"]["steps"]
+
+    def _step(self, name):
+        return next(s for s in self._steps() if s.get("name", "").startswith(name))
+
+    def test_it_runs_on_friday_morning_and_by_hand(self):
+        on = self._data()[True]
+        assert on["schedule"] == [{"cron": "0 7 * * 5"}]          # 09:00 in Madrid in summer time, 08:00 in winter
+        inputs = on["workflow_dispatch"]["inputs"]
+        assert inputs["version"]["required"] is False and inputs["force"]["type"] == "boolean"
+
+    def test_it_may_start_other_workflows_but_not_write_to_the_repository(self):
+        assert self._data()["permissions"] == {"contents": "read", "actions": "write"}
+
+    def test_two_runs_never_overlap(self):
+        concurrency = self._data()["concurrency"]
+        assert concurrency["group"] == "live-android-release" and concurrency["cancel-in-progress"] is False
+
+    def test_it_sees_every_tag_and_the_history_since_the_last_release(self):
+        checkout = next(s for s in self._steps() if "actions/checkout" in str(s.get("uses", "")))
+        assert checkout["with"]["fetch-depth"] == 0
+
+    def test_the_decision_comes_from_the_tested_script_and_inputs_reach_it_through_the_environment(self):
+        step = self._step("Decide")
+        assert "scripts/live_android_release.py" in step["run"] and "${{" not in step["run"]
+        assert step["env"]["FORCED_VERSION"] == "${{ inputs.version }}"
+
+    def test_it_only_publishes_when_the_script_says_so(self):
+        assert self._step("Release notes")["if"] == "steps.decide.outputs.release == 'true'"
+        assert "steps.decide.outputs.release == 'true'" in self._step("Publish")["if"]
+
+    def test_a_dry_run_shows_the_decision_and_the_notes_but_publishes_nothing(self):
+        assert self._data()[True]["workflow_dispatch"]["inputs"]["dry_run"]["type"] == "boolean"
+        assert "inputs.dry_run" in self._step("Publish")["if"]
+        preview = self._step("Preview")
+        assert "inputs.dry_run" in preview["if"] and "GITHUB_STEP_SUMMARY" in preview["run"] and "${{" not in preview["run"]
+        assert "gh workflow run" not in preview["run"]
+
+    def test_the_build_is_started_with_the_version_and_the_notes_as_inputs_of_the_android_workflow(self):
+        run = self._step("Publish")["run"]
+        assert "gh workflow run live-android.yml" in run
+        for name in ("version=", "notes=", "release_body="):
+            assert name in run
+
+    def test_the_run_summary_says_what_was_decided(self):
+        assert "GITHUB_STEP_SUMMARY" in self._step("Decide")["run"]
+
+
+class TestAndroidWorkflowManualRelease:
+    """Issue #279: a tag created with GITHUB_TOKEN does not start other workflows, so the weekly workflow dispatches this one."""
+
+    def _data(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "live-android.yml").read_text(encoding="utf-8"))
+
+    def _steps(self):
+        return self._data()["jobs"]["apk"]["steps"]
+
+    def _step(self, name):
+        return next(s for s in self._steps() if s.get("name", "").startswith(name))
+
+    def test_it_can_be_started_by_hand_or_by_the_weekly_workflow_with_a_version(self):
+        inputs = self._data()[True]["workflow_dispatch"]["inputs"]
+        assert inputs["version"]["required"] is True
+        assert {"notes", "release_body"} <= set(inputs)
+        assert "tags" in self._data()[True]["push"], "pushing a tag by hand keeps working"
+
+    def test_the_version_comes_from_the_input_only_on_main_and_only_if_it_looks_like_a_version(self):
+        step = self._step("Version")
+        assert step["env"]["DISPATCH_VERSION"] == "${{ inputs.version }}"
+        assert "${{ inputs" not in step["run"], "inputs must not be pasted into the script"
+        assert "refs/heads/main" in step["run"] and "[0-9]+" in step["run"]
+
+    def test_the_build_number_still_comes_from_the_run_number_of_this_workflow_so_it_only_grows(self):
+        """A lower versionCode than the installed one would make Android refuse the update."""
+        assert "github.run_number" in self._step("Version")["run"]
+
+    def test_both_releases_are_published_for_a_tag_and_for_a_manual_run(self):
+        for name in ("Publish a GitHub Release", "Update the stable"):
+            condition = self._step(name)["if"]
+            assert "refs/tags/live-android-v" in condition and "workflow_dispatch" in condition
+
+    def test_a_manual_run_creates_the_tag_at_the_commit_that_was_built(self):
+        with_ = self._step("Publish a GitHub Release")["with"]
+        assert "live-android-v{0}" in with_["tag_name"] and "inputs.version" in with_["tag_name"]
+        assert with_["target_commitish"] == "${{ github.sha }}" and with_["prerelease"] is True
+        assert "inputs.release_body" in with_["body"]
+
+    def test_the_notes_of_the_update_notice_come_from_the_environment(self):
+        step = self._step("Name the APK")
+        assert step["env"]["NOTES"] == "${{ inputs.notes }}"
+        assert "${{ inputs" not in step["run"] and "$NOTES" in step["run"]

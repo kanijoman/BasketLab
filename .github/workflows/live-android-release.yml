@@ -1,0 +1,111 @@
+name: Live Android release
+
+# Every Friday morning (issue #279) the app is published with everything integrated since the last release; the staff
+# updates from the app (#227). Friday evening games are why it is not later. The decisions (is there anything new in
+# the app? which version?) are in scripts/live_android_release.py, tested in tests/test_live_android_release.py.
+#
+# A tag created with GITHUB_TOKEN does not start other workflows, so this workflow does not tag: it dispatches
+# live-android.yml, which builds from main, signs, and creates the tag and the two releases. Pushing a tag
+# `live-android-vX.Y.Z` by hand keeps working.
+#
+# By hand: "Run workflow" with `version` (X.Y.Z, newer than the last one) or `force` (publish without changes);
+# `dry_run` shows the decision and the notes without publishing anything.
+
+on:
+  schedule:
+    - cron: "0 7 * * 5"   # Friday 07:00 UTC = 09:00 in Madrid in summer time, 08:00 in winter
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Force this version (X.Y.Z, newer than the last release); empty = the next minor"
+        required: false
+        type: string
+        default: ""
+      force:
+        description: "Publish even if the app has no changes since the last release"
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: "Only show the version and the notes that would be published"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write   # to start live-android.yml
+
+concurrency:
+  group: live-android-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Decide and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # every tag and the history since the last release
+
+      - name: Decide
+        id: decide
+        env:
+          FORCED_VERSION: ${{ inputs.version }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=(decide)
+          if [ -n "$FORCED_VERSION" ]; then args+=(--version "$FORCED_VERSION"); fi
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
+          python3 scripts/live_android_release.py "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Release notes
+        id: notes
+        if: steps.decide.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.decide.outputs.version }}
+          PREVIOUS: ${{ steps.decide.outputs.previous_tag }}
+        run: |
+          args=(-f "tag_name=live-android-v$VERSION" -f "target_commitish=$GITHUB_SHA")
+          if [ -n "$PREVIOUS" ]; then args+=(-f "previous_tag_name=$PREVIOUS"); fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > generated-notes.md
+          {
+            echo "short<<EOF_SHORT_NOTES"
+            python3 scripts/live_android_release.py notes < generated-notes.md
+            echo "EOF_SHORT_NOTES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Preview (dry run)
+        if: steps.decide.outputs.release == 'true' && inputs.dry_run
+        env:
+          VERSION: ${{ steps.decide.outputs.version }}
+          SHORT_NOTES: ${{ steps.notes.outputs.short }}
+        run: |
+          {
+            echo ""
+            echo "**Ensayo: no se ha publicado nada.** Se publicaría la versión $VERSION con estas notas:"
+            echo ""
+            echo "$SHORT_NOTES"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish
+        if: steps.decide.outputs.release == 'true' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.decide.outputs.version }}
+          SHORT_NOTES: ${{ steps.notes.outputs.short }}
+        run: |
+          gh workflow run live-android.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" \
+            -f "version=$VERSION" -f "notes=$SHORT_NOTES" -f "release_body=$(cat generated-notes.md)"
+          sleep 10
+          url="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow live-android.yml --event workflow_dispatch --limit 1 --json url --jq '.[0].url')"
+          {
+            echo ""
+            echo "Compilación de la versión $VERSION lanzada: $url"
+            echo "Enlace fijo al APK: https://github.com/$GITHUB_REPOSITORY/releases/download/live-android-latest/basketlab-live.apk"
+            echo ""
+            echo "$SHORT_NOTES"
+          } >> "$GITHUB_STEP_SUMMARY"
