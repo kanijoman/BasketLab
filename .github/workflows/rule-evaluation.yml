@@ -1,0 +1,64 @@
+name: Rule evaluation
+
+# Replays the games of a FEB competition as live from both teams through the alert engine and measures every rule
+# (issue #238): alerts, duplicates, follow-up by the coach, outcome, coach behaviour. The recordings committed in
+# tests/recordings replace the simulated feed of their match. By hand only: it reads the whole competition from Atlas
+# (repository secret ATLAS_READ_URI, ATLAS_WRITE_URI as fallback). The report goes to the run summary and to the
+# `rule-evaluation` artifact (report.md, evaluation.json, alerts.jsonl). See docs/LIVE_RULES_CANDIDATES.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      collection:
+        description: "MongoDB collection of the competition (e.g. FEB_LF_CHALLENGE_2026_2027)"
+        required: true
+        type: string
+      team:
+        description: "Evaluate only this team id (optional; every team still feeds the season)"
+        required: false
+        type: string
+      min_prior_games:
+        description: "Skip sides whose team has fewer earlier games"
+        required: false
+        default: "3"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rule-evaluation
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    name: Evaluate the rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Evaluate
+        env:
+          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
+          COLLECTION: ${{ inputs.collection }}
+          TEAM: ${{ inputs.team }}
+          MIN_PRIOR_GAMES: ${{ inputs.min_prior_games }}
+        run: |
+          args=(--collection "$COLLECTION" --min-prior-games "${MIN_PRIOR_GAMES:-3}" --out rule-evaluation)
+          if [ -n "$TEAM" ]; then args+=(--team "$TEAM"); fi
+          for recording in tests/recordings/*.rec.json.gz; do args+=(--recording "$recording"); done
+          python -m src.live_prep.rule_evaluation "${args[@]}"
+      - name: Upload the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: rule-evaluation
+          path: rule-evaluation/
+          if-no-files-found: ignore
+          retention-days: 30

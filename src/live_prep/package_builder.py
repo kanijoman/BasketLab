@@ -7,9 +7,10 @@ game documents; ``db_source`` reads them from MongoDB.
 
 from __future__ import annotations
 
+import copy
 import math
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from src.live_core.engine import LiveEngine
 from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, possessions
@@ -103,21 +104,32 @@ class _PlayerAcc:
         }
 
 
-class _Season:
-    """Accumulates what the package needs while stored games are replayed through LiveEngine."""
+class SeasonAccumulator:
+    """What a package needs, accumulated while stored games are replayed through LiveEngine.
 
-    def __init__(self, team_id: str, rival_id: str) -> None:
-        self.team_id, self.rival_id = team_id, rival_id
-        self.players: Dict[str, Dict[str, _PlayerAcc]] = {team_id: {}, rival_id: {}}
+    It tracks EVERY team (or only those in ``track``, to save memory), so one pass over the season gives the
+    package of any pair of teams as it would have been after the games added so far (``to_package``). The rule
+    evaluator relies on that; ``build_package`` is the one-pair wrapper.
+    """
+
+    def __init__(self, track: Optional[Iterable[str]] = None) -> None:
+        self._track = {str(t) for t in track} if track is not None else None
+        self.players: Dict[str, Dict[str, _PlayerAcc]] = {}
         self.league_players: Dict[str, _PlayerAcc] = {}
         self.names: Dict[str, str] = {}
-        self.diffs: Dict[str, List[Dict[str, float]]] = {team_id: [], rival_id: []}
+        self.diffs: Dict[str, List[Dict[str, float]]] = {}
         self.league_diffs: List[Dict[str, float]] = []
-        self.paces: List[float] = []  # every game of either team (kept: ``pace_per_40``)
-        self.paces_by_team: Dict[str, List[float]] = {team_id: [], rival_id: []}
-        self.played = {team_id: 0, rival_id: 0}
-        self.zones: Dict[str, Dict[str, Dict[str, int]]] = {"league": {}, "rival": {}}
+        self.pace_log: List[Tuple[Tuple[str, str], float]] = []  # (the two team ids, game pace) in game order
+        self._played: Dict[str, int] = {}
+        self.zone_league: Dict[str, Dict[str, int]] = {}
+        self.zone_team: Dict[str, Dict[str, Dict[str, int]]] = {}
         self.total_games = 0
+
+    def tracked(self, team_id: str) -> bool:
+        return self._track is None or team_id in self._track
+
+    def played(self, team_id: str) -> int:
+        return self._played.get(team_id, 0)
 
     def add_game(self, game: Dict[str, Any]) -> None:
         header = [(str(t["id"]), (t.get("name") or str(t["id"])).strip()) for t in game["HEADER"]["TEAM"]]
@@ -132,24 +144,22 @@ class _Season:
         for pid, p in snap["players"].items():
             self.league_players.setdefault(pid, _PlayerAcc(p["name"], str(p["team_id"]))).add(p)
         for tid in ids:
-            self._add_zones(self.zones["league"], snap["zones"].get(tid, {}))
-        for tid in (self.team_id, self.rival_id):
-            if tid in ids:
+            self._add_zones(self.zone_league, snap["zones"].get(tid, {}))
+        if snap["elapsed"] and any(self.tracked(tid) for tid in ids):
+            n = (possessions(stats[ids[0]]) + possessions(stats[ids[1]])) / 2
+            self.pace_log.append(((ids[0], ids[1]), n / snap["elapsed"] * GAME_SECONDS))
+        for tid in ids:
+            if self.tracked(tid):
                 self._add_team(tid, ids[1] if ids[0] == tid else ids[0], snap, stats)
 
     def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
-        self.played[tid] += 1
-        self.diffs[tid].append(differentials(stats[tid], stats[other]))
-        if snap["elapsed"]:
-            n = (possessions(stats[tid]) + possessions(stats[other])) / 2
-            pace = n / snap["elapsed"] * GAME_SECONDS
-            self.paces.append(pace)
-            self.paces_by_team[tid].append(pace)
+        self._played[tid] = self.played(tid) + 1
+        self.diffs.setdefault(tid, []).append(differentials(stats[tid], stats[other]))
+        table = self.players.setdefault(tid, {})
         for pid, p in snap["players"].items():
             if p["team_id"] == tid:
-                self.players[tid].setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
-        if tid == self.rival_id:
-            self._add_zones(self.zones["rival"], snap["zones"].get(tid, {}))
+                table.setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
+        self._add_zones(self.zone_team.setdefault(tid, {}), snap["zones"].get(tid, {}))
 
     @staticmethod
     def _add_zones(target: Dict[str, Dict[str, int]], cells: Dict[str, Dict[str, int]]) -> None:
@@ -158,46 +168,55 @@ class _Season:
             for key in total:
                 total[key] += cell[key]
 
-    def _team_baselines(self) -> Dict[str, Any]:
+    def _paces(self, *team_ids: str) -> List[float]:
+        """Pace of each game of the given teams, in game order (a game of two of them counts once per team)."""
+        return [pace for ids, pace in self.pace_log for tid in team_ids if tid in ids]
+
+    def _team_baselines(self, team_id: str, rival_id: str) -> Dict[str, Any]:
         out: Dict[str, Any] = {
-            "four_factors_prior": matchup_prior(self.diffs[self.team_id], self.diffs[self.rival_id]),
-            "sample_games": {"own": self.played[self.team_id], "rival": self.played[self.rival_id],
-                             "league": self.total_games},
+            "four_factors_prior": matchup_prior(self.diffs.get(team_id, []), self.diffs.get(rival_id, [])),
+            "sample_games": {"own": self.played(team_id), "rival": self.played(rival_id), "league": self.total_games},
         }
         spread = league_spread(self.league_diffs)
         if spread:
             out["four_factors_sd"] = spread
-        if self.paces:
-            out["pace_per_40"] = round(sum(self.paces) / len(self.paces), 1)
-        for key, tid in (("pace_own_per_40", self.team_id), ("pace_rival_per_40", self.rival_id)):
-            paces = self.paces_by_team[tid]
-            if paces:
-                out[key] = round(sum(paces) / len(paces), 1)
+        paces = self._paces(team_id, rival_id)
+        if paces:
+            out["pace_per_40"] = round(sum(paces) / len(paces), 1)
+        for key, tid in (("pace_own_per_40", team_id), ("pace_rival_per_40", rival_id)):
+            own = self._paces(tid)
+            if own:
+                out[key] = round(sum(own) / len(own), 1)
         return out
 
     def _league_players_with_minutes(self) -> List[_PlayerAcc]:
         return [a for a in self.league_players.values() if sum(a.minutes) >= MIN_LEAGUE_SECONDS]
 
-    def to_package(self, collection: str, season: str, competition_meta: Optional[Dict[str, Any]],
-                   created_at: Optional[str]) -> PreparationPackage:
+    def to_package(self, collection: str, season: str, team_id: str, rival_id: str,
+                   competition_meta: Optional[Dict[str, Any]], created_at: Optional[str]) -> PreparationPackage:
+        """The package of ``team_id`` against ``rival_id`` with the games added so far (nothing is modified)."""
+        team_id, rival_id = str(team_id), str(rival_id)
+        if not (self.tracked(team_id) and self.tracked(rival_id)):
+            raise ValueError("Both teams must be tracked by the accumulator")
         qualified = self._league_players_with_minutes()
         league_rates = league_distribution([raw_rates(a.stats, sum(a.minutes)) for a in qualified])
         impact_means = impact_league([impact_rates(a.stats, sum(a.minutes)) for a in qualified])
 
-        baselines = self._team_baselines()
+        baselines = self._team_baselines(team_id, rival_id)
         baselines["league_rates"] = {m: {k: round(v, 4) for k, v in d.items()} for m, d in league_rates.items()}
         baselines["impact_league"] = {m: round(v, 3) for m, v in impact_means.items()}
 
         def table(tid: str) -> Dict[str, Dict[str, Any]]:
             return {pid: acc.baseline(league_rates, impact_means)
-                    for pid, acc in self.players[tid].items() if acc.minutes}
+                    for pid, acc in self.players.get(tid, {}).items() if acc.minutes}
 
         return PreparationPackage(
             collection=collection, season=season,
-            team={"id": self.team_id, "name": self.names.get(self.team_id, self.team_id)},
-            rival={"id": self.rival_id, "name": self.names.get(self.rival_id, self.rival_id)},
-            tables={"players": table(self.team_id), "rival_players": table(self.rival_id),
-                    "lineups": [], "roles": [], "zones": self.zones},
+            team={"id": team_id, "name": self.names.get(team_id, team_id)},
+            rival={"id": rival_id, "name": self.names.get(rival_id, rival_id)},
+            tables={"players": table(team_id), "rival_players": table(rival_id),
+                    "lineups": [], "roles": [],
+                    "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {})})},
             created_at=created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             competition_meta=competition_meta or {},
             baselines=baselines,
@@ -213,7 +232,7 @@ def build_package(
     competition_meta: Optional[Dict[str, Any]] = None,
     created_at: Optional[str] = None,
 ) -> PreparationPackage:
-    acc = _Season(str(team_id), str(rival_id))
+    acc = SeasonAccumulator(track=(str(team_id), str(rival_id)))
     for game in games:
         acc.add_game(game)
-    return acc.to_package(collection, season, competition_meta, created_at)
+    return acc.to_package(collection, season, team_id, rival_id, competition_meta, created_at)

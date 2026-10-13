@@ -156,3 +156,30 @@ class TestRecorderWorkflowBudget:
         assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]
         assert "completed" in triggers["workflow_run"]["types"]
         assert "schedule" in triggers and "workflow_dispatch" in triggers
+
+
+class TestRuleEvaluation:
+    """The rule evaluator workflow (issue #238) runs by hand, reads Atlas read-only and always uploads its report."""
+
+    def _data(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "rule-evaluation.yml").read_text(encoding="utf-8"))
+
+    def test_it_runs_only_by_hand_and_asks_for_the_collection(self):
+        on = self._data()[True]
+        assert list(on) == ["workflow_dispatch"]
+        inputs = on["workflow_dispatch"]["inputs"]
+        assert inputs["collection"]["required"] is True and {"team", "min_prior_games"} <= set(inputs)
+
+    def test_inputs_reach_the_command_through_the_environment_not_the_script_text(self):
+        step = next(s for s in _steps("rule-evaluation.yml") if s.get("name") == "Evaluate")
+        assert "${{" not in step["run"], "an input interpolated into the script would allow command injection"
+        assert step["env"]["COLLECTION"] == "${{ inputs.collection }}"
+        assert "ATLAS_READ_URI" in step["env"]["MONGODB_CONNECTION_STRING"]   # read-only user first
+
+    def test_the_committed_recordings_replace_the_simulated_feed_of_their_match(self):
+        step = next(s for s in _steps("rule-evaluation.yml") if s.get("name") == "Evaluate")
+        assert "tests/recordings/*.rec.json.gz" in step["run"] and "--recording" in step["run"]
+
+    def test_the_report_is_uploaded_even_if_the_evaluation_fails(self):
+        upload = next(s for s in _steps("rule-evaluation.yml") if "upload-artifact" in str(s.get("uses", "")))
+        assert upload["if"] == "${{ !cancelled() }}" and upload["with"]["path"] == "rule-evaluation/"
