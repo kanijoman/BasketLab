@@ -93,7 +93,9 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .alert-category[data-category='gestion'] { --cat: var(--cat-ritmo); }
 .alert-category[data-category='alineacion'] { --cat: var(--cat-alineacion); }
 .alert-message { margin: 6px 0 4px; }
-.proposals { margin: 4px 0 0; padding-left: 18px; color: var(--text); font-weight: 600; }
+.proposals { margin: 4px 0 0; padding-left: 0; list-style: none; color: var(--text); font-weight: 600; }
+.proposals li { display: flex; align-items: center; gap: 6px; }
+.proposal-icon { flex: none; opacity: 0.8; }
 
 .panel { margin-top: 24px; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .package-import { display: grid; gap: 10px; margin-top: 12px; }
