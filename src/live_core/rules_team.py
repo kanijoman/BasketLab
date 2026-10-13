@@ -9,18 +9,27 @@ from .rules_fouls import FOUL_OUT, evaluate_player_fouls, warn_threshold
 
 
 def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    """Own players close to fouling out."""
+    period, out = snap["period"], []
+    for pid, p in snap["players"].items():
+        if p["team_id"] != ctx.own_team_id:
+            continue
+        alert = evaluate_player_fouls(pid, p["name"], p["pf"], period)
+        if alert:
+            out.append(Advice(
+                key=f"foul:{pid}:{p['pf']}", id="foul_trouble", severity=alert.severity,
+                category="faltas", message=alert.message,
+                evidence={"player_id": pid, "team_id": p["team_id"], "pf": p["pf"], "period": period},
+            ))
+    return out
+
+
+def rival_foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    """Rival players in foul trouble: an opportunity to attack them."""
     period, out = snap["period"], []
     for pid, p in snap["players"].items():
         pf = p["pf"]
-        if p["team_id"] == ctx.own_team_id:
-            alert = evaluate_player_fouls(pid, p["name"], pf, period)
-            if alert:
-                out.append(Advice(
-                    key=f"foul:{pid}:{pf}", id="foul_trouble", severity=alert.severity,
-                    category="faltas", message=alert.message,
-                    evidence={"player_id": pid, "team_id": p["team_id"], "pf": pf, "period": period},
-                ))
-        elif p["team_id"] == ctx.rival_team_id and warn_threshold(period) <= pf < FOUL_OUT:
+        if p["team_id"] == ctx.rival_team_id and warn_threshold(period) <= pf < FOUL_OUT:
             out.append(Advice(
                 key=f"rfoul:{pid}:{pf}", id="rival_foul_trouble", severity="info", category="faltas",
                 message=f"Rival {p['name']} con {pf} faltas personales: atacarle y forzar contacto.",

@@ -10,7 +10,7 @@ already shown (#234).
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
@@ -20,11 +20,15 @@ from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
-from .rules_team import foul_rule, run_rule, team_fouls_rule, turnover_rule
+from .rules_team import foul_rule, rival_foul_rule, run_rule, team_fouls_rule, turnover_rule
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
-RULES: List[Rule] = [foul_rule, team_fouls_rule, run_rule, turnover_rule, fatigue_rule, four_factors_rule,
-                     rival_player_rule, rival_zone_rule]
+# (id, rule) in evaluation order; the ids are config.RULE_IDS and can be switched off with RuleConfig.rules_off.
+RULES: List[Tuple[str, Rule]] = [
+    ("foul_trouble", foul_rule), ("rival_foul_trouble", rival_foul_rule), ("team_fouls", team_fouls_rule),
+    ("rival_run", run_rule), ("turnover_streak", turnover_rule), ("fatigue_high", fatigue_rule),
+    ("four_factors_lever", four_factors_rule), ("rival_hot_player", rival_player_rule), ("rival_zone", rival_zone_rule),
+]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
 # steals -> ball security. Scoring/assists/threes/FTA have no matchup data: tactical text only.
@@ -85,7 +89,9 @@ class AdviceEngine:
         if self._ctx is None:
             return []
         now, emitted = snapshot["elapsed"], []
-        for rule in RULES:
+        for rule_id, rule in RULES:
+            if not self._ctx.config.enabled(rule_id):
+                continue
             for advice in rule(snapshot, self._ctx):
                 last = self._last.get(advice.key)
                 if last is None or (advice.rearm_s is not None and now - last >= advice.rearm_s):

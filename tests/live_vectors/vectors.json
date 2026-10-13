@@ -2565,6 +2565,18 @@
     []
    ],
    [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+   ],
+   [
     [
      {
       "category": "rotacion",
@@ -16338,6 +16350,221 @@
   },
   {
    "args": {
+    "own": "T1",
+    "rival": "T2",
+    "snapshots": [
+     {
+      "elapsed": 300,
+      "log": [],
+      "period": 1,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 1,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 300,
+      "log": [],
+      "period": 1,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 2,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 300,
+      "log": [],
+      "period": 1,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 2,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 600,
+      "log": [],
+      "period": 2,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 2,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 600,
+      "log": [],
+      "period": 2,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 3,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 600,
+      "log": [],
+      "period": 2,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 3,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 900,
+      "log": [],
+      "period": 3,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 3,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 900,
+      "log": [],
+      "period": 3,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 4,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 1200,
+      "log": [],
+      "period": 4,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 4,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     },
+     {
+      "elapsed": 1200,
+      "log": [],
+      "period": 4,
+      "players": {
+       "x": {
+        "minutes": 0,
+        "name": "Ana",
+        "on_court": true,
+        "pf": 5,
+        "pf_by_period": {},
+        "pts": 0,
+        "stint": 0,
+        "team_id": "T1"
+       }
+      },
+      "remaining": 0,
+      "score": {},
+      "teams": {}
+     }
+    ]
+   },
+   "fn": "advice.sequence"
+  },
+  {
+   "args": {
+    "config": {
+     "rules_off": [
+      "foul_trouble",
+      "does_not_exist"
+     ]
+    },
     "own": "T1",
     "rival": "T2",
     "snapshots": [
