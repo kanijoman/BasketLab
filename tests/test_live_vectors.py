@@ -43,7 +43,7 @@ def test_the_stored_expectations_match_the_current_reference(suite, game):
 def test_the_vector_file_covers_every_area(suite):
     fns = {case["fn"] for case in suite["unit"]}
     for prefix in ("clock.", "events.", "fouls.", "fatigue.", "four_factors.", "profiles.", "zones.",
-                   "recommender.", "advice.", "windows."):
+                   "recommender.", "advice.", "windows.", "timeouts.", "context."):
         assert any(f.startswith(prefix) for f in fns), f"no vectors for {prefix}"
     assert len(suite["engine"]["checkpoints"]) >= 8
 

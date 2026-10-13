@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
 from live_helpers import ON_COURT, OWN, RIVAL, TABLE, player, snap  # noqa: E402
+from context_cases import context_cases  # noqa: E402
 from src.live_core.profiles import DEFAULT_LEAGUE  # noqa: E402
 from src.live_core.vectors import run_suite, unwrap_extended_json  # noqa: E402
 from src.live_prep.package_builder import build_package  # noqa: E402
@@ -132,6 +133,7 @@ def unit_cases():
     # advice sequences (dedupe, re-arm, proposals, rival scouting)
     cases += advice_sequences()
     cases += windows_cases()
+    cases += context_cases(case)
     return cases
 
 

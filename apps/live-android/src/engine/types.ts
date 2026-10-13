@@ -85,8 +85,18 @@ export interface PaceAnalysis {
   sample_games: { own: number | null; rival: number | null }
 }
 
+/** Phase of the match and the timeouts each team has left (FIBA budget), from src/live_core/game_context.py + timeouts.py. */
+export interface GameContext {
+  phase: 'normal' | 'close_late' | 'decided'
+  /** Own score minus rival score. */
+  margin: number
+  /** Seconds left in the current period. */
+  remaining_s: number
+  timeouts: { own: number; rival: number | null }
+}
+
 export interface EngineOutput {
   snapshot: Snapshot
   alerts: Alert[]
-  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis }
+  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext }
 }

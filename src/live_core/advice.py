@@ -15,12 +15,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
+from .game_context import adjust_for_phase, game_phase
 from .pace import PaceModel
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, rival_foul_rule, run_rule, team_fouls_rule, turnover_rule
+from .timeouts import timeouts_left
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
 # (id, rule) in evaluation order; the ids are config.RULE_IDS and can be switched off with RuleConfig.rules_off.
@@ -83,21 +85,38 @@ class AdviceEngine:
         pace = self._pace.evaluate(snapshot) if self._pace else None
         if pace:
             analysis["pace"] = pace
+        if self._ctx is not None:
+            own, rival = self._ctx.own_team_id, self._ctx.rival_team_id
+            analysis["context"] = {**game_phase(snapshot, own, rival, self._ctx.config), "timeouts": {
+                "own": timeouts_left(snapshot, own), "rival": timeouts_left(snapshot, rival) if rival else None}}
         return analysis
 
     def evaluate(self, snapshot: Dict[str, Any]) -> List[Advice]:
         if self._ctx is None:
             return []
-        now, emitted = snapshot["elapsed"], []
+        cfg, now, emitted = self._ctx.config, snapshot["elapsed"], []
+        context = (game_phase(snapshot, self._ctx.own_team_id, self._ctx.rival_team_id, cfg)
+                   if cfg.enabled("game_context") else None)
         for rule_id, rule in RULES:
-            if not self._ctx.config.enabled(rule_id):
+            if not cfg.enabled(rule_id):
                 continue
-            for advice in rule(snapshot, self._ctx):
-                last = self._last.get(advice.key)
-                if last is None or (advice.rearm_s is not None and now - last >= advice.rearm_s):
+            for raw in rule(snapshot, self._ctx):
+                advice = adjust_for_phase(raw, context) if context else raw
+                if self._is_new(advice, raw.key, now):
                     self._last[advice.key] = now
                     emitted.append(self._with_proposal(self._numbered(advice), snapshot))
         return sorted(emitted, key=lambda a: SEVERITY_RANK[a.severity])  # stable: critical first
+
+    def _is_new(self, advice: Advice, base_key: str, now: int) -> bool:
+        """Never said, or a re-armed alert whose interval has passed.
+
+        An alert the phase lowered (``key~phase``) counts what was already said under its plain key, so a change of phase
+        does not repeat it; the other way round it does (the plain key was never said), as the game reopened.
+        """
+        last = self._last.get(advice.key)
+        if last is None and advice.key != base_key:
+            last = self._last.get(base_key)
+        return last is None or (advice.rearm_s is not None and now - last >= advice.rearm_s)
 
     def _numbered(self, advice: Advice) -> Advice:
         """The first emission keeps its key; the n-th repeat of a re-armed alert becomes ``key#n``."""
