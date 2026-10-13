@@ -23,7 +23,11 @@ export function useLiveFeed({ engine, http = defaultHttp, timing, onOutput, rest
   const [state, setState] = useState<FeedState>({ kind: 'idle' })
   const feed = useRef<LiveFeed | null>(null)
 
-  const disconnect = useCallback(() => feed.current?.stop(), [])
+  /** The feed goes silent when stopped, so "disconnected" is reported here. */
+  const disconnect = useCallback(() => {
+    feed.current?.stop()
+    setState({ kind: 'stopped' })
+  }, [])
 
   const connect = useCallback(async (code: string) => {
     feed.current?.stop()

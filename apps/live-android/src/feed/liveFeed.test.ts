@@ -123,4 +123,29 @@ describe('LiveFeed', () => {
     await feed.start()
     expect(n).toBe(2)
   })
+
+  it('after stop() nothing more is reported — no state, no document — not even from a round that was in flight (CI flake)', async () => {
+    // CI of #218 failed with "window is not defined": the loop of a finished test woke up from its sleep and
+    // called a React setState after the test environment was gone.
+    const states: FeedState[] = []
+    const documents: string[] = []
+    let release!: () => void
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const client = {
+      fetch: vi.fn(async (_code: string, endpoint: string) => {
+        if (endpoint === 'boxscore') await gate  // the first round is still waiting for FEB when stop() arrives
+        return endpoint === 'boxscore' ? box('2') : endpoint === 'keyfacts' ? kf(1) : sc
+      }),
+    } as unknown as FebClient
+    const feed = new LiveFeed({
+      client, code: '777', onDocument: json => { documents.push(json) }, onState: s => states.push(s),
+      sleep: async () => undefined, now: () => 0,
+    })
+    const running = feed.start()
+    feed.stop()
+    release()
+    await running
+    expect(documents).toEqual([])
+    expect(states.map(s => s.kind)).toEqual(['connecting'])  // nothing after the stop, not even "stopped"
+  })
 })
