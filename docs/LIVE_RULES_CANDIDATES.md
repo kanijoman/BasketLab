@@ -33,5 +33,5 @@ Anotar los resultados en un nuevo fichero `docs/evaluaciones/<fecha>_<partido>.m
 
 ## Datos que faltan para decidir mejor
 - Más partidos grabados de León: depende de que el planner cubra la ventana previa (#205).
-- Saber si el staff **vio y usó** las alertas (botón «seguida / descartada» en la app), para pasar de coincidencia a obediencia.
+- Saber si el staff **vio y usó** las alertas, para pasar de coincidencia a obediencia: la app ya tiene los botones «seguida / descartada / ya hecho» y exporta el resultado (#235, [LIVE.md](LIVE.md)); falta usarlo en partidos reales y que el evaluador lo lea (#238).
 - Paquete con más partidos previos (líneas base de jugador menos ruidosas).

@@ -1,5 +1,6 @@
 import { Activity, ChartColumn, Hand, Repeat, Swords, type LucideIcon } from 'lucide-react'
 import type { Alert, Proposal } from '../engine/types'
+import type { Verdict } from '../feedback/store'
 
 /** Spanish label of each category the engine emits (icon below, colour in styles.css). */
 export const CATEGORY_LABEL: Record<string, string> = {
@@ -27,6 +28,26 @@ export function clockLabel(period: number, remaining: number): string {
   return `${period > 4 ? `PR${period - 4}` : `Q${period}`} ${mm}:${ss}`
 }
 
+const VERDICTS: { value: Verdict; label: string }[] = [
+  { value: 'seguida', label: 'Seguida' },
+  { value: 'descartada', label: 'Descartada' },
+  { value: 'ya_hecho', label: 'Ya hecho' },
+]
+
+/** What the staff did with the alert (issue #235): pressing the chosen answer again takes it back. */
+function VerdictButtons({ verdict, onVerdict }: { verdict: Verdict | null; onVerdict: (v: Verdict | null) => void }) {
+  return (
+    <div className="verdicts" role="group" aria-label="¿Qué se hizo con esta alerta?">
+      {VERDICTS.map(v => (
+        <button key={v.value} type="button" className="secondary verdict" aria-pressed={verdict === v.value}
+          onClick={() => onVerdict(verdict === v.value ? null : v.value)}>
+          {v.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function CategoryTag({ category }: { category: string }) {
   const Icon = CATEGORY_ICON[category]
   return (
@@ -37,7 +58,15 @@ function CategoryTag({ category }: { category: string }) {
   )
 }
 
-export default function AlertCard({ alert, at }: { alert: Alert; at: string }) {
+interface CardProps {
+  alert: Alert
+  at: string
+  /** The answer of the staff; the buttons only show when somebody listens to them. */
+  verdict?: Verdict | null
+  onVerdict?: (verdict: Verdict | null) => void
+}
+
+export default function AlertCard({ alert, at, verdict = null, onVerdict }: CardProps) {
   return (
     <li className={`alert alert-${alert.severity}`}>
       <div className="alert-head">
@@ -53,6 +82,7 @@ export default function AlertCard({ alert, at }: { alert: Alert; at: string }) {
           ))}
         </ul>
       )}
+      {onVerdict && <VerdictButtons verdict={verdict} onVerdict={onVerdict} />}
     </li>
   )
 }

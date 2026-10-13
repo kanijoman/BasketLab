@@ -115,3 +115,12 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .pace-same .pace-delta { color: var(--muted); }
 
 .status.warn { color: var(--pace-fast); }
+
+/* Feedback of the staff on each alert (issue #235) */
+.verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.verdict { flex: 1 1 0; min-width: 88px; padding: 0 10px; font-size: 0.85rem; }
+.verdict[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.feedback-panel { display: grid; gap: 8px; }
+.feedback-panel h2 { margin: 0; }
+.feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.feedback-actions button { flex: 1 1 0; min-width: 96px; }

@@ -1,5 +1,6 @@
 import AlertCard, { CATEGORY_LABEL } from './AlertCard'
 import type { Alert } from '../engine/types'
+import type { Verdict } from '../feedback/store'
 
 export interface AlertEntry { alert: Alert; at: string }
 
@@ -13,9 +14,19 @@ export function splitBySeverity(entries: AlertEntry[]) {
   return { critical: by('critical'), warning: by('warning'), info: by('info') }
 }
 
-export default function AlertList({ entries }: { entries: AlertEntry[] }) {
+interface ListProps {
+  entries: AlertEntry[]
+  /** Answer of the staff per alert key, and the way to give one (issue #235). */
+  verdicts?: Record<string, Verdict | null>
+  onVerdict?: (key: string, verdict: Verdict | null) => void
+}
+
+export default function AlertList({ entries, verdicts = {}, onVerdict }: ListProps) {
   const { critical, warning, info } = splitBySeverity(entries)
-  const card = (e: AlertEntry) => <AlertCard key={e.alert.key} alert={e.alert} at={e.at} />
+  const card = (e: AlertEntry) => (
+    <AlertCard key={e.alert.key} alert={e.alert} at={e.at} verdict={verdicts[e.alert.key] ?? null}
+      onVerdict={onVerdict && (v => onVerdict(e.alert.key, v))} />
+  )
   return (
     <div className="alert-list">
       <p className="alert-counts" aria-label="Resumen de alertas">
