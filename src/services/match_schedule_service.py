@@ -87,9 +87,29 @@ class MatchScheduleService:
         now = self._now()
         entries = [self._entry(m, team_id, "scheduled", now) for m in mine
                    if m.kind == "scheduled" and m.start and datetime.fromisoformat(m.start) >= now - STALE_AFTER]
-        entries = self._live_entries(mine, team_id, collection, now) + entries
+        entries = self._live_entries(mine, team_id, collection, now) + self._resolve_started(entries)
         entries.sort(key=lambda e: (e["status"] != "live", e["start"] or ""))
         return self._result(entries[:limit], url, None)
+
+    def _resolve_started(self, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """A calendar row that already kicked off still says "scheduled": FEB's page shows no score while the match is
+        on and for a long time after it (seen in the first real recording, issue #118). Ask FEB's live API: a match
+        in progress is ``live``, a finished one is dropped, a delayed one (404) or a failed lookup stays ``scheduled``."""
+        resolved, checks = [], 0
+        for entry in entries:
+            started = entry["starts_in_min"] is not None and entry["starts_in_min"] <= 0
+            if not started or checks >= MAX_STATUS_CHECKS:
+                resolved.append(entry)
+                continue
+            checks += 1
+            try:
+                status = self._status(entry["code"])
+            except Exception:  # noqa: BLE001 - one failing lookup must not hide the match
+                status = "scheduled"
+            if status == "finished":
+                continue
+            resolved.append({**entry, "status": "live"} if status == "live" else entry)
+        return resolved
 
     def _live_entries(self, mine: List[CalendarMatch], team_id: str, collection: str, now: datetime) -> List[Dict[str, Any]]:
         known = self._known_codes(collection)
