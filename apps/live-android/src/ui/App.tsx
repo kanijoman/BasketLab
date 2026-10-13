@@ -10,11 +10,12 @@ import {
   loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch,
   type DemoData, type DemoMatch, type RealDemoData,
 } from '../engine/demo'
-import type { Alert, EngineOutput, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
+import type { EngineOutput, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
 import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
-import AlertCard, { clockLabel } from './AlertCard'
+import { clockLabel } from './AlertCard'
+import AlertList, { type AlertEntry } from './AlertList'
 import DemoControls, { SAMPLE, type DemoSource, type SourceOption } from './DemoControls'
 import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
@@ -41,7 +42,7 @@ interface Props {
 }
 
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
-interface Entry { alert: Alert; at: string }
+type Entry = AlertEntry
 
 export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
@@ -255,7 +256,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
         <h2>Alertas</h2>
         {entries.length === 0
           ? <p className="detail">{pkg ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
-          : <ul className="alerts">{entries.map(e => <AlertCard key={e.alert.key} alert={e.alert} at={e.at} />)}</ul>}
+          : <AlertList entries={entries} />}
       </section>
 
       {panel}

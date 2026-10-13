@@ -41,7 +41,7 @@ def test_defaults_cover_every_zone():
 
 def test_hot_corner_raises_an_efficiency_alert():
     [a] = zone_alerts(eng().evaluate(zsnap({"left_corner_three": cell(6, 4, 3)})))
-    assert a.severity == "warning" and a.category == "rival" and a.evidence["kind"] == "eficiencia"
+    assert a.severity == "info" and a.category == "rival" and a.evidence["kind"] == "eficiencia"
     assert a.evidence["family"] == "esquina" and (a.evidence["attempts"], a.evidence["makes"]) == (6, 4)
     assert "esquina" in a.message.lower() and "4/6" in a.message
 

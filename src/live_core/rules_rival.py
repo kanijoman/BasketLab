@@ -117,7 +117,7 @@ def rival_zone_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if attempts >= cfg.zone_min_attempts and makes >= cfg.zone_min_makes \
                 and pps - expected_pps >= cfg.zone_pps_excess:
             out.append(Advice(
-                key=f"zone:{family}:eficiencia", id="rival_zone", severity="warning", category="rival",
+                key=f"zone:{family}:eficiencia", id="rival_zone", severity="info", category="rival",
                 message=(f"Rival castiga desde {label}: {makes}/{attempts} ({pps:.2f} pts/tiro, "
                          f"esperado {expected_pps:.2f}). {response}"),
                 evidence={**base, "kind": "eficiencia"}))

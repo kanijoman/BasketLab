@@ -66,7 +66,8 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if index < ctx.config.fatigue_alert_index:
             continue
         out.append(Advice(
-            key=f"fatigue:{pid}", id="fatigue_high", severity="warning", category="rotacion",
+            key=f"fatigue:{pid}", id="fatigue_high",
+            severity="warning" if index >= ctx.config.fatigue_warning_index else "info", category="rotacion",
             message=(f"{p['name']}: riesgo de fatiga alto (índice {index:.0f}/100), "
                      f"{_clock(p['stint'])} seguidos en pista y {p['minutes'] // 60} min jugados. "
                      "Valorar descanso."),

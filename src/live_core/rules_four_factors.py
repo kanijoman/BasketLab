@@ -33,7 +33,7 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     title, metric, action = _LABELS[lever]
     return [Advice(
-        key=f"lever:{lever}", id="four_factors_lever", severity="warning", category="four_factors",
+        key=f"lever:{lever}", id="four_factors_lever", severity="info", category="four_factors",
         message=f"{title}: {metric} {_own_vs_rival(lever, result)} ({pts100:+.1f} pts/100 posesiones). {action}",
         evidence={"lever": lever, "pts100": pts100, "possessions": result["possessions"],
                   "factors_own": result["factors_own"], "factors_rival": result["factors_rival"],

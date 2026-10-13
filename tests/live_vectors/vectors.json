@@ -101,7 +101,7 @@
       "lever:ftr"
      ],
      "digests": {
-      "alerts": "9b027c476e937ac2b2127e70480dc831933585f9257e0f22761d405d5f9b102b",
+      "alerts": "1b582e8b1f10426d65c0371a3cad86d5130cb37f3dc05044bd3af13fb3ec3d6e",
       "analysis": "a013697a280d0bc8bf304c5c2be03f02f294d9257819db9aa8b980f5cc4d4507",
       "snapshot": "f0810a07a6e874012f7d6fa95d51827658226a694a2b96cd5f80892ab9810da9"
      },
@@ -2673,7 +2673,7 @@
       "message": "Rival castiga desde las esquinas: 4/6 (2.00 pts/tiro, esperado 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
       "proposal": [],
       "rearm_s": null,
-      "severity": "warning"
+      "severity": "info"
      }
     ],
     [
@@ -2823,7 +2823,7 @@
        }
       ],
       "rearm_s": 600,
-      "severity": "warning"
+      "severity": "info"
      }
     ],
     [],
@@ -2949,7 +2949,7 @@
        }
       ],
       "rearm_s": 600,
-      "severity": "warning"
+      "severity": "info"
      }
     ]
    ]
