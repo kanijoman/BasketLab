@@ -87,6 +87,38 @@ describe('LivePrepPage', () => {
     expect(screen.getByText(/guarda la contraseña/i)).toBeTruthy()
   })
 
+  it('keeps a download button after finishing, so a blocked automatic download is not lost (regression)', async () => {
+    renderPage()
+    await fill()
+    fireEvent.click(screen.getByRole('button', { name: /generar paquete/i }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
+    const again = await screen.findByRole('button', { name: /descargar.*paquete/i })
+    const urlApi = URL as unknown as { createObjectURL: ReturnType<typeof vi.fn>; revokeObjectURL: ReturnType<typeof vi.fn> }
+    const before = urlApi.createObjectURL.mock.calls.length
+    fireEvent.click(again)
+    expect(urlApi.createObjectURL.mock.calls.length).toBe(before + 1)
+    expect(pkg.downloadLivePackage).toHaveBeenCalledTimes(1) // the file is kept, not asked for again
+  })
+
+  it('does not release the file URL right after clicking the download link (it cancels downloads in some browsers)', async () => {
+    renderPage()
+    await fill()
+    fireEvent.click(screen.getByRole('button', { name: /generar paquete/i }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500) })
+    await screen.findByText(/paquete descargado/i)
+    const urlApi = URL as unknown as { revokeObjectURL: ReturnType<typeof vi.fn> }
+    expect(urlApi.revokeObjectURL).not.toHaveBeenCalled()
+  })
+
+  it('shows a progress bar while the package is being built', async () => {
+    renderPage()
+    await fill()
+    fireEvent.click(screen.getByRole('button', { name: /generar paquete/i }))
+    const bar = await screen.findByRole('progressbar')
+    expect(bar.getAttribute('aria-valuenow')).toBe('2')
+    expect(bar.getAttribute('aria-valuemax')).toBe('5')
+  })
+
   it('reports a generation failure', async () => {
     pkg.getLivePackageProgress.mockReset().mockResolvedValue({ status: 'error', current: 1, total: 5, team: '', rival: '', error: 'db down' })
     renderPage()

@@ -22,13 +22,14 @@ function formatStart(start: string | null): string {
   const d = new Date(start)
   return d.toLocaleString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
-type Phase = { kind: 'idle' } | { kind: 'running'; progress: LivePackageProgress | null } | { kind: 'done'; file: string } | { kind: 'error'; message: string }
+type Phase = { kind: 'idle' } | { kind: 'running'; progress: LivePackageProgress | null } | { kind: 'done'; file: string; blob: Blob } | { kind: 'error'; message: string }
 
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = Object.assign(document.createElement('a'), { href: url, download: filename })
   a.click()
-  URL.revokeObjectURL(url)
+  // Releasing the URL right after the click cancels the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 export default function LivePrepPage() {
@@ -92,7 +93,7 @@ export default function LivePrepPage() {
         const blob = await downloadLivePackage(jobId)
         const name = `live_${progress.team}_vs_${progress.rival}.bpkg`.replace(/\s+/g, '_')
         saveBlob(blob, name)
-        setPhase({ kind: 'done', file: name })
+        setPhase({ kind: 'done', file: name, blob })
         return
       }
       setPhase({ kind: 'running', progress })
@@ -189,16 +190,30 @@ export default function LivePrepPage() {
             </button>
 
             {phase.kind === 'running' && (
-              <p className="text-sm text-ink-secondary">
-                {phase.progress && phase.progress.total > 0
-                  ? `Procesando… ${phase.progress.current} de ${phase.progress.total} partidos`
-                  : 'Iniciando…'}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-ink-secondary">
+                  {phase.progress && phase.progress.total > 0
+                    ? `Procesando… ${phase.progress.current} de ${phase.progress.total} partidos`
+                    : 'Iniciando…'}
+                </p>
+                {phase.progress && phase.progress.total > 0 && (
+                  <div role="progressbar" aria-label="Progreso del paquete" aria-valuemin={0}
+                    aria-valuenow={phase.progress.current} aria-valuemax={phase.progress.total}
+                    className="h-2 rounded-full bg-surface-border overflow-hidden">
+                    <div className="h-full bg-accent-400 transition-all"
+                      style={{ width: `${Math.round((phase.progress.current / phase.progress.total) * 100)}%` }} />
+                  </div>
+                )}
+              </div>
             )}
             {phase.kind === 'error' && <p className="text-sm text-down">{phase.message}</p>}
             {phase.kind === 'done' && (
               <div className="text-sm text-ink-secondary space-y-1">
                 <p className="text-up">Paquete descargado: {phase.file}</p>
+                <button className="btn-secondary" onClick={() => saveBlob(phase.blob, phase.file)}>
+                  <Download className="w-3.5 h-3.5" />
+                  Descargar paquete de nuevo
+                </button>
                 <p>Impórtalo en la app BasketLab Live con la misma contraseña.
                   <strong className="text-ink-primary"> Guarda la contraseña: no se puede recuperar.</strong></p>
               </div>
