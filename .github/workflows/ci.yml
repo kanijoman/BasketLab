@@ -128,6 +128,12 @@ jobs:
     name: Deploy → Render
     needs: [test-backend, test-frontend, e2e-web]
     runs-on: ubuntu-latest
+    # Render's free plan may take 20-25 min to deploy (issue #269): the check waits up to 40 min.
+    timeout-minutes: 60
+    # A newer push cancels the run of an older commit that is still waiting (it shows grey, not red)
+    concurrency:
+      group: deploy-render
+      cancel-in-progress: true
     # Only deploy on push to main (not PRs, not develop)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -160,6 +166,8 @@ jobs:
       - name: Post-deploy check (api)
         env:
           RENDER_API_URL: ${{ vars.RENDER_API_URL }}
+          # lets the check ask GitHub whether a newer commit that contains this one is already deployed
+          GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/post_deploy_check.py --sha "$GITHUB_SHA"
 
   # ── Deploy to Vercel (frontend) ────────────────────────────────────────────

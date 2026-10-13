@@ -183,3 +183,21 @@ class TestRuleEvaluation:
     def test_the_report_is_uploaded_even_if_the_evaluation_fails(self):
         upload = next(s for s in _steps("rule-evaluation.yml") if "upload-artifact" in str(s.get("uses", "")))
         assert upload["if"] == "${{ !cancelled() }}" and upload["with"]["path"] == "rule-evaluation/"
+
+
+class TestDeployJob:
+    """Issue #269: an older run still waiting for Render must not fail when a newer deploy arrives."""
+
+    def _job(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]["deploy-backend"]
+
+    def test_a_newer_deploy_cancels_the_run_that_is_still_waiting(self):
+        concurrency = self._job()["concurrency"]
+        assert concurrency["cancel-in-progress"] is True and concurrency["group"]
+
+    def test_the_job_may_wait_as_long_as_the_check_does(self):
+        assert self._job()["timeout-minutes"] >= 50
+
+    def test_the_check_can_ask_github_whether_a_newer_commit_contains_ours(self):
+        step = next(s for s in self._job()["steps"] if "Post-deploy check" in s.get("name", ""))
+        assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
