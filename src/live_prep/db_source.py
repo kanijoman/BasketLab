@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterable, Iterator, Optional
+from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Sequence
 
 from src.live_core.package import PreparationPackage
 from src.utils.collection_utils import is_fbcyl
@@ -46,10 +46,13 @@ def build_package_from_db(
     season: Optional[str] = None,
     competition_meta: Optional[Dict[str, Any]] = None,
     progress: Optional[Callable[[int, int], None]] = None,
+    roster_source: Optional[Callable[[Sequence[str]], Optional[Dict[str, Dict[str, Any]]]]] = None,
 ) -> PreparationPackage:
     """``handler`` is a MongoDBHandler. FEB only for now (FBCYL has a different feed).
 
-    ``progress(done, total)`` is called after each replayed game (the replay is CPU heavy).
+    ``progress(done, total)`` is called after each replayed game (the replay is CPU heavy). ``roster_source(team ids)``
+    (``roster_fetcher.fetch_rosters`` in production; no request is made without it) gives the roster of both teams
+    for ``tables.roster``; if it fails or answers nothing the package is built without roster (issue #271).
     """
     if is_fbcyl(collection):
         raise NotImplementedError("Live packages are FEB-only for now (FBCYL has a different feed).")
@@ -57,4 +60,13 @@ def build_package_from_db(
     total = mongo_collection.count_documents(_WITH_PBP)
     games = _counted(mongo_collection.find(_WITH_PBP, GAME_PROJECTION), total, progress)
     return build_package(games, collection, season or season_of(mongo_collection, collection),
-                         team_id, rival_id, competition_meta)
+                         team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id))
+
+
+def _roster(source: Optional[Callable[..., Any]], team_id: str, rival_id: str) -> Optional[Dict[str, Dict[str, Any]]]:
+    if source is None:
+        return None
+    try:
+        return source([team_id, rival_id]) or None
+    except Exception:  # noqa: BLE001 - FEB's website must never stop a package
+        return None

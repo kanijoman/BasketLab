@@ -33,9 +33,10 @@ def handler(feb_game_doc):
 
 
 @pytest.fixture()
-def client(handler):
+def client(handler, monkeypatch):
     from src.api.routers import live_package
 
+    monkeypatch.setattr(live_package, "ROSTER_SOURCE", lambda ids: None)   # these tests never reach FEB's website
     live_package.JOBS.clear()
     app.dependency_overrides[get_db] = lambda: handler
     yield TestClient(app)
@@ -136,3 +137,36 @@ class TestLimits:
         p = _wait_done(client, job)
         assert p["status"] == "error" and "db down" in p["error"]
         assert client.get(f"{V1}/package/download/{job}").status_code == 409
+
+
+class TestRoster:
+    """Issue #271: the package carries the FEB roster (who is a "formación" player) when the website answers."""
+
+    ROSTER = {"2817524": {"team_id": OWN, "name": "E. PRUEBA", "formacion": True, "birth": None, "nationality": None,
+                          "position": None, "dorsal": None, "height": None}}
+
+    def _package(self, client):
+        job = client.post(f"{V1}/package", json=BODY).json()["job_id"]
+        assert _wait_done(client, job)["status"] == "done"
+        content = client.get(f"{V1}/package/download/{job}").content
+        return PreparationPackage.loads(decrypt_package(json.loads(content), BODY["passphrase"]))
+
+    def test_the_job_asks_for_the_rosters_of_both_teams_and_the_package_carries_them(self, client, monkeypatch):
+        from src.api.routers import live_package
+
+        asked = []
+        monkeypatch.setattr(live_package, "ROSTER_SOURCE", lambda ids: asked.append(list(ids)) or self.ROSTER)
+        assert self._package(client).tables["roster"] == self.ROSTER
+        assert asked == [[OWN, RIVAL]]
+
+    def test_without_the_website_the_package_is_built_without_roster(self, client):
+        assert "roster" not in self._package(client).tables
+
+    def test_a_failing_roster_source_does_not_fail_the_job(self, client, monkeypatch):
+        from src.api.routers import live_package
+
+        def down(ids):
+            raise RuntimeError("FEB down")
+
+        monkeypatch.setattr(live_package, "ROSTER_SOURCE", down)
+        assert "roster" not in self._package(client).tables

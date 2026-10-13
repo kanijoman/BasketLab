@@ -50,13 +50,14 @@ class AdviceEngine:
         rival_baselines: Optional[Dict[str, Dict[str, Any]]] = None,
         impact_league: Optional[Dict[str, float]] = None,
         zone_ref: Optional[Dict[str, Any]] = None,
+        roster: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
-                        rival_baselines or {}, impact_league or {}, zone_ref or {})
+                        rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {})
             if own_team_id else None
         )
         self._recommender = Recommender(own_team_id, baselines, cfg) if own_team_id and baselines else None
@@ -74,6 +75,7 @@ class AdviceEngine:
             rival_baselines=(package.tables or {}).get("rival_players", {}),
             impact_league=(package.baselines or {}).get("impact_league"),
             zone_ref=(package.tables or {}).get("zones"),
+            roster=(package.tables or {}).get("roster"),
         )
 
     def analyze(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:

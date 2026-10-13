@@ -10,6 +10,7 @@ Exit code 2 when the password (``PACKAGE_PASSWORD``, >= 8 characters) or the con
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -77,10 +78,11 @@ def publish_all(db: Any, out: Any, passphrase: str, collections: List[str], team
     """Write the packages and the index; a rival whose package fails is reported in ``errors`` and skipped."""
     from src.live_prep.db_source import build_package_from_db
     from src.live_prep.package_crypto import encrypt_package
+    from src.live_prep.roster_fetcher import fetch_rosters
     from src.services.match_schedule_service import MatchScheduleService
 
     service = service or MatchScheduleService(db)
-    build = build or build_package_from_db
+    build = build or functools.partial(build_package_from_db, roster_source=fetch_rosters)
     out = Path(out)
     team_dir = out / team_id
     team_dir.mkdir(parents=True, exist_ok=True)
