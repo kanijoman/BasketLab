@@ -239,3 +239,30 @@ class TestZones:
     def test_no_zone_data_gives_empty_section(self):
         assert build_team_report("A", _stats(), _quartiles(), None)["zones"] == []
         assert build_team_report("A", _stats(), _quartiles(), None, zones=[])["zones"] == []
+
+
+def _only_python_types(obj, path="report"):
+    """Fail on any numpy scalar: FastAPI cannot serialize numpy.bool (500 on /team-report)."""
+    import numpy as np
+
+    assert not isinstance(obj, (np.generic,)), f"{path} is {type(obj)}"
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            _only_python_types(v, f"{path}.{k}")
+    elif isinstance(obj, (list, tuple)):
+        for i, v in enumerate(obj):
+            _only_python_types(v, f"{path}[{i}]")
+
+
+@pytest.mark.parametrize("mode", ["own", "rival"])
+def test_report_with_numpy_inputs_has_only_python_types_regression(mode):
+    """Bug: quartiles from Mongo/numpy made `advantage` a numpy.bool and diff_pct a numpy.float64,
+    so GET /team-report answered 500 (PydanticSerializationError)."""
+    import numpy as np
+
+    quartiles = {k: {q: np.float64(v) for q, v in qs.items()} for k, qs in _quartiles().items()}
+    stats = {k: (np.float64(v) if k != "games_played" else v)
+             for k, v in _stats(points_per_game=95.0, turnovers_per_game=9.0).items()}
+    report = build_team_report("A", stats, quartiles, None, mode=mode)
+    assert report["differentials"], "the fixture must produce differentials"
+    _only_python_types(report)

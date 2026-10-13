@@ -30,7 +30,7 @@ def diff_pct(value: float, median: Optional[float]) -> Optional[float]:
     """Difference to the league median in % of the median (None if median is 0/missing)."""
     if not median:
         return None
-    return (value - median) / abs(median) * 100.0
+    return float((value - median) / abs(median) * 100.0)  # plain float: numpy scalars break JSON serialization
 
 
 def _assess(value: float, level: int, higher_is_better: Optional[bool], median: float) -> Optional[str]:
@@ -76,7 +76,7 @@ def differentials(stats: Dict[str, Any], quartiles: Dict[str, Any], cfg: ReportC
         d = diff_pct(value, (quartiles.get(stat.key) or {}).get("q2"))
         if d is None or abs(d) < cfg.diff_threshold_pct:
             continue
-        better = d > 0 if stat.higher_is_better else d < 0
+        better = bool(d > 0 if stat.higher_is_better else d < 0)
         out.append({"key": stat.key, "label": stat.label, "value": value,
                     "formatted": format_value(stat, value), "diff_pct": d, "advantage": better})
     return sorted(out, key=lambda x: -abs(x["diff_pct"]))
