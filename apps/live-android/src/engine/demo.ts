@@ -6,6 +6,20 @@ export interface DemoData {
   game: string
 }
 
+/** The real recorded match (Zamora - Leon): its preparation package and the packed recording. */
+export interface RealDemoData {
+  package: string
+  recording: string
+}
+
+export async function loadRealDemo(): Promise<RealDemoData> {
+  const [pkg, recording] = await Promise.all([
+    fetch(`${location.origin}/demo/real_package.json`).then(r => r.text()),
+    fetch(`${location.origin}/demo/recording.json`).then(r => r.text()),
+  ])
+  return { package: pkg, recording }
+}
+
 export async function loadDemoData(): Promise<DemoData> {
   const [pkg, game] = await Promise.all([
     fetch(`${location.origin}/demo/package.json`).then(r => r.text()),

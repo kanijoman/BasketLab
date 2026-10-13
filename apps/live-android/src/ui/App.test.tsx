@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { EngineApi } from '../engine/client'
@@ -28,10 +28,18 @@ function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
     loadReplay: vi.fn().mockResolvedValue({ duration: 100, status: 'FINISHED' }),
     replay: vi.fn(async (e: number) => out(e, e >= 5 ? [ALERT] : [])),
     update: vi.fn(),
+    loadRecording: vi.fn().mockResolvedValue({ duration: 100, status: 'GRABACION', match: '2524470', frames: 10 }),
+    // seconds 0-2: the match is not there yet; 3-5: FEB answers 404; afterwards the engine output (with an alert)
+    playRecording: vi.fn(async (s: number) =>
+      s < 3 ? { feed: 'waiting' as const, output: null }
+        : s < 6 ? { feed: 'gap' as const, output: null }
+          : { feed: 'ok' as const, output: out(s, s >= 8 ? [ALERT] : []) }),
     dispose: vi.fn(),
     ...over,
   }
 }
+
+const loadRealDemo = () => Promise.resolve({ package: 'REALPKG', recording: 'REC' })
 
 const PKG_TEXT = JSON.stringify({
   checksum: 'x',
@@ -163,5 +171,57 @@ describe('App', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
     await waitFor(() => expect(screen.getByText('72,0')).toBeTruthy())
     expect(screen.getByText(/EQUIPO RIVAL/, { selector: '.pace-name' })).toBeTruthy()
+  })
+
+  describe('real recorded match (issue #174)', () => {
+    const pick = (value: string) =>
+      fireEvent.change(screen.getByLabelText(/partido de la demostración/i), { target: { value } })
+
+    it('offers the recorded match as a demo source and starts the engine with its package and recording', async () => {
+      const engine = fakeEngine()
+      render(<App engine={engine} loadDemo={loadDemo} loadRealDemo={loadRealDemo} />)
+      await screen.findByText('EQUIPO PROPIO')
+      expect(within(screen.getByLabelText(/partido de la demostración/i)).getAllByRole('option').map(o => o.textContent))
+        .toEqual(['Partido de ejemplo', 'Partido real: Zamora – León'])
+      pick('real')
+      await waitFor(() => expect(engine.loadRecording).toHaveBeenCalledWith('REC'))
+      expect(engine.start).toHaveBeenLastCalledWith('REALPKG')
+    })
+
+    it('plays it second by second: waits for the match, shows the real 404 and then the alerts', async () => {
+      const engine = fakeEngine()
+      render(<App engine={engine} loadDemo={loadDemo} loadRealDemo={loadRealDemo} />)
+      await screen.findByText('EQUIPO PROPIO')
+      pick('real')
+      await waitFor(() => expect(engine.loadRecording).toHaveBeenCalled())
+      fireEvent.click(await screen.findByRole('button', { name: /reproducir/i }))
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
+      expect(await screen.findByText(/esperando el inicio/i)).toBeTruthy()
+      await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
+      expect(await screen.findByText(/FEB no responde/i)).toBeTruthy()
+      await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+      await waitFor(() => expect(screen.getByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy())
+      expect(screen.queryByText(/FEB no responde/i)).toBeNull()
+      expect(engine.replay).not.toHaveBeenCalled() // the recording goes through playRecording, not the truncated replay
+    })
+
+    it('goes back to the sample game', async () => {
+      const engine = fakeEngine()
+      render(<App engine={engine} loadDemo={loadDemo} loadRealDemo={loadRealDemo} />)
+      await screen.findByText('EQUIPO PROPIO')
+      pick('real')
+      await waitFor(() => expect(engine.loadRecording).toHaveBeenCalled())
+      pick('sample')
+      await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('PKG'))
+      expect(engine.loadReplay).toHaveBeenLastCalledWith('GAME')
+    })
+
+    it('says so when the recording cannot be loaded', async () => {
+      const failing = () => Promise.reject(new Error('sin red'))
+      render(<App engine={fakeEngine()} loadDemo={loadDemo} loadRealDemo={failing} />)
+      await screen.findByText('EQUIPO PROPIO')
+      pick('real')
+      expect(await screen.findByText(/no se pudo cargar el partido real/i)).toBeTruthy()
+    })
   })
 })

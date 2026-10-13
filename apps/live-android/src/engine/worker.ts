@@ -25,6 +25,8 @@ function run(bridge: LiveBridge, msg: WorkerRequest): unknown {
     case 'loadReplay': return bridge.loadReplay(msg.payload)
     case 'replay': return bridge.replay(msg.payload)
     case 'update': return bridge.update(msg.payload)
+    case 'loadRecording': return bridge.loadRecording(msg.payload)
+    case 'playRecording': return bridge.playRecording(msg.payload)
   }
 }
 

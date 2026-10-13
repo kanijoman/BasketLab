@@ -71,3 +71,25 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
   await page.getByRole('button', { name: 'Quitar paquete' }).click()
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 30_000 })
 })
+
+test('the real recorded match (Zamora - Leon) plays through the real engine in a real browser (issue #174)', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', e => errors.push(e.message))
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+
+  await page.getByLabel('Partido de la demostración').selectOption('real')
+  await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible({ timeout: 60_000 })
+  await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible()
+
+  await page.getByLabel('Velocidad').selectOption('300')
+  await page.getByRole('button', { name: 'Reproducir' }).click()
+  // 7156 s of feed at 300x: ~25 s. The official result, with the corrected lines of the real feed applied
+  await expect(page.getByText('Partido finalizado')).toBeVisible({ timeout: 90_000 })
+  await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('38')
+  await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('59')
+  await expect(page.locator('.alert').first()).toBeVisible()
+  await expect(page.locator('.pace-card')).toContainText('posesiones por equipo')
+
+  expect(errors).toEqual([])
+})
