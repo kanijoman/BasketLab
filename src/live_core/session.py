@@ -17,6 +17,7 @@ from .engine import LiveEngine
 from .events import parse_line
 from .package import PreparationPackage
 from .replay import truncate_doc
+from .recorded_feed import RecordedFeed
 from .vectors import to_jsonable, unwrap_extended_json
 
 
@@ -26,6 +27,7 @@ class LiveSession:
         self._engine = LiveEngine()
         self._advice = AdviceEngine.from_package(self.package)
         self._replay_doc: Optional[Dict[str, Any]] = None
+        self._feed: Optional[RecordedFeed] = None
         self.replay_info: Dict[str, Any] = {}
 
     @property
@@ -54,6 +56,26 @@ class LiveSession:
             "status": (game_doc.get("HEADER") or {}).get("statusText", ""),
         }
         return self.replay_info
+
+    def load_recording(self, recording: Any) -> Dict[str, Any]:
+        """Prepare a packed real recording (see ``recorded_feed``); ``play`` then feeds the engine with it."""
+        self._feed = RecordedFeed.loads(recording)
+        return {"match": self._feed.match, "duration": self._feed.duration, "frames": len(self._feed.frames),
+                "status": "GRABACION"}
+
+    def play(self, t: float) -> Dict[str, Any]:
+        """The recording ``t`` seconds after its first poll, as the live mode will receive it.
+
+        ``{"feed": "ok", "output": <update output>}``; ``"waiting"`` before the first poll and ``"gap"`` while FEB
+        answered nothing (a real 404 in the middle of the match): then the engine is NOT updated, like a failed poll.
+        """
+        if self._feed is None:
+            raise RuntimeError("No recording loaded (call load_recording first)")
+        if self._feed.document_at(t) is None:
+            return {"feed": "waiting", "output": None}
+        if self._feed.in_any_gap(t):
+            return {"feed": "gap", "output": None}
+        return {"feed": "ok", "output": self.update(self._feed.document_at(t))}
 
     def replay(self, elapsed: int) -> Dict[str, Any]:
         """The loaded game as it was ``elapsed`` game-seconds after tip-off."""
@@ -97,3 +119,11 @@ def replay_json(elapsed: int) -> str:
 
 def update_json(doc_json: str) -> str:
     return _dump(_session().update(unwrap_extended_json(json.loads(doc_json))))
+
+
+def load_recording_json(recording_json: str) -> str:
+    return _dump(_session().load_recording(recording_json))
+
+
+def play_recording_json(t: float) -> str:
+    return _dump(_session().play(t))

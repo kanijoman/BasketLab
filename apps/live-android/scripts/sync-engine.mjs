@@ -1,11 +1,13 @@
 // Copies into public/ everything the app ships and that lives outside apps/live-android:
 //   public/engine/live_core.json  the Python sources of src/live_core (standard library only)
 //   public/pyodide/               the Pyodide runtime (offline: nothing is fetched from a CDN)
-//   public/demo/                  a preparation package + a finished FEB game for the demo replay
+//   public/demo/                  a preparation package + a finished FEB game for the demo replay, plus the
+//                                 package and the packed recording of a real match ("Partido real")
 // Generated files are git-ignored; this runs before dev / build / test.
 
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 
 const appRoot = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(appRoot, "../..");
@@ -32,5 +34,11 @@ fs.mkdirSync(out("demo"), { recursive: true });
 const vectors = JSON.parse(fs.readFileSync(path.join(repoRoot, "tests/live_vectors/vectors.json"), "utf8"));
 fs.writeFileSync(out("demo", "package.json"), vectors.engine.package);
 fs.copyFileSync(path.join(repoRoot, "src/JSON_samples/feb_game.json"), out("demo", "game.json"));
+
+// The real recorded match (issue #174): its package and the packed recording (gunzipped: ~330 KB, the APK
+// compresses it again), so the demo can feed the engine with what FEB really served.
+const recordings = path.join(repoRoot, "tests/recordings");
+fs.copyFileSync(path.join(recordings, "2524470.package.json"), out("demo", "real_package.json"));
+fs.writeFileSync(out("demo", "recording.json"), zlib.gunzipSync(fs.readFileSync(path.join(recordings, "2524470.rec.json.gz"))));
 
 console.log(`sync-engine: ${Object.keys(files).length} live_core modules, Pyodide runtime, demo data`);

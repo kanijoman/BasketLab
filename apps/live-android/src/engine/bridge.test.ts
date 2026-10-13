@@ -12,6 +12,8 @@ const repoRoot = path.resolve(appRoot, '../..')
 const bundle: EngineBundle = JSON.parse(fs.readFileSync(path.join(appRoot, 'public/engine/live_core.json'), 'utf8'))
 const demoPackage = fs.readFileSync(path.join(appRoot, 'public/demo/package.json'), 'utf8')
 const demoGame = fs.readFileSync(path.join(appRoot, 'public/demo/game.json'), 'utf8')
+const realPackage = fs.readFileSync(path.join(appRoot, 'public/demo/real_package.json'), 'utf8')
+const recording = fs.readFileSync(path.join(appRoot, 'public/demo/recording.json'), 'utf8')
 const vectors = JSON.parse(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/vectors.json'), 'utf8'))
 const expected: { elapsed: number; score: Record<string, number>; alerts: string[] }[] = vectors.expected.engine.checkpoints
 
@@ -61,4 +63,24 @@ describe('LiveBridge on Pyodide', () => {
     bridge.replay(1800)
     expect(performance.now() - t0).toBeLessThan(1000)
   })
+
+describe('real recorded match on Pyodide (issue #174)', () => {
+  it('plays the recording through the engine: not there yet, a moment, a real 404, the end', () => {
+    bridge.start(realPackage)
+    const info = bridge.loadRecording(recording)
+    expect(info.match).toBe('2524470')
+    expect(info.duration).toBeGreaterThan(7100)
+
+    expect(bridge.playRecording(-5)).toEqual({ feed: 'waiting', output: null })
+    const mid = bridge.playRecording(3000)
+    expect(mid.feed).toBe('ok')
+    expect(mid.output!.snapshot.elapsed).toBeGreaterThan(1000)
+    expect(bridge.playRecording(6000)).toEqual({ feed: 'gap', output: null }) // FEB answered 404 here in the real match
+
+    let last = mid.output
+    for (let s = 3060; s <= info.duration + 60; s += 60) last = bridge.playRecording(s).output ?? last
+    expect(last!.snapshot.score).toEqual({ '1008631': 38, '1008898': 59 }) // the official result, corrections included
+    expect(last!.analysis.pace?.reliable).toBe(true)
+  }, 120_000)
+})
 })

@@ -83,6 +83,10 @@ class RecordedFeed:
     def in_gap(self, endpoint: str, t: float) -> bool:
         return any(float(a) <= t < float(b) for a, b in (self._data.get("gaps") or {}).get(endpoint, []))
 
+    def in_any_gap(self, t: float) -> bool:
+        """True while at least one of the three endpoints answered nothing (a client would see a failed poll)."""
+        return any(self.in_gap(endpoint, t) for endpoint in ENDPOINTS)
+
     def document_at(self, t: float, endpoint: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """What FEB served ``t`` seconds in (``endpoint`` = boxscore / shotchart / keyfacts); None = not available."""
         if endpoint and self.in_gap(endpoint, t):

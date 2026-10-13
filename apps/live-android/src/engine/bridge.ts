@@ -4,7 +4,7 @@
  * Runs wherever a Pyodide instance exists (the Web Worker in the app, Node in the tests).
  * Only strings cross the boundary: JSON in, JSON out.
  */
-import type { EngineOutput, ReplayInfo, SessionMeta } from './types'
+import type { EngineOutput, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
 
 /** The part of the Pyodide API the bridge uses. */
 export interface PyodideLike {
@@ -20,7 +20,10 @@ export interface EngineBundle {
 type PyFn = (...args: unknown[]) => string
 
 export class LiveBridge {
-  private readonly fn: Record<'start_json' | 'load_replay_json' | 'replay_json' | 'update_json', PyFn>
+  private readonly fn: Record<
+    'start_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json',
+    PyFn
+  >
 
   constructor(py: PyodideLike, bundle: EngineBundle) {
     py.FS.mkdirTree('/app/src/live_core')
@@ -35,6 +38,8 @@ export class LiveBridge {
       load_replay_json: get('load_replay_json'),
       replay_json: get('replay_json'),
       update_json: get('update_json'),
+      load_recording_json: get('load_recording_json'),
+      play_recording_json: get('play_recording_json'),
     }
   }
 
@@ -52,5 +57,14 @@ export class LiveBridge {
 
   update(docJson: string): EngineOutput {
     return JSON.parse(this.fn.update_json(docJson))
+  }
+
+  loadRecording(recordingJson: string): RecordingInfo {
+    return JSON.parse(this.fn.load_recording_json(recordingJson))
+  }
+
+  /** The engine fed with what FEB served `t` seconds after the first poll of the recording. */
+  playRecording(t: number): RecordingFrame {
+    return JSON.parse(this.fn.play_recording_json(t))
   }
 }

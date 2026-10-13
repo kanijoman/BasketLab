@@ -61,4 +61,16 @@ describe('EngineClient', () => {
     const { worker } = setup()
     expect(() => worker.reply({ id: 999, ok: true, result: null })).not.toThrow()
   })
+
+  it('sends the recording requests', async () => {
+    const { worker, client } = setup()
+    const load = client.loadRecording('REC')
+    expect(worker.sent[0]).toMatchObject({ type: 'loadRecording', payload: 'REC' })
+    worker.reply({ id: worker.sent[0].id, ok: true, result: { match: '1', duration: 10, frames: 2, status: 'GRABACION' } })
+    await expect(load).resolves.toMatchObject({ match: '1' })
+    const play = client.playRecording(42.5)
+    expect(worker.sent[1]).toMatchObject({ type: 'playRecording', payload: 42.5 })
+    worker.reply({ id: worker.sent[1].id, ok: true, result: { feed: 'gap', output: null } })
+    await expect(play).resolves.toEqual({ feed: 'gap', output: null })
+  })
 })

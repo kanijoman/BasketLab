@@ -21,6 +21,18 @@ export interface ReplayInfo {
   status: string
 }
 
+/** A packed real recording loaded for playback (src/live_core/recorded_feed.py). */
+export interface RecordingInfo extends ReplayInfo {
+  match: string
+  frames: number
+}
+
+/** One moment of the recording: the engine output, or why there is none (not started yet / FEB answered 404). */
+export interface RecordingFrame {
+  feed: 'ok' | 'waiting' | 'gap'
+  output: EngineOutput | null
+}
+
 export type Severity = 'critical' | 'warning' | 'info'
 
 export interface Proposal {

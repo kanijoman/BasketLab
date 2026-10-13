@@ -6,12 +6,13 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
-import { loadDemoData, type DemoData } from '../engine/demo'
-import type { Alert, EngineOutput, ReplayInfo, SessionMeta } from '../engine/types'
+import { loadDemoData, loadRealDemo as fetchRealDemo, type DemoData, type RealDemoData } from '../engine/demo'
+import type { Alert, EngineOutput, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
 import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import AlertCard, { clockLabel } from './AlertCard'
+import DemoControls, { type DemoSource } from './DemoControls'
 import PaceCard from './PaceCard'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
@@ -19,16 +20,17 @@ import RemotePackages from './RemotePackages'
 interface Props {
   engine?: EngineApi
   loadDemo?: () => Promise<DemoData>
+  /** The real recorded match of the demo (injected in tests). */
+  loadRealDemo?: () => Promise<RealDemoData>
   store?: PackageStore
   /** Network access of the published-packages list (injected in tests). */
   remoteFetcher?: Fetcher
 }
 
-const SPEEDS = [1, 10, 30, 60]
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 interface Entry { alert: Alert; at: string }
 
-export default function App({ engine: injected, loadDemo = loadDemoData, store: injectedStore, remoteFetcher }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadRealDemo = fetchRealDemo, store: injectedStore, remoteFetcher }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -41,6 +43,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
   const [elapsed, setElapsed] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
+  const [source, setSource] = useState<DemoSource>('sample')
+  const [feed, setFeed] = useState<RecordingFrame['feed']>('ok')
+  const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
   const busy = useRef(false)
   const elapsedRef = useRef(0)
@@ -49,7 +54,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
   const reset = useCallback(() => {
     seen.current.clear()
     elapsedRef.current = 0
-    setEntries([]); setOut(null); setElapsed(0); setPlaying(false); setInfo(null)
+    setEntries([]); setOut(null); setElapsed(0); setPlaying(false); setInfo(null); setFeed('ok'); setNotice(null)
   }, [])
 
   const beginDemo = useCallback(async (data: DemoData) => {
@@ -59,11 +64,29 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
     try {
       setMeta(await engine.start(data.package))
       setInfo(await engine.loadReplay(data.game))
+      setSource('sample')
       setPhase({ kind: 'ready' })
     } catch (e) {
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     }
   }, [engine, reset])
+
+  /** The real recorded match: the engine is fed with what FEB served (404 windows included). */
+  const beginReal = useCallback(async (fallback: DemoData) => {
+    setPhase({ kind: 'loading' })
+    reset()
+    setPkg(null)
+    try {
+      const real = await loadRealDemo()
+      setMeta(await engine.start(real.package))
+      setInfo(await engine.loadRecording(real.recording))
+      setSource('real')
+      setPhase({ kind: 'ready' })
+    } catch (e) {
+      await beginDemo(fallback)
+      setNotice(`No se pudo cargar el partido real: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [engine, reset, loadRealDemo, beginDemo])
 
   const beginPackage = useCallback(async (plaintext: string) => {
     setPhase({ kind: 'loading' })
@@ -103,8 +126,16 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
     busy.current = true
     try {
       const t0 = performance.now()
-      const result = await engine.replay(to)
+      let result: EngineOutput | null
+      if (source === 'real') {
+        const frame = await engine.playRecording(to)
+        setFeed(frame.feed)
+        result = frame.output
+      } else {
+        result = await engine.replay(to)
+      }
       setMs(Math.round(performance.now() - t0))
+      if (!result) return // the feed answered nothing: the last state stays
       setOut(result)
       const at = clockLabel(result.snapshot.period, result.snapshot.remaining)
       const fresh = result.alerts.filter(a => !seen.current.has(a.key))
@@ -116,7 +147,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
     } finally {
       busy.current = false
     }
-  }, [engine])
+  }, [engine, source])
 
   useEffect(() => {
     if (!playing || !info) return
@@ -171,17 +202,13 @@ export default function App({ engine: injected, loadDemo = loadDemoData, store: 
         <p className="status">Paquete cargado. La app queda a la espera del partido en directo (próximamente).</p>
       ) : (
         <>
-          <section className="controls">
-            <button onClick={() => setPlaying(p => !p)} disabled={finished}>{playing ? 'Pausa' : 'Reproducir'}</button>
-            <label>
-              Velocidad
-              <select value={speed} onChange={e => setSpeed(Number(e.target.value))}>
-                {SPEEDS.map(s => <option key={s} value={s}>{s}×</option>)}
-              </select>
-            </label>
-            <button className="secondary" onClick={() => demo && void beginDemo(demo)}>Reiniciar</button>
-            {ms !== null && <span className="perf">{ms} ms</span>}
-          </section>
+          <DemoControls
+            source={source} onSource={s => demo && void (s === 'real' ? beginReal(demo) : beginDemo(demo))}
+            playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
+            speed={speed} onSpeed={setSpeed} onRestart={() => demo && void (source === 'real' ? beginReal(demo) : beginDemo(demo))}
+            ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null}
+          />
+          {notice && <p role="alert" className="status error">{notice}</p>}
 
           {finished && <p className="status">Partido finalizado</p>}
 
