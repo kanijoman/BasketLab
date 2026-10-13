@@ -19,6 +19,7 @@ from .game_context import adjust_for_phase, game_phase
 from .pace import PaceModel
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
+from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, rival_foul_rule, run_rule, team_fouls_rule, turnover_rule
@@ -27,7 +28,8 @@ from .timeouts import timeouts_left
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
 # (id, rule) in evaluation order; the ids are config.RULE_IDS and can be switched off with RuleConfig.rules_off.
 RULES: List[Tuple[str, Rule]] = [
-    ("foul_trouble", foul_rule), ("rival_foul_trouble", rival_foul_rule), ("team_fouls", team_fouls_rule),
+    ("foul_trouble", foul_rule), ("rival_foul_trouble", rival_foul_rule), ("formation_lineup", formation_rule),
+    ("team_fouls", team_fouls_rule),
     ("rival_run", run_rule), ("turnover_streak", turnover_rule), ("fatigue_high", fatigue_rule),
     ("four_factors_lever", four_factors_rule), ("rival_hot_player", rival_player_rule), ("rival_zone", rival_zone_rule),
 ]
@@ -60,8 +62,10 @@ class AdviceEngine:
                         rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {})
             if own_team_id else None
         )
-        self._recommender = Recommender(own_team_id, baselines, cfg) if own_team_id and baselines else None
+        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster)
+                             if own_team_id and baselines else None)
         self._last: Dict[str, int] = {}
+        self._streak: Dict[str, int] = {}   # key -> consecutive evaluations it has appeared in (alerts that ask to confirm)
         self._count: Dict[str, int] = {}
 
     @classmethod
@@ -91,7 +95,17 @@ class AdviceEngine:
             own, rival = self._ctx.own_team_id, self._ctx.rival_team_id
             analysis["context"] = {**game_phase(snapshot, own, rival, self._ctx.config), "timeouts": {
                 "own": timeouts_left(snapshot, own), "rival": timeouts_left(snapshot, rival) if rival else None}}
+            if self._ctx.config.formation_min_on_court > 0:
+                analysis["formation"] = self._formation_status(snapshot)
         return analysis
+
+    def _formation_status(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
+        """For the app: the minimum, whether the roster tells who is formación, and how many are on court now."""
+        ctx = self._ctx
+        known = roster_known(ctx.roster, ctx.own_team_id)
+        counts = formation_counts(snapshot, ctx.own_team_id, ctx.roster)
+        return {"min": ctx.config.formation_min_on_court, "known": known, "on_court": counts["yes"] if known else None,
+                "unknown": counts["unknown"] if known else 0, "players": counts["players"]}
 
     def evaluate(self, snapshot: Dict[str, Any]) -> List[Advice]:
         if self._ctx is None:
@@ -99,14 +113,20 @@ class AdviceEngine:
         cfg, now, emitted = self._ctx.config, snapshot["elapsed"], []
         context = (game_phase(snapshot, self._ctx.own_team_id, self._ctx.rival_team_id, cfg)
                    if cfg.enabled("game_context") else None)
+        streaks: Dict[str, int] = {}
         for rule_id, rule in RULES:
             if not cfg.enabled(rule_id):
                 continue
             for raw in rule(snapshot, self._ctx):
                 advice = adjust_for_phase(raw, context) if context else raw
+                if advice.confirm > 1:
+                    streaks[advice.key] = self._streak.get(advice.key, 0) + 1
+                    if streaks[advice.key] < advice.confirm:
+                        continue
                 if self._is_new(advice, raw.key, now):
                     self._last[advice.key] = now
                     emitted.append(self._with_proposal(self._numbered(advice), snapshot))
+        self._streak = streaks   # an alert that was not there this time starts again
         return sorted(emitted, key=lambda a: SEVERITY_RANK[a.severity])  # stable: critical first
 
     def _is_new(self, advice: Advice, base_key: str, now: int) -> bool:
@@ -127,6 +147,11 @@ class AdviceEngine:
 
     def _with_proposal(self, advice: Advice, snapshot: Dict[str, Any]) -> Advice:
         """Attach the recommender's substitution proposals to the advice that calls for them."""
+        if advice.id in ("foul_trouble", "fatigue_high"):
+            note = departure_note(snapshot, self._ctx.own_team_id, self._ctx.roster, self._ctx.config,
+                                  advice.evidence["player_id"])
+            if note:
+                advice = dataclasses.replace(advice, message=f"{advice.message} {note}")
         if self._recommender is None:
             return advice
         if advice.id in ("foul_trouble", "fatigue_high"):

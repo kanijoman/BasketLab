@@ -55,6 +55,8 @@ export interface Alert {
   evidence: Record<string, unknown>
   proposal: Proposal[]
   rearm_s: number | null
+  /** Evaluations in a row the engine needed to see the alert before saying it (1 for most). */
+  confirm?: number
 }
 
 export interface Snapshot {
@@ -95,8 +97,21 @@ export interface GameContext {
   timeouts: { own: number; rival: number | null }
 }
 
+/** Formación players on court against the competition's minimum, from src/live_core/rules_lineup.py. */
+export interface FormationStatus {
+  /** Minimum on court at all times (0: the competition has no such rule; the engine then sends nothing). */
+  min: number
+  /** False when the package has no FEB roster of our team: the lineup is not watched. */
+  known: boolean
+  on_court: number | null
+  /** On-court players the roster does not settle (they get the benefit of the doubt). */
+  unknown: number
+  /** Own players on court now (5 unless a substitution is in progress). */
+  players: number
+}
+
 export interface EngineOutput {
   snapshot: Snapshot
   alerts: Alert[]
-  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext }
+  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext; formation?: FormationStatus }
 }

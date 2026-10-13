@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from .config import RuleConfig
 from .profiles import role_distance
 from .rules_fouls import FOUL_OUT, evaluate_player_fouls
+from .rules_lineup import roster_known
 from .rules_rotation import fatigue_index
 
 # lever -> (profile metric, +1 if higher is better else -1, Spanish label)
@@ -38,10 +39,13 @@ BALANCE_DIMS = {
 
 class Recommender:
     def __init__(self, own_team_id: str, players_table: Dict[str, Dict[str, Any]],
-                 config: Optional[RuleConfig] = None) -> None:
+                 config: Optional[RuleConfig] = None, roster: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
         self._own = own_team_id
         self._table = players_table or {}
         self._cfg = config or RuleConfig()
+        self._roster = roster or {}
+        # With the roster of our team and a minimum of "formación" players on court, a swap must not break it (#272)
+        self._formation_min = self._cfg.formation_min_on_court if roster_known(self._roster, own_team_id) else 0
         # Load for bench players ignores the stint: they are resting, only minutes count.
         self._bench_cfg = RuleConfig(**{**self._cfg.__dict__, "fatigue_weight_stint": 0.0})
 
@@ -58,6 +62,23 @@ class Recommender:
             return False  # already in foul trouble
         load, _ = fatigue_index(0, player["minutes"], snap["elapsed"], self._table[pid], self._bench_cfg)
         return load < self._cfg.fatigue_alert_index
+
+    def _is_formation(self, pid: str) -> int:
+        """1 for a formación player; a player the roster does not settle does NOT count (never risk the minimum)."""
+        return 1 if (self._roster.get(pid) or {}).get("formacion") is True else 0
+
+    def _formation_on_court(self, snap: Dict[str, Any]) -> int:
+        return sum(self._is_formation(pid) for pid, p in snap["players"].items()
+                   if p["on_court"] and p["team_id"] == self._own)
+
+    def _with_formation(self, candidate: Dict[str, Any], after: int) -> Dict[str, Any]:
+        """Says how many formación players are left on court after the swap when the minimum is in force."""
+        if not self._formation_min:
+            return candidate
+        candidate = {**candidate, "formation_after": after, "formation_ok": after >= self._formation_min}
+        if after <= self._formation_min:
+            candidate["message"] += f". Quedan {after} de formación en pista (mínimo {self._formation_min})"
+        return candidate
 
     def _quintet_balance(self, snap: Dict[str, Any], swap_out: str, swap_in: str) -> Dict[str, float]:
         """Change in each balance dimension if ``swap_in`` replaces ``swap_out`` on court."""
@@ -80,6 +101,7 @@ class Recommender:
             return []
 
         out: List[Dict[str, Any]] = []
+        before = self._formation_on_court(snap)
         for pid, p in players.items():
             z_in = self._z(pid)
             if (pid == out_pid or p["team_id"] != self._own or p["on_court"] or not z_in
@@ -88,7 +110,11 @@ class Recommender:
             distance = role_distance(z_out, z_in)
             if distance > self._cfg.rec_max_role_distance:
                 continue
-            out.append(self._candidate(snap, out_pid, outgoing, pid, p, z_out, z_in, distance, lever))
+            after = before - self._is_formation(out_pid) + self._is_formation(pid)
+            if self._formation_min and after < self._formation_min and after < before:
+                continue  # it would leave fewer than the minimum (or make an illegal lineup worse)
+            candidate = self._candidate(snap, out_pid, outgoing, pid, p, z_out, z_in, distance, lever)
+            out.append(self._with_formation(candidate, after))
 
         out.sort(key=lambda c: (not c["balance_ok"], -c["score"], c["in_id"]))
         return out[: max_results or self._cfg.rec_max_results]

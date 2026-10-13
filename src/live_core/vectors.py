@@ -69,7 +69,7 @@ def _advice_sequence(a: Dict[str, Any]) -> List[Any]:
         own_team_id=a["own"], rival_team_id=a.get("rival"), baselines=a.get("baselines"),
         config=RuleConfig.from_dict(a.get("config")), team_baselines=a.get("team_baselines"),
         rival_baselines=a.get("rival_baselines"), impact_league=a.get("impact_league"),
-        zone_ref=a.get("zone_ref"),
+        zone_ref=a.get("zone_ref"), roster=a.get("roster"),
     )
     return [engine.evaluate(snap) for snap in a["snapshots"]]
 
@@ -110,7 +110,7 @@ def _four_factors_evaluate(a: Dict[str, Any]) -> Any:
 
 def _recommender(method: str) -> Callable[[Dict[str, Any]], Any]:
     def call(a: Dict[str, Any]) -> Any:
-        rec = Recommender(a["own"], a["table"], RuleConfig.from_dict(a.get("config")))
+        rec = Recommender(a["own"], a["table"], RuleConfig.from_dict(a.get("config")), roster=a.get("roster"))
         if method == "swaps":
             return rec.suggest_swaps(a["snapshot"], a["out"], lever=a.get("lever"))
         return rec.suggest_for_lever(a["snapshot"], a["lever"])
