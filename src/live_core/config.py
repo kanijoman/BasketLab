@@ -4,11 +4,26 @@ confirmed and, later, edited by the user (they travel inside the preparation pac
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterable, Optional, Tuple
+
+# Ids of the alert rules, in evaluation order (advice.RULES). A package can switch any of them off with
+# ``rule_config["rules_off"]``. ``team_fouls`` covers both team_fouls_bonus and rival_near_bonus.
+RULE_IDS: Tuple[str, ...] = (
+    "foul_trouble", "rival_foul_trouble", "team_fouls", "rival_run", "turnover_streak",
+    "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone",
+)
+
+
+def unknown_rule_ids(rule_ids: Iterable[str]) -> Tuple[str, ...]:
+    """Ids that are not rules of this engine. The engine ignores them (a package written for a newer engine
+    must not crash the app); tools that write a package or a configuration use this to reject typos."""
+    return tuple(r for r in rule_ids if r not in RULE_IDS)
 
 
 @dataclass(frozen=True)
 class RuleConfig:
+    # Rules switched off (ids in RULE_IDS). Nothing is off by default.
+    rules_off: Tuple[str, ...] = ()
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.
@@ -74,4 +89,11 @@ class RuleConfig:
     def from_dict(cls, overrides: Optional[Dict[str, Any]]) -> "RuleConfig":
         """Build from a package's ``rule_config``; unknown keys are ignored."""
         known = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in (overrides or {}).items() if k in known})
+        values = {k: v for k, v in (overrides or {}).items() if k in known}
+        off = values.get("rules_off")
+        # JSON gives a list; the dataclass is frozen and hashable, so keep a tuple. Anything else is ignored.
+        values["rules_off"] = tuple(str(r) for r in off) if isinstance(off, (list, tuple)) else ()
+        return cls(**values)
+
+    def enabled(self, rule_id: str) -> bool:
+        return rule_id not in self.rules_off

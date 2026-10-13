@@ -141,6 +141,9 @@ def advice_sequences():
     for s in pf_steps:
         s["players"]["x"]["name"], s["players"]["x"]["team_id"] = "Ana", OWN
     out.append(case("advice.sequence", {"own": OWN, "rival": RIVAL, "snapshots": pf_steps}))
+    # per-rule switch (#236): the same sequence with the own-foul rule off emits nothing from it
+    out.append(case("advice.sequence", {"own": OWN, "rival": RIVAL, "snapshots": pf_steps,
+                                        "config": {"rules_off": ["foul_trouble", "does_not_exist"]}}))
 
     tired = [mk(2, e, {"p": player("g1", True, stint=s, minutes=m)})
              for e, s, m in [(1200, 720, 1100), (1210, 730, 1110), (1440, 960, 1400), (1500, 20, 1420)]]
