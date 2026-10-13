@@ -68,7 +68,8 @@ class LiveGame:
         self.last_num = 0
         self._last_miss_team: Optional[str] = None
         self._rested_through = 1  # last period whose opening break has been credited
-        # Chronological [elapsed, team_id, kind, value] for runs and streaks: pts, tov, orb.
+        # Chronological [elapsed, team_id, kind, value, player_id] (player None when the event has none):
+        # pts (points of a made shot), fg2/fg3/ft (an attempt: 1 made, 0 missed), tov, orb, stl, timeout.
         self.log: list = []
 
     # -- event application -------------------------------------------------------
@@ -129,11 +130,12 @@ class LiveGame:
         team.stats[att_key] += 1
         if player:
             player.stats[att_key] += 1
+        self._log(ev, ev.kind, 1 if ev.made else 0)
         if ev.made:
             team.stats[made_key] += 1
             team.stats["pts"] += ev.points
             self.score[ev.team_id] += ev.points
-            self.log.append([ev.elapsed, ev.team_id, "pts", ev.points])
+            self._log(ev, "pts", ev.points)
             if player:
                 player.pts += ev.points
                 player.stats[made_key] += 1
@@ -160,8 +162,11 @@ class LiveGame:
         if player:
             player.stats[key] += 1
         if offensive:
-            self.log.append([ev.elapsed, ev.team_id, "orb", 1])
+            self._log(ev, "orb", 1)
         self._last_miss_team = None
+
+    def _log(self, ev: Event, kind: str, value: int) -> None:
+        self.log.append([ev.elapsed, ev.team_id, kind, value, ev.player_id or None])
 
     def _count(self, key: str, team: Optional[_Team], player: Optional[_Player] = None) -> None:
         if team is not None:
@@ -174,10 +179,12 @@ class LiveGame:
         # box-score TO column excludes them, so keep them apart (possessions add both).
         self._count("tov" if ev.player_id else "tov_team", team, player)
         if team is not None:
-            self.log.append([ev.elapsed, ev.team_id, "tov", 1])
+            self._log(ev, "tov", 1)
 
     def _on_steal(self, ev, player, team):
         self._count("stl", team, player)
+        if team is not None:
+            self._log(ev, "stl", 1)
 
     def _on_assist(self, ev, player, team):
         self._count("ast", team, player)
@@ -188,6 +195,7 @@ class LiveGame:
     def _on_timeout(self, ev, player, team):
         if team is not None:
             team.timeouts.append(ev.elapsed)
+            self.log.append([ev.elapsed, ev.team_id, "timeout", 1, None])  # a timeout never has a player
 
     def _on_foul(self, ev: Event, player: Optional[_Player], team: Optional[_Team]) -> None:
         if player:

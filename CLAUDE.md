@@ -34,7 +34,7 @@ Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests
 - **Dual format**: siempre FEB + FBCYL (`is_fbcyl`, ver DATA_FORMATS).
 - **Código y comentarios en inglés; textos de UI en español.**
 - **Preguntar solo por**: umbrales de lógica de negocio, alcance ambiguo, preferencias de layout.
-- **Testing tras features**: plan (camino feliz + bordes + errores) → ejecutar → suite completa. Checklist: sin excepciones · bordes (vacío/None/cero) · FEB+FBCYL · sin regresiones.
+- **Testing tras features**: plan (camino feliz + bordes + errores) → ejecutar **solo los tests que cubren lo que se ha tocado** (los nuevos y los antiguos del mismo código: `pytest --no-cov tests/test_<área>*.py`, `vitest run <ruta>`; tras cambiar `live_core`, también vectores y `test_docs_consistency`). **No lanzar la suite completa en local** (≈ 6 min): la ejecuta el CI de GitHub en el PR y un fallo ahí se arregla en el mismo PR. Checklist: sin excepciones · bordes (vacío/None/cero) · FEB+FBCYL · sin regresiones en lo afectado.
 
 ## Calidad (antes de escribir y cada ~100 líneas)
 | Comprobación | Umbral | Acción |
@@ -109,7 +109,7 @@ MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · mat
 python run_api.py                    # API :8000 (BASKETLAB_DEV=1 → reload)
 python run_scraper.py                # servicio scraper
 cd frontend && npm run dev           # Vite :5173
-pytest -q                            # backend (CI: requirements.txt)
+pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite completa (pytest -q) la corre el CI
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
 python -m src.live_core.fake_feb --speed 30   # FEB simulado

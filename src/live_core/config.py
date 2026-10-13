@@ -76,6 +76,10 @@ class RuleConfig:
     zone_share: float = 0.35
     zone_share_excess: float = 0.15
     zone_shrink_n0: float = 20.0
+    # Diagnosis of a run or a drought (windows.run_causes): events of one kind needed to count as a cause, and how
+    # many causes are said at most.
+    cause_min_count: int = 2
+    cause_max: int = 3
     # Game pace (possessions per 40 min): minimum game time before the pace, its projection and its +/- are
     # trusted (the extrapolation is very noisy in the first minutes: 45 vs 69 possessions at 3 min in a real game).
     pace_min_elapsed_s: int = 300
