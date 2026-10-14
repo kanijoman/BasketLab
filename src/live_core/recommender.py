@@ -80,6 +80,12 @@ class Recommender:
             candidate["message"] += f". Quedan {after} de formación en pista (mínimo {self._formation_min})"
         return candidate
 
+    def _formation_after(self, before: int, out_pid: str, in_pid: str) -> int:
+        return before - self._is_formation(out_pid) + self._is_formation(in_pid)
+
+    def _breaks_formation(self, before: int, after: int) -> bool:
+        return bool(self._formation_min) and after < self._formation_min and after < before
+
     def _quintet_balance(self, snap: Dict[str, Any], swap_out: str, swap_in: str) -> Dict[str, float]:
         """Change in each balance dimension if ``swap_in`` replaces ``swap_out`` on court."""
         on_court = [pid for pid, p in snap["players"].items() if p["on_court"] and p["team_id"] == self._own]
@@ -110,14 +116,44 @@ class Recommender:
             distance = role_distance(z_out, z_in)
             if distance > self._cfg.rec_max_role_distance:
                 continue
-            after = before - self._is_formation(out_pid) + self._is_formation(pid)
-            if self._formation_min and after < self._formation_min and after < before:
+            after = self._formation_after(before, out_pid, pid)
+            if self._breaks_formation(before, after):
                 continue  # it would leave fewer than the minimum (or make an illegal lineup worse)
             candidate = self._candidate(snap, out_pid, outgoing, pid, p, z_out, z_in, distance, lever)
             out.append(self._with_formation(candidate, after))
 
         out.sort(key=lambda c: (not c["balance_ok"], -c["score"], c["in_id"]))
         return out[: max_results or self._cfg.rec_max_results]
+
+    def suggest_rest(self, snap: Dict[str, Any], out_pid: str, exclude=(),
+                     max_results: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Minutes-sharing mode (issue #273): who should replace ``out_pid`` so that the lowest profiles play.
+
+        No role similarity: the candidates are the available bench players who have played less today AND average
+        fewer minutes than ``out_pid``, ranked by minutes today (who has not played first), then by average minutes.
+        Fouls, fatigue and the formación minimum are respected as in ``suggest_swaps``.
+        """
+        players, outgoing = snap["players"], snap["players"].get(out_pid)
+        base = self._table.get(out_pid)
+        if not base or not outgoing or not outgoing["on_court"] or outgoing["team_id"] != self._own:
+            return []
+        before, found = self._formation_on_court(snap), []
+        for pid, p in players.items():
+            entry = self._table.get(pid)
+            if (pid == out_pid or pid in exclude or not entry or p["team_id"] != self._own or p["on_court"]
+                    or p["minutes"] >= outgoing["minutes"] or (entry.get("avg_min") or 0) >= (base.get("avg_min") or 0)
+                    or not self._available(snap, pid, p)):
+                continue
+            after = self._formation_after(before, out_pid, pid)
+            if self._breaks_formation(before, after):
+                continue
+            message = f"Entra {p['name'].strip()} por {outgoing['name'].strip()}"
+            found.append(self._with_formation({
+                "type": "sub", "mode": "rest", "out_id": out_pid, "out_name": outgoing["name"].strip(),
+                "in_id": pid, "in_name": p["name"].strip(), "minutes_today_s": p["minutes"],
+                "avg_min_s": entry.get("avg_min") or 0, "balance_ok": True, "message": message}, after))
+        found.sort(key=lambda c: (c["minutes_today_s"], c["avg_min_s"], c["in_id"]))
+        return found[: max_results or self._cfg.rec_max_results]
 
     def suggest_for_lever(self, snap: Dict[str, Any], lever: str,
                           max_results: Optional[int] = None) -> List[Dict[str, Any]]:
