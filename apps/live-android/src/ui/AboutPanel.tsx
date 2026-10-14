@@ -45,6 +45,8 @@ export function VersionFooter({ version, engineVersion }: { version: AppVersion 
 }
 
 interface Props {
+  /** Experimental features the staff can switch off on this device (issue #257). */
+  experimental?: { winProb: boolean; onWinProb: (on: boolean) => void }
   engineVersion?: string | null
   schemaVersion?: number | null
   version: AppVersion | null
@@ -70,7 +72,7 @@ function UpdateStatus({ update, onOpen }: { update: UpdateResult | null; onOpen:
   )
 }
 
-export default function AboutPanel({ engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
+export default function AboutPanel({ experimental, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
 
@@ -107,6 +109,15 @@ export default function AboutPanel({ engineVersion, schemaVersion, version, upda
         <button type="button" className="secondary" onClick={() => onOpen(REPO_URL)}>Repositorio</button>
         <button type="button" className="secondary" onClick={() => onOpen(RELEASES_URL)}>Notas de la versión</button>
       </div>
+      {experimental && (
+        <fieldset className="experimental">
+          <legend>Funciones experimentales</legend>
+          <label>
+            <input type="checkbox" checked={experimental.winProb} onChange={e => experimental.onWinProb(e.target.checked)} />
+            {' '}Probabilidad de victoria (experimental)
+          </label>
+        </fieldset>
+      )}
       {note && <p role={note.error ? 'alert' : 'status'} className={note.error ? 'status error' : 'detail'}>{note.text}</p>}
     </section>
   )

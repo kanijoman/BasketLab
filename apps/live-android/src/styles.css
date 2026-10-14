@@ -180,3 +180,22 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .help-hint { display: inline-block; }
 .help-button { width: 36px; min-height: 36px; padding: 0; background: transparent; border: 0; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
 .help-text { margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }
+/* Win probability, experimental (#257) */
+.wp-card { margin: 12px 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.wp-card h2 { margin: 0 0 8px; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 6px;
+  border: 1px solid var(--accent); color: var(--accent); }
+.wp-main { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+.wp-value { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wp-chart { width: 100%; height: 56px; margin: 8px 0 4px; display: block; }
+.wp-chart-half { stroke: var(--line); stroke-dasharray: 2 2; stroke-width: 0.5; vector-effect: non-scaling-stroke; }
+.wp-chart-line { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.wp-levers-title { margin: 10px 0 6px; font-size: 0.9rem; }
+.wp-levers { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.wp-lever { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; }
+.wp-lever-name { font-weight: 600; overflow-wrap: anywhere; }
+.wp-gain { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--accent); }
+.wp-lever .detail { grid-column: 1 / -1; }
+.wp-note { margin: 10px 0 0; font-size: 0.8rem; }
+.experimental { margin: 12px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.experimental label { display: flex; align-items: center; gap: 8px; min-height: 44px; }

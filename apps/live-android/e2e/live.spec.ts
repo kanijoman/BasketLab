@@ -113,8 +113,24 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await expect(page.locator('.alerts').first().locator('.alert-info')).toHaveCount(0)
   await page.screenshot({ path: 'test-results/alerts-hierarchy.png', fullPage: true })
   await expect(page.locator('.pace-card')).toContainText('posesiones por equipo')
+  await expect(page.locator('.wp-card')).toContainText(/\d+ %/) // the win probability, experimental (#257)
 
   expect(errors).toEqual([])
+})
+
+test('the win probability card in the middle of the real match, for the layout review (issue #257)', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible({ timeout: 60_000 })
+  await page.getByRole('radio', { name: '300×' }).click()
+  await page.getByRole('button', { name: 'Reproducir' }).click()
+  await page.waitForTimeout(9_000) // ~ the second quarter at 300x
+  await page.getByRole('button', { name: 'Pausa' }).click()
+  const card = page.getByRole('region', { name: 'Probabilidad de victoria' })
+  await expect(card).toContainText(/\d+ %/)
+  await expect(card).toContainText('Experimental')
+  await card.screenshot({ path: 'test-results/win-prob-card.png' })
+  await page.screenshot({ path: 'test-results/win-prob-screen.png', fullPage: true })
 })
 
 test('live mode: connects to a (fake) FEB serving the real recording and follows the match in a real browser (issue #217)', async ({ page }) => {
