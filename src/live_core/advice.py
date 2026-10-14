@@ -18,12 +18,14 @@ from .four_factors import FourFactorsModel
 from .game_context import adjust_for_phase, game_phase
 from .pace import PaceModel
 from .proposals import timeout_proposal
+from .lineups import lineup_key
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
 from .rules_closing import advantage_rule, closing_rule, pace_rule
 from .rules_discipline import disqualification_rule, key_fouls_rule, rival_pair_rule
 from .rules_flow import drought_rule, long_run_rule, window_rule
+from .rules_plusminus import lineup_rule, player_rule
 from .rules_players import own_player_rule, rival_player_rule as rival_form_rule, rival_star_rule
 from .rules_rest import rest_rule
 from .rules_summary import summary_rule
@@ -49,7 +51,7 @@ RULES: List[Tuple[str, Rule]] = [
     ("disqualification", disqualification_rule), ("timeout_budget", timeout_budget_rule),
     ("key_fouls_close", key_fouls_rule), ("rival_foul_pair", rival_pair_rule),
     ("closing_briefing", closing_rule), ("period_summary", summary_rule), ("advantage_management", advantage_rule),
-    ("pace_control", pace_rule),
+    ("pace_control", pace_rule), ("lineup_net", lineup_rule), ("player_plus_minus", player_rule),
 ]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
@@ -71,6 +73,7 @@ class AdviceEngine:
         impact_league: Optional[Dict[str, float]] = None,
         zone_ref: Optional[Dict[str, Any]] = None,
         roster: Optional[Dict[str, Dict[str, Any]]] = None,
+        lineups: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
@@ -80,7 +83,8 @@ class AdviceEngine:
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
                         rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender,
-                        pace=self._pace, team_baselines=team_baselines or {})
+                        pace=self._pace, team_baselines=team_baselines or {},
+                        lineups={lineup_key(row["players"]): row for row in (lineups or [])})
             if own_team_id else None
         )
         self._last: Dict[str, int] = {}
@@ -99,6 +103,7 @@ class AdviceEngine:
             impact_league=(package.baselines or {}).get("impact_league"),
             zone_ref=(package.tables or {}).get("zones"),
             roster=(package.tables or {}).get("roster"),
+            lineups=(package.tables or {}).get("lineups"),
         )
 
     def analyze(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:

@@ -66,7 +66,7 @@ REAL_MATCH_TABLE = {
     ("own_drought", "critical"): 1, ("own_drought", "warning"): 2, ("own_drought", "info"): 1,
     ("rest_starters", "info"): 4, ("rival_drought", "info"): 1,
     ("rival_foul_trouble", "warning"): 2, ("rival_foul_trouble", "info"): 2, ("rival_hot_player", "warning"): 2, ("rival_hot_run", "warning"): 1, ("own_cold_player", "info"): 2,
-    ("rival_star_out", "info"): 3, ("rival_foul_pair", "warning"): 1, ("period_summary", "info"): 3,
+    ("rival_star_out", "info"): 3, ("rival_foul_pair", "warning"): 1, ("period_summary", "info"): 3, ("lineup_net", "warning"): 2, ("player_plus_minus", "info"): 6,
     ("rival_hot_streak", "warning"): 1, ("rival_near_bonus", "info"): 2, ("rival_orb_window", "warning"): 3,
     ("rival_run", "warning"): 1, ("rival_run", "info"): 3, ("rival_zone", "info"): 1,
     ("team_fouls_bonus", "warning"): 1, ("team_fouls_bonus", "info"): 1, ("turnover_streak", "warning"): 3,

@@ -15,6 +15,7 @@ RULE_IDS: Tuple[str, ...] = (
     "rival_player_form", "own_player_form", "rival_star_bench",
     "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
+    "lineup_net", "player_plus_minus",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -128,6 +129,15 @@ class RuleConfig:
     three_volume_min_fga: int = 12
     three_volume_max_pct: float = 0.25
     three_volume_block: int = 8
+    # Quintets and plus/minus (issue #248): the quintet on court is this many points down (net) after this many seconds together;
+    # its season row of the package is shown from this many seconds together; a player is this many points down in his stint of at
+    # least this many seconds.
+    lineup_net: int = 6
+    lineup_min_s: int = 180
+    lineup_season_min_s: int = 600
+    pm_player_net: int = 8
+    pm_player_min_s: int = 240
+    pm_player_gap: int = 3
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.
