@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 # ``rule_config["rules_off"]``. ``team_fouls`` covers both team_fouls_bonus and rival_near_bonus.
 RULE_IDS: Tuple[str, ...] = (
     "foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
-    "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone",
+    "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -33,6 +33,9 @@ class RuleConfig:
     formation_min_on_court: int = 2
     formation_confirm_polls: int = 2
     decided_margin: int = 20
+    # Rest in a decided game: a player is important with at least this average and this many seconds played today.
+    rest_important_avg_min_s: int = 1200
+    rest_important_today_s: int = 600
     decided_remaining_s: int = 480
     close_margin: int = 6
     close_remaining_s: int = 240

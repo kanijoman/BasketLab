@@ -21,6 +21,7 @@ from .proposals import timeout_proposal
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
+from .rules_rest import rest_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
 from .rules_team import foul_rule, rival_foul_rule, run_rule, team_fouls_rule, turnover_rule
@@ -33,6 +34,7 @@ RULES: List[Tuple[str, Rule]] = [
     ("team_fouls", team_fouls_rule),
     ("rival_run", run_rule), ("turnover_streak", turnover_rule), ("fatigue_high", fatigue_rule),
     ("four_factors_lever", four_factors_rule), ("rival_hot_player", rival_player_rule), ("rival_zone", rival_zone_rule),
+    ("rest_starters", rest_rule),
 ]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
@@ -58,13 +60,13 @@ class AdviceEngine:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
-        self._ctx = (
-            RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
-                        rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {})
-            if own_team_id else None
-        )
         self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster)
                              if own_team_id and baselines else None)
+        self._ctx = (
+            RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
+                        rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender)
+            if own_team_id else None
+        )
         self._last: Dict[str, int] = {}
         self._streak: Dict[str, int] = {}   # key -> consecutive evaluations it has appeared in (alerts that ask to confirm)
         self._count: Dict[str, int] = {}

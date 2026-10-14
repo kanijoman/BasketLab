@@ -189,12 +189,14 @@
      "alerts": [
       "foul:2817526:4",
       "bonus:982047:4",
+      "rest:2817526",
+      "rest:2212271",
       "rfoul:2073736:4",
       "rfoul:1489375:3",
       "rbonus:981204:4"
      ],
      "digests": {
-      "alerts": "94156bbed1f075cdedc1e557132a765aba10b531f3fcf3bcd35c0b43e68a2c57",
+      "alerts": "767b4cbfebb9588c330b51659d5ff43cc808ba30fb712a2e41f9e0fc7de17736",
       "analysis": "d6d0af7c6ba5cc0acd89472df548aca8a2ed9f4ce10469e785c90a57a9487547",
       "snapshot": "933a2dbc8d212aebf51446ef615f582971748b38a81fa037bd17eb4873e8d975"
      },

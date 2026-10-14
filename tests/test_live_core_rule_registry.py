@@ -12,10 +12,11 @@ from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
+from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
 
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
-                "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone")
+                "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters")
 
 
 def _engine(rules_off=(), **kw):
@@ -67,6 +68,7 @@ SCENARIOS = {
     "four_factors_lever": (lambda: ff_snap(_stats(tov=22), _stats()), {"four_factors_lever"}, {}),
     "rival_hot_player": (lambda: rival_snap({"orb": 4}), {"rival_hot_player"}, {"rival_baselines": RIVAL_BASELINES}),
     "rival_zone": (_zone, {"rival_zone"}, {}),
+    "rest_starters": (rest_decided, {"rest_starters"}, {"baselines": REST_TABLE}),
 }
 
 

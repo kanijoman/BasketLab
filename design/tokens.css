@@ -38,6 +38,7 @@
   --cat-juego: #38bdf8;
   --cat-ritmo: #34d399;
   --cat-alineacion: #2dd4bf;
+  --cat-descanso: #f472b6;
 
   /* pace card: faster / slower than usual (neutral colors, not good/bad) */
   --pace-fast: #f59e0b;
@@ -87,6 +88,7 @@
     --cat-juego: #0a69a8;
     --cat-ritmo: #1a7f4b;
     --cat-alineacion: #0f766e;
+    --cat-descanso: #be185d;
     --pace-fast: #b45309;
     --pace-slow: #1d4ed8;
   }
@@ -113,6 +115,7 @@
   --cat-juego: #0a69a8;
   --cat-ritmo: #1a7f4b;
   --cat-alineacion: #0f766e;
+  --cat-descanso: #be185d;
   --pace-fast: #b45309;
   --pace-slow: #1d4ed8;
 }

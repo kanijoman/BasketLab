@@ -34,3 +34,4 @@ class RuleContext:
     impact_league: Dict[str, float] = field(default_factory=dict)             # league per-40 means
     zone_ref: Dict[str, Any] = field(default_factory=dict)                    # {"rival": {zone: cell}, "league": {...}}
     roster: Dict[str, Dict[str, Any]] = field(default_factory=dict)           # player id -> FEB roster entry (formación...)
+    recommender: Optional[Any] = None                                          # Recommender (None without player baselines)

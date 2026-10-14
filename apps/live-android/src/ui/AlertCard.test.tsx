@@ -51,6 +51,17 @@ describe('AlertCard category of the lineup rule (issue #272)', () => {
   })
 })
 
+describe('AlertCard category of the rest rule (issue #273)', () => {
+  it('shows «Descanso» with its own icon and colour', () => {
+    const alert: Alert = { ...ALERT, key: 'rest:p1', id: 'rest_starters', category: 'descanso',
+      message: 'Partido decidido (+22): descansa a Ana (28 min hoy) y da minutos a Bea (sin minutos hoy).' }
+    render(<ul><AlertCard alert={alert} at="Q4 05:00" /></ul>)
+    const tag = screen.getByText('Descanso').closest('[data-category]') as HTMLElement
+    expect(tag.getAttribute('data-category')).toBe('descanso')
+    expect(tag.querySelector('svg')).toBeTruthy()
+  })
+})
+
 describe('proposal kinds (issue #240)', () => {
   const withProposal = (...proposal: Alert['proposal']): Alert => ({ ...ALERT, proposal })
 
