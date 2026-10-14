@@ -79,7 +79,7 @@ def shrink(obs: float, prior: float, n: float, n0: float) -> float:
     return (n * obs + n0 * prior) / (n + n0) if (n + n0) else prior
 
 
-def _points_per_unit(own: Dict[str, int]) -> Dict[str, float]:
+def points_per_unit(own: Dict[str, int]) -> Dict[str, float]:
     """Points per 100 possessions per 1.0 of each factor differential (analytic marginals)."""
     poss = possessions(own)
     reliable = poss >= _MIN_POSS_FOR_RATES
@@ -125,8 +125,8 @@ class FourFactorsModel:
         z = {k: (shrunk[k] - mean.get(k, 0.0)) / sd[k] for k in WEIGHTS}
         contributions = {k: WEIGHTS[k] * z[k] for k in WEIGHTS}
         score = sum(contributions.values())
-        pts100 = {k: _points_per_unit(own)[k] * shrunk[k] for k in WEIGHTS}
-        pts100_raw = {k: _points_per_unit(own)[k] * raw[k] for k in WEIGHTS}   # without the shrinkage towards the prior
+        pts100 = {k: points_per_unit(own)[k] * shrunk[k] for k in WEIGHTS}
+        pts100_raw = {k: points_per_unit(own)[k] * raw[k] for k in WEIGHTS}   # without the shrinkage towards the prior
 
         deficits = {k: v for k, v in contributions.items() if v < 0 and pts100[k] < 0}
         lever = min(deficits, key=deficits.get) if deficits else None

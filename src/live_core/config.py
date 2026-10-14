@@ -236,6 +236,9 @@ class RuleConfig:
     wp_sigma: float = 12.0
     wp_n0: float = 60.0
     wp_home_adv: float = 4.0
+    # Levers (#256): how much faster or slower the pace is tried, and the smallest probability gain worth listing.
+    wp_pace_change: float = 0.10
+    wp_lever_min_gain: float = 0.01
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0

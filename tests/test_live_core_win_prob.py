@@ -7,7 +7,7 @@ expected net rating), weighted by the possessions played. P(win) = Phi(mean / sd
 import pytest
 
 from src.live_core.config import RuleConfig
-from src.live_core.win_prob import WinProbabilityModel
+from src.live_core.win_prob import WinProbabilityModel, phi
 
 OWN, RIVAL = "1", "2"
 
@@ -123,3 +123,81 @@ def test_the_advice_engine_publishes_it_in_the_analysis(feb_game_doc):
     assert 0.0 <= wp["p"] <= 1.0
     margin = snapshot["score"][ids[0]] - snapshot["score"][ids[1]]
     assert (wp["p"] > 0.5) == (margin > 0) or margin == 0
+
+
+# -- levers (issue #256): how much the probability moves if the team gets back to its usual level -----------------
+
+LEVER_STATS = dict(fg2m=20, fg2a=40, fg3m=6, fg3a=20, ftm=10, fta=14, orb=8, drb=25, tov=10, tov_team=0, stl=5, ast=12, blk=2, pts=0)
+
+
+def lever_snap(margin=0, elapsed=1200):
+    s = snap(margin, elapsed)
+    s["teams"] = {OWN: {"stats": dict(LEVER_STATS)}, RIVAL: {"stats": dict(LEVER_STATS)}}
+    return s
+
+
+def lever_ff(shrunk=None, prior=None, poss_remaining=40.0, reliable=True):
+    zero = {"efg": 0.0, "tov": 0.0, "orb": 0.0, "ftr": 0.0}
+    return {**ff(poss=40.0, poss_remaining=poss_remaining, reliable=reliable), "shrunk": {**zero, **(shrunk or {})}}
+
+
+def levers(margin=0, shrunk=None, prior=None, ff_over=None, **cfg):
+    m = model({"four_factors_prior": prior or {}}, **cfg)
+    s = lever_snap(margin)
+    return m.levers(s, {**lever_ff(shrunk), **(ff_over or {})})
+
+
+def by_id(rows):
+    return {r["id"]: r for r in rows}
+
+
+def test_a_factor_below_its_usual_level_is_a_lever_worth_its_gain_in_probability():
+    from src.live_core.four_factors import points_per_unit
+
+    rows = by_id(levers(margin=-4, shrunk={"efg": -0.05}, prior={"efg": 0.0}))
+    assert "efg" in rows and rows["efg"]["gain"] > 0
+    extra = points_per_unit(LEVER_STATS)["efg"] * 0.05 * 40 / 100        # points over what is left of the game
+    m = model()
+    base = m.evaluate(lever_snap(-4), lever_ff())
+    expected = phi((-4 + extra) / base["sd"]) - base["p"]
+    assert rows["efg"]["gain"] == pytest.approx(expected, abs=1e-3)
+    assert rows["efg"]["gain_pts"] == pytest.approx(extra, abs=0.01)
+
+
+def test_a_factor_at_or_above_its_usual_level_is_not_a_lever():
+    rows = by_id(levers(margin=-4, shrunk={"efg": 0.03, "tov": 0.0}, prior={"efg": 0.0, "tov": 0.0}))
+    assert "efg" not in rows and "tov" not in rows
+
+
+def test_the_usual_level_is_the_prior_of_the_package():
+    # shrunk 0.0 is below a prior of +0.04: back to usual means improving
+    assert "orb" in by_id(levers(margin=-4, shrunk={"orb": 0.0}, prior={"orb": 0.04}))
+
+
+def test_levers_come_ordered_by_gain_and_small_ones_are_dropped():
+    rows = levers(margin=-4, shrunk={"efg": -0.08, "tov": -0.03, "ftr": -0.0001})
+    gains = [r["gain"] for r in rows if r["id"] != "pace"]
+    assert gains == sorted(gains, reverse=True) and "ftr" not in by_id(rows)
+    assert all(r["gain"] >= RuleConfig().wp_lever_min_gain for r in rows)
+
+
+def test_no_levers_without_a_reliable_game_or_four_factors():
+    assert levers(margin=-4, shrunk={"efg": -0.08}, ff_over={"reliable": False}) == []
+    assert model().levers(lever_snap(-4), None) == []
+
+
+def test_trailing_team_gains_from_a_faster_game_and_the_leader_from_a_slower_one():
+    behind = by_id(levers(margin=-6))["pace"]
+    ahead = by_id(levers(margin=6))["pace"]
+    assert behind["direction"] == "up" and ahead["direction"] == "down"
+    assert behind["gain"] > 0 and ahead["gain"] > 0
+    assert "pace" not in by_id(levers(margin=0))
+
+
+def test_a_decided_game_has_no_pace_lever():
+    assert "pace" not in by_id(levers(margin=40))
+
+
+def test_lever_gain_by_id_for_the_alerts():
+    gains = model().lever_gains(lever_snap(-4), lever_ff({"efg": -0.05}))
+    assert set(gains) >= {"efg"} and gains["efg"] > 0

@@ -90,7 +90,7 @@ class AdviceEngine:
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
                         rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender,
-                        pace=self._pace, team_baselines=team_baselines or {},
+                        pace=self._pace, team_baselines=team_baselines or {}, win_prob=self._win_prob,
                         lineups={lineup_key(row["players"]): row for row in (lineups or [])})
             if own_team_id else None
         )
@@ -122,6 +122,7 @@ class AdviceEngine:
         win_prob = self._win_prob.evaluate(snapshot, result) if self._win_prob else None
         if win_prob:
             analysis["win_prob"] = win_prob
+            analysis["win_levers"] = self._win_levers(snapshot, result)
         pace = self._pace.evaluate(snapshot) if self._pace else None
         if pace:
             analysis["pace"] = pace
@@ -132,6 +133,13 @@ class AdviceEngine:
             if self._ctx.config.formation_min_on_court > 0:
                 analysis["formation"] = self._formation_status(snapshot)
         return analysis
+
+    def _win_levers(self, snapshot: Dict[str, Any], four_factors: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Levers of the win probability; each factor lever carries the recommender's swaps for it (issue #256)."""
+        levers = self._win_prob.levers(snapshot, four_factors)
+        if self._recommender is None:
+            return levers
+        return [{**lv, "proposal": self._recommender.suggest_for_lever(snapshot, lv["id"])} if lv["id"] != "pace" else lv for lv in levers]
 
     def _formation_status(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
         """For the app: the minimum, whether the roster tells who is formación, and how many are on court now."""

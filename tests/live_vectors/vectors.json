@@ -53,7 +53,7 @@
      ],
      "digests": {
       "alerts": "c082e7c8ba9320b1941f39395c651f5bb45a1897016fb4e7b5659d2faddda419",
-      "analysis": "82ef44312ae1035e85b16eb18ea588a71e085584d71b4c8ec3d1579d1ec46834",
+      "analysis": "2113e68e3ac9b079ac3b38be98d99104af03e396aa6ef5fdf66d225bcaba4cc3",
       "snapshot": "20d84172be2a1d74d1d9bc43d7450cd2edb19c06a91a9b0ae4887b9dce851d43"
      },
      "elapsed": 300,
@@ -73,7 +73,7 @@
      ],
      "digests": {
       "alerts": "ee5ba07d51ca69ca9393e988b670728f10c3578d0df8938becb54cf23e8f030a",
-      "analysis": "61ead1077658324ee3a6be64bba3524737a0d9daf2bc2cb45bc602fe808c7194",
+      "analysis": "ba0a4916fa6e7618a5eb316a85bfef0fdff43601151becb25f2731a89a516f76",
       "snapshot": "11d30dc2ba9de322d9611d1d9243dcc756755f87007db2545407335c307ce97b"
      },
      "elapsed": 600,
@@ -89,7 +89,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "05fc28c7f20498b42631d33b258d17a27ae10031e30411bc735be89d8adfc5e9",
+      "analysis": "ad5365c6406980696bced9d492df68585c12cc60eefa3dbd54f0693f64dedb5e",
       "snapshot": "f2dd092c5109484cb300580cc7214f4e5bc101a5ee785b4c251af203dbe24b50"
      },
      "elapsed": 900,
@@ -110,8 +110,8 @@
       "summary:2"
      ],
      "digests": {
-      "alerts": "858b6d5969e11162d6151f33b5ebcf8a82e189d8a27661c4240da6fc2451728a",
-      "analysis": "76ead3b00f261ad69458541d8a4c6340af86b460740c7b5dc269134c53a89b4a",
+      "alerts": "22ee3d930541cfe18c3b9d882fc4388edb9c471d8653eae8bf3ad85d0b4cf22d",
+      "analysis": "1cd1a20a452f00aabab0175e1e884448d8052721b404b6efa172a499b23a2b3a",
       "snapshot": "1dc9ea15399855e6768f66ddae13c8443604ebd769f2778036718b98217f1352"
      },
      "elapsed": 1200,
@@ -128,8 +128,8 @@
       "lever:ftr:1:2"
      ],
      "digests": {
-      "alerts": "cab6a6214f3fcdffbbe4067f0bf34b0d9d9bc0bbfc9395fc106b4eab5eb18f43",
-      "analysis": "734ef68deb0cc1ed3989001c4f6dd8105de894ff04a55d384ce68ee4f1543334",
+      "alerts": "f14064b504f757c508840d91c08ef2e56bd07d11418c24afa6c98f5859210bc8",
+      "analysis": "f5b5d1c1ae519f1af6e6ae47e55b740a37a64ed629fcdf253033de0ea927137c",
       "snapshot": "b30f548fce8182b879b401403ce78658cca309bb456b214010de1edecc44bf15"
      },
      "elapsed": 1350,
@@ -150,7 +150,7 @@
      ],
      "digests": {
       "alerts": "a014edffc1171024da1792703222d69e1f437b93ea7c3c9f75bce438670ad22b",
-      "analysis": "a9ebaedd556c1d7631919cd3518976783ed795e28c4b738e42ba74c29165cbcb",
+      "analysis": "643200e95684bfefdea5c088b0b2b4dbdad354d80e46ced483898e3fa34b2082",
       "snapshot": "87476f9f64d3d2e51bd7296606417990e79bebfff4026d2048ead94c95bcfcf1"
      },
      "elapsed": 1800,
@@ -166,7 +166,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "9b11937a33228e56368179824d2a3caf9d58dec5ebec39089545c66058ad69ef",
+      "analysis": "92dfc59a5ed90a5f591ca896c95f664d9e65bb723c75419777e639c113dc5014",
       "snapshot": "664f8df5c2b5b43a42b693bb95f797669b94ed19ee2459d190253395521bef9e"
      },
      "elapsed": 1800,
@@ -186,7 +186,7 @@
      ],
      "digests": {
       "alerts": "d8ef87d4dc517fd1b7fff5ba11bd1be7e27be13711cff2c81d900ffcde3a8879",
-      "analysis": "5ee580ec1aac5ad86a13b4ae070d76f910b998b429630cb9713d97300b98e900",
+      "analysis": "05f503e8333b5eee27ea6f65f45b9d14ba089f1d9b3ada867a68903a8160fe08",
       "snapshot": "f9e6bbd2e271cdd1ebce544bcc61c8fd494b50fb999cedf1fe8f925894da5189"
      },
      "elapsed": 2100,
@@ -212,7 +212,7 @@
      ],
      "digests": {
       "alerts": "0b16c934f29120860cb7b850b23a0337d288c88d4d16f2910671ca2d13182aeb",
-      "analysis": "4b1770c5c51bbcbad9eb664ba8c04750c633ba21bbdfd20b673d6cd4e3472253",
+      "analysis": "d339bf7c120908415a19d5cf6f9afcdd0510145f745d91644ca5703594ff67fc",
       "snapshot": "642f01424383cc53ec9a4c0f002be8f2bf8529bf9fc8225dafdd3d1c2d677e52"
      },
      "elapsed": 2340,
@@ -232,7 +232,7 @@
      ],
      "digests": {
       "alerts": "d03cf390f83f035e4ef34e7578c99a65aa515b5d0f5b2b7ecc977d69a2907d87",
-      "analysis": "fb1119f29b04b541f00a01fa45ae71a5574be1c2b6b055ef29a932d2e038067f",
+      "analysis": "ab544733e199a382b5d38ef52a1eda5063b5331e9020b71c66d471b84b67c2c5",
       "snapshot": "6a222b00fc45c5deb3d7682d24b83d5a6cc1236011cc278d618a85a0c2f954ee"
      },
      "elapsed": 2400,
@@ -3239,7 +3239,8 @@
        "lever": "tov",
        "possessions": 74.2,
        "pts100": -8.8432,
-       "pts100_raw": -11.8244
+       "pts100_raw": -11.8244,
+       "win_gain": 0.2955
       },
       "id": "four_factors_lever",
       "key": "lever:tov:1:2",
