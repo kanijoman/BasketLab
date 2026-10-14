@@ -17,6 +17,7 @@ from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .game_context import adjust_for_phase, game_phase
 from .pace import PaceModel
+from .proposals import timeout_proposal
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
@@ -146,7 +147,8 @@ class AdviceEngine:
         return advice if n == 1 else dataclasses.replace(advice, key=f"{advice.key}#{n}")
 
     def _with_proposal(self, advice: Advice, snapshot: Dict[str, Any]) -> Advice:
-        """Attach the recommender's substitution proposals to the advice that calls for them."""
+        """Complete the advice's proposals: timeouts get their count, substitutions come after the rule's own."""
+        advice = self._with_timeout_count(advice, snapshot)
         if advice.id in ("foul_trouble", "fatigue_high"):
             note = departure_note(snapshot, self._ctx.own_team_id, self._ctx.roster, self._ctx.config,
                                   advice.evidence["player_id"])
@@ -154,6 +156,7 @@ class AdviceEngine:
                 advice = dataclasses.replace(advice, message=f"{advice.message} {note}")
         if self._recommender is None:
             return advice
+        proposal: List[Dict[str, Any]]
         if advice.id in ("foul_trouble", "fatigue_high"):
             proposal = self._recommender.suggest_swaps(
                 snapshot, advice.evidence["player_id"], lever=self._current_lever(snapshot))
@@ -165,7 +168,15 @@ class AdviceEngine:
             proposal = self._recommender.suggest_for_lever(snapshot, _RIVAL_LEVER[advice.evidence["metric"]])
         else:
             return advice
-        return dataclasses.replace(advice, proposal=proposal)
+        return dataclasses.replace(advice, proposal=[*advice.proposal, *proposal])
+
+    def _with_timeout_count(self, advice: Advice, snapshot: Dict[str, Any]) -> Advice:
+        """A timeout proposal that does not say how many timeouts are left gets the own team's count."""
+        if not any(p.get("type") == "timeout" and "left" not in p for p in advice.proposal):
+            return advice
+        left = timeouts_left(snapshot, self._ctx.own_team_id)
+        return dataclasses.replace(advice, proposal=[
+            timeout_proposal(left) if p.get("type") == "timeout" and "left" not in p else p for p in advice.proposal])
 
     def _current_lever(self, snapshot: Dict[str, Any]) -> Optional[str]:
         result = self._model.evaluate(snapshot) if self._model else None

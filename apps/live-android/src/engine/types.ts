@@ -37,12 +37,18 @@ export interface RecordingFrame {
 
 export type Severity = 'critical' | 'warning' | 'info'
 
+/** What an alert proposes: `sub` (out → in), `timeout` (`left` = timeouts left), `tactic` (`message`, optional target
+ *  player); any other `type` is shown by its `message`. */
 export interface Proposal {
   type: string
   out_id?: string
   out_name?: string
   in_id?: string
   in_name?: string
+  left?: number
+  message?: string
+  player_id?: string
+  player_name?: string
   [key: string]: unknown
 }
 

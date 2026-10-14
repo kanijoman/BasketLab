@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import AlertCard from './AlertCard'
+import AlertCard, { formatProposal } from './AlertCard'
 import type { Alert } from '../engine/types'
 
 const ALERT: Alert = {
@@ -48,5 +48,40 @@ describe('AlertCard category of the lineup rule (issue #272)', () => {
     const tag = screen.getByText('Alineación').closest('[data-category]') as HTMLElement
     expect(tag.getAttribute('data-category')).toBe('alineacion')
     expect(tag.querySelector('svg')).toBeTruthy()
+  })
+})
+
+describe('proposal kinds (issue #240)', () => {
+  const withProposal = (...proposal: Alert['proposal']): Alert => ({ ...ALERT, proposal })
+
+  it('formats a substitution as out → in, as before', () => {
+    expect(formatProposal({ type: 'sub', out_name: 'Ana', in_name: 'Bea' })).toBe('Ana → Bea')
+  })
+
+  it('formats a timeout with the timeouts left', () => {
+    expect(formatProposal({ type: 'timeout', left: 2 })).toBe('Tiempo muerto · quedan 2')
+    expect(formatProposal({ type: 'timeout', left: 1 })).toBe('Tiempo muerto · queda 1')
+    expect(formatProposal({ type: 'timeout', left: 0 })).toBe('Tiempo muerto · no quedan')
+    expect(formatProposal({ type: 'timeout' })).toBe('Tiempo muerto')
+  })
+
+  it('formats a tactic with its message and, if any, its target player', () => {
+    expect(formatProposal({ type: 'tactic', message: 'Defensa en zona' })).toBe('Defensa en zona')
+    expect(formatProposal({ type: 'tactic', message: 'Ayudas sobre ella', player_name: 'Rita' })).toBe('Rita: Ayudas sobre ella')
+  })
+
+  it('shows an unknown kind by its message, or by its type if it has none', () => {
+    expect(formatProposal({ type: 'futuro', message: 'Algo nuevo' })).toBe('Algo nuevo')
+    expect(formatProposal({ type: 'futuro' })).toBe('futuro')
+  })
+
+  it('renders every kind in the card, each with its kind and an icon', () => {
+    render(<ul><AlertCard at="Q2 05:00" alert={withProposal(
+      { type: 'timeout', left: 2 }, { type: 'tactic', message: 'Zona 2-3' }, { type: 'sub', out_name: 'Ana', in_name: 'Bea' },
+    )} /></ul>)
+    const items = within(screen.getByRole('list', { name: 'Propuestas' })).getAllByRole('listitem')
+    expect(items.map(i => i.textContent)).toEqual(['Tiempo muerto · quedan 2', 'Zona 2-3', 'Ana → Bea'])
+    expect(items.map(i => i.getAttribute('data-kind'))).toEqual(['timeout', 'tactic', 'sub'])
+    items.forEach(i => expect(i.querySelector('svg')).not.toBeNull())
   })
 })
