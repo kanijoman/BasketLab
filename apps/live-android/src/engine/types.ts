@@ -118,8 +118,35 @@ export interface FormationStatus {
   players: number
 }
 
+/** Win probability of the own team, from src/live_core/win_prob.py (issue #254; experimental in the app, #257). */
+export interface WinProb {
+  p: number
+  /** Expected final margin (own minus rival). */
+  projected_margin: number
+  sd: number
+  poss_remaining: number
+  mu_per_100: number
+  /** False until the game has enough possessions: the figure rests on the pre-game prior and the score. */
+  reliable: boolean
+}
+
+/** What moves the win probability in our favour (issue #256): a Four Factors factor or the pace. */
+export interface WinLever {
+  id: 'efg' | 'tov' | 'orb' | 'ftr' | 'pace' | string
+  /** Probability gain (0-1) if the factor goes back to its usual level, or with the pace change. */
+  gain: number
+  gain_pts: number
+  /** Pace only: who is behind wants it faster ('up'), who is ahead slower ('down'). */
+  direction?: 'up' | 'down'
+  /** Factor levers: the recommender's substitutions for it. */
+  proposal?: Proposal[]
+}
+
 export interface EngineOutput {
   snapshot: Snapshot
   alerts: Alert[]
-  analysis: { four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext; formation?: FormationStatus }
+  analysis: {
+    four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext
+    formation?: FormationStatus; win_prob?: WinProb; win_levers?: WinLever[]
+  }
 }

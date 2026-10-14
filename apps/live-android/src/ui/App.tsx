@@ -22,6 +22,9 @@ import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
+import WinProbCard from './WinProbCard'
+import { useExperimental } from './useExperimental'
+import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
@@ -73,6 +76,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
   const [tab, setTab] = useTab()
+  const [winProbOn, setWinProbOn] = useExperimental('win_prob')
+  const winProbHistory = useWinProbHistory(out)
   const busy = useRef(false)
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
@@ -265,6 +270,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <FormationStatus formation={out?.analysis?.formation} />
 
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
+      {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
 
       {pkg ? (
         <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running}
@@ -301,7 +307,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
       onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
         packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind,
-        engineVersion: meta?.engine_version ?? null })} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null} />
+        engineVersion: meta?.engine_version ?? null })} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null}
+      experimental={{ winProb: winProbOn, onWinProb: setWinProbOn }} />
   )
   return (
     <main className="screen with-tabs">
