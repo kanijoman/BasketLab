@@ -1,4 +1,49 @@
-# Probabilidad de victoria: calibración con varias competiciones (14/10/2026)
+# Probabilidad de victoria: informe definitivo de la calibración (14/10/2026)
+
+**Terminología**: *puntos porcentuales* (pp) miden la probabilidad (prevista 35 % frente a 42 % real = 7 pp); *puntos de marcador* miden el margen del partido (el MAE del margen es de ~7,3 puntos de marcador). Son cosas distintas.
+
+## Conclusiones aplicables
+
+1. **El modelo está bien calibrado en conjunto** (1.529 partidos de LF Endesa, LF2 y LF Challenge, 2024/25 y 2025/26; 21.312 cortes de 5 min): en los deciles de 10 % a 90 % el desvío es de ±2 pp como máximo y **todos los intervalos de confianza al 95 % (remuestreo por partido) caben dentro de ±5 pp**, el límite del criterio acordado. En los extremos hay un exceso de seguridad de ~1 pp (p. ej. 97,4 % previsto, 96,2 % real) que no tiene importancia práctica. **El criterio se cumple.**
+2. **En LF Challenge sola** (454 partidos, la competición del staff) el decil 30-40 % se desvía +7,4 pp (IC 95 % [+1,7, +12,8]) y el 60-70 % −7,5 pp (mismo desvío visto desde el otro equipo). Es distinto de cero, pero **el intervalo incluye los 5 pp**: no puede afirmarse que supere el límite. Con 10 deciles, alguno sale «significativo» por azar, y los dos son el mismo hallazgo. No hay evidencia suficiente para un ajuste propio de LF Challenge.
+3. **Lo que aporta el modelo es el valor previo más el marcador y el tiempo.** Gana con claridad a «solo marcador y tiempo» (log loss 0,391 frente a 0,435; MAE del margen 7,3 frente a 8,3 puntos de marcador) y queda a una milésima de «solo valor previo» (0,389). Los Four Factors del partido **no añaden** información sobre el valor previo; las palancas siguen siendo útiles como orden de prioridades, no como cifras exactas.
+4. **Decisiones**: la tarjeta de la app se mantiene como está (porcentaje con la insignia «Experimental» y su nota); no se tocan el motor ni los parámetros (`wp_n0` = 120, `wp_sigma` = 12, `wp_home_adv` = 4); la alerta de vuelco (#258) sigue aplazada hasta repetir esta medición con más partidos de LF Challenge de 2026/27 (con `python -m src.live_prep.wp_cli … --bootstrap 1000 --no-grid`).
+
+### Intervalos de confianza por decil: LF Endesa + LF2 + LF Challenge (1.529 partidos)
+
+Desvío = frecuencia real − probabilidad prevista, en puntos. Un intervalo que no contiene el 0 indica que el desvío no es solo ruido.
+
+| Decil | Cortes | Partidos | P media | Frecuencia | Desvío | IC 95 % | ¿Distinto de 0? |
+|---|---|---|---|---|---|---|---|
+| 0-10 % | 4558 | 1271 | 0.026 | 0.038 | +1.1 | [0.3, 2.0] | **sí** |
+| 10-20 % | 1732 | 1022 | 0.148 | 0.163 | +1.5 | [-0.9, 3.9] | no |
+| 20-30 % | 1499 | 911 | 0.249 | 0.247 | -0.2 | [-2.8, 2.6] | no |
+| 30-40 % | 1496 | 834 | 0.349 | 0.368 | +1.9 | [-1.0, 4.8] | no |
+| 40-50 % | 1374 | 753 | 0.451 | 0.433 | -1.8 | [-4.4, 0.8] | no |
+| 50-60 % | 1380 | 756 | 0.548 | 0.567 | +1.8 | [-0.8, 4.3] | no |
+| 60-70 % | 1496 | 834 | 0.651 | 0.632 | -1.9 | [-4.9, 0.9] | no |
+| 70-80 % | 1498 | 910 | 0.751 | 0.753 | +0.2 | [-2.6, 2.7] | no |
+| 80-90 % | 1731 | 1022 | 0.852 | 0.837 | -1.5 | [-4.0, 0.9] | no |
+| 90-100 % | 4548 | 1269 | 0.974 | 0.962 | -1.1 | [-2.0, -0.3] | **sí** |
+
+### Intervalos de confianza por decil: solo LF Challenge (454 partidos)
+
+Desvío = frecuencia real − probabilidad prevista, en puntos. Un intervalo que no contiene el 0 indica que el desvío no es solo ruido.
+
+| Decil | Cortes | Partidos | P media | Frecuencia | Desvío | IC 95 % | ¿Distinto de 0? |
+|---|---|---|---|---|---|---|---|
+| 0-10 % | 1426 | 381 | 0.025 | 0.031 | +0.6 | [-0.6, 1.8] | no |
+| 10-20 % | 514 | 305 | 0.146 | 0.160 | +1.3 | [-2.7, 5.5] | no |
+| 20-30 % | 445 | 262 | 0.250 | 0.254 | +0.4 | [-4.3, 5.0] | no |
+| 30-40 % | 409 | 223 | 0.349 | 0.423 | +7.4 | [1.7, 12.8] | **sí** |
+| 40-50 % | 383 | 209 | 0.453 | 0.418 | -3.5 | [-8.5, 1.8] | no |
+| 50-60 % | 385 | 210 | 0.547 | 0.582 | +3.5 | [-1.8, 8.5] | no |
+| 60-70 % | 408 | 222 | 0.651 | 0.576 | -7.5 | [-13.0, -1.8] | **sí** |
+| 70-80 % | 445 | 262 | 0.749 | 0.746 | -0.3 | [-5.0, 4.3] | no |
+| 80-90 % | 515 | 306 | 0.854 | 0.841 | -1.3 | [-5.5, 2.6] | no |
+| 90-100 % | 1426 | 381 | 0.975 | 0.969 | -0.6 | [-1.8, 0.6] | no |
+
+---
 
 ## Actualización: con LF2 y LF Endesa **sí cumple el criterio**
 

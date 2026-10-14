@@ -21,7 +21,7 @@ from src.live_core.win_prob import GAME_SECONDS, WinProbabilityModel
 from .eval_feed import finished_game_polls
 from .eval_source import same_start_groups
 from .package_builder import SeasonAccumulator
-from .wp_metrics import brier, log_loss, mae, max_decile_gap, reliability
+from .wp_metrics import bootstrap_reliability, brier, log_loss, mae, max_decile_gap, reliability
 
 VARIANTS = ("full", "prior_only", "score_time")
 _FIXED_DATE = "1970-01-01T00:00:00Z"
@@ -91,6 +91,14 @@ def score_samples(samples: Sequence[Dict[str, Any]], cfg: RuleConfig, variant: s
     return {"n": len(samples), "brier": brier(ps, ys), "log_loss": log_loss(ps, ys),
             "mae": mae([r["projected_margin"] for r in results], [s["final_margin"] for s in samples]),
             "reliability": rel, "max_gap": max_decile_gap(rel)}
+
+
+def bootstrap_forecast(samples: Sequence[Dict[str, Any]], cfg: RuleConfig, resamples: int = 1000, seed: int = 0,
+                       variant: str = "full") -> List[Dict[str, Any]]:
+    """Per-decil gap of the forecast with a bootstrap interval resampling whole games (issue #261)."""
+    results = [forecast(s, cfg, variant) for s in samples]
+    return bootstrap_reliability([r["p"] for r in results], [int(s["won"]) for s in samples], [str(s["game"]) for s in samples],
+                                 resamples=resamples, seed=seed)
 
 
 def compare(samples: Sequence[Dict[str, Any]], cfg: Optional[RuleConfig] = None) -> Dict[str, Dict[str, Any]]:

@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from src.live_core.config import RuleConfig
 
-from .wp_eval import GAP_LIMIT_POINTS, GAP_MIN_CUTS, LOG_LOSS_TOLERANCE, VARIANTS, app_criterion, collect_samples, compare, grid_search
+from .wp_eval import GAP_LIMIT_POINTS, GAP_MIN_CUTS, LOG_LOSS_TOLERANCE, VARIANTS, app_criterion, bootstrap_forecast, collect_samples, compare, grid_search
 
 DEFAULT_GRID = {"wp_sigma": [12.0, 13.5, 15.0, 16.5, 18.0], "wp_n0": [60.0, 120.0, 240.0], "wp_home_adv": [0.0, 4.0, 8.0], "ff_beta": [0.0, 9.0]}
 NAMES = {"full": "Modelo completo", "prior_only": "Solo valor previo", "score_time": "Solo marcador y tiempo"}
@@ -21,7 +21,7 @@ def _fmt(value: Optional[float], digits: int = 3) -> str:
 
 
 def build_report(compared: Dict[str, Dict[str, Any]], ranked: Sequence[Dict[str, Any]], samples: Sequence[Dict[str, Any]],
-                 cfg: RuleConfig, validation: Optional[Dict[str, Any]] = None) -> str:
+                 cfg: RuleConfig, validation: Optional[Dict[str, Any]] = None, bootstrap: Optional[List[Dict[str, Any]]] = None) -> str:
     games = len({s["game"] for s in samples})
     full, lines = compared["full"], []
     lines += ["# Calibración de la probabilidad de victoria", "",
@@ -35,11 +35,26 @@ def build_report(compared: Dict[str, Dict[str, Any]], ranked: Sequence[Dict[str,
               "## Fiabilidad del modelo completo", "",
               "| Decil | n | P media | Frecuencia |", "|---|---|---|---|"]
     lines += [f"| {r['bin'] * 10}-{r['bin'] * 10 + 10} % | {r['n']} | {r['mean_p']:.3f} | {r['freq']:.3f} |" for r in full["reliability"]]
-    lines += ["", "## Mejores parámetros (por log loss)", "", "| Parámetros | Log loss | Brier | MAE |", "|---|---|---|---|"]
-    lines += [f"| {r['params']} | {_fmt(r['log_loss'])} | {_fmt(r['brier'])} | {_fmt(r['mae'], 2)} |" for r in ranked[:8]]
+    if ranked:
+        lines += ["", "## Mejores parámetros (por log loss)", "", "| Parámetros | Log loss | Brier | MAE |", "|---|---|---|---|"]
+        lines += [f"| {r['params']} | {_fmt(r['log_loss'])} | {_fmt(r['brier'])} | {_fmt(r['mae'], 2)} |" for r in ranked[:8]]
+    if bootstrap:
+        lines += _bootstrap_section(bootstrap)
     if validation:
         lines += _validation_section(validation)
     return "\n".join(lines) + "\n"
+
+
+def _bootstrap_section(rows: Sequence[Dict[str, Any]]) -> List[str]:
+    """Gap per decile with the 95 % interval of resampling whole games: does it differ from zero?"""
+    lines = ["", "## Intervalos de confianza por decil (remuestreo por partido)", "",
+             "Desvío = frecuencia real − probabilidad prevista, en puntos. Un intervalo que no contiene el 0 indica que el desvío no es solo ruido.", "",
+             "| Decil | Cortes | Partidos | P media | Frecuencia | Desvío | IC 95 % | ¿Distinto de 0? |", "|---|---|---|---|---|---|---|---|"]
+    for r in rows:
+        significant = r["lo"] is not None and (r["lo"] > 0 or r["hi"] < 0)
+        lines.append(f"| {r['bin'] * 10}-{r['bin'] * 10 + 10} % | {r['n']} | {r['games']} | {r['mean_p']:.3f} | {r['freq']:.3f} | "
+                     f"{r['gap']:+.1f} | [{_fmt(r['lo'], 1)}, {_fmt(r['hi'], 1)}] | {'**sí**' if significant else 'no'} |")
+    return lines
 
 
 def _criterion_text(compared: Dict[str, Dict[str, Any]]) -> str:
@@ -84,6 +99,9 @@ def _parser() -> argparse.ArgumentParser:
                              "(each has its own priors; their samples are scored together)")
     p.add_argument("--validate-dir", metavar="DIR",
                    help="folder of a season NOT used to tune: the default and the best parameters are scored on it")
+    p.add_argument("--bootstrap", type=int, default=0, metavar="N",
+                   help="add the gap per decile with a 95 %% interval from N resamplings of whole games")
+    p.add_argument("--no-grid", action="store_true", help="skip the parameter grid (faster; incompatible with --validate-dir)")
     p.add_argument("--min-prior-games", type=int, default=3, help="skip sides whose team has fewer earlier games")
     p.add_argument("--cut", type=int, default=300, help="seconds between the cuts")
     p.add_argument("--out", help="write the report to this file (it is always printed)")
@@ -112,7 +130,10 @@ def _mongo_games(args: argparse.Namespace):
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    args = _parser().parse_args(argv)
+    parser = _parser()
+    args = parser.parse_args(argv)
+    if args.no_grid and args.validate_dir:
+        parser.error("--validate-dir needs the grid (it tries the best parameters): drop --no-grid")
     try:
         samples = _samples(args)
     except (ValueError, OSError, RuntimeError) as exc:
@@ -122,9 +143,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Error: ningún partido con suficientes partidos previos", file=sys.stderr)
         return 2
     cfg = RuleConfig()
-    ranked = grid_search(samples, DEFAULT_GRID, cfg)
+    ranked = [] if args.no_grid else grid_search(samples, DEFAULT_GRID, cfg)
     validation = _validate(args, ranked, cfg) if args.validate_dir else None
-    text = build_report(compare(samples, cfg), ranked, samples, cfg, validation)
+    boot = bootstrap_forecast(samples, cfg, resamples=args.bootstrap) if args.bootstrap else None
+    text = build_report(compare(samples, cfg), ranked, samples, cfg, validation, boot)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
     print(text)
