@@ -20,6 +20,12 @@ def period_length(period: int) -> int:
     return REGULATION_LENGTH if period <= REGULATION_PERIODS else OVERTIME_LENGTH
 
 
+def game_seconds_left(period: int, remaining: int) -> int:
+    """Seconds of play left in the game: what is left of ``period`` plus the regulation periods still to play."""
+    later = sum(period_length(p) for p in range(period + 1, REGULATION_PERIODS + 1))
+    return max(0, remaining) + later
+
+
 def period_start(period: int) -> int:
     """Elapsed seconds at the start of ``period``."""
     if period <= REGULATION_PERIODS:

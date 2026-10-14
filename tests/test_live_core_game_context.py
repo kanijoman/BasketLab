@@ -141,6 +141,7 @@ def test_a_normal_game_changes_nothing():
 # --- in the engine ------------------------------------------------------------------------
 
 RUN_LOG = [[2000, RIVAL, "pts", 3], [2040, RIVAL, "pts", 2], [2090, RIVAL, "pts", 3]]   # 0-8 against, before 2100
+RUN_KEY = "rival_run:4:1800:critical"   # the run alert is keyed by episode (the 4th period, no timeout) and level (#241)
 
 
 def engine(**kw):
@@ -152,22 +153,22 @@ def run_alerts(eng, snapshot):
 
 
 def test_the_rival_run_is_a_warning_when_the_game_is_decided_and_critical_otherwise():
-    assert run_alerts(engine(), mk(4, 300, margin=-22, log=RUN_LOG)) == [("rival_run~decided", "warning", "decided")]
-    assert run_alerts(engine(), mk(4, 300, margin=-10, log=RUN_LOG)) == [("rival_run", "critical", None)]
+    assert run_alerts(engine(), mk(4, 300, margin=-22, log=RUN_LOG)) == [(RUN_KEY + "~decided", "warning", "decided")]
+    assert run_alerts(engine(), mk(4, 300, margin=-10, log=RUN_LOG)) == [(RUN_KEY, "critical", None)]
 
 
 def test_a_lowered_alert_does_not_block_the_normal_one_when_the_game_opens_up_again():
     eng = engine()
-    assert run_alerts(eng, mk(4, 300, margin=-22, log=RUN_LOG)) == [("rival_run~decided", "warning", "decided")]
-    assert run_alerts(eng, mk(4, 250, margin=-9, log=RUN_LOG)) == [("rival_run", "critical", None)]
+    assert run_alerts(eng, mk(4, 300, margin=-22, log=RUN_LOG)) == [(RUN_KEY + "~decided", "warning", "decided")]
+    assert run_alerts(eng, mk(4, 250, margin=-9, log=RUN_LOG)) == [(RUN_KEY, "critical", None)]
 
 
-def test_the_phase_does_not_repeat_what_the_staff_already_saw_inside_the_rearm_window():
+def test_the_phase_does_not_repeat_what_the_staff_already_saw():
     eng = engine()
-    assert run_alerts(eng, mk(4, 300, margin=-10, log=RUN_LOG)) == [("rival_run", "critical", None)]
+    assert run_alerts(eng, mk(4, 300, margin=-10, log=RUN_LOG)) == [(RUN_KEY, "critical", None)]
     assert run_alerts(eng, mk(4, 290, margin=-22, log=RUN_LOG)) == []            # same alert, 10 s later: not again
-    later = [[2300, RIVAL, "pts", 3], [2340, RIVAL, "pts", 2], [2390, RIVAL, "pts", 3]]       # a new 0-8 run
-    assert run_alerts(eng, mk(4, 0, margin=-22, log=later)) == [("rival_run~decided", "warning", "decided")]   # re-armed: it does
+    later = [[2300, RIVAL, "pts", 3], [2340, RIVAL, "pts", 2], [2390, RIVAL, "pts", 3]]       # another 0-8 run, same episode
+    assert run_alerts(eng, mk(4, 0, margin=-22, log=later)) == []              # nothing repeats by time any more (#241)
 
 
 def one_shot(monkeypatch, category="rival"):
@@ -198,7 +199,7 @@ def test_fouls_keep_their_severity_in_a_decided_game():
 
 def test_the_context_can_be_switched_off_like_a_rule():
     off = engine(config=RuleConfig(rules_off=("game_context",)))
-    assert run_alerts(off, mk(4, 300, margin=-22, log=RUN_LOG)) == [("rival_run", "critical", None)]
+    assert run_alerts(off, mk(4, 300, margin=-22, log=RUN_LOG)) == [(RUN_KEY, "critical", None)]
     assert "game_context" in FEATURE_IDS and unknown_rule_ids(["game_context", "rival_run"]) == ()
     assert "game_context" not in RULE_IDS      # it is not an alert rule: it has no alerts of its own
 

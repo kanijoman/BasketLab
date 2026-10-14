@@ -53,7 +53,7 @@
      ],
      "digests": {
       "alerts": "c082e7c8ba9320b1941f39395c651f5bb45a1897016fb4e7b5659d2faddda419",
-      "analysis": "52d8e37fc82fe72802b286d88d368e2e50cb426a7cc3d65bd2e0922fae5b2ed0",
+      "analysis": "fbe2ea917cbfaec52a09d4d83e201c8e5c49f3e1d67a270e5e455e17d095fed7",
       "snapshot": "17f75c32c5c25f992670b052e1800716e1c74f69de0a2b4c1a914f1a859c9b8a"
      },
      "elapsed": 300,
@@ -71,7 +71,7 @@
      ],
      "digests": {
       "alerts": "13b3d6d68e4227538e21f18bad2cbefc23dc0d552911e44bd2e2a4fc1270b8bb",
-      "analysis": "cddf8f3ad50d260732dc212ffb8a4f6720ecbc5087c1b33e015b817e8ca409e9",
+      "analysis": "b81ad4e2fa5c21cd36ffe8d6b626131a9dcf6fec290ae31451d46e45078bcaa1",
       "snapshot": "856d3483fa8c9bdd8c0b5fadf3f1cdeb087ea303bda3d249ddf22b75e7b597a1"
      },
      "elapsed": 600,
@@ -87,7 +87,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "063f8a4e9ebfc04baec391bb53859d71be800d72315adbffa693cf7542f0d18e",
+      "analysis": "65a90dbf290a7d8cbb9ed5d87aea8420e10e77f17a7dca408ee336c0dfcdf5b4",
       "snapshot": "984e566bee2c5dd0567804fb28382e64a5c52ff2d238c076314997d9b683b52c"
      },
      "elapsed": 900,
@@ -102,11 +102,11 @@
     {
      "alerts": [
       "bonus:982047:2",
-      "lever:ftr"
+      "lever:ftr:1:1"
      ],
      "digests": {
-      "alerts": "1a1d37d134a7f4be1688d720f899aca0a5ec0d9da1c48f039bdabad7ceb0c473",
-      "analysis": "e870320a81e9f588948e64794b45ac7889a81ae27f8c0797c04a236f29c23f2c",
+      "alerts": "818fe3327404bb351036e91ccf363aa6c1d631ca6d383d547cf334ef70a4e6e6",
+      "analysis": "6917d6a9cbf1d3349009c99af2eecd447cd3573acc0a6b0833164ca12d63edb2",
       "snapshot": "e62be1e7b6d358469ddc8a66b047410ab67fb3c251e6004f98e2ad9a2b88e52b"
      },
      "elapsed": 1200,
@@ -119,10 +119,12 @@
      }
     },
     {
-     "alerts": [],
+     "alerts": [
+      "lever:ftr:1:2"
+     ],
      "digests": {
-      "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "8dc9f8a01acda05fe9f5ed2b49095b1e0126f356488213d2ab84fafcf6227e3a",
+      "alerts": "cab6a6214f3fcdffbbe4067f0bf34b0d9d9bc0bbfc9395fc106b4eab5eb18f43",
+      "analysis": "9c6f325afa274e70549857d000c9e74f9b2d377d70002a32f87aa45cc2648714",
       "snapshot": "7011eda0ea2cc9d04200c350ac6c7eb00e2282d9ff7d010a1fe84a86df3dc9c2"
      },
      "elapsed": 1350,
@@ -140,8 +142,8 @@
       "rbonus:981204:3"
      ],
      "digests": {
-      "alerts": "6e1c944db4c5620f3965d1e6ae3d4fe816e946c18b6d8986dbb3949db63b37fb",
-      "analysis": "330cf2eb08ea021fb536f5054363532747f8398a993cca983cb66cfa1f1b5b84",
+      "alerts": "302f2a397bdce80c6b7b476202f2a84ef928d72d2a2c08321d8982edc5d9cfcd",
+      "analysis": "35108410f99c48dfa50b15bab1ba7072d83fdf1ce14cc445594815590aab3c1c",
       "snapshot": "de5f5cddba744407fa462d1a567e6d722472f269500791c15dc1dd0729b88b32"
      },
      "elapsed": 1800,
@@ -157,7 +159,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "37ce1adc445949761af619eaab0ab4304e7fe422f8f3f7316fcd7da80c553f50",
+      "analysis": "830152f01280138d22fae9ea397e67bb37352cb42323406976e81afa022c6be1",
       "snapshot": "77bbb7176630850551ca9cdc5647f32d680e6d294c1084a685f2137580ccccd5"
      },
      "elapsed": 1800,
@@ -171,13 +173,11 @@
     },
     {
      "alerts": [
-      "foul:2212271:3",
-      "foul:2010120:3",
       "rfoul:2073736:3"
      ],
      "digests": {
-      "alerts": "ecb350a0ed494512fbde8ce9c589e56bf0836f656a15e8abf67f60184853e2ad",
-      "analysis": "3315c7152b6654987ca7a57bfc733e04f4ca19293df7f02a8c53d32c6a76010d",
+      "alerts": "1cd6381bc4a531921d746351e8f2861e342a3ac2a8fb83d9b42e408cdfa2b011",
+      "analysis": "40980fc3903262a080b7f18c2eba4ba662a0bf3f733c21eff1af59f7339b0a69",
       "snapshot": "aa4371c5f1ad47c7f1ac368e4a9a7f09758817533a1511d57524c4c71715bfd3"
      },
      "elapsed": 2100,
@@ -192,17 +192,17 @@
     {
      "alerts": [
       "foul:2817526:4",
-      "bonus:982047:4",
+      "rfoul:2073736:4",
       "rest:2817526",
       "rest:2212271",
-      "rfoul:2073736:4",
       "rfoul:1489375:3",
+      "bonus:982047:4",
       "rbonus:981204:4",
       "rival_hot_3p:5"
      ],
      "digests": {
-      "alerts": "49fcbc2808fc8ba60f1359649faf255dc819746cfb13f8a199995d8da1c65353",
-      "analysis": "d6d0af7c6ba5cc0acd89472df548aca8a2ed9f4ce10469e785c90a57a9487547",
+      "alerts": "c34e3247d0c1f8f18678f4444a44255ef5d64a293a16bb02ca7c99bc14ea5f8a",
+      "analysis": "8c9feae491745c78ea8e4df0a35420bd74fb67bb52cddeea7710ed4ae5973816",
       "snapshot": "933a2dbc8d212aebf51446ef615f582971748b38a81fa037bd17eb4873e8d975"
      },
      "elapsed": 2340,
@@ -219,8 +219,8 @@
       "rfoul:2088360:3"
      ],
      "digests": {
-      "alerts": "49124ff646a6783d3c8a82da40e2962a9f330970568d90a6a0a1c979c6fe6957",
-      "analysis": "e9c4a2480dc464931953fb6031c416acf878b0cc1400190d9b722aaa0025179a",
+      "alerts": "e46ff93b73a8f794d5d1eb58ad8583832ca2a67c2ddf00dae235c2fd9cef6027",
+      "analysis": "37553822679df4ff87931f8c93fd450f7a2eb9cdd559d576314ad392842ce868",
       "snapshot": "0dccaf22e1a4a6740466c4cda37295d1a28c7d5749b08532144bcebae91c59f5"
      },
      "elapsed": 2400,
@@ -626,12 +626,7 @@
    null,
    null,
    null,
-   {
-    "message": "Ana: 2 faltas personales en el periodo 1. Valorar cambio.",
-    "pf": 2,
-    "player_id": "p1",
-    "severity": "warning"
-   },
+   null,
    null,
    null,
    null,
@@ -645,25 +640,25 @@
     "message": "Ana: 3 faltas personales en el periodo 1. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "warning"
+    "severity": "info"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 1. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "warning"
+    "severity": "info"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 2. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "warning"
+    "severity": "info"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 2. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "warning"
+    "severity": "info"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 3. Valorar cambio.",
@@ -909,6 +904,12 @@
      "orb": 2.8157,
      "tov": 1.5184
     },
+    "pts100_raw": {
+     "efg": 4.8542,
+     "ftr": 3.3935,
+     "orb": 4.0619,
+     "tov": 2.0785
+    },
     "reliable": true,
     "score": 0.3435,
     "shrunk": {
@@ -963,6 +964,12 @@
      "ftr": 2.1341,
      "orb": 3.0861,
      "tov": 1.2769
+    },
+    "pts100_raw": {
+     "efg": 4.8542,
+     "ftr": 3.3935,
+     "orb": 4.0619,
+     "tov": 2.0785
     },
     "reliable": true,
     "score": 0.3979,
@@ -1019,6 +1026,12 @@
      "orb": 3.0861,
      "tov": 1.2769
     },
+    "pts100_raw": {
+     "efg": 4.8542,
+     "ftr": 3.3935,
+     "orb": 4.0619,
+     "tov": 2.0785
+    },
     "reliable": true,
     "score": 0.3979,
     "shrunk": {
@@ -1074,6 +1087,12 @@
      "orb": 3.0861,
      "tov": 1.2769
     },
+    "pts100_raw": {
+     "efg": 4.8542,
+     "ftr": 3.3935,
+     "orb": 4.0619,
+     "tov": 2.0785
+    },
     "reliable": true,
     "score": 0.3979,
     "shrunk": {
@@ -1128,6 +1147,12 @@
      "ftr": 2.1341,
      "orb": 3.0861,
      "tov": 1.2769
+    },
+    "pts100_raw": {
+     "efg": 4.8542,
+     "ftr": 3.3935,
+     "orb": 4.0619,
+     "tov": 2.0785
     },
     "reliable": true,
     "score": 0.3979,
@@ -2538,24 +2563,7 @@
       "severity": "warning"
      }
     ],
-    [
-     {
-      "category": "faltas",
-      "confirm": 1,
-      "evidence": {
-       "period": 1,
-       "pf": 2,
-       "player_id": "x",
-       "team_id": "T1"
-      },
-      "id": "foul_trouble",
-      "key": "foul:x:2",
-      "message": "Ana: 2 faltas personales en el periodo 1. Valorar cambio.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "warning"
-     }
-    ],
+    [],
     [],
     [
      {
@@ -2598,7 +2606,7 @@
       "message": "Ana: 3 faltas personales en el periodo 2. Valorar cambio.",
       "proposal": [],
       "rearm_s": null,
-      "severity": "warning"
+      "severity": "info"
      }
     ],
     [],
@@ -2823,45 +2831,23 @@
        },
        "has_baseline": true,
        "index": 82.67,
+       "kept_because": null,
+       "level": "warning",
        "minutes_s": 1100,
        "player_id": "p",
        "stint_s": 720,
        "team_id": "T1"
       },
       "id": "fatigue_high",
-      "key": "fatigue:p",
+      "key": "fatigue:p:480:warning",
       "message": "Ana: riesgo de fatiga alto (índice 83/100), 12:00 seguidos en pista y 18 min jugados. Valorar descanso.",
       "proposal": [],
-      "rearm_s": 240,
+      "rearm_s": null,
       "severity": "warning"
      }
     ],
     [],
-    [
-     {
-      "category": "rotacion",
-      "confirm": 1,
-      "evidence": {
-       "components": {
-        "minutes": 1.0,
-        "projection": 0.667,
-        "stint": 1.0
-       },
-       "has_baseline": true,
-       "index": 91.67,
-       "minutes_s": 1400,
-       "player_id": "p",
-       "stint_s": 960,
-       "team_id": "T1"
-      },
-      "id": "fatigue_high",
-      "key": "fatigue:p#2",
-      "message": "Ana: riesgo de fatiga alto (índice 92/100), 16:00 seguidos en pista y 23 min jugados. Valorar descanso.",
-      "proposal": [],
-      "rearm_s": 240,
-      "severity": "warning"
-     }
-    ],
+    [],
     []
    ],
    [
@@ -3008,13 +2994,19 @@
       "category": "gestion",
       "confirm": 1,
       "evidence": {
+       "main_player_id": null,
        "turnovers": 4,
        "window_s": 300
       },
       "id": "turnover_streak",
-      "key": "tov_streak",
+      "key": "tov_streak:2:600",
       "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
       "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
        {
         "balance_delta": {
          "creación": -0.4,
@@ -3054,7 +3046,7 @@
         "type": "sub"
        }
       ],
-      "rearm_s": 300,
+      "rearm_s": null,
       "severity": "warning"
      },
      {
@@ -3081,11 +3073,12 @@
        },
        "lever": "tov",
        "possessions": 74.2,
-       "pts100": -8.8432
+       "pts100": -8.8432,
+       "pts100_raw": -11.8244
       },
       "id": "four_factors_lever",
-      "key": "lever:tov",
-      "message": "Balón: pérdidas (TOV%) 25% vs 13% (-8.8 pts/100 posesiones). Pérdidas: asegurar el balón.",
+      "key": "lever:tov:1:2",
+      "message": "Balón: pérdidas (TOV%) 25% vs 13% (-8.8 pts/100 posesiones; -12 sin ajustar al histórico). Pérdidas: asegurar el balón.",
       "proposal": [
        {
         "balance_delta": {
@@ -3126,138 +3119,12 @@
         "type": "sub"
        }
       ],
-      "rearm_s": 600,
+      "rearm_s": null,
       "severity": "info"
      }
     ],
     [],
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "turnovers": 4,
-       "window_s": 300
-      },
-      "id": "turnover_streak",
-      "key": "tov_streak#2",
-      "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
-      "proposal": [
-       {
-        "balance_delta": {
-         "creación": -0.4,
-         "espaciado": 0.0,
-         "juego interior": 0.0,
-         "rebote": 0.0
-        },
-        "balance_ok": true,
-        "in_id": "g2",
-        "in_name": "Guard Dos",
-        "lever": "tov",
-        "lever_gain": 3.0,
-        "message": "Entra Guard Dos por Guard Uno y mejora las pérdidas (+3.0 σ). Rol similar (distancia 0.4)",
-        "out_id": "g1",
-        "out_name": "Guard Uno",
-        "role_distance": 0.4,
-        "score": 2.8,
-        "type": "sub"
-       },
-       {
-        "balance_delta": {
-         "creación": 0.0,
-         "espaciado": 0.0,
-         "juego interior": 0.0,
-         "rebote": -0.4
-        },
-        "balance_ok": true,
-        "in_id": "b2",
-        "in_name": "Pivot Dos",
-        "lever": "tov",
-        "lever_gain": 1.0,
-        "message": "Entra Pivot Dos por Pivot Uno y mejora las pérdidas (+1.0 σ). Rol similar (distancia 0.4)",
-        "out_id": "b1",
-        "out_name": "Pivot Uno",
-        "role_distance": 0.4,
-        "score": 0.8,
-        "type": "sub"
-       }
-      ],
-      "rearm_s": 300,
-      "severity": "warning"
-     },
-     {
-      "category": "four_factors",
-      "confirm": 1,
-      "evidence": {
-       "contributions": {
-        "efg": 0.0,
-        "ftr": 0.0,
-        "orb": 0.0,
-        "tov": -0.5061
-       },
-       "factors_own": {
-        "efg": 0.4833,
-        "ftr": 0.2333,
-        "orb": 0.2424,
-        "tov": 0.2662
-       },
-       "factors_rival": {
-        "efg": 0.4833,
-        "ftr": 0.2333,
-        "orb": 0.2424,
-        "tov": 0.1313
-       },
-       "lever": "tov",
-       "possessions": 75.2,
-       "pts100": -10.1222
-      },
-      "id": "four_factors_lever",
-      "key": "lever:tov#2",
-      "message": "Balón: pérdidas (TOV%) 27% vs 13% (-10.1 pts/100 posesiones). Pérdidas: asegurar el balón.",
-      "proposal": [
-       {
-        "balance_delta": {
-         "creación": -0.4,
-         "espaciado": 0.0,
-         "juego interior": 0.0,
-         "rebote": 0.0
-        },
-        "balance_ok": true,
-        "in_id": "g2",
-        "in_name": "Guard Dos",
-        "lever": "tov",
-        "lever_gain": 3.0,
-        "message": "Entra Guard Dos por Guard Uno y mejora las pérdidas (+3.0 σ). Rol similar (distancia 0.4)",
-        "out_id": "g1",
-        "out_name": "Guard Uno",
-        "role_distance": 0.4,
-        "score": 2.8,
-        "type": "sub"
-       },
-       {
-        "balance_delta": {
-         "creación": 0.0,
-         "espaciado": 0.0,
-         "juego interior": 0.0,
-         "rebote": -0.4
-        },
-        "balance_ok": true,
-        "in_id": "b2",
-        "in_name": "Pivot Dos",
-        "lever": "tov",
-        "lever_gain": 1.0,
-        "message": "Entra Pivot Dos por Pivot Uno y mejora las pérdidas (+1.0 σ). Rol similar (distancia 0.4)",
-        "out_id": "b1",
-        "out_name": "Pivot Uno",
-        "role_distance": 0.4,
-        "score": 0.8,
-        "type": "sub"
-       }
-      ],
-      "rearm_s": 600,
-      "severity": "info"
-     }
-    ]
+    []
    ],
    {
     "fg2": [
@@ -4065,16 +3932,24 @@
       "confirm": 1,
       "evidence": {
        "base_severity": "critical",
+       "causes": "",
+       "net": 8,
        "own_points": 0,
        "phase": "decided",
        "rival_points": 8,
        "window_s": 150
       },
       "id": "rival_run",
-      "key": "rival_run~decided",
+      "key": "rival_run:4:1800:critical~decided",
       "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
-      "proposal": [],
-      "rearm_s": 300,
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
       "severity": "warning"
      },
      {
@@ -4110,15 +3985,23 @@
       "category": "gestion",
       "confirm": 1,
       "evidence": {
+       "causes": "",
+       "net": 8,
        "own_points": 0,
        "rival_points": 8,
        "window_s": 150
       },
       "id": "rival_run",
-      "key": "rival_run",
+      "key": "rival_run:4:1800:critical",
       "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
-      "proposal": [],
-      "rearm_s": 300,
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
       "severity": "critical"
      },
      {
@@ -4146,25 +4029,7 @@
       "severity": "critical"
      }
     ],
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "base_severity": "critical",
-       "own_points": 0,
-       "phase": "decided",
-       "rival_points": 8,
-       "window_s": 150
-      },
-      "id": "rival_run",
-      "key": "rival_run~decided#2",
-      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
-      "proposal": [],
-      "rearm_s": 300,
-      "severity": "warning"
-     }
-    ]
+    []
    ],
    [
     [
@@ -4172,15 +4037,23 @@
       "category": "gestion",
       "confirm": 1,
       "evidence": {
+       "causes": "",
+       "net": 8,
        "own_points": 0,
        "rival_points": 8,
        "window_s": 150
       },
       "id": "rival_run",
-      "key": "rival_run",
+      "key": "rival_run:4:1800:critical",
       "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
-      "proposal": [],
-      "rearm_s": 300,
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
       "severity": "critical"
      },
      {
@@ -4210,23 +4083,7 @@
     ],
     [],
     [],
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "own_points": 0,
-       "rival_points": 8,
-       "window_s": 150
-      },
-      "id": "rival_run",
-      "key": "rival_run#2",
-      "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
-      "proposal": [],
-      "rearm_s": 300,
-      "severity": "critical"
-     }
-    ]
+    []
    ],
    [
     [
@@ -4257,37 +4114,26 @@
     ],
     [
      {
-      "category": "faltas",
-      "confirm": 1,
-      "evidence": {
-       "base_severity": "warning",
-       "period": 4,
-       "pf": 3,
-       "phase": "close_late",
-       "player_id": "x",
-       "team_id": "T1"
-      },
-      "id": "foul_trouble",
-      "key": "foul:x:3~close_late",
-      "message": "Ana: 3 faltas personales en el periodo 4. Valorar cambio.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "critical"
-     },
-     {
       "category": "gestion",
       "confirm": 1,
       "evidence": {
        "base_severity": "warning",
+       "main_player_id": null,
        "phase": "close_late",
        "turnovers": 4,
        "window_s": 300
       },
       "id": "turnover_streak",
-      "key": "tov_streak~close_late",
+      "key": "tov_streak:4:1800~close_late",
       "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
-      "proposal": [],
-      "rearm_s": 300,
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
       "severity": "critical"
      },
      {
@@ -4387,33 +4233,24 @@
       "severity": "critical"
      },
      {
-      "category": "faltas",
-      "confirm": 1,
-      "evidence": {
-       "period": 4,
-       "pf": 3,
-       "player_id": "x",
-       "team_id": "T1"
-      },
-      "id": "foul_trouble",
-      "key": "foul:x:3",
-      "message": "Ana: 3 faltas personales en el periodo 4. Valorar cambio.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "warning"
-     },
-     {
       "category": "gestion",
       "confirm": 1,
       "evidence": {
+       "main_player_id": null,
        "turnovers": 4,
        "window_s": 300
       },
       "id": "turnover_streak",
-      "key": "tov_streak",
+      "key": "tov_streak:4:1800",
       "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
-      "proposal": [],
-      "rearm_s": 300,
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
       "severity": "warning"
      }
     ],

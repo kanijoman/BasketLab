@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from src.live_core.recorded_feed import RecordedFeed
+from src.live_prep.eval_labels import ACTION_FOR
 from src.live_prep.rule_evaluation import ConfigSpec, attach_feedback, evaluate, validate_config
 
 A, B, C = "982047", "981204", "900003"
@@ -90,7 +91,7 @@ def test_alerts_are_rows_with_their_labels_and_outcome(two_configs):
         assert {"net_before", "net_after", "net_delta", "measure"} <= set(r["outcome"])
         assert r["severity"] in ("critical", "warning", "info") and r["message"]
     labelled = {r["id"] for r in rows if r["label"] is not None}
-    assert labelled <= {"foul_trouble", "fatigue_high", "rival_run", "turnover_streak", "four_factors_lever"}
+    assert labelled <= set(ACTION_FOR)       # only the rules with an expected action get a label
 
 
 def test_the_sample_game_gets_foul_alerts_for_its_own_team_in_the_base_configuration(two_configs):

@@ -1,20 +1,24 @@
-"""Team-level rules: fouls (players and team), scoring runs and turnover streaks."""
+"""Foul rules (players and team): own fouls by risk, the bonus by time left, rival fouls with a concrete tactic."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
+from .clock import game_seconds_left
+from .proposals import tactic_proposal
 from .rules_fouls import FOUL_OUT, evaluate_player_fouls, warn_threshold
 
 
 def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Own players close to fouling out."""
     period, out = snap["period"], []
+    left = game_seconds_left(period, snap["remaining"])
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id:
             continue
-        alert = evaluate_player_fouls(pid, p["name"], p["pf"], period)
+        alert = evaluate_player_fouls(pid, p["name"], p["pf"], period, seconds_left=left,
+                                      min_left_s=ctx.config.foul_min_left_s)
         if alert:
             out.append(Advice(
                 key=f"foul:{pid}:{p['pf']}", id="foul_trouble", severity=alert.severity,
@@ -24,22 +28,57 @@ def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return out
 
 
+def _contact_player(snap: Dict[str, Any], ctx: RuleContext) -> Optional[Dict[str, Any]]:
+    """The own player on court who draws the most contact (free-throw rate z above the threshold), or None."""
+    best = None
+    for pid, p in snap["players"].items():
+        if p["team_id"] != ctx.own_team_id or not p["on_court"]:
+            continue
+        ftr = ((ctx.baselines.get(pid) or {}).get("z") or {}).get("ftr")
+        if ftr is not None and ftr >= ctx.config.contact_ftr_z and (best is None or ftr > best[0]):
+            best = (ftr, pid, p["name"].strip())
+    return {"player_id": best[1], "name": best[2]} if best else None
+
+
+def _attack_proposal(contact: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if contact is None:
+        return [tactic_proposal("Atacar el aro y forzar el contacto")]
+    return [tactic_proposal(f"Balón a {contact['name']}, que provoca contacto", contact["player_id"], contact["name"])]
+
+
 def rival_foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
-    """Rival players in foul trouble: an opportunity to attack them."""
+    """Rival players in foul trouble: an opportunity to attack them. An important rival is a warning; the ball goes to
+    the own player who draws the most contact (issue #241, R8)."""
     period, out = snap["period"], []
+    contact = _contact_player(snap, ctx)
     for pid, p in snap["players"].items():
         pf = p["pf"]
         if p["team_id"] == ctx.rival_team_id and warn_threshold(period) <= pf < FOUL_OUT:
+            important = ((ctx.rival_baselines.get(pid) or {}).get("avg_min") or 0) >= ctx.config.rival_important_avg_min_s
+            message = f"Rival {p['name']} con {pf} faltas personales: atacarle y forzar contacto."
+            if contact:
+                message += f" Balón a {contact['name']}, que provoca contacto."
             out.append(Advice(
-                key=f"rfoul:{pid}:{pf}", id="rival_foul_trouble", severity="info", category="faltas",
-                message=f"Rival {p['name']} con {pf} faltas personales: atacarle y forzar contacto.",
-                evidence={"player_id": pid, "team_id": p["team_id"], "pf": pf, "period": period},
+                key=f"rfoul:{pid}:{pf}", id="rival_foul_trouble", severity="warning" if important else "info", category="faltas",
+                message=message,
+                evidence={"player_id": pid, "team_id": p["team_id"], "pf": pf, "period": period, "important": important},
+                proposal=_attack_proposal(contact),
             ))
     return out
 
 
+def _bonus_severity(count: int, limit: int, remaining: int, cfg: Any) -> str:
+    """Own team: the longer we would be in bonus the more serious (issue #241, F3)."""
+    if count == limit:     # the next foul puts the rival in the bonus
+        return "warning" if remaining > cfg.bonus_short_left_s else "info"
+    if remaining > cfg.bonus_long_left_s:
+        return "critical"
+    return "warning" if remaining > cfg.bonus_short_left_s else "info"
+
+
 def team_fouls_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     period, limit, out = snap["period"], ctx.config.team_foul_bonus, []
+    contact = _contact_player(snap, ctx)
     for team_id, own in ((ctx.own_team_id, True), (ctx.rival_team_id, False)):
         team = snap["teams"].get(team_id) if team_id else None
         count = (team or {}).get("fouls_by_period", {}).get(str(period), 0)
@@ -50,46 +89,14 @@ def team_fouls_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             msg = ("Equipo con {n} faltas en el periodo: el rival entra en bonus con la siguiente."
                    if count == limit else
                    "Equipo con {n} faltas en el periodo: el rival ya está en bonus, evitar faltas.")
-            out.append(Advice(key=f"bonus:{team_id}:{period}", id="team_fouls_bonus", severity="warning",
+            out.append(Advice(key=f"bonus:{team_id}:{period}", id="team_fouls_bonus",
+                              severity=_bonus_severity(count, limit, snap["remaining"], ctx.config),
                               category="faltas", message=msg.format(n=count), evidence=evidence))
         else:
             msg = ("Rival con {n} faltas de equipo en el periodo: su siguiente falta da tiros libres."
                    if count == limit else
                    "Rival con {n} faltas de equipo en el periodo: ya estamos en bonus, atacar el aro.")
             out.append(Advice(key=f"rbonus:{team_id}:{period}", id="rival_near_bonus", severity="info",
-                              category="faltas", message=msg.format(n=count), evidence=evidence))
+                              category="faltas", message=msg.format(n=count), evidence=evidence,
+                              proposal=_attack_proposal(contact)))
     return out
-
-
-def _recent(log: List[List[Any]], now: int, window: int, kind: str, team_id: str) -> List[List[Any]]:
-    return [e for e in log if e[2] == kind and e[1] == team_id and now - window <= e[0] <= now]
-
-
-def run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
-    if not ctx.rival_team_id:
-        return []
-    cfg, now, log = ctx.config, snap["elapsed"], snap.get("log", [])
-    rival = sum(e[3] for e in _recent(log, now, cfg.run_window_s, "pts", ctx.rival_team_id))
-    own = sum(e[3] for e in _recent(log, now, cfg.run_window_s, "pts", ctx.own_team_id))
-    if rival < cfg.run_points or own > 0:
-        return []
-    window = f"{cfg.run_window_s // 60}:{cfg.run_window_s % 60:02d}"
-    return [Advice(
-        key="rival_run", id="rival_run", severity="critical", category="gestion",
-        message=f"Parcial de 0-{rival} en contra en los últimos {window}. Valorar tiempo muerto.",
-        evidence={"rival_points": rival, "own_points": own, "window_s": cfg.run_window_s},
-        rearm_s=cfg.run_window_s * 2,
-    )]
-
-
-def turnover_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
-    cfg = ctx.config
-    count = len(_recent(snap.get("log", []), snap["elapsed"], cfg.turnover_window_s, "tov", ctx.own_team_id))
-    if count < cfg.turnover_streak:
-        return []
-    return [Advice(
-        key="tov_streak", id="turnover_streak", severity="warning", category="gestion",
-        message=f"{count} pérdidas propias en los últimos {cfg.turnover_window_s // 60} min. Asegurar el balón.",
-        evidence={"turnovers": count, "window_s": cfg.turnover_window_s},
-        rearm_s=cfg.turnover_window_s,
-    )]

@@ -55,7 +55,8 @@ def test_turnover_streak_proposes_ball_security():
     s = snap(elapsed=1200)
     s["log"] = [[1000 + 30 * i, OWN, "tov", 1] for i in range(4)]
     [alert] = by_id(engine().evaluate(s), "turnover_streak")
-    assert alert.proposal and alert.proposal[0]["in_id"] == "g2"
+    subs = [p for p in alert.proposal if p["type"] == "sub"]
+    assert subs and subs[0]["in_id"] == "g2"
 
 
 def test_foul_swaps_are_ranked_by_the_current_lever_when_there_is_one():
@@ -64,11 +65,11 @@ def test_foul_swaps_are_ranked_by_the_current_lever_when_there_is_one():
     assert alert.proposal[0]["lever"] == "tov"
 
 
-def test_a_scoring_run_gets_no_substitution_proposal():
+def test_a_scoring_run_proposes_a_timeout_not_a_substitution():
     s = snap(elapsed=1110)
     s["log"] = [[1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]]
     [alert] = by_id(engine().evaluate(s), "rival_run")
-    assert alert.proposal == []
+    assert [p["type"] for p in alert.proposal] == ["timeout"]
 
 
 def test_without_player_baselines_alerts_still_fire_without_proposals():

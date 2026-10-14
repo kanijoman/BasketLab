@@ -96,6 +96,12 @@ def test_the_expected_actions_are_declared_per_rule():
     assert ACTION_FOR["four_factors_lever"] == "proposed_sub"
 
 
+def test_the_new_rules_of_the_epic_are_labelled_too():
+    """#241-#243, #273: the droughts and the long run ask for a timeout, the rest alert for one of the proposed players."""
+    assert ACTION_FOR["own_drought"] == ACTION_FOR["long_run"] == "timeout"
+    assert ACTION_FOR["rest_starters"] == "proposed_sub"
+
+
 def test_the_windows_come_from_the_config():
     tight = LabelConfig(follow_s=20, late_s=40, lookback_s=0)
     assert label_alert(row(), Actions([ev(160, "sub_out", player="p1")]), tight)["label"] == "tarde"   # 30 s after S

@@ -26,7 +26,8 @@ from .rules_rest import rest_rule
 from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
-from .rules_team import foul_rule, rival_foul_rule, run_rule, team_fouls_rule, turnover_rule
+from .rules_run import run_rule, turnover_rule
+from .rules_team import foul_rule, rival_foul_rule, team_fouls_rule
 from .timeouts import timeouts_left
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]

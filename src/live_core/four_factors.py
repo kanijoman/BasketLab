@@ -126,6 +126,7 @@ class FourFactorsModel:
         contributions = {k: WEIGHTS[k] * z[k] for k in WEIGHTS}
         score = sum(contributions.values())
         pts100 = {k: _points_per_unit(own)[k] * shrunk[k] for k in WEIGHTS}
+        pts100_raw = {k: _points_per_unit(own)[k] * raw[k] for k in WEIGHTS}   # without the shrinkage towards the prior
 
         deficits = {k: v for k, v in contributions.items() if v < 0 and pts100[k] < 0}
         lever = min(deficits, key=deficits.get) if deficits else None
@@ -136,7 +137,7 @@ class FourFactorsModel:
             "factors_own": _round(factors(own, rival)),
             "factors_rival": _round(factors(rival, own)),
             "diffs": _round(raw), "shrunk": _round(shrunk), "z": _round(z),
-            "contributions": _round(contributions), "pts100": _round(pts100),
+            "contributions": _round(contributions), "pts100": _round(pts100), "pts100_raw": _round(pts100_raw),
             "score": round(score, 4), "lever": lever,
             "expected_net_rtg": round(self._cfg.ff_beta * score, 3),
             "projection": self._project(snap, n, score),
