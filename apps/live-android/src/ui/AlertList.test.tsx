@@ -25,25 +25,45 @@ describe('AlertList (issue #229)', () => {
     expect(within(counts).getByText('2 informativas')).toBeTruthy()
   })
 
-  it('pins the critical ones on top, then the warnings, keeping the order of arrival inside a level', () => {
+  it('is one chronological flow: the order it receives (the latest first), severity is not a grouping (issue #313)', () => {
     render(<AlertList entries={MIX} />)
     const shown = screen.getAllByRole('listitem').filter(li => li.classList.contains('alert'))
-    expect(shown.slice(0, 3).map(li => li.querySelector('.alert-message')?.textContent)).toEqual(['c1', 'w1', 'w2'])
-  })
-
-  it('shows the informative ones always, under their own heading (issue #309: collapsed they were overlooked)', () => {
-    render(<AlertList entries={MIX} />)
+    expect(shown.map(li => li.querySelector('.alert-message')?.textContent)).toEqual(['w1', 'i1', 'c1', 'w2', 'i2'])
     expect(document.querySelector('details')).toBeNull()
-    const block = screen.getByRole('region', { name: 'Informativas' })
-    expect(within(block).getByRole('heading', { name: 'Informativas (2)' })).toBeTruthy()
-    expect(within(block).getAllByRole('listitem').filter(li => li.classList.contains('alert-info'))).toHaveLength(2)
+    expect(screen.queryByRole('region', { name: 'Informativas' })).toBeNull()
   })
 
-  it('without informative alerts there is no informative block', () => {
-    render(<AlertList entries={[entry('c1', 'critical')]} />)
-    expect(screen.queryByRole('region', { name: 'Informativas' })).toBeNull()
-    expect(screen.getByText('1 crítica')).toBeTruthy()
-    expect(screen.queryByText(/informativa/)).toBeNull()
+  it('the severity is a mark of each alert, in its own colour', () => {
+    render(<AlertList entries={MIX} />)
+    const classes = screen.getAllByRole('listitem').filter(li => li.classList.contains('alert')).map(li => [...li.classList].find(c => c.startsWith('alert-') && c !== 'alert-body'))
+    expect(classes).toEqual(['alert-warning', 'alert-info', 'alert-critical', 'alert-warning', 'alert-info'])
+  })
+
+  it('shows the 20 latest and collapses the rest behind «Ver las N anteriores»', () => {
+    const many = Array.from({ length: 25 }, (_, i) => entry(`a${i}`, 'warning'))      // a0 is the latest
+    render(<AlertList entries={many} />)
+    const details = screen.getByText('Ver las 5 anteriores', { selector: 'summary' }).closest('details') as HTMLDetailsElement
+    expect(details.open).toBe(false)
+    const visible = document.querySelectorAll('.alert-list > .alerts > li')
+    expect(visible).toHaveLength(20)
+    expect(visible[0].querySelector('.alert-message')?.textContent).toBe('a0')
+    expect(visible[19].querySelector('.alert-message')?.textContent).toBe('a19')
+    expect(within(details).getAllByRole('listitem').filter(li => li.classList.contains('alert')).map(li => li.querySelector('.alert-message')?.textContent))
+      .toEqual(['a20', 'a21', 'a22', 'a23', 'a24'])
+  })
+
+  it('with 20 alerts or fewer there is nothing collapsed, and the older one uses the singular', () => {
+    render(<AlertList entries={Array.from({ length: 20 }, (_, i) => entry(`a${i}`, 'info'))} />)
+    expect(document.querySelector('details')).toBeNull()
+    render(<AlertList entries={Array.from({ length: 21 }, (_, i) => entry(`b${i}`, 'info'))} />)
+    expect(screen.getByText('Ver la 1 anterior', { selector: 'summary' })).toBeTruthy()
+  })
+
+  it('a new alert goes on top of the flow', () => {
+    const { rerender } = render(<AlertList entries={[entry('old', 'warning')]} />)
+    rerender(<AlertList entries={[entry('new', 'critical'), entry('old', 'warning')]} />)
+    const first = document.querySelector('.alert-list > .alerts > li .alert-message')
+    expect(first?.textContent).toBe('new')
   })
 
   it('uses the singular for one informative alert', () => {
