@@ -258,6 +258,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setElapsed(to)
     await step(to)
   }
+  // the count is about the alerts of THIS run (#314): the history of earlier runs of the same match stays in the device, not in the count
+  const shownKeys = new Set(entries.map(e => e.alert.key))
+  const shownFeedback = feedback.records.filter(r => shownKeys.has(r.key))
   const homeFirst = (snap?.home_id ?? meta?.home_id) === rival.id
   const [home, away] = homeFirst ? [rival, own] : [own, rival]
   const matchTab = (
@@ -302,8 +305,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
       </section>
 
-      {feedback.records.length > 0 && (
-        <FeedbackPanel records={feedback.records} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
+      {shownFeedback.length > 0 && (
+        <FeedbackPanel records={shownFeedback} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
       )}
 
       <VersionFooter version={update.installed} engineVersion={meta?.engine_version ?? null} />
