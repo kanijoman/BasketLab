@@ -8,7 +8,8 @@ export { CATEGORY_LABEL }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
-/** Critical first, then warnings; the informative ones stay collapsed (context, not action). Stable inside a level. */
+/** Critical first, then warnings, then the informative ones in their own block (always visible: collapsed they were overlooked,
+ *  issue #309). Stable inside a level. */
 export function splitBySeverity(entries: AlertEntry[]) {
   const by = (s: Alert['severity']) => entries.filter(e => e.alert.severity === s)
   return { critical: by('critical'), warning: by('warning'), info: by('info') }
@@ -36,10 +37,10 @@ export default function AlertList({ entries, verdicts = {}, onVerdict }: ListPro
       </p>
       <ul className="alerts">{[...critical, ...warning].map(card)}</ul>
       {info.length > 0 && (
-        <details className="alerts-info">
-          <summary>{plural(info.length, 'informativa', 'informativas')}</summary>
+        <section className="alerts-info" aria-label="Informativas">
+          <h3>Informativas ({info.length})</h3>
           <ul className="alerts">{info.map(card)}</ul>
-        </details>
+        </section>
       )}
     </div>
   )

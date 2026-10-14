@@ -16,7 +16,7 @@ import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import { clockLabel } from './AlertCard'
 import AlertList, { type AlertEntry } from './AlertList'
-import DemoControls, { SAMPLE, type DemoSource, type SourceOption } from './DemoControls'
+import DemoControls, { SAMPLE, mmss, type DemoSource, type SourceOption } from './DemoControls'
 import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
@@ -24,6 +24,7 @@ import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
 import WinProbCard from './WinProbCard'
 import { useExperimental } from './useExperimental'
+import { useSessionLog } from './useSessionLog'
 import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
@@ -78,6 +79,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [tab, setTab] = useTab()
   const [winProbOn, setWinProbOn] = useExperimental('win_prob')
   const winProbHistory = useWinProbHistory(out)
+  const session = useSessionLog()
   const busy = useRef(false)
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
@@ -216,12 +218,14 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     return () => clearInterval(timer)
   }, [playing, speed, info, step])
 
+  const { record } = session
   const removePackage = useCallback(() => {
+    record('Paquete quitado: vuelve la demostración')
     setPkg(null)
     if (demo) void beginDefault(demo, matches)
-  }, [demo, matches, beginDefault])
+  }, [demo, matches, beginDefault, record])
 
-  const onLoaded = (s: PackageSummary) => { setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
+  const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} />
 
   if (phase.kind === 'loading') return <main className="screen"><p className="status">Cargando motor…</p></main>
@@ -278,9 +282,11 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       ) : (
         <>
           <DemoControls
-            source={source} sources={sources} onSource={pickSource}
+            source={source} sources={sources}
+            onSource={value => { record(`Cambio de partido de la demostración (${value})`); pickSource(value) }}
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
-            speed={speed} onSpeed={setSpeed} onRestart={() => pickSource(source)} onSeek={to => void seek(to)}
+            speed={speed} onSpeed={setSpeed} onRestart={() => { record('Partido reiniciado con el botón Reiniciar'); pickSource(source) }}
+            onSeek={to => { record(`Salto en la línea de tiempo a ${mmss(to)}`); void seek(to) }}
             ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null} home={home} away={away}
           />
           {notice && <p role="alert" className="status error">{notice}</p>}
@@ -307,7 +313,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
       onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
         packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind,
-        engineVersion: meta?.engine_version ?? null })} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null}
+        engineVersion: meta?.engine_version ?? null, sessionLog: session.lines })} sessionLog={session.lines} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null}
       experimental={{ winProb: winProbOn, onWinProb: setWinProbOn }} />
   )
   return (

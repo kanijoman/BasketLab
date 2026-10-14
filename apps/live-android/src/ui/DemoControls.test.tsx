@@ -31,13 +31,13 @@ describe('transport bar (issue #231)', () => {
   })
 
   it('has play/pause and restart as icon buttons with an accessible name', () => {
-    const p = setup()
+    const p = setup({ elapsed: 0 })
     const play = screen.getByRole('button', { name: 'Reproducir' })
     expect(play.querySelector('svg')).toBeTruthy()
     fireEvent.click(play)
     expect(p.onPlay).toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }))
-    expect(p.onRestart).toHaveBeenCalled()
+    expect(p.onRestart).toHaveBeenCalled()      // nothing to lose at the very start: no question asked
   })
 
   it('says Pausa while playing', () => {
@@ -60,15 +60,13 @@ describe('transport bar (issue #231)', () => {
     expect(p.onSpeed).toHaveBeenCalledWith(300)
   })
 
-  it('has a timeline with the elapsed and the total time that seeks when moved', () => {
-    const p = setup()
+  it('has a timeline with the elapsed and the total time', () => {
+    setup()
     const slider = screen.getByRole('slider', { name: 'Línea de tiempo' }) as HTMLInputElement
     expect(slider.min).toBe('0')
     expect(slider.max).toBe('7150')
     expect(slider.value).toBe('65')
     expect(screen.getByText('1:05 / 119:10')).toBeTruthy()
-    fireEvent.change(slider, { target: { value: '3000' } })
-    expect(p.onSeek).toHaveBeenCalledWith(3000)
   })
 
   it('also has the timeline for the sample game', () => {
@@ -95,5 +93,70 @@ describe('transport bar (issue #231)', () => {
   it('shows no feed state for the sample game', () => {
     setup({ source: SAMPLE, feed: 'gap' })
     expect(screen.queryByText(/FEB no responde/)).toBeNull()
+  })
+})
+
+describe('no accidental resets (issue #309)', () => {
+  const slider = () => screen.getByRole('slider', { name: 'Línea de tiempo' }) as HTMLInputElement
+  const drag = (to: number) => fireEvent.change(slider(), { target: { value: String(to) } })
+  const release = () => fireEvent.pointerUp(slider())
+
+  it('restarting a match in progress asks first, and only a yes restarts it', () => {
+    const p = setup({ elapsed: 600 })
+    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }))
+    const ask = screen.getByRole('group', { name: 'Confirmar' })
+    expect(within(ask).getByText(/se perderán las alertas/i)).toBeTruthy()
+    expect(ask.textContent).not.toMatch(/respuestas/i)      // the feedback answers are kept (see #314): do not promise they are lost
+    expect(p.onRestart).not.toHaveBeenCalled()
+    fireEvent.click(within(ask).getByRole('button', { name: /sí, reiniciar/i }))
+    expect(p.onRestart).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('group', { name: 'Confirmar' })).toBeNull()
+  })
+
+  it('cancelling the question leaves everything as it was', () => {
+    const p = setup({ elapsed: 600 })
+    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }))
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(p.onRestart).not.toHaveBeenCalled()
+    expect(screen.queryByRole('group', { name: 'Confirmar' })).toBeNull()
+  })
+
+  it('moving the timeline does not seek until it is released (a touch while scrolling must not jump)', () => {
+    const p = setup({ elapsed: 600 })
+    drag(630)
+    expect(slider().value).toBe('630')      // it follows the finger
+    expect(p.onSeek).not.toHaveBeenCalled()
+    release()
+    expect(p.onSeek).toHaveBeenCalledWith(630)
+  })
+
+  it('a small jump forward is direct; a jump back or a long one forward asks first', () => {
+    const p = setup({ elapsed: 600 })
+    drag(700); release()
+    expect(p.onSeek).toHaveBeenCalledWith(700)
+    vi.mocked(p.onSeek).mockClear()
+    drag(100); release()
+    expect(p.onSeek).not.toHaveBeenCalled()
+    expect(screen.getByText(/saltar a 1:40/i)).toBeTruthy()
+    expect(screen.getByText(/volver atrás borra las alertas/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^saltar$/i }))
+    expect(p.onSeek).toHaveBeenCalledWith(100)
+  })
+
+  it('a long jump forward says that the alerts in between are not shown', () => {
+    const p = setup({ elapsed: 600 })
+    drag(3000); release()
+    expect(screen.getByText(/saltar a 50:00/i)).toBeTruthy()
+    expect(screen.getByText(/no se muestran las alertas del tramo/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(p.onSeek).not.toHaveBeenCalled()
+    expect(slider().value).toBe('600')      // the bar goes back to where the match is
+  })
+
+  it('the keyboard commits when the key is released', () => {
+    const p = setup({ elapsed: 600 })
+    drag(610)
+    fireEvent.keyUp(slider(), { key: 'ArrowRight' })
+    expect(p.onSeek).toHaveBeenCalledWith(610)
   })
 })
