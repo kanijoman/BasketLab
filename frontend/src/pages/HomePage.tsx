@@ -1,7 +1,7 @@
 ﻿/**
- * HomePage â€” landing page showing available collections from MongoDB.
+ * HomePage — landing page showing available collections from MongoDB.
  *
- * Groups collections by league â†’ competition â†’ season desc â†’ group.
+ * Groups collections by league → competition → season desc → group.
  * Recent collections are stored in localStorage for quick access at the top.
  * If the database is empty, directs the user to the Admin panel.
  */
@@ -13,7 +13,7 @@ import { getCollectionList, type CollectionInfo } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
 
-// â”€â”€ Grouping helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Grouping helpers ──────────────────────────────────────────────────────────
 
 interface GroupedCompetition {
   competition: string
@@ -54,7 +54,7 @@ function groupCollections(list: CollectionInfo[]): GroupedLeague[] {
   return leagues
 }
 
-// â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => void }) {
   const isFbcyl = col.league === 'FBCYL'
@@ -74,7 +74,7 @@ function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => 
           {col.group ? `Grupo ${col.group}` : col.season}
         </span>
         <span className="text-sm text-ink-primary font-medium truncate">
-          {col.competition} {col.season}{col.group ? ` â€“ ${col.group}` : ''}
+          {col.competition} {col.season}{col.group ? ` – ${col.group}` : ''}
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -131,7 +131,7 @@ function LeagueSection({
   )
 }
 
-// â”€â”€ Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const navigate = useNavigate()

@@ -104,6 +104,14 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .package-import input { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; }
 .package-summary p { margin: 4px 0; }
 
+/* Published packages (Próximos partidos): a card per match, the match on the left and the button on the right */
+.remote-packages-pass { display: grid; gap: 4px; margin: 8px 0; color: var(--muted); font-size: 0.85rem; }
+.remote-packages-pass input { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; }
+.remote-packages { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 8px; }
+.remote-packages li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+.remote-packages li > span { min-width: 0; overflow-wrap: anywhere; }
+.remote-packages li button { flex: none; }
+
 /* Game pace card */
 .pace-card { margin: 12px 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .pace-card h2 { margin: 0 0 8px; font-size: 1rem; }

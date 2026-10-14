@@ -60,6 +60,14 @@ describe('RemotePackages', () => {
     expect(screen.getByText(/10\/10\/2026/)).toBeTruthy()
   })
 
+  it('marks the list and the password field with the classes the styles use (issue #210)', async () => {
+    const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    expect(container.querySelector('ul.remote-packages > li > span')).toBeTruthy()
+    expect(container.querySelector('ul.remote-packages > li > button')).toBeTruthy()
+    expect(container.querySelector('label.remote-packages-pass input[type="password"]')).toBeTruthy()
+  })
+
   it('downloads, decrypts, installs and remembers the password', async () => {
     const store = memoryStore()
     const eng = engine()
