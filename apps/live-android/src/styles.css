@@ -221,3 +221,21 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 @keyframes splash-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
 @keyframes splash-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
 @media (prefers-reduced-motion: reduce) { .splash-mark, .splash-progress span { animation: none; } }
+/* Motion (#312): it says what changed and is short. A new alert enters with a highlight, the score flashes, a tab fades in and buttons
+   answer to the touch. Everything stops for who asks for less motion. */
+@keyframes alert-in { from { opacity: 0; transform: translateY(-10px); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 232 101 26) / 0.55); } 60% { opacity: 1; transform: none; } to { box-shadow: 0 0 0 0 transparent; } }
+@keyframes score-bump { 0% { transform: scale(1); color: var(--accent); } 40% { transform: scale(1.22); color: var(--accent); } 100% { transform: scale(1); } }
+@keyframes tab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.alert-new { animation: alert-in 0.45s ease-out; }
+.team .pts.bump { animation: score-bump 0.6s ease-out; display: inline-block; }
+.tab-fade { animation: tab-in 0.18s ease-out; }
+button { transition: transform 0.08s ease, background-color 0.15s ease, border-color 0.15s ease; }
+button:active { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) {
+  .alert-new, .pts.bump, .tab-fade { animation: none; }
+  button { transition: none; }
+  button:active { transform: none; }
+}
+/* A little depth (#312): the cards were flat. A soft shadow, and the scoreboard with an accent edge that says what the screen is about. */
+.scoreboard, .panel, .alert, .pace-card, .wp-card { box-shadow: 0 1px 3px rgb(0 0 0 / 0.22); }
+.scoreboard { border-top: 3px solid var(--accent); background: linear-gradient(180deg, rgb(var(--accent-rgb, 232 101 26) / 0.07), var(--card) 55%); }

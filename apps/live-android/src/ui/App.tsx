@@ -325,7 +325,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     <main className="screen with-tabs">
       <BrandHeader />
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+      <div role="tabpanel" key={tab} className="tab-fade" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'partido' ? matchTab : tab === 'paquetes' ? panel : aboutTab}
       </div>
       <TabBar active={tab} onChange={setTab} />

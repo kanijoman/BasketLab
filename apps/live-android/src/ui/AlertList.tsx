@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import AlertCard, { CATEGORY_LABEL } from './AlertCard'
 import type { Alert } from '../engine/types'
 import type { Verdict } from '../feedback/store'
@@ -17,6 +18,21 @@ export function countBySeverity(entries: AlertEntry[]) {
   return { critical: by('critical'), warning: by('warning'), info: by('info') }
 }
 
+/** The keys that arrived with the latest change of the list (issue #312): they enter with a highlight. The first render has none, so
+ *  opening a tab or the app does not animate the whole list; rendering the same list again keeps the same ones marked. */
+function useFreshKeys(entries: AlertEntry[]): Set<string> {
+  const state = useRef<{ known: Set<string> | null; fresh: Set<string> }>({ known: null, fresh: new Set() })
+  const keys = entries.map(e => e.alert.key)
+  const { known } = state.current
+  if (known === null) {
+    state.current = { known: new Set(keys), fresh: new Set() }
+  } else {
+    const added = keys.filter(k => !known.has(k))
+    if (added.length > 0) state.current = { known: new Set(keys), fresh: new Set(added) }
+  }
+  return state.current.fresh
+}
+
 interface ListProps {
   /** The latest first (the app prepends every new alert). */
   entries: AlertEntry[]
@@ -31,8 +47,9 @@ interface ListProps {
  */
 export default function AlertList({ entries, verdicts = {}, onVerdict }: ListProps) {
   const { critical, warning, info } = countBySeverity(entries)
+  const fresh = useFreshKeys(entries)
   const card = (e: AlertEntry) => (
-    <AlertCard key={e.alert.key} alert={e.alert} at={e.at} verdict={verdicts[e.alert.key] ?? null}
+    <AlertCard key={e.alert.key} alert={e.alert} at={e.at} verdict={verdicts[e.alert.key] ?? null} fresh={fresh.has(e.alert.key)}
       onVerdict={onVerdict && (v => onVerdict(e.alert.key, v))} />
   )
   const older = entries.slice(VISIBLE_ALERTS)
