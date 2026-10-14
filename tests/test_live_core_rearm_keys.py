@@ -50,5 +50,5 @@ def test_every_alert_key_of_the_real_match_is_unique_regression():
         result = session.play(t)
         if result["output"]:
             keys += [a["key"] for a in result["output"]["alerts"]]
-    assert len(keys) == 82   # 27 + rest (#273) + streaks (#243) + flow (#242) + the revised rules (#241): the table is in test_live_core_alert_severity.py
+    assert len(keys) == 87   # 27 + rest (#273) + streaks (#243) + flow (#242) + the revised rules (#241): the table is in test_live_core_alert_severity.py
     assert len(set(keys)) == len(keys), "the app would hide every alert whose key repeats"

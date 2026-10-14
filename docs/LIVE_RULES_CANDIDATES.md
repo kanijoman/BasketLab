@@ -26,7 +26,7 @@ Todas con acción propuesta y horizonte mayor que la latencia del feed (mediana 
 | Jugadores (#244, **hecho**) | J1 rival en racha (≥ 7 puntos en 3 min) · J2 dependencia del rival (> 40 %) · J3 propio en racha · J4 propio frío con volumen · V1 su jugador clave en el banquillo |
 | Sanciones y tiempos muertos (#245, **hecho**) | F1 antideportiva/técnica: una más y descalificado · F2 presupuesto de tiempos muertos y rival sin ellos · F4 jugador clave con 4 faltas en cierre igualado · V2 dos rivales con ≥ 3 faltas en pista |
 | Cierre y pausas (#246, **hecho**) | C1 briefing de cierre igualado · C3 resumen de fin de cuarto y descanso · C4 gestión de ventaja (+10 con < 5 min) · G1 el rival impone su ritmo |
-| Zonas (#247) | Z1 zona caliente propia · Z2 zona fría o mala selección de tiro · Z3 zona que concede el rival · Z4 rival caliente en una zona · Z5 diferencia en la pintura ≥ 10 |
+| Zonas (#247, **hecho**) | Z1 zona caliente propia · Z2 zona fría o mala selección de tiro · Z3 zona que concede el rival · Z4 rival caliente en una zona · Z5 diferencia en la pintura ≥ 10 |
 | Quintetos (#248, **hecho**) | R9 quinteto en negativo · J7 +/- individual |
 | Alineación y minutos (#271 a #275) | L1 plantilla de FEB en el paquete (**hecho**, #276) · L2 alineación indebida: mínimo de jugadoras de formación en pista, alerta crítica y restricción del recomendador (**integrada**, #272) · M1 descanso de las importantes en partido decidido (**hecho**, #273) · K1 analítica clutch por jugadora (**hecho**, #274) · K2 clutch en el briefing de cierre (**hecho**, #275) |
 | Base | tiempos muertos FIBA y contexto del partido (#239, **hecho**: R7 y la base de F2 y C1), propuestas de tiempo muerto y táctica (#240), registro de eventos y ventanas (#237) |

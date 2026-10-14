@@ -31,6 +31,12 @@ def _roster(doc: Dict[str, Any]) -> Dict[str, Tuple[str, str]]:
     return roster
 
 
+def _dorsals(doc: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+    """Team id -> jersey number -> player id, from the box score (the shot chart only has jersey numbers)."""
+    return {str(team.get("id")): {str(p["no"]): str(p["id"]) for p in team.get("PLAYER", []) if p.get("id") and p.get("no") is not None}
+            for team in (doc.get("BOXSCORE") or {}).get("TEAM", [])}
+
+
 def _events(doc: Dict[str, Any]) -> List[Event]:
     lines = ((doc.get("PLAYBYPLAY") or {}).get("LINES")) or []
     parsed = [e for e in (parse_line(line) for line in lines) if e is not None]
@@ -65,14 +71,15 @@ class LiveEngine:
         if self._game is None:
             teams = _teams(doc)
             self._game = LiveGame(teams, _roster(doc))
-            self._shots = ShotTracker([tid for tid, _ in teams])
+            self._shots = ShotTracker([tid for tid, _ in teams], _dorsals(doc))
         for event in live:
             if event.num not in self._applied:
                 self._game.apply(event)
                 self._applied[event.num] = hash(event)
         self._sync_clock(doc)
+        self._shots.set_dorsals(_dorsals(doc))
         self._shots.update(doc.get("SHOTCHART"))
-        return {**self._game.snapshot(), "zones": self._shots.snapshot()}
+        return {**self._game.snapshot(), "zones": self._shots.snapshot(), "zone_players": self._shots.player_snapshot()}
 
     def _sync_clock(self, doc: Dict[str, Any]) -> None:
         """The header is fresher than the last event; "FINAL" and the like are ignored."""

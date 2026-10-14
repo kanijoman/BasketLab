@@ -15,7 +15,7 @@ RULE_IDS: Tuple[str, ...] = (
     "rival_player_form", "own_player_form", "rival_star_bench",
     "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
-    "lineup_net", "player_plus_minus",
+    "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -138,6 +138,15 @@ class RuleConfig:
     pm_player_net: int = 8
     pm_player_min_s: int = 240
     pm_player_gap: int = 3
+    # Zones of our team and the rival's defence (issue #247): a zone the rival concedes this many points per shot above the league, with
+    # at least this many of our own shots there to confirm it; a rival player hot from a zone (attempts, makes, points per shot);
+    # the difference in points in the paint that is worth saying.
+    zone_concede_excess: float = 0.15
+    zone_confirm_attempts: int = 3
+    zone_player_min_attempts: int = 4
+    zone_player_min_makes: int = 3
+    zone_player_pps: float = 1.5
+    paint_diff: int = 10
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

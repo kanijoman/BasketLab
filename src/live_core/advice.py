@@ -28,6 +28,7 @@ from .rules_flow import drought_rule, long_run_rule, window_rule
 from .rules_plusminus import lineup_rule, player_rule
 from .rules_players import own_player_rule, rival_player_rule as rival_form_rule, rival_star_rule
 from .rules_rest import rest_rule
+from .rules_zones import own_zone_rule, paint_rule, rival_defence_rule, rival_player_zone_rule
 from .rules_summary import summary_rule
 from .rules_timeouts import timeout_budget_rule
 from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
@@ -52,6 +53,8 @@ RULES: List[Tuple[str, Rule]] = [
     ("key_fouls_close", key_fouls_rule), ("rival_foul_pair", rival_pair_rule),
     ("closing_briefing", closing_rule), ("period_summary", summary_rule), ("advantage_management", advantage_rule),
     ("pace_control", pace_rule), ("lineup_net", lineup_rule), ("player_plus_minus", player_rule),
+    ("own_zones", own_zone_rule), ("rival_defence_zones", rival_defence_rule), ("rival_zone_player", rival_player_zone_rule),
+    ("paint_battle", paint_rule),
 ]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,

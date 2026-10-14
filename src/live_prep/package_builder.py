@@ -149,6 +149,7 @@ class SeasonAccumulator:
         self._played: Dict[str, int] = {}
         self.zone_league: Dict[str, Dict[str, int]] = {}
         self.zone_team: Dict[str, Dict[str, Dict[str, int]]] = {}
+        self.zone_conceded: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> zones of the shots its defence let the opponents take (#247)
         self.total_games = 0
 
     def tracked(self, team_id: str) -> bool:
@@ -195,6 +196,7 @@ class SeasonAccumulator:
             if p["team_id"] == tid:
                 table.setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
         self._add_zones(self.zone_team.setdefault(tid, {}), snap["zones"].get(tid, {}))
+        self._add_zones(self.zone_conceded.setdefault(tid, {}), snap["zones"].get(other, {}))
 
     @staticmethod
     def _add_zones(target: Dict[str, Dict[str, int]], cells: Dict[str, Dict[str, int]]) -> None:
@@ -260,7 +262,8 @@ class SeasonAccumulator:
         tables: Dict[str, Any] = {
             "players": table(team_id), "rival_players": table(rival_id), "roles": [],
             "lineups": season_table(self.lineup_totals, team_id, LINEUPS_PER_TEAM) + season_table(self.lineup_totals, rival_id, LINEUPS_PER_TEAM),
-            "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {})}),
+            "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {}),
+                                    "own": self.zone_team.get(team_id, {}), "rival_conceded": self.zone_conceded.get(rival_id, {})}),
         }
         if roster:
             tables["roster"] = copy.deepcopy(roster)
