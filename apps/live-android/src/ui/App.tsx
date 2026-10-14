@@ -23,7 +23,7 @@ import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
 import FormationStatus from './FormationStatus'
-import AboutPanel, { UpdateBanner, buildDiagnostics } from './AboutPanel'
+import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab from './PackagesTab'
 import TabBar from './TabBar'
@@ -294,12 +294,14 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
         <FeedbackPanel records={feedback.records} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
       )}
 
+      <VersionFooter version={update.installed} engineVersion={meta?.engine_version ?? null} />
     </>
   )
   const aboutTab = (
     <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
       onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
-        packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind })} />
+        packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind,
+        engineVersion: meta?.engine_version ?? null })} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null} />
   )
   return (
     <main className="screen with-tabs">

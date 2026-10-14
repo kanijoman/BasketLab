@@ -175,3 +175,4 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .update-available { display: grid; gap: 6px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgb(var(--accent-rgb) / 0.08); }
 .about-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .about-actions button { flex: 1 1 0; min-width: 140px; }
+.version-footer { margin: 24px 0 0; text-align: center; color: var(--muted); font-size: 0.75rem; }
