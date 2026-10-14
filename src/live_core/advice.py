@@ -80,7 +80,7 @@ class AdviceEngine:
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
                         rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender,
-                        pace=self._pace)
+                        pace=self._pace, team_baselines=team_baselines or {})
             if own_team_id else None
         )
         self._last: Dict[str, int] = {}

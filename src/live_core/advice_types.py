@@ -37,3 +37,4 @@ class RuleContext:
     recommender: Optional[Any] = None                                          # Recommender (None without player baselines)
     memory: Dict[str, Any] = field(default_factory=dict)                       # what a rule remembers between evaluations (one per engine)
     pace: Optional[Any] = None                                                 # PaceModel (None without a perspective)
+    team_baselines: Dict[str, Any] = field(default_factory=dict)               # the package's team baselines (paces, three-point rate...)

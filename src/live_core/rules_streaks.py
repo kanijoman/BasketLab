@@ -49,7 +49,27 @@ def cold_shooting_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             message=f"Triples fríos: {sum(threes)}/{len(threes)} seguidos. Atacar el aro.",
             evidence={"made": sum(threes), "attempts": len(threes)},
             proposal=[tactic_proposal("Atacar el aro, menos triples")]))
-    return out
+    return out + _three_volume(snap, ctx)
+
+
+def _three_volume(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    """T2 (issue #291): many more threes than the team usually takes, and they are not going in: attack the rim."""
+    cfg, own = ctx.config, ctx.own_team_id
+    habit = ctx.team_baselines.get("fg3_rate_own")
+    stats = (snap["teams"].get(own) or {}).get("stats") or {}
+    threes, twos = stats.get("fg3a", 0), stats.get("fg2a", 0)
+    attempts = threes + twos
+    if habit is None or attempts < cfg.three_volume_min_fga or not threes:
+        return []
+    share, made = threes / attempts, stats.get("fg3m", 0)
+    if share < habit + cfg.three_volume_margin or made / threes > cfg.three_volume_max_pct:
+        return []
+    return [Advice(
+        key=f"cold_3p_volume:{threes // cfg.three_volume_block}", id="cold_3p_volume", severity="info", category="four_factors",
+        message=(f"Volumen de triples muy alto ({threes} de {attempts} tiros, el {round(100 * share)} % frente al "
+                 f"{round(100 * habit)} % habitual) con {made}/{threes}. Atacar el aro."),
+        evidence={"fg3a": threes, "fga": attempts, "share": round(share, 3), "habit": habit, "fg3m": made},
+        proposal=[tactic_proposal("Atacar el aro, menos triples")])]
 
 
 def rival_hot_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:

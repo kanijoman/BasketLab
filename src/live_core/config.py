@@ -122,6 +122,12 @@ class RuleConfig:
     summary_fouls: int = 5
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60
+    # Volume of threes (issue #291): the share of the team's shots that are threes is this far above its habitual one, with at least
+    # this many field-goal attempts and a three-point percentage of at most this; it is said once per block of this many threes.
+    three_volume_margin: float = 0.10
+    three_volume_min_fga: int = 12
+    three_volume_max_pct: float = 0.25
+    three_volume_block: int = 8
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

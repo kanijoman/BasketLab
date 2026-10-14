@@ -141,6 +141,7 @@ class SeasonAccumulator:
         self.names: Dict[str, str] = {}
         self.diffs: Dict[str, List[Dict[str, float]]] = {}
         self.league_diffs: List[Dict[str, float]] = []
+        self.team_threes: Dict[str, List[int]] = {}   # team -> [three-point attempts, field-goal attempts] over the season (#291)
         self.pace_log: List[Tuple[Tuple[str, str], float]] = []  # (the two team ids, game pace) in game order
         self._played: Dict[str, int] = {}
         self.zone_league: Dict[str, Dict[str, int]] = {}
@@ -176,6 +177,9 @@ class SeasonAccumulator:
 
     def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self._played[tid] = self.played(tid) + 1
+        shots = self.team_threes.setdefault(tid, [0, 0])
+        shots[0] += stats[tid]["fg3a"]
+        shots[1] += stats[tid]["fg2a"] + stats[tid]["fg3a"]
         self.diffs.setdefault(tid, []).append(differentials(stats[tid], stats[other]))
         table = self.players.setdefault(tid, {})
         for pid, p in snap["players"].items():
@@ -202,6 +206,10 @@ class SeasonAccumulator:
         spread = league_spread(self.league_diffs)
         if spread:
             out["four_factors_sd"] = spread
+        for key, tid in (("fg3_rate_own", team_id), ("fg3_rate_rival", rival_id)):
+            threes, attempts = self.team_threes.get(tid, [0, 0])
+            if attempts:
+                out[key] = round(threes / attempts, 3)     # the share of the shots a team usually takes from three (issue #291)
         paces = self._paces(team_id, rival_id)
         if paces:
             out["pace_per_40"] = round(sum(paces) / len(paces), 1)

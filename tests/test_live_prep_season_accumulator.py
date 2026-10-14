@@ -114,3 +114,22 @@ def test_the_free_throw_data_is_the_same_for_build_package(feb_game_doc):
     a = accumulated([feb_game_doc], A, B)
     b = build_package([feb_game_doc], "FEB_TEST", "2025-2026", A, B, created_at=STAMP)
     assert a.tables["players"] == b.tables["players"] and a.baselines["ft_league_pct"] == b.baselines["ft_league_pct"]
+
+
+def test_the_package_carries_the_habitual_three_point_rate_of_both_teams(feb_game_doc):
+    """Issue #291 (T2): the share of three-point attempts in all field-goal attempts, over the season, of our team and the rival's."""
+    from src.live_core.engine import LiveEngine
+
+    package = accumulated([feb_game_doc], A, B)
+    stats = {tid: LiveEngine().update(feb_game_doc)["teams"][tid]["stats"] for tid in (A, B)}
+    for key, tid in (("fg3_rate_own", A), ("fg3_rate_rival", B)):
+        s = stats[tid]
+        assert package.baselines[key] == pytest.approx(s["fg3a"] / (s["fg2a"] + s["fg3a"]), abs=1e-3)
+    assert 0.1 < package.baselines["fg3_rate_own"] < 0.6
+
+
+def test_a_team_without_games_has_no_three_point_rate(feb_game_doc):
+    acc = SeasonAccumulator(track=(A, "999999"))
+    acc.add_game(feb_game_doc)
+    package = acc.to_package("FEB_TEST", "2025-2026", A, "999999", None, STAMP)
+    assert "fg3_rate_own" in package.baselines and "fg3_rate_rival" not in package.baselines
