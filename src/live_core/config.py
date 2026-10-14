@@ -12,6 +12,7 @@ RULE_IDS: Tuple[str, ...] = (
     "foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
     "cold_shooting", "rival_hot_shooting", "free_throw_cold", "scoring_drought", "long_run", "game_flow_windows",
+    "rival_player_form", "own_player_form", "rival_star_bench",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -80,6 +81,20 @@ class RuleConfig:
     turnover_player_min: int = 3
     fatigue_critical_index: float = 95.0
     lever_step_pts100: float = 5.0
+    # Players (issue #244): a streak is this many points in the window or this many baskets in a row; a rival depends on one
+    # player above this share of his points (with this minimum); an own player is cold with at least this many attempts, an
+    # eFG at most this, and a volume this many times above his usual; the rival's key players (by production) and the fouls
+    # from which the key player coming back is a warning.
+    hot_player_pts: int = 7
+    hot_player_window_s: int = 180
+    hot_player_row: int = 3
+    dependence_share: float = 0.40
+    dependence_min_pts: int = 12
+    cold_player_min_fga: int = 6
+    cold_player_max_efg: float = 0.30
+    cold_player_volume_ratio: float = 1.5
+    rival_key_n: int = 1
+    key_return_pf: int = 3
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

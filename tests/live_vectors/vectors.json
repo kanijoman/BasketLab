@@ -67,10 +67,11 @@
     },
     {
      "alerts": [
-      "cold_fg:2"
+      "cold_fg:2",
+      "star_out:1949844:1"
      ],
      "digests": {
-      "alerts": "13b3d6d68e4227538e21f18bad2cbefc23dc0d552911e44bd2e2a4fc1270b8bb",
+      "alerts": "a4b5c91570aa9333b2e145fe8b3a4687aa28595fb514428f029e651119888349",
       "analysis": "b81ad4e2fa5c21cd36ffe8d6b626131a9dcf6fec290ae31451d46e45078bcaa1",
       "snapshot": "856d3483fa8c9bdd8c0b5fadf3f1cdeb087ea303bda3d249ddf22b75e7b597a1"
      },
@@ -101,11 +102,13 @@
     },
     {
      "alerts": [
+      "rival_hot:1949844:2",
       "bonus:982047:2",
-      "lever:ftr:1:1"
+      "lever:ftr:1:1",
+      "rival_dependence:1949844:1"
      ],
      "digests": {
-      "alerts": "818fe3327404bb351036e91ccf363aa6c1d631ca6d383d547cf334ef70a4e6e6",
+      "alerts": "942567996e4ef841e31a9aa84558e347ff1270d00dbede734da7ceb84398fbe8",
       "analysis": "6917d6a9cbf1d3349009c99af2eecd447cd3573acc0a6b0833164ca12d63edb2",
       "snapshot": "e62be1e7b6d358469ddc8a66b047410ab67fb3c251e6004f98e2ad9a2b88e52b"
      },
@@ -139,10 +142,11 @@
     {
      "alerts": [
       "bonus:982047:3",
-      "rbonus:981204:3"
+      "rbonus:981204:3",
+      "star_out:1949844:2"
      ],
      "digests": {
-      "alerts": "302f2a397bdce80c6b7b476202f2a84ef928d72d2a2c08321d8982edc5d9cfcd",
+      "alerts": "74f1d1b436539be70dde28dd0544c1c60276f5173a6047f567d470c647c8ab3a",
       "analysis": "35108410f99c48dfa50b15bab1ba7072d83fdf1ce14cc445594815590aab3c1c",
       "snapshot": "de5f5cddba744407fa462d1a567e6d722472f269500791c15dc1dd0729b88b32"
      },
@@ -216,10 +220,11 @@
     },
     {
      "alerts": [
+      "rival_hot:2088360:4",
       "rfoul:2088360:3"
      ],
      "digests": {
-      "alerts": "e46ff93b73a8f794d5d1eb58ad8583832ca2a67c2ddf00dae235c2fd9cef6027",
+      "alerts": "31b890c24621207cd22fd5b7c1f87d096af4b35a6c07748299047c00b40e6061",
       "analysis": "37553822679df4ff87931f8c93fd450f7a2eb9cdd559d576314ad392842ce868",
       "snapshot": "0dccaf22e1a4a6740466c4cda37295d1a28c7d5749b08532144bcebae91c59f5"
      },

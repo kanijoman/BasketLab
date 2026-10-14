@@ -12,6 +12,7 @@ from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
+from tests.test_live_core_players import basket as pl_basket, impact as pl_impact, pl_snap, player as pl_player
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
@@ -19,7 +20,8 @@ from tests.test_live_core_rival_zones import zsnap
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
                 "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
                 "cold_shooting", "rival_hot_shooting", "free_throw_cold",
-                "scoring_drought", "long_run", "game_flow_windows")
+                "scoring_drought", "long_run", "game_flow_windows",
+                "rival_player_form", "own_player_form", "rival_star_bench")
 
 
 def _engine(rules_off=(), **kw):
@@ -80,13 +82,22 @@ SCENARIOS = {
     "free_throw_cold": (lambda: snap(elapsed=400, log=free_throws(OWN, [0] * 8)), {"ft_cold"}, {}),
     "scoring_drought": (lambda: snap(elapsed=400, log=[[100, OWN, "pts", 2, "p1"]]), {"own_drought", "fg_drought", "rival_drought"}, {}),
     "long_run": (lambda: snap(elapsed=330, log=[[t, RIVAL, "pts", 2, "p1"] for t in (100, 140, 180, 220, 260, 300)]), {"long_run"}, {}),
+    "rival_player_form": (lambda: pl_snap({"r1": pl_player("Rita", RIVAL)}, [pl_basket(RIVAL, "r1", 250, 3), pl_basket(RIVAL, "r1", 310, 2),
+                                                                         pl_basket(RIVAL, "r1", 380, 2)]), {"rival_hot_run"}, {}),
+    "own_player_form": (lambda: pl_snap({"p1": pl_player("Ana", OWN)}, [pl_basket(OWN, "p1", 250, 3), pl_basket(OWN, "p1", 310, 2),
+                                                                      pl_basket(OWN, "p1", 380, 2)]), {"own_hot_player"}, {}),
+    "rival_star_bench": (lambda: [snap(elapsed=300, players={"r1": pl_player("Rita", RIVAL)}),
+                                  snap(elapsed=330, players={"r1": pl_player("Rita", RIVAL, on_court=False)})],
+                         {"rival_star_out"}, {"rival_baselines": {"r1": {"name": "Rita", "avg_min": 1500, "impact40": pl_impact(24.0)}}}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 
 
 def _ids(engine, snapshot):
-    """Ids emitted by evaluating the snapshot twice (an alert that asks for confirmation needs two evaluations)."""
-    return {a.id for _ in range(2) for a in engine.evaluate(snapshot)}
+    """Ids emitted by evaluating the snapshot twice (an alert that asks for confirmation needs two evaluations). A list of
+    snapshots is evaluated in order (a rule that remembers the previous evaluation needs a change to say something)."""
+    snapshots = snapshot if isinstance(snapshot, list) else [snapshot]
+    return {a.id for _ in range(2) for s in snapshots for a in engine.evaluate(s)}
 
 
 def test_every_rule_has_a_unique_id_and_the_registry_matches_the_known_ids():

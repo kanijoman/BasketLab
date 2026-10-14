@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
 from .config import RuleConfig
-from .windows import last_shots, trailing_makes, window_stats
+from .windows import player_form, window_stats
 
 GAME_SECONDS = 2400
 
@@ -58,7 +58,6 @@ def _clock(seconds: int) -> str:
 
 
 _LEVELS = ("critical", "warning", "info")     # most to least urgent
-_HOT_STREAK = 3                              # consecutive made field goals of the player that count as a hot streak
 
 
 def _level(index: float, cfg: RuleConfig) -> Optional[str]:
@@ -76,7 +75,8 @@ def _reason_to_keep(snap: Dict[str, Any], ctx: RuleContext, pid: str) -> Optiona
     net = window_stats(log, own, start, now)["pts"] - (window_stats(log, rival, start, now)["pts"] if rival else 0)
     if net >= cfg.own_run_net:
         return "parcial a favor"
-    if trailing_makes(last_shots(log, own, _HOT_STREAK, player_id=pid)) >= _HOT_STREAK:
+    form = player_form(log, own, pid, now, cfg.hot_player_window_s)
+    if form["pts"] >= cfg.hot_player_pts or form["made_in_row"] >= cfg.hot_player_row:
         return "está en racha"
     return None
 
