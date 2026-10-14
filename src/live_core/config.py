@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 RULE_IDS: Tuple[str, ...] = (
     "foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
+    "cold_shooting", "rival_hot_shooting", "free_throw_cold", "scoring_drought", "long_run", "game_flow_windows",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -39,10 +40,51 @@ class RuleConfig:
     decided_remaining_s: int = 480
     close_margin: int = 6
     close_remaining_s: int = 240
+    # Shooting streaks (last N attempts, oldest first): own cold field goals / threes (made at most), rival hot field goals /
+    # threes (made at least), own free throws at or below this share with at least this many attempts (issue #243).
+    cold_fg_n: int = 8
+    cold_fg_max_made: int = 1
+    cold_3p_n: int = 7
+    cold_3p_max_made: int = 1
+    hot_fg_n: int = 8
+    hot_fg_min_made: int = 6
+    hot_3p_n: int = 6
+    hot_3p_min_made: int = 4
+    ft_cold_min_attempts: int = 8
+    ft_cold_max_pct: float = 0.5
+    # Game flow (issue #242): own drought (warning; critical from the second value), rival drought (a window to run), no field
+    # goal; long run against (net points in the window), run for us (net, in run_window_s); counts in the flow window: rival
+    # offensive rebounds, rival points within a few seconds of our turnovers, rival turnovers. Quiet after our own timeout.
+    drought_own_s: int = 240
+    drought_critical_s: int = 360
+    drought_rival_s: int = 210
+    drought_fg_s: int = 180
+    after_timeout_quiet_s: int = 60
+    long_run_net: int = 10
+    long_run_window_s: int = 300
+    own_run_net: int = 8
+    flow_window_s: int = 180
+    rival_orb_n: int = 3
+    tov_points_n: int = 6
+    tov_points_horizon_s: int = 8
+    rival_tov_n: int = 4
+    # Revised rules (issue #241). Fouls: three personal fouls are a risk only with more than this left in the game. Bonus: seconds
+    # left in the period above which being in bonus is critical / a warning. Rival fouls: average seconds of an important rival
+    # and the z of free-throw rate from which an own player is the one who draws contact. Turnovers: from this many of one player
+    # he is named. Fatigue: index from which it is critical. Lever: the step (pts/100) it must worsen to be said again.
+    foul_min_left_s: int = 360
+    bonus_long_left_s: int = 300
+    bonus_short_left_s: int = 120
+    rival_important_avg_min_s: int = 1200
+    contact_ftr_z: float = 0.5
+    turnover_player_min: int = 3
+    fatigue_critical_index: float = 95.0
+    lever_step_pts100: float = 5.0
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.
     run_points: int = 8
+    run_net_info: int = 6   # net points of a run that is already information (issue #241)
     run_window_s: int = 150
     # Own turnovers inside the window.
     turnover_streak: int = 4
@@ -50,7 +92,7 @@ class RuleConfig:
     # Fatigue index (0-100): weighted mix of stint length, minutes pace and projected minutes.
     fatigue_alert_index: float = 60.0
     fatigue_warning_index: float = 80.0   # from here fatigue is a warning; between alert and warning it is context
-    fatigue_rearm_s: int = 240
+    fatigue_rearm_s: int = 240            # no longer used by the rule since #241 (kept: a package may carry it)
     fatigue_default_avg_stint_s: int = 420
     fatigue_weight_stint: float = 40.0
     fatigue_weight_minutes: float = 35.0
@@ -64,7 +106,7 @@ class RuleConfig:
     ff_min_possessions: float = 15.0
     ff_beta: float = 9.0
     ff_lever_min_pts100: float = 3.0
-    ff_lever_rearm_s: int = 600
+    ff_lever_rearm_s: int = 600           # no longer used by the rule since #241 (kept: a package may carry it)
     # Recommender: widest role gap accepted, weight of that gap in the ranking, how much the
     # quintet's rebounding/creation/spacing/interior may drop (sum of z), results per advice.
     rec_max_role_distance: float = 3.0

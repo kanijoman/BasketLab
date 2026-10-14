@@ -21,7 +21,10 @@ ACTION_FOR: Dict[str, str] = {
     "fatigue_high": "sub_out",
     "rival_run": "timeout",
     "turnover_streak": "timeout",
+    "own_drought": "timeout",
+    "long_run": "timeout",
     "four_factors_lever": "proposed_sub",
+    "rest_starters": "proposed_sub",
 }
 
 _FOUL_OUT = 5

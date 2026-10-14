@@ -13,6 +13,7 @@ from typing import Optional
 FOUL_OUT = 5
 WARNING_CAP = 3
 CRITICAL_PF = FOUL_OUT - 1
+SECOND_HALF_FIRST_PERIOD = 3
 
 
 @dataclass(frozen=True)
@@ -34,10 +35,15 @@ def evaluate_player_fouls(
     pf: int,
     period: int,
     last_alerted_pf: int = 0,
+    seconds_left: Optional[int] = None,
+    min_left_s: int = 360,
 ) -> Optional[FoulAlert]:
-    """Return an alert for this player's foul count, or None.
+    """Return an alert for this player's foul count, or None (issue #241, R4: risk of elimination).
 
-    ``last_alerted_pf`` is the foul count already alerted: the same count never repeats.
+    ``last_alerted_pf`` is the foul count already alerted: the same count never repeats. Four fouls (one from elimination)
+    is always critical. Three fouls is a risk only while more than ``min_left_s`` of the game is left (with less the player
+    will most likely finish): information in the first half, where the coach already changes the player (89 % within two
+    minutes), a warning in the second. Two fouls never alert. ``seconds_left=None`` (no clock at hand) counts as plenty.
     """
     if pf >= FOUL_OUT or pf <= last_alerted_pf:
         return None
@@ -46,9 +52,9 @@ def evaluate_player_fouls(
             player_id, pf, "critical",
             f"{name}: {pf} faltas personales, a una de la eliminación. Gestionar sus minutos.",
         )
-    if pf >= warn_threshold(period):
+    if pf >= WARNING_CAP and (seconds_left is None or seconds_left > min_left_s):
         return FoulAlert(
-            player_id, pf, "warning",
+            player_id, pf, "warning" if period >= SECOND_HALF_FIRST_PERIOD else "info",
             f"{name}: {pf} faltas personales en el periodo {period}. Valorar cambio.",
         )
     return None

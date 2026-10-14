@@ -13,15 +13,15 @@ def test_warn_threshold_by_period(period, expected):
 
 
 @pytest.mark.parametrize(
-    "pf, period, fires",
-    [(1, 1, False), (2, 1, True), (1, 2, False), (2, 2, False), (3, 2, True),
-     (2, 3, False), (3, 3, True), (2, 4, False), (3, 4, True)],
+    "pf, period, severity",
+    [(1, 1, None), (2, 1, None), (1, 2, None), (2, 2, None), (3, 2, "info"),
+     (2, 3, None), (3, 3, "warning"), (2, 4, None), (3, 4, "warning")],
 )
-def test_warning_fires_at_threshold(pf, period, fires):
+def test_warning_fires_at_threshold(pf, period, severity):
+    """Issue #241 (R4): two fouls never alert; three are information in the first half and a warning in the second."""
     alert = evaluate_player_fouls("p1", "Ana", pf, period)
-    assert (alert is not None) == fires
-    if fires:
-        assert alert.severity == "warning"
+    assert (alert.severity if alert else None) == severity
+    if alert:
         assert alert.player_id == "p1" and alert.pf == pf
 
 
@@ -49,6 +49,6 @@ def test_new_foul_alerts_again_and_escalates():
 
 
 def test_message_is_in_spanish_and_has_evidence():
-    alert = evaluate_player_fouls("p1", "Ana", 2, 1)
-    assert "Ana" in alert.message and "2" in alert.message
+    alert = evaluate_player_fouls("p1", "Ana", 3, 3)
+    assert "Ana" in alert.message and "3" in alert.message
     assert "faltas" in alert.message.lower()

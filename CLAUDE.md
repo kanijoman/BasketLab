@@ -109,7 +109,7 @@ MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · mat
 python run_api.py                    # API :8000 (BASKETLAB_DEV=1 → reload)
 python run_scraper.py                # servicio scraper
 cd frontend && npm run dev           # Vite :5173
-pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite completa (pytest -q) la corre el CI
+pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite completa la corre el CI (en paralelo: python -m pytest -n auto)
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
 python -m src.live_core.fake_feb --speed 30   # FEB simulado

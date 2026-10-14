@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
 from .config import RuleConfig
+from .windows import last_shots, trailing_makes, window_stats
 
 GAME_SECONDS = 2400
 
@@ -56,24 +57,57 @@ def _clock(seconds: int) -> str:
     return f"{seconds // 60}:{seconds % 60:02d}"
 
 
+_LEVELS = ("critical", "warning", "info")     # most to least urgent
+_HOT_STREAK = 3                              # consecutive made field goals of the player that count as a hot streak
+
+
+def _level(index: float, cfg: RuleConfig) -> Optional[str]:
+    if index >= cfg.fatigue_critical_index:
+        return "critical"
+    if index >= cfg.fatigue_warning_index:
+        return "warning"
+    return "info" if index >= cfg.fatigue_alert_index else None
+
+
+def _reason_to_keep(snap: Dict[str, Any], ctx: RuleContext, pid: str) -> Optional[str]:
+    """Why a tired player may stay for now: the team is on a run, or he is on a hot streak (else None)."""
+    cfg, own, rival, now, log = ctx.config, ctx.own_team_id, ctx.rival_team_id, snap["elapsed"], snap.get("log", [])
+    start = now - cfg.run_window_s
+    net = window_stats(log, own, start, now)["pts"] - (window_stats(log, rival, start, now)["pts"] if rival else 0)
+    if net >= cfg.own_run_net:
+        return "parcial a favor"
+    if trailing_makes(last_shots(log, own, _HOT_STREAK, player_id=pid)) >= _HOT_STREAK:
+        return "está en racha"
+    return None
+
+
 def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    """Fatigue of the own players on court, escalated info -> warning -> critical (issue #241, R5).
+
+    Each level is said once per stint (the key carries the second the stint began), so nothing repeats by time. With an own
+    run or a player on a hot streak the level goes down one step (never below information) and the message says why.
+    """
     out = []
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id or not p["on_court"]:
             continue
         index, parts = fatigue_index(p["stint"], p["minutes"], snap["elapsed"],
                                      ctx.baselines.get(pid), ctx.config)
-        if index < ctx.config.fatigue_alert_index:
+        level = _level(index, ctx.config)
+        if level is None:
             continue
+        reason = _reason_to_keep(snap, ctx, pid)
+        severity = _LEVELS[min(len(_LEVELS) - 1, _LEVELS.index(level) + 1)] if reason else level
+        message = (f"{p['name']}: riesgo de fatiga {'muy alto' if level == 'critical' else 'alto'} (índice {index:.0f}/100), "
+                   f"{_clock(p['stint'])} seguidos en pista y {p['minutes'] // 60} min jugados. "
+                   + ("Cambio recomendado." if level == "critical" else "Valorar descanso."))
+        if reason:
+            message += f" Se baja un nivel: {reason}."
         out.append(Advice(
-            key=f"fatigue:{pid}", id="fatigue_high",
-            severity="warning" if index >= ctx.config.fatigue_warning_index else "info", category="rotacion",
-            message=(f"{p['name']}: riesgo de fatiga alto (índice {index:.0f}/100), "
-                     f"{_clock(p['stint'])} seguidos en pista y {p['minutes'] // 60} min jugados. "
-                     "Valorar descanso."),
+            key=f"fatigue:{pid}:{snap['elapsed'] - p['stint']}:{level}" + ("~context" if reason else ""),
+            id="fatigue_high", severity=severity, category="rotacion", message=message,
             evidence={"player_id": pid, "team_id": p["team_id"], "index": index, "components": parts,
-                      "stint_s": p["stint"], "minutes_s": p["minutes"],
+                      "stint_s": p["stint"], "minutes_s": p["minutes"], "level": level, "kept_because": reason,
                       "has_baseline": pid in ctx.baselines},
-            rearm_s=ctx.config.fatigue_rearm_s,
         ))
     return out

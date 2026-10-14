@@ -40,11 +40,11 @@ def ids(advices):
 
 # --- foul trouble ------------------------------------------------------------------
 
-def test_own_player_with_two_fouls_in_q1_gets_a_warning():
-    out = engine().evaluate(snap(period=1, players={"p1": _player("Ana", OWN, pf=2)}))
+def test_own_player_with_three_fouls_in_q3_gets_a_warning():
+    out = engine().evaluate(snap(period=3, players={"p1": _player("Ana", OWN, pf=3)}))
     [a] = [a for a in out if a.id == "foul_trouble"]
     assert a.severity == "warning" and a.category == "faltas" and "Ana" in a.message
-    assert a.evidence["pf"] == 2
+    assert a.evidence["pf"] == 3
 
 
 def test_four_fouls_is_critical():
@@ -71,8 +71,9 @@ def test_same_alert_is_not_repeated_but_a_new_foul_is_new():
 # --- team fouls --------------------------------------------------------------------
 
 def test_own_team_at_four_fouls_in_the_period_warns_about_the_bonus():
-    out = engine().evaluate(snap(period=2, fouls_by_period={OWN: {"2": 4}}))
-    [a] = [a for a in out if a.id == "team_fouls_bonus"]
+    s = snap(period=2, fouls_by_period={OWN: {"2": 4}})
+    s["remaining"] = 400
+    [a] = [a for a in engine().evaluate(s) if a.id == "team_fouls_bonus"]
     assert a.severity == "warning" and a.evidence["team_fouls"] == 4
 
 
@@ -107,7 +108,7 @@ def test_unanswered_rival_run_is_critical_and_suggests_a_timeout():
 
 
 def test_run_requires_it_to_be_unanswered_and_recent():
-    answered = [_pts(1000, RIVAL, 3), _pts(1040, RIVAL, 5), _pts(1050, OWN, 2)]
+    answered = [_pts(1000, RIVAL, 3), _pts(1040, RIVAL, 5), _pts(1050, OWN, 2), _pts(1060, OWN, 2)]   # net +4: no run
     assert "rival_run" not in ids(engine().evaluate(snap(elapsed=1110, log=answered)))
     too_slow = [_pts(800, RIVAL, 3), _pts(1000, RIVAL, 5)]
     assert "rival_run" not in ids(engine().evaluate(snap(elapsed=1110, log=too_slow)))
@@ -159,14 +160,18 @@ def test_no_fatigue_alert_for_a_short_stint_or_the_bench_or_the_rival():
         assert "fatigue_high" not in ids(engine(baselines=BASE).evaluate(snap(elapsed=1200, players=players)))
 
 
-def test_fatigue_reminder_after_the_rearm_period_while_still_high():
+def test_fatigue_is_said_again_only_when_it_escalates_to_a_higher_level():
+    """Issue #241 (R5): no reminders by time; a worse level of the same stint is a new alert."""
     eng = engine(baselines=BASE)
     players = {"p1": _player("Ana", OWN, stint=720, minutes=1100)}
-    assert "fatigue_high" in ids(eng.evaluate(snap(elapsed=1200, players=players)))
-    assert "fatigue_high" not in ids(eng.evaluate(snap(elapsed=1210, players=players)))
-    later = 1200 + RuleConfig().fatigue_rearm_s
-    players = {"p1": _player("Ana", OWN, stint=960, minutes=1400)}  # still on court, more minutes
-    assert "fatigue_high" in ids(eng.evaluate(snap(elapsed=later, players=players)))
+    [first] = [a for a in eng.evaluate(snap(elapsed=1200, players=players)) if a.id == "fatigue_high"]
+    assert first.severity == "warning"
+    grown = lambda dt: {"p1": _player("Ana", OWN, stint=720 + dt, minutes=1100 + dt)}   # the stint grows with the clock  # noqa: E731
+    assert "fatigue_high" not in ids(eng.evaluate(snap(elapsed=1210, players=grown(10))))
+    assert "fatigue_high" not in ids(eng.evaluate(snap(elapsed=1200 + 4 * 240, players=grown(4 * 240))))   # nothing by time
+    players = {"p1": _player("Ana", OWN, stint=1200, minutes=1700)}                                    # still on court, much worse
+    [second] = [a for a in eng.evaluate(snap(elapsed=1680, players=players)) if a.id == "fatigue_high"]
+    assert second.severity == "critical" and second.key != first.key
 
 
 # --- ordering / config -------------------------------------------------------------
@@ -276,12 +281,13 @@ def test_no_lever_alert_when_the_deficit_is_small():
     assert "four_factors_lever" not in ids(engine().evaluate(ff_snap(_stats(tov=11), _stats())))
 
 
-def test_lever_alert_is_not_repeated_until_it_re_arms():
+def test_lever_alert_is_not_repeated_by_time():
+    """Issue #241 (R6): the same lever is said once; the rest of the behaviour is in test_live_core_rules_revision.py."""
     eng = engine()
     first = ff_snap(_stats(tov=22), _stats(), elapsed=1200)
     assert "four_factors_lever" in ids(eng.evaluate(first))
     assert "four_factors_lever" not in ids(eng.evaluate(ff_snap(_stats(tov=22), _stats(), elapsed=1260)))
-    assert "four_factors_lever" in ids(
+    assert "four_factors_lever" not in ids(
         eng.evaluate(ff_snap(_stats(tov=22), _stats(), elapsed=1200 + RuleConfig().ff_lever_rearm_s)))
 
 

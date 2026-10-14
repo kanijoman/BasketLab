@@ -35,3 +35,4 @@ class RuleContext:
     zone_ref: Dict[str, Any] = field(default_factory=dict)                    # {"rival": {zone: cell}, "league": {...}}
     roster: Dict[str, Dict[str, Any]] = field(default_factory=dict)           # player id -> FEB roster entry (formación...)
     recommender: Optional[Any] = None                                          # Recommender (None without player baselines)
+    memory: Dict[str, Any] = field(default_factory=dict)                       # what a rule remembers between evaluations (one per engine)

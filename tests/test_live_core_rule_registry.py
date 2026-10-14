@@ -12,11 +12,14 @@ from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
+from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
 
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
-                "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters")
+                "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
+                "cold_shooting", "rival_hot_shooting", "free_throw_cold",
+                "scoring_drought", "long_run", "game_flow_windows")
 
 
 def _engine(rules_off=(), **kw):
@@ -25,7 +28,9 @@ def _engine(rules_off=(), **kw):
 
 def _fouls():
     players = {"p1": _player("Ana", OWN, pf=3), "r1": _player("Rival Uno", RIVAL, pf=3)}
-    return snap(period=3, players=players)
+    # both teams scored a minute ago: a game with no scoring at all would (rightly) raise the drought alerts
+    log = [[500, team, kind, value, "p1"] for team in (OWN, RIVAL) for kind, value in (("fg2", 1), ("pts", 2))]
+    return snap(period=3, players=players, log=log)
 
 
 def _bonus():
@@ -33,7 +38,8 @@ def _bonus():
 
 
 def _run():
-    return snap(elapsed=1110, log=[[1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]])
+    return snap(elapsed=1110, log=[[880, OWN, "fg2", 1, "p1"], [880, OWN, "pts", 2, "p1"],   # our last basket, before the run window
+                               [1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]])
 
 
 def _turnovers():
@@ -69,6 +75,12 @@ SCENARIOS = {
     "rival_hot_player": (lambda: rival_snap({"orb": 4}), {"rival_hot_player"}, {"rival_baselines": RIVAL_BASELINES}),
     "rival_zone": (_zone, {"rival_zone"}, {}),
     "rest_starters": (rest_decided, {"rest_starters"}, {"baselines": REST_TABLE}),
+    "cold_shooting": (lambda: snap(elapsed=400, log=shots(OWN, [0] * 8)), {"cold_fg_streak"}, {}),
+    "rival_hot_shooting": (lambda: snap(elapsed=400, log=shots(RIVAL, [1] * 8)), {"rival_hot_streak"}, {}),
+    "free_throw_cold": (lambda: snap(elapsed=400, log=free_throws(OWN, [0] * 8)), {"ft_cold"}, {}),
+    "scoring_drought": (lambda: snap(elapsed=400, log=[[100, OWN, "pts", 2, "p1"]]), {"own_drought", "fg_drought", "rival_drought"}, {}),
+    "long_run": (lambda: snap(elapsed=330, log=[[t, RIVAL, "pts", 2, "p1"] for t in (100, 140, 180, 220, 260, 300)]), {"long_run"}, {}),
+    "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 
 

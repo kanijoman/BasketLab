@@ -21,10 +21,13 @@ from .proposals import timeout_proposal
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
+from .rules_flow import drought_rule, long_run_rule, window_rule
 from .rules_rest import rest_rule
+from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
-from .rules_team import foul_rule, rival_foul_rule, run_rule, team_fouls_rule, turnover_rule
+from .rules_run import run_rule, turnover_rule
+from .rules_team import foul_rule, rival_foul_rule, team_fouls_rule
 from .timeouts import timeouts_left
 
 Rule = Callable[[Dict[str, Any], RuleContext], List[Advice]]
@@ -35,6 +38,8 @@ RULES: List[Tuple[str, Rule]] = [
     ("rival_run", run_rule), ("turnover_streak", turnover_rule), ("fatigue_high", fatigue_rule),
     ("four_factors_lever", four_factors_rule), ("rival_hot_player", rival_player_rule), ("rival_zone", rival_zone_rule),
     ("rest_starters", rest_rule),
+    ("cold_shooting", cold_shooting_rule), ("rival_hot_shooting", rival_hot_rule), ("free_throw_cold", free_throw_rule),
+    ("scoring_drought", drought_rule), ("long_run", long_run_rule), ("game_flow_windows", window_rule),
 ]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
@@ -164,6 +169,8 @@ class AdviceEngine:
                 snapshot, advice.evidence["player_id"], lever=self._current_lever(snapshot))
         elif advice.id == "four_factors_lever":
             proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
+        elif advice.id == "rival_orb_window":
+            proposal = self._recommender.suggest_for_lever(snapshot, "def_reb")
         elif advice.id == "turnover_streak":
             proposal = self._recommender.suggest_for_lever(snapshot, "tov")
         elif advice.id == "rival_hot_player" and advice.evidence["metric"] in _RIVAL_LEVER:
