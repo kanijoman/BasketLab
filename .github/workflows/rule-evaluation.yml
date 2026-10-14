@@ -22,6 +22,15 @@ on:
         required: false
         default: "3"
         type: string
+      roster:
+        description: "Ask FEB for the current roster of every team (once each) so the illegal-lineup rule can be measured (#278)"
+        required: false
+        default: false
+        type: boolean
+      roster_file:
+        description: "Roster file of the repository (JSON, the package's tables.roster); no network. Optional"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -49,9 +58,13 @@ jobs:
           COLLECTION: ${{ inputs.collection }}
           TEAM: ${{ inputs.team }}
           MIN_PRIOR_GAMES: ${{ inputs.min_prior_games }}
+          ROSTER: ${{ inputs.roster }}
+          ROSTER_FILE: ${{ inputs.roster_file }}
         run: |
           args=(--collection "$COLLECTION" --min-prior-games "${MIN_PRIOR_GAMES:-3}" --out rule-evaluation)
           if [ -n "$TEAM" ]; then args+=(--team "$TEAM"); fi
+          if [ "$ROSTER" = "true" ]; then args+=(--roster); fi
+          if [ -n "$ROSTER_FILE" ]; then args+=(--roster-file "$ROSTER_FILE"); fi
           for recording in tests/recordings/*.rec.json.gz; do args+=(--recording "$recording"); done
           python -m src.live_prep.rule_evaluation "${args[@]}"
       - name: Upload the report

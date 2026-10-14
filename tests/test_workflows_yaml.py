@@ -374,3 +374,25 @@ class TestBackendTestsRunInParallel:
 
     def test_xdist_is_installed_for_the_job(self):
         assert "pytest-xdist" in (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")
+
+
+class TestRuleEvaluationRoster:
+    """Issue #278: the evaluation can ask FEB for the rosters (``roster``) or read a file of the repository (``roster_file``), so the
+    illegal-lineup rule is measured. Inputs reach the script only through the environment."""
+
+    def _data(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "rule-evaluation.yml").read_text(encoding="utf-8"))
+
+    def _step(self):
+        return next(s for s in _steps("rule-evaluation.yml") if s.get("name") == "Evaluate")
+
+    def test_it_has_the_two_optional_inputs(self):
+        inputs = self._data()[True]["workflow_dispatch"]["inputs"]
+        assert inputs["roster"]["type"] == "boolean" and inputs["roster"]["required"] is False
+        assert inputs["roster_file"]["type"] == "string" and inputs["roster_file"]["required"] is False
+
+    def test_the_inputs_reach_the_script_by_the_environment_and_become_the_flags(self):
+        step = self._step()
+        assert step["env"]["ROSTER"] == "${{ inputs.roster }}" and step["env"]["ROSTER_FILE"] == "${{ inputs.roster_file }}"
+        assert "${{ inputs" not in step["run"]
+        assert "--roster-file" in step["run"] and '"$ROSTER_FILE"' in step["run"] and "--roster" in step["run"]

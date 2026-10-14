@@ -90,6 +90,32 @@ def _comparison_sections(names: Sequence[str], metrics: Dict[str, Dict[str, Dict
     return out
 
 
+def formation_summary(ev: Any) -> Optional[Dict[str, Dict[str, Any]]]:
+    """Per configuration: the minimum of "formación" players on court, the illegal-lineup alerts and the sides that had one (None
+    without a roster: the rule is then off in the evaluator's packages)."""
+    if not ev.params.get("roster"):
+        return None
+    minimum = ev.params.get("formation_min") or {}
+    out = {}
+    for name in ev.configs:
+        rows = [r for r in ev.rows if r["config"] == name and r["id"] == "formation_lineup"]
+        out[name] = {"min_on_court": minimum.get(name), "alerts": len(rows), "sides": len({(r["game"], r["team"]) for r in rows})}
+    return out
+
+
+def _formation_section(ev: Any, summary: Optional[Dict[str, Dict[str, Any]]]) -> List[str]:
+    out = ["## Alineación indebida (#272)", ""]
+    if summary is None:
+        return out + ["Sin plantilla: la regla no actúa en estos paquetes y no se miden sus falsos positivos. "
+                      "Use `--roster` (pide a FEB la plantilla de cada equipo una vez) o `--roster-file`.", ""]
+    roster = ev.params["roster"]
+    out += [f"La plantilla es la **plantilla actual** de FEB ({roster['players']} jugadoras de {roster['teams']} equipos): una "
+            "aproximación válida para la temporada en curso. En una competición sin esta regla el mínimo es 0.", ""]
+    out += _table(["Configuración", "Mínimo en pista", "Alertas", "Equipo-partidos con alerta"],
+                  [[f"«{n}»", s["min_on_court"], s["alerts"], s["sides"]] for n, s in summary.items()])
+    return out + [""]
+
+
 def _coach_section(c: Dict[str, Any]) -> List[str]:
     t, s, d = c["timeouts"], c["stints"], c["droughts"]
     out = ["## Comportamiento de los entrenadores", "",
@@ -123,8 +149,9 @@ def build_report(ev: Any) -> Tuple[Dict[str, Any], str]:
     by_config = {name: [r for r in ev.rows if r["config"] == name] for name in ev.configs}
     metrics = {name: rule_metrics(rows, ev.team_games, follow_s=follow) for name, rows in by_config.items()}
     coach = summarize_coach(ev.coach, team_games=2 * len(ev.coach))
+    formation = formation_summary(ev)
     data = {"params": ev.params, "configs": ev.configs, "timing": dict(Counter(g["timing"] for g in ev.team_games)),
-            "metrics": metrics, "coach": coach, "simulation": ev.simulation}
+            "metrics": metrics, "coach": coach, "simulation": ev.simulation, "formation": formation}
     p = ev.params
     lines = ["# Evaluación de reglas del motor live", "",
              f"{_plural(p.get('games', 0), 'partido', 'partidos')} · "
@@ -135,5 +162,5 @@ def build_report(ev: Any) -> Tuple[Dict[str, Any], str]:
     if ev.configs:
         lines += _baseline_section(ev.configs[0], metrics[ev.configs[0]])
         lines += _comparison_sections(ev.configs, metrics)
-    lines += _coach_section(coach) + _simulation_section(ev.simulation)
+    lines += _formation_section(ev, formation) + _coach_section(coach) + _simulation_section(ev.simulation)
     return data, "\n".join(lines).rstrip() + "\n"
