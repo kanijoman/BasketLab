@@ -20,7 +20,7 @@ test('the demo opens on the latest recorded match, local team on the left, and a
   await expect(page.locator('.scoreboard .team').nth(1)).toContainText('MIPELLETYMAS B.F. LEON')
   await expect(page.locator('.scoreboard .team').nth(1)).toContainText('Tu equipo')
 
-  await page.getByLabel('Velocidad').selectOption('60')
+  await page.getByRole('radio', { name: '60×' }).click()
   await page.getByRole('button', { name: 'Reproducir' }).click()
 
   // the first alerts of the real match come a few minutes after tip-off (about 10 s at 60x)
@@ -95,7 +95,7 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible()
 
-  await page.getByLabel('Velocidad').selectOption('300')
+  await page.getByRole('radio', { name: '300×' }).click()
   await page.getByRole('button', { name: 'Reproducir' }).click()
   // 7156 s of feed at 300x: ~25 s. The official result, with the corrected lines of the real feed applied
   await expect(page.getByText('Partido finalizado')).toBeVisible({ timeout: 90_000 })

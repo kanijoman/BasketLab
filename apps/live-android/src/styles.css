@@ -40,12 +40,22 @@ body {
 .team-logo { border-radius: 50%; object-fit: contain; background: rgb(var(--text-rgb) / 0.06); }
 .team-logo-initials { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
 
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0; }
-.controls label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+/* Transport bar of the demo (#231): match row, buttons + speed, timeline */
+.transport { display: grid; gap: 10px; margin: 16px 0; }
+.transport-source { display: flex; align-items: center; gap: 10px; }
+.transport-source .demo-source { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; color: var(--muted); font-size: 0.8rem; }
+.transport-source select { width: 100%; min-width: 0; font-size: 1rem; }
+.transport-buttons { display: flex; align-items: center; gap: 8px; }
+.icon-button { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.segmented { display: flex; flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.segment { flex: 1 1 0; min-width: 0; border: 0; border-radius: 0; padding: 0 4px; background: var(--card); color: var(--text); font-variant-numeric: tabular-nums; }
+.segment + .segment { border-left: 1px solid var(--line); }
+.segment.selected { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.timeline { display: flex; align-items: center; gap: 10px; }
+.timeline input[type='range'] { flex: 1 1 auto; min-width: 0; min-height: 44px; accent-color: var(--accent); }
+.timeline-time { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85rem; min-width: 7.5em; text-align: right; }
 /* the match picker has long option labels: it takes its own row and never wider than the screen (phone e2e) */
-.controls .demo-source { flex: 1 1 100%; min-width: 0; }
-.controls .demo-source select { flex: 1 1 auto; min-width: 0; max-width: 100%; }
-.perf { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
+.perf { margin: 0; text-align: right; color: var(--muted); font-size: 0.8rem; }
 
 button, select {
   min-height: 44px; /* touch target */

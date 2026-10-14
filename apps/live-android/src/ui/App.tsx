@@ -241,6 +241,19 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
   }
+  /** The timeline: forward jumps straight there; going back rebuilds the engine from the start (the alerts in between are not replayed). */
+  const seek = async (to: number) => {
+    setPlaying(false)
+    if (to < elapsedRef.current && demo) {
+      const match = matches.find(m => m.code === source)
+      await (match ? beginRecorded(match, demo) : beginDemo(demo))
+    }
+    elapsedRef.current = to
+    setElapsed(to)
+    await step(to)
+  }
+  const homeFirst = (snap?.home_id ?? meta?.home_id) === rival.id
+  const [home, away] = homeFirst ? [rival, own] : [own, rival]
   return (
     <main className="screen">
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
@@ -259,8 +272,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           <DemoControls
             source={source} sources={sources} onSource={pickSource}
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
-            speed={speed} onSpeed={setSpeed} onRestart={() => pickSource(source)}
-            ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null}
+            speed={speed} onSpeed={setSpeed} onRestart={() => pickSource(source)} onSeek={to => void seek(to)}
+            ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null} home={home} away={away}
           />
           {notice && <p role="alert" className="status error">{notice}</p>}
 

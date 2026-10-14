@@ -114,10 +114,42 @@ describe('App', () => {
     const engine = fakeEngine()
     render(<App engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
-    fireEvent.change(screen.getByLabelText(/velocidad/i), { target: { value: '30' } })
+    fireEvent.click(screen.getByRole('radio', { name: '30×' }))
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(2100) })
     expect(replayCalls(engine).at(-1)![0]).toBeGreaterThanOrEqual(30)
+  })
+
+  it('seeks forward on the timeline without restarting the engine (issue #231)', async () => {
+    const engine = fakeEngine()
+    render(<App engine={engine} loadDemo={loadDemo} />)
+    await screen.findByText('EQUIPO PROPIO')
+    fireEvent.change(screen.getByRole('slider', { name: 'Línea de tiempo' }), { target: { value: '60' } })
+    await waitFor(() => expect(replayCalls(engine).at(-1)![0]).toBe(60))
+    expect(engine.loadReplay).toHaveBeenCalledTimes(1)
+    expect((screen.getByRole('slider', { name: 'Línea de tiempo' }) as HTMLInputElement).value).toBe('60')
+  })
+
+  it('seeks back by rebuilding the engine from the start and jumping to that second (issue #231)', async () => {
+    const engine = fakeEngine()
+    render(<App engine={engine} loadDemo={loadDemo} />)
+    await screen.findByText('EQUIPO PROPIO')
+    fireEvent.change(screen.getByRole('slider', { name: 'Línea de tiempo' }), { target: { value: '60' } })
+    await waitFor(() => expect(replayCalls(engine).at(-1)![0]).toBe(60))
+    fireEvent.change(screen.getByRole('slider', { name: 'Línea de tiempo' }), { target: { value: '20' } })
+    await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(replayCalls(engine).at(-1)![0]).toBe(20))
+    expect((screen.getByRole('slider', { name: 'Línea de tiempo' }) as HTMLInputElement).value).toBe('20')
+  })
+
+  it('pauses when the user seeks (issue #231)', async () => {
+    const engine = fakeEngine()
+    render(<App engine={engine} loadDemo={loadDemo} />)
+    await screen.findByText('EQUIPO PROPIO')
+    fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
+    expect(screen.getByRole('button', { name: 'Pausa' })).toBeTruthy()
+    fireEvent.change(screen.getByRole('slider', { name: 'Línea de tiempo' }), { target: { value: '40' } })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reproducir' })).toBeTruthy())
   })
 
   it('stops at the end of the game', async () => {
