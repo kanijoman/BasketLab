@@ -16,6 +16,8 @@ from tests.test_live_core_players import basket as pl_basket, impact as pl_impac
 from tests.test_live_core_closing import end_of as cl_end_of, finish as cl_finish, pace_snap as cl_pace_snap, pts as cl_pts
 from tests.test_live_core_plusminus import stage as pm_stage
 from tests.test_live_core_zone_rules import cell as zr_cell, player as zr_player, zone_snap as zr_snap
+from tests.test_live_core_j8_g4 import orb_snap as j8_snap, team_snap as g4_snap
+from tests.test_live_core_p6_c2 import comeback_snap as p6_comeback_snap
 from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_evaluate_snap
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
@@ -28,7 +30,9 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "rival_player_form", "own_player_form", "rival_star_bench",
                 "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
                 "closing_briefing", "period_summary", "advantage_management", "pace_control",
-                "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle")
+                "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
+                "after_timeout_scoring", "own_orb_player", "static_offense",
+                "period_edges", "comeback_plan")
 
 
 def _engine(rules_off=(), **kw):
@@ -120,6 +124,13 @@ SCENARIOS = {
     "rival_zone_player": (lambda: zr_snap(players={"r1": zr_player("Rita", RIVAL)},
                                           zone_players={OWN: {}, RIVAL: {"r1": {"right_wing_three": zr_cell(4, 3, 9)}}}), {"rival_player_zone"}, {}),
     "paint_battle": (lambda: zr_snap(rival={"restricted_area": zr_cell(9, 7, 22)}), {"paint_battle"}, {}),
+    "after_timeout_scoring": (lambda: in_play(snap(elapsed=1500, period=3, log=[[100, RIVAL, "timeout", 1, None], [112, RIVAL, "pts", 2, "p1"], [400, RIVAL, "timeout", 1, None], [420, RIVAL, "pts", 2, "p1"]])),
+                              {"rival_scores_after_timeout"}, {}),
+    "own_orb_player": (lambda: j8_snap(4), {"own_orb_player"}, {}),
+    "static_offense": (lambda: g4_snap(14, 4), {"static_offense"}, {}),
+    "period_edges": (lambda: cl_end_of(2, [cl_pts(RIVAL, 50, 3), cl_pts(RIVAL, 100, 2), cl_pts(RIVAL, 650, 2), cl_pts(RIVAL, 700, 2)]),
+                     {"period_edge_deficit"}, {}),
+    "comeback_plan": (lambda: p6_comeback_snap(-9), {"comeback_plan"}, {}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 

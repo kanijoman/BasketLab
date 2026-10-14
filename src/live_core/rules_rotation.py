@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
 from .config import RuleConfig
+from .rules_players import orb_dominant
 from .windows import player_form, window_stats
 
 GAME_SECONDS = 2400
@@ -78,6 +79,8 @@ def _reason_to_keep(snap: Dict[str, Any], ctx: RuleContext, pid: str) -> Optiona
     form = player_form(log, own, pid, now, cfg.hot_player_window_s)
     if form["pts"] >= cfg.hot_player_pts or form["made_in_row"] >= cfg.hot_player_row:
         return "está en racha"
+    if orb_dominant(snap["players"][pid], ctx.baselines.get(pid), cfg):
+        return "está dominando el rebote ofensivo"
     return None
 
 

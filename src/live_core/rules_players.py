@@ -6,6 +6,9 @@
 * ``own_player_form``: J3 an own player on a streak (look for him; the fatigue rule defers its warning for him, see
   ``rules_rotation``) and J4 an own player who shoots cold with a volume above his usual (change his role or look for
   another shooter).
+* ``own_orb_player`` (J8, issue #251): an own player on court with ``orb_player_min`` or more offensive rebounds and ``orb_player_excess``
+  above what her minutes and her usual rate give: keep her on court (the fatigue warning of that player goes down a level too, see
+  ``rules_rotation``). It is said again every ``orb_player_min`` rebounds.
 * ``rival_star_bench``: V1 the rival's key player (the most production: minutes x points per 40 in the package) leaves
   the court (the moment to press) and comes back with fouls (attack him). It remembers who was on court in
   ``ctx.memory``, so it needs evaluations in order, as the engine does.
@@ -22,6 +25,7 @@ from .proposals import tactic_proposal
 from .windows import player_form
 
 GAME_SECONDS = 2400
+DEFAULT_ORB40 = 1.5   # the league's offensive rebounds per 40 minutes when the package has no rate for the player
 
 
 def _name(p: Dict[str, Any]) -> str:
@@ -30,6 +34,33 @@ def _name(p: Dict[str, Any]) -> str:
 
 def is_hot(form: Dict[str, int], cfg: Any) -> bool:
     return form["pts"] >= cfg.hot_player_pts or form["made_in_row"] >= cfg.hot_player_row
+
+
+def orb_dominant(p: Dict[str, Any], base: Optional[Dict[str, Any]], cfg: Any) -> Optional[Dict[str, Any]]:
+    """The offensive-rebound numbers of a player when she is clearly above her usual (J8), else None."""
+    orb = (p.get("stats") or {}).get("orb", 0)
+    rate = ((base or {}).get("rates") or {}).get("orb40", DEFAULT_ORB40)
+    expected = rate * p["minutes"] / GAME_SECONDS
+    if orb < cfg.orb_player_min or orb < expected + cfg.orb_player_excess:
+        return None
+    return {"orb": orb, "expected": round(expected, 1)}
+
+
+def own_orb_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    out = []
+    for pid, p in snap["players"].items():
+        if p["team_id"] != ctx.own_team_id or not p["on_court"]:
+            continue
+        found = orb_dominant(p, ctx.baselines.get(pid), ctx.config)
+        if found:
+            out.append(Advice(
+                key=f"own_orb:{pid}:{found['orb'] // ctx.config.orb_player_min}", id="own_orb_player", severity="info",
+                category="four_factors",
+                message=(f"{_name(p)} lleva {found['orb']} rebotes ofensivos en {p['minutes'] // 60} min (esperados {found['expected']}): "
+                         "mantenerle en pista."),
+                evidence={"player_id": pid, "team_id": p["team_id"], **found},
+                proposal=[tactic_proposal(f"Mantener a {_name(p)} en pista: rebote ofensivo", pid, _name(p))]))
+    return out
 
 
 def rival_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
