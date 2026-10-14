@@ -54,7 +54,7 @@
      "digests": {
       "alerts": "c082e7c8ba9320b1941f39395c651f5bb45a1897016fb4e7b5659d2faddda419",
       "analysis": "fbe2ea917cbfaec52a09d4d83e201c8e5c49f3e1d67a270e5e455e17d095fed7",
-      "snapshot": "17f75c32c5c25f992670b052e1800716e1c74f69de0a2b4c1a914f1a859c9b8a"
+      "snapshot": "3d19f8ba3ae0968c7bd48e018652294801bfdd1439325b36efde33a6efda6eb7"
      },
      "elapsed": 300,
      "lever": "ftr",
@@ -73,7 +73,7 @@
      "digests": {
       "alerts": "a4b5c91570aa9333b2e145fe8b3a4687aa28595fb514428f029e651119888349",
       "analysis": "b81ad4e2fa5c21cd36ffe8d6b626131a9dcf6fec290ae31451d46e45078bcaa1",
-      "snapshot": "856d3483fa8c9bdd8c0b5fadf3f1cdeb087ea303bda3d249ddf22b75e7b597a1"
+      "snapshot": "a99524728901c5ba444d5040d2ecda78d1fe8cacad5b03f79d9524d8db07677c"
      },
      "elapsed": 600,
      "lever": "ftr",
@@ -89,7 +89,7 @@
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "analysis": "65a90dbf290a7d8cbb9ed5d87aea8420e10e77f17a7dca408ee336c0dfcdf5b4",
-      "snapshot": "984e566bee2c5dd0567804fb28382e64a5c52ff2d238c076314997d9b683b52c"
+      "snapshot": "20479e7bdde1626a8ad3b83106207441e99a146a067e71134b8741413fc9ec34"
      },
      "elapsed": 900,
      "lever": "ftr",
@@ -110,7 +110,7 @@
      "digests": {
       "alerts": "942567996e4ef841e31a9aa84558e347ff1270d00dbede734da7ceb84398fbe8",
       "analysis": "6917d6a9cbf1d3349009c99af2eecd447cd3573acc0a6b0833164ca12d63edb2",
-      "snapshot": "e62be1e7b6d358469ddc8a66b047410ab67fb3c251e6004f98e2ad9a2b88e52b"
+      "snapshot": "48584e92206f14de8536a0cca00650c2f09f2c2c438a76bc52b52fc851d84027"
      },
      "elapsed": 1200,
      "lever": "ftr",
@@ -128,7 +128,7 @@
      "digests": {
       "alerts": "cab6a6214f3fcdffbbe4067f0bf34b0d9d9bc0bbfc9395fc106b4eab5eb18f43",
       "analysis": "9c6f325afa274e70549857d000c9e74f9b2d377d70002a32f87aa45cc2648714",
-      "snapshot": "7011eda0ea2cc9d04200c350ac6c7eb00e2282d9ff7d010a1fe84a86df3dc9c2"
+      "snapshot": "3fecf081a1d57340b96f543528ca9bffff3cac46a9f2a5ec1b7370037435f0f3"
      },
      "elapsed": 1350,
      "lever": "ftr",
@@ -148,7 +148,7 @@
      "digests": {
       "alerts": "74f1d1b436539be70dde28dd0544c1c60276f5173a6047f567d470c647c8ab3a",
       "analysis": "35108410f99c48dfa50b15bab1ba7072d83fdf1ce14cc445594815590aab3c1c",
-      "snapshot": "de5f5cddba744407fa462d1a567e6d722472f269500791c15dc1dd0729b88b32"
+      "snapshot": "c08dd174fe6ca363aaf0c3f4d915191b8d77651559aa8095b9df1636c3d8be69"
      },
      "elapsed": 1800,
      "lever": "ftr",
@@ -164,7 +164,7 @@
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "analysis": "830152f01280138d22fae9ea397e67bb37352cb42323406976e81afa022c6be1",
-      "snapshot": "77bbb7176630850551ca9cdc5647f32d680e6d294c1084a685f2137580ccccd5"
+      "snapshot": "81fadacd3a21fa1635fa7bae96a7e80bda5083c4d58226e3b2612ad65b3b238c"
      },
      "elapsed": 1800,
      "lever": "ftr",
@@ -177,12 +177,13 @@
     },
     {
      "alerts": [
-      "rfoul:2073736:3"
+      "rfoul:2073736:3",
+      "sanction:2010120:10"
      ],
      "digests": {
-      "alerts": "1cd6381bc4a531921d746351e8f2861e342a3ac2a8fb83d9b42e408cdfa2b011",
+      "alerts": "2989bda6b0f1932b63cedc90640c55c5cf4aea0ac0d498854c19322886e81193",
       "analysis": "40980fc3903262a080b7f18c2eba4ba662a0bf3f733c21eff1af59f7339b0a69",
-      "snapshot": "aa4371c5f1ad47c7f1ac368e4a9a7f09758817533a1511d57524c4c71715bfd3"
+      "snapshot": "c9ff8785fcd24886df584c5f3a75b65c1ade1351ab2c1e23475627e10a82a2ba"
      },
      "elapsed": 2100,
      "lever": "ftr",
@@ -207,7 +208,7 @@
      "digests": {
       "alerts": "c34e3247d0c1f8f18678f4444a44255ef5d64a293a16bb02ca7c99bc14ea5f8a",
       "analysis": "8c9feae491745c78ea8e4df0a35420bd74fb67bb52cddeea7710ed4ae5973816",
-      "snapshot": "933a2dbc8d212aebf51446ef615f582971748b38a81fa037bd17eb4873e8d975"
+      "snapshot": "46e510a89ab86383f77a42ef106cf578325aa8884646c9bf554bbf9145443a34"
      },
      "elapsed": 2340,
      "lever": "tov",
@@ -221,12 +222,13 @@
     {
      "alerts": [
       "rival_hot:2088360:4",
+      "rival_pair:2073736:2088360",
       "rfoul:2088360:3"
      ],
      "digests": {
-      "alerts": "31b890c24621207cd22fd5b7c1f87d096af4b35a6c07748299047c00b40e6061",
+      "alerts": "d03cf390f83f035e4ef34e7578c99a65aa515b5d0f5b2b7ecc977d69a2907d87",
       "analysis": "37553822679df4ff87931f8c93fd450f7a2eb9cdd559d576314ad392842ce868",
-      "snapshot": "0dccaf22e1a4a6740466c4cda37295d1a28c7d5749b08532144bcebae91c59f5"
+      "snapshot": "72b45042a19d10500a73968d067885d1379f9b551d5b5313703cf4fca606b5ed"
      },
      "elapsed": 2400,
      "lever": "tov",
@@ -4164,6 +4166,28 @@
       ],
       "rearm_s": null,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "base_severity": "warning",
+       "phase": "close_late",
+       "remaining_s": 200,
+       "timeouts_left": 3
+      },
+      "id": "timeout_budget",
+      "key": "timeout_budget:4~close_late",
+      "message": "Quedan 3 tiempos muertos y en el último 2:00 solo se pueden pedir 2: usar uno antes de entonces o se pierde.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ],
     [
@@ -4248,6 +4272,26 @@
       "id": "turnover_streak",
       "key": "tov_streak:4:1800",
       "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "warning"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "remaining_s": 200,
+       "timeouts_left": 3
+      },
+      "id": "timeout_budget",
+      "key": "timeout_budget:4",
+      "message": "Quedan 3 tiempos muertos y en el último 2:00 solo se pueden pedir 2: usar uno antes de entonces o se pierde.",
       "proposal": [
        {
         "left": 3,

@@ -13,6 +13,7 @@ RULE_IDS: Tuple[str, ...] = (
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
     "cold_shooting", "rival_hot_shooting", "free_throw_cold", "scoring_drought", "long_run", "game_flow_windows",
     "rival_player_form", "own_player_form", "rival_star_bench",
+    "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -95,6 +96,11 @@ class RuleConfig:
     cold_player_volume_ratio: float = 1.5
     rival_key_n: int = 1
     key_return_pf: int = 3
+    # Sanctions and the finish (issue #245): the timeout budget is warned from this many seconds left of the 4th period, the rival
+    # without timeouts is pressed with at most this margin, and two rivals with this many fouls on court are attacked.
+    timeout_budget_s: int = 240
+    timeout_pressure_margin: int = 10
+    rival_pair_pf: int = 3
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

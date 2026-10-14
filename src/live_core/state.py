@@ -38,6 +38,8 @@ class _Player:
     closed: int = 0
     pf: int = 0
     pf_by_period: Dict[int, int] = field(default_factory=dict)
+    unsports: int = 0   # unsportsmanlike fouls (FIBA: disqualified with two, or with one and a technical)
+    techs: int = 0      # technical fouls of the player
     pts: int = 0
     credit: int = 0  # rest credited to the current stint (see QUARTER_BREAK_CREDIT_S)
     stints_done: int = 0  # finished stints and their rest-adjusted total length (for baselines)
@@ -201,6 +203,10 @@ class LiveGame:
         if player:
             player.pf = ev.pf_count if ev.pf_count is not None else player.pf + 1
             player.pf_by_period[ev.period] = player.pf_by_period.get(ev.period, 0) + 1
+            if ev.foul_type == "unsportsmanlike":
+                player.unsports += 1
+            elif ev.foul_type == "technical":
+                player.techs += 1
         if team is not None and ev.foul_type in _TEAM_FOUL_TYPES:
             team.fouls_by_period[ev.period] = team.fouls_by_period.get(ev.period, 0) + 1
             team.fouls_game += 1
@@ -225,7 +231,7 @@ class LiveGame:
             players[pid] = {
                 "name": p.name, "team_id": p.team_id, "on_court": p.on_court,
                 "minutes": p.closed + (max(0, now - p.stint_start) if p.on_court else 0),
-                "stint": stint, "pf": p.pf, "pts": p.pts,
+                "stint": stint, "pf": p.pf, "pts": p.pts, "unsportsmanlike": p.unsports, "technical": p.techs,
                 "stints_done": p.stints_done, "stint_sum": p.stint_sum, "stats": dict(p.stats),
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
             }

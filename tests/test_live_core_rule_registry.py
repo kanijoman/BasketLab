@@ -13,6 +13,7 @@ from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
 from tests.test_live_core_players import basket as pl_basket, impact as pl_impact, pl_snap, player as pl_player
+from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_evaluate_snap
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
@@ -21,7 +22,8 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
                 "cold_shooting", "rival_hot_shooting", "free_throw_cold",
                 "scoring_drought", "long_run", "game_flow_windows",
-                "rival_player_form", "own_player_form", "rival_star_bench")
+                "rival_player_form", "own_player_form", "rival_star_bench",
+                "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair")
 
 
 def _engine(rules_off=(), **kw):
@@ -89,6 +91,12 @@ SCENARIOS = {
     "rival_star_bench": (lambda: [snap(elapsed=300, players={"r1": pl_player("Rita", RIVAL)}),
                                   snap(elapsed=330, players={"r1": pl_player("Rita", RIVAL, on_court=False)})],
                          {"rival_star_out"}, {"rival_baselines": {"r1": {"name": "Rita", "avg_min": 1500, "impact40": pl_impact(24.0)}}}),
+    "disqualification": (lambda: snap(elapsed=400, players={"p1": sa_player("Ana", OWN, unsportsmanlike=1)}), {"disqualification_risk"}, {}),
+    "timeout_budget": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200), {"timeout_budget"}, {}),
+    "key_fouls_close": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200, score={OWN: 60, RIVAL: 58},
+                                                 players={"g1": sa_player("Guard Uno", OWN, pf=4)}), {"key_fouls_close"}, {"baselines": REST_TABLE}),
+    "rival_foul_pair": (lambda: snap(elapsed=400, players={"r1": sa_player("Rita", RIVAL, pf=3), "r2": sa_player("Rosa", RIVAL, pf=4)}),
+                        {"rival_foul_pair"}, {}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 
