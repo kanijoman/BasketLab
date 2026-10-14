@@ -25,6 +25,7 @@ from src.live_core.profiles import (
     shrink_rates,
     z_scores,
 )
+from src.live_core import clutch as clutch_mod
 from src.live_core.state import PLAYER_STAT_KEYS
 
 FEATURE_MIN_GAMES_FOR_SPREAD = 8   # samples needed before trusting a league spread
@@ -75,6 +76,7 @@ class _PlayerAcc:
         self.minutes: List[int] = []
         self.stint_sum = self.stints = self.pf = 0
         self.stats = {k: 0 for k in PLAYER_STAT_KEYS}
+        self.clutch, self.q4 = clutch_mod.empty(), clutch_mod.empty()
 
     def add(self, p: Dict[str, Any]) -> None:
         if p["minutes"] <= 0:
@@ -83,6 +85,9 @@ class _PlayerAcc:
         self.pf += p["pf"]
         for key in PLAYER_STAT_KEYS:
             self.stats[key] += p["stats"][key]
+        for bucket, key in ((self.clutch, "clutch"), (self.q4, "q4")):
+            for field in clutch_mod.FIELDS:
+                bucket[field] += (p.get(key) or {}).get(field, 0)      # snapshots of an older engine have no clutch totals
         self.stint_sum += p["stint_sum"] + (p["stint"] if p["on_court"] else 0)
         self.stints += p["stints_done"] + (1 if p["on_court"] else 0)
 
@@ -106,7 +111,19 @@ class _PlayerAcc:
             # free throws (issue #246): attempts and the percentage shrunk to the league mean, so a 1/1 night is not 100 %
             "fta": self.stats["fta"],
             "ft_pct": round((self.stats["ftm"] + FT_PRIOR_ATTEMPTS * ft_mean) / (self.stats["fta"] + FT_PRIOR_ATTEMPTS), 3),
+            "clutch": self._clutch(total, ft_mean),
         }
+
+    def _clutch(self, total: int, ft_mean: float) -> Dict[str, Any]:
+        """Responsibility and accuracy in a close finish, shrunk to this player's season (issue #274; see ``live_core.clutch``)."""
+        s = self.stats
+        shots = s["fg2a"] + s["fg3a"] + clutch_mod.FT_POSSESSION_COST * s["fta"]
+        points = 2 * s["fg2m"] + 3 * s["fg3m"] + s["ftm"]
+        return clutch_mod.summarize(
+            self.clutch, self.q4,
+            usage_per10=(shots + s["tov"]) / total * 600 if total else 0.0,
+            pps_season=points / shots if shots else 0.0,
+            ft_pct_season=(s["ftm"] + FT_PRIOR_ATTEMPTS * ft_mean) / (s["fta"] + FT_PRIOR_ATTEMPTS))
 
 
 class SeasonAccumulator:

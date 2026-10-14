@@ -11,7 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, Optional, Tuple
 
-from .clock import period_start
+from . import clutch as clutch_mod
+from .clock import period_length, period_start
 from .events import Event
 
 STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "tov_team",
@@ -45,6 +46,8 @@ class _Player:
     stints_done: int = 0  # finished stints and their rest-adjusted total length (for baselines)
     stint_sum: int = 0
     stats: Dict[str, int] = field(default_factory=lambda: {k: 0 for k in PLAYER_STAT_KEYS})
+    clutch: Dict[str, int] = field(default_factory=clutch_mod.empty)   # what he does in a close finish (see clutch.py)
+    q4: Dict[str, int] = field(default_factory=clutch_mod.empty)       # and in the whole 4th period (the fallback)
 
 
 @dataclass
@@ -69,6 +72,7 @@ class LiveGame:
         self.elapsed = 0
         self.last_num = 0
         self._last_miss_team: Optional[str] = None
+        self._in_clutch = False   # is the event being applied inside the clutch window (margin before it)?
         self._rested_through = 1  # last period whose opening break has been credited
         # Chronological [elapsed, team_id, kind, value, player_id] (player None when the event has none):
         # pts (points of a made shot), fg2/fg3/ft (an attempt: 1 made, 0 missed), tov, orb, stl, timeout.
@@ -76,8 +80,41 @@ class LiveGame:
 
     # -- event application -------------------------------------------------------
 
+    def _margin(self) -> int:
+        """Score margin between the two teams right now (a huge one if the game does not have two teams)."""
+        scores = list(self.score.values())
+        return abs(scores[0] - scores[1]) if len(scores) == 2 else 10 ** 6
+
+    def _tick(self, now: int) -> None:
+        """Credit the game-seconds since the last clock to the players on court: in the 4th period, and in the clutch window
+        while the margin (as it was) is close. The window can open inside the interval, so only its overlap counts."""
+        before = self.elapsed
+        if now <= before:
+            return
+        q4_start = period_start(clutch_mod.LAST_REGULATION_PERIOD)
+        q4_end = q4_start + period_length(clutch_mod.LAST_REGULATION_PERIOD)
+        q4 = max(0, min(now, q4_end) - max(before, q4_start))
+        window = max(0, now - max(before, clutch_mod.window_start(self.period))) if self._margin() <= clutch_mod.in_window_margin() else 0
+        if not (q4 or window):
+            return
+        for player in self.players.values():
+            if player.on_court:
+                player.q4["sec"] += q4
+                player.clutch["sec"] += window
+
+    def _clutch_bump(self, ev: Event, player: Optional[_Player], **amounts: int) -> None:
+        """Add to the player's 4th-period totals and, if the event is inside the window, to his clutch totals."""
+        if player is None or ev.period != clutch_mod.LAST_REGULATION_PERIOD and not self._in_clutch:
+            return
+        for bucket, applies in ((player.q4, ev.period == clutch_mod.LAST_REGULATION_PERIOD), (player.clutch, self._in_clutch)):
+            if applies:
+                for key, value in amounts.items():
+                    bucket[key] += value
+
     def apply(self, ev: Event) -> None:
         self._enter_period(ev.period)
+        self._tick(ev.elapsed)
+        self._in_clutch = clutch_mod.in_window(ev.period, ev.elapsed, self._margin())   # the margin BEFORE the event
         self.period, self.remaining, self.elapsed, self.last_num = ev.period, ev.remaining, ev.elapsed, ev.num
         player = self._player_for(ev)
         team = self.teams.get(ev.team_id) if ev.team_id else None
@@ -132,6 +169,10 @@ class LiveGame:
         team.stats[att_key] += 1
         if player:
             player.stats[att_key] += 1
+        if ev.kind == "ft":
+            self._clutch_bump(ev, player, fta=1, ftm=1 if ev.made else 0, pts=ev.points if ev.made else 0)
+        else:
+            self._clutch_bump(ev, player, fga=1, pts=ev.points if ev.made else 0)
         self._log(ev, ev.kind, 1 if ev.made else 0)
         if ev.made:
             team.stats[made_key] += 1
@@ -180,6 +221,8 @@ class LiveGame:
         # FEB logs team turnovers ("Equipo: PERDIDA") without a player; the official
         # box-score TO column excludes them, so keep them apart (possessions add both).
         self._count("tov" if ev.player_id else "tov_team", team, player)
+        if ev.player_id:
+            self._clutch_bump(ev, player, tov=1)
         if team is not None:
             self._log(ev, "tov", 1)
 
@@ -218,6 +261,7 @@ class LiveGame:
         elapsed = elapsed_seconds(period, remaining)
         if elapsed >= self.elapsed:
             self._enter_period(period)
+            self._tick(elapsed)
             self.period, self.remaining, self.elapsed = period, remaining, elapsed
 
     # -- output -----------------------------------------------------------------
@@ -234,6 +278,7 @@ class LiveGame:
                 "stint": stint, "pf": p.pf, "pts": p.pts, "unsportsmanlike": p.unsports, "technical": p.techs,
                 "stints_done": p.stints_done, "stint_sum": p.stint_sum, "stats": dict(p.stats),
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
+                "clutch": dict(p.clutch), "q4": dict(p.q4),
             }
         teams = {
             tid: {
