@@ -134,3 +134,44 @@ def test_a_game_the_engine_cannot_score_is_left_out(feb_game_doc):
     unreadable["PLAYBYPLAY"]["LINES"] = [l for l in lines if "ANOTADO" not in (l.get("text") or "").upper()]
     assert collect_samples([unreadable], cut_s=300, min_prior_games=0) == []
     assert collect_samples([feb_game_doc], cut_s=300, min_prior_games=0)
+
+# -- the criterion to show the probability in the app (agreed with the user on 2026-10-14, issue #255) -------------
+
+def _variant(log_loss, rows):
+    return {"log_loss": log_loss, "reliability": rows}
+
+
+def _bins(gap_points, n=500):
+    return [{"bin": 3, "n": n, "mean_p": 0.35, "freq": 0.35 + gap_points / 100}]
+
+
+def test_criterion_met_when_it_beats_score_and_time_stays_with_the_prior_and_deciles_are_close():
+    from src.live_prep.wp_eval import app_criterion
+
+    result = app_criterion({"full": _variant(0.370, _bins(4.0)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})
+    assert result["met"] is True and result["gap"] == pytest.approx(4.0)
+
+
+def test_criterion_allows_a_log_loss_up_to_half_a_thousandth_worse_than_the_prior_but_not_more():
+    from src.live_prep.wp_eval import app_criterion
+
+    def met(full):
+        return app_criterion({"full": _variant(full, _bins(1.0)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})["met"]
+
+    assert met(0.3729) is True and met(0.3731) is False
+
+
+def test_criterion_fails_if_it_does_not_beat_score_and_time_or_the_deciles_are_far():
+    from src.live_prep.wp_eval import app_criterion
+
+    assert app_criterion({"full": _variant(0.430, _bins(1.0)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})["met"] is False
+    assert app_criterion({"full": _variant(0.370, _bins(6.4)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})["met"] is False
+
+
+def test_criterion_ignores_deciles_with_fewer_than_400_cuts_and_fails_without_any():
+    from src.live_prep.wp_eval import app_criterion
+
+    base = {"prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])}
+    assert app_criterion({"full": _variant(0.370, _bins(9.0, n=399)), **base})["met"] is False   # no decile is trustworthy: not shown
+    mixed = _bins(9.0, n=399) + [{"bin": 8, "n": 800, "mean_p": 0.85, "freq": 0.86}]
+    assert app_criterion({"full": _variant(0.370, mixed), **base})["gap"] == pytest.approx(1.0)

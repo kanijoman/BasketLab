@@ -108,3 +108,21 @@ def grid_search(samples: Sequence[Dict[str, Any]], grid: Dict[str, Sequence[floa
         rows.append({"params": params, "log_loss": scored["log_loss"], "brier": scored["brier"], "mae": scored["mae"],
                      "max_gap": scored["max_gap"]})
     return sorted(rows, key=lambda r: r["log_loss"])
+
+
+# Criterion to show the probability in the app (agreed on 2026-10-14, issue #255): better than score and clock alone,
+# not worse than the pre-game prior beyond the noise, and deciles with enough cuts (the two sides of a game mirror each
+# other, so fewer cuts say little) within 5 points.
+LOG_LOSS_TOLERANCE = 0.005
+GAP_MIN_CUTS = 400
+GAP_LIMIT_POINTS = 5.0
+
+
+def app_criterion(compared: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """``met`` plus what it rests on: the two log-loss comparisons and the largest decile gap among trustworthy deciles."""
+    full = compared["full"]
+    vs_score_time = full["log_loss"] < compared["score_time"]["log_loss"]
+    vs_prior = full["log_loss"] <= compared["prior_only"]["log_loss"] + LOG_LOSS_TOLERANCE + 1e-9
+    gap = max_decile_gap(full["reliability"], min_n=GAP_MIN_CUTS)
+    return {"met": bool(vs_score_time and vs_prior and gap is not None and gap <= GAP_LIMIT_POINTS),
+            "vs_score_time": vs_score_time, "vs_prior": vs_prior, "gap": gap}

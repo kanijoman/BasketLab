@@ -10,11 +10,10 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from src.live_core.config import RuleConfig
 
-from .wp_eval import VARIANTS, collect_samples, compare, grid_search
+from .wp_eval import GAP_LIMIT_POINTS, GAP_MIN_CUTS, LOG_LOSS_TOLERANCE, VARIANTS, app_criterion, collect_samples, compare, grid_search
 
-DEFAULT_GRID = {"wp_sigma": [9.0, 10.5, 12.0, 13.5], "wp_n0": [30.0, 60.0, 120.0], "wp_home_adv": [0.0, 4.0, 8.0], "ff_beta": [0.0, 4.5, 9.0]}
+DEFAULT_GRID = {"wp_sigma": [12.0, 13.5, 15.0, 16.5, 18.0], "wp_n0": [60.0, 120.0, 240.0], "wp_home_adv": [0.0, 4.0, 8.0], "ff_beta": [0.0, 9.0]}
 NAMES = {"full": "Modelo completo", "prior_only": "Solo valor previo", "score_time": "Solo marcador y tiempo"}
-MAX_GAP_POINTS = 5.0
 
 
 def _fmt(value: Optional[float], digits: int = 3) -> str:
@@ -32,11 +31,12 @@ def build_report(compared: Dict[str, Dict[str, Any]], ranked: Sequence[Dict[str,
     for variant in VARIANTS:
         c = compared[variant]
         lines.append(f"| {NAMES[variant]} | {_fmt(c['brier'])} | {_fmt(c['log_loss'])} | {_fmt(c['mae'], 2)} | {_fmt(c['max_gap'], 1)} |")
-    beats = all((full["log_loss"] or 9) < (compared[v]["log_loss"] or 9) for v in ("prior_only", "score_time"))
-    gap = full["max_gap"]
-    ok = beats and gap is not None and gap <= MAX_GAP_POINTS
-    lines += ["", f"**Criterio para mostrarla en la app** (mejor que «solo marcador y tiempo» y que «solo valor previo» y desvío por decil ≤ {MAX_GAP_POINTS:.0f} pts): "
-              f"{'cumplido' if ok else 'NO cumplido'}.", "", "## Fiabilidad del modelo completo", "",
+    crit = app_criterion(compared)
+    lines += ["", "**Criterio para mostrarla en la app**: mejor que «solo marcador y tiempo» "
+              f"({'sí' if crit['vs_score_time'] else 'no'}), no peor que «solo valor previo» en más de {LOG_LOSS_TOLERANCE} de log loss "
+              f"({'sí' if crit['vs_prior'] else 'no'}) y desvío por decil con al menos {GAP_MIN_CUTS} cortes ≤ {GAP_LIMIT_POINTS:.0f} pts "
+              f"(mayor desvío: {_fmt(crit['gap'], 1)}). **{'Cumplido' if crit['met'] else 'NO cumplido'}.**", "",
+              "## Fiabilidad del modelo completo", "",
               "| Decil | n | P media | Frecuencia |", "|---|---|---|---|"]
     lines += [f"| {r['bin'] * 10}-{r['bin'] * 10 + 10} % | {r['n']} | {r['mean_p']:.3f} | {r['freq']:.3f} |" for r in full["reliability"]]
     lines += ["", "## Mejores parámetros (por log loss)", "", "| Parámetros | Log loss | Brier | MAE |", "|---|---|---|---|"]
