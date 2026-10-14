@@ -13,6 +13,8 @@ interface DiagnosticsInput {
   schemaVersion: number | null
   feed: string | null
   engineVersion?: string | null
+  /** Latest events of the session, newest first (issue #309). */
+  sessionLog?: string[]
 }
 
 /** Plain text with what is needed to report a problem; nothing secret (no package contents, no passphrase). */
@@ -25,6 +27,7 @@ export function buildDiagnostics(d: DiagnosticsInput): string {
     `Dispositivo: ${d.userAgent}`,
     d.packageId ? `Paquete: ${d.packageId} (esquema de paquete ${d.schemaVersion ?? '?'})` : 'Paquete: sin paquete',
     `Conexión: ${d.feed ?? 'sin conexión'}`,
+    ...(d.sessionLog && d.sessionLog.length ? ['Registro reciente:', ...d.sessionLog.map(line => `- ${line}`)] : []),
   ].join('\n')
 }
 
@@ -45,6 +48,8 @@ export function VersionFooter({ version, engineVersion }: { version: AppVersion 
 }
 
 interface Props {
+  /** Latest events of the session, newest first: what happened to the match on this device (issue #309). */
+  sessionLog?: string[]
   /** Experimental features the staff can switch off on this device (issue #257). */
   experimental?: { winProb: boolean; onWinProb: (on: boolean) => void }
   engineVersion?: string | null
@@ -72,7 +77,7 @@ function UpdateStatus({ update, onOpen }: { update: UpdateResult | null; onOpen:
   )
 }
 
-export default function AboutPanel({ experimental, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
+export default function AboutPanel({ sessionLog, experimental, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
 
@@ -109,6 +114,14 @@ export default function AboutPanel({ experimental, engineVersion, schemaVersion,
         <button type="button" className="secondary" onClick={() => onOpen(REPO_URL)}>Repositorio</button>
         <button type="button" className="secondary" onClick={() => onOpen(RELEASES_URL)}>Notas de la versión</button>
       </div>
+      {sessionLog && (
+        <section className="session-log" aria-label="Registro de la sesión">
+          <h3>Registro de la sesión</h3>
+          {sessionLog.length === 0 ? <p className="detail">Sin eventos todavía.</p> : (
+            <ul className="detail">{sessionLog.map(line => <li key={line}>{line}</li>)}</ul>
+          )}
+        </section>
+      )}
       {experimental && (
         <fieldset className="experimental">
           <legend>Funciones experimentales</legend>

@@ -132,3 +132,24 @@ describe('buildDiagnostics', () => {
     expect(text).toContain('sin paquete')
   })
 })
+
+describe('session log in the About panel (issue #309)', () => {
+  it('shows the recent events with their time', () => {
+    panel({ sessionLog: ['14/10 16:05:12 · Arranque de la app', '14/10 16:06:40 · Partido reiniciado con el botón Reiniciar'] })
+    const block = screen.getByRole('region', { name: 'Registro de la sesión' })
+    expect(block.textContent).toMatch(/Arranque de la app/)
+    expect(block.textContent).toMatch(/Partido reiniciado/)
+  })
+
+  it('without events it says there are none', () => {
+    panel({ sessionLog: [] })
+    expect(screen.getByText(/sin eventos todavía/i)).toBeTruthy()
+  })
+
+  it('the diagnostics carry the latest events', () => {
+    const text = buildDiagnostics({ version: VERSION, userAgent: 'UA', packageId: null, schemaVersion: null, feed: null, sessionLog: ['a', 'b'] })
+    expect(text).toContain('Registro reciente')
+    expect(text).toContain('- a')
+    expect(text).toContain('- b')
+  })
+})

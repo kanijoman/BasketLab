@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import AlertList, { CATEGORY_LABEL, type AlertEntry } from './AlertList'
 import type { Alert } from '../engine/types'
@@ -31,18 +31,17 @@ describe('AlertList (issue #229)', () => {
     expect(shown.slice(0, 3).map(li => li.querySelector('.alert-message')?.textContent)).toEqual(['c1', 'w1', 'w2'])
   })
 
-  it('collapses the informative ones behind a summary and opens them on demand', () => {
+  it('shows the informative ones always, under their own heading (issue #309: collapsed they were overlooked)', () => {
     render(<AlertList entries={MIX} />)
-    const details = screen.getByText('2 informativas', { selector: 'summary' }).closest('details') as HTMLDetailsElement
-    expect(details.open).toBe(false)
-    fireEvent.click(screen.getByText('2 informativas', { selector: 'summary' }))
-    details.open = true
-    expect(within(details).getAllByRole('listitem').filter(li => li.classList.contains('alert-info'))).toHaveLength(2)
+    expect(document.querySelector('details')).toBeNull()
+    const block = screen.getByRole('region', { name: 'Informativas' })
+    expect(within(block).getByRole('heading', { name: 'Informativas (2)' })).toBeTruthy()
+    expect(within(block).getAllByRole('listitem').filter(li => li.classList.contains('alert-info'))).toHaveLength(2)
   })
 
-  it('without informative alerts there is no collapsed block', () => {
+  it('without informative alerts there is no informative block', () => {
     render(<AlertList entries={[entry('c1', 'critical')]} />)
-    expect(document.querySelector('details')).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Informativas' })).toBeNull()
     expect(screen.getByText('1 crítica')).toBeTruthy()
     expect(screen.queryByText(/informativa/)).toBeNull()
   })
