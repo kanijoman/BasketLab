@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
 from .config import RuleConfig
+from .game_context import game_phase
 from .rules_players import orb_dominant
 from .windows import player_form, window_stats
 
@@ -84,6 +85,14 @@ def _reason_to_keep(snap: Dict[str, Any], ctx: RuleContext, pid: str) -> Optiona
     return None
 
 
+def _decided_offset(snap: Dict[str, Any], ctx: RuleContext) -> float:
+    """Index points added in a decided game: fatigue alerts earlier when nothing is at stake (issue #320)."""
+    cfg = ctx.config
+    if not cfg.decided_only_rotation or not ctx.rival_team_id:
+        return 0.0
+    return cfg.decided_fatigue_offset if game_phase(snap, ctx.own_team_id, ctx.rival_team_id, cfg)["phase"] == "decided" else 0.0
+
+
 def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Fatigue of the own players on court, escalated info -> warning -> critical (issue #241, R5).
 
@@ -96,7 +105,7 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         index, parts = fatigue_index(p["stint"], p["minutes"], snap["elapsed"],
                                      ctx.baselines.get(pid), ctx.config)
-        level = _level(index, ctx.config)
+        level = _level(index + _decided_offset(snap, ctx), ctx.config)
         if level is None:
             continue
         reason = _reason_to_keep(snap, ctx, pid)

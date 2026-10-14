@@ -1,7 +1,8 @@
 """Game context: the phase of the match changes how urgent each alert is.
 
-``decided``: |margin| >= ``decided_margin`` with less than ``decided_remaining_s`` left of the 4th period. Performance,
-rhythm, rival and fatigue alerts go down one level (nobody will act on them) and fouls are kept.
+``decided``: |margin| >= ``decided_margin`` with less than ``decided_remaining_s`` left of the 4th period. Only fatigue and rotation
+alerts are worth showing (issue #320: ``kept_when_decided``; the rest is silenced, not recorded, so it comes back if the game
+reopens) and fatigue is kept at full urgency (it even alerts earlier, see ``rules_rotation``).
 ``close_late``: |margin| <= ``close_margin`` with ``close_remaining_s`` or less left of the 4th period, or an overtime
 within reach: fouls and rhythm (timeouts) go up one level and fatigue goes down (the best players stay on court).
 An alert whose severity changes carries the phase in its key (``key~phase``), so a lowered alert never blocks the
@@ -21,11 +22,21 @@ _LEVELS = ("critical", "warning", "info")   # most to least urgent
 
 # phase -> category -> shift: +1 raises the urgency one level, -1 lowers it
 PHASE_SHIFT: Dict[str, Dict[str, int]] = {
-    "decided": {"four_factors": -1, "rival": -1, "gestion": -1, "rotacion": -1},
+    "decided": {"four_factors": -1, "rival": -1, "gestion": -1},
     "close_late": {"faltas": 1, "gestion": 1, "rotacion": -1},
 }
 
 _REGULATION_LAST_PERIOD = 4
+
+
+# What still says something in a decided game (issue #320): fatigue and rotation, plus what is a rule of the game, not a tactic
+# (an illegal lineup, a player about to be disqualified).
+_DECIDED_CATEGORIES = ("rotacion", "descanso")
+_DECIDED_IDS = ("disqualification_risk", "formation_lineup")
+
+
+def kept_when_decided(advice: Advice) -> bool:
+    return advice.category in _DECIDED_CATEGORIES or advice.id in _DECIDED_IDS
 
 
 def game_phase(snap: Dict[str, Any], own_id: Any, rival_id: Any, config: RuleConfig) -> Dict[str, Any]:

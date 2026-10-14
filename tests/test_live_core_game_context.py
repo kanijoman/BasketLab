@@ -1,7 +1,8 @@
 """Game context (issue #239): the phase of the match changes how urgent each alert is.
 
-decided (|margin| >= 20 with less than 8:00 left in the 4th period): performance, rhythm, rival and fatigue alerts go
-down one level and fouls are kept. close_late (|margin| <= 6 with 4:00 or less in the 4th period, or overtime within
+decided (|margin| >= 20 with less than 8:00 left in the 4th period): performance, rhythm and rival alerts go
+down one level and fouls are kept; since #320 only fatigue and rotation are SHOWN in a decided game (tests/test_live_core_decided_rotation.py), so
+the tests of the level shift below run with ``decided_only_rotation=False``. close_late (|margin| <= 6 with 4:00 or less in the 4th period, or overtime within
 6): fouls and rhythm (timeouts) go up one level and fatigue goes down (nobody rests the best players now). A changed
 alert carries its phase in the key so a lowered alert never blocks the normal one later.
 """
@@ -94,10 +95,16 @@ def ctx(name):
     return {"phase": name, "margin": 0, "remaining_s": 100}
 
 
-@pytest.mark.parametrize("category", ["four_factors", "rival", "gestion", "rotacion"])
-def test_in_a_decided_game_performance_and_fatigue_alerts_go_down_one_level(category):
+@pytest.mark.parametrize("category", ["four_factors", "rival", "gestion"])
+def test_in_a_decided_game_performance_and_rival_alerts_go_down_one_level(category):
     assert adjust_for_phase(adv("critical", category), ctx("decided")).severity == "warning"
     assert adjust_for_phase(adv("warning", category), ctx("decided")).severity == "info"
+
+
+def test_in_a_decided_game_fatigue_and_rotation_keep_their_urgency():
+    """#320: fatigue is the one thing that matters in a decided game, so it is not lowered."""
+    alert = adv("critical", "rotacion")
+    assert adjust_for_phase(alert, ctx("decided")) is alert
 
 
 def test_in_a_decided_game_fouls_are_kept_and_info_cannot_go_lower():
@@ -145,6 +152,8 @@ RUN_KEY = "rival_run:4:1800:critical"   # the run alert is keyed by episode (the
 
 
 def engine(**kw):
+    # the phase mechanism (levels, keys) is what these tests look at: the decided-game filter of #320 is off here
+    kw.setdefault("config", RuleConfig(decided_only_rotation=False))
     return AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, **kw)
 
 
@@ -198,7 +207,7 @@ def test_fouls_keep_their_severity_in_a_decided_game():
 
 
 def test_the_context_can_be_switched_off_like_a_rule():
-    off = engine(config=RuleConfig(rules_off=("game_context",)))
+    off = engine(config=RuleConfig(rules_off=("game_context",), decided_only_rotation=False))
     assert run_alerts(off, mk(4, 300, margin=-22, log=RUN_LOG)) == [(RUN_KEY, "critical", None)]
     assert "game_context" in FEATURE_IDS and unknown_rule_ids(["game_context", "rival_run"]) == ()
     assert "game_context" not in RULE_IDS      # it is not an alert rule: it has no alerts of its own

@@ -135,3 +135,37 @@ def test_names_in_messages_are_trimmed():
     s["players"]["b1"]["name"] = "Pivot Uno  "
     [first, *_] = swaps(rec(), s, "b1")
     assert "  " not in first["message"] and first["out_name"] == "Pivot Uno"
+
+
+# --- fouls of who comes in (issue #317) ---------------------------------------------------
+
+def test_in_the_first_quarter_two_fouls_is_already_a_risk_and_the_player_does_not_come_in():
+    s = snap(period=1, elapsed=400, overrides={"b2": {"pf": 2}, "b3": {"pf": 1}})
+    ids = [o["in_id"] for o in swaps(rec(), s, "b1")]
+    assert "b2" not in ids and "b3" in ids
+
+
+def test_later_on_two_fouls_can_come_in_but_the_proposal_says_so():
+    s = snap(period=2, overrides={"b2": {"pf": 2}, "b3": {"pf": 0}})
+    out = {o["in_id"]: o for o in swaps(rec(), s, "b1")}
+    assert "b2" in out and "entra con 2 faltas" in out["b2"]["message"].lower() and out["b2"]["pf_in"] == 2
+    assert "faltas" not in out["b3"]["message"].lower()
+
+
+def test_three_fouls_never_come_in_in_any_period():
+    for period in (1, 2, 3, 4):
+        s = snap(period=period, overrides={"b2": {"pf": 3}})
+        assert "b2" not in [o["in_id"] for o in swaps(rec(), s, "b1")], period
+
+
+def test_the_first_quarter_limit_is_configurable():
+    s = snap(period=1, elapsed=400, overrides={"b2": {"pf": 2}})
+    assert "b2" in [o["in_id"] for o in swaps(rec(foul_risk_pf_first_period=3), s, "b1")]
+
+
+def test_the_same_goes_for_the_lever_swaps_and_for_the_rest_mode():
+    s = snap(period=1, elapsed=400, overrides={"b2": {"pf": 2}})
+    assert "b2" not in [o["in_id"] for o in rec().suggest_for_lever(s, "orb")]
+    s2 = snap(period=2, overrides={"g2": {"pf": 2}})
+    rest = {o["in_id"]: o for o in rec().suggest_rest(s2, "g1")}
+    assert "g2" not in rest or "faltas" in rest["g2"]["message"].lower()

@@ -60,8 +60,18 @@ class Recommender:
             return False
         if evaluate_player_fouls(pid, player["name"], player["pf"], snap["period"]) is not None:
             return False  # already in foul trouble
+        if snap["period"] <= 1 and player["pf"] >= self._cfg.foul_risk_pf_first_period:
+            return False  # two fouls in the first quarter: a risk, she would sit down again (issue #317)
         load, _ = fatigue_index(0, player["minutes"], snap["elapsed"], self._table[pid], self._bench_cfg)
         return load < self._cfg.fatigue_alert_index
+
+    def _with_fouls(self, candidate: Dict[str, Any], player: Dict[str, Any]) -> Dict[str, Any]:
+        """The fouls of who comes in, in the data and in the words of the proposal (issue #317)."""
+        pf = player["pf"]
+        candidate = {**candidate, "pf_in": pf}
+        if pf >= self._cfg.foul_note_pf:
+            candidate["message"] += f". Entra con {pf} faltas"
+        return candidate
 
     def _is_formation(self, pid: str) -> int:
         """1 for a formación player; a player the roster does not settle does NOT count (never risk the minimum)."""
@@ -119,7 +129,7 @@ class Recommender:
             after = self._formation_after(before, out_pid, pid)
             if self._breaks_formation(before, after):
                 continue  # it would leave fewer than the minimum (or make an illegal lineup worse)
-            candidate = self._candidate(snap, out_pid, outgoing, pid, p, z_out, z_in, distance, lever)
+            candidate = self._with_fouls(self._candidate(snap, out_pid, outgoing, pid, p, z_out, z_in, distance, lever), p)
             out.append(self._with_formation(candidate, after))
 
         out.sort(key=lambda c: (not c["balance_ok"], -c["score"], c["in_id"]))
@@ -148,10 +158,10 @@ class Recommender:
             if self._breaks_formation(before, after):
                 continue
             message = f"Entra {p['name'].strip()} por {outgoing['name'].strip()}"
-            found.append(self._with_formation({
+            found.append(self._with_formation(self._with_fouls({
                 "type": "sub", "mode": "rest", "out_id": out_pid, "out_name": outgoing["name"].strip(),
                 "in_id": pid, "in_name": p["name"].strip(), "minutes_today_s": p["minutes"],
-                "avg_min_s": entry.get("avg_min") or 0, "balance_ok": True, "message": message}, after))
+                "avg_min_s": entry.get("avg_min") or 0, "balance_ok": True, "message": message}, p), after))
         found.sort(key=lambda c: (c["minutes_today_s"], c["avg_min_s"], c["in_id"]))
         return found[: max_results or self._cfg.rec_max_results]
 
