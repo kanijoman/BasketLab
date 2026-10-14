@@ -230,6 +230,12 @@ class RuleConfig:
     # Game pace (possessions per 40 min): minimum game time before the pace, its projection and its +/- are
     # trusted (the extrapolation is very noisy in the first minutes: 45 vs 69 possessions at 3 min in a real game).
     pace_min_elapsed_s: int = 300
+    # Win probability (#254; placeholders until calibrated with the evaluator in #255): spread of the final margin of a
+    # whole game (points), prior weight in possessions of the pre-game expectation against what the game shows, and
+    # home court in points per 100 possessions.
+    wp_sigma: float = 12.0
+    wp_n0: float = 60.0
+    wp_home_adv: float = 4.0
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0

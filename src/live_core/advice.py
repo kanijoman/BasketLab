@@ -15,6 +15,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
+from .win_prob import WinProbabilityModel
 from .game_context import adjust_for_phase, game_phase
 from .pace import PaceModel
 from .proposals import timeout_proposal
@@ -83,6 +84,7 @@ class AdviceEngine:
         cfg = config or RuleConfig()
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
+        self._win_prob = WinProbabilityModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id and rival_team_id else None
         self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster)
                              if own_team_id and baselines else None)
         self._ctx = (
@@ -117,6 +119,9 @@ class AdviceEngine:
         result = self._model.evaluate(snapshot) if self._model else None
         if result:
             analysis["four_factors"] = result
+        win_prob = self._win_prob.evaluate(snapshot, result) if self._win_prob else None
+        if win_prob:
+            analysis["win_prob"] = win_prob
         pace = self._pace.evaluate(snapshot) if self._pace else None
         if pace:
             analysis["pace"] = pace
