@@ -106,6 +106,7 @@ describe('no accidental resets (issue #309)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }))
     const ask = screen.getByRole('group', { name: 'Confirmar' })
     expect(within(ask).getByText(/se perderán las alertas/i)).toBeTruthy()
+    expect(ask.textContent).not.toMatch(/respuestas/i)      // the feedback answers are kept (see #314): do not promise they are lost
     expect(p.onRestart).not.toHaveBeenCalled()
     fireEvent.click(within(ask).getByRole('button', { name: /sí, reiniciar/i }))
     expect(p.onRestart).toHaveBeenCalledTimes(1)

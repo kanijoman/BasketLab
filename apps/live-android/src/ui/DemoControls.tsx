@@ -54,7 +54,7 @@ function Confirm({ question, elapsed, onYes, onNo }: { question: Question; elaps
   return (
     <div role="group" aria-label="Confirmar" className="confirm">
       {restart ? (
-        <p>¿Reiniciar el partido? Se perderán las alertas y las respuestas de esta reproducción.</p>
+        <p>¿Reiniciar el partido? Se perderán las alertas que hay en pantalla.</p>
       ) : (
         <p>
           Saltar a {mmss(to)}.{' '}
