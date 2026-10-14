@@ -191,3 +191,33 @@ def test_the_validation_section_applies_the_agreed_criterion_to_the_held_out_sea
                  "--min-prior-games", "0", "--out", str(out)]) == 0
     section = out.read_text(encoding="utf-8").split("## Validación en una temporada aparte")[1]
     assert "Criterio en la validación" in section and ("Cumplido" in section or "NO cumplido" in section)
+
+
+def test_bootstrap_of_the_forecast_by_game(samples):
+    from src.live_prep.wp_eval import bootstrap_forecast
+
+    rows = bootstrap_forecast(samples, RuleConfig(), resamples=50, seed=0)
+    assert rows and sum(r["n"] for r in rows) == len(samples)
+    assert {r["games"] for r in rows} <= {1}    # one game in the fixture: every bin comes from that one game
+
+
+def test_cli_can_skip_the_grid_and_add_the_bootstrap_section(tmp_path, feb_game_doc, capsys):
+    import json
+
+    from src.live_prep.wp_cli import main
+
+    (tmp_path / "g.json").write_text(json.dumps(feb_game_doc), encoding="utf-8")
+    out = tmp_path / "r.md"
+    assert main(["--games-dir", str(tmp_path), "--min-prior-games", "0", "--no-grid", "--bootstrap", "40", "--out", str(out)]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert "## Intervalos de confianza por decil" in text and "remuestreo por partido" in text
+    assert "## Mejores parámetros" not in text
+
+
+def test_cli_rejects_validation_without_the_grid(tmp_path):
+    import pytest as _pytest
+
+    from src.live_prep.wp_cli import main
+
+    with _pytest.raises(SystemExit):
+        main(["--games-dir", str(tmp_path), "--validate-dir", str(tmp_path), "--no-grid"])

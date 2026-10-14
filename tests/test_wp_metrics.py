@@ -39,3 +39,57 @@ def test_max_decile_gap_in_points_ignoring_tiny_bins():
     rows = [{"bin": 1, "n": 40, "mean_p": 0.15, "freq": 0.20}, {"bin": 8, "n": 2, "mean_p": 0.85, "freq": 0.0}]
     assert max_decile_gap(rows, min_n=10) == pytest.approx(5.0)
     assert max_decile_gap(rows, min_n=100) is None
+
+
+# -- bootstrap by game (issue #261): is a decile gap distinguishable from zero? ----------------------------------
+
+import random
+
+from src.live_prep.wp_metrics import bootstrap_reliability
+
+
+def _games(n_games, p, freq, cuts=1, seed=1):
+    """``n_games`` games each with ``cuts`` cuts of forecast ``p`` whose outcome happens with probability ``freq``."""
+    rng = random.Random(seed)
+    ps, ys, games = [], [], []
+    for g in range(n_games):
+        outcome = int(rng.random() < freq)
+        for _ in range(cuts):
+            ps.append(p)
+            ys.append(outcome)
+            games.append(f"g{g}")
+    return ps, ys, games
+
+
+def test_a_calibrated_forecast_has_an_interval_around_zero():
+    ps, ys, games = _games(600, 0.35, 0.35)
+    [row] = bootstrap_reliability(ps, ys, games, resamples=300, seed=0)
+    assert row["bin"] == 3 and row["n"] == 600
+    assert row["lo"] < 0 < row["hi"]
+    assert abs(row["gap"]) < 5
+
+
+def test_a_biased_forecast_has_an_interval_that_excludes_zero():
+    ps, ys, games = _games(600, 0.35, 0.50)
+    [row] = bootstrap_reliability(ps, ys, games, resamples=300, seed=0)
+    assert row["gap"] == pytest.approx(15, abs=5) and row["lo"] > 0
+
+
+def test_gap_is_frequency_minus_forecast_in_points():
+    [row] = bootstrap_reliability([0.35, 0.35], [1, 0], ["a", "b"], resamples=50, seed=0)
+    assert row["gap"] == pytest.approx(15.0)
+    assert row["freq"] == pytest.approx(0.5) and row["mean_p"] == pytest.approx(0.35)
+
+
+def test_cuts_of_one_game_count_as_one_game_so_the_interval_is_wider():
+    """Resampling whole games respects that the cuts of a game share the outcome."""
+    one_each = bootstrap_reliability(*_games(200, 0.35, 0.35, cuts=1, seed=3), resamples=300, seed=0)[0]
+    seven_each = bootstrap_reliability(*_games(200, 0.35, 0.35, cuts=7, seed=3), resamples=300, seed=0)[0]
+    assert seven_each["n"] == 1400 and one_each["n"] == 200
+    assert (seven_each["hi"] - seven_each["lo"]) == pytest.approx(one_each["hi"] - one_each["lo"], rel=0.35)   # same games: same width
+
+
+def test_it_is_deterministic_for_a_seed_and_empty_input_is_empty():
+    data = _games(100, 0.65, 0.6)
+    assert bootstrap_reliability(*data, resamples=100, seed=7) == bootstrap_reliability(*data, resamples=100, seed=7)
+    assert bootstrap_reliability([], [], [], resamples=10, seed=0) == []
