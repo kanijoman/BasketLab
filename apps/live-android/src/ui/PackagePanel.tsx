@@ -5,6 +5,7 @@ import { decryptEnvelope } from '../package/crypto'
 import type { PackageStore } from '../package/storage'
 import { installPackage } from '../package/install'
 import type { PackageSummary } from '../package/summary'
+import HelpHint from './HelpHint'
 
 interface Props {
   engine: EngineApi
@@ -55,6 +56,11 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
   return (
     <section className="panel">
       <h2>Paquete de preparación</h2>
+      <HelpHint label="Ayuda sobre el paquete de preparación">
+        Contiene las estadísticas de la temporada de los dos equipos y los umbrales de las reglas. En directo, el motor las
+        compara con lo que pasa en la pista para proponer alertas. Se actualiza solo 3 veces al día; con «Quitar paquete»
+        vuelves al partido de demostración.
+      </HelpHint>
       {loaded ? (
         <div className="package-summary">
           <p><strong>{loaded.team}</strong> vs <strong>{loaded.rival}</strong></p>
@@ -76,6 +82,10 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
       )}
 
       <div className="package-import">
+        <HelpHint label="Ayuda sobre los ficheros .bpkg">
+          Úsalo sin conexión o con un paquete generado a mano (fichero .bpkg y su contraseña). Normalmente basta con
+          descargarlo de la lista de próximos partidos.
+        </HelpHint>
         <label>
           Fichero del paquete (.bpkg)
           <input type="file" accept=".bpkg,application/octet-stream,application/json"

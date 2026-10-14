@@ -128,3 +128,15 @@ describe('RemotePackages', () => {
     expect(await screen.findByText(/no hay paquetes publicados/i)).toBeTruthy()
   })
 })
+
+describe('RemotePackages help (issue #225)', () => {
+  it('explains where the password of the published packages comes from', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    fireEvent.click(screen.getByRole('button', { name: /ayuda sobre los paquetes publicados/i }))
+    const text = screen.getByRole('note').textContent ?? ''
+    expect(text).toMatch(/van cifrados/i)
+    expect(text).toMatch(/PACKAGE_PASSWORD/)
+    expect(text).toMatch(/queda guardada en este dispositivo/i)
+  })
+})

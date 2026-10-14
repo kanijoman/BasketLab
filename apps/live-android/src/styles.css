@@ -176,3 +176,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .about-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .about-actions button { flex: 1 1 0; min-width: 140px; }
 .version-footer { margin: 24px 0 0; text-align: center; color: var(--muted); font-size: 0.75rem; }
+/* Help hints (#225) */
+.help-hint { display: inline-block; }
+.help-button { width: 36px; min-height: 36px; padding: 0; background: transparent; border: 0; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
+.help-text { margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }

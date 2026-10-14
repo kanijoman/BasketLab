@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { EngineApi } from '../engine/client'
 import { decryptEnvelope } from '../package/crypto'
 import { installPackage } from '../package/install'
+import HelpHint from './HelpHint'
 import { loadPassphrase, savePassphrase } from '../package/passphrase'
 import { fetchIndex, fetchPackageText, type Fetcher, type PackageIndexEntry } from '../package/remote'
 import type { PackageStore } from '../package/storage'
@@ -65,6 +66,10 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
             Contraseña de los paquetes publicados
             <input type="password" value={pass} onChange={e => setPass(e.target.value)} autoComplete="off" />
           </label>
+          <HelpHint label="Ayuda sobre los paquetes publicados">
+            Los paquetes publicados van cifrados. Es la contraseña que fijó quien los genera (BasketLab → Preparación live o el
+            secreto PACKAGE_PASSWORD). Se escribe una vez y queda guardada en este dispositivo.
+          </HelpHint>
           <ul className="remote-packages">
             {entries.map(entry => (
               <li key={entry.file}>
