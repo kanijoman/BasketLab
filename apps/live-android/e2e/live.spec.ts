@@ -68,6 +68,9 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
+  // the import is in the Paquetes tab (issue #224)
+  await page.getByRole('tab', { name: 'Paquetes' }).click()
+
   // wrong password first: a clear error and nothing stored
   await page.getByLabel('Fichero del paquete (.bpkg)').setInputFiles(bpkg)
   await page.getByLabel('Contraseña del paquete').fill('contraseña-incorrecta')
@@ -76,13 +79,13 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
 
   await page.getByLabel('Contraseña del paquete').fill('clave-de-prueba-1')
   await page.getByRole('button', { name: 'Importar' }).click()
-  await expect(page.getByText('Paquete cargado')).toBeVisible({ timeout: 30_000 })
-  await expect(page.getByText(/partidos: 1 propios/)).toBeVisible()
+  await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 30_000 })   // the summary of the loaded package
 
   // survives a reload (IndexedDB) and can be removed
   await page.reload()
-  await expect(page.getByText('Paquete cargado')).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 90_000 })   // the tab is remembered too
   await page.getByRole('button', { name: 'Quitar paquete' }).click()
+  await page.getByRole('tab', { name: 'Partido' }).click()
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 30_000 })
 })
 

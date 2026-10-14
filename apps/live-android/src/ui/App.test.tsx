@@ -1,66 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
-import type { EngineApi } from '../engine/client'
-import type { EngineOutput } from '../engine/types'
-import type { PackageStore, StoredPackage } from '../package/storage'
-
-const META = {
-  package_id: 'p', schema_version: 1, created_at: '', collection: 'c', season: '2025',
-  team: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' },
-}
-
-const out = (elapsed: number, alerts: EngineOutput['alerts'] = []): EngineOutput => ({
-  snapshot: { period: 1, remaining: 600 - elapsed, elapsed, score: { '1': elapsed, '2': elapsed - 1 } } as never,
-  alerts,
-  analysis: {},
-})
-
-const ALERT = {
-  key: 'foul:9:3', id: 'foul_trouble', severity: 'critical' as const, category: 'faltas',
-  message: 'J. PÉREZ: 4 faltas personales. Gestionar sus minutos.', evidence: {}, rearm_s: null,
-  proposal: [{ type: 'sub', out_id: '9', out_name: 'J. PÉREZ', in_id: '10', in_name: 'L. GÓMEZ' }],
-}
-
-function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
-  return {
-    start: vi.fn().mockResolvedValue(META),
-    loadReplay: vi.fn().mockResolvedValue({ duration: 100, status: 'FINISHED' }),
-    replay: vi.fn(async (e: number) => out(e, e >= 5 ? [ALERT] : [])),
-    update: vi.fn(),
-    loadRecording: vi.fn().mockResolvedValue({ duration: 100, status: 'GRABACION', match: '2524470', frames: 10 }),
-    // seconds 0-2: the match is not there yet; 3-5: FEB answers 404; afterwards the engine output (with an alert)
-    playRecording: vi.fn(async (s: number) =>
-      s < 3 ? { feed: 'waiting' as const, output: null }
-        : s < 6 ? { feed: 'gap' as const, output: null }
-          : { feed: 'ok' as const, output: out(s, s >= 8 ? [ALERT] : []) }),
-    dispose: vi.fn(),
-    ...over,
-  }
-}
-
-
-const PKG_TEXT = JSON.stringify({
-  checksum: 'x',
-  package: {
-    team: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' }, season: '2025-2026',
-    collection: 'c', created_at: '2026-10-08T12:00:00Z',
-    tables: { players: { a: {} }, rival_players: { b: {} } }, baselines: { sample_games: { own: 5, rival: 4, league: 50 } },
-  },
-})
-
-function memoryStore(initial: StoredPackage | null = null): PackageStore & { saved: StoredPackage | null } {
-  const s = {
-    saved: initial,
-    load: async () => s.saved,
-    save: async (r: StoredPackage) => { s.saved = r },
-    clear: async () => { s.saved = null },
-  }
-  return s
-}
-
-const loadDemo = () => Promise.resolve({ package: 'PKG', game: 'GAME' })
-const replayCalls = (e: EngineApi) => (e.replay as ReturnType<typeof vi.fn>).mock.calls
+import { fakeEngine, loadDemo, memoryStore, META, out, PKG_TEXT, replayCalls } from './appTestKit'
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -170,7 +111,10 @@ describe('App', () => {
     it('uses the stored package instead of the demo and shows its summary', async () => {
       const engine = fakeEngine()
       render(<App engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
+      await screen.findByText('EQUIPO PROPIO')
+      fireEvent.click(screen.getByRole('tab', { name: 'Paquetes' }))                   // the summary is in the Paquetes tab (#224)
       expect(await screen.findByText(/partidos: 5 propios/)).toBeTruthy()
+      fireEvent.click(screen.getByRole('tab', { name: 'Partido' }))
       expect(engine.start).toHaveBeenCalledWith(PKG_TEXT)
       expect(engine.loadReplay).not.toHaveBeenCalled()
       expect(screen.queryByRole('button', { name: /reproducir/i })).toBeNull()
@@ -180,7 +124,10 @@ describe('App', () => {
     it('goes back to the demo when the package is removed', async () => {
       const store = memoryStore(saved)
       render(<App engine={fakeEngine()} loadDemo={loadDemo} store={store} />)
+      await screen.findByText('EQUIPO PROPIO')
+      fireEvent.click(screen.getByRole('tab', { name: 'Paquetes' }))
       fireEvent.click(await screen.findByRole('button', { name: /quitar paquete/i }))
+      fireEvent.click(screen.getByRole('tab', { name: 'Partido' }))
       expect(await screen.findByRole('button', { name: /reproducir/i })).toBeTruthy()
       expect(store.saved).toBeNull()
     })
