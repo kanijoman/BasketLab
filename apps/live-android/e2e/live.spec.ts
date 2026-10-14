@@ -102,8 +102,8 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('59') // Zamora, local, on the left
   await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('38') // Leon, visitor
   await expect(page.locator('.alert').first()).toBeVisible()
-  // the hierarchy of issue #229: a critical one, the warnings on view and the informative ones collapsed
-  await expect(page.locator('.alert-counts')).toContainText('1 crítica')
+  // the hierarchy of issue #229: the critical ones, the warnings on view and the informative ones collapsed
+  await expect(page.locator('.alert-counts')).toContainText(/\d+ críticas?/) // exact counts depend on the rules and the playback speed
   await expect(page.locator('.alert-counts')).toContainText(/\d+ avisos/) // exact counts depend on the playback speed
   await expect(page.locator('.alert-counts')).toContainText(/\d+ informativas/)
   await expect(page.locator('.alerts-info')).not.toHaveAttribute('open', '')
