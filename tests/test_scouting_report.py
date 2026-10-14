@@ -154,3 +154,11 @@ def test_with_a_small_sample_every_finding_carries_how_few_games_are_behind_it()
     assert small["keys"] and all(k["text"].endswith("(solo 2 partidos)") for k in small["keys"])
     assert all("solo" not in k["text"].split("(")[-1] for k in build_scouting_report(collected())["keys"])
     assert all("(solo 2 partidos)" in p["text"] for p in small["plan"]["exploit"] + small["plan"]["neutralize"] if p["source"] == "motor")
+
+
+def test_the_plan_takes_only_the_main_findings_of_the_engine_so_it_does_not_repeat_the_whole_list():
+    many = collected(alerts=[{"id": i, "category": "x", "count": 9, "games": 5, "per_game": 2.0, "avg_minute": 20.0, "severity": "warning", "message": "m"}
+                             for i in ("own_drought", "turnover_streak", "cold_fg_streak", "paint_battle", "team_fouls_bonus", "rival_run")])
+    plan = build_scouting_report(many)["plan"]
+    for side in ("neutralize", "exploit"):
+        assert sum(1 for p in plan[side] if p["source"] == "motor") <= 3

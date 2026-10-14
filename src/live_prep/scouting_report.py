@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 from src.live_core.zones import ZONES, zone_family
 
 MAX_KEYS = 8
+PLAN_ENGINE_ITEMS = 3      # per side: the plan is the main findings, the full list is already above
 
 
 @dataclass(frozen=True)
@@ -208,9 +209,11 @@ def _plan(keys: List[Dict[str, str]], team_report: Optional[Dict[str, Any]]) -> 
         if item.get("kind") in plan and item["text"] not in seen:
             plan[item["kind"]].append({"text": item["text"], "source": "informe"})
             seen.add(item["text"])
+    taken = {side: 0 for side in plan}
     for key in keys:
-        if key["text"] not in seen:
+        if key["text"] not in seen and taken[key["action"]] < PLAN_ENGINE_ITEMS:
             plan[key["action"]].append({"text": key["text"], "source": "motor"})
+            taken[key["action"]] += 1
     return plan
 
 
