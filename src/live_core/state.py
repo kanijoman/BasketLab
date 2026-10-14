@@ -14,6 +14,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 from . import clutch as clutch_mod
 from .clock import period_length, period_start
 from .events import Event
+from .lineups import LineupTracker
 
 STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "tov_team",
              "stl", "ast", "blk", "pts")
@@ -46,6 +47,8 @@ class _Player:
     stints_done: int = 0  # finished stints and their rest-adjusted total length (for baselines)
     stint_sum: int = 0
     stats: Dict[str, int] = field(default_factory=lambda: {k: 0 for k in PLAYER_STAT_KEYS})
+    pm: int = 0         # plus/minus: his team's points minus the rival's while he is on court (see lineups.py)
+    stint_pm: int = 0   # the same since he came in
     clutch: Dict[str, int] = field(default_factory=clutch_mod.empty)   # what he does in a close finish (see clutch.py)
     q4: Dict[str, int] = field(default_factory=clutch_mod.empty)       # and in the whole 4th period (the fallback)
 
@@ -73,6 +76,7 @@ class LiveGame:
         self.last_num = 0
         self._last_miss_team: Optional[str] = None
         self._in_clutch = False   # is the event being applied inside the clutch window (margin before it)?
+        self.lineups = LineupTracker(list(self.teams))
         self._rested_through = 1  # last period whose opening break has been credited
         # Chronological [elapsed, team_id, kind, value, player_id] (player None when the event has none):
         # pts (points of a made shot), fg2/fg3/ft (an attempt: 1 made, 0 missed), tov, orb, stl, timeout.
@@ -91,6 +95,7 @@ class LiveGame:
         before = self.elapsed
         if now <= before:
             return
+        self.lineups.tick(now - before)
         q4_start = period_start(clutch_mod.LAST_REGULATION_PERIOD)
         q4_end = q4_start + period_length(clutch_mod.LAST_REGULATION_PERIOD)
         q4 = max(0, min(now, q4_end) - max(before, q4_start))
@@ -122,6 +127,7 @@ class LiveGame:
         handler = getattr(self, f"_on_{ev.kind}", None)
         if handler:
             handler(ev, player, team)
+        self.lineups.refresh(self.players, ev.elapsed)
 
     def _player_for(self, ev: Event) -> Optional[_Player]:
         if not ev.player_id or ev.kind not in _PLAYER_KINDS:
@@ -154,7 +160,7 @@ class LiveGame:
 
     def _on_sub_in(self, ev: Event, player: Optional[_Player], team) -> None:
         if player and not player.on_court:
-            player.on_court, player.stint_start, player.credit = True, ev.elapsed, 0
+            player.on_court, player.stint_start, player.credit, player.stint_pm = True, ev.elapsed, 0, 0
 
     def _on_sub_out(self, ev: Event, player: Optional[_Player], team) -> None:
         if player and player.on_court:
@@ -178,6 +184,7 @@ class LiveGame:
             team.stats[made_key] += 1
             team.stats["pts"] += ev.points
             self.score[ev.team_id] += ev.points
+            self.lineups.points(self.players, ev.team_id, ev.points)
             self._log(ev, "pts", ev.points)
             if player:
                 player.pts += ev.points
@@ -278,7 +285,7 @@ class LiveGame:
                 "stint": stint, "pf": p.pf, "pts": p.pts, "unsportsmanlike": p.unsports, "technical": p.techs,
                 "stints_done": p.stints_done, "stint_sum": p.stint_sum, "stats": dict(p.stats),
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
-                "clutch": dict(p.clutch), "q4": dict(p.q4),
+                "clutch": dict(p.clutch), "q4": dict(p.q4), "pm": p.pm, "stint_pm": p.stint_pm,
             }
         teams = {
             tid: {
@@ -294,4 +301,5 @@ class LiveGame:
             "log": [list(e) for e in self.log],
             # the first team of FEB's header is the local one; the session JSON sorts keys, so say it explicitly
             "home_id": next(iter(self.teams), None),
+            **self.lineups.snapshot(),
         }

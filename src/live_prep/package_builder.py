@@ -26,10 +26,12 @@ from src.live_core.profiles import (
     z_scores,
 )
 from src.live_core import clutch as clutch_mod
+from src.live_core.lineups import season_table
 from src.live_core.state import PLAYER_STAT_KEYS
 
 FEATURE_MIN_GAMES_FOR_SPREAD = 8   # samples needed before trusting a league spread
 MIN_GAMES_FOR_P90 = 5
+LINEUPS_PER_TEAM = 30     # quintets per team in tables.lineups (the most played ones; the package must stay small)
 FT_PRIOR_ATTEMPTS = 10    # free-throw attempts of weight the league mean has when shrinking a player's percentage
 DEFAULT_FT_PCT = 0.72     # league mean when nobody has attempted a free throw yet (placeholder)
 PRIOR_SHRINK_GAMES = 6             # prior weight: games / (games + 6)
@@ -141,11 +143,13 @@ class SeasonAccumulator:
         self.names: Dict[str, str] = {}
         self.diffs: Dict[str, List[Dict[str, float]]] = {}
         self.league_diffs: List[Dict[str, float]] = []
+        self.lineup_totals: Dict[str, Dict[Tuple[str, ...], Dict[str, int]]] = {}   # team -> quintet -> season totals (#248)
         self.team_threes: Dict[str, List[int]] = {}   # team -> [three-point attempts, field-goal attempts] over the season (#291)
         self.pace_log: List[Tuple[Tuple[str, str], float]] = []  # (the two team ids, game pace) in game order
         self._played: Dict[str, int] = {}
         self.zone_league: Dict[str, Dict[str, int]] = {}
         self.zone_team: Dict[str, Dict[str, Dict[str, int]]] = {}
+        self.zone_conceded: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> zones of the shots its defence let the opponents take (#247)
         self.total_games = 0
 
     def tracked(self, team_id: str) -> bool:
@@ -177,6 +181,12 @@ class SeasonAccumulator:
 
     def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self._played[tid] = self.played(tid) + 1
+        for row in snap["lineups"].get(tid, []):
+            total = self.lineup_totals.setdefault(tid, {}).setdefault(
+                tuple(row["players"]), {"seconds": 0, "pts_for": 0, "pts_against": 0, "stints": 0, "games": 0})
+            for key in ("seconds", "pts_for", "pts_against", "stints"):
+                total[key] += row[key]
+            total["games"] += 1
         shots = self.team_threes.setdefault(tid, [0, 0])
         shots[0] += stats[tid]["fg3a"]
         shots[1] += stats[tid]["fg2a"] + stats[tid]["fg3a"]
@@ -186,6 +196,7 @@ class SeasonAccumulator:
             if p["team_id"] == tid:
                 table.setdefault(pid, _PlayerAcc(p["name"], tid)).add(p)
         self._add_zones(self.zone_team.setdefault(tid, {}), snap["zones"].get(tid, {}))
+        self._add_zones(self.zone_conceded.setdefault(tid, {}), snap["zones"].get(other, {}))
 
     @staticmethod
     def _add_zones(target: Dict[str, Dict[str, int]], cells: Dict[str, Dict[str, int]]) -> None:
@@ -249,8 +260,10 @@ class SeasonAccumulator:
                     for pid, acc in self.players.get(tid, {}).items() if acc.minutes}
 
         tables: Dict[str, Any] = {
-            "players": table(team_id), "rival_players": table(rival_id), "lineups": [], "roles": [],
-            "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {})}),
+            "players": table(team_id), "rival_players": table(rival_id), "roles": [],
+            "lineups": season_table(self.lineup_totals, team_id, LINEUPS_PER_TEAM) + season_table(self.lineup_totals, rival_id, LINEUPS_PER_TEAM),
+            "zones": copy.deepcopy({"league": self.zone_league, "rival": self.zone_team.get(rival_id, {}),
+                                    "own": self.zone_team.get(team_id, {}), "rival_conceded": self.zone_conceded.get(rival_id, {})}),
         }
         if roster:
             tables["roster"] = copy.deepcopy(roster)

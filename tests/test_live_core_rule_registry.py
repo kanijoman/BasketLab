@@ -14,6 +14,8 @@ from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_sn
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
 from tests.test_live_core_players import basket as pl_basket, impact as pl_impact, pl_snap, player as pl_player
 from tests.test_live_core_closing import end_of as cl_end_of, finish as cl_finish, pace_snap as cl_pace_snap, pts as cl_pts
+from tests.test_live_core_plusminus import stage as pm_stage
+from tests.test_live_core_zone_rules import cell as zr_cell, player as zr_player, zone_snap as zr_snap
 from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_evaluate_snap
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
@@ -25,7 +27,8 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "scoring_drought", "long_run", "game_flow_windows",
                 "rival_player_form", "own_player_form", "rival_star_bench",
                 "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
-                "closing_briefing", "period_summary", "advantage_management", "pace_control")
+                "closing_briefing", "period_summary", "advantage_management", "pace_control",
+                "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle")
 
 
 def _engine(rules_off=(), **kw):
@@ -109,6 +112,14 @@ SCENARIOS = {
     "period_summary": (lambda: cl_end_of(1, [cl_pts(OWN, 100)]), {"period_summary"}, {}),
     "advantage_management": (lambda: cl_finish(remaining=280, margin=10), {"advantage_management"}, {}),
     "pace_control": (lambda: cl_pace_snap(), {"pace_control"}, {"team_baselines": {"pace_own_per_40": 80.0, "pace_rival_per_40": 72.0}}),
+    "lineup_net": (lambda: pm_stage(), {"lineup_net"}, {}),
+    "player_plus_minus": (lambda: pm_stage(net=0, seconds=60, stint_pm={"g1": -9}, stint=300), {"player_plus_minus"}, {}),
+    "own_zones": (lambda: zr_snap(own={"restricted_area": zr_cell(6, 6, 12)}), {"own_zone_hot"}, {}),
+    "rival_defence_zones": (lambda: zr_snap(own={"restricted_area": zr_cell(3, 3, 6)}), {"rival_concedes_zone"},
+                            {"zone_ref": {"league": {"restricted_area": zr_cell(100, 65, 130)}, "rival_conceded": {"restricted_area": zr_cell(60, 48, 96)}}}),
+    "rival_zone_player": (lambda: zr_snap(players={"r1": zr_player("Rita", RIVAL)},
+                                          zone_players={OWN: {}, RIVAL: {"r1": {"right_wing_three": zr_cell(4, 3, 9)}}}), {"rival_player_zone"}, {}),
+    "paint_battle": (lambda: zr_snap(rival={"restricted_area": zr_cell(9, 7, 22)}), {"paint_battle"}, {}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 
