@@ -38,6 +38,7 @@ import RankingsPage from '@/pages/RankingsPage'
 import ReportPage from '@/pages/ReportPage'
 import TeamReportPage from '@/pages/TeamReportPage'
 import LivePrepPage from '@/pages/LivePrepPage'
+import ScoutingRivalPage from '@/pages/ScoutingRivalPage'
 import PossessionsPage from '@/pages/PossessionsPage'
 import InOutPage from '@/pages/InOutPage'
 import AdminPage from '@/pages/AdminPage'
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="report"      element={<ReportPage />} />
               <Route path="team-report" element={<TeamReportPage />} />
               <Route path="live-prep"   element={<LivePrepPage />} />
+              <Route path="scouting-rival" element={<ScoutingRivalPage />} />
               <Route path="possessions" element={<PossessionsPage />} />
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />

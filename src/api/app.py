@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 
 from src.api.routers import collections, teams, players, lineups, scrape
 from src.api.routers import shots, possessions, reports, historical, analysis
-from src.api.routers import analysis_predictive, matches, multi_phase, rotaciones, team_report, live_package, health
+from src.api.routers import analysis_predictive, matches, multi_phase, rotaciones, team_report, live_package, health, scouting_rival
 
 
 class UTF8JSONResponse(JSONResponse):
@@ -103,6 +103,7 @@ app.include_router(matches.router,             prefix="/api/v1/matches",  tags=[
 app.include_router(multi_phase.router,         prefix="/api/v1/multi",       tags=["multi-phase"])
 app.include_router(rotaciones.router,          prefix="/api/v1/rotaciones",  tags=["rotaciones"])
 app.include_router(live_package.router,        prefix="/api/v1/live",        tags=["live"])
+app.include_router(scouting_rival.router,       prefix="/api/v1/scouting-rival", tags=["scouting-rival"])
 
 
 @app.get("/", tags=["health"])
