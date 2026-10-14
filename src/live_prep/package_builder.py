@@ -65,6 +65,15 @@ def matchup_prior(own: List[Dict[str, float]], rival: List[Dict[str, float]]) ->
     return {f: round((own_mean[f] - rival_mean[f]) * weight, 4) for f in WEIGHTS}
 
 
+def net_prior(own: List[float], rival: List[float]) -> float:
+    """Expected margin per 100 possessions of own vs rival: gap of their mean net ratings, shrunk like ``matchup_prior``."""
+    games = min(len(own), len(rival)) if rival else len(own)
+    if not own or not games:
+        return 0.0
+    gap = sum(own) / len(own) - (sum(rival) / len(rival) if rival else 0.0)
+    return round(gap * games / (games + PRIOR_SHRINK_GAMES), 3)
+
+
 def _percentile(values: List[int], q: float) -> float:
     ordered = sorted(values)
     pos = (len(ordered) - 1) * q
@@ -151,6 +160,7 @@ class SeasonAccumulator:
         self.zone_team: Dict[str, Dict[str, Dict[str, int]]] = {}
         self.zone_conceded: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> zones of the shots its defence let the opponents take (#247)
         self.total_games = 0
+        self.net_log: Dict[str, List[float]] = {}   # team -> net rating per 100 possessions of each game (#254)
 
     def tracked(self, team_id: str) -> bool:
         return self._track is None or team_id in self._track
@@ -175,6 +185,11 @@ class SeasonAccumulator:
         if snap["elapsed"] and any(self.tracked(tid) for tid in ids):
             n = (possessions(stats[ids[0]]) + possessions(stats[ids[1]])) / 2
             self.pace_log.append(((ids[0], ids[1]), n / snap["elapsed"] * GAME_SECONDS))
+            if n:
+                margin = (snap["score"][ids[0]] - snap["score"][ids[1]]) / n * 100
+                for tid, sign in ((ids[0], 1), (ids[1], -1)):
+                    if self.tracked(tid):
+                        self.net_log.setdefault(tid, []).append(sign * margin)
         for tid in ids:
             if self.tracked(tid):
                 self._add_team(tid, ids[1] if ids[0] == tid else ids[0], snap, stats)
@@ -214,6 +229,7 @@ class SeasonAccumulator:
             "four_factors_prior": matchup_prior(self.diffs.get(team_id, []), self.diffs.get(rival_id, [])),
             "sample_games": {"own": self.played(team_id), "rival": self.played(rival_id), "league": self.total_games},
         }
+        out["net_rtg_prior"] = net_prior(self.net_log.get(team_id, []), self.net_log.get(rival_id, []))
         spread = league_spread(self.league_diffs)
         if spread:
             out["four_factors_sd"] = spread

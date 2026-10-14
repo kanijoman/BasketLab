@@ -38,4 +38,5 @@ class RuleContext:
     memory: Dict[str, Any] = field(default_factory=dict)                       # what a rule remembers between evaluations (one per engine)
     pace: Optional[Any] = None                                                 # PaceModel (None without a perspective)
     team_baselines: Dict[str, Any] = field(default_factory=dict)               # the package's team baselines (paces, three-point rate...)
+    win_prob: Optional[Any] = None                                             # WinProbabilityModel (None without a rival)
     lineups: Dict[str, Dict[str, Any]] = field(default_factory=dict)           # quintet key (lineups.lineup_key) -> season row of the package

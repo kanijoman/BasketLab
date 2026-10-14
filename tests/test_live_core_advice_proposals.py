@@ -89,3 +89,15 @@ def test_proposals_are_json_serialisable():
     s = snap(period=2, overrides={"b1": {"pf": 3}})
     [alert] = by_id(engine().evaluate(s), "foul_trouble")
     json.dumps(dataclasses.asdict(alert))
+
+
+def test_analysis_levers_come_with_who_to_bring_in_and_the_alert_carries_the_probability_gain():
+    """#256: the lever in the analysis is worth a win-probability gain and carries the recommender's swap for it."""
+    s = with_teams(snap(elapsed=1200), _stats(tov=22))
+    s["score"] = {OWN: 36, RIVAL: 40}
+    eng = engine()
+    levers = {lv["id"]: lv for lv in eng.analyze(s)["win_levers"]}
+    assert levers["tov"]["gain"] > 0
+    assert levers["tov"]["proposal"] and levers["tov"]["proposal"][0]["in_id"] == "g2"
+    [alert] = by_id(eng.evaluate(s), "four_factors_lever")
+    assert alert.evidence["win_gain"] == levers["tov"]["gain"]

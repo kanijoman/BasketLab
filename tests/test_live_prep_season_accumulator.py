@@ -133,3 +133,24 @@ def test_a_team_without_games_has_no_three_point_rate(feb_game_doc):
     acc.add_game(feb_game_doc)
     package = acc.to_package("FEB_TEST", "2025-2026", A, "999999", None, STAMP)
     assert "fg3_rate_own" in package.baselines and "fg3_rate_rival" not in package.baselines
+
+
+def test_package_carries_the_net_rating_prior_for_the_win_probability(feb_game_doc):
+    """#254: expected margin per 100 possessions of team vs rival = gap of their net ratings, shrunk by games played."""
+    from src.live_core.engine import LiveEngine
+    from src.live_core.four_factors import possessions
+    from src.live_prep.package_builder import PRIOR_SHRINK_GAMES
+
+    snap = LiveEngine().update(feb_game_doc)
+    poss = (possessions(snap["teams"][A]["stats"]) + possessions(snap["teams"][B]["stats"])) / 2
+    net_a = (snap["score"][A] - snap["score"][B]) / poss * 100
+    weight = 1 / (1 + PRIOR_SHRINK_GAMES)
+    ab = accumulated([feb_game_doc], A, B).baselines["net_rtg_prior"]
+    ba = accumulated([feb_game_doc], B, A).baselines["net_rtg_prior"]
+    assert ab == pytest.approx(2 * net_a * weight, abs=1e-3)
+    assert ab == pytest.approx(-ba, abs=1e-3)
+
+
+def test_net_rating_prior_is_zero_without_games():
+    acc = SeasonAccumulator()
+    assert acc.to_package("FEB_TEST", "2025-2026", A, B, None, STAMP).baselines["net_rtg_prior"] == 0.0
