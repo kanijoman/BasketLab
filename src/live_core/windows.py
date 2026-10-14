@@ -81,6 +81,17 @@ def trailing_makes(results: Sequence[int]) -> int:
     return count
 
 
+def points_after_turnovers(log: Iterable[Sequence[Any]], team_id: str, rival_id: str, start: int, end: int,
+                           horizon: int) -> int:
+    """Points ``rival_id`` scored within ``horizon`` game-seconds after a turnover of ``team_id`` (turnovers in ``[start, end]``).
+
+    Each rival basket counts once, however many turnovers it follows.
+    """
+    entries = list(log)
+    times = [e[0] for e in entries if e[1] == team_id and e[2] == "tov" and start <= e[0] <= end]
+    return sum(e[3] for e in entries if e[1] == rival_id and e[2] == "pts" and any(t <= e[0] <= t + horizon for t in times))
+
+
 def player_points(log: Iterable[Sequence[Any]], player_id: str, start: int, end: int) -> int:
     return sum(e[3] for e in log if e[2] == "pts" and player_of(e) == player_id and start <= e[0] <= end)
 

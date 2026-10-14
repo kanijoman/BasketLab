@@ -11,7 +11,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 RULE_IDS: Tuple[str, ...] = (
     "foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
-    "cold_shooting", "rival_hot_shooting", "free_throw_cold",
+    "cold_shooting", "rival_hot_shooting", "free_throw_cold", "scoring_drought", "long_run", "game_flow_windows",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -52,6 +52,22 @@ class RuleConfig:
     hot_3p_min_made: int = 4
     ft_cold_min_attempts: int = 8
     ft_cold_max_pct: float = 0.5
+    # Game flow (issue #242): own drought (warning; critical from the second value), rival drought (a window to run), no field
+    # goal; long run against (net points in the window), run for us (net, in run_window_s); counts in the flow window: rival
+    # offensive rebounds, rival points within a few seconds of our turnovers, rival turnovers. Quiet after our own timeout.
+    drought_own_s: int = 240
+    drought_critical_s: int = 360
+    drought_rival_s: int = 210
+    drought_fg_s: int = 180
+    after_timeout_quiet_s: int = 60
+    long_run_net: int = 10
+    long_run_window_s: int = 300
+    own_run_net: int = 8
+    flow_window_s: int = 180
+    rival_orb_n: int = 3
+    tov_points_n: int = 6
+    tov_points_horizon_s: int = 8
+    rival_tov_n: int = 4
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

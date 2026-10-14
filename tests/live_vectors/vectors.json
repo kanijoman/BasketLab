@@ -48,9 +48,11 @@
   "engine": {
    "checkpoints": [
     {
-     "alerts": [],
+     "alerts": [
+      "rival_tov:1:0"
+     ],
      "digests": {
-      "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "alerts": "c082e7c8ba9320b1941f39395c651f5bb45a1897016fb4e7b5659d2faddda419",
       "analysis": "52d8e37fc82fe72802b286d88d368e2e50cb426a7cc3d65bd2e0922fae5b2ed0",
       "snapshot": "17f75c32c5c25f992670b052e1800716e1c74f69de0a2b4c1a914f1a859c9b8a"
      },
@@ -2510,7 +2512,32 @@
    [],
    [],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 300
+      },
+      "id": "own_drought",
+      "key": "drought:1:0",
+      "message": "Sequía de 5:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "warning"
+     }
+    ],
     [
      {
       "category": "faltas",
@@ -2530,7 +2557,32 @@
      }
     ],
     [],
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 600
+      },
+      "id": "own_drought",
+      "key": "drought:2:600",
+      "message": "Sequía de 10:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [
      {
       "category": "faltas",
@@ -2550,7 +2602,32 @@
      }
     ],
     [],
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 900
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 15:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [
      {
       "category": "faltas",
@@ -2569,23 +2646,172 @@
       "severity": "critical"
      }
     ],
-    [],
-    []
-   ],
-   [
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1200
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800",
+      "message": "Sequía de 20:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     []
    ],
    [
     [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 300
+      },
+      "id": "own_drought",
+      "key": "drought:1:0",
+      "message": "Sequía de 5:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "warning"
+     }
+    ],
+    [],
+    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 600
+      },
+      "id": "own_drought",
+      "key": "drought:2:600",
+      "message": "Sequía de 10:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
+    [],
+    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 900
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 15:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
+    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1200
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800",
+      "message": "Sequía de 20:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
+    []
+   ],
+   [
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1200
+      },
+      "id": "own_drought",
+      "key": "drought:2:600",
+      "message": "Sequía de 20:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     },
      {
       "category": "rotacion",
       "confirm": 1,
@@ -2639,7 +2865,32 @@
     []
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 900
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 15:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [
      {
       "category": "rival",
@@ -2726,7 +2977,32 @@
     ]
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 600
+      },
+      "id": "own_drought",
+      "key": "drought:2:600",
+      "message": "Sequía de 10:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 2,
+        "message": "Tiempo muerto · quedan 2",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [
      {
       "category": "gestion",
@@ -3800,6 +4076,32 @@
       "proposal": [],
       "rearm_s": 300,
       "severity": "warning"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "base_severity": "critical",
+       "causes": "",
+       "gap_s": 2100,
+       "phase": "decided"
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800~decided",
+      "message": "Sequía de 35:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "warning"
      }
     ],
     [],
@@ -3817,6 +4119,30 @@
       "message": "Parcial de 0-8 en contra en los últimos 2:30. Valorar tiempo muerto.",
       "proposal": [],
       "rearm_s": 300,
+      "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 2150
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800",
+      "message": "Sequía de 35:50 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
       "severity": "critical"
      }
     ],
@@ -3856,6 +4182,30 @@
       "proposal": [],
       "rearm_s": 300,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 2100
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800",
+      "message": "Sequía de 35:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ],
     [],
@@ -3879,7 +4229,32 @@
     ]
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1700
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 28:20 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [
      {
       "category": "faltas",
@@ -3914,6 +4289,30 @@
       "proposal": [],
       "rearm_s": 300,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "4 pérdidas",
+       "gap_s": 2200
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800",
+      "message": "Sequía de 36:40 sin anotar (4 pérdidas). Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ],
     [
@@ -3936,8 +4335,57 @@
     ]
    ],
    [
-    [],
     [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1700
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 28:20 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "4 pérdidas",
+       "gap_s": 2200
+      },
+      "id": "own_drought",
+      "key": "drought:4:1800",
+      "message": "Sequía de 36:40 sin anotar (4 pérdidas). Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     },
      {
       "category": "faltas",
       "confirm": 1,
@@ -3989,7 +4437,32 @@
     ]
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [
      {
       "category": "alineacion",
@@ -4065,6 +4538,30 @@
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ],
     [],
@@ -4097,7 +4594,32 @@
     ]
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [],
     [],
     [],
@@ -4105,7 +4627,32 @@
     []
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [],
     [],
     [],
@@ -4113,7 +4660,32 @@
     []
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [],
     [],
     [
@@ -4164,6 +4736,30 @@
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ],
     [],
@@ -4171,17 +4767,92 @@
     []
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [],
     []
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [],
     []
    ],
    [
-    [],
+    [
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1500
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 25:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
+     }
+    ],
     [],
     [],
     [],
