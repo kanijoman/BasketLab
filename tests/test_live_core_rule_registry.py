@@ -12,11 +12,13 @@ from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
+from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
 
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
-                "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters")
+                "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
+                "cold_shooting", "rival_hot_shooting", "free_throw_cold")
 
 
 def _engine(rules_off=(), **kw):
@@ -69,6 +71,9 @@ SCENARIOS = {
     "rival_hot_player": (lambda: rival_snap({"orb": 4}), {"rival_hot_player"}, {"rival_baselines": RIVAL_BASELINES}),
     "rival_zone": (_zone, {"rival_zone"}, {}),
     "rest_starters": (rest_decided, {"rest_starters"}, {"baselines": REST_TABLE}),
+    "cold_shooting": (lambda: snap(elapsed=400, log=shots(OWN, [0] * 8)), {"cold_fg_streak"}, {}),
+    "rival_hot_shooting": (lambda: snap(elapsed=400, log=shots(RIVAL, [1] * 8)), {"rival_hot_streak"}, {}),
+    "free_throw_cold": (lambda: snap(elapsed=400, log=free_throws(OWN, [0] * 8)), {"ft_cold"}, {}),
 }
 
 

@@ -22,7 +22,7 @@ Todas con acción propuesta y horizonte mayor que la latencia del feed (mediana 
 | Bloque (issue) | Reglas |
 |---|---|
 | Flujo del partido (#242) | R2 sequía propia ≥ 4:00 y rival ≥ 3:30 · P2 sequía de canasta en juego ≥ 3:00 · P3 parcial largo −10 neto en 5 min · P4 parcial propio +8 · G2 ≥ 3 rebotes ofensivos rivales en 3 min · G3 ≥ 6 puntos rivales tras pérdida en 3 min · G5 rival con ≥ 4 pérdidas en 3 min |
-| Rachas de tiro (#243) | T1 racha fría propia (≤ 1/8) · T2 triples fríos propios · T3 rival en racha (≥ 6/8) · T4 rival en racha de triples (≥ 4 de 6) · T5 tiros libres propios ≤ 50 % |
+| Rachas de tiro (#243, **hecho**) | T1 racha fría propia (≤ 1/8) · T2 triples fríos propios · T3 rival en racha (≥ 6/8) · T4 rival en racha de triples (≥ 4 de 6) · T5 tiros libres propios ≤ 50 % |
 | Jugadores (#244) | J1 rival en racha (≥ 7 puntos en 3 min) · J2 dependencia del rival (> 40 %) · J3 propio en racha · J4 propio frío con volumen · V1 su jugador clave en el banquillo |
 | Sanciones y tiempos muertos (#245) | F1 antideportiva/técnica: una más y descalificado · F2 presupuesto de tiempos muertos y rival sin ellos · F4 jugador clave con 4 faltas en cierre igualado · V2 dos rivales con ≥ 3 faltas en pista |
 | Cierre y pausas (#246) | C1 briefing de cierre igualado · C3 resumen de fin de cuarto y descanso · C4 gestión de ventaja (+10 con < 5 min) · G1 el rival impone su ritmo |

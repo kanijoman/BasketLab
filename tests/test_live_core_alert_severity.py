@@ -66,4 +66,4 @@ def test_the_real_match_has_a_useful_distribution_regression():
         if result["output"]:
             alerts += result["output"]["alerts"]
     counts = Counter(a["severity"] for a in alerts)
-    assert (counts["critical"], counts["warning"], counts["info"]) == (1, 10, 20)  # +4 info: rest in the decided stretch (#273); Zamora lost by 20+
+    assert (counts["critical"], counts["warning"], counts["info"]) == (1, 14, 23)  # +4 info: rest in the decided stretch (#273) + 7 streak alerts (#243); Zamora lost by 20+

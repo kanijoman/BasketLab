@@ -64,9 +64,11 @@
      }
     },
     {
-     "alerts": [],
+     "alerts": [
+      "cold_fg:2"
+     ],
      "digests": {
-      "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "alerts": "13b3d6d68e4227538e21f18bad2cbefc23dc0d552911e44bd2e2a4fc1270b8bb",
       "analysis": "cddf8f3ad50d260732dc212ffb8a4f6720ecbc5087c1b33e015b817e8ca409e9",
       "snapshot": "856d3483fa8c9bdd8c0b5fadf3f1cdeb087ea303bda3d249ddf22b75e7b597a1"
      },
@@ -193,10 +195,11 @@
       "rest:2212271",
       "rfoul:2073736:4",
       "rfoul:1489375:3",
-      "rbonus:981204:4"
+      "rbonus:981204:4",
+      "rival_hot_3p:5"
      ],
      "digests": {
-      "alerts": "767b4cbfebb9588c330b51659d5ff43cc808ba30fb712a2e41f9e0fc7de17736",
+      "alerts": "49fcbc2808fc8ba60f1359649faf255dc819746cfb13f8a199995d8da1c65353",
       "analysis": "d6d0af7c6ba5cc0acd89472df548aca8a2ed9f4ce10469e785c90a57a9487547",
       "snapshot": "933a2dbc8d212aebf51446ef615f582971748b38a81fa037bd17eb4873e8d975"
      },

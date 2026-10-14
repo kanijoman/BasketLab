@@ -11,6 +11,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 RULE_IDS: Tuple[str, ...] = (
     "foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
+    "cold_shooting", "rival_hot_shooting", "free_throw_cold",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -39,6 +40,18 @@ class RuleConfig:
     decided_remaining_s: int = 480
     close_margin: int = 6
     close_remaining_s: int = 240
+    # Shooting streaks (last N attempts, oldest first): own cold field goals / threes (made at most), rival hot field goals /
+    # threes (made at least), own free throws at or below this share with at least this many attempts (issue #243).
+    cold_fg_n: int = 8
+    cold_fg_max_made: int = 1
+    cold_3p_n: int = 7
+    cold_3p_max_made: int = 1
+    hot_fg_n: int = 8
+    hot_fg_min_made: int = 6
+    hot_3p_n: int = 6
+    hot_3p_min_made: int = 4
+    ft_cold_min_attempts: int = 8
+    ft_cold_max_pct: float = 0.5
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.
