@@ -32,37 +32,45 @@ class ScoutingConfig:
     alert_min_per_game: float = 0.5
 
 
-# what the engine's rules say about a team, in words: id -> (label, what to do about it, key text or None when it is not a finding)
+# what the engine's alerts say about a team, in words, keyed by the id the ENGINE emits (not the rule id): label, what to do about it
+# and the text of the finding when it is one (said only when it fires often enough)
 ALERTS: Dict[str, Any] = {
-    "scoring_drought": ("Sequías de anotación", "exploit", "Sufre sequías de anotación: presionar fuerte cuando se atascan."),
-    "turnover_streak": ("Rachas de pérdidas", "exploit", "Acumula rachas de pérdidas: presión sobre balón."),
-    "cold_shooting": ("Rachas de tiro frío", "exploit", None),
-    "free_throw_cold": ("Fallos en tiros libres", "exploit", None),
-    "foul_trouble": ("Jugadoras con problemas de faltas", "exploit", None),
-    "team_fouls": ("Faltas de equipo / bonus", "exploit", None),
-    "fatigue_high": ("Fatiga de sus jugadoras", "exploit", None),
-    "rival_run": ("Parciales en contra", "exploit", "Sus rivales les hacen parciales largos: insistir cuando lleguen."),
-    "long_run": ("Parciales a favor", "neutralize", None),
-    "after_timeout_scoring": ("Reacción tras tiempo muerto", "exploit", None),
-    "period_edges": ("Inicios y finales de cuarto", "exploit", None),
-    "static_offense": ("Ataque estático", "exploit", None),
-    "comeback_plan": ("Remontadas", "neutralize", None),
-    "advantage_management": ("Gestión de la ventaja", "exploit", None),
-    "closing_briefing": ("Cierres ajustados", "exploit", None),
-    "own_zones": ("Tiro desde sus zonas", "neutralize", None),
-    "paint_battle": ("Batalla en la pintura", "exploit", None),
+    "own_drought": ("Sequías de anotación", "exploit", "Sufre sequías de anotación: presionar fuerte cuando se atascan"),
+    "fg_drought": ("Sequías de canasta de campo", "exploit", None),
+    "scoring_drought": ("Sequías de anotación", "exploit", "Sufre sequías de anotación: presionar fuerte cuando se atascan"),
+    "turnover_streak": ("Rachas de pérdidas", "exploit", "Acumula rachas de pérdidas: presión sobre el balón"),
+    "cold_fg_streak": ("Rachas frías de tiro de campo", "exploit", "Se enfría con facilidad en ataque: defender fuerte y no dejarle recuperar el ritmo"),
+    "cold_3p_streak": ("Rachas de triples fallados", "exploit", None),
+    "cold_3p_volume": ("Exceso de triples", "exploit", None),
+    "ft_cold": ("Tiros libres fallados", "exploit", None),
+    "own_cold_player": ("Jugadoras que no acierta con volumen", "exploit", None),
+    "own_hot_player": ("Jugadoras en racha", "neutralize", None),
     "own_orb_player": ("Rebote ofensivo individual", "neutralize", None),
-    "own_player_form": ("Jugadoras en racha", "neutralize", None),
-    "pace_control": ("Control del ritmo", "neutralize", None),
-    "lineup_net": ("Rendimiento de quintetos", "neutralize", None),
-    "player_plus_minus": ("+/- individual", "neutralize", None),
-    "four_factors_lever": ("Palanca de los Four Factors", "exploit", None),
+    "own_zone_hot": ("Zonas calientes de tiro", "neutralize", None),
+    "own_zone_cold": ("Zonas frías de tiro", "exploit", None),
+    "own_zone_selection": ("Mala selección de tiro", "exploit", None),
+    "paint_battle": ("Pintura perdida", "exploit", "Pierde con frecuencia la batalla de la pintura: atacar el aro y cargar el rebote"),
+    "static_offense": ("Ataque estático", "exploit", None),
+    "fatigue_high": ("Fatiga de sus jugadoras", "exploit", None),
+    "foul_trouble": ("Jugadoras con problemas de faltas", "exploit", None),
+    "team_fouls_bonus": ("Entra pronto en bonus", "exploit", "Acumula faltas de equipo pronto en el periodo: atacar el aro para llegar al bonus"),
+    "key_fouls_close": ("Faltas de sus clave en el cierre", "exploit", None),
+    "disqualification_risk": ("Riesgo de descalificación", "exploit", None),
+    "player_plus_minus": ("Jugadoras con +/- negativo en pista", "exploit", None),
+    "lineup_net": ("Quintetos que rinden mal", "exploit", None),
+    "rival_run": ("Parciales en contra", "exploit", "Sus rivales les hacen parciales largos: insistir cuando lleguen"),
+    "long_run": ("Parciales largos en contra", "exploit", None),
+    "own_run": ("Parciales a favor", "neutralize", None),
+    "comeback_plan": ("Situaciones de remontada", "neutralize", None),
+    "closing_briefing": ("Finales igualados", "exploit", None),
+    "advantage_management": ("Gestión de las ventajas", "exploit", None),
+    "period_edge_deficit": ("Finales de cuarto en negativo", "exploit", None),
     "timeout_budget": ("Gestión de los tiempos muertos", "exploit", None),
-    "key_fouls_close": ("Faltas en el cierre", "exploit", None),
-    "formation_lineup": ("Alineación de formación", "exploit", None),
-    "rest_starters": ("Descanso en partido decidido", "exploit", None),
-    "game_flow_windows": ("Flujo del partido", "exploit", None),
-    "disqualification": ("Descalificaciones", "exploit", None),
+    "rest_starters": ("Descanso de las titulares en partido decidido", "exploit", None),
+    "pace_control": ("Control del ritmo", "neutralize", None),
+    "points_off_turnovers": ("Puntos del rival tras sus pérdidas", "exploit", None),
+    "formation_lineup": ("Alineación indebida (jugadoras de formación)", "exploit", None),
+    "four_factors_lever": ("Palanca de los Four Factors", "exploit", None),
 }
 
 
@@ -166,7 +174,7 @@ def _zone_keys(rows: List[Dict[str, Any]], cfg: ScoutingConfig) -> List[Dict[str
 def _alert_rows(data: Dict[str, Any], cfg: ScoutingConfig) -> List[Dict[str, Any]]:
     rows = []
     for a in data.get("alerts", []):
-        label = ALERTS.get(a["id"], (a["id"].replace("_", " ").capitalize(), "exploit", None))[0]
+        label = ALERTS.get(a["id"], (f"Alerta «{a['id'].replace('_', ' ')}»", "exploit", None))[0]
         rows.append({"id": a["id"], "label": label, "per_game": a["per_game"], "avg_minute": a["avg_minute"], "games": a["games"],
                      "count": a["count"], "text": f"{label}: {fmt(a['per_game'])} por partido (en {a['games']} partidos, hacia el minuto {a['avg_minute']:.0f})."})
     return rows

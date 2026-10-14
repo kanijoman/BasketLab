@@ -131,3 +131,19 @@ def test_it_is_plain_json_and_the_keys_are_limited_and_ordered():
     json.dumps(r)
     assert 1 <= len(r["keys"]) <= 8
     assert all(k["area"] and k["text"] for k in r["keys"])
+
+
+def test_every_alert_the_engine_can_raise_about_a_team_has_its_words():
+    """A new rule must be given a label here (or be about the rivals): the PDF must not show a raw rule id."""
+    import re
+    from pathlib import Path
+
+    from src.live_prep.scouting_collect import _about_the_team
+    from src.live_prep.scouting_report import ALERTS
+
+    ids = set()
+    for path in Path("src/live_core").glob("rules_*.py"):
+        ids |= set(re.findall(r'\bid="([a-z0-9_]+)"', path.read_text(encoding="utf-8")))
+    ids |= set(re.findall(r'\bid="([a-z0-9_]+)"', Path("src/live_core/advice.py").read_text(encoding="utf-8")))
+    missing = sorted(i for i in ids if _about_the_team(i) and i not in ALERTS)
+    assert not missing, f"alert ids without a label in scouting_report.ALERTS: {missing}"
