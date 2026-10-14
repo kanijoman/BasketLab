@@ -92,6 +92,20 @@ def points_after_turnovers(log: Iterable[Sequence[Any]], team_id: str, rival_id:
     return sum(e[3] for e in entries if e[1] == rival_id and e[2] == "pts" and any(t <= e[0] <= t + horizon for t in times))
 
 
+def player_form(log: Iterable[Sequence[Any]], team_id: str, player_id: str, now: int, window_s: int) -> Dict[str, int]:
+    """How a player is doing in the last ``window_s`` seconds: ``pts`` and ``made_in_row`` (field goals made in a row at the
+    end of his attempts of the window; a miss breaks the row)."""
+    start, pts, shots = now - window_s, 0, []
+    for e in log:
+        if e[1] != team_id or player_of(e) != player_id or not start <= e[0] <= now:
+            continue
+        if e[2] == "pts":
+            pts += e[3]
+        elif e[2] in _FIELD_GOALS:
+            shots.append(int(bool(e[3])))
+    return {"pts": pts, "made_in_row": trailing_makes(shots)}
+
+
 def player_points(log: Iterable[Sequence[Any]], player_id: str, start: int, end: int) -> int:
     return sum(e[3] for e in log if e[2] == "pts" and player_of(e) == player_id and start <= e[0] <= end)
 

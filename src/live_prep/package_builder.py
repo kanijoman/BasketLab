@@ -29,6 +29,8 @@ from src.live_core.state import PLAYER_STAT_KEYS
 
 FEATURE_MIN_GAMES_FOR_SPREAD = 8   # samples needed before trusting a league spread
 MIN_GAMES_FOR_P90 = 5
+FT_PRIOR_ATTEMPTS = 10    # free-throw attempts of weight the league mean has when shrinking a player's percentage
+DEFAULT_FT_PCT = 0.72     # league mean when nobody has attempted a free throw yet (placeholder)
 PRIOR_SHRINK_GAMES = 6             # prior weight: games / (games + 6)
 SPREAD_FLOOR = 0.5                 # never below half of the default spread
 GAME_SECONDS = 2400
@@ -84,7 +86,7 @@ class _PlayerAcc:
         self.stint_sum += p["stint_sum"] + (p["stint"] if p["on_court"] else 0)
         self.stints += p["stints_done"] + (1 if p["on_court"] else 0)
 
-    def baseline(self, league: "League", impact_means: Dict[str, float]) -> Dict[str, Any]:
+    def baseline(self, league: "League", impact_means: Dict[str, float], ft_mean: float = 0.0) -> Dict[str, Any]:
         total = sum(self.minutes)
         rates = raw_rates(self.stats, total)
         fga = self.stats["fg2a"] + self.stats["fg3a"]
@@ -101,6 +103,9 @@ class _PlayerAcc:
             "avg_stint": round(self.stint_sum / self.stints) if self.stints else None,
             "stints": self.stints,
             "pf_per40": round(self.pf / total * GAME_SECONDS, 2) if total else 0.0,
+            # free throws (issue #246): attempts and the percentage shrunk to the league mean, so a 1/1 night is not 100 %
+            "fta": self.stats["fta"],
+            "ft_pct": round((self.stats["ftm"] + FT_PRIOR_ATTEMPTS * ft_mean) / (self.stats["fta"] + FT_PRIOR_ATTEMPTS), 3),
         }
 
 
@@ -206,13 +211,16 @@ class SeasonAccumulator:
         qualified = self._league_players_with_minutes()
         league_rates = league_distribution([raw_rates(a.stats, sum(a.minutes)) for a in qualified])
         impact_means = impact_league([impact_rates(a.stats, sum(a.minutes)) for a in qualified])
+        ft_attempts = sum(a.stats["fta"] for a in qualified)
+        ft_mean = sum(a.stats["ftm"] for a in qualified) / ft_attempts if ft_attempts else DEFAULT_FT_PCT
 
         baselines = self._team_baselines(team_id, rival_id)
+        baselines["ft_league_pct"] = round(ft_mean, 4)
         baselines["league_rates"] = {m: {k: round(v, 4) for k, v in d.items()} for m, d in league_rates.items()}
         baselines["impact_league"] = {m: round(v, 3) for m, v in impact_means.items()}
 
         def table(tid: str) -> Dict[str, Dict[str, Any]]:
-            return {pid: acc.baseline(league_rates, impact_means)
+            return {pid: acc.baseline(league_rates, impact_means, ft_mean)
                     for pid, acc in self.players.get(tid, {}).items() if acc.minutes}
 
         tables: Dict[str, Any] = {

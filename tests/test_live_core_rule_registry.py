@@ -12,6 +12,9 @@ from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
+from tests.test_live_core_players import basket as pl_basket, impact as pl_impact, pl_snap, player as pl_player
+from tests.test_live_core_closing import end_of as cl_end_of, finish as cl_finish, pace_snap as cl_pace_snap, pts as cl_pts
+from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_evaluate_snap
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
@@ -19,7 +22,10 @@ from tests.test_live_core_rival_zones import zsnap
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
                 "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
                 "cold_shooting", "rival_hot_shooting", "free_throw_cold",
-                "scoring_drought", "long_run", "game_flow_windows")
+                "scoring_drought", "long_run", "game_flow_windows",
+                "rival_player_form", "own_player_form", "rival_star_bench",
+                "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
+                "closing_briefing", "period_summary", "advantage_management", "pace_control")
 
 
 def _engine(rules_off=(), **kw):
@@ -30,16 +36,22 @@ def _fouls():
     players = {"p1": _player("Ana", OWN, pf=3), "r1": _player("Rival Uno", RIVAL, pf=3)}
     # both teams scored a minute ago: a game with no scoring at all would (rightly) raise the drought alerts
     log = [[500, team, kind, value, "p1"] for team in (OWN, RIVAL) for kind, value in (("fg2", 1), ("pts", 2))]
-    return snap(period=3, players=players, log=log)
+    return in_play(snap(period=3, players=players, log=log))
 
 
 def _bonus():
     return snap(period=2, fouls_by_period={OWN: {"2": 4}, RIVAL: {"2": 4}})
 
 
+def in_play(snapshot):
+    """The default test snapshot has the clock at 0:00 (the end of a period, when the period summary is said): mid-period here."""
+    snapshot["remaining"] = 300
+    return snapshot
+
+
 def _run():
-    return snap(elapsed=1110, log=[[880, OWN, "fg2", 1, "p1"], [880, OWN, "pts", 2, "p1"],   # our last basket, before the run window
-                               [1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]])
+    return in_play(snap(elapsed=1110, log=[[880, OWN, "fg2", 1, "p1"], [880, OWN, "pts", 2, "p1"],   # our last basket, before the run window
+                               [1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]]))
 
 
 def _turnovers():
@@ -80,13 +92,32 @@ SCENARIOS = {
     "free_throw_cold": (lambda: snap(elapsed=400, log=free_throws(OWN, [0] * 8)), {"ft_cold"}, {}),
     "scoring_drought": (lambda: snap(elapsed=400, log=[[100, OWN, "pts", 2, "p1"]]), {"own_drought", "fg_drought", "rival_drought"}, {}),
     "long_run": (lambda: snap(elapsed=330, log=[[t, RIVAL, "pts", 2, "p1"] for t in (100, 140, 180, 220, 260, 300)]), {"long_run"}, {}),
+    "rival_player_form": (lambda: pl_snap({"r1": pl_player("Rita", RIVAL)}, [pl_basket(RIVAL, "r1", 250, 3), pl_basket(RIVAL, "r1", 310, 2),
+                                                                         pl_basket(RIVAL, "r1", 380, 2)]), {"rival_hot_run"}, {}),
+    "own_player_form": (lambda: pl_snap({"p1": pl_player("Ana", OWN)}, [pl_basket(OWN, "p1", 250, 3), pl_basket(OWN, "p1", 310, 2),
+                                                                      pl_basket(OWN, "p1", 380, 2)]), {"own_hot_player"}, {}),
+    "rival_star_bench": (lambda: [snap(elapsed=300, players={"r1": pl_player("Rita", RIVAL)}),
+                                  snap(elapsed=330, players={"r1": pl_player("Rita", RIVAL, on_court=False)})],
+                         {"rival_star_out"}, {"rival_baselines": {"r1": {"name": "Rita", "avg_min": 1500, "impact40": pl_impact(24.0)}}}),
+    "disqualification": (lambda: snap(elapsed=400, players={"p1": sa_player("Ana", OWN, unsportsmanlike=1)}), {"disqualification_risk"}, {}),
+    "timeout_budget": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200), {"timeout_budget"}, {}),
+    "key_fouls_close": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200, score={OWN: 60, RIVAL: 58},
+                                                 players={"g1": sa_player("Guard Uno", OWN, pf=4)}), {"key_fouls_close"}, {"baselines": REST_TABLE}),
+    "rival_foul_pair": (lambda: snap(elapsed=400, players={"r1": sa_player("Rita", RIVAL, pf=3), "r2": sa_player("Rosa", RIVAL, pf=4)}),
+                        {"rival_foul_pair"}, {}),
+    "closing_briefing": (lambda: cl_finish(), {"closing_briefing"}, {}),
+    "period_summary": (lambda: cl_end_of(1, [cl_pts(OWN, 100)]), {"period_summary"}, {}),
+    "advantage_management": (lambda: cl_finish(remaining=280, margin=10), {"advantage_management"}, {}),
+    "pace_control": (lambda: cl_pace_snap(), {"pace_control"}, {"team_baselines": {"pace_own_per_40": 80.0, "pace_rival_per_40": 72.0}}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 
 
 def _ids(engine, snapshot):
-    """Ids emitted by evaluating the snapshot twice (an alert that asks for confirmation needs two evaluations)."""
-    return {a.id for _ in range(2) for a in engine.evaluate(snapshot)}
+    """Ids emitted by evaluating the snapshot twice (an alert that asks for confirmation needs two evaluations). A list of
+    snapshots is evaluated in order (a rule that remembers the previous evaluation needs a change to say something)."""
+    snapshots = snapshot if isinstance(snapshot, list) else [snapshot]
+    return {a.id for _ in range(2) for s in snapshots for a in engine.evaluate(s)}
 
 
 def test_every_rule_has_a_unique_id_and_the_registry_matches_the_known_ids():

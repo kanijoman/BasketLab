@@ -21,8 +21,13 @@ from .proposals import timeout_proposal
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
+from .rules_closing import advantage_rule, closing_rule, pace_rule
+from .rules_discipline import disqualification_rule, key_fouls_rule, rival_pair_rule
 from .rules_flow import drought_rule, long_run_rule, window_rule
+from .rules_players import own_player_rule, rival_player_rule as rival_form_rule, rival_star_rule
 from .rules_rest import rest_rule
+from .rules_summary import summary_rule
+from .rules_timeouts import timeout_budget_rule
 from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
@@ -40,6 +45,11 @@ RULES: List[Tuple[str, Rule]] = [
     ("rest_starters", rest_rule),
     ("cold_shooting", cold_shooting_rule), ("rival_hot_shooting", rival_hot_rule), ("free_throw_cold", free_throw_rule),
     ("scoring_drought", drought_rule), ("long_run", long_run_rule), ("game_flow_windows", window_rule),
+    ("rival_player_form", rival_form_rule), ("own_player_form", own_player_rule), ("rival_star_bench", rival_star_rule),
+    ("disqualification", disqualification_rule), ("timeout_budget", timeout_budget_rule),
+    ("key_fouls_close", key_fouls_rule), ("rival_foul_pair", rival_pair_rule),
+    ("closing_briefing", closing_rule), ("period_summary", summary_rule), ("advantage_management", advantage_rule),
+    ("pace_control", pace_rule),
 ]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
@@ -69,7 +79,8 @@ class AdviceEngine:
                              if own_team_id and baselines else None)
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
-                        rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender)
+                        rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender,
+                        pace=self._pace)
             if own_team_id else None
         )
         self._last: Dict[str, int] = {}

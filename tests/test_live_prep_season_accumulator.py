@@ -86,3 +86,31 @@ def test_a_game_that_is_not_between_two_teams_is_ignored(feb_game_doc):
     acc = SeasonAccumulator()
     acc.add_game(broken)
     assert acc.played(A) == 0 and acc.total_games == 0
+
+
+def test_the_package_carries_the_free_throw_percentage_shrunk_to_the_league_mean(feb_game_doc):
+    """Issue #246 (C1): who to give the ball to and who to foul in a close finish needs the free-throw percentage of each
+    player. With few attempts it must stay close to the league mean (a 1/1 night is not a 100 % shooter)."""
+    from src.live_core.engine import LiveEngine
+    from src.live_prep.package_builder import MIN_LEAGUE_SECONDS
+
+    package = accumulated([feb_game_doc], A, B)
+    played = LiveEngine().update(feb_game_doc)["players"]
+    players = {**package.tables["players"], **package.tables["rival_players"]}
+    league = [pid for pid, p in players.items() if p["seconds"] >= MIN_LEAGUE_SECONDS]    # the league population, as for the rates
+    made = sum(played[pid]["stats"]["ftm"] for pid in league)
+    attempts = sum(played[pid]["stats"]["fta"] for pid in league)
+    mean = package.baselines["ft_league_pct"]
+    assert mean == pytest.approx(made / attempts, abs=1e-3) and 0.4 < mean < 1.0
+    for pid, p in players.items():
+        ftm, fta = played[pid]["stats"]["ftm"], played[pid]["stats"]["fta"]
+        assert p["fta"] == fta
+        assert p["ft_pct"] == pytest.approx((ftm + 10 * mean) / (fta + 10), abs=1e-3)
+    no_attempts = [p for p in players.values() if p["fta"] == 0]
+    assert no_attempts and all(p["ft_pct"] == pytest.approx(mean, abs=1e-3) for p in no_attempts)
+
+
+def test_the_free_throw_data_is_the_same_for_build_package(feb_game_doc):
+    a = accumulated([feb_game_doc], A, B)
+    b = build_package([feb_game_doc], "FEB_TEST", "2025-2026", A, B, created_at=STAMP)
+    assert a.tables["players"] == b.tables["players"] and a.baselines["ft_league_pct"] == b.baselines["ft_league_pct"]
