@@ -205,3 +205,19 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .confirm { padding: 10px 12px; border: 1px solid var(--sev-warning, var(--accent)); border-radius: 10px; background: var(--card); }
 .confirm p { margin: 0 0 8px; }
 .confirm-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Brand (#311): the header of the screens, the loading splash and the logo of Acerca de */
+.brand-header { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
+.brand-name { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.01em; }
+.brand-name strong { color: var(--accent); }
+.about-logo { display: block; margin: 0 0 8px; }
+.splash { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: var(--surface, var(--bg)); text-align: center; }
+.splash h1 { margin: 0; font-size: 1.6rem; }
+.splash h1 strong { color: var(--accent); }
+.splash p { margin: 0; color: var(--muted); }
+.splash-mark { animation: splash-breathe 2.4s ease-in-out infinite; }
+.splash-progress { width: 160px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.splash-progress span { display: block; width: 40%; height: 100%; border-radius: 2px; background: var(--accent); animation: splash-slide 1.4s ease-in-out infinite; }
+@keyframes splash-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes splash-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .splash-mark, .splash-progress span { animation: none; } }

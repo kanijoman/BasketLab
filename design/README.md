@@ -6,7 +6,7 @@ Fuente única de los **tokens de diseño** (y, más adelante, de la marca) para 
 |---|---|
 | `tokens.css` | Variables CSS: superficies, texto, acento naranja, escalas de radio / espaciado / tipografía, paleta de **severidad** y de **categoría** de alertas. Oscuro por defecto; claro con `prefers-color-scheme` o `data-theme="light|dark"` en `<html>`. |
 | `tailwind-preset.cjs` | Preset de Tailwind sobre esos tokens (la web lo usará en U0). Los colores llevan canales `--x-rgb` para soportar `bg-surface/50`. |
-| `brand/` | (Pendiente, U1 #189) logo SVG, favicon e iconos. |
+| `brand/` | Marca de la **app live** (#311): `live-mark.svg` (balón con el pulso del directo, sin fondo), `live-icon.svg` (sobre la baldosa azul marino `#1A2744`) y `live-foreground.svg` (primer plano del icono adaptable de Android). El logo de la web (U1 #189) sigue pendiente. |
 
 ## Cómo se usa
 - **App Android**: `src/main.tsx` importa `@design/tokens.css` (alias de Vite a esta carpeta) antes de `styles.css`; los estilos solo usan `var(--…)`.

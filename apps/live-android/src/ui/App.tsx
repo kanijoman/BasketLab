@@ -21,7 +21,9 @@ import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
+import BrandHeader from './BrandHeader'
 import PaceCard from './PaceCard'
+import Splash from './Splash'
 import WinProbCard from './WinProbCard'
 import { useExperimental } from './useExperimental'
 import { useSessionLog } from './useSessionLog'
@@ -228,7 +230,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} />
 
-  if (phase.kind === 'loading') return <main className="screen"><p className="status">Cargando motor…</p></main>
+  if (phase.kind === 'loading') return <Splash />
   if (phase.kind === 'error') {
     return (
       <main className="screen">
@@ -321,6 +323,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   )
   return (
     <main className="screen with-tabs">
+      <BrandHeader />
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'partido' ? matchTab : tab === 'paquetes' ? panel : aboutTab}
