@@ -90,3 +90,88 @@ def test_cli_needs_enough_earlier_games(tmp_path, feb_game_doc, capsys):
     out = tmp_path / "r.md"
     assert main(["--games-dir", str(tmp_path), "--min-prior-games", "0", "--out", str(out)]) == 0
     assert "Calibración de la probabilidad de victoria" in out.read_text(encoding="utf-8")
+
+
+def test_cli_pools_several_season_folders_without_mixing_their_priors(tmp_path, feb_game_doc, capsys):
+    """#301: each folder is a season (its own accumulator); the samples of all of them are scored together."""
+    import json
+
+    from src.live_prep.wp_cli import main
+
+    for season in ("2024", "2025"):
+        (tmp_path / season).mkdir()
+        (tmp_path / season / "g.json").write_text(json.dumps(feb_game_doc), encoding="utf-8")
+    assert main(["--games-dir", str(tmp_path / "2024"), "--games-dir", str(tmp_path / "2025"), "--min-prior-games", "0"]) == 0
+    one = capsys.readouterr().out.split(" cortes de ")[0].split()[-1]
+    assert main(["--games-dir", str(tmp_path / "2025"), "--min-prior-games", "0"]) == 0
+    single = capsys.readouterr().out.split(" cortes de ")[0].split()[-1]
+    assert int(one) == 2 * int(single)
+
+
+def test_a_held_out_season_checks_the_parameters_tuned_on_the_others(tmp_path, feb_game_doc, capsys):
+    """#301: ``--validate-dir`` scores the default and the best parameters of the grid on a season that was not used to tune."""
+    import json
+
+    from src.live_prep.wp_cli import main
+
+    for season in ("2024", "2025"):
+        (tmp_path / season).mkdir()
+        (tmp_path / season / "g.json").write_text(json.dumps(feb_game_doc), encoding="utf-8")
+    out = tmp_path / "r.md"
+    assert main(["--games-dir", str(tmp_path / "2024"), "--validate-dir", str(tmp_path / "2025"),
+                 "--min-prior-games", "0", "--out", str(out)]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert "## Validación en una temporada aparte" in text
+    assert "Parámetros por defecto" in text and "Parámetros ajustados" in text and "wp_sigma" in text
+
+
+def test_a_game_the_engine_cannot_score_is_left_out(feb_game_doc):
+    """Old seasons write the points in another way (``(13 Pts)``): the engine reads 0-0 and every forecast would be a lie."""
+    import copy
+
+    unreadable = copy.deepcopy(feb_game_doc)
+    lines = unreadable["PLAYBYPLAY"]["LINES"]
+    unreadable["PLAYBYPLAY"]["LINES"] = [l for l in lines if "ANOTADO" not in (l.get("text") or "").upper()]
+    assert collect_samples([unreadable], cut_s=300, min_prior_games=0) == []
+    assert collect_samples([feb_game_doc], cut_s=300, min_prior_games=0)
+
+# -- the criterion to show the probability in the app (agreed with the user on 2026-10-14, issue #255) -------------
+
+def _variant(log_loss, rows):
+    return {"log_loss": log_loss, "reliability": rows}
+
+
+def _bins(gap_points, n=500):
+    return [{"bin": 3, "n": n, "mean_p": 0.35, "freq": 0.35 + gap_points / 100}]
+
+
+def test_criterion_met_when_it_beats_score_and_time_stays_with_the_prior_and_deciles_are_close():
+    from src.live_prep.wp_eval import app_criterion
+
+    result = app_criterion({"full": _variant(0.370, _bins(4.0)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})
+    assert result["met"] is True and result["gap"] == pytest.approx(4.0)
+
+
+def test_criterion_allows_a_log_loss_up_to_half_a_thousandth_worse_than_the_prior_but_not_more():
+    from src.live_prep.wp_eval import app_criterion
+
+    def met(full):
+        return app_criterion({"full": _variant(full, _bins(1.0)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})["met"]
+
+    assert met(0.3729) is True and met(0.3731) is False
+
+
+def test_criterion_fails_if_it_does_not_beat_score_and_time_or_the_deciles_are_far():
+    from src.live_prep.wp_eval import app_criterion
+
+    assert app_criterion({"full": _variant(0.430, _bins(1.0)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})["met"] is False
+    assert app_criterion({"full": _variant(0.370, _bins(6.4)), "prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])})["met"] is False
+
+
+def test_criterion_ignores_deciles_with_fewer_than_400_cuts_and_fails_without_any():
+    from src.live_prep.wp_eval import app_criterion
+
+    base = {"prior_only": _variant(0.368, []), "score_time": _variant(0.420, [])}
+    assert app_criterion({"full": _variant(0.370, _bins(9.0, n=399)), **base})["met"] is False   # no decile is trustworthy: not shown
+    mixed = _bins(9.0, n=399) + [{"bin": 8, "n": 800, "mean_p": 0.85, "freq": 0.86}]
+    assert app_criterion({"full": _variant(0.370, mixed), **base})["gap"] == pytest.approx(1.0)
