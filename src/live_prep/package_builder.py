@@ -25,6 +25,7 @@ from src.live_core.profiles import (
     shrink_rates,
     z_scores,
 )
+from src.live_core import clutch as clutch_mod
 from src.live_core.state import PLAYER_STAT_KEYS
 
 FEATURE_MIN_GAMES_FOR_SPREAD = 8   # samples needed before trusting a league spread
@@ -75,6 +76,7 @@ class _PlayerAcc:
         self.minutes: List[int] = []
         self.stint_sum = self.stints = self.pf = 0
         self.stats = {k: 0 for k in PLAYER_STAT_KEYS}
+        self.clutch, self.q4 = clutch_mod.empty(), clutch_mod.empty()
 
     def add(self, p: Dict[str, Any]) -> None:
         if p["minutes"] <= 0:
@@ -83,6 +85,9 @@ class _PlayerAcc:
         self.pf += p["pf"]
         for key in PLAYER_STAT_KEYS:
             self.stats[key] += p["stats"][key]
+        for bucket, key in ((self.clutch, "clutch"), (self.q4, "q4")):
+            for field in clutch_mod.FIELDS:
+                bucket[field] += (p.get(key) or {}).get(field, 0)      # snapshots of an older engine have no clutch totals
         self.stint_sum += p["stint_sum"] + (p["stint"] if p["on_court"] else 0)
         self.stints += p["stints_done"] + (1 if p["on_court"] else 0)
 
@@ -106,7 +111,19 @@ class _PlayerAcc:
             # free throws (issue #246): attempts and the percentage shrunk to the league mean, so a 1/1 night is not 100 %
             "fta": self.stats["fta"],
             "ft_pct": round((self.stats["ftm"] + FT_PRIOR_ATTEMPTS * ft_mean) / (self.stats["fta"] + FT_PRIOR_ATTEMPTS), 3),
+            "clutch": self._clutch(total, ft_mean),
         }
+
+    def _clutch(self, total: int, ft_mean: float) -> Dict[str, Any]:
+        """Responsibility and accuracy in a close finish, shrunk to this player's season (issue #274; see ``live_core.clutch``)."""
+        s = self.stats
+        shots = s["fg2a"] + s["fg3a"] + clutch_mod.FT_POSSESSION_COST * s["fta"]
+        points = 2 * s["fg2m"] + 3 * s["fg3m"] + s["ftm"]
+        return clutch_mod.summarize(
+            self.clutch, self.q4,
+            usage_per10=(shots + s["tov"]) / total * 600 if total else 0.0,
+            pps_season=points / shots if shots else 0.0,
+            ft_pct_season=(s["ftm"] + FT_PRIOR_ATTEMPTS * ft_mean) / (s["fta"] + FT_PRIOR_ATTEMPTS))
 
 
 class SeasonAccumulator:
@@ -124,6 +141,7 @@ class SeasonAccumulator:
         self.names: Dict[str, str] = {}
         self.diffs: Dict[str, List[Dict[str, float]]] = {}
         self.league_diffs: List[Dict[str, float]] = []
+        self.team_threes: Dict[str, List[int]] = {}   # team -> [three-point attempts, field-goal attempts] over the season (#291)
         self.pace_log: List[Tuple[Tuple[str, str], float]] = []  # (the two team ids, game pace) in game order
         self._played: Dict[str, int] = {}
         self.zone_league: Dict[str, Dict[str, int]] = {}
@@ -159,6 +177,9 @@ class SeasonAccumulator:
 
     def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self._played[tid] = self.played(tid) + 1
+        shots = self.team_threes.setdefault(tid, [0, 0])
+        shots[0] += stats[tid]["fg3a"]
+        shots[1] += stats[tid]["fg2a"] + stats[tid]["fg3a"]
         self.diffs.setdefault(tid, []).append(differentials(stats[tid], stats[other]))
         table = self.players.setdefault(tid, {})
         for pid, p in snap["players"].items():
@@ -185,6 +206,10 @@ class SeasonAccumulator:
         spread = league_spread(self.league_diffs)
         if spread:
             out["four_factors_sd"] = spread
+        for key, tid in (("fg3_rate_own", team_id), ("fg3_rate_rival", rival_id)):
+            threes, attempts = self.team_threes.get(tid, [0, 0])
+            if attempts:
+                out[key] = round(threes / attempts, 3)     # the share of the shots a team usually takes from three (issue #291)
         paces = self._paces(team_id, rival_id)
         if paces:
             out["pace_per_40"] = round(sum(paces) / len(paces), 1)

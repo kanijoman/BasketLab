@@ -157,3 +157,41 @@ def test_streak_alerts_are_json_serialisable():
     for advice in by_id(run(shots(OWN, [0] * 8) + shots(RIVAL, [1] * 8)), "cold_fg_streak") + by_id(
             run(shots(RIVAL, [1] * 8)), "rival_hot_streak"):
         assert json.loads(json.dumps(advice.proposal)) == advice.proposal
+
+
+# --- T2 volume (issue #291): too many threes with a poor percentage, against the team's habit ------------------------
+
+def team_stats(fg2a, fg3a, fg3m):
+    return {"fg2m": 0, "fg2a": fg2a, "fg3m": fg3m, "fg3a": fg3a, "ftm": 0, "fta": 0, "orb": 0, "drb": 0, "tov": 0, "tov_team": 0,
+            "stl": 0, "ast": 0, "blk": 0, "pts": 0}
+
+
+def volume(fg2a, fg3a, fg3m, habit=0.30, eng=None):
+    s = snap(elapsed=1200, period=2)
+    s["teams"][OWN]["stats"] = team_stats(fg2a, fg3a, fg3m)
+    e = eng or AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, team_baselines={"fg3_rate_own": habit} if habit else {})
+    return by_id(e.evaluate(s), "cold_3p_volume")
+
+
+def test_t2_volume_many_more_threes_than_usual_with_a_poor_percentage_says_to_attack_the_rim():
+    [alert] = volume(fg2a=12, fg3a=14, fg3m=3)          # 54 % of the shots are threes against a habit of 30 %, 3/14
+    assert alert.severity == "info" and alert.category == "four_factors"
+    assert "14 de 26" in alert.message and "30 %" in alert.message and "3/14" in alert.message
+    assert alert.proposal[0]["type"] == "tactic" and "aro" in alert.proposal[0]["message"]
+
+
+@pytest.mark.parametrize("kwargs", [
+    dict(fg2a=12, fg3a=14, fg3m=6),        # 43 %: the volume is fine if they go in
+    dict(fg2a=16, fg3a=10, fg3m=2),        # 38 % of the shots, only 8 points above the habit
+    dict(fg2a=3, fg3a=7, fg3m=1),          # only ten shots: too early
+    dict(fg2a=12, fg3a=14, fg3m=3, habit=0),    # no habitual rate in the package
+])
+def test_t2_volume_needs_a_high_share_a_poor_percentage_enough_attempts_and_a_habit(kwargs):
+    assert not volume(**kwargs)
+
+
+def test_t2_volume_is_said_once_per_block_of_attempts():
+    e = AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, team_baselines={"fg3_rate_own": 0.30})
+    assert volume(12, 14, 3, eng=e)
+    assert not volume(12, 15, 3, eng=e)
+    assert volume(16, 22, 4, eng=e)                       # a whole new block of eight attempts, still cold
