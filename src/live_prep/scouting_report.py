@@ -223,8 +223,10 @@ def build_scouting_report(data: Dict[str, Any], team_report: Optional[Dict[str, 
     findings: List[Callable[[], List[Dict[str, str]]]] = [
         lambda: _scorer_key(data, cfg), lambda: _clutch_key(data, cfg), lambda: _quarter_keys(data, cfg), lambda: _timeout_key(data, cfg),
         lambda: _zone_keys(zones, cfg), lambda: _alert_keys(data, cfg)]
-    keys = [k for f in findings for k in f()][:MAX_KEYS]
     low = n < cfg.low_sample_games
+    keys = [k for f in findings for k in f()][:MAX_KEYS]
+    if low:      # a finding from two games is a hint, and it says so
+        keys = [{**k, "text": f"{k['text']} (solo {n} partidos)"} for k in keys]
     notices = [f"Muestra pequeña: solo {n} partidos con jugada a jugada detrás de estos datos; son orientativos."] if low else []
     return {
         "team": data["team"], "sample_games": n, "low_sample": low, "notices": notices,

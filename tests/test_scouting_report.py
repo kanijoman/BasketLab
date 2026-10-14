@@ -147,3 +147,10 @@ def test_every_alert_the_engine_can_raise_about_a_team_has_its_words():
     ids |= set(re.findall(r'\bid="([a-z0-9_]+)"', Path("src/live_core/advice.py").read_text(encoding="utf-8")))
     missing = sorted(i for i in ids if _about_the_team(i) and i not in ALERTS)
     assert not missing, f"alert ids without a label in scouting_report.ALERTS: {missing}"
+
+
+def test_with_a_small_sample_every_finding_carries_how_few_games_are_behind_it():
+    small = build_scouting_report(collected(sample_games=2, games=collected()["games"][:2]))
+    assert small["keys"] and all(k["text"].endswith("(solo 2 partidos)") for k in small["keys"])
+    assert all("solo" not in k["text"].split("(")[-1] for k in build_scouting_report(collected())["keys"])
+    assert all("(solo 2 partidos)" in p["text"] for p in small["plan"]["exploit"] + small["plan"]["neutralize"] if p["source"] == "motor")
