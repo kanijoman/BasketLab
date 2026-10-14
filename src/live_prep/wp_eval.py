@@ -49,8 +49,8 @@ def _game_samples(game: Dict[str, Any], index: int, acc: SeasonAccumulator, ids:
     if not sides:
         return []
     kept, last = _cuts(game, cut_s)
-    if last is None:
-        return []
+    if last is None or not any(last["score"].values()):
+        return []     # nothing replayed, or no points read (an old text format): any forecast would be meaningless
     out = []
     for own, rival in sides:
         baselines = acc.to_package(collection, "", own, rival, None, _FIXED_DATE).baselines

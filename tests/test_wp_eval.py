@@ -90,3 +90,47 @@ def test_cli_needs_enough_earlier_games(tmp_path, feb_game_doc, capsys):
     out = tmp_path / "r.md"
     assert main(["--games-dir", str(tmp_path), "--min-prior-games", "0", "--out", str(out)]) == 0
     assert "Calibración de la probabilidad de victoria" in out.read_text(encoding="utf-8")
+
+
+def test_cli_pools_several_season_folders_without_mixing_their_priors(tmp_path, feb_game_doc, capsys):
+    """#301: each folder is a season (its own accumulator); the samples of all of them are scored together."""
+    import json
+
+    from src.live_prep.wp_cli import main
+
+    for season in ("2024", "2025"):
+        (tmp_path / season).mkdir()
+        (tmp_path / season / "g.json").write_text(json.dumps(feb_game_doc), encoding="utf-8")
+    assert main(["--games-dir", str(tmp_path / "2024"), "--games-dir", str(tmp_path / "2025"), "--min-prior-games", "0"]) == 0
+    one = capsys.readouterr().out.split(" cortes de ")[0].split()[-1]
+    assert main(["--games-dir", str(tmp_path / "2025"), "--min-prior-games", "0"]) == 0
+    single = capsys.readouterr().out.split(" cortes de ")[0].split()[-1]
+    assert int(one) == 2 * int(single)
+
+
+def test_a_held_out_season_checks_the_parameters_tuned_on_the_others(tmp_path, feb_game_doc, capsys):
+    """#301: ``--validate-dir`` scores the default and the best parameters of the grid on a season that was not used to tune."""
+    import json
+
+    from src.live_prep.wp_cli import main
+
+    for season in ("2024", "2025"):
+        (tmp_path / season).mkdir()
+        (tmp_path / season / "g.json").write_text(json.dumps(feb_game_doc), encoding="utf-8")
+    out = tmp_path / "r.md"
+    assert main(["--games-dir", str(tmp_path / "2024"), "--validate-dir", str(tmp_path / "2025"),
+                 "--min-prior-games", "0", "--out", str(out)]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert "## Validación en una temporada aparte" in text
+    assert "Parámetros por defecto" in text and "Parámetros ajustados" in text and "wp_sigma" in text
+
+
+def test_a_game_the_engine_cannot_score_is_left_out(feb_game_doc):
+    """Old seasons write the points in another way (``(13 Pts)``): the engine reads 0-0 and every forecast would be a lie."""
+    import copy
+
+    unreadable = copy.deepcopy(feb_game_doc)
+    lines = unreadable["PLAYBYPLAY"]["LINES"]
+    unreadable["PLAYBYPLAY"]["LINES"] = [l for l in lines if "ANOTADO" not in (l.get("text") or "").upper()]
+    assert collect_samples([unreadable], cut_s=300, min_prior_games=0) == []
+    assert collect_samples([feb_game_doc], cut_s=300, min_prior_games=0)
