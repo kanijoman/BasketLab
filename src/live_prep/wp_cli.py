@@ -31,11 +31,7 @@ def build_report(compared: Dict[str, Dict[str, Any]], ranked: Sequence[Dict[str,
     for variant in VARIANTS:
         c = compared[variant]
         lines.append(f"| {NAMES[variant]} | {_fmt(c['brier'])} | {_fmt(c['log_loss'])} | {_fmt(c['mae'], 2)} | {_fmt(c['max_gap'], 1)} |")
-    crit = app_criterion(compared)
-    lines += ["", "**Criterio para mostrarla en la app**: mejor que «solo marcador y tiempo» "
-              f"({'sí' if crit['vs_score_time'] else 'no'}), no peor que «solo valor previo» en más de {LOG_LOSS_TOLERANCE} de log loss "
-              f"({'sí' if crit['vs_prior'] else 'no'}) y desvío por decil con al menos {GAP_MIN_CUTS} cortes ≤ {GAP_LIMIT_POINTS:.0f} pts "
-              f"(mayor desvío: {_fmt(crit['gap'], 1)}). **{'Cumplido' if crit['met'] else 'NO cumplido'}.**", "",
+    lines += ["", f"**Criterio para mostrarla en la app**: {_criterion_text(compared)}", "",
               "## Fiabilidad del modelo completo", "",
               "| Decil | n | P media | Frecuencia |", "|---|---|---|---|"]
     lines += [f"| {r['bin'] * 10}-{r['bin'] * 10 + 10} % | {r['n']} | {r['mean_p']:.3f} | {r['freq']:.3f} |" for r in full["reliability"]]
@@ -44,6 +40,14 @@ def build_report(compared: Dict[str, Dict[str, Any]], ranked: Sequence[Dict[str,
     if validation:
         lines += _validation_section(validation)
     return "\n".join(lines) + "\n"
+
+
+def _criterion_text(compared: Dict[str, Dict[str, Any]]) -> str:
+    """The agreed criterion applied to a set of variants, in words."""
+    crit = app_criterion(compared)
+    return (f"mejor que «solo marcador y tiempo» ({'sí' if crit['vs_score_time'] else 'no'}), no peor que «solo valor previo» en más de "
+            f"{LOG_LOSS_TOLERANCE} de log loss ({'sí' if crit['vs_prior'] else 'no'}) y desvío por decil con al menos {GAP_MIN_CUTS} cortes "
+            f"≤ {GAP_LIMIT_POINTS:.0f} pts (mayor desvío: {_fmt(crit['gap'], 1)}). **{'Cumplido' if crit['met'] else 'NO cumplido'}.**")
 
 
 def _validation_section(v: Dict[str, Any]) -> List[str]:
@@ -57,6 +61,8 @@ def _validation_section(v: Dict[str, Any]) -> List[str]:
     for variant in ("prior_only", "score_time"):
         c = v["default"][variant]
         lines.append(f"| {NAMES[variant]} | {_fmt(c['brier'])} | {_fmt(c['log_loss'])} | {_fmt(c['mae'], 2)} | {_fmt(c['max_gap'], 1)} |")
+    lines += ["", f"**Criterio en la validación** (parámetros por defecto): {_criterion_text(v['default'])}",
+              f"**Criterio en la validación** (parámetros ajustados): {_criterion_text(v['tuned'])}"]
     return lines
 
 

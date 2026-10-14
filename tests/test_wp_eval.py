@@ -175,3 +175,19 @@ def test_criterion_ignores_deciles_with_fewer_than_400_cuts_and_fails_without_an
     assert app_criterion({"full": _variant(0.370, _bins(9.0, n=399)), **base})["met"] is False   # no decile is trustworthy: not shown
     mixed = _bins(9.0, n=399) + [{"bin": 8, "n": 800, "mean_p": 0.85, "freq": 0.86}]
     assert app_criterion({"full": _variant(0.370, mixed), **base})["gap"] == pytest.approx(1.0)
+
+
+def test_the_validation_section_applies_the_agreed_criterion_to_the_held_out_season(tmp_path, feb_game_doc):
+    """#261: the held-out season is judged with the same criterion (not with the noisy deciles of a handful of cuts)."""
+    import json
+
+    from src.live_prep.wp_cli import main
+
+    for season in ("2024", "2025"):
+        (tmp_path / season).mkdir()
+        (tmp_path / season / "g.json").write_text(json.dumps(feb_game_doc), encoding="utf-8")
+    out = tmp_path / "r.md"
+    assert main(["--games-dir", str(tmp_path / "2024"), "--validate-dir", str(tmp_path / "2025"),
+                 "--min-prior-games", "0", "--out", str(out)]) == 0
+    section = out.read_text(encoding="utf-8").split("## Validación en una temporada aparte")[1]
+    assert "Criterio en la validación" in section and ("Cumplido" in section or "NO cumplido" in section)

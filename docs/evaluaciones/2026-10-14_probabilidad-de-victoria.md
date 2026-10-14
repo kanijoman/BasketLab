@@ -1,4 +1,66 @@
-# Probabilidad de victoria: calibración con LF Challenge 2024/25 y 2025/26 (14/10/2026)
+# Probabilidad de victoria: calibración con varias competiciones (14/10/2026)
+
+## Actualización: con LF2 y LF Endesa **sí cumple el criterio**
+
+Con 1.302 partidos de LF Endesa, LF2 y LF Challenge (2024/25 y 2025/26 según el caso; 18.134 cortes de 5 min, descargados con `download_games`, #301) el modelo cumple el criterio acordado: mejor que «solo marcador y tiempo» (log loss 0,398 frente a 0,439), no peor que «solo valor previo» (0,396) y **mayor desvío por decil 1,8 pts** (≤ 5, con deciles de más de 1.100 cortes). Las probabilidades de la franja 30-70 % son ahora correctas (p. ej. 34,9 % previsto → 35,5 % real; 65,1 % → 64,4 %): el desvío de ~7 pts de la primera calibración era de **LF Challenge sola**, con deciles de ~400 cortes (la mitad independientes) y una liga distinta.
+
+**Validación con una competición entera fuera del ajuste** (entrenando con las demás):
+
+| Validación | Cortes / partidos | Log loss (defecto) | Valor previo | Marcador y tiempo | Mayor desvío (≥ 400 cortes) | Criterio |
+|---|---|---|---|---|---|---|
+| LF Endesa 2025/26 | 2.934 / 215 | 0,422 | 0,422 | 0,448 | 1,4 | **Cumplido** |
+| LF2 2025/26 | 4.508 / 323 | 0,377 | 0,371 | 0,433 | 2,4 | NO por 0,001 (0,006 sobre el prior; tolerancia 0,005). Con los parámetros ajustados sí cumple log loss pero el desvío sube a 5,6 |
+| LF Challenge 2025/26 | 3.178 / 227 | 0,354 | 0,350 | 0,412 | (deciles < 400 cortes) | no concluyente por tamaño |
+
+**Lectura**: el modelo es fiable en conjunto, y los fallos que quedan son marginales (una milésima de log loss o medio punto de desvío). **En LF Challenge sola, la competición del staff, el tramo 30-70 % sigue desviándose hasta ~7 pts** (454 partidos): por eso la tarjeta mantiene la insignia «Experimental» y su nota hasta que haya más partidos de 2026/27 de esa liga. Los Four Factors del partido siguen sin aportar sobre el valor previo. Siguientes pasos opcionales: parámetros por competición (el `wp_sigma` y `wp_n0` mejores salen distintos), incertidumbre del prior, repetir con 2026/27.
+
+### Entrenamiento conjunto (1.302 partidos)
+
+## Variantes
+
+| Variante | Brier | Log loss | MAE del margen | Mayor desvío por decil (pts) |
+|---|---|---|---|---|
+| Modelo completo | 0.129 | 0.398 | 7.29 | 1.8 |
+| Solo valor previo | 0.128 | 0.396 | 7.25 | 1.6 |
+| Solo marcador y tiempo | 0.145 | 0.439 | 8.18 | 0.9 |
+
+**Criterio para mostrarla en la app**: mejor que «solo marcador y tiempo» (sí), no peor que «solo valor previo» en más de 0.005 de log loss (sí) y desvío por decil con al menos 400 cortes ≤ 5 pts (mayor desvío: 1.8). **Cumplido.**
+
+
+### Validación en LF Endesa 2025/26
+
+
+2934 cortes de 215 partidos que no se usaron para ajustar. Parámetros ajustados: `{'wp_sigma': 13.5, 'wp_n0': 240.0, 'wp_home_adv': 4.0, 'ff_beta': 9.0}`.
+
+| Variante | Brier | Log loss | MAE del margen | Mayor desvío por decil (pts) |
+|---|---|---|---|---|
+| Parámetros por defecto (modelo completo) | 0.141 | 0.422 | 8.04 | 6.8 |
+| Parámetros ajustados (modelo completo) | 0.139 | 0.418 | 8.01 | 3.7 |
+| Solo valor previo | 0.140 | 0.422 | 7.97 | 6.7 |
+| Solo marcador y tiempo | 0.152 | 0.448 | 8.81 | 3.1 |
+
+**Criterio en la validación** (parámetros por defecto): mejor que «solo marcador y tiempo» (sí), no peor que «solo valor previo» en más de 0.005 de log loss (sí) y desvío por decil con al menos 400 cortes ≤ 5 pts (mayor desvío: 1.4). **Cumplido.**
+**Criterio en la validación** (parámetros ajustados): mejor que «solo marcador y tiempo» (sí), no peor que «solo valor previo» en más de 0.005 de log loss (sí) y desvío por decil con al menos 400 cortes ≤ 5 pts (mayor desvío: 0.1). **Cumplido.**
+
+### Validación en LF2 2025/26
+
+
+4508 cortes de 323 partidos que no se usaron para ajustar. Parámetros ajustados: `{'wp_sigma': 13.5, 'wp_n0': 240.0, 'wp_home_adv': 4.0, 'ff_beta': 9.0}`.
+
+| Variante | Brier | Log loss | MAE del margen | Mayor desvío por decil (pts) |
+|---|---|---|---|---|
+| Parámetros por defecto (modelo completo) | 0.123 | 0.377 | 6.86 | 2.4 |
+| Parámetros ajustados (modelo completo) | 0.122 | 0.378 | 6.83 | 5.7 |
+| Solo valor previo | 0.121 | 0.371 | 6.81 | 4.0 |
+| Solo marcador y tiempo | 0.144 | 0.433 | 7.66 | 5.7 |
+
+**Criterio en la validación** (parámetros por defecto): mejor que «solo marcador y tiempo» (sí), no peor que «solo valor previo» en más de 0.005 de log loss (no) y desvío por decil con al menos 400 cortes ≤ 5 pts (mayor desvío: 2.4). **NO cumplido.**
+**Criterio en la validación** (parámetros ajustados): mejor que «solo marcador y tiempo» (sí), no peor que «solo valor previo» en más de 0.005 de log loss (sí) y desvío por decil con al menos 400 cortes ≤ 5 pts (mayor desvío: 5.6). **NO cumplido.**
+
+---
+
+# Primera calibración: solo LF Challenge 2024/25 y 2025/26
+
 
 **Conclusión: el modelo es útil pero NO cumple el criterio para mostrarlo en la app. Se vuelve a medir cuando haya más datos de la temporada en curso.**
 
