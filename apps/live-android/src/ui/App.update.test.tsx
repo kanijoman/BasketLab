@@ -44,6 +44,9 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ v: 1, packages: [] }) }))
 })
 
+/** The About panel is in its own tab (issue #224). */
+const openAbout = () => fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
+
 const mount = (d: AppUpdateDeps, extra: object = {}) =>
   render(<App engine={engine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} appUpdate={d} {...extra} />)
 
@@ -61,6 +64,7 @@ describe('update notice', () => {
   it('says nothing when the installed version is the latest', async () => {
     mount(deps({ getInstalled: async () => ({ name: '0.3.0', build: 52, builtAt: null, native: true }) }))
     await screen.findByText('EQUIPO PROPIO')
+    openAbout()
     await waitFor(() => expect(screen.getByText(/tienes la última versión/i)).toBeTruthy())
     expect(screen.queryByRole('status', { name: /actualización/i })).toBeNull()
   })
@@ -68,6 +72,7 @@ describe('update notice', () => {
   it('offline it does not complain: no notice and no error screen', async () => {
     mount(deps({ fetchJson: vi.fn().mockRejectedValue(new Error('offline')) }))
     await screen.findByText('EQUIPO PROPIO')
+    openAbout()
     await waitFor(() => expect(screen.getByRole('button', { name: /buscar actualización/i })).toBeTruthy())
     expect(screen.queryByRole('status', { name: /actualización/i })).toBeNull()
   })
@@ -76,6 +81,7 @@ describe('update notice', () => {
     const d = deps({ getInstalled: async () => ({ name: 'dev', build: null, builtAt: null, native: false }) })
     mount(d)
     await screen.findByText('EQUIPO PROPIO')
+    openAbout()
     await waitFor(() => expect(screen.getByText(/versión de desarrollo/i)).toBeTruthy())
     expect(d.fetchJson).not.toHaveBeenCalled()
   })
@@ -83,6 +89,8 @@ describe('update notice', () => {
   it('the About panel shows the version and the button checks again on demand', async () => {
     const d = deps({ getInstalled: async () => ({ name: '0.3.0', build: 52, builtAt: null, native: true }) })
     mount(d)
+    await screen.findByText('EQUIPO PROPIO')
+    openAbout()
     await screen.findByText(/BasketLab Live 0\.3\.0/)
     expect(d.fetchJson).toHaveBeenCalledTimes(1)                      // on opening
     fireEvent.click(screen.getByRole('button', { name: /buscar actualización/i }))

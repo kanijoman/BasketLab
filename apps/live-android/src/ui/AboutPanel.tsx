@@ -3,12 +3,16 @@ import { useState } from 'react'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
+export const REPO_URL = 'https://github.com/kanijoman/BasketLab'
+export const RELEASES_URL = `${REPO_URL}/releases`
+
 interface DiagnosticsInput {
   version: AppVersion | null
   userAgent: string
   packageId: string | null
   schemaVersion: number | null
   feed: string | null
+  engineVersion?: string | null
 }
 
 /** Plain text with what is needed to report a problem; nothing secret (no package contents, no passphrase). */
@@ -17,6 +21,7 @@ export function buildDiagnostics(d: DiagnosticsInput): string {
   return [
     v ? `BasketLab Live ${v.name}${v.build !== null ? ` (build ${v.build})` : ''}` : 'BasketLab Live (versión desconocida)',
     `Compilada: ${v?.builtAt ?? 'desconocido'}`,
+    `Motor: ${d.engineVersion ?? 'desconocido'}`,
     `Dispositivo: ${d.userAgent}`,
     d.packageId ? `Paquete: ${d.packageId} (esquema de paquete ${d.schemaVersion ?? '?'})` : 'Paquete: sin paquete',
     `Conexión: ${d.feed ?? 'sin conexión'}`,
@@ -33,7 +38,15 @@ export function UpdateBanner({ latest, onOpen }: { latest: LatestInfo; onOpen: (
   )
 }
 
+/** One discreet line with the versions, always at hand in the match screen. */
+export function VersionFooter({ version, engineVersion }: { version: AppVersion | null; engineVersion: string | null }) {
+  const app = version && version.name !== 'dev' ? version.name : 'desarrollo'
+  return <p className="version-footer">BasketLab Live {app}{engineVersion ? ` · motor ${engineVersion}` : ''}</p>
+}
+
 interface Props {
+  engineVersion?: string | null
+  schemaVersion?: number | null
   version: AppVersion | null
   update: UpdateResult | null
   checking: boolean
@@ -57,7 +70,7 @@ function UpdateStatus({ update, onOpen }: { update: UpdateResult | null; onOpen:
   )
 }
 
-export default function AboutPanel({ version, update, checking, onCheck, onOpen, diagnostics }: Props) {
+export default function AboutPanel({ engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
 
@@ -78,6 +91,11 @@ export default function AboutPanel({ version, update, checking, onCheck, onOpen,
         {dev ? 'BasketLab Live · versión de desarrollo' : `BasketLab Live ${version!.name}${version!.build !== null ? ` · build ${version!.build}` : ''}`}
       </p>
       {version?.builtAt && <p className="detail">Compilada el {version.builtAt.slice(0, 10)}</p>}
+      {(engineVersion || schemaVersion) && (
+        <p className="detail">
+          {[engineVersion && `Motor ${engineVersion}`, schemaVersion && `esquema de paquete ${schemaVersion}`].filter(Boolean).join(' · ')}
+        </p>
+      )}
       <UpdateStatus update={update} onOpen={onOpen} />
       <div className="about-actions">
         {update?.status !== 'unsupported' && version?.native && (
@@ -86,6 +104,8 @@ export default function AboutPanel({ version, update, checking, onCheck, onOpen,
           </button>
         )}
         <button type="button" className="secondary" onClick={() => void copy()}>Copiar diagnóstico</button>
+        <button type="button" className="secondary" onClick={() => onOpen(REPO_URL)}>Repositorio</button>
+        <button type="button" className="secondary" onClick={() => onOpen(RELEASES_URL)}>Notas de la versión</button>
       </div>
       {note && <p role={note.error ? 'alert' : 'status'} className={note.error ? 'status error' : 'detail'}>{note.text}</p>}
     </section>

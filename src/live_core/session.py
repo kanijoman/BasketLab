@@ -17,6 +17,7 @@ from .engine import LiveEngine
 from .events import parse_line
 from .package import PreparationPackage
 from .replay import truncate_doc
+from .version import engine_version
 from .recorded_feed import RecordedFeed
 from .vectors import to_jsonable, unwrap_extended_json
 
@@ -38,6 +39,7 @@ class LiveSession:
             "collection": p.collection, "season": p.season, "team": p.team, "rival": p.rival,
             # who plays at home in the match the package was prepared for (None: the first document will say)
             "home_id": ((p.competition_meta or {}).get("match") or {}).get("home", {}).get("id"),
+            "engine_version": engine_version(),   # for the About screen and the diagnostics (#226)
         }
 
     def update(self, doc: Dict[str, Any]) -> Dict[str, Any]:

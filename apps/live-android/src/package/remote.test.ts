@@ -30,10 +30,12 @@ describe('fetchIndex', () => {
 
   it('reports an HTTP error (branch not published yet)', async () => {
     await expect(fetchIndex(reply('Not Found', false, 404))).rejects.toThrow(/404/)
+    await expect(fetchIndex(reply('Not Found', false, 404))).rejects.toThrow(/actualizar la lista/i)  // what to do (#225)
   })
 
   it('reports being offline', async () => {
     await expect(fetchIndex(vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))).rejects.toThrow(/conexión/i)
+    await expect(fetchIndex(vi.fn().mockRejectedValue(new TypeError('x')))).rejects.toThrow(/revisa la conexión/i)  // what to do (#225)
   })
 })
 

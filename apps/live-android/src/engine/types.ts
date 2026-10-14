@@ -8,6 +8,8 @@ export interface TeamRef {
 export interface SessionMeta {
   package_id: string
   schema_version: number
+  /** Short hash of the engine sources that run in the app (see src/live_core/version.py). */
+  engine_version?: string
   created_at: string
   collection: string
   season: string

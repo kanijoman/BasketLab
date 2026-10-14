@@ -40,12 +40,22 @@ body {
 .team-logo { border-radius: 50%; object-fit: contain; background: rgb(var(--text-rgb) / 0.06); }
 .team-logo-initials { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
 
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0; }
-.controls label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+/* Transport bar of the demo (#231): match row, buttons + speed, timeline */
+.transport { display: grid; gap: 10px; margin: 16px 0; }
+.transport-source { display: flex; align-items: center; gap: 10px; }
+.transport-source .demo-source { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; color: var(--muted); font-size: 0.8rem; }
+.transport-source select { width: 100%; min-width: 0; font-size: 1rem; }
+.transport-buttons { display: flex; align-items: center; gap: 8px; }
+.icon-button { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.segmented { display: flex; flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.segment { flex: 1 1 0; min-width: 0; border: 0; border-radius: 0; padding: 0 4px; background: var(--card); color: var(--text); font-variant-numeric: tabular-nums; }
+.segment + .segment { border-left: 1px solid var(--line); }
+.segment.selected { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.timeline { display: flex; align-items: center; gap: 10px; }
+.timeline input[type='range'] { flex: 1 1 auto; min-width: 0; min-height: 44px; accent-color: var(--accent); }
+.timeline-time { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85rem; min-width: 7.5em; text-align: right; }
 /* the match picker has long option labels: it takes its own row and never wider than the screen (phone e2e) */
-.controls .demo-source { flex: 1 1 100%; min-width: 0; }
-.controls .demo-source select { flex: 1 1 auto; min-width: 0; max-width: 100%; }
-.perf { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
+.perf { margin: 0; text-align: right; color: var(--muted); font-size: 0.8rem; }
 
 button, select {
   min-height: 44px; /* touch target */
@@ -98,6 +108,16 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .proposals { margin: 4px 0 0; padding-left: 0; list-style: none; color: var(--text); font-weight: 600; }
 .proposals li { display: flex; align-items: center; gap: 6px; }
 .proposal-icon { flex: none; opacity: 0.8; }
+
+/* Bottom navigation (#224): the screen leaves room for it, and for the gesture bar of the phone */
+.screen.with-tabs { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; background: var(--card); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom); }
+.tab { flex: 1 1 0; min-width: 0; min-height: 56px; border: 0; border-radius: 0; background: transparent; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.75rem; }
+.tab.active { color: var(--accent); font-weight: 700; }
+.notice { margin: 12px 0; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
+.link-button { margin-top: 6px; }
 
 .panel { margin-top: 24px; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .package-import { display: grid; gap: 10px; margin-top: 12px; }
@@ -155,3 +175,8 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .update-available { display: grid; gap: 6px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgb(var(--accent-rgb) / 0.08); }
 .about-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .about-actions button { flex: 1 1 0; min-width: 140px; }
+.version-footer { margin: 24px 0 0; text-align: center; color: var(--muted); font-size: 0.75rem; }
+/* Help hints (#225) */
+.help-hint { display: inline-block; }
+.help-button { width: 36px; min-height: 36px; padding: 0; background: transparent; border: 0; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
+.help-text { margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--card); border: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; }

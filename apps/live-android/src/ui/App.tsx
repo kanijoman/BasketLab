@@ -23,10 +23,11 @@ import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
 import PaceCard from './PaceCard'
 import FormationStatus from './FormationStatus'
-import AboutPanel, { UpdateBanner, buildDiagnostics } from './AboutPanel'
+import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
-import PackagePanel from './PackagePanel'
-import RemotePackages from './RemotePackages'
+import PackagesTab from './PackagesTab'
+import TabBar from './TabBar'
+import { useTab } from './useTab'
 import FeedbackPanel from './FeedbackPanel'
 import { useFeedback } from '../feedback/useFeedback'
 
@@ -71,6 +72,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [feed, setFeed] = useState<RecordingFrame['feed']>('ok')
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
+  const [tab, setTab] = useTab()
   const busy = useRef(false)
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
@@ -215,12 +217,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }, [demo, matches, beginDefault])
 
   const onLoaded = (s: PackageSummary) => { setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
-  const panel = (
-    <>
-      <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={remoteFetcher} />
-      <PackagePanel engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} />
-    </>
-  )
+  const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} />
 
   if (phase.kind === 'loading') return <main className="screen"><p className="status">Cargando motor…</p></main>
   if (phase.kind === 'error') {
@@ -241,9 +238,27 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
   }
-  return (
-    <main className="screen">
-      {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
+  /** The timeline: forward jumps straight there; going back rebuilds the engine from the start (the alerts in between are not replayed). */
+  const seek = async (to: number) => {
+    setPlaying(false)
+    if (to < elapsedRef.current && demo) {
+      const match = matches.find(m => m.code === source)
+      await (match ? beginRecorded(match, demo) : beginDemo(demo))
+    }
+    elapsedRef.current = to
+    setElapsed(to)
+    await step(to)
+  }
+  const homeFirst = (snap?.home_id ?? meta?.home_id) === rival.id
+  const [home, away] = homeFirst ? [rival, own] : [own, rival]
+  const matchTab = (
+    <>
+      {!pkg && (
+        <p className="notice">
+          Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}
+          <button className="secondary link-button" onClick={() => setTab('paquetes')}>Ir a Paquetes</button>
+        </p>
+      )}
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
@@ -259,8 +274,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           <DemoControls
             source={source} sources={sources} onSource={pickSource}
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
-            speed={speed} onSpeed={setSpeed} onRestart={() => pickSource(source)}
-            ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null}
+            speed={speed} onSpeed={setSpeed} onRestart={() => pickSource(source)} onSeek={to => void seek(to)}
+            ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null} home={home} away={away}
           />
           {notice && <p role="alert" className="status error">{notice}</p>}
 
@@ -279,11 +294,22 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
         <FeedbackPanel records={feedback.records} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
       )}
 
-      {panel}
-
-      <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
-        onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
-          packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind })} />
+      <VersionFooter version={update.installed} engineVersion={meta?.engine_version ?? null} />
+    </>
+  )
+  const aboutTab = (
+    <AboutPanel version={update.installed} update={update.result} checking={update.checking} onCheck={update.checkNow}
+      onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
+        packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind,
+        engineVersion: meta?.engine_version ?? null })} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null} />
+  )
+  return (
+    <main className="screen with-tabs">
+      {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === 'partido' ? matchTab : tab === 'paquetes' ? panel : aboutTab}
+      </div>
+      <TabBar active={tab} onChange={setTab} />
     </main>
   )
 }

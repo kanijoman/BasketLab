@@ -31,7 +31,7 @@ export interface PackageIndex {
 /** The part of ``fetch`` that is used (so tests can pass a light fake). */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Pick<Response, 'ok' | 'status' | 'text' | 'json'>>
 
-const OFFLINE = 'Sin conexión con GitHub: se sigue usando el paquete guardado en el dispositivo.'
+const OFFLINE = 'Sin conexión con GitHub: se sigue usando el paquete guardado en el dispositivo. Revisa la conexión y vuelve a intentarlo.'
 
 async function get(url: string, fetcher: Fetcher): Promise<Awaited<ReturnType<Fetcher>>> {
   let res: Awaited<ReturnType<Fetcher>>
@@ -41,7 +41,7 @@ async function get(url: string, fetcher: Fetcher): Promise<Awaited<ReturnType<Fe
   } catch {
     throw new Error(OFFLINE)
   }
-  if (!res.ok) throw new Error(`No se pudo descargar (HTTP ${res.status}). ¿Se ha publicado ya el paquete?`)
+  if (!res.ok) throw new Error(`No se pudo descargar (HTTP ${res.status}). ¿Se ha publicado ya el paquete? Prueba a actualizar la lista en unos minutos.`)
   return res
 }
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import AboutPanel, { UpdateBanner, buildDiagnostics } from './AboutPanel'
+import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics, REPO_URL, RELEASES_URL } from './AboutPanel'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
@@ -59,6 +59,20 @@ describe('AboutPanel (issues #226 and #227)', () => {
     expect((screen.getByRole('button', { name: /buscando/i }) as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('shows the engine and the package schema versions when known', () => {
+    panel({ engineVersion: 'ab12cd34', schemaVersion: 1 })
+    expect(screen.getByText(/motor ab12cd34/i)).toBeTruthy()
+    expect(screen.getByText(/esquema de paquete 1/i)).toBeTruthy()
+  })
+
+  it('opens the repository and the release notes', () => {
+    const p = panel()
+    fireEvent.click(screen.getByRole('button', { name: /repositorio/i }))
+    expect(p.onOpen).toHaveBeenCalledWith(REPO_URL)
+    fireEvent.click(screen.getByRole('button', { name: /notas de la versión/i }))
+    expect(p.onOpen).toHaveBeenCalledWith(RELEASES_URL)
+  })
+
   it('copies the diagnostics for an issue', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { clipboard: { writeText } })
@@ -86,6 +100,18 @@ describe('UpdateBanner', () => {
   })
 })
 
+describe('VersionFooter', () => {
+  it('shows app and engine versions in one discreet line', () => {
+    render(<VersionFooter version={VERSION} engineVersion="ab12cd34" />)
+    expect(screen.getByText(/BasketLab Live 0\.2\.0/).textContent).toMatch(/motor ab12cd34/)
+  })
+
+  it('leaves the engine out until it is known', () => {
+    render(<VersionFooter version={VERSION} engineVersion={null} />)
+    expect(screen.getByText(/BasketLab Live 0\.2\.0/).textContent).not.toMatch(/motor/)
+  })
+})
+
 describe('buildDiagnostics', () => {
   it('has what is needed to report a problem and nothing secret', () => {
     const text = buildDiagnostics({ version: VERSION, userAgent: 'UA/1.0', packageId: 'FEB:1:2026', schemaVersion: 1, feed: 'live' })
@@ -94,6 +120,11 @@ describe('buildDiagnostics', () => {
     expect(text).toContain('FEB:1:2026')
     expect(text).toContain('esquema de paquete 1')
     expect(text).toContain('live')
+  })
+
+  it('includes the engine version', () => {
+    const text = buildDiagnostics({ version: VERSION, userAgent: 'UA', packageId: null, schemaVersion: null, feed: null, engineVersion: 'ab12cd34' })
+    expect(text).toContain('Motor: ab12cd34')
   })
 
   it('copes with nothing loaded yet', () => {

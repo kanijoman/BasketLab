@@ -59,6 +59,6 @@ export async function decryptEnvelope(text: string, passphrase: string): Promise
     )
     return new TextDecoder().decode(plain)
   } catch {
-    throw new PackageDecryptError('No se pudo descifrar: contraseña incorrecta o fichero dañado.')
+    throw new PackageDecryptError('No se pudo descifrar: contraseña incorrecta o fichero dañado. Usa la que fijó quien genera los paquetes.')
   }
 }

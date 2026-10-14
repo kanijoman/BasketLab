@@ -14,4 +14,9 @@ class MemoryStorage implements Storage {
 }
 vi.stubGlobal('localStorage', new MemoryStorage())
 
-afterEach(() => cleanup())
+// what a test stores (the active tab, the staff's answers...) must not leak into the next one
+// (a test may have restored the real, unusable one with unstubAllGlobals: then there is nothing of ours to clear)
+afterEach(() => {
+  cleanup()
+  try { localStorage.clear() } catch { /* not ours */ }
+})

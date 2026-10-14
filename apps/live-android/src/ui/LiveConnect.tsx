@@ -1,6 +1,7 @@
 /** Live mode of the app: connect to FEB for the match of the loaded package and see what the connection is doing. */
 import { useEffect, useState } from 'react'
 import type { FeedState } from '../feed/liveFeed'
+import HelpHint from './HelpHint'
 
 interface Props {
   /** FEB match code the package was prepared for (null: the user types it). */
@@ -62,6 +63,12 @@ export default function LiveConnect({ matchCode, state, running, onStart, onStop
           Código del partido (FEB)
           <input inputMode="numeric" value={typed} onChange={e => setTyped(e.target.value)} placeholder="p. ej. 2524475" />
         </label>
+      )}
+      {!matchCode && (
+        <HelpHint label="Ayuda sobre el código">
+          Es el número que aparece en la dirección del partido en la web de FEB (por ejemplo, 2524475). Los paquetes
+          descargados de la lista ya lo traen y no hace falta escribirlo.
+        </HelpHint>
       )}
       <Status state={state} now={now} />
       {running

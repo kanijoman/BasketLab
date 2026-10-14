@@ -19,6 +19,7 @@ describe('decryptEnvelope (AES-256-GCM, PBKDF2-SHA256)', () => {
   it('rejects a wrong passphrase with a clear message', async () => {
     await expect(decryptEnvelope(fixture, 'otra-clave-distinta')).rejects.toThrow(PackageDecryptError)
     await expect(decryptEnvelope(fixture, 'otra-clave-distinta')).rejects.toThrow(/contraseña/i)
+    await expect(decryptEnvelope(fixture, 'otra-clave-distinta')).rejects.toThrow(/quien genera los paquetes/i)  // what to do (#225)
   })
 
   it('rejects tampered data (GCM authentication)', async () => {
