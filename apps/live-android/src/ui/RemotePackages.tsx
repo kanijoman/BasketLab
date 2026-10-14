@@ -61,7 +61,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
       {entries?.length === 0 && <p className="detail">No hay paquetes publicados todavía.</p>}
       {entries && entries.length > 0 && (
         <>
-          <label>
+          <label className="remote-packages-pass">
             Contraseña de los paquetes publicados
             <input type="password" value={pass} onChange={e => setPass(e.target.value)} autoComplete="off" />
           </label>
