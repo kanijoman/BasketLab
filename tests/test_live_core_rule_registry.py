@@ -13,6 +13,7 @@ from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
 from tests.test_live_core_players import basket as pl_basket, impact as pl_impact, pl_snap, player as pl_player
+from tests.test_live_core_closing import end_of as cl_end_of, finish as cl_finish, pace_snap as cl_pace_snap, pts as cl_pts
 from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_evaluate_snap
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
@@ -23,7 +24,8 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "cold_shooting", "rival_hot_shooting", "free_throw_cold",
                 "scoring_drought", "long_run", "game_flow_windows",
                 "rival_player_form", "own_player_form", "rival_star_bench",
-                "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair")
+                "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
+                "closing_briefing", "period_summary", "advantage_management", "pace_control")
 
 
 def _engine(rules_off=(), **kw):
@@ -34,16 +36,22 @@ def _fouls():
     players = {"p1": _player("Ana", OWN, pf=3), "r1": _player("Rival Uno", RIVAL, pf=3)}
     # both teams scored a minute ago: a game with no scoring at all would (rightly) raise the drought alerts
     log = [[500, team, kind, value, "p1"] for team in (OWN, RIVAL) for kind, value in (("fg2", 1), ("pts", 2))]
-    return snap(period=3, players=players, log=log)
+    return in_play(snap(period=3, players=players, log=log))
 
 
 def _bonus():
     return snap(period=2, fouls_by_period={OWN: {"2": 4}, RIVAL: {"2": 4}})
 
 
+def in_play(snapshot):
+    """The default test snapshot has the clock at 0:00 (the end of a period, when the period summary is said): mid-period here."""
+    snapshot["remaining"] = 300
+    return snapshot
+
+
 def _run():
-    return snap(elapsed=1110, log=[[880, OWN, "fg2", 1, "p1"], [880, OWN, "pts", 2, "p1"],   # our last basket, before the run window
-                               [1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]])
+    return in_play(snap(elapsed=1110, log=[[880, OWN, "fg2", 1, "p1"], [880, OWN, "pts", 2, "p1"],   # our last basket, before the run window
+                               [1000, RIVAL, "pts", 3], [1040, RIVAL, "pts", 2], [1100, RIVAL, "pts", 3]]))
 
 
 def _turnovers():
@@ -97,6 +105,10 @@ SCENARIOS = {
                                                  players={"g1": sa_player("Guard Uno", OWN, pf=4)}), {"key_fouls_close"}, {"baselines": REST_TABLE}),
     "rival_foul_pair": (lambda: snap(elapsed=400, players={"r1": sa_player("Rita", RIVAL, pf=3), "r2": sa_player("Rosa", RIVAL, pf=4)}),
                         {"rival_foul_pair"}, {}),
+    "closing_briefing": (lambda: cl_finish(), {"closing_briefing"}, {}),
+    "period_summary": (lambda: cl_end_of(1, [cl_pts(OWN, 100)]), {"period_summary"}, {}),
+    "advantage_management": (lambda: cl_finish(remaining=280, margin=10), {"advantage_management"}, {}),
+    "pace_control": (lambda: cl_pace_snap(), {"pace_control"}, {"team_baselines": {"pace_own_per_40": 80.0, "pace_rival_per_40": 72.0}}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 

@@ -62,6 +62,17 @@ describe('AlertCard category of the rest rule (issue #273)', () => {
   })
 })
 
+describe('AlertCard category of the period summary (issue #246)', () => {
+  it('shows «Resumen» with its own icon and colour', () => {
+    const alert: Alert = { ...ALERT, key: 'summary:1', id: 'period_summary', severity: 'info', category: 'resumen',
+      message: 'Fin del 1.er cuarto: 18-12 (+6). Claves: Pérdidas: 6 vs 1. Ajustes: Asegurar el balón en la salida de pista.' }
+    render(<ul><AlertCard alert={alert} at="Q1 00:00" /></ul>)
+    const tag = screen.getByText('Resumen').closest('[data-category]') as HTMLElement
+    expect(tag.getAttribute('data-category')).toBe('resumen')
+    expect(tag.querySelector('svg')).toBeTruthy()
+  })
+})
+
 describe('proposal kinds (issue #240)', () => {
   const withProposal = (...proposal: Alert['proposal']): Alert => ({ ...ALERT, proposal })
 

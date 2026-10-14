@@ -14,6 +14,7 @@ RULE_IDS: Tuple[str, ...] = (
     "cold_shooting", "rival_hot_shooting", "free_throw_cold", "scoring_drought", "long_run", "game_flow_windows",
     "rival_player_form", "own_player_form", "rival_star_bench",
     "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
+    "closing_briefing", "period_summary", "advantage_management", "pace_control",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -101,6 +102,26 @@ class RuleConfig:
     timeout_budget_s: int = 240
     timeout_pressure_margin: int = 10
     rival_pair_pf: int = 3
+    # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period. Pace: we lose by
+    # at least this many points while the rival's pace is imposed, and the habitual paces differ by at least this many possessions.
+    advantage_margin: int = 10
+    advantage_remaining_s: int = 300
+    pace_losing_margin: int = 5
+    pace_gap: float = 3.0
+    # Summary of a quarter (the keys, in priority order): turnovers and rival offensive rebounds worse by this much, a rival scorer
+    # with this many points, own free throws / threes / field goals poor with at least this many attempts, rival threes hot, team fouls.
+    summary_tov_diff: int = 3
+    summary_orb_diff: int = 3
+    summary_scorer_pts: int = 8
+    summary_ft_min_att: int = 4
+    summary_3p_min_att: int = 5
+    summary_3p_max_pct: float = 0.25
+    summary_rival_3p_min_pct: float = 0.45
+    summary_fg_min_att: int = 10
+    summary_fg_max_efg: float = 0.35
+    summary_fouls: int = 5
+    # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
+    summary_grace_s: int = 60
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.
