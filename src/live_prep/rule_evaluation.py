@@ -70,12 +70,28 @@ def _alert_row(a: Dict[str, Any], snap: Dict[str, Any], shown: int, ctx: Dict[st
 
 class _Evaluator:
     def __init__(self, configs: Sequence[ConfigSpec], recordings: Dict[str, Any], collection: str, season: str,
-                 team: Optional[str], latency_s: float, poll_s: float, min_prior: int, labels: LabelConfig) -> None:
+                 team: Optional[str], latency_s: float, poll_s: float, min_prior: int, labels: LabelConfig,
+                 roster: Optional[Dict[str, Dict[str, Any]]] = None,
+                 roster_source: Optional[Callable[[str], Optional[Dict[str, Dict[str, Any]]]]] = None) -> None:
         self.configs, self.recordings, self.collection, self.season = configs, recordings, collection, season
         self.team, self.latency_s, self.poll_s, self.min_prior, self.labels = team, latency_s, poll_s, min_prior, labels
         self.acc = SeasonAccumulator()
+        self.roster, self.roster_source = roster, roster_source
+        self.rosters: Dict[str, Dict[str, Dict[str, Any]]] = {}   # team id -> its players, each team asked for at most once
         self.finished: List[Tuple[Actions, Tuple[str, str]]] = []   # every game, for the simulation of the run rule
         self.out = Evaluation(configs=[c.name for c in configs])
+
+    def roster_for(self, *team_ids: str) -> Optional[Dict[str, Dict[str, Any]]]:
+        """The roster rows of these teams (the given table first, then FEB once per team), or None without any (issue #278)."""
+        table: Dict[str, Dict[str, Any]] = {}
+        for tid in dict.fromkeys(team_ids):
+            if tid not in self.rosters:
+                rows = {pid: e for pid, e in (self.roster or {}).items() if str(e.get("team_id")) == tid}
+                if not rows and self.roster_source is not None:
+                    rows = self.roster_source(tid) or {}
+                self.rosters[tid] = rows
+            table.update(self.rosters[tid])
+        return table or None
 
     def _perspectives(self, code: str, ids: List[str]) -> List[Tuple[str, str, int, ConfigSpec, AdviceEngine]]:
         out = []
@@ -83,7 +99,8 @@ class _Evaluator:
             prior = self.acc.played(own)
             if (self.team and own != self.team) or prior < self.min_prior:
                 continue
-            package = self.acc.to_package(self.collection, self.season, own, rival, {"match": {"code": code}}, FIXED_CREATED_AT)
+            package = self.acc.to_package(self.collection, self.season, own, rival, {"match": {"code": code}}, FIXED_CREATED_AT,
+                                          roster=self.roster_for(own, rival))
             for spec in self.configs:
                 configured = dataclasses.replace(package, rule_config={**package.rule_config, **spec.overrides})
                 out.append((own, rival, prior, spec, AdviceEngine.from_package(configured)))
@@ -133,17 +150,23 @@ def evaluate(
     min_prior_games: int = 0,
     label_cfg: Optional[LabelConfig] = None,
     progress: Optional[Callable[[int], None]] = None,
+    roster: Optional[Dict[str, Dict[str, Any]]] = None,
+    roster_source: Optional[Callable[[str], Optional[Dict[str, Dict[str, Any]]]]] = None,
 ) -> Evaluation:
     """Replay ``games`` (in date order; ``eval_source`` gives them so) and return the alerts, labels and coach data.
 
     ``configs``: the first one is the baseline. ``team``: evaluate only that team's side (everybody still feeds the
     season). ``min_prior_games``: skip sides whose team has fewer earlier games (its baselines would be noise).
+
+    ``roster`` (a table player id -> {team_id, formacion, ...}) and/or ``roster_source`` (team id -> its roster, asked at most once per
+    team) give the packages the FEB roster, without which the illegal-lineup rule is off (issue #278). It is the CURRENT roster: an
+    approximation that is valid for the season in progress.
     """
     configs = list(configs or [ConfigSpec("base")])
     for spec in configs:
         validate_config(spec)
     recordings = dict(recordings or {})
-    run = _Evaluator(configs, recordings, collection, season, team, latency_s, poll_s, min_prior_games, label_cfg or LabelConfig())
+    run = _Evaluator(configs, recordings, collection, season, team, latency_s, poll_s, min_prior_games, label_cfg or LabelConfig(), roster, roster_source)
     source = merge_recordings(games, recordings) if recordings else games
     done = 0
     for group in same_start_groups(source):
@@ -156,7 +179,10 @@ def evaluate(
             progress(done)
     run.out.simulation = simulate_run_rule([a for a, _ in run.finished], [p for _, p in run.finished], RUN_SPECS)
     run.out.params = {"latency_s": latency_s, "poll_s": poll_s, "min_prior_games": min_prior_games, "team": team,
-                      "follow_s": run.labels.follow_s, "games": done}
+                      "follow_s": run.labels.follow_s, "games": done,
+                      "roster": ({"players": sum(len(r) for r in run.rosters.values()), "teams": sum(1 for r in run.rosters.values() if r)}
+                                 if roster or roster_source else None),
+                      "formation_min": {c.name: c.overrides.get("formation_min_on_court", RuleConfig().formation_min_on_court) for c in configs}}
     return run.out
 
 
