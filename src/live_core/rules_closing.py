@@ -1,9 +1,12 @@
 """The finish and the pace (issue #246): C1, C4 and G1.
 
-* C1 ``closing_briefing``: a close finish (``game_context``: 4:00 or less, margin within 6, or overtime) gets ONE briefing per
+* C1 ``closing_briefing`` (with the clutch players of K2, issue #275): a close finish (``game_context``: 4:00 or less, margin within 6, or overtime) gets ONE briefing per
   period: the timeouts that are left (own and rival), the team fouls of the period, our poor free throws of the day (T5 is
   integrated here) and, with the package's free-throw percentages (``ft_pct`` shrunk to the league mean), the best free-throw
-  shooters on court and who to foul. Without that data it leaves those parts out.
+  shooters on court and who to foul. K2: the two rival players on court who take most responsibility in a close finish (labelled
+  "eficaz" only if their shrunk accuracy is above their season's) and the own players to look for (the effective ones first). The
+  clutch data comes from the package (``clutch``, see ``clutch.py``); with a small sample it says so (4th-period usage). Without
+  any of that data it leaves those parts out.
 * C4 ``advantage_management``: ``advantage_margin`` points up with less than ``advantage_remaining_s`` left of the 4th period:
   spend clock, do not concede threes, avoid fouls.
 * G1 ``pace_control``: the game is being played at the pace of the rival (closer to its habitual one than to ours, habits that
@@ -39,6 +42,23 @@ def _ranked(snap: Dict[str, Any], team_id: str, table: Dict[str, Dict[str, Any]]
              if p["team_id"] == team_id and p["on_court"] and (table.get(pid) or {}).get("ft_pct") is not None]
     found.sort(key=lambda t: (-t[0], t[1]) if best else (t[0], t[1]))
     return [{"player_id": pid, "name": name, "ft_pct": round(100 * pct)} for pct, pid, name in found[:2]]
+
+
+def _clutch_players(snap: Dict[str, Any], team_id: Optional[str], table: Dict[str, Dict[str, Any]], effective_first: bool) -> List[Dict[str, Any]]:
+    """The two players of ``team_id`` on court with most clutch responsibility in the package (the effective ones first if asked)."""
+    found = []
+    for pid, p in snap["players"].items():
+        data = (table.get(pid) or {}).get("clutch") or {}
+        if p["team_id"] == team_id and p["on_court"] and data.get("basis") in ("clutch", "q4"):
+            found.append((bool(data["effective"]) if effective_first else False, data["usage"], pid, p["name"].strip(), data))
+    found.sort(key=lambda t: (-t[0], -t[1], t[2]))
+    return [{"player_id": pid, "name": name, "usage": usage, "effective": bool(d["effective"]), "sample": d["sample"]}
+            for _, usage, pid, name, d in found[:2]]
+
+
+def _clutch_label(entry: Dict[str, Any]) -> str:
+    tags = (["eficaz"] if entry["effective"] else []) + (["muestra pequeña"] if entry["sample"] == "small" else [])
+    return entry["name"] + (f" ({', '.join(tags)})" if tags else "")
 
 
 def _own_free_throws(snap: Dict[str, Any], ctx: RuleContext) -> Optional[str]:
@@ -78,11 +98,19 @@ def closing_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         parts.append("hacer falta a: " + ", ".join(f"{t['name']} ({t['ft_pct']} %)" for t in targets))
         proposal.append(tactic_proposal(f"Hacer falta a {targets[0]['name']} ({targets[0]['ft_pct']} % en tiros libres)",
                                         targets[0]["player_id"], targets[0]["name"]))
+    rival_clutch = _clutch_players(snap, ctx.rival_team_id, ctx.rival_baselines, effective_first=False) if ctx.rival_team_id else []
+    own_clutch = _clutch_players(snap, ctx.own_team_id, ctx.baselines, effective_first=True)
+    if rival_clutch:
+        parts.append("las que más asumen en el cierre: " + ", ".join(_clutch_label(r) for r in rival_clutch))
+        proposal.append(tactic_proposal("Vigilar a " + " y ".join(r["name"] for r in rival_clutch) + " en el cierre"))
+    if own_clutch:
+        parts.append("a quién buscar: " + ", ".join(_clutch_label(o) for o in own_clutch))
+        proposal.append(tactic_proposal("Buscar a " + " y ".join(o["name"] for o in own_clutch) + " en el cierre"))
     return [Advice(
         key=f"closing:{snap['period']}", id="closing_briefing", severity="warning", category="gestion",
         message=f"Cierre igualado ({context['margin']:+d} a {_clock(context['remaining_s'])}): " + "; ".join(parts) + ".",
         evidence={"margin": context["margin"], "own_timeouts": own_left, "rival_timeouts": rival_left, "fouls": fouls,
-                  "shooters": shooters, "foul_targets": targets},
+                  "shooters": shooters, "foul_targets": targets, "rival_clutch": rival_clutch, "own_clutch": own_clutch},
         proposal=proposal)]
 
 

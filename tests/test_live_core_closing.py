@@ -270,3 +270,54 @@ def test_g1_without_the_habitual_paces_it_says_nothing_and_it_is_said_once_per_p
 def test_the_alerts_are_json_serialisable():
     [alert] = by_id(engine().evaluate(finish()), "closing_briefing")
     assert json.loads(json.dumps(alert.proposal)) == alert.proposal
+
+
+# --- K2 (issue #275): the clutch players in the closing briefing ----------------------------------------------------
+
+def clutch(usage, effective=False, basis="clutch", sample="ok"):
+    return {"basis": basis, "sample": sample, "sec": 600, "usage": usage, "effective": effective, "pps": 1.0, "pps_season": 1.0, "ft_pct": 0.7}
+
+
+def with_clutch(table, **by_pid):
+    return {pid: {**entry, **({"clutch": by_pid[pid]} if pid in by_pid else {})} for pid, entry in table.items()}
+
+
+def briefing(own=None, rival=None, players=None):
+    e = engine(baselines=with_clutch(OWN_FT, **(own or {})), rival_baselines=with_clutch(RIVAL_FT, **(rival or {})))
+    [alert] = by_id(e.evaluate(finish(players=players)), "closing_briefing")
+    return alert
+
+
+def test_k2_the_rival_players_with_most_responsibility_are_named_and_labelled_effective_only_if_they_are():
+    alert = briefing(rival={"r2": clutch(16.0, effective=True), "r1": clutch(12.0), "r3": clutch(5.0)})
+    msg = alert.message
+    assert "las que más asumen en el cierre: Rival r2 (eficaz), Rita" in msg and "Rut" not in msg.split("las que más asumen")[1].split(";")[0]
+    assert [r["player_id"] for r in alert.evidence["rival_clutch"]] == ["r2", "r1"]
+    assert any(p["type"] == "tactic" and "Vigilar" in p["message"] and "Rival r2" in p["message"] for p in alert.proposal)
+
+
+def test_k2_without_a_clutch_sample_it_uses_the_fourth_period_and_says_so():
+    alert = briefing(rival={"r1": clutch(14.0, effective=True, basis="q4", sample="small")})
+    assert "Rita (eficaz, muestra pequeña)" in alert.message
+    assert alert.evidence["rival_clutch"][0]["sample"] == "small"
+
+
+def test_k2_whoever_has_no_clutch_data_is_left_out_and_without_data_there_is_no_clutch_part():
+    assert "asumen" not in briefing().message
+    alert = briefing(rival={"r1": {"basis": "none", "sample": "none", "sec": 0}})
+    assert "asumen" not in alert.message
+
+
+def test_k2_it_says_who_to_look_for_in_our_team_the_effective_first():
+    alert = briefing(own={"g1": clutch(10.0, effective=False), "w2": clutch(8.0, effective=True), "b1": clutch(15.0)})
+    assert "a quién buscar: Ala Dos (eficaz), Propia b1" in alert.message
+    assert [o["player_id"] for o in alert.evidence["own_clutch"]] == ["w2", "b1"]
+    assert any(p["type"] == "tactic" and p["message"].startswith("Buscar a Ala Dos") for p in alert.proposal)
+
+
+def test_k2_the_bench_does_not_count_and_the_existing_parts_of_the_briefing_stay():
+    players = lineup()
+    players["r2"]["on_court"] = False
+    alert = briefing(rival={"r2": clutch(20.0, effective=True), "r1": clutch(12.0)}, players=players)
+    assert "Rival r2" not in alert.message.split("asumen")[1].split(";")[0] and "Rita" in alert.message
+    assert "tiempos muertos" in alert.message and "hacer falta a" in alert.message

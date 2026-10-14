@@ -4357,8 +4357,10 @@
         "T2": 0
        },
        "margin": 2,
+       "own_clutch": [],
        "own_timeouts": 3,
        "phase": "close_late",
+       "rival_clutch": [],
        "rival_timeouts": 3,
        "shooters": []
       },
