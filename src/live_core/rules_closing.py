@@ -9,6 +9,9 @@
   any of that data it leaves those parts out.
 * C4 ``advantage_management``: ``advantage_margin`` points up with less than ``advantage_remaining_s`` left of the 4th period:
   spend clock, do not concede threes, avoid fouls.
+* C2 ``comeback_plan`` (issue #253): ``comeback_margin`` (8) or more down in the last ``comeback_left_s`` (10:00) of the game: how many
+  possessions each team has left at the current pace and how many net points per possession the comeback takes, against what we do.
+  Provisional until the win-probability model (epic #261) gives a calibrated projection.
 * G1 ``pace_control``: the game is being played at the pace of the rival (closer to its habitual one than to ours, habits that
   differ by ``pace_gap`` possessions per 40) and we lose by ``pace_losing_margin`` or more: raise the pace if the rival slows the
   game down, lower it if it speeds it up (``PaceModel``).
@@ -26,6 +29,7 @@ from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import timeouts_left
 
 LAST_PERIOD = 4
+GAME_SECONDS = 2400
 
 
 def _clock(seconds: int) -> str:
@@ -153,3 +157,32 @@ def pace_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         evidence={"direction": direction, "current40": current, "habit_own40": own_habit, "habit_rival40": rival_habit, "margin": margin},
         proposal=[tactic_proposal(f"{verb.capitalize()} el ritmo: " + ("correr más, transición rápida" if direction == "up"
                                                                          else "atacar más tiempo y cuidar cada posesión"))])]
+
+
+def comeback_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    cfg, score, rival = ctx.config, snap.get("score") or {}, ctx.rival_team_id
+    if ctx.pace is None or not rival or rival not in score or ctx.own_team_id not in score or snap["period"] != LAST_PERIOD:
+        return []
+    deficit = score[rival] - score[ctx.own_team_id]
+    left = max(0, snap["remaining"])
+    if deficit < cfg.comeback_margin or not 0 < left <= cfg.comeback_left_s:
+        return []
+    pace = ctx.pace.evaluate(snap)
+    if not pace or not pace["reliable"] or not pace["possessions"]:
+        return []
+    possessions_left = pace["current40"] * left / GAME_SECONDS
+    if possessions_left <= 0:
+        return []
+    need, now = deficit / possessions_left, -deficit / pace["possessions"]
+    if need > cfg.comeback_max_need:
+        return []            # an impossible comeback is not advice
+    hard = need >= cfg.comeback_hard
+    advice = ("Hace falta ganar posesiones extra: presión, rebote ofensivo y faltas tácticas." if hard
+              else "Es posible a ritmo normal: ganar cada posesión y no perder balones.")
+    return [Advice(
+        key=f"comeback:{left // 240}", id="comeback_plan", severity="info", category="gestion",
+        message=(f"Remontada: perdemos por {deficit} con unas {possessions_left:.0f} posesiones por equipo: hace falta ganar "
+                 f"{need:+.2f} netos por posesión (hoy {now:+.2f}). {advice}"),
+        evidence={"deficit": deficit, "possessions_left": round(possessions_left, 1), "need": round(need, 3), "now": round(now, 3)},
+        proposal=[tactic_proposal("Buscar posesiones extra: presión, rebote ofensivo y faltas tácticas" if hard
+                                  else "Mantener el ritmo y no perder balones")])]

@@ -31,7 +31,7 @@ Todas con acción propuesta y horizonte mayor que la latencia del feed (mediana 
 | Alineación y minutos (#271 a #275) | L1 plantilla de FEB en el paquete (**hecho**, #276) · L2 alineación indebida: mínimo de jugadoras de formación en pista, alerta crítica y restricción del recomendador (**integrada**, #272) · M1 descanso de las importantes en partido decidido (**hecho**, #273) · K1 analítica clutch por jugadora (**hecho**, #274) · K2 clutch en el briefing de cierre (**hecho**, #275) |
 | Base | tiempos muertos FIBA y contexto del partido (#239, **hecho**: R7 y la base de F2 y C1), propuestas de tiempo muerto y táctica (#240), registro de eventos y ventanas (#237) |
 
-**Aplazadas** (prioridad C): P5 (#249), P6 (#250), J8 (#251), G4 (#252), C2 (#253). **Descartadas** por latencia o falta de datos: 2×1, última posesión, falta intencionada en el último minuto, «falta que dar», detectar la defensa del rival, emparejamientos, quién provoca la falta (la línea de falta solo identifica al infractor) y contraataque.
+**Aplazadas** (prioridad C): P5 (#249), P6 (#250), J8 (#251), G4 (#252), C2 (#253): **integradas** al cerrar la épica. **Descartadas** por latencia o falta de datos: 2×1, última posesión, falta intencionada en el último minuto, «falta que dar», detectar la defensa del rival, emparejamientos, quién provoca la falta (la línea de falta solo identifica al infractor) y contraataque.
 
 ## Criterios para promover una regla a «validada»
 1. Evidencia en **≥ 5 partidos de León** grabados (o ≥ 20 de la competición si es comportamiento de entrenadores), con resultados variados (no solo derrotas).

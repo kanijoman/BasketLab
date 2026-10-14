@@ -3,6 +3,10 @@
 * ``scoring_drought``: R2 own team without scoring (timeout or change of system, with the diagnosis of the window) and
   the rival without scoring while we do (a window to run); P2 no field goal for a while although free throws went in.
 * ``long_run``: P3 a long run against (net -10 in 5 min: timeout) and P4 a run for us (do not break the lineup).
+* ``after_timeout_scoring`` (P5, issue #249): the rival scores right after coming out of its timeouts (at least ``timeout_score_n`` of
+  its ``timeout_score_min`` or more timeouts, inside ``timeout_score_window_s``): prepare a special defence of the inbound pass.
+* ``static_offense`` (G4, issue #252): ``static_min_fgm`` or more made baskets with an assist share of ``static_ast_share`` or less:
+  move the ball. Said once per half.
 * ``game_flow_windows``: G2 rival offensive rebounds, G3 rival points right after our turnovers, G5 rival turnovers,
   all in the last three minutes.
 
@@ -17,7 +21,7 @@ from typing import Any, Dict, List
 from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import field_goal_gap, points_after_turnovers, run_causes, scoring_gap, window_stats
+from .windows import field_goal_gap, points_after_turnovers, run_causes, scoring_gap, scores_after_timeouts, window_stats
 
 
 def _clock(seconds: int) -> str:
@@ -121,3 +125,29 @@ def window_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             evidence={"turnovers": theirs["tov"], "window_s": cfg.flow_window_s, "team_id": rival},
             proposal=[tactic_proposal("Mantener la presión defensiva")]))
     return out
+
+
+def after_timeout_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    rival, cfg = ctx.rival_team_id, ctx.config
+    if not rival:
+        return []
+    timeouts, followed = scores_after_timeouts(snap.get("log", []), rival, cfg.timeout_score_window_s, snap["elapsed"])
+    if timeouts < cfg.timeout_score_min or followed < cfg.timeout_score_n:
+        return []
+    return [Advice(
+        key=f"after_timeout:{timeouts}", id="rival_scores_after_timeout", severity="info", category="rival",
+        message=f"El rival anota al salir de sus tiempos muertos ({followed} de {timeouts}): preparar la defensa del saque.",
+        evidence={"timeouts": timeouts, "scored": followed, "window_s": cfg.timeout_score_window_s, "team_id": rival},
+        proposal=[tactic_proposal("Defensa especial del saque tras el tiempo muerto del rival")])]
+
+
+def static_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    stats = (snap["teams"].get(ctx.own_team_id) or {}).get("stats") or {}
+    fgm, ast, cfg = stats.get("fg2m", 0) + stats.get("fg3m", 0), stats.get("ast", 0), ctx.config
+    if fgm < cfg.static_min_fgm or ast / fgm > cfg.static_ast_share:
+        return []
+    return [Advice(
+        key=f"static:{1 if snap['period'] <= 2 else 2}", id="static_offense", severity="info", category="four_factors",
+        message=f"Juego estático: {ast} asistencias en {fgm} canastas ({round(100 * ast / fgm)} %). Mover el balón.",
+        evidence={"ast": ast, "fgm": fgm, "share": round(ast / fgm, 3)},
+        proposal=[tactic_proposal("Mover el balón: un pase más antes de tirar")])]

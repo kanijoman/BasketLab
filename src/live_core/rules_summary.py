@@ -3,6 +3,10 @@
 At the end of the 1st, 2nd (halftime: the first half) and 3rd periods (``remaining == 0``) one alert of category ``resumen`` says
 the score of the period, up to three keys and one or two adjustments. The keys are the first three that apply of a fixed list
 (priority order below), so the summary is deterministic and a quiet period says so. Thresholds are provisional, in ``RuleConfig``.
+
+P6 (``period_edges``, issue #250) is delivered in the same pause: when the first ``edge_window_s`` (2:00) of the quarters played, or their
+last ``edge_window_s``, add up to ``edge_net`` (6) points against or worse, with at least ``edge_min_periods`` (2) negative quarters,
+it says so and asks to prepare the way out of the next quarter. Said once per kind and pause.
 """
 
 from __future__ import annotations
@@ -125,3 +129,37 @@ def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         evidence={"period": period, "own_points": own, "rival_points": rival, "keys": [key for key, _ in found],
                   "adjustments": adjustments},
         proposal=[tactic_proposal(a) for a in adjustments])]
+
+
+def _edge_nets(snap: Dict[str, Any], ctx: RuleContext, through: int, kind: str) -> List[int]:
+    """Net points (own - rival) of the first or last ``edge_window_s`` of each quarter up to ``through``."""
+    log, rival, width = snap.get("log", []), ctx.rival_team_id or "", ctx.config.edge_window_s
+    nets = []
+    for p in range(1, through + 1):
+        start, end = period_start(p), period_start(p) + period_length(p)
+        lo, hi = (start, start + width) if kind == "start" else (end - width, end)
+        nets.append(window_stats(log, ctx.own_team_id, lo, hi)["pts"] - window_stats(log, rival, lo, hi)["pts"])
+    return nets
+
+
+_EDGE_TEXT = {
+    "start": ("Inicios de cuarto", "Preparar la salida del próximo cuarto: quinteto y primera jugada"),
+    "end": ("Cierres de cuarto", "Cuidar los últimos 2:00 de cada cuarto: última posesión y no regalar faltas"),
+}
+
+
+def edges_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
+    period = _period_to_sum_up(snap, ctx.config.summary_grace_s)
+    if period is None or not ctx.rival_team_id:
+        return []
+    cfg, out = ctx.config, []
+    for kind, (label, advice) in _EDGE_TEXT.items():
+        nets = _edge_nets(snap, ctx, period, kind)
+        if len(nets) < cfg.edge_min_periods or sum(1 for n in nets if n < 0) < cfg.edge_min_periods or sum(nets) > -cfg.edge_net:
+            continue
+        out.append(Advice(
+            key=f"edges:{kind}:{period}", id="period_edge_deficit", severity="info", category="resumen",
+            message=f"{label}: {', '.join(f'{n:+d}' for n in nets)} ({sum(nets):+d} acumulado). {advice}.",
+            evidence={"kind": kind, "nets": nets, "total": sum(nets), "window_s": cfg.edge_window_s},
+            proposal=[tactic_proposal(advice)]))
+    return out

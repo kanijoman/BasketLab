@@ -16,6 +16,8 @@ RULE_IDS: Tuple[str, ...] = (
     "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
     "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
+    "after_timeout_scoring", "own_orb_player", "static_offense",
+    "period_edges", "comeback_plan",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -147,6 +149,27 @@ class RuleConfig:
     zone_player_min_makes: int = 3
     zone_player_pps: float = 1.5
     paint_diff: int = 10
+    # P5 (issue #249): a rival basket within this many seconds of its timeout "follows" it; it is said when that happened after at
+    # least ``timeout_score_n`` of at least ``timeout_score_min`` timeouts.
+    timeout_score_window_s: int = 30
+    timeout_score_n: int = 2
+    timeout_score_min: int = 2
+    # J8 (issue #251): an own player with at least this many offensive rebounds and this many above what her minutes give. G4 (issue
+    # #252): at least this many made baskets with an assist share at or below this.
+    orb_player_min: int = 3
+    orb_player_excess: float = 2.0
+    static_min_fgm: int = 10
+    static_ast_share: float = 0.35
+    # P6 (issue #250): the first/last seconds of a quarter that count, the accumulated net points against and the number of negative
+    # quarters needed. C2 (issue #253): the deficit and the game time left (seconds) from which the comeback plan is said, and the net
+    # points per possession from which normal play is not enough.
+    edge_window_s: int = 120
+    edge_net: int = 6
+    edge_min_periods: int = 2
+    comeback_margin: int = 8
+    comeback_left_s: int = 600
+    comeback_hard: float = 0.5
+    comeback_max_need: float = 1.5   # above this many net points per possession the comeback is not a plan: nothing is said
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

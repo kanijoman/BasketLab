@@ -7,7 +7,7 @@ Standard library only. Rules (runs, droughts, shooting streaks, hot players) bui
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from .config import RuleConfig
 
@@ -90,6 +90,22 @@ def points_after_turnovers(log: Iterable[Sequence[Any]], team_id: str, rival_id:
     entries = list(log)
     times = [e[0] for e in entries if e[1] == team_id and e[2] == "tov" and start <= e[0] <= end]
     return sum(e[3] for e in entries if e[1] == rival_id and e[2] == "pts" and any(t <= e[0] <= t + horizon for t in times))
+
+
+def scores_after_timeouts(log: Iterable[Sequence[Any]], team_id: str, window_s: int, now: int) -> Tuple[int, int]:
+    """``(timeouts, followed)`` of a team: its timeouts whose ``window_s`` seconds are over (or already answered), and how many of
+    them were followed by a basket of the same team inside the window (issue #249). A timeout still inside its window and not yet
+    followed by a basket counts for neither."""
+    entries = list(log)
+    timeouts = [e[0] for e in entries if e[1] == team_id and e[2] == "timeout" and e[0] <= now]
+    scores = [e[0] for e in entries if e[1] == team_id and e[2] == "pts"]
+    counted = followed = 0
+    for t in timeouts:
+        scored = any(t <= s <= t + window_s for s in scores)
+        if scored or now >= t + window_s:
+            counted += 1
+            followed += 1 if scored else 0
+    return counted, followed
 
 
 def player_form(log: Iterable[Sequence[Any]], team_id: str, player_id: str, now: int, window_s: int) -> Dict[str, int]:
