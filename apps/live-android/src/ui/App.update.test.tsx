@@ -25,7 +25,7 @@ const engine = (): EngineApi => ({
   replay: vi.fn(), update: vi.fn(async (): Promise<EngineOutput> => ({
     snapshot: { period: 1, remaining: 593, elapsed: 7, score: { '1': 2, '2': 0 } } as never, alerts: [], analysis: {},
   })),
-  loadRecording: vi.fn(), playRecording: vi.fn(), dispose: vi.fn(),
+  loadRecording: vi.fn(), playRecording: vi.fn(), setMode: vi.fn(), dispose: vi.fn(),
 })
 
 function memory() {

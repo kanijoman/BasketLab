@@ -113,6 +113,12 @@ describe('FeedbackStore (issue #235)', () => {
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 
+  it('says in which alert mode the staff followed the match, when it is known (issue #130)', () => {
+    const store = new FeedbackStore('live:2524470', 'pk1', memory())
+    expect(store.export('2026-10-17T21:00:00.000Z', 'conservative')).toMatchObject({ alert_mode: 'conservative' })
+    expect('alert_mode' in store.export('2026-10-17T21:00:00.000Z')).toBe(false)
+  })
+
   it('names the downloaded file after the match', () => {
     expect(feedbackFileName('live:2524470', '2026-10-17T21:00:00.000Z')).toBe('feedback-live-2524470-2026-10-17.json')
   })

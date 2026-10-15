@@ -26,6 +26,14 @@ describe('EngineClient', () => {
     await expect(p).resolves.toMatchObject({ team: { name: 'A' } })
   })
 
+  it('sends the alert mode as its own request (issue #130)', async () => {
+    const { worker, client } = setup()
+    const p = client.setMode('conservative')
+    expect(worker.sent[0]).toMatchObject({ type: 'setMode', payload: 'conservative' })
+    worker.reply({ id: worker.sent[0].id, ok: true, result: {} })
+    await expect(p).resolves.toBeUndefined()
+  })
+
   it('correlates concurrent requests by id, whatever the order of the replies', async () => {
     const { worker, client } = setup()
     const a = client.replay(10)

@@ -23,13 +23,17 @@ from .vectors import to_jsonable, unwrap_extended_json
 
 
 class LiveSession:
-    def __init__(self, package_text: str) -> None:
+    def __init__(self, package_text: str, mode: Optional[str] = None) -> None:
         self.package = PreparationPackage.loads(package_text)
         self._engine = LiveEngine()
-        self._advice = AdviceEngine.from_package(self.package)
+        self._advice = AdviceEngine.from_package(self.package, mode)
         self._replay_doc: Optional[Dict[str, Any]] = None
         self._feed: Optional[RecordedFeed] = None
         self.replay_info: Dict[str, Any] = {}
+
+    def set_mode(self, mode: Optional[str]) -> None:
+        """Change the alert mode (issue #130). The advice engine is rebuilt, so what it remembered (what it already said) starts again."""
+        self._advice = AdviceEngine.from_package(self.package, mode)
 
     @property
     def meta(self) -> Dict[str, Any]:
@@ -107,10 +111,15 @@ def _dump(obj: Any) -> str:
     return json.dumps(obj, sort_keys=True, ensure_ascii=False)
 
 
-def start_json(package_text: str) -> str:
+def start_json(package_text: str, mode: Optional[str] = None) -> str:
     global _SESSION
-    _SESSION = LiveSession(package_text)
+    _SESSION = LiveSession(package_text, mode)
     return _dump(_SESSION.meta)
+
+
+def set_mode_json(mode: Optional[str]) -> str:
+    _session().set_mode(mode)
+    return "{}"
 
 
 def load_replay_json(game_json: str) -> str:

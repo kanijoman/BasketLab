@@ -17,7 +17,7 @@ const engine = (formation: object | undefined): EngineApi => ({
   start: vi.fn().mockResolvedValue(META),
   loadReplay: vi.fn().mockResolvedValue({ duration: 100, status: 'FINISHED' }),
   replay: vi.fn(async (e: number) => out(e, formation)),
-  update: vi.fn(), loadRecording: vi.fn(), playRecording: vi.fn(), dispose: vi.fn(),
+  update: vi.fn(), loadRecording: vi.fn(), playRecording: vi.fn(), setMode: vi.fn(), dispose: vi.fn(),
 })
 const loadDemo = () => Promise.resolve({ package: 'PKG', game: 'GAME' })
 

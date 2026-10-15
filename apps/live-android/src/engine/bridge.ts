@@ -21,7 +21,7 @@ type PyFn = (...args: unknown[]) => string
 
 export class LiveBridge {
   private readonly fn: Record<
-    'start_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json',
+    'start_json' | 'set_mode_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json',
     PyFn
   >
 
@@ -35,6 +35,7 @@ export class LiveBridge {
     const get = (name: string) => py.runPython(`from src.live_core import session as _s\n_s.${name}`) as PyFn
     this.fn = {
       start_json: get('start_json'),
+      set_mode_json: get('set_mode_json'),
       load_replay_json: get('load_replay_json'),
       replay_json: get('replay_json'),
       update_json: get('update_json'),
@@ -43,8 +44,20 @@ export class LiveBridge {
     }
   }
 
+  /** Alert mode (issue #130); null is the default one. It applies to the sessions started after and to the running one. */
+  private mode: string | null = null
+  private started = false
+
+  setMode(mode: string | null): Record<string, never> {
+    this.mode = mode
+    if (this.started) this.fn.set_mode_json(mode)
+    return {}
+  }
+
   start(packageText: string): SessionMeta {
-    return JSON.parse(this.fn.start_json(packageText))
+    const meta = JSON.parse(this.fn.start_json(packageText, this.mode))
+    this.started = true
+    return meta
   }
 
   loadReplay(gameJson: string): ReplayInfo {

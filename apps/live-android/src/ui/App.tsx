@@ -27,6 +27,7 @@ import PaceCard from './PaceCard'
 import Splash from './Splash'
 import WinProbCard from './WinProbCard'
 import { useExperimental } from './useExperimental'
+import { ALERT_MODES, useAlertMode, type AlertMode } from './useAlertMode'
 import { useSessionLog } from './useSessionLog'
 import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
@@ -85,11 +86,18 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [winProbOn, setWinProbOn] = useExperimental('win_prob')
   const winProbHistory = useWinProbHistory(out)
   const session = useSessionLog()
+  // the engine hears the mode before the first package starts (the effects run in this order and the worker serves requests in order)
+  const [alertMode, setAlertMode] = useAlertMode()
+  useEffect(() => { void engine.setMode(alertMode) }, [engine, alertMode])
+  const chooseAlertMode = useCallback((next: AlertMode) => {
+    setAlertMode(next)
+    session.record(`Modo de alertas: ${ALERT_MODES.find(m => m.id === next)?.label ?? next}`)
+  }, [setAlertMode, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
   const busy = useRef(false)
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
   // the staff's answers belong to the match being followed: the package's match, else the demo being replayed
-  const feedback = useFeedback(pkg ? `live:${pkg.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null)
+  const feedback = useFeedback(pkg ? `live:${pkg.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null, undefined, alertMode)
   const { register: registerAlert } = feedback
 
   const reset = useCallback(() => {
@@ -322,7 +330,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       onOpen={update.open} diagnostics={buildDiagnostics({ version: update.installed, userAgent: navigator.userAgent,
         packageId: meta?.package_id ?? null, schemaVersion: meta?.schema_version ?? null, feed: live.state.kind,
         engineVersion: meta?.engine_version ?? null, sessionLog: session.lines })} sessionLog={session.lines} engineVersion={meta?.engine_version ?? null} schemaVersion={meta?.schema_version ?? null}
-      experimental={{ winProb: winProbOn, onWinProb: setWinProbOn }} />
+      experimental={{ winProb: winProbOn, onWinProb: setWinProbOn }} alertMode={{ mode: alertMode, onMode: chooseAlertMode }} />
   )
   return (
     <main className="screen with-tabs">

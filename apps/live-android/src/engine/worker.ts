@@ -22,6 +22,7 @@ const ready = createBridge()
 function run(bridge: LiveBridge, msg: WorkerRequest): unknown {
   switch (msg.type) {
     case 'start': return bridge.start(msg.payload)
+    case 'setMode': return bridge.setMode(msg.payload)
     case 'loadReplay': return bridge.loadReplay(msg.payload)
     case 'replay': return bridge.replay(msg.payload)
     case 'update': return bridge.update(msg.payload)

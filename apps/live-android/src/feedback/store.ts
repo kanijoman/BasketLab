@@ -25,6 +25,8 @@ export interface FeedbackExport {
   exported_at: string
   context: string
   package_id: string | null
+  /** Alert mode the staff had chosen when exporting (issue #130), so the evaluator can compare modes. */
+  alert_mode?: string
   entries: FeedbackRecord[]
 }
 
@@ -98,10 +100,10 @@ export class FeedbackStore {
     }
   }
 
-  export(exportedAt: string): FeedbackExport {
+  export(exportedAt: string, alertMode?: string): FeedbackExport {
     return {
       v: 1, kind: 'basketlab-live-feedback', exported_at: exportedAt,
-      context: this.context, package_id: this.packageId, entries: this.records(),
+      context: this.context, package_id: this.packageId, ...(alertMode ? { alert_mode: alertMode } : {}), entries: this.records(),
     }
   }
 
