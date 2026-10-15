@@ -76,6 +76,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [pkg, setPkg] = useState<PackageSummary | null>(null)
   // reviewing a recorded match while the package stays saved (issue #344); the live view is a package that is not being reviewed
   const [reviewing, setReviewing] = useState(false)
+  /** Moments of the recorded match in which something new appears (issue #345); empty for the sample game. */
+  const [events, setEvents] = useState<number[]>([])
   const liveMode = pkg !== null && !reviewing
   const [out, setOut] = useState<EngineOutput | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
@@ -117,6 +119,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     try {
       setMeta(await engine.start(data.package))
       setInfo(await engine.loadReplay(data.game))
+      setEvents([])
       setSource(SAMPLE)
       setPhase({ kind: 'ready' })
     } catch (e) {
@@ -134,6 +137,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       setMeta(await engine.start(real.package))
       const recording = await engine.loadRecording(real.recording)
       setInfo(recording)
+      setEvents(recording.events ?? [])
       // start at the first event, not in the minutes before the match (issue #346); the timeline still shows the whole recording
       const start = recording.start_at ?? 0
       elapsedRef.current = start
@@ -280,6 +284,18 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
   }
+  /** The next moment with something new: nothing happens in between, so it needs no question and the alerts of the tramo are none (#345). */
+  const nextEvent = events.find(t => t > elapsedRef.current + 0.5)
+  const goToNextEvent = async () => {
+    // a quick second tap waits for the engine to finish the first jump, so the screen never shows a time the engine has not reached
+    while (busy.current) await new Promise<void>(resolve => setTimeout(resolve, 10))
+    const to = events.find(t => t > elapsedRef.current + 0.5)
+    if (to === undefined) return
+    record('Salto al siguiente evento')
+    elapsedRef.current = to
+    setElapsed(to)
+    await step(to)
+  }
   /** The timeline: forward jumps straight there; going back rebuilds the engine from the start (the alerts in between are not replayed). */
   const seek = async (to: number) => {
     setPlaying(false)
@@ -324,6 +340,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
             speed={speed} onSpeed={setSpeed} onRestart={() => { record('Partido reiniciado con el botón Reiniciar'); pickSource(source) }}
             onSeek={to => { record(`Salto en la línea de tiempo a ${mmss(to)}`); void seek(to) }}
+            onNextEvent={events.length ? () => void goToNextEvent() : undefined} hasNextEvent={nextEvent !== undefined}
             ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null} home={home} away={away}
           />
           {notice && <p role="alert" className="status error">{notice}</p>}

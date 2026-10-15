@@ -187,6 +187,40 @@ describe('App', () => {
       expect(screen.getByText('4:30 / 119:15')).toBeTruthy()
     })
 
+    describe('next event (issue #345)', () => {
+      const EVENTS = [270, 285, 300, 1500]
+      const withEvents = (events: number[] | undefined) =>
+        fakeEngine({ loadRecording: vi.fn().mockResolvedValue({ duration: 7155, status: 'GRABACION', match: '2524470', frames: 353, start_at: 270, events }) })
+      const next = () => fireEvent.click(screen.getByRole('button', { name: /siguiente evento/i }))
+
+      it('jumps to the next moment with something new, without a question and without speeding up', async () => {
+        const engine = withEvents(EVENTS)
+        render(<App engine={engine} {...props} />)
+        await screen.findByLabelText(/partido de la demostración/i)
+        expect(screen.getByText('4:30 / 119:15')).toBeTruthy()
+        next()
+        expect(await screen.findByText('4:45 / 119:15')).toBeTruthy()
+        next(); next()
+        expect(await screen.findByText('25:00 / 119:15')).toBeTruthy()           // the long break is one step
+        expect(screen.queryByRole('group', { name: /confirmar/i })).toBeNull()
+        await waitFor(() => expect(engine.playRecording).toHaveBeenLastCalledWith(1500))
+      })
+
+      it('is disabled after the last event', async () => {
+        render(<App engine={withEvents([270, 285])} {...props} />)
+        await screen.findByLabelText(/partido de la demostración/i)
+        next()
+        await screen.findByText('4:45 / 119:15')
+        expect((screen.getByRole('button', { name: /siguiente evento/i }) as HTMLButtonElement).disabled).toBe(true)
+      })
+
+      it('is not there for the sample game nor for a recording that does not list its events', async () => {
+        render(<App engine={withEvents(undefined)} {...props} />)
+        await screen.findByLabelText(/partido de la demostración/i)
+        expect(screen.queryByRole('button', { name: /siguiente evento/i })).toBeNull()
+      })
+    })
+
     it('a recording that says nothing starts at 0:00, as before', async () => {
       render(<App engine={fakeEngine()} {...props} />)
       await screen.findByLabelText(/partido de la demostración/i)
