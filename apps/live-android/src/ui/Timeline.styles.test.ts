@@ -20,3 +20,11 @@ describe('timeline touch behaviour (issue #309)', () => {
     expect(rule('.alerts-older > summary')).toContain('min-height: 44px')
   })
 })
+
+// Issue #322: the e2e of the phone layout wants every button at least 44 px tall; the new switch and counters must not be smaller
+describe('touch size of the controls added in #322', () => {
+  it('the theme switch and the severity counters are at least 44 px', () => {
+    expect(rule('.brand-header .theme-toggle')).toMatch(/height: 44px/)
+    expect(rule('button.count')).toMatch(/min-height: 44px/)
+  })
+})

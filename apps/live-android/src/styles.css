@@ -240,9 +240,9 @@ button:active { transform: scale(0.96); }
 .scoreboard, .panel, .alert, .pace-card, .wp-card { box-shadow: 0 1px 3px rgb(0 0 0 / 0.22); }
 .scoreboard { border-top: 3px solid var(--accent); background: linear-gradient(180deg, rgb(var(--accent-rgb, 232 101 26) / 0.07), var(--card) 55%); }
 /* The counters of the alert list are the severity filter (#322): buttons the size of a thumb, dimmed while that severity is hidden */
-button.count { min-height: 36px; padding: 4px 12px; border-radius: 999px; border-width: 1px; border-style: solid; font-weight: 600; cursor: pointer; }
+button.count { min-height: 44px; padding: 4px 12px; border-radius: 999px; border-width: 1px; border-style: solid; font-weight: 600; cursor: pointer; }
 button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-decoration: line-through; }
 /* Light or dark (#322): the switch in the header and the choice in Acerca de */
-.brand-header .theme-toggle { margin-left: auto; width: 40px; height: 40px; min-height: 40px; }
+.brand-header .theme-toggle { margin-left: auto; width: 44px; height: 44px; min-height: 44px; }
 .appearance { margin: 12px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; gap: 16px; flex-wrap: wrap; }
 .appearance label { display: flex; align-items: center; gap: 6px; min-height: 44px; }
