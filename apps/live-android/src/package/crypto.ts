@@ -52,6 +52,18 @@ function fromBase64(value: string): Uint8Array {
   return Uint8Array.from(bin, c => c.charCodeAt(0))
 }
 
+/** Like `decryptEnvelope`, for a password typed on a phone (issue #337): as typed first and, if that fails, without the spaces or line
+ *  breaks a keyboard leaves at the start or the end. A password that really has them still works: it is tried first as typed. */
+export async function decryptPackage(text: string, passphrase: string): Promise<string> {
+  try {
+    return await decryptEnvelope(text, passphrase)
+  } catch (error) {
+    const trimmed = passphrase.trim()
+    if (error instanceof PackageDecryptError && trimmed !== passphrase && trimmed) return decryptEnvelope(text, trimmed)
+    throw error
+  }
+}
+
 /** Returns the package JSON text (the PreparationPackage envelope with its own checksum). */
 export async function decryptEnvelope(text: string, passphrase: string): Promise<string> {
   const env = parseEnvelope(text)

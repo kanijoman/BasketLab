@@ -68,6 +68,29 @@ describe('RemotePackages', () => {
     expect(container.querySelector('label.remote-packages-pass input[type="password"]')).toBeTruthy()
   })
 
+  it('a wrong password says how many characters were typed, so a missing letter or a stray space shows (issue #337)', async () => {
+    const store = memoryStore()
+    render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
+    download()
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toMatch(/contraseña/i)
+    expect(alert.textContent).toMatch(/escribiste 19 caracteres/i)
+    expect(store.saved).toBeNull()
+  })
+
+  it('has a button to see the password and tolerates the spaces of a keyboard', async () => {
+    const store = memoryStore()
+    const onLoaded = vi.fn()
+    render(<RemotePackages engine={engine()} store={store} onLoaded={onLoaded} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    expect(screen.getByRole('button', { name: /mostrar contraseña/i })).toBeTruthy()
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: ` ${PASS} ` } })
+    download()
+    await waitFor(() => expect(onLoaded).toHaveBeenCalled())
+  })
+
   it('downloads, decrypts, installs and remembers the password', async () => {
     const store = memoryStore()
     const eng = engine()

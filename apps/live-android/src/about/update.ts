@@ -10,7 +10,8 @@ import type { AppVersion } from './appInfo'
 export const LATEST_URL = 'https://github.com/kanijoman/BasketLab/releases/download/live-android-latest/latest.json'
 
 const CACHE_KEY = 'basketlab-live-update'
-const MAX_AGE_MS = 6 * 60 * 60 * 1000
+// A few minutes, not hours (issue #335): right after a release the app must not say it is up to date for 6 h.
+const MAX_AGE_MS = 10 * 60 * 1000
 const TIMEOUT_MS = 10_000
 
 export interface LatestInfo {

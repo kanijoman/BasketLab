@@ -41,6 +41,34 @@ async function importFile(text: string, pass: string) {
 
 beforeEach(() => vi.stubGlobal('crypto', webcrypto))
 
+// Issue #338: nobody knew how to get the file, and "Seleccionar archivo" opens Android's file manager without saying what to look for
+describe('PackagePanel: the import of a file is a folded option with its steps (issue #338)', () => {
+  it('is closed by default, under a summary that says what it is for', () => {
+    const { container } = render(<PackagePanel engine={engineStub()} store={memoryStore()} onLoaded={vi.fn()} />)
+    const details = container.querySelector('details.package-import') as HTMLDetailsElement
+    expect(details).toBeTruthy()
+    expect(details.open).toBe(false)
+    expect(details.querySelector('summary')?.textContent).toMatch(/importar un fichero \.bpkg/i)
+  })
+
+  it('explains where the file comes from and what the file manager of the device is', () => {
+    const { container } = render(<PackagePanel engine={engineStub()} store={memoryStore()} onLoaded={vi.fn()} />)
+    const steps = (container.querySelector('details.package-import ol') as HTMLElement).textContent ?? ''
+    expect(steps).toMatch(/Preparación live/)
+    expect(steps).toMatch(/Descargas/)
+    expect(steps).toMatch(/gestor de archivos/i)
+    expect(steps).toMatch(/lista de próximos partidos/i)       // the usual way, no file needed
+  })
+
+  it('still imports a file with the option folded away (the controls are in the page)', async () => {
+    const store = memoryStore()
+    const onLoaded = vi.fn()
+    render(<PackagePanel engine={engineStub()} store={store} onLoaded={onLoaded} />)
+    await importFile(fixture, PASS)
+    await waitFor(() => expect(onLoaded).toHaveBeenCalled())
+  })
+})
+
 describe('PackagePanel', () => {
   it('imports an encrypted package: decrypts, validates with the engine, stores it and reports it', async () => {
     const store = memoryStore()

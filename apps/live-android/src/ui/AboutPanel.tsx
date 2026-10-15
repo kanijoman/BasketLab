@@ -140,8 +140,10 @@ export default function AboutPanel({ sessionLog, experimental, alertMode, engine
           {ALERT_MODES.map(option => (
             <label key={option.id}>
               <input type="radio" name="alert-mode" checked={alertMode.mode === option.id} onChange={() => alertMode.onMode(option.id)} />
-              {' '}<strong>{option.label}</strong>
-              <span className="detail"> · {option.help}</span>
+              <span>
+                <strong>{option.label}</strong>
+                <span className="detail">{option.help}</span>
+              </span>
             </label>
           ))}
         </fieldset>

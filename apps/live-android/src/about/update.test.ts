@@ -76,12 +76,19 @@ describe('checkForUpdate', () => {
     expect((await checkForUpdate(deps({ fetchJson: vi.fn().mockResolvedValue({ hello: 'world' }) }))).status).toBe('unknown')
   })
 
-  it('remembers the last answer: a second automatic check within hours makes no request', async () => {
+  it('remembers the last answer for a few minutes: a second automatic check right after makes no request', async () => {
     const d = deps()
     await checkForUpdate(d)
-    const again = await checkForUpdate({ ...d, now: () => 1_000_000 + 60 * 60 * 1000 })
+    const again = await checkForUpdate({ ...d, now: () => 1_000_000 + 5 * 60 * 1000 })
     expect(d.fetchJson).toHaveBeenCalledTimes(1)
     expect(again.status).toBe('available')
+  })
+
+  it('does not trust an answer for hours: a release published meanwhile must be noticed when the app opens (issue #335)', async () => {
+    const d = deps()
+    await checkForUpdate(d)
+    await checkForUpdate({ ...d, now: () => 1_000_000 + 11 * 60 * 1000 })
+    expect(d.fetchJson).toHaveBeenCalledTimes(2)
   })
 
   it('asks again after the cache expires, and always when the user presses the button', async () => {

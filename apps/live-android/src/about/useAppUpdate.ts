@@ -1,6 +1,7 @@
 import { Browser } from '@capacitor/browser'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getInstalledVersion, type AppVersion } from './appInfo'
+import { capacitorDevice } from '../feed/device'
 import { checkForUpdate, fetchJson, type StorageLike, type UpdateResult } from './update'
 
 /** Everything the update check touches from the outside (injected in tests). */
@@ -11,12 +12,15 @@ export interface AppUpdateDeps {
   openUrl: (url: string) => void | Promise<unknown>
   storage?: StorageLike | null
   now?: () => number
+  /** Calls back when the app returns to the foreground (issue #335); returns the function that stops listening. */
+  onResume?: (callback: () => void) => () => void
 }
 
 export const DEFAULT_UPDATE_DEPS: AppUpdateDeps = {
   getInstalled: () => getInstalledVersion(),
   fetchJson,
   openUrl: url => Browser.open({ url }),
+  onResume: callback => capacitorDevice.onResume(() => callback()),
   storage: (() => { try { return typeof localStorage === 'undefined' ? null : localStorage } catch { return null } })(),
 }
 
@@ -48,6 +52,12 @@ export function useAppUpdate(deps: AppUpdateDeps = DEFAULT_UPDATE_DEPS) {
     })()
     return () => { alive = false }
   }, [check])
+
+  // coming back to the foreground: a release may have been published meanwhile (the answer of a few minutes ago is reused)
+  useEffect(() => {
+    if (!installed?.native || !depsRef.current.onResume) return
+    return depsRef.current.onResume(() => { void check(installed, false) })
+  }, [installed, check])
 
   const checkNow = useCallback(() => { if (installed) void check(installed, true) }, [installed, check])
   const open = useCallback((url: string) => { void Promise.resolve(depsRef.current.openUrl(url)).catch(() => undefined) }, [])

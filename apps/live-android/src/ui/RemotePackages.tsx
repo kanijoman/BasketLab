@@ -1,10 +1,11 @@
 /** Packages published by BasketLab for the next matches: list, download, decrypt and install (issue #175). */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { EngineApi } from '../engine/client'
-import { decryptEnvelope } from '../package/crypto'
+import { decryptPackage } from '../package/crypto'
 import { installPackage } from '../package/install'
 import HelpHint from './HelpHint'
-import { loadPassphrase, savePassphrase } from '../package/passphrase'
+import { failureText, loadPassphrase, savePassphrase } from '../package/passphrase'
+import PasswordField from './PasswordField'
 import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, type Fetcher, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import RoundPackages from './RoundPackages'
 import type { PackageStore } from '../package/storage'
@@ -51,12 +52,12 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
     setBusy(entry.file)
     setError(null)
     try {
-      const plaintext = await decryptEnvelope(await fetchPackageText(entry, fetcher), pass)
+      const plaintext = await decryptPackage(await fetchPackageText(entry, fetcher), pass)
       const summary = await installPackage(engine, store, plaintext)
       savePassphrase(pass) // only once it is known to be right
       onLoaded(summary)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(failureText(e, pass))
     } finally {
       setBusy(null)
     }
@@ -68,7 +69,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
     try {
       let bundle = bundles.current.get(round.file)
       if (!bundle) {
-        bundle = parseRoundBundle(await decryptEnvelope(await fetchRoundText(round, fetcher), pass))
+        bundle = parseRoundBundle(await decryptPackage(await fetchRoundText(round, fetcher), pass))
         bundles.current.set(round.file, bundle)
       }
       const item = bundle.matches.find(m => m.match.code === match.code)
@@ -77,7 +78,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
       savePassphrase(pass)
       onLoaded(summary)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(failureText(e, pass))
     } finally {
       setBusy(null)
     }
@@ -91,10 +92,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
       {entries?.length === 0 && <p className="detail">No hay paquetes publicados todavía.</p>}
       {anything && (
         <>
-          <label className="remote-packages-pass">
-            Contraseña de los paquetes publicados
-            <input type="password" value={pass} onChange={e => setPass(e.target.value)} autoComplete="off" />
-          </label>
+          <PasswordField className="remote-packages-pass" label="Contraseña de los paquetes publicados" value={pass} onChange={setPass} />
           <HelpHint label="Ayuda sobre los paquetes publicados">
             Los paquetes publicados van cifrados. Es la contraseña que fijó quien los genera (BasketLab → Preparación live o el
             secreto PACKAGE_PASSWORD). Se escribe una vez y queda guardada en este dispositivo.
