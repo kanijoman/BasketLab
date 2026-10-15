@@ -57,6 +57,7 @@ def test_one_formacion_player_on_court_is_an_illegal_lineup_after_two_evaluation
     assert a.severity == "critical" and a.category == "alineacion"
     assert a.evidence["on_court_formation"] == 1 and a.evidence["minimum"] == 2
     assert "formación" in a.message and "1" in a.message and "2" in a.message
+    assert "de tu equipo" in a.message     # the staff could not tell whether the warning was about their lineup or the rival's (#322)
 
 
 @pytest.mark.parametrize("marks", [[YES, YES, NO, NO, NO], [YES, YES, YES, NO, NO], [YES] * 5])

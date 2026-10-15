@@ -41,7 +41,7 @@ def formation_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     return [Advice(
         key="formation:" + "-".join(counts["ids"]), id="formation_lineup", severity="critical", category="alineacion",
-        message=(f"Alineación indebida: solo {counts['yes']} de formación en pista (mínimo {minimum}). "
+        message=(f"Alineación indebida de tu equipo: solo {counts['yes']} de formación en pista (mínimo {minimum}). "
                  "Corregirlo con el próximo cambio."),
         evidence={"on_court_formation": counts["yes"], "unknown": counts["unknown"], "minimum": minimum,
                   "lineup": counts["ids"]},

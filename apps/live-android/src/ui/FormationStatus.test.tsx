@@ -49,3 +49,22 @@ describe('FormationStatus (issue #272)', () => {
     expect(container.firstChild).toBeNull()
   })
 })
+
+describe('FormationStatus says whose lineup it is (issue #322: it was not clear if it was ours or the rival)', () => {
+  const own = { id: '1', name: 'MIPELLETYMAS B.F. LEON' }
+
+  it('names the own team', () => {
+    render(<FormationStatus formation={status()} team={own} />)
+    const el = document.querySelector('.formation-status') as HTMLElement
+    expect(el.textContent).toMatch(/tu equipo/i)
+    expect(el.textContent).toContain('MIPELLETYMAS B.F. LEON')
+    expect(el.textContent).toMatch(/formación en pista: 3 \(mínimo 2\)/i)
+  })
+
+  it('also when it is not being watched, and when the lineup is illegal', () => {
+    const { rerender } = render(<FormationStatus formation={status({ known: false, on_court: null })} team={own} />)
+    expect(document.querySelector('.formation-status')?.textContent).toMatch(/tu equipo/i)
+    rerender(<FormationStatus formation={status({ on_court: 1 })} team={own} />)
+    expect(screen.getByRole('alert').textContent).toMatch(/tu equipo/i)
+  })
+})

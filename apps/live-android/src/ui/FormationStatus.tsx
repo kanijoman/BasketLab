@@ -1,14 +1,16 @@
 /** Formación players on court against the minimum of the competition (issue #272), under the scoreboard. */
-import type { FormationStatus as Status } from '../engine/types'
+import type { FormationStatus as Status, TeamRef } from '../engine/types'
 
 const LINEUP = 5
 
-export default function FormationStatus({ formation }: { formation?: Status | null }) {
+/** ``team`` is the OWN team: the minimum is about its lineup, and the card says so (issue #322: it was not clear whose it was). */
+export default function FormationStatus({ formation, team }: { formation?: Status | null; team?: TeamRef | null }) {
+  const whose = team ? `Tu equipo (${team.name})` : 'Tu equipo'
   if (!formation || formation.min <= 0) return null
   if (!formation.known) {
     return (
       <p className="formation-status" data-state="unknown" role="status">
-        Sin plantilla de FEB: no se vigila la alineación de formación.
+        {whose}: sin plantilla de FEB, no se vigila la alineación de formación.
       </p>
     )
   }
@@ -24,7 +26,7 @@ export default function FormationStatus({ formation }: { formation?: Status | nu
   ].filter(Boolean)
   return (
     <p className="formation-status" data-state={state} role={bad ? 'alert' : 'status'}>
-      Formación en pista: {count} (mínimo {min}){notes.length > 0 && ` · ${notes.join(' · ')}`}
+      {whose} · formación en pista: {count} (mínimo {min}){notes.length > 0 && ` · ${notes.join(' · ')}`}
     </p>
   )
 }
