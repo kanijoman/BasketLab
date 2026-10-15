@@ -18,7 +18,7 @@ interface Props {
 export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved, fetcher }: Props) {
   return (
     <>
-      <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={fetcher} />
+      <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={fetcher} loaded={loaded} />
       <PackagePanel engine={engine} store={store} loaded={loaded} onLoaded={onLoaded} onRemoved={onRemoved} />
     </>
   )

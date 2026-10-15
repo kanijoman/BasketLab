@@ -8,6 +8,8 @@ interface Props {
   busy: string | null
   /** ``ownId``: the team whose point of view is followed (issue #286). */
   onDownload: (round: RoundIndexEntry, match: RoundMatch, ownId: string) => void
+  /** Is this match, followed as this team, the package that is loaded now? (issue #342) */
+  isLoaded: (code: string, ownId: string) => boolean
 }
 
 /** `LF_CHALLENGE_2026_2027_Liga_Regular_Único` -> `LF CHALLENGE 2026 2027 Liga Regular Único`. */
@@ -21,7 +23,7 @@ function when(start?: string | null): string {
   return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-export default function RoundPackages({ rounds, pass, busy, onDownload }: Props) {
+export default function RoundPackages({ rounds, pass, busy, onDownload, isLoaded }: Props) {
   if (rounds.length === 0) return null
   return (
     <>
@@ -41,12 +43,15 @@ export default function RoundPackages({ rounds, pass, busy, onDownload }: Props)
                     <span className="detail"> · {when(match.start)}</span>
                   </span>
                   <span className="round-sides">
-                    {sidesOf(match).map(id => (
-                      <button key={id} aria-label={`Descargar ${label} como ${nameOf(id)}`} disabled={!pass || busy !== null}
-                        onClick={() => onDownload(round, match, id)}>
-                        {busy === `${round.file}#${match.code}#${id}` ? 'Descargando…' : `Seguir como ${nameOf(id)}`}
-                      </button>
-                    ))}
+                    {sidesOf(match).map(id => {
+                      const ready = isLoaded(match.code, id)
+                      return (
+                        <button key={id} aria-label={ready ? `${label} como ${nameOf(id)}: ya disponible` : `Descargar ${label} como ${nameOf(id)}`}
+                          disabled={ready || !pass || busy !== null} onClick={() => onDownload(round, match, id)}>
+                          {ready ? 'Ya disponible' : busy === `${round.file}#${match.code}#${id}` ? 'Descargando…' : `Seguir como ${nameOf(id)}`}
+                        </button>
+                      )
+                    })}
                   </span>
                 </li>
               )
