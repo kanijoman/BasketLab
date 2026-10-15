@@ -3,9 +3,10 @@
   <g transform="translate(10 10) scale(0.8)">
     <circle cx="50" cy="50" r="38" fill="#E8651A"/>
     <circle cx="50" cy="50" r="38" fill="none" stroke="#B5441A" stroke-width="3"/>
-    <path d="M 12 50 Q 50 39.6 88 50" fill="none" stroke="#B5441A" stroke-width="3"/>
-    <path d="M 50 12 Q 34.2 50 50 88" fill="none" stroke="#B5441A" stroke-width="3"/>
-    <path d="M 50 12 Q 65.8 50 50 88" fill="none" stroke="#B5441A" stroke-width="3"/>
+    <path d="M 12 50 L 88 50" fill="none" stroke="#B5441A" stroke-width="3"/>
+    <path d="M 20.9 25.6 Q 34 50 20.9 74.4" fill="none" stroke="#B5441A" stroke-width="3" stroke-linecap="round"/>
+    <path d="M 50 12 L 50 88" fill="none" stroke="#B5441A" stroke-width="3"/>
+    <path d="M 79.1 25.6 Q 66 50 79.1 74.4" fill="none" stroke="#B5441A" stroke-width="3" stroke-linecap="round"/>
     <path d="M 6 54 L 30 54 L 38 36 L 51 70 L 60 44 L 66 54 L 94 54" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>
