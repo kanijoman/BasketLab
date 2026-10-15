@@ -71,6 +71,9 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
   // the import is in the Paquetes tab (issue #224)
   await page.getByRole('tab', { name: 'Paquetes' }).click()
 
+  // the import is a folded option with its steps (issue #338): unfold it
+  await page.getByText(/Importar un fichero \.bpkg/).click()
+
   // wrong password first: a clear error and nothing stored
   await page.getByLabel('Fichero del paquete (.bpkg)').setInputFiles(bpkg)
   await page.getByLabel('Contraseña del paquete').fill('contraseña-incorrecta')

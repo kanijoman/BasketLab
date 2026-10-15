@@ -29,8 +29,8 @@ describe('help texts of the Paquetes tab and the live connection (issue #225)', 
     fireEvent.click(screen.getByRole('button', { name: /ayuda sobre el paquete de preparación/i }))
     expect(screen.getByRole('note').textContent).toMatch(/estadísticas de la temporada/i)
     expect(screen.getByRole('note').textContent).toMatch(/3 veces al día/i)
-    fireEvent.click(screen.getByRole('button', { name: /ayuda sobre los ficheros/i }))
-    expect(screen.getAllByRole('note').some(n => /sin conexión/i.test(n.textContent ?? ''))).toBe(true)
+    // the import of a file explains itself in its folded option (issue #338), not behind a «?»
+    expect(screen.getByText(/importar un fichero \.bpkg \(sin conexión/i)).toBeTruthy()
   })
 
   it('the live connection explains the match code', () => {

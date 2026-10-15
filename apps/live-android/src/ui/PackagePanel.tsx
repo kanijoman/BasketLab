@@ -83,11 +83,15 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
         <p className="detail">Sin paquete: se usa el partido de demostración.</p>
       )}
 
-      <div className="package-import">
-        <HelpHint label="Ayuda sobre los ficheros .bpkg">
-          Úsalo sin conexión o con un paquete generado a mano (fichero .bpkg y su contraseña). Normalmente basta con
-          descargarlo de la lista de próximos partidos.
-        </HelpHint>
+      <details className="package-import">
+        <summary>Importar un fichero .bpkg (sin conexión o generado a mano)</summary>
+        <ol className="detail">
+          <li>Lo normal es no necesitar ningún fichero: descarga el partido de la lista de próximos partidos, arriba.</li>
+          <li>Si quieres un paquete hecho a mano, genéralo en la web de BasketLab: <strong>Preparación live</strong>. Se guarda como un fichero .bpkg, normalmente en la carpeta <strong>Descargas</strong> del dispositivo.</li>
+          <li>Aquí pulsa «Seleccionar archivo»: Android abre su <strong>gestor de archivos</strong>. Busca el .bpkg en Descargas.</li>
+          <li>Escribe la contraseña con la que se generó el paquete y pulsa «Importar».</li>
+        </ol>
+        <div className="package-import-body">
         <label>
           Fichero del paquete (.bpkg)
           <input type="file" accept=".bpkg,application/octet-stream,application/json"
@@ -98,7 +102,8 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
           {busy ? 'Importando…' : loaded ? 'Importar otro' : 'Importar'}
         </button>
         {error && <p role="alert" className="status error">{error}</p>}
-      </div>
+        </div>
+      </details>
     </section>
   )
 }
