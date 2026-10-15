@@ -15,10 +15,10 @@ test('the demo opens on the latest recorded match, local team on the left, and a
   await page.goto('/')
   await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible()
-  // Zamora hosted Leon: the local team goes on the left, ours is marked
+  // Zamora hosted Leon: the local team goes on the left, and no team is labelled as ours
   await expect(page.locator('.scoreboard .team').nth(0)).toContainText('RECOLETAS ZAMORA')
   await expect(page.locator('.scoreboard .team').nth(1)).toContainText('MIPELLETYMAS B.F. LEON')
-  await expect(page.locator('.scoreboard .team').nth(1)).toContainText('Tu equipo')
+  await expect(page.locator('.scoreboard .team').nth(1)).not.toContainText('Tu equipo')
 
   await page.getByRole('radio', { name: '60×' }).click()
   await page.getByRole('button', { name: 'Reproducir' }).click()
