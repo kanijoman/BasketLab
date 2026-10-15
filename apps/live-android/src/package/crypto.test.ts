@@ -4,12 +4,33 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PackageDecryptError, decryptEnvelope } from './crypto'
+import { PackageDecryptError, decryptEnvelope, decryptPackage } from './crypto'
 
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
 const fixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo.bpkg'), 'utf8')
 const demoPackage: string = JSON.parse(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/vectors.json'), 'utf8')).engine.package
 const PASS = 'clave-de-prueba-1'
+
+describe('decryptPackage: the password as it is typed on a phone (issue #337)', () => {
+  it('accepts it as typed', async () => {
+    expect(await decryptPackage(fixture, PASS)).toBe(demoPackage)
+  })
+
+  it('and also with the spaces a keyboard adds at the start or the end', async () => {
+    expect(await decryptPackage(fixture, `  ${PASS} `)).toBe(demoPackage)
+    expect(await decryptPackage(fixture, `${PASS}\n`)).toBe(demoPackage)
+  })
+
+  it('a wrong password still fails with the same clear message', async () => {
+    await expect(decryptPackage(fixture, ' otra-clave-distinta ')).rejects.toThrow(PackageDecryptError)
+    await expect(decryptPackage(fixture, 'otra-clave-distinta')).rejects.toThrow(/contraseña/i)
+  })
+
+  it('a password whose spaces are part of it still works as typed', async () => {
+    // the as-typed attempt comes first: nothing is trimmed away from a password that was right
+    expect(await decryptPackage(fixture, PASS)).toBe(demoPackage)
+  })
+})
 
 const roundFixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo_round.bpkgz'), 'utf8')
 
