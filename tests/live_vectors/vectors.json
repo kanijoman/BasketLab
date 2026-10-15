@@ -4547,7 +4547,7 @@
       },
       "id": "formation_lineup",
       "key": "formation:f1-f2-f3-f4-f5",
-      "message": "Alineación indebida de tu equipo: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
+      "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
@@ -4575,7 +4575,7 @@
       },
       "id": "formation_lineup",
       "key": "formation:f1-f2-f3-f4-f5#2",
-      "message": "Alineación indebida de tu equipo: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
+      "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
@@ -4602,7 +4602,7 @@
       },
       "id": "formation_lineup",
       "key": "formation:f1-f2-f3-f4-f5",
-      "message": "Alineación indebida de tu equipo: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
+      "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
@@ -4655,7 +4655,7 @@
       },
       "id": "formation_lineup",
       "key": "formation:f1-f2-f3-f4-f5#2",
-      "message": "Alineación indebida de tu equipo: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
+      "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
@@ -4776,7 +4776,7 @@
       },
       "id": "formation_lineup",
       "key": "formation:f1-f2-f3-f4-f5",
-      "message": "Alineación indebida de tu equipo: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
+      "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
@@ -4803,7 +4803,7 @@
       },
       "id": "formation_lineup",
       "key": "formation:f1-f2-f3-f4-f5",
-      "message": "Alineación indebida de tu equipo: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
+      "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"

@@ -57,7 +57,16 @@ def test_one_formacion_player_on_court_is_an_illegal_lineup_after_two_evaluation
     assert a.severity == "critical" and a.category == "alineacion"
     assert a.evidence["on_court_formation"] == 1 and a.evidence["minimum"] == 2
     assert "formación" in a.message and "1" in a.message and "2" in a.message
-    assert "de tu equipo" in a.message     # the staff could not tell whether the warning was about their lineup or the rival's (#322)
+    assert "Alineación indebida de " + OWN in a.message     # it names the team (the app is not only for one club, #322)
+
+
+def test_the_alert_names_the_team_from_the_snapshot():
+    s, roster = board([YES, NO, NO, NO, NO])
+    s["teams"][OWN]["name"] = "RECOLETAS ZAMORA"
+    eng = engine(roster)
+    eng.evaluate(s)
+    [a] = formation_alerts(eng, s)
+    assert a.message.startswith("Alineación indebida de RECOLETAS ZAMORA: solo 1 de formación")
 
 
 @pytest.mark.parametrize("marks", [[YES, YES, NO, NO, NO], [YES, YES, YES, NO, NO], [YES] * 5])
@@ -364,7 +373,8 @@ def test_the_rival_in_an_illegal_lineup_is_a_critical_alert_too():
     assert lineup_alerts(eng, s) == []                    # confirmed after two evaluations, like ours
     [a] = lineup_alerts(eng, s)
     assert a.id == "rival_formation_lineup" and a.severity == "critical" and a.category == "alineacion"
-    assert "del rival" in a.message and "1" in a.message and "2" in a.message
+    assert "Alineación indebida de " + RIVAL in a.message and "1" in a.message and "2" in a.message
+    assert "Valorar avisar a la mesa" in a.message         # what to do differs: it is not our lineup to fix
     assert a.evidence["team_id"] == RIVAL and a.evidence["on_court_formation"] == 1 and a.evidence["minimum"] == 2
 
 

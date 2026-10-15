@@ -41,7 +41,8 @@ def _illegal_lineup(snap: Dict[str, Any], ctx: RuleContext, team_id: Optional[st
     # a substitution is two lines: with fewer than 5 on court the lineup is not complete yet
     if counts["players"] != LINEUP_SIZE or counts["yes"] + counts["unknown"] >= minimum:
         return []
-    who = "de tu equipo" if own else "del rival"
+    name = ((snap.get("teams") or {}).get(team_id) or {}).get("name") or ("tu equipo" if own else "el rival")
+    who = f"de {name}"
     advice = "Corregirlo con el próximo cambio." if own else "Valorar avisar a la mesa."
     return [Advice(
         key=("formation:" if own else "rival_formation:") + "-".join(counts["ids"]),
