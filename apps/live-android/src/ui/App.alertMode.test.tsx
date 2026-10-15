@@ -26,6 +26,15 @@ describe('alert mode in Acerca de (issue #130)', () => {
     expect(screen.getByText(/solo lo que está claro/i)).toBeTruthy()
   })
 
+  it('each option keeps its help inside its own row (issue #336)', async () => {
+    await openAbout()
+    for (const name of [/Agresivo/, /Medio/, /Conservador/]) {
+      const label = screen.getByRole('radio', { name }).closest('label') as HTMLElement
+      expect(label.querySelectorAll('input[type=radio]')).toHaveLength(1)
+      expect(label.querySelector('.detail')).toBeTruthy()
+    }
+  })
+
   it('choosing a mode tells the engine, is remembered and goes to the session log', async () => {
     const engine = await openAbout()
     fireEvent.click(screen.getByRole('radio', { name: /Conservador/ }))

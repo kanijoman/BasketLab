@@ -21,6 +21,16 @@ describe('timeline touch behaviour (issue #309)', () => {
   })
 })
 
+// Issue #336: the help text pushed the radio buttons of the alert modes into one running line (Conservador after Medio)
+describe('alert mode options (issue #336)', () => {
+  it('are one row each: the radio on the left, the name and its help stacked on the right', () => {
+    expect(rule('.alert-mode label')).toMatch(/display: grid/)
+    expect(rule('.alert-mode label')).toMatch(/grid-template-columns: auto 1fr/)
+    expect(rule('.alert-mode label')).toMatch(/min-height: 44px/)
+    expect(rule('.alert-mode .detail')).toMatch(/display: block/)
+  })
+})
+
 // Issue #322: the e2e of the phone layout wants every button at least 44 px tall; the new switch and counters must not be smaller
 describe('touch size of the controls added in #322', () => {
   it('the theme switch and the severity counters are at least 44 px', () => {
