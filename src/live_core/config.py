@@ -207,6 +207,10 @@ class RuleConfig:
     rec_distance_weight: float = 0.5
     rec_balance_tolerance: float = 1.5
     rec_max_results: int = 3
+    # Quintets of the package in the recommender (#132): the net rating per 40 min of the quintet a swap makes is shrunk to zero by this
+    # many seconds together, and each shrunk point moves the score (sigma) by this weight. Needs ``lineup_season_min_s`` together.
+    rec_lineup_prior_s: int = 1800
+    rec_lineup_weight: float = 0.03
     rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever
     # Rival players producing far above their season rate: minutes needed, excess in Poisson
     # standard deviations over the expected count, and the minimum count per metric.

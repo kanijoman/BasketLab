@@ -87,13 +87,14 @@ class AdviceEngine:
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._win_prob = WinProbabilityModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id and rival_team_id else None
-        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster)
+        lineup_table = {lineup_key(row["players"]): row for row in (lineups or [])}
+        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster, lineups=lineup_table)
                              if own_team_id and baselines else None)
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
                         rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender,
                         pace=self._pace, team_baselines=team_baselines or {}, win_prob=self._win_prob,
-                        lineups={lineup_key(row["players"]): row for row in (lineups or [])})
+                        lineups=lineup_table)
             if own_team_id else None
         )
         self._last: Dict[str, int] = {}
