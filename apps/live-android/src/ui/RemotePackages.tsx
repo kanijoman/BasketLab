@@ -6,7 +6,7 @@ import { installPackage } from '../package/install'
 import HelpHint from './HelpHint'
 import { failureText, loadPassphrase, savePassphrase } from '../package/passphrase'
 import PasswordField from './PasswordField'
-import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, type Fetcher, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, pickPackage, type Fetcher, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import RoundPackages from './RoundPackages'
 import type { PackageStore } from '../package/storage'
 import type { PackageSummary } from '../package/summary'
@@ -63,8 +63,8 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
     }
   }
 
-  async function downloadRoundMatch(round: RoundIndexEntry, match: RoundMatch) {
-    setBusy(`${round.file}#${match.code}`)
+  async function downloadRoundMatch(round: RoundIndexEntry, match: RoundMatch, ownId: string) {
+    setBusy(`${round.file}#${match.code}#${ownId}`)
     setError(null)
     try {
       let bundle = bundles.current.get(round.file)
@@ -72,9 +72,9 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
         bundle = parseRoundBundle(await decryptPackage(await fetchRoundText(round, fetcher), pass))
         bundles.current.set(round.file, bundle)
       }
-      const item = bundle.matches.find(m => m.match.code === match.code)
-      if (!item) throw new Error('El partido ya no está en la jornada publicada. Actualiza la lista.')
-      const summary = await installPackage(engine, store, item.package)
+      const text = pickPackage(bundle, match.code, ownId)
+      if (!text) throw new Error('El partido ya no está en la jornada publicada. Actualiza la lista.')
+      const summary = await installPackage(engine, store, text)
       savePassphrase(pass)
       onLoaded(summary)
     } catch (e) {
@@ -110,7 +110,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
               </li>
             ))}
           </ul>
-          <RoundPackages rounds={rounds} pass={pass} busy={busy} onDownload={(round, match) => void downloadRoundMatch(round, match)} />
+          <RoundPackages rounds={rounds} pass={pass} busy={busy} onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)} />
         </>
       )}
       <button className="secondary" disabled={busy !== null} onClick={() => void refresh()}>Actualizar lista</button>

@@ -39,7 +39,7 @@ describe('compressed bundles (issue #286)', () => {
     expect(JSON.parse(roundFixture).z).toBe('gzip')
     const bundle = JSON.parse(await decryptEnvelope(roundFixture, PASS))
     expect(bundle.collection).toBe('DEMO_2026')
-    expect(bundle.matches.map((m: { match: { code: string } }) => m.match.code)).toEqual(['101', '102', '103'])
+    expect(bundle.matches.map((m: { match: { code: string } }) => m.match.code)).toEqual(['101', '101', '102', '102', '103', '103'])   // each match from both of its teams
     expect(bundle.matches[0].package).toBe(demoPackage)
   })
 

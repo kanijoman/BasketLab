@@ -1,6 +1,6 @@
 import { webcrypto } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PACKAGES_BASE_URL, fetchIndex, fetchPackageText, fetchRoundText, orderRounds, parseRoundBundle, type PackageIndexEntry, type RoundIndexEntry } from './remote'
+import { PACKAGES_BASE_URL, fetchIndex, fetchPackageText, fetchRoundText, orderRounds, parseRoundBundle, pickPackage, sidesOf, type PackageIndexEntry, type RoundIndexEntry } from './remote'
 
 const TEXT = '{"v":1,"alg":"AES-256-GCM"}'
 async function sha(text: string) {
@@ -70,6 +70,21 @@ describe('rounds of the index (issues #286, #172)', () => {
     ])
     expect(ordered.map(r => r.collection)).toEqual(['B', 'A'])
     expect(ordered[0].matches.map(m => m.code)).toEqual(['3', '4', '2'])
+  })
+
+  it('the sides that can be followed in a match: both teams, or just the default one in an older index (issue #286)', () => {
+    expect(sidesOf({ ...roundMatch('1', 's'), own_ids: ['h1', 'a1'] })).toEqual(['h1', 'a1'])
+    expect(sidesOf(roundMatch('1', 's'))).toEqual(['h1'])
+  })
+
+  it('picks the package of the chosen side, and the first one of the match when the bundle has only that', () => {
+    const entry = (ownId: string, text: string) => ({ match: roundMatch('1', 's'), own_id: ownId, rival_id: 'x', is_club: false, package: text })
+    const both = { v: 1, collection: 'A', round: 3, matches: [entry('h1', 'HOME'), entry('a1', 'AWAY'), { ...entry('h2', 'OTRO'), match: roundMatch('2', 's') }] }
+    expect(pickPackage(both, '1', 'a1')).toBe('AWAY')
+    expect(pickPackage(both, '1', 'h1')).toBe('HOME')
+    const older = { ...both, matches: [entry('h1', 'HOME')] }
+    expect(pickPackage(older, '1', 'a1')).toBe('HOME')       // a bundle published before both sides existed: the only one
+    expect(pickPackage(both, '9', 'h1')).toBeNull()
   })
 
   it('parses a bundle and refuses one of another version or shape', () => {

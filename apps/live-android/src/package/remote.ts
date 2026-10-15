@@ -28,8 +28,10 @@ export interface RoundMatch {
   start?: string | null
   home: { id: string; name: string }
   away: { id: string; name: string }
-  /** The team whose point of view the package has (the club's when it plays the match, else the home team). */
+  /** The team whose point of view the DEFAULT package has (the club's when it plays the match, else the home team). */
   own_id: string
+  /** Every team the match can be followed as (both teams, the default one first); absent in an index from before it existed. */
+  own_ids?: string[]
   is_club: boolean
 }
 
@@ -128,4 +130,16 @@ export function parseRoundBundle(text: string): RoundBundle {
   if (!bundle || typeof bundle !== 'object' || !Array.isArray(bundle.matches)) throw new Error('El fichero descargado no es una jornada de BasketLab.')
   if (bundle.v !== BUNDLE_VERSION) throw new Error(`Versión de jornada no soportada (${bundle.v}). Actualiza la app.`)
   return bundle as RoundBundle
+}
+
+/** The sides of a match that can be followed: both teams, or just the default one in an older index. */
+export function sidesOf(match: RoundMatch): string[] {
+  return match.own_ids && match.own_ids.length ? match.own_ids : [match.own_id]
+}
+
+/** The package text of a match as seen from ``ownId``; a bundle published before both sides existed has only the first one of the match.
+ *  Null when the match is not in the bundle. */
+export function pickPackage(bundle: RoundBundle, code: string, ownId: string): string | null {
+  const ofMatch = bundle.matches.filter(m => m.match.code === code)
+  return (ofMatch.find(m => m.own_id === ownId) ?? ofMatch[0])?.package ?? null
 }
