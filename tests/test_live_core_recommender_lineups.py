@@ -19,8 +19,8 @@ def row(key, net40, seconds):
     return {"team_id": OWN, "players": key.split("|"), "seconds": seconds, "pts_for": 0, "pts_against": 0, "stints": 3, "net40": net40}
 
 
-def rec(lineups=None, **cfg):
-    return Recommender(OWN, TABLE, RuleConfig(**cfg), lineups=lineups)
+def rec(lineups=None, games_played=None, **cfg):
+    return Recommender(OWN, TABLE, RuleConfig(**cfg), lineups=lineups, games_played=games_played)
 
 
 def best_of(r, out_pid="b1"):
@@ -59,6 +59,26 @@ def test_two_minutes_together_are_enough_to_count_and_the_threshold_is_its_own_s
     assert rec({key: row(key, 20.0, 120)}, rec_lineup_min_s=300).suggest_swaps(snap(), "b1")[0]["lineup_net40"] is None
     # the recommender's threshold does not move the one of the lineup_net alert
     assert RuleConfig().lineup_season_min_s == 600 and RuleConfig().rec_lineup_min_s == 120
+
+
+def test_the_threshold_grows_with_the_games_played_so_the_share_of_the_season_stays_meaningful():
+    key = after("b1", "b2")
+    first = lambda r: r.suggest_swaps(snap(), "b1")[0]["lineup_net40"]
+    few = rec({key: row(key, 20.0, 400)}, games_played=3)              # 1 % of 3 games = 72 s: the 2-minute floor rules
+    many = rec({key: row(key, 20.0, 400)}, games_played=30)            # 1 % of 30 games = 720 s
+    enough = rec({key: row(key, 20.0, 900)}, games_played=30)
+    unknown = rec({key: row(key, 20.0, 150)})                          # no sample in the package: the floor
+    assert first(few) == pytest.approx(20.0) and first(many) is None and first(enough) == pytest.approx(20.0)
+    assert first(unknown) == pytest.approx(20.0)
+
+
+def test_the_engine_reads_the_games_played_from_the_packages_baselines():
+    key = after("b1", "b2")
+    kw = dict(own_team_id=OWN, rival_team_id=RIVAL, baselines=TABLE, config=RuleConfig(), lineups=[row(key, 20.0, 400)])
+    many = AdviceEngine(team_baselines={"sample_games": {"own": 30, "rival": 30}}, **kw)
+    few = AdviceEngine(team_baselines={"sample_games": {"own": 3, "rival": 3}}, **kw)
+    assert many._recommender.suggest_swaps(snap(), "b1")[0]["lineup_net40"] is None
+    assert few._recommender.suggest_swaps(snap(), "b1")[0]["lineup_net40"] == pytest.approx(20.0)
 
 
 def test_the_same_net_rating_counts_less_the_less_they_played_together():

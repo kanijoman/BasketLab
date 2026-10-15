@@ -88,7 +88,8 @@ class AdviceEngine:
         self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._win_prob = WinProbabilityModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id and rival_team_id else None
         lineup_table = {lineup_key(row["players"]): row for row in (lineups or [])}
-        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster, lineups=lineup_table)
+        games_played = ((team_baselines or {}).get("sample_games") or {}).get("own")
+        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster, lineups=lineup_table, games_played=games_played)
                              if own_team_id and baselines else None)
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,

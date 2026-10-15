@@ -209,7 +209,10 @@ class RuleConfig:
     rec_max_results: int = 3
     # Quintets of the package in the recommender (#132): the net rating per 40 min of the quintet a swap makes is shrunk to zero by this
     # many seconds together, and each shrunk point moves the score (sigma) by this weight. Needs ``rec_lineup_min_s`` together.
-    rec_lineup_min_s: int = 120   # provisional: to adjust (maybe by the share of the minutes the season covers) with more data
+    # Together time a quintet needs to count: at least ``rec_lineup_min_s`` and at least this share of the minutes the own team has played
+    # in the season (``rec_lineup_min_share`` of games played x 40 min; adaptive: the more games, the more a quintet must have played).
+    rec_lineup_min_s: int = 120
+    rec_lineup_min_share: float = 0.01
     rec_lineup_prior_s: int = 1800
     rec_lineup_weight: float = 0.03
     rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever

@@ -19,6 +19,8 @@ from .rules_fouls import FOUL_OUT, evaluate_player_fouls
 from .rules_lineup import roster_known
 from .rules_rotation import fatigue_index
 
+GAME_SECONDS = 2400
+
 # lever -> (profile metric, +1 if higher is better else -1, Spanish label)
 LEVER_METRIC = {
     "tov": ("tov40", -1.0, "las pérdidas"),
@@ -42,11 +44,13 @@ BALANCE_DIMS = {
 class Recommender:
     def __init__(self, own_team_id: str, players_table: Dict[str, Dict[str, Any]],
                  config: Optional[RuleConfig] = None, roster: Optional[Dict[str, Dict[str, Any]]] = None,
-                 lineups: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+                 lineups: Optional[Dict[str, Dict[str, Any]]] = None, games_played: Optional[int] = None) -> None:
         self._own = own_team_id
         self._lineups = lineups or {}       # quintet key (lineups.lineup_key) -> season row of the package
         self._table = players_table or {}
         self._cfg = config or RuleConfig()
+        # together time a quintet needs to count (#132): a floor, and a share of the season's minutes once there are games played
+        self._lineup_min_s = max(self._cfg.rec_lineup_min_s, self._cfg.rec_lineup_min_share * GAME_SECONDS * (games_played or 0))
         self._roster = roster or {}
         # With the roster of our team and a minimum of "formación" players on court, a swap must not break it (#272)
         self._formation_min = self._cfg.formation_min_on_court if roster_known(self._roster, own_team_id) else 0
@@ -114,7 +118,7 @@ class Recommender:
         """The season of the quintet the swap makes: its net rating per 40 min, the seconds together and the score it is worth."""
         on_court = [pid for pid, p in snap["players"].items() if p["on_court"] and p["team_id"] == self._own]
         season = self._lineups.get(lineup_key([swap_in if pid == swap_out else pid for pid in on_court]))
-        if not season or season["seconds"] < self._cfg.rec_lineup_min_s:
+        if not season or season["seconds"] < self._lineup_min_s:
             return {"net40": None, "seconds": 0, "bonus": 0.0}
         seconds = season["seconds"]
         shrunk = season["net40"] * seconds / (seconds + self._cfg.rec_lineup_prior_s)
