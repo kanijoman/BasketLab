@@ -175,3 +175,23 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
 
   expect(errors).toEqual([])
 })
+
+test('light and dark: the switch in the header changes the whole screen and is remembered (issue #322)', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+  const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  const toggle = () => page.getByRole('button', { name: /^cambiar a modo/i })
+  const first = await background()                                      // the system theme of the browser (light in Playwright)
+  await page.screenshot({ path: 'test-results/theme-system.png' })
+  await toggle().click()
+  const other = await background()
+  expect(other).not.toBe(first)
+  const chosen = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+  expect(['light', 'dark']).toContain(chosen)
+  await page.screenshot({ path: `test-results/theme-${chosen}.png` })
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+  expect(await background()).toBe(other)                                  // remembered across a reload
+  await toggle().click()
+  expect(await background()).toBe(first)
+})
