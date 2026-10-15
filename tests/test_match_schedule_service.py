@@ -1,5 +1,5 @@
 """Upcoming / live matches of a team from the FEB calendar (issue #119)."""
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -183,3 +183,35 @@ class TestUpcoming:
     def test_fbcyl_collections_are_not_supported(self):
         out = _service().upcoming("FBCYL_1A_2026", TEAM)
         assert out["matches"] == [] and "FEB" in out["warning"]
+
+
+class TestNextRound:
+    """Every match of the next round of a competition, not only the club's (issues #286, #172)."""
+
+    def test_the_matches_of_the_earliest_round_that_has_matches_to_play(self):
+        out = _service().next_round("LF_CHALLENGE_2026")
+        upcoming = [m for m in SCHED if m.start and datetime.fromisoformat(m.start) >= NOW - timedelta(hours=3)]
+        first = min(m.round_index for m in upcoming)
+        expected = [m.code for m in upcoming if m.round_index == first]
+        assert out["round"] == first and [m["code"] for m in out["matches"]] == expected
+        assert out["warning"] is None and out["calendar_url"]
+
+    def test_a_match_has_what_the_package_and_the_index_need(self):
+        match = _service().next_round("LF_CHALLENGE_2026")["matches"][0]
+        assert set(match) == {"code", "start", "round", "home", "away"}
+        assert match["home"]["id"] and match["home"]["name"] and match["away"]["id"]
+
+    def test_played_matches_are_not_listed(self):
+        calendar = [m for m in ALL if m.kind == "result"] + SCHED
+        out = _service(calendar=calendar).next_round("LF_CHALLENGE_2026")
+        assert all(m["code"] in {s.code for s in SCHED} for m in out["matches"])
+
+    def test_without_a_calendar_it_is_empty_with_a_warning_and_never_raises(self):
+        def boom(url):
+            raise ConnectionError("calendario no disponible")
+
+        svc = MatchScheduleService(_db(), fetch_calendar=boom, now=lambda: NOW, competitions=lambda: COMPETITIONS)
+        out = svc.next_round("LF_CHALLENGE_2026")
+        assert out["round"] is None and out["matches"] == [] and "calendario" in out["warning"].lower()
+        assert _service(_db(codes=())).next_round("LF_CHALLENGE_2026")["matches"] == []
+        assert _service().next_round("FBCYL_1A_2026")["matches"] == []

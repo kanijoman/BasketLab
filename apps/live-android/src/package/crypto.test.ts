@@ -11,6 +11,26 @@ const fixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo.bpk
 const demoPackage: string = JSON.parse(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/vectors.json'), 'utf8')).engine.package
 const PASS = 'clave-de-prueba-1'
 
+const roundFixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo_round.bpkgz'), 'utf8')
+
+describe('compressed bundles (issue #286)', () => {
+  it('decrypts and decompresses what Python wrote (gzip before AES-GCM)', async () => {
+    expect(JSON.parse(roundFixture).z).toBe('gzip')
+    const bundle = JSON.parse(await decryptEnvelope(roundFixture, PASS))
+    expect(bundle.collection).toBe('DEMO_2026')
+    expect(bundle.matches.map((m: { match: { code: string } }) => m.match.code)).toEqual(['101', '102', '103'])
+    expect(bundle.matches[0].package).toBe(demoPackage)
+  })
+
+  it('refuses a compression it does not know', async () => {
+    await expect(decryptEnvelope(JSON.stringify({ ...JSON.parse(roundFixture), z: 'brotli' }), PASS)).rejects.toThrow(/compresión/i)
+  })
+
+  it('a wrong passphrase still fails as before', async () => {
+    await expect(decryptEnvelope(roundFixture, 'otra-clave-distinta')).rejects.toThrow(/contraseña/i)
+  })
+})
+
 describe('decryptEnvelope (AES-256-GCM, PBKDF2-SHA256)', () => {
   it('decrypts what Python encrypted, byte for byte', async () => {
     expect(await decryptEnvelope(fixture, PASS)).toBe(demoPackage)

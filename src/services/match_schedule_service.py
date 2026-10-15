@@ -91,6 +91,29 @@ class MatchScheduleService:
         entries.sort(key=lambda e: (e["status"] != "live", e["start"] or ""))
         return self._result(entries[:limit], url, None)
 
+    def next_round(self, collection: str) -> Dict[str, Any]:
+        """``{"round", "matches", "calendar_url", "warning"}``: every match still to play of the earliest round that has any (issues #286,
+        #172). A match is ``{code, start, round, home: {id, name}, away: {id, name}}``; one that kicked off long ago counts as played."""
+        empty = {"round": None, "matches": [], "calendar_url": None}
+        if is_fbcyl(collection):
+            return {**empty, "warning": "Los partidos en directo solo están disponibles para competiciones FEB"}
+        url = self.calendar_url(collection)
+        if not url:
+            return {**empty, "warning": "No se conoce el calendario de la competición (sin partidos ni metadatos)"}
+        try:
+            calendar = self._fetch(url)
+        except Exception as exc:  # noqa: BLE001 - FEB down / layout change: report, do not fail
+            return {**empty, "calendar_url": url, "warning": f"No se pudo leer el calendario de FEB: {exc}"}
+        limit = self._now() - STALE_AFTER
+        pending = [m for m in calendar if m.kind == "scheduled" and m.start and datetime.fromisoformat(m.start) >= limit]
+        if not pending:
+            return {**empty, "calendar_url": url, "warning": "No quedan partidos por jugar en el calendario"}
+        first = min(m.round_index for m in pending)
+        matches = [{"code": m.code, "start": m.start, "round": m.round_index,
+                    "home": {"id": m.home_id, "name": m.home_name}, "away": {"id": m.away_id, "name": m.away_name}}
+                   for m in pending if m.round_index == first]
+        return {"round": first, "matches": matches, "calendar_url": url, "warning": None}
+
     def _resolve_started(self, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """A calendar row that already kicked off still says "scheduled": FEB's page shows no score while the match is
         on and for a long time after it (seen in the first real recording, issue #118). Ask FEB's live API: a match

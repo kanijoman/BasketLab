@@ -19,6 +19,9 @@ on:
       - "src/live_prep/publisher.py"
       - "src/live_prep/package_builder.py"
       - "src/live_prep/db_source.py"
+      - "src/live_prep/round_packages.py"
+      - "src/live_prep/package_crypto.py"
+      - "src/services/match_schedule_service.py"
       - "config/package_publish.json"
       - ".github/workflows/live-packages.yml"
 
@@ -35,7 +38,7 @@ jobs:
     # a red Atlas refresh (missing matches) must not block the packages; a cancelled one does
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
