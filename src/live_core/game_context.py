@@ -32,7 +32,7 @@ _REGULATION_LAST_PERIOD = 4
 # What still says something in a decided game (issue #320): fatigue and rotation, plus what is a rule of the game, not a tactic
 # (an illegal lineup, a player about to be disqualified).
 _DECIDED_CATEGORIES = ("rotacion", "descanso")
-_DECIDED_IDS = ("disqualification_risk", "formation_lineup")
+_DECIDED_IDS = ("disqualification_risk", "formation_lineup", "rival_formation_lineup")
 
 
 def kept_when_decided(advice: Advice) -> bool:

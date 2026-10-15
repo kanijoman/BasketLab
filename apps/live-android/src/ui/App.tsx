@@ -276,7 +276,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
-      <FormationStatus formation={out?.analysis?.formation} team={own} />
+      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
 
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
       {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}

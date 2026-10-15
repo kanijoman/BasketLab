@@ -147,8 +147,13 @@ class AdviceEngine:
         ctx = self._ctx
         known = roster_known(ctx.roster, ctx.own_team_id)
         counts = formation_counts(snapshot, ctx.own_team_id, ctx.roster)
+        rival = ctx.rival_team_id
+        rival_known = bool(rival) and roster_known(ctx.roster, rival)
+        rival_counts = formation_counts(snapshot, rival, ctx.roster) if rival_known else None
         return {"min": ctx.config.formation_min_on_court, "known": known, "on_court": counts["yes"] if known else None,
-                "unknown": counts["unknown"] if known else 0, "players": counts["players"]}
+                "unknown": counts["unknown"] if known else 0, "players": counts["players"],
+                "rival": {"known": rival_known, "on_court": rival_counts["yes"] if rival_counts else None,
+                          "unknown": rival_counts["unknown"] if rival_counts else 0, "players": rival_counts["players"] if rival_counts else 0}}
 
     def evaluate(self, snapshot: Dict[str, Any]) -> List[Advice]:
         if self._ctx is None:

@@ -3,68 +3,46 @@ import { describe, expect, it } from 'vitest'
 import FormationStatus from './FormationStatus'
 import type { FormationStatus as Status } from '../engine/types'
 
-const status = (over: Partial<Status> = {}): Status => ({ min: 2, known: true, on_court: 3, unknown: 0, players: 5, ...over })
+const rivalOf = (known: boolean) => ({ known, on_court: known ? 3 : null, unknown: 0, players: known ? 5 : 0 })
+const status = (over: Partial<Status> = {}): Status => ({ min: 2, known: true, on_court: 3, unknown: 0, players: 5, rival: rivalOf(true), ...over })
+const OWN = { id: '1', name: 'MIPELLETYMAS B.F. LEON' }
+const RIVAL = { id: '2', name: 'RECOLETAS ZAMORA' }
 
-describe('FormationStatus (issue #272)', () => {
-  it('shows how many formación players are on court against the minimum', () => {
-    render(<FormationStatus formation={status()} />)
-    expect(screen.getByText(/formación en pista: 3 \(mínimo 2\)/i)).toBeTruthy()
-    expect(document.querySelector('.formation-status')?.getAttribute('data-state')).toBe('ok')
+// Issue #322: the lineup is watched for BOTH teams and an illegal one is a critical alert; a card under the scoreboard that is always
+// there says nothing. The only thing worth a line is that a team is NOT watched (no roster in the package).
+describe('FormationStatus: only says when a team is not being watched (issue #322)', () => {
+  it('shows nothing while both teams are watched, whatever the count', () => {
+    for (const on_court of [0, 1, 2, 3, 5]) {
+      const { container, unmount } = render(<FormationStatus formation={status({ on_court })} own={OWN} rival={RIVAL} />)
+      expect(container.innerHTML, String(on_court)).toBe('')
+      unmount()
+    }
   })
 
-  it('at the minimum it is fine but says so', () => {
-    render(<FormationStatus formation={status({ on_court: 2 })} />)
-    expect(document.querySelector('.formation-status')?.getAttribute('data-state')).toBe('limit')
+  it('shows nothing when the competition has no such rule or the engine sent nothing', () => {
+    expect(render(<FormationStatus formation={status({ min: 0 })} own={OWN} rival={RIVAL} />).container.innerHTML).toBe('')
+    expect(render(<FormationStatus formation={null} own={OWN} rival={RIVAL} />).container.innerHTML).toBe('')
   })
 
-  it('below the minimum with a full lineup is an illegal lineup and is announced to assistive technology', () => {
-    render(<FormationStatus formation={status({ on_court: 1 })} />)
-    const el = screen.getByRole('alert')
-    expect(el.textContent).toMatch(/por debajo del mínimo/i)
-    expect(el.getAttribute('data-state')).toBe('bad')
+  it('says it when our team has no roster', () => {
+    render(<FormationStatus formation={status({ known: false, on_court: null })} own={OWN} rival={RIVAL} />)
+    expect(screen.getByRole('status').textContent).toMatch(/no se vigila la alineación de formación de MIPELLETYMAS B\.F\. LEON/i)
   })
 
-  it('with a substitution in progress (fewer than five on court) it does not shout', () => {
-    render(<FormationStatus formation={status({ on_court: 0, players: 4 })} />)
-    expect(screen.queryByRole('alert')).toBeNull()
-    expect(screen.getByText(/cambio en curso/i)).toBeTruthy()
+  it('says it when the rival has no roster', () => {
+    render(<FormationStatus formation={status({ rival: rivalOf(false) })} own={OWN} rival={RIVAL} />)
+    expect(screen.getByRole('status').textContent).toMatch(/no se vigila la alineación de formación de RECOLETAS ZAMORA/i)
   })
 
-  it('players the roster does not know give the benefit of the doubt and are mentioned', () => {
-    render(<FormationStatus formation={status({ on_court: 1, unknown: 2 })} />)
-    expect(screen.queryByRole('alert')).toBeNull()
-    expect(screen.getByText(/2 sin datos/i)).toBeTruthy()
+  it('names both when neither is watched', () => {
+    render(<FormationStatus formation={status({ known: false, on_court: null, rival: rivalOf(false) })} own={OWN} rival={RIVAL} />)
+    const text = screen.getByRole('status').textContent ?? ''
+    expect(text).toContain('MIPELLETYMAS B.F. LEON')
+    expect(text).toContain('RECOLETAS ZAMORA')
   })
 
-  it('says it is not watching the lineup when the package has no roster', () => {
-    render(<FormationStatus formation={status({ known: false, on_court: null })} />)
-    expect(screen.getByText(/sin plantilla de feb/i)).toBeTruthy()
-    expect(screen.getByText(/no se vigila/i)).toBeTruthy()
-  })
-
-  it('shows nothing without the data or when the competition has no such rule', () => {
-    const { container, rerender } = render(<FormationStatus formation={undefined} />)
-    expect(container.firstChild).toBeNull()
-    rerender(<FormationStatus formation={status({ min: 0 })} />)
-    expect(container.firstChild).toBeNull()
-  })
-})
-
-describe('FormationStatus says whose lineup it is (issue #322: it was not clear if it was ours or the rival)', () => {
-  const own = { id: '1', name: 'MIPELLETYMAS B.F. LEON' }
-
-  it('names the own team', () => {
-    render(<FormationStatus formation={status()} team={own} />)
-    const el = document.querySelector('.formation-status') as HTMLElement
-    expect(el.textContent).toMatch(/tu equipo/i)
-    expect(el.textContent).toContain('MIPELLETYMAS B.F. LEON')
-    expect(el.textContent).toMatch(/formación en pista: 3 \(mínimo 2\)/i)
-  })
-
-  it('also when it is not being watched, and when the lineup is illegal', () => {
-    const { rerender } = render(<FormationStatus formation={status({ known: false, on_court: null })} team={own} />)
-    expect(document.querySelector('.formation-status')?.textContent).toMatch(/tu equipo/i)
-    rerender(<FormationStatus formation={status({ on_court: 1 })} team={own} />)
-    expect(screen.getByRole('alert').textContent).toMatch(/tu equipo/i)
+  it('an engine that does not send the rival yet (an old package) only talks about our team', () => {
+    const old = { min: 2, known: true, on_court: 2, unknown: 0, players: 5 } as Status
+    expect(render(<FormationStatus formation={old} own={OWN} rival={RIVAL} />).container.innerHTML).toBe('')
   })
 })

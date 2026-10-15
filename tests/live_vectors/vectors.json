@@ -53,7 +53,7 @@
      ],
      "digests": {
       "alerts": "c082e7c8ba9320b1941f39395c651f5bb45a1897016fb4e7b5659d2faddda419",
-      "analysis": "3cd869964f57b50115a8e5540b8ea14582c7278883691b58c385da2acccf375d",
+      "analysis": "6d0dbab26d55d0aed02121f4d0ec2897151d09a582408af60c6c16ef698a5884",
       "snapshot": "20d84172be2a1d74d1d9bc43d7450cd2edb19c06a91a9b0ae4887b9dce851d43"
      },
      "elapsed": 300,
@@ -73,7 +73,7 @@
      ],
      "digests": {
       "alerts": "ee5ba07d51ca69ca9393e988b670728f10c3578d0df8938becb54cf23e8f030a",
-      "analysis": "f42d51ccd882baaec333797ecae401d864554d2bc372c0f1f89913af2bff324a",
+      "analysis": "e92de32237830c56b3d9885d5c92e26cdf4d04d8baa50646a246fabc166b67c9",
       "snapshot": "36103ee5d5c97af64e18fbb5ea6d269791ab4cfe4217f24bb88934768a067288"
      },
      "elapsed": 600,
@@ -89,7 +89,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "c9800a03ed7eecf4adb1eb9d1d4964bd925f815ca6b54dfb67ccff4e165a47b3",
+      "analysis": "5cb007274495735337d994e6c799b617834af93e7d6663f840d0a142429d29d9",
       "snapshot": "8e72d28f85937eede9b2e12043accf41b2b2092a43ffe2cb156b8ec3dad26c00"
      },
      "elapsed": 900,
@@ -111,7 +111,7 @@
      ],
      "digests": {
       "alerts": "1828df2ced2db22b4aa09f20ae2dd937447e616e8ea924c34a6f18398888307e",
-      "analysis": "c869b8ec9616465006a28c859503e95e0af91fde0f3b0a0509f26c6f9ff98362",
+      "analysis": "14e8cd9a9f2c8eb49812bcfa71da0a5a7e676a44a20c26d8f5fa3fa654f9d0b9",
       "snapshot": "cc54458b5715ee15da13acaf0cd3dc133ef7a4bf2d8b6b631346abc0a6309360"
      },
      "elapsed": 1200,
@@ -129,7 +129,7 @@
      ],
      "digests": {
       "alerts": "b941cbba7a71fa5d8b9d380bab046eb571ce37f14ff847512eb4697e55b767f9",
-      "analysis": "886be1d29f5712669cb518422e3edccacfbebac518d9cc9a380e77a141e12ea6",
+      "analysis": "0e54bfb7c3c7a9f62c16caf8a76338896643f5f0eb3011af6cc632da7ba0edbe",
       "snapshot": "80b95fcde48eb83cb22b3f538de96b7cf2879d70578ec2167ee34f9f6a9a8162"
      },
      "elapsed": 1350,
@@ -150,7 +150,7 @@
      ],
      "digests": {
       "alerts": "a014edffc1171024da1792703222d69e1f437b93ea7c3c9f75bce438670ad22b",
-      "analysis": "36970af6370a812c0ebbc0760593d467a4a7bb26ab6de11342318ac2e31acedf",
+      "analysis": "c9a38ba5452118b12b440c4ada75c4a14cf61ab462b22cf680ddccaebb9b090a",
       "snapshot": "b82083b564bd375f205fb9b55b0598979c79baccfb65edf8bd3cf516594b7517"
      },
      "elapsed": 1800,
@@ -166,7 +166,7 @@
      "alerts": [],
      "digests": {
       "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-      "analysis": "eeef7892584cd7ba3b88e3c34fbaa34f3ac8100ab6c9ec030c122cf70e3154ff",
+      "analysis": "3d4d4e2f623c12f362bd890c77704cbf3dad2a1b1c3b74757918f1ff666353c4",
       "snapshot": "83bd35d4c64e39eef9ff52e171d39bdab8e8e7b49c54080f856e40e60f230a1d"
      },
      "elapsed": 1800,
@@ -186,7 +186,7 @@
      ],
      "digests": {
       "alerts": "d8ef87d4dc517fd1b7fff5ba11bd1be7e27be13711cff2c81d900ffcde3a8879",
-      "analysis": "f2049c7632d6c69a64a094f78c3242936f98d2f833bd34ca6fa8677a466bf5af",
+      "analysis": "3536eb8d2e8189b79e3de68e095c8db8056d6396321b588df076fdfb77f5856c",
       "snapshot": "0ccdeb46ad3fce7cc61f454cd87bf2074d3b0e9f9fc655c3d0baf3a2c3e0a3da"
      },
      "elapsed": 2100,
@@ -206,7 +206,7 @@
      ],
      "digests": {
       "alerts": "dcc159e4f1e13a799732657de37e59f8902c6855906d3c3b77199c725c61331e",
-      "analysis": "8c31a99ca887ecbdf05a713693149aa22eb63486c2f4108abdf6edd9574d7a85",
+      "analysis": "8c48f937f031ee2e0e8d2c319e7a9cae53ceae77fff8bbdc8c6daf3ec18f6e33",
       "snapshot": "46d646be328ebb8529a2753f9e6c406d55d76786f4c8b73f906a02777b12b968"
      },
      "elapsed": 2340,
@@ -232,7 +232,7 @@
      ],
      "digests": {
       "alerts": "925057787a2c56a71f60ad409385179706b59fb3ef6ccf7d9c8c54db5f26ae47",
-      "analysis": "034104cd40729e0b10d127e02ad96b8b7d052ccb88e0cb71d3f2783168cf746e",
+      "analysis": "b6cefb0770c7d82a4a4600b8976871e1ea0aaf8e16f3ee689e55eff0957e9d55",
       "snapshot": "da82e1244076810e97c2e550aa54f8c307036bfee574b006f233be7e22f830cd"
      },
      "elapsed": 2400,
@@ -4542,6 +4542,7 @@
        ],
        "minimum": 2,
        "on_court_formation": 1,
+       "team_id": "T1",
        "unknown": 0
       },
       "id": "formation_lineup",
@@ -4569,6 +4570,7 @@
        ],
        "minimum": 2,
        "on_court_formation": 1,
+       "team_id": "T1",
        "unknown": 0
       },
       "id": "formation_lineup",
@@ -4595,6 +4597,7 @@
        ],
        "minimum": 2,
        "on_court_formation": 1,
+       "team_id": "T1",
        "unknown": 0
       },
       "id": "formation_lineup",
@@ -4647,6 +4650,7 @@
        ],
        "minimum": 2,
        "on_court_formation": 1,
+       "team_id": "T1",
        "unknown": 0
       },
       "id": "formation_lineup",
@@ -4767,6 +4771,7 @@
        ],
        "minimum": 2,
        "on_court_formation": 1,
+       "team_id": "T1",
        "unknown": 0
       },
       "id": "formation_lineup",
@@ -4793,6 +4798,7 @@
        ],
        "minimum": 2,
        "on_court_formation": 1,
+       "team_id": "T1",
        "unknown": 0
       },
       "id": "formation_lineup",
