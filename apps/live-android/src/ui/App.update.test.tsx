@@ -50,6 +50,48 @@ const openAbout = () => fireEvent.click(screen.getByRole('tab', { name: 'Acerca 
 const mount = (d: AppUpdateDeps, extra: object = {}) =>
   render(<App engine={engine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} appUpdate={d} {...extra} />)
 
+/** A device whose "back to the foreground" the test triggers by hand (issue #335). */
+function withResume(over: Partial<AppUpdateDeps> = {}) {
+  let resume: (() => void) | null = null
+  const d = deps({ onResume: cb => { resume = cb; return () => { resume = null } }, ...over })
+  return { d, fire: () => resume?.(), listening: () => resume !== null }
+}
+
+describe('new versions are noticed without opening Acerca de (issue #335)', () => {
+  it('checks again when the app comes back to the foreground, and shows the notice', async () => {
+    let now = 1_000_000
+    const first = { ...LATEST, version: '0.2.0', versionCode: 40 }       // what was published when the app opened: nothing newer
+    const fetchJson = vi.fn().mockResolvedValueOnce(first).mockResolvedValue(LATEST)
+    const { d, fire } = withResume({ fetchJson, now: () => now })
+    mount(d)
+    await screen.findByText('EQUIPO PROPIO')
+    await waitFor(() => expect(fetchJson).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('status', { name: /actualización/i })).toBeNull()
+    now += 11 * 60 * 1000                                                 // a release was published and the cache is old
+    fire()
+    expect((await screen.findByRole('status', { name: /actualización/i })).textContent).toMatch(/versión nueva: 0\.3\.0/i)
+    expect(fetchJson).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not ask again when it returns within the minutes of the cache', async () => {
+    const { d, fire } = withResume({ now: () => 1_000_000 })
+    mount(d)
+    await screen.findByRole('status', { name: /actualización/i })
+    fire()
+    await new Promise(resolve => setTimeout(resolve, 20))
+    expect(d.fetchJson).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops listening when the app closes, and in a browser it never listens for nothing', async () => {
+    const { d, listening } = withResume()
+    const { unmount } = mount(d)
+    await screen.findByRole('status', { name: /actualización/i })
+    expect(listening()).toBe(true)
+    unmount()
+    expect(listening()).toBe(false)
+  })
+})
+
 describe('update notice', () => {
   it('shows a discreet notice when a newer version is published and opens the APK from its button', async () => {
     const d = deps()
