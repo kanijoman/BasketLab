@@ -26,6 +26,33 @@ def session():
     return s
 
 
+class TestFirstEvent:
+    """A recording starts with minutes of nothing (the match is SCHEDULED, no plays): the app starts at the first event (issue #346)."""
+
+    def test_the_first_event_is_the_first_moment_with_a_play_by_play_line(self):
+        feed = RecordedFeed.loads(RECORDING)
+        start = feed.first_event_at()
+        assert 200 < start < 400                                   # ~4.5 minutes of waiting in the real match
+        assert (feed.document_at(start)["PLAYBYPLAY"]["LINES"])
+        assert not (feed.document_at(start - 1)["PLAYBYPLAY"]["LINES"])
+
+    def test_before_it_there_is_nothing_to_see(self):
+        feed = RecordedFeed.loads(RECORDING)
+        start = feed.first_event_at()
+        assert all(not (feed.document_at(t) or {"PLAYBYPLAY": {"LINES": []}})["PLAYBYPLAY"]["LINES"] for t in range(0, int(start), 15))
+
+    def test_a_recording_without_plays_starts_at_the_beginning(self):
+        data = {"v": 1, "match": "1", "base": {"HEADER": {}, "BOXSCORE": {}, "PLAYBYPLAY": {}, "SHOTCHART": {}},
+                "lines": [], "shots": [], "frames": [{"t": 0.0, "h": {"status": "1"}}, {"t": 30.0, "h": {"status": "1"}}], "gaps": {}}
+        assert RecordedFeed(data).first_event_at() == 0.0
+
+    def test_loading_a_recording_tells_where_to_start(self):
+        s = LiveSession(PACKAGE)
+        info = s.load_recording(RECORDING)
+        assert info["start_at"] == RecordedFeed.loads(RECORDING).first_event_at()
+        assert 0 <= info["start_at"] < info["duration"]
+
+
 class TestFeed:
     def test_in_any_gap_covers_every_endpoint(self):
         feed = RecordedFeed.loads(RECORDING)

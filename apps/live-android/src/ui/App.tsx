@@ -132,7 +132,12 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     try {
       const real = await loadMatch(match)
       setMeta(await engine.start(real.package))
-      setInfo(await engine.loadRecording(real.recording))
+      const recording = await engine.loadRecording(real.recording)
+      setInfo(recording)
+      // start at the first event, not in the minutes before the match (issue #346); the timeline still shows the whole recording
+      const start = recording.start_at ?? 0
+      elapsedRef.current = start
+      setElapsed(start)
       setSource(match.code)
       setPhase({ kind: 'ready' })
     } catch (e) {

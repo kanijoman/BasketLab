@@ -180,6 +180,19 @@ describe('App', () => {
         .toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'Partido de ejemplo'])
     })
 
+    it('opens at the first event of a recorded match, not at the minutes before it (issue #346)', async () => {
+      const engine = fakeEngine({ loadRecording: vi.fn().mockResolvedValue({ duration: 7155, status: 'GRABACION', match: '2524470', frames: 353, start_at: 270 }) })
+      render(<App engine={engine} {...props} />)
+      await screen.findByLabelText(/partido de la demostración/i)
+      expect(screen.getByText('4:30 / 119:15')).toBeTruthy()
+    })
+
+    it('a recording that says nothing starts at 0:00, as before', async () => {
+      render(<App engine={fakeEngine()} {...props} />)
+      await screen.findByLabelText(/partido de la demostración/i)
+      expect(screen.getByText('0:00 / 1:40')).toBeTruthy()
+    })
+
     it('plays it second by second: waits for the match, shows the real 404 and then the alerts', async () => {
       const engine = fakeEngine()
       render(<App engine={engine} {...props} />)

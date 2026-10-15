@@ -29,6 +29,8 @@ export interface ReplayInfo {
 export interface RecordingInfo extends ReplayInfo {
   match: string
   frames: number
+  /** Seconds in which the first play-by-play line appears: the minutes before are the match waiting to start (issue #346). Absent: 0. */
+  start_at?: number
 }
 
 /** One moment of the recording: the engine output, or why there is none (not started yet / FEB answered 404). */
