@@ -28,6 +28,9 @@ _TEAM_FOUL_TYPES = {"personal", "unsportsmanlike", "technical"}
 # Recovery credited to a player who stays on court through a break (game-seconds of the
 # current stint; real minutes are never discounted). Halftime resets the stint completely.
 QUARTER_BREAK_CREDIT_S = 60
+# A timeout is a minute of rest for the players on court of BOTH teams (the clock stops for everybody): credited like the break, partly
+# (issue #316; provisional, to be tuned with the evaluator).
+TIMEOUT_CREDIT_S = 30
 HALFTIME_PERIOD = 3
 
 
@@ -248,6 +251,9 @@ class LiveGame:
         if team is not None:
             team.timeouts.append(ev.elapsed)
             self.log.append([ev.elapsed, ev.team_id, "timeout", 1, None])  # a timeout never has a player
+            for on_court in self.players.values():
+                if on_court.on_court:
+                    on_court.credit += TIMEOUT_CREDIT_S
 
     def _on_foul(self, ev: Event, player: Optional[_Player], team: Optional[_Team]) -> None:
         if player:

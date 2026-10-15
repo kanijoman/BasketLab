@@ -1,5 +1,6 @@
 /** About the app: version, update check and diagnostics to attach to an issue (issues #226 and #227). */
 import { useState } from 'react'
+import markUrl from '@design/brand/live-mark.svg'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
@@ -93,6 +94,7 @@ export default function AboutPanel({ sessionLog, experimental, engineVersion, sc
 
   return (
     <section className="panel about-panel" aria-label="Acerca de">
+      <img src={markUrl} alt="" width={72} height={72} aria-hidden="true" className="about-logo" />
       <h2>Acerca de</h2>
       <p>
         {dev ? 'BasketLab Live · versión de desarrollo' : `BasketLab Live ${version!.name}${version!.build !== null ? ` · build ${version!.build}` : ''}`}

@@ -206,12 +206,12 @@ def test_advice_is_a_plain_dataclass_with_json_friendly_fields():
 
 # --- integration with the real sample game -----------------------------------------
 
-def _run_sample(feb_game_doc, own):
+def _run_sample(feb_game_doc, own, config=None):
     from src.live_core.engine import LiveEngine
     from src.live_core.clock import period_and_remaining
     from src.live_core.replay import truncate_doc
 
-    live, advice, emitted = LiveEngine(), AdviceEngine(own_team_id=own), []
+    live, advice, emitted = LiveEngine(), AdviceEngine(own_team_id=own, config=config), []
     for elapsed in range(60, 2401, 30):
         period, remaining = period_and_remaining(elapsed - 1) if elapsed < 2400 else (4, 0)
         snapshot = live.update(truncate_doc(feb_game_doc, period, remaining))
@@ -232,14 +232,16 @@ def test_sample_game_alerts_make_basketball_sense(feb_game_doc):
 def test_sample_game_rearmed_alerts_respect_their_interval(feb_game_doc):
     from src.live_core.config import RuleConfig
 
-    emitted = _run_sample(feb_game_doc, own="982047")
+    # the rest of the timeouts (#316) shortens the stints, so the alert level is lowered here: the test is about the re-arm, not the level
+    config = RuleConfig(fatigue_alert_index=40.0)
+    emitted = _run_sample(feb_game_doc, own="982047", config=config)
     fatigue = [a for a in emitted if a.id == "fatigue_high"]
     assert fatigue, "the sample has long stints: at least one fatigue alert is expected"
     by_player = {}
     for a in fatigue:
         by_player.setdefault(a.evidence["player_id"], []).append(a)
     for alerts in by_player.values():
-        assert all(a.evidence["index"] >= RuleConfig().fatigue_alert_index for a in alerts)
+        assert all(a.evidence["index"] >= config.fatigue_alert_index for a in alerts)
 
 
 def test_sample_game_run_is_deterministic(feb_game_doc):

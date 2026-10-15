@@ -15,8 +15,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
+from .recent_timeout import adapt_for_recent_timeout
 from .win_prob import WinProbabilityModel
-from .game_context import adjust_for_phase, game_phase
+from .game_context import adjust_for_phase, game_phase, kept_when_decided
 from .pace import PaceModel
 from .proposals import timeout_proposal
 from .lineups import lineup_key
@@ -161,13 +162,16 @@ class AdviceEngine:
                 continue
             for raw in rule(snapshot, self._ctx):
                 advice = adjust_for_phase(raw, context) if context else raw
+                if context and context["phase"] == "decided" and cfg.decided_only_rotation and not kept_when_decided(advice):
+                    continue     # silenced, not recorded: it comes back if the game reopens (#320)
                 if advice.confirm > 1:
                     streaks[advice.key] = self._streak.get(advice.key, 0) + 1
                     if streaks[advice.key] < advice.confirm:
                         continue
                 if self._is_new(advice, raw.key, now):
                     self._last[advice.key] = now
-                    emitted.append(self._with_proposal(self._numbered(advice), snapshot))
+                    emitted.append(adapt_for_recent_timeout(self._with_proposal(self._numbered(advice), snapshot), snapshot,
+                                                            self._ctx.own_team_id, self._ctx.config))
         self._streak = streaks   # an alert that was not there this time starts again
         return sorted(emitted, key=lambda a: SEVERITY_RANK[a.severity])  # stable: critical first
 
@@ -199,8 +203,7 @@ class AdviceEngine:
             return advice
         proposal: List[Dict[str, Any]]
         if advice.id in ("foul_trouble", "fatigue_high"):
-            proposal = self._recommender.suggest_swaps(
-                snapshot, advice.evidence["player_id"], lever=self._current_lever(snapshot))
+            proposal = self._relief(snapshot, advice)
         elif advice.id == "four_factors_lever":
             proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
         elif advice.id == "rival_orb_window":
@@ -212,6 +215,16 @@ class AdviceEngine:
         else:
             return advice
         return dataclasses.replace(advice, proposal=[*advice.proposal, *proposal])
+
+    def _relief(self, snapshot: Dict[str, Any], advice: Advice) -> List[Dict[str, Any]]:
+        """Who comes in for a tired or fouled player: the closest role, but in a decided game the bench goes first (issue #320)."""
+        pid = advice.evidence["player_id"]
+        if advice.id == "fatigue_high" and self._ctx.config.decided_only_rotation:
+            phase = game_phase(snapshot, self._ctx.own_team_id, self._ctx.rival_team_id, self._ctx.config)["phase"]
+            rested = self._recommender.suggest_rest(snapshot, pid) if phase == "decided" else []
+            if rested:
+                return rested
+        return self._recommender.suggest_swaps(snapshot, pid, lever=self._current_lever(snapshot))
 
     def _with_timeout_count(self, advice: Advice, snapshot: Dict[str, Any]) -> Advice:
         """A timeout proposal that does not say how many timeouts are left gets the own team's count."""

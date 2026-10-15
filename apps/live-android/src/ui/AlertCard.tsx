@@ -80,11 +80,13 @@ interface CardProps {
   /** The answer of the staff; the buttons only show when somebody listens to them. */
   verdict?: Verdict | null
   onVerdict?: (verdict: Verdict | null) => void
+  /** Arrived with the latest change of the list: enters with a highlight (issue #312). */
+  fresh?: boolean
 }
 
-export default function AlertCard({ alert, at, verdict = null, onVerdict }: CardProps) {
+export default function AlertCard({ alert, at, verdict = null, onVerdict, fresh = false }: CardProps) {
   return (
-    <li className={`alert alert-${alert.severity}`}>
+    <li className={`alert alert-${alert.severity}${fresh ? ' alert-new' : ''}`}>
       <div className="alert-head">
         <span className="badge">{SEVERITY_LABEL[alert.severity]}</span>
         <CategoryTag category={alert.category} />

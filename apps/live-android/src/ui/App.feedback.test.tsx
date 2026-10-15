@@ -76,4 +76,24 @@ describe('App feedback (issue #235)', () => {
     expect(screen.getByRole('button', { name: 'Seguida' }).getAttribute('aria-pressed')).toBe('false')
     expect(JSON.parse(localStorage.getItem(KEY) ?? '[]')).toEqual([])
   })
+
+  // Issue #314: "0 de 53" with 40 alerts on the screen — the history of earlier runs of the same match was counted
+  it('the count is about the alerts of this run, not the history of earlier runs', async () => {
+    const stale = ['a', 'b', 'c'].map(key => ({ key, id: 'x', severity: 'info', category: 'rival', message: 'm', elapsed: 900, shown_at: '2026-10-14T10:00:00Z', verdict: null }))
+    localStorage.setItem(KEY, JSON.stringify(stale))
+    await playUntilTheAlert()
+    expect(screen.getByText(/0 de 1 alertas valoradas/i)).toBeTruthy()
+    expect(screen.queryByText(/de 4 alertas/i)).toBeNull()
+  })
+
+  it('after a restart the count starts again from the alerts that come back, and the answers stay', async () => {
+    await playUntilTheAlert()
+    fireEvent.click(screen.getByRole('button', { name: 'Seguida' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }))
+    fireEvent.click(screen.getByRole('button', { name: /sí, reiniciar/i }))
+    await waitFor(() => expect(screen.queryByText(/alertas valoradas/i)).toBeNull())      // nothing shown yet: no panel
+    fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
+    await waitFor(() => expect(screen.getByText(/1 de 1 alertas valoradas/i)).toBeTruthy())
+  })
 })

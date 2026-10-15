@@ -82,8 +82,10 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .count-warning { color: var(--sev-warning); background: rgb(var(--sev-warning-rgb) / 0.14); border-color: rgb(var(--sev-warning-rgb) / 0.4); }
 .count-info { color: var(--sev-info); background: rgb(var(--sev-info-rgb) / 0.12); border-color: rgb(var(--sev-info-rgb) / 0.35); }
 .alerts { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.alerts-info { margin-top: 14px; }
-.alerts-info > h3 { margin: 0 0 8px; font-size: 0.95rem; color: var(--sev-info); }
+.alerts-older { margin-top: 12px; }
+.alerts-older > summary { cursor: pointer; padding: 10px 12px; min-height: 44px; box-sizing: border-box; color: var(--muted); font-weight: 600;
+  border: 1px dashed var(--line); border-radius: 10px; }
+.alerts-older[open] > summary { margin-bottom: 10px; }
 .alert { background: var(--card); border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; padding: 10px 12px; }
 .alert-critical { border-left-color: var(--sev-critical); background: rgb(var(--sev-critical-rgb) / 0.12); border-color: rgb(var(--sev-critical-rgb) / 0.45); }
 .alert-warning { border-left-color: var(--sev-warning); background: rgb(var(--sev-warning-rgb) / 0.08); }
@@ -203,3 +205,37 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .confirm { padding: 10px 12px; border: 1px solid var(--sev-warning, var(--accent)); border-radius: 10px; background: var(--card); }
 .confirm p { margin: 0 0 8px; }
 .confirm-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Brand (#311): the header of the screens, the loading splash and the logo of Acerca de */
+.brand-header { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
+.brand-name { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.01em; }
+.brand-name strong { color: var(--accent); }
+.about-logo { display: block; margin: 0 0 8px; }
+.splash { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: var(--surface, var(--bg)); text-align: center; }
+.splash h1 { margin: 0; font-size: 1.6rem; }
+.splash h1 strong { color: var(--accent); }
+.splash p { margin: 0; color: var(--muted); }
+.splash-mark { animation: splash-breathe 2.4s ease-in-out infinite; }
+.splash-progress { width: 160px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.splash-progress span { display: block; width: 40%; height: 100%; border-radius: 2px; background: var(--accent); animation: splash-slide 1.4s ease-in-out infinite; }
+@keyframes splash-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes splash-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .splash-mark, .splash-progress span { animation: none; } }
+/* Motion (#312): it says what changed and is short. A new alert enters with a highlight, the score flashes, a tab fades in and buttons
+   answer to the touch. Everything stops for who asks for less motion. */
+@keyframes alert-in { from { opacity: 0; transform: translateY(-10px); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 232 101 26) / 0.55); } 60% { opacity: 1; transform: none; } to { box-shadow: 0 0 0 0 transparent; } }
+@keyframes score-bump { 0% { transform: scale(1); color: var(--accent); } 40% { transform: scale(1.22); color: var(--accent); } 100% { transform: scale(1); } }
+@keyframes tab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.alert-new { animation: alert-in 0.45s ease-out; }
+.team .pts.bump { animation: score-bump 0.6s ease-out; display: inline-block; }
+.tab-fade { animation: tab-in 0.18s ease-out; }
+button { transition: transform 0.08s ease, background-color 0.15s ease, border-color 0.15s ease; }
+button:active { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) {
+  .alert-new, .pts.bump, .tab-fade { animation: none; }
+  button { transition: none; }
+  button:active { transform: none; }
+}
+/* A little depth (#312): the cards were flat. A soft shadow, and the scoreboard with an accent edge that says what the screen is about. */
+.scoreboard, .panel, .alert, .pace-card, .wp-card { box-shadow: 0 1px 3px rgb(0 0 0 / 0.22); }
+.scoreboard { border-top: 3px solid var(--accent); background: linear-gradient(180deg, rgb(var(--accent-rgb, 232 101 26) / 0.07), var(--card) 55%); }

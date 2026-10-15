@@ -15,8 +15,8 @@ describe('timeline touch behaviour (issue #309)', () => {
     expect(rule(".timeline input[type='range']")).toContain('touch-action: pan-y')
   })
 
-  it('shows the informative alerts as a block with a heading, not behind a summary', () => {
-    expect(css).not.toContain('.alerts-info > summary')
-    expect(rule('.alerts-info > h3')).toContain('font-size')
+  it('the older alerts wait behind a summary, and the informative ones have no block of their own any more (#313)', () => {
+    expect(css).not.toContain('.alerts-info')
+    expect(rule('.alerts-older > summary')).toContain('min-height: 44px')
   })
 })

@@ -40,6 +40,10 @@ class RuleConfig:
     formation_min_on_court: int = 2
     formation_confirm_polls: int = 2
     decided_margin: int = 20
+    # In a decided game (#320) only fatigue and rotation alerts are shown (False: everything as in any other phase), and fatigue
+    # alerts this many index points earlier: nobody should be left tired when nothing is at stake.
+    decided_only_rotation: bool = True
+    decided_fatigue_offset: float = 15.0
     # Rest in a decided game: a player is important with at least this average and this many seconds played today.
     rest_important_avg_min_s: int = 1200
     rest_important_today_s: int = 600
@@ -239,6 +243,12 @@ class RuleConfig:
     # Levers (#256): how much faster or slower the pace is tried, and the smallest probability gain worth listing.
     wp_pace_change: float = 0.10
     wp_lever_min_gain: float = 0.01
+    # No timeout is proposed right after the own team called one (issue #318): window in game-seconds (0 = always propose).
+    timeout_recent_s: int = 120
+    # Fouls of who comes in (issue #317): in the first quarter this many personal fouls already make a player a risk (she does not come
+    # in); from this many a proposal says "entra con N faltas".
+    foul_risk_pf_first_period: int = 2
+    foul_note_pf: int = 2
     # Prior weight (in possessions) of the season expectation per factor.
     ff_n0_efg: float = 40.0
     ff_n0_tov: float = 25.0

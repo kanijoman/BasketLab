@@ -21,7 +21,9 @@ import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
+import BrandHeader from './BrandHeader'
 import PaceCard from './PaceCard'
+import Splash from './Splash'
 import WinProbCard from './WinProbCard'
 import { useExperimental } from './useExperimental'
 import { useSessionLog } from './useSessionLog'
@@ -228,7 +230,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} />
 
-  if (phase.kind === 'loading') return <main className="screen"><p className="status">Cargando motor…</p></main>
+  if (phase.kind === 'loading') return <Splash />
   if (phase.kind === 'error') {
     return (
       <main className="screen">
@@ -258,6 +260,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setElapsed(to)
     await step(to)
   }
+  // the count is about the alerts of THIS run (#314): the history of earlier runs of the same match stays in the device, not in the count
+  const shownKeys = new Set(entries.map(e => e.alert.key))
+  const shownFeedback = feedback.records.filter(r => shownKeys.has(r.key))
   const homeFirst = (snap?.home_id ?? meta?.home_id) === rival.id
   const [home, away] = homeFirst ? [rival, own] : [own, rival]
   const matchTab = (
@@ -302,8 +307,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
       </section>
 
-      {feedback.records.length > 0 && (
-        <FeedbackPanel records={feedback.records} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
+      {shownFeedback.length > 0 && (
+        <FeedbackPanel records={shownFeedback} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
       )}
 
       <VersionFooter version={update.installed} engineVersion={meta?.engine_version ?? null} />
@@ -318,8 +323,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   )
   return (
     <main className="screen with-tabs">
+      <BrandHeader />
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
-      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+      <div role="tabpanel" key={tab} className="tab-fade" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'partido' ? matchTab : tab === 'paquetes' ? panel : aboutTab}
       </div>
       <TabBar active={tab} onChange={setTab} />

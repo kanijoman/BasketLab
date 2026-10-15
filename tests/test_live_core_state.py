@@ -287,3 +287,50 @@ def test_the_real_recording_has_zamora_at_home():
     feed = RecordedFeed.load(Path(__file__).parent / "recordings" / "2524470.rec.json.gz")
     snap = LiveEngine().update(feed.document_at(feed.duration))
     assert snap["home_id"] == "1008898"  # RECOLETAS ZAMORA hosted MIPELLETYMAS B.F. LEON
+
+
+# --- rest in timeouts (issue #316) -------------------------------------------------
+
+def _doc_with_timeout(team="T2", at="08:00"):
+    """P1 (team T1) never leaves the court; a timeout is called at ``at`` of the 2nd quarter by ``team``."""
+    doc = _doc(2, "07:00")
+    doc["PLAYBYPLAY"]["LINES"].append({"num": "2", "quarter": "2", "time": at, "idTeam": team, "idPlayer": None,
+                                       "action": "timeout", "text": "(B) Tiempo muerto", "deleted": None})
+    return doc
+
+
+def test_a_timeout_gives_recovery_to_the_players_on_court():
+    # Q2 starts at 600 s; the 2-minute break credits 60 s; the timeout (of EITHER team: both stop) credits TIMEOUT_CREDIT_S more.
+    from src.live_core.state import TIMEOUT_CREDIT_S
+
+    without = LiveEngine().update(_doc(2, "07:00"))["players"]["P1"]["stint"]
+    with_timeout = LiveEngine().update(_doc_with_timeout())["players"]["P1"]["stint"]
+    assert without - with_timeout == TIMEOUT_CREDIT_S
+
+
+def test_the_timeout_of_the_own_team_counts_the_same():
+    from src.live_core.state import TIMEOUT_CREDIT_S
+
+    base = LiveEngine().update(_doc(2, "07:00"))["players"]["P1"]["stint"]
+    assert base - LiveEngine().update(_doc_with_timeout(team="T1"))["players"]["P1"]["stint"] == TIMEOUT_CREDIT_S
+
+
+def test_two_timeouts_credit_twice_but_minutes_are_never_discounted():
+    from src.live_core.state import TIMEOUT_CREDIT_S
+
+    doc = _doc_with_timeout()
+    doc["PLAYBYPLAY"]["LINES"].append({"num": "3", "quarter": "2", "time": "07:30", "idTeam": "T1", "idPlayer": None,
+                                       "action": "timeout", "text": "(A) Tiempo muerto", "deleted": None})
+    p = LiveEngine().update(doc)["players"]["P1"]
+    base = LiveEngine().update(_doc(2, "07:00"))["players"]["P1"]
+    assert base["stint"] - p["stint"] == 2 * TIMEOUT_CREDIT_S
+    assert p["minutes"] == base["minutes"]
+
+
+def test_a_bench_player_does_not_get_credit_for_a_timeout():
+    doc = _doc_with_timeout()
+    doc["BOXSCORE"]["TEAM"][0]["PLAYER"].append({"id": "P2", "name": "DOS"})
+    doc["PLAYBYPLAY"]["LINES"].append({"num": "4", "quarter": "2", "time": "07:30", "idTeam": "T1", "idPlayer": "P2", "action": "subst",
+                                       "text": "(A) DOS: Sustitución (Entra a pista)", "deleted": None})
+    p2 = LiveEngine().update(doc)["players"]["P2"]
+    assert p2["on_court"] and p2["stint"] == 30      # entered after the timeout (07:30 -> 07:00): a fresh stint, nothing credited
