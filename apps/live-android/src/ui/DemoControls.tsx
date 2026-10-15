@@ -3,7 +3,7 @@
  * as a segmented control, a timeline to seek (elapsed / total) and, below, what the (recorded) feed is doing.
  */
 import { useState } from 'react'
-import { Pause, Play, RotateCcw } from 'lucide-react'
+import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react'
 import type { RecordingFrame, TeamRef } from '../engine/types'
 import TeamLogo from './TeamLogo'
 
@@ -34,6 +34,9 @@ interface Props {
   onRestart: () => void
   /** Jump to a game-second (going back rebuilds the engine from the start). */
   onSeek: (to: number) => void
+  /** Jump to the next moment with something new (a recorded match that lists its events; absent: no button, issue #345). */
+  onNextEvent?: () => void
+  hasNextEvent?: boolean
   ms: number | null
   /** What the recorded feed did at the last step (only for the real match). */
   feed: RecordingFrame['feed']
@@ -107,6 +110,11 @@ export default function DemoControls(p: Props) {
         <button className="icon-button" aria-label={p.playing ? 'Pausa' : 'Reproducir'} onClick={p.onPlay} disabled={p.finished}>
           {p.playing ? <Pause size={22} aria-hidden="true" /> : <Play size={22} aria-hidden="true" />}
         </button>
+        {p.onNextEvent && (
+          <button className="icon-button secondary" aria-label="Siguiente evento" onClick={p.onNextEvent} disabled={!p.hasNextEvent}>
+            <SkipForward size={20} aria-hidden="true" />
+          </button>
+        )}
         <button className="icon-button secondary" aria-label="Reiniciar" onClick={() => (p.elapsed > 0 ? setQuestion({ kind: 'restart' }) : p.onRestart())}>
           <RotateCcw size={20} aria-hidden="true" />
         </button>

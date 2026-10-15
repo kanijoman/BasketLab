@@ -29,6 +29,10 @@ export interface ReplayInfo {
 export interface RecordingInfo extends ReplayInfo {
   match: string
   frames: number
+  /** Seconds in which the first play-by-play line appears: the minutes before are the match waiting to start (issue #346). Absent: 0. */
+  start_at?: number
+  /** Seconds of the moments in which something new appears in the feed, sorted: the steps of «Siguiente evento» (issue #345). */
+  events?: number[]
 }
 
 /** One moment of the recording: the engine output, or why there is none (not started yet / FEB answered 404). */

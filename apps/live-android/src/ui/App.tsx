@@ -34,6 +34,7 @@ import FormationStatus from './FormationStatus'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab from './PackagesTab'
+import ReviewSwitch from './ReviewSwitch'
 import TabBar from './TabBar'
 import { useTab } from './useTab'
 import FeedbackPanel from './FeedbackPanel'
@@ -73,6 +74,11 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [demo, setDemo] = useState<DemoData | null>(null)
   const [matches, setMatches] = useState<DemoMatch[]>([])
   const [pkg, setPkg] = useState<PackageSummary | null>(null)
+  // reviewing a recorded match while the package stays saved (issue #344); the live view is a package that is not being reviewed
+  const [reviewing, setReviewing] = useState(false)
+  /** Moments of the recorded match in which something new appears (issue #345); empty for the sample game. */
+  const [events, setEvents] = useState<number[]>([])
+  const liveMode = pkg !== null && !reviewing
   const [out, setOut] = useState<EngineOutput | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
   const [elapsed, setElapsed] = useState(0)
@@ -97,7 +103,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
   // the staff's answers belong to the match being followed: the package's match, else the demo being replayed
-  const feedback = useFeedback(pkg ? `live:${pkg.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null, undefined, alertMode)
+  const feedback = useFeedback(liveMode ? `live:${pkg!.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null, undefined, alertMode)
   const { register: registerAlert } = feedback
 
   const reset = useCallback(() => {
@@ -109,10 +115,11 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const beginDemo = useCallback(async (data: DemoData) => {
     setPhase({ kind: 'loading' })
     reset()
-    setPkg(null)
+    setReviewing(true)
     try {
       setMeta(await engine.start(data.package))
       setInfo(await engine.loadReplay(data.game))
+      setEvents([])
       setSource(SAMPLE)
       setPhase({ kind: 'ready' })
     } catch (e) {
@@ -124,11 +131,17 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const beginRecorded = useCallback(async (match: DemoMatch, fallback: DemoData) => {
     setPhase({ kind: 'loading' })
     reset()
-    setPkg(null)
+    setReviewing(true)
     try {
       const real = await loadMatch(match)
       setMeta(await engine.start(real.package))
-      setInfo(await engine.loadRecording(real.recording))
+      const recording = await engine.loadRecording(real.recording)
+      setInfo(recording)
+      setEvents(recording.events ?? [])
+      // start at the first event, not in the minutes before the match (issue #346); the timeline still shows the whole recording
+      const start = recording.start_at ?? 0
+      elapsedRef.current = start
+      setElapsed(start)
       setSource(match.code)
       setPhase({ kind: 'ready' })
     } catch (e) {
@@ -146,6 +159,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const beginPackage = useCallback(async (plaintext: string) => {
     setPhase({ kind: 'loading' })
     reset()
+    setReviewing(false)
     try {
       setMeta(await engine.start(plaintext))
       setPkg(summarizePackage(plaintext))
@@ -235,9 +249,19 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const removePackage = useCallback(() => {
     record('Paquete quitado: vuelve la demostración')
     setPkg(null)
+    setReviewing(false)
     if (demo) void beginDefault(demo, matches)
   }, [demo, matches, beginDefault, record])
 
+  const reviewRecorded = () => {
+    if (!demo) return
+    record('Revisión de un partido grabado: el paquete sigue guardado')
+    void beginDefault(demo, matches)
+  }
+  const backToPackage = () => {
+    record('Vuelta al partido del paquete')
+    void store.load().then(r => r && beginPackage(r.plaintext))
+  }
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} />
 
@@ -260,6 +284,18 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
   }
+  /** The next moment with something new: nothing happens in between, so it needs no question and the alerts of the tramo are none (#345). */
+  const nextEvent = events.find(t => t > elapsedRef.current + 0.5)
+  const goToNextEvent = async () => {
+    // a quick second tap waits for the engine to finish the first jump, so the screen never shows a time the engine has not reached
+    while (busy.current) await new Promise<void>(resolve => setTimeout(resolve, 10))
+    const to = events.find(t => t > elapsedRef.current + 0.5)
+    if (to === undefined) return
+    record('Salto al siguiente evento')
+    elapsedRef.current = to
+    setElapsed(to)
+    await step(to)
+  }
   /** The timeline: forward jumps straight there; going back rebuilds the engine from the start (the alerts in between are not replayed). */
   const seek = async (to: number) => {
     setPlaying(false)
@@ -278,6 +314,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [home, away] = homeFirst ? [rival, own] : [own, rival]
   const matchTab = (
     <>
+      {pkg && <ReviewSwitch reviewing={reviewing} disabled={live.running} onLive={backToPackage} onReview={reviewRecorded} />}
       {!pkg && (
         <p className="notice">
           Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}
@@ -292,7 +329,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
       {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
 
-      {pkg ? (
+      {liveMode ? (
         <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
           onStart={code => void live.connect(code)} onStop={live.disconnect} />
       ) : (
@@ -303,6 +340,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
             speed={speed} onSpeed={setSpeed} onRestart={() => { record('Partido reiniciado con el botón Reiniciar'); pickSource(source) }}
             onSeek={to => { record(`Salto en la línea de tiempo a ${mmss(to)}`); void seek(to) }}
+            onNextEvent={events.length ? () => void goToNextEvent() : undefined} hasNextEvent={nextEvent !== undefined}
             ms={ms} feed={feed} elapsed={elapsed} duration={info?.duration ?? null} home={home} away={away}
           />
           {notice && <p role="alert" className="status error">{notice}</p>}
@@ -314,7 +352,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <section>
         <h2>Alertas</h2>
         {entries.length === 0
-          ? <p className="detail">{pkg ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
+          ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
           : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
       </section>
 

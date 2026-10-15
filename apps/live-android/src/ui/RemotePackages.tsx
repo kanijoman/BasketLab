@@ -16,6 +16,8 @@ interface Props {
   store: PackageStore
   onLoaded: (summary: PackageSummary) => void
   fetcher?: Fetcher
+  /** The package that is loaded now (the app knows it: it survives a restart). Without it the component remembers what it downloaded. */
+  loaded?: PackageSummary | null
 }
 
 function when(entry: PackageIndexEntry): string {
@@ -25,13 +27,19 @@ function when(entry: PackageIndexEntry): string {
   return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-export default function RemotePackages({ engine, store, onLoaded, fetcher }: Props) {
+export default function RemotePackages({ engine, store, onLoaded, fetcher, loaded }: Props) {
   const [entries, setEntries] = useState<PackageIndexEntry[] | null>(null)
   const [rounds, setRounds] = useState<RoundIndexEntry[]>([])
   const bundles = useRef(new Map<string, RoundBundle>())   // a bundle is downloaded and decrypted once, however many of its matches are used
   const [pass, setPass] = useState(loadPassphrase)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // what was just downloaded: the message and which match and side it was (issue #342)
+  const [got, setGot] = useState<{ code: string; ownId: string; text: string } | null>(null)
+
+  /** Is this match, as seen from this team, the package that is loaded? The app says it (`loaded`); alone, the last download counts. */
+  const isLoaded = useCallback((code: string, ownId: string) =>
+    loaded !== undefined ? loaded?.match?.code === code && loaded.teamId === ownId : got?.code === code && got.ownId === ownId, [loaded, got])
 
   const refresh = useCallback(async () => {
     setError(null)
@@ -51,10 +59,12 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
   async function download(entry: PackageIndexEntry) {
     setBusy(entry.file)
     setError(null)
+    setGot(null)
     try {
       const plaintext = await decryptPackage(await fetchPackageText(entry, fetcher), pass)
       const summary = await installPackage(engine, store, plaintext)
       savePassphrase(pass) // only once it is known to be right
+      setGot({ code: entry.match.code, ownId: entry.team_id, text: `${summary.team} contra ${summary.rival}` })
       onLoaded(summary)
     } catch (e) {
       setError(failureText(e, pass))
@@ -66,6 +76,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
   async function downloadRoundMatch(round: RoundIndexEntry, match: RoundMatch, ownId: string) {
     setBusy(`${round.file}#${match.code}#${ownId}`)
     setError(null)
+    setGot(null)
     try {
       let bundle = bundles.current.get(round.file)
       if (!bundle) {
@@ -76,6 +87,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
       if (!text) throw new Error('El partido ya no está en la jornada publicada. Actualiza la lista.')
       const summary = await installPackage(engine, store, text)
       savePassphrase(pass)
+      setGot({ code: match.code, ownId, text: `${summary.team} contra ${summary.rival}` })
       onLoaded(summary)
     } catch (e) {
       setError(failureText(e, pass))
@@ -104,16 +116,18 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
                   <strong>{entry.rival}</strong>
                   <span className="detail"> · {when(entry)}{entry.match.round ? ` · jornada ${entry.match.round}` : ''}</span>
                 </span>
-                <button disabled={!pass || busy !== null} onClick={() => void download(entry)}>
-                  {busy === entry.file ? 'Descargando…' : 'Descargar'}
+                <button disabled={isLoaded(entry.match.code, entry.team_id) || !pass || busy !== null} onClick={() => void download(entry)}>
+                  {isLoaded(entry.match.code, entry.team_id) ? 'Ya disponible' : busy === entry.file ? 'Descargando…' : 'Descargar'}
                 </button>
               </li>
             ))}
           </ul>
-          <RoundPackages rounds={rounds} pass={pass} busy={busy} onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)} />
+          <RoundPackages rounds={rounds} pass={pass} busy={busy} onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)}
+            isLoaded={isLoaded} />
         </>
       )}
       <button className="secondary" disabled={busy !== null} onClick={() => void refresh()}>Actualizar lista</button>
+      {got && !error && <p role="status" className="status">Descargado: {got.text}. Ya puedes seguirlo desde la pestaña Partido.</p>}
       {error && <p role="alert" className="status error">{error}</p>}
     </section>
   )

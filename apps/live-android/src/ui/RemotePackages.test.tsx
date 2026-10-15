@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RemotePackages from './RemotePackages'
+import type { PackageSummary } from '../package/summary'
 import type { PackageStore, StoredPackage } from '../package/storage'
 import type { EngineApi } from '../engine/client'
 import { PACKAGES_BASE_URL } from '../package/remote'
@@ -51,6 +52,49 @@ const download = () => fireEvent.click(screen.getByRole('button', { name: /desca
 beforeEach(() => {
   vi.stubGlobal('crypto', webcrypto)
   localStorage.clear()
+})
+
+const loadedSummary = (code: string, teamId: string): PackageSummary => ({
+  team: 'EQ', teamId, rival: 'RV', rivalId: 'x', season: '2026', collection: 'C', createdAt: '', ownPlayers: 1, rivalPlayers: 1,
+  games: { own: 1, rival: 1, league: 1 }, match: { code },
+})
+
+// Issue #342: after a download nothing said it had worked, and the button stayed as if nothing had happened
+describe('RemotePackages: feedback of the download (issue #342)', () => {
+  it('says the match is loaded and turns its button into «Ya disponible», disabled', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
+    download()
+    const done = await screen.findByRole('status')
+    expect(done.textContent).toMatch(/descargado/i)
+    expect(done.textContent).toMatch(/pestaña Partido/i)
+    const button = screen.getByRole('button', { name: /ya disponible/i }) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    expect(screen.queryByRole('button', { name: /^descargar$/i })).toBeNull()
+  })
+
+  it('a package that was already loaded (the app was reopened) shows as available from the start', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} loaded={loadedSummary('2524470', '1008631')} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    expect((screen.getByRole('button', { name: /ya disponible/i }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('another loaded match leaves this one downloadable', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} loaded={loadedSummary('999', '1008631')} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    expect(screen.queryByRole('button', { name: /ya disponible/i })).toBeNull()
+  })
+
+  it('a failed download says nothing is available and keeps the button', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
+    download()
+    await screen.findByRole('alert')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByRole('button', { name: /ya disponible/i })).toBeNull()
+  })
 })
 
 describe('RemotePackages', () => {
@@ -243,5 +287,29 @@ describe('RemotePackages: the round of every competition', () => {
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
     await screen.findByText(/RECOLETAS ZAMORA/)
     expect(screen.queryByText(/jornada completa/i)).toBeNull()
+  })
+})
+
+describe('RemotePackages: feedback of a round download (issue #342)', () => {
+  it('only the side that was downloaded is «Ya disponible»; the other side of the match can still be followed', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
+    await screen.findByText(/DEMO 2026/)
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
+    fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
+    expect((await screen.findByRole('status')).textContent).toMatch(/descargado/i)
+    const done = screen.getByRole('button', { name: /EQ 31 contra EQ 32 como EQ 31/i }) as HTMLButtonElement
+    expect(done.disabled).toBe(true)
+    expect(done.textContent).toMatch(/ya disponible/i)
+    const other = screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 32/i }) as HTMLButtonElement
+    expect(other.disabled).toBe(false)
+    expect(other.textContent).toMatch(/seguir como EQ 32/i)
+  })
+
+  it('a loaded package of a round match shows its side as available from the start', async () => {
+    localStorage.setItem(PASS_KEY, PASS)
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} loaded={loadedSummary('103', '32')} />)
+    await screen.findByText(/DEMO 2026/)
+    expect((screen.getByRole('button', { name: /EQ 31 contra EQ 32 como EQ 32/i }) as HTMLButtonElement).textContent).toMatch(/ya disponible/i)
+    expect((screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }) as HTMLButtonElement).disabled).toBe(false)
   })
 })

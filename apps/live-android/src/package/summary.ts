@@ -1,7 +1,10 @@
 /** Human-readable description of a preparation package (what the user sees after importing). */
 export interface PackageSummary {
   team: string
+  /** FEB id of the team the package is for (with the match code it says WHICH package is loaded, issue #342). */
+  teamId: string
   rival: string
+  rivalId: string
   season: string
   collection: string
   createdAt: string
@@ -22,8 +25,8 @@ export interface PackageMatch {
 
 interface RawPackage {
   package?: {
-    team?: { name?: string }
-    rival?: { name?: string }
+    team?: { id?: string; name?: string }
+    rival?: { id?: string; name?: string }
     season?: string
     collection?: string
     created_at?: string
@@ -39,7 +42,9 @@ export function summarizePackage(text: string): PackageSummary {
   const games = body.baselines?.sample_games ?? {}
   return {
     team: body.team?.name ?? '',
+    teamId: String(body.team?.id ?? ''),
     rival: body.rival?.name ?? '',
+    rivalId: String(body.rival?.id ?? ''),
     season: body.season ?? '',
     collection: body.collection ?? '',
     createdAt: body.created_at ?? '',

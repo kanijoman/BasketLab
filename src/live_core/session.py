@@ -69,7 +69,7 @@ class LiveSession:
         """Prepare a packed real recording (see ``recorded_feed``); ``play`` then feeds the engine with it."""
         self._feed = RecordedFeed.loads(recording)
         return {"match": self._feed.match, "duration": self._feed.duration, "frames": len(self._feed.frames),
-                "status": "GRABACION"}
+                "status": "GRABACION", "start_at": self._feed.first_event_at(), "events": self._feed.event_times()}
 
     def play(self, t: float) -> Dict[str, Any]:
         """The recording ``t`` seconds after its first poll, as the live mode will receive it.

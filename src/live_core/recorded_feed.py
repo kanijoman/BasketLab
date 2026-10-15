@@ -76,6 +76,19 @@ class RecordedFeed:
             ends += [float(end) for _, end in spans]
         return max(ends)
 
+    def event_times(self) -> List[float]:
+        """The moments (seconds since the first poll) in which a play-by-play line or a shot first appears, sorted and unique: the
+        steps of «Saltar al siguiente evento» (issue #345). The minutes in which nothing new shows (the break between periods, a
+        404 window) are a single step."""
+        entries = list(self._data["lines"]) + list(self._data["shots"])
+        return sorted({float(self._times[e["f"]]) for e in entries if _visible(e, e["f"])})
+
+    def first_event_at(self) -> float:
+        """Seconds since the first poll of the first moment a play-by-play line is visible (0 when the recording has none): what comes
+        before is the match waiting to start (SCHEDULED, no plays), which a replay does not need to sit through (issue #346)."""
+        frames = [entry["f"] for entry in self._data["lines"] if _visible(entry, entry["f"])]
+        return float(self._times[min(frames)]) if frames else 0.0
+
     def frame_time_of(self, iso_utc: str) -> float:
         """Seconds since the first poll of an ISO timestamp taken from the recording's ``polls.jsonl``."""
         return round((datetime.fromisoformat(iso_utc) - datetime.fromisoformat(self._data["started"])).total_seconds(), 3)
