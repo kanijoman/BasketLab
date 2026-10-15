@@ -28,7 +28,6 @@ export default function Scoreboard({ own, rival, homeId, score, clock }: Props) 
       <TeamLogo team={team} size={44} />
       <span className="name">{team.name}</span>
       <Points value={score?.[team.id] ?? 0} />
-      {team.id === own.id && <span className="own-tag">Tu equipo</span>}
     </div>
   )
   return (
