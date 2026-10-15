@@ -137,5 +137,8 @@ def test_committed_demo_round_bundle_decrypts_to_three_matches_with_the_demo_pac
     assert envelope["z"] == "gzip"
     bundle = json.loads(decrypt_package(envelope, "clave-de-prueba-1"))
     assert bundle["collection"] == "DEMO_2026" and bundle["round"] == 4
-    assert [(m["match"]["code"], m["is_club"]) for m in bundle["matches"]] == [("101", False), ("102", True), ("103", False)]
+    # every match has a package from each of its two teams, the default one first (the club's in the middle match)
+    assert [(m["match"]["code"], m["own_id"], m["is_club"]) for m in bundle["matches"]] == [
+        ("101", "11", False), ("101", "12", False), ("102", "1008631", True), ("102", "1008898", True),
+        ("103", "31", False), ("103", "32", False)]
     assert all(m["package"] == vectors["engine"]["package"] for m in bundle["matches"])

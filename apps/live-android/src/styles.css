@@ -141,6 +141,10 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .remote-packages li > span { min-width: 0; overflow-wrap: anywhere; }
 .remote-packages li button { flex: none; }
 .round-packages h3 { margin: 12px 0 4px; font-size: 1rem; }
+/* A match offers to be followed as either of its teams (#286): the row stacks on a phone, the buttons share the width */
+.remote-packages li.round-match { flex-wrap: wrap; }
+.round-sides { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 14rem; justify-content: flex-end; }
+.round-sides button { flex: 1 1 9rem; min-height: 44px; }
 
 /* Game pace card */
 .pace-card { margin: 12px 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }

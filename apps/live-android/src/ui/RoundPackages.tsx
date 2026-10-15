@@ -1,12 +1,13 @@
 /** The next round of every competition (issues #286, #172): the matches to follow, the club's competition and match first. */
-import { orderRounds, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import { orderRounds, sidesOf, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 
 interface Props {
   rounds: RoundIndexEntry[]
   pass: string
-  /** `file#code` of the download in progress. */
+  /** `file#code#team` of the download in progress. */
   busy: string | null
-  onDownload: (round: RoundIndexEntry, match: RoundMatch) => void
+  /** ``ownId``: the team whose point of view is followed (issue #286). */
+  onDownload: (round: RoundIndexEntry, match: RoundMatch, ownId: string) => void
 }
 
 /** `LF_CHALLENGE_2026_2027_Liga_Regular_Único` -> `LF CHALLENGE 2026 2027 Liga Regular Único`. */
@@ -32,15 +33,21 @@ export default function RoundPackages({ rounds, pass, busy, onDownload }: Props)
           <ul className="remote-packages">
             {round.matches.map(match => {
               const label = `${match.home.name} contra ${match.away.name}`
+              const nameOf = (id: string) => (id === match.home.id ? match.home.name : id === match.away.id ? match.away.name : id)
               return (
-                <li key={match.code}>
+                <li key={match.code} className="round-match">
                   <span>
                     {match.is_club ? <strong>{match.home.name} – {match.away.name}</strong> : <>{match.home.name} – {match.away.name}</>}
                     <span className="detail"> · {when(match.start)}</span>
                   </span>
-                  <button aria-label={`Descargar ${label}`} disabled={!pass || busy !== null} onClick={() => onDownload(round, match)}>
-                    {busy === `${round.file}#${match.code}` ? 'Descargando…' : 'Descargar'}
-                  </button>
+                  <span className="round-sides">
+                    {sidesOf(match).map(id => (
+                      <button key={id} aria-label={`Descargar ${label} como ${nameOf(id)}`} disabled={!pass || busy !== null}
+                        onClick={() => onDownload(round, match, id)}>
+                        {busy === `${round.file}#${match.code}#${id}` ? 'Descargando…' : `Seguir como ${nameOf(id)}`}
+                      </button>
+                    ))}
+                  </span>
                 </li>
               )
             })}

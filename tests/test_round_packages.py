@@ -39,29 +39,33 @@ def _build(games, matches, club=None, **kw):
     return build_round_packages(games, "FEB_TEST", "2025-2026", matches, club_team_id=club, created_at=STAMP, **kw)
 
 
-def test_one_package_per_match_of_the_round(feb_game_doc, teams):
+def test_every_match_has_a_package_from_each_of_its_two_teams(feb_game_doc, teams):
+    """Any club can follow the match, not only the home team or the club of the staff (issue #286)."""
     matches = [_match("1", teams["a"], teams["b"]), _match("2", teams["c"], teams["d"])]
     built = _build([feb_game_doc], matches)
-    assert [b["match"]["code"] for b in built] == ["1", "2"]
+    assert [(b["match"]["code"], b["own_id"], b["rival_id"]) for b in built] == [
+        ("1", teams["a"][0], teams["b"][0]), ("1", teams["b"][0], teams["a"][0]),
+        ("2", teams["c"][0], teams["d"][0]), ("2", teams["d"][0], teams["c"][0])]
     assert all(isinstance(b["package"], PreparationPackage) for b in built)
+    assert all(b["package"].team["id"] == b["own_id"] and b["package"].rival["id"] == b["rival_id"] for b in built)
 
 
-def test_the_perspective_is_the_clubs_when_it_plays_and_the_home_teams_otherwise(feb_game_doc, teams):
+def test_the_default_perspective_comes_first_the_clubs_when_it_plays_and_the_home_teams_otherwise(feb_game_doc, teams):
     matches = [_match("1", teams["a"], teams["b"]), _match("2", teams["c"], teams["d"])]
     club_away = _build([feb_game_doc], matches, club=teams["b"][0])
-    assert club_away[0]["package"].team["id"] == teams["b"][0] and club_away[0]["package"].rival["id"] == teams["a"][0]
-    assert club_away[0]["is_club"] is True
-    assert club_away[1]["package"].team["id"] == teams["c"][0] and club_away[1]["is_club"] is False       # the home team
-    assert [b["own_id"] for b in club_away] == [teams["b"][0], teams["c"][0]]
+    assert [(b["own_id"], b["default"]) for b in club_away] == [
+        (teams["b"][0], True), (teams["a"][0], False), (teams["c"][0], True), (teams["d"][0], False)]
+    assert [b["is_club"] for b in club_away] == [True, True, False, False]      # the match is the club's, whichever side is followed
 
 
-def test_a_package_is_what_the_one_off_builder_gives_for_that_match(feb_game_doc, teams):
+def test_both_packages_are_what_the_one_off_builder_gives_for_that_side(feb_game_doc, teams):
     """One shared pass must not change the numbers of a package."""
     matches = [_match("1", teams["a"], teams["b"]), _match("2", teams["c"], teams["d"])]
-    first = _build([feb_game_doc], matches)[0]["package"]
-    single = build_package([feb_game_doc], "FEB_TEST", "2025-2026", teams["a"][0], teams["b"][0], first.competition_meta, STAMP)
-    assert first.dumps() == single.dumps()
-    assert first.competition_meta["match"]["code"] == "1"
+    built = _build([feb_game_doc], matches)
+    for entry, (own, rival) in zip(built[:2], ((teams["a"][0], teams["b"][0]), (teams["b"][0], teams["a"][0]))):
+        single = build_package([feb_game_doc], "FEB_TEST", "2025-2026", own, rival, entry["package"].competition_meta, STAMP)
+        assert entry["package"].dumps() == single.dumps()
+    assert built[0]["package"].competition_meta["match"]["code"] == "1"
 
 
 def test_the_rosters_are_asked_once_per_team_and_a_failure_leaves_the_package_without_roster(feb_game_doc, teams):
@@ -77,7 +81,8 @@ def test_the_rosters_are_asked_once_per_team_and_a_failure_leaves_the_package_wi
     built = _build([feb_game_doc], matches, roster_source=source)
     flat = [t for ids in asked for t in ids]
     assert flat.count(teams["a"][0]) == 1, "each team is asked once, however many matches it has"
-    assert "roster" in built[0]["package"].tables and "roster" not in built[2]["package"].tables
+    assert "roster" in built[0]["package"].tables and "roster" in built[1]["package"].tables
+    assert "roster" not in built[4]["package"].tables                            # c against d: c fails and d has none
 
 
 # --- the bundle ------------------------------------------------------------------------------
@@ -91,8 +96,9 @@ def test_the_bundle_holds_every_package_in_one_compressed_envelope(feb_game_doc,
     assert envelope["z"] == "gzip"
     bundle = json.loads(decrypt_package(envelope, PASSWORD))
     assert bundle["v"] == ROUND_BUNDLE_VERSION and bundle["collection"] == "FEB_TEST" and bundle["round"] == 4
-    assert [m["match"]["code"] for m in bundle["matches"]] == ["1", "2"]
-    assert PreparationPackage.loads(bundle["matches"][1]["package"]).team["id"] == teams["c"][0]
+    assert [(m["match"]["code"], m["own_id"]) for m in bundle["matches"]] == [
+        ("1", teams["a"][0]), ("1", teams["b"][0]), ("2", teams["c"][0]), ("2", teams["d"][0])]
+    assert PreparationPackage.loads(bundle["matches"][2]["package"]).team["id"] == teams["c"][0]
     assert len(raw.encode("utf-8")) < sum(len(m["package"]) for m in bundle["matches"]), "compressed before encrypting"
 
 
@@ -103,7 +109,8 @@ def test_the_index_entry_summarises_the_matches_without_the_packages(feb_game_do
     assert entry["collection"] == "FEB_TEST" and entry["round"] == 4 and entry["club"] is True
     assert entry["file"] == round_file_name("FEB_TEST", 4) and len(entry["sha256"]) == 64 and entry["bytes"] > 0
     assert [(m["code"], m["own_id"], m["is_club"]) for m in entry["matches"]] == [
-        ("1", teams["a"][0], True), ("2", teams["c"][0], False)]
+        ("1", teams["a"][0], True), ("2", teams["c"][0], False)]              # one line per match: its default side
+    assert [m["own_ids"] for m in entry["matches"]] == [[teams["a"][0], teams["b"][0]], [teams["c"][0], teams["d"][0]]]
     assert entry["matches"][0]["home"]["name"] == teams["a"][1] and "package" not in entry["matches"][0]
 
 
