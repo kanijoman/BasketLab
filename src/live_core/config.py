@@ -17,7 +17,7 @@ RULE_IDS: Tuple[str, ...] = (
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
     "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
     "after_timeout_scoring", "own_orb_player", "static_offense",
-    "period_edges", "comeback_plan",
+    "period_edges", "comeback_plan", "win_flip",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -243,6 +243,10 @@ class RuleConfig:
     # Levers (#256): how much faster or slower the pace is tried, and the smallest probability gain worth listing.
     wp_pace_change: float = 0.10
     wp_lever_min_gain: float = 0.01
+    # Flip alert (#258): the probability of winning falls this much (0-1) within this many game-seconds. Provisional: to confirm with the
+    # staff, and the probability itself is experimental in the app (#257).
+    wp_flip_drop: float = 0.20
+    wp_flip_window_s: int = 300
     # No timeout is proposed right after the own team called one (issue #318): window in game-seconds (0 = always propose).
     timeout_recent_s: int = 120
     # Fouls of who comes in (issue #317): in the first quarter this many personal fouls already make a player a risk (she does not come

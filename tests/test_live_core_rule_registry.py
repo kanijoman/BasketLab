@@ -22,6 +22,7 @@ from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_e
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
+from tests.test_live_core_win_flip import board as wf_board
 
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
                 "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
@@ -32,7 +33,7 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "closing_briefing", "period_summary", "advantage_management", "pace_control",
                 "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
                 "after_timeout_scoring", "own_orb_player", "static_offense",
-                "period_edges", "comeback_plan")
+                "period_edges", "comeback_plan", "win_flip")
 
 
 def _engine(rules_off=(), **kw):
@@ -131,6 +132,7 @@ SCENARIOS = {
     "period_edges": (lambda: cl_end_of(2, [cl_pts(RIVAL, 50, 3), cl_pts(RIVAL, 100, 2), cl_pts(RIVAL, 650, 2), cl_pts(RIVAL, 700, 2)]),
                      {"period_edge_deficit"}, {}),
     "comeback_plan": (lambda: p6_comeback_snap(-9), {"comeback_plan"}, {}),
+    "win_flip": (lambda: [wf_board(6, 1200), wf_board(-8, 1380)], {"win_flip"}, {}),
     "game_flow_windows": (lambda: snap(elapsed=350, log=[[t, RIVAL, "orb", 1, "p1"] for t in (250, 300, 340)]), {"rival_orb_window"}, {}),
 }
 

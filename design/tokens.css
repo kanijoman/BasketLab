@@ -40,6 +40,7 @@
   --cat-alineacion: #2dd4bf;
   --cat-descanso: #f472b6;
   --cat-resumen: #facc15;
+  --cat-probabilidad: #818cf8;
 
   /* pace card: faster / slower than usual (neutral colors, not good/bad) */
   --pace-fast: #f59e0b;
@@ -91,6 +92,7 @@
     --cat-alineacion: #0f766e;
     --cat-descanso: #be185d;
     --cat-resumen: #a16207;
+    --cat-probabilidad: #4338ca;
     --pace-fast: #b45309;
     --pace-slow: #1d4ed8;
   }
@@ -119,6 +121,7 @@
   --cat-alineacion: #0f766e;
   --cat-descanso: #be185d;
   --cat-resumen: #a16207;
+  --cat-probabilidad: #4338ca;
   --pace-fast: #b45309;
   --pace-slow: #1d4ed8;
 }

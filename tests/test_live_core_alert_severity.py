@@ -71,7 +71,7 @@ REAL_MATCH_TABLE = {
     ("rival_hot_run", "warning"): 1, ("rival_hot_streak", "warning"): 1, ("rival_near_bonus", "info"): 2,
     ("rival_orb_window", "warning"): 3, ("rival_run", "info"): 2, ("rival_run", "warning"): 1, ("rival_star_out", "info"): 1,
     ("rival_zone", "info"): 1, ("static_offense", "info"): 1, ("team_fouls_bonus", "info"): 1,
-    ("turnover_streak", "warning"): 3,
+    ("turnover_streak", "warning"): 3, ("win_flip", "warning"): 2,
 }
 
 

@@ -51,6 +51,17 @@ describe('AlertCard category of the lineup rule (issue #272)', () => {
   })
 })
 
+describe('AlertCard category of the win-probability flip (issue #258)', () => {
+  it('shows «Probabilidad» with its own icon and colour', () => {
+    const alert: Alert = { ...ALERT, key: 'win_flip', id: 'win_flip', severity: 'warning', category: 'probabilidad',
+      message: 'La probabilidad de victoria ha caído de 62% a 38% en los últimos 5 min (experimental).' }
+    render(<ul><AlertCard alert={alert} at="Q2 05:00" /></ul>)
+    const tag = screen.getByText('Probabilidad').closest('[data-category]') as HTMLElement
+    expect(tag.getAttribute('data-category')).toBe('probabilidad')
+    expect(tag.querySelector('svg')).toBeTruthy()
+  })
+})
+
 describe('AlertCard category of the rest rule (issue #273)', () => {
   it('shows «Descanso» with its own icon and colour', () => {
     const alert: Alert = { ...ALERT, key: 'rest:p1', id: 'rest_starters', category: 'descanso',
