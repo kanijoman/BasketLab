@@ -35,15 +35,20 @@ async function play(formation: object | undefined) {
   await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
 }
 
-describe('App formation status (issue #272)', () => {
-  it('shows the formación players on court once the engine reports them', async () => {
-    await play({ min: 2, known: true, on_court: 3, unknown: 0, players: 5 })
-    await waitFor(() => expect(screen.getByText(/formación en pista: 3 \(mínimo 2\)/i)).toBeTruthy())
+describe('App formation status (issues #272 and #322)', () => {
+  it('says nothing under the scoreboard while both lineups are watched: an illegal one is a critical alert, not a card', async () => {
+    await play({ min: 2, known: true, on_court: 1, unknown: 0, players: 5, rival: { known: true, on_court: 0, unknown: 0, players: 5 } })
+    expect(screen.queryByText(/formación/i)).toBeNull()
   })
 
-  it('warns that the lineup is not being watched when the package has no roster', async () => {
-    await play({ min: 2, known: false, on_court: null, unknown: 0, players: 5 })
-    await waitFor(() => expect(screen.getByText(/no se vigila/i)).toBeTruthy())
+  it('warns that a team is not being watched when the package has no roster of it', async () => {
+    await play({ min: 2, known: false, on_court: null, unknown: 0, players: 5, rival: { known: true, on_court: 3, unknown: 0, players: 5 } })
+    await waitFor(() => expect(screen.getByText(/no se vigila la alineación de formación de EQUIPO PROPIO/i)).toBeTruthy())
+  })
+
+  it('also for the rival', async () => {
+    await play({ min: 2, known: true, on_court: 3, unknown: 0, players: 5, rival: { known: false, on_court: null, unknown: 0, players: 0 } })
+    await waitFor(() => expect(screen.getByText(/no se vigila la alineación de formación de EQUIPO RIVAL/i)).toBeTruthy())
   })
 
   it('shows nothing about formación without the data', async () => {

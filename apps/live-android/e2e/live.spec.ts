@@ -15,10 +15,10 @@ test('the demo opens on the latest recorded match, local team on the left, and a
   await page.goto('/')
   await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible()
-  // Zamora hosted Leon: the local team goes on the left, ours is marked
+  // Zamora hosted Leon: the local team goes on the left, and no team is labelled as ours
   await expect(page.locator('.scoreboard .team').nth(0)).toContainText('RECOLETAS ZAMORA')
   await expect(page.locator('.scoreboard .team').nth(1)).toContainText('MIPELLETYMAS B.F. LEON')
-  await expect(page.locator('.scoreboard .team').nth(1)).toContainText('Tu equipo')
+  await expect(page.locator('.scoreboard .team').nth(1)).not.toContainText('Tu equipo')
 
   await page.getByRole('radio', { name: '60×' }).click()
   await page.getByRole('button', { name: 'Reproducir' }).click()
@@ -174,4 +174,24 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
   await expect(page.locator('.alert').first()).toBeVisible()
 
   expect(errors).toEqual([])
+})
+
+test('light and dark: the switch in the header changes the whole screen and is remembered (issue #322)', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+  const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  const toggle = () => page.getByRole('button', { name: /^cambiar a modo/i })
+  const first = await background()                                      // the system theme of the browser (light in Playwright)
+  await page.screenshot({ path: 'test-results/theme-system.png' })
+  await toggle().click()
+  const other = await background()
+  expect(other).not.toBe(first)
+  const chosen = await page.evaluate(() => document.documentElement.getAttribute('data-theme'))
+  expect(['light', 'dark']).toContain(chosen)
+  await page.screenshot({ path: `test-results/theme-${chosen}.png` })
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
+  expect(await background()).toBe(other)                                  // remembered across a reload
+  await toggle().click()
+  expect(await background()).toBe(first)
 })

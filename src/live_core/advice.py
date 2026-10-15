@@ -33,6 +33,7 @@ from .rules_rest import rest_rule
 from .rules_zones import own_zone_rule, paint_rule, rival_defence_rule, rival_player_zone_rule
 from .rules_summary import edges_rule, summary_rule
 from .rules_timeouts import timeout_budget_rule
+from .rules_winflip import win_flip_rule
 from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
 from .rules_rotation import fatigue_rule
@@ -58,7 +59,7 @@ RULES: List[Tuple[str, Rule]] = [
     ("own_zones", own_zone_rule), ("rival_defence_zones", rival_defence_rule), ("rival_zone_player", rival_player_zone_rule),
     ("paint_battle", paint_rule), ("after_timeout_scoring", after_timeout_rule),
     ("own_orb_player", own_orb_rule), ("static_offense", static_rule),
-    ("period_edges", edges_rule), ("comeback_plan", comeback_rule),
+    ("period_edges", edges_rule), ("comeback_plan", comeback_rule), ("win_flip", win_flip_rule),
 ]
 
 # Rival threats we can answer with own-team data: offensive rebounds -> defensive rebounders,
@@ -86,13 +87,15 @@ class AdviceEngine:
         self._model = FourFactorsModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._pace = PaceModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id else None
         self._win_prob = WinProbabilityModel(own_team_id, rival_team_id, team_baselines, cfg) if own_team_id and rival_team_id else None
-        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster)
+        lineup_table = {lineup_key(row["players"]): row for row in (lineups or [])}
+        games_played = ((team_baselines or {}).get("sample_games") or {}).get("own")
+        self._recommender = (Recommender(own_team_id, baselines, cfg, roster=roster, lineups=lineup_table, games_played=games_played)
                              if own_team_id and baselines else None)
         self._ctx = (
             RuleContext(own_team_id, rival_team_id, cfg, baselines or {}, self._model,
                         rival_baselines or {}, impact_league or {}, zone_ref or {}, roster or {}, self._recommender,
                         pace=self._pace, team_baselines=team_baselines or {}, win_prob=self._win_prob,
-                        lineups={lineup_key(row["players"]): row for row in (lineups or [])})
+                        lineups=lineup_table)
             if own_team_id else None
         )
         self._last: Dict[str, int] = {}
@@ -147,8 +150,13 @@ class AdviceEngine:
         ctx = self._ctx
         known = roster_known(ctx.roster, ctx.own_team_id)
         counts = formation_counts(snapshot, ctx.own_team_id, ctx.roster)
+        rival = ctx.rival_team_id
+        rival_known = bool(rival) and roster_known(ctx.roster, rival)
+        rival_counts = formation_counts(snapshot, rival, ctx.roster) if rival_known else None
         return {"min": ctx.config.formation_min_on_court, "known": known, "on_court": counts["yes"] if known else None,
-                "unknown": counts["unknown"] if known else 0, "players": counts["players"]}
+                "unknown": counts["unknown"] if known else 0, "players": counts["players"],
+                "rival": {"known": rival_known, "on_court": rival_counts["yes"] if rival_counts else None,
+                          "unknown": rival_counts["unknown"] if rival_counts else 0, "players": rival_counts["players"] if rival_counts else 0}}
 
     def evaluate(self, snapshot: Dict[str, Any]) -> List[Advice]:
         if self._ctx is None:
@@ -204,6 +212,8 @@ class AdviceEngine:
         proposal: List[Dict[str, Any]]
         if advice.id in ("foul_trouble", "fatigue_high"):
             proposal = self._relief(snapshot, advice)
+        elif advice.id == "win_flip" and advice.evidence["lever"] not in (None, "pace"):
+            proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
         elif advice.id == "four_factors_lever":
             proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
         elif advice.id == "rival_orb_window":

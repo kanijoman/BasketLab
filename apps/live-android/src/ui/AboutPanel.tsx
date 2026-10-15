@@ -1,6 +1,7 @@
 /** About the app: version, update check and diagnostics to attach to an issue (issues #226 and #227). */
 import { useState } from 'react'
 import markUrl from '@design/brand/live-mark.svg'
+import { useTheme, type ThemePreference } from './useTheme'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
@@ -78,7 +79,12 @@ function UpdateStatus({ update, onOpen }: { update: UpdateResult | null; onOpen:
   )
 }
 
+const APPEARANCE: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'Sistema' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' },
+]
+
 export default function AboutPanel({ sessionLog, experimental, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
+  const { preference, setPreference } = useTheme()
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
 
@@ -116,6 +122,15 @@ export default function AboutPanel({ sessionLog, experimental, engineVersion, sc
         <button type="button" className="secondary" onClick={() => onOpen(REPO_URL)}>Repositorio</button>
         <button type="button" className="secondary" onClick={() => onOpen(RELEASES_URL)}>Notas de la versión</button>
       </div>
+      <fieldset className="appearance" role="radiogroup" aria-label="Apariencia">
+        <legend>Apariencia</legend>
+        {APPEARANCE.map(option => (
+          <label key={option.value}>
+            <input type="radio" name="appearance" checked={preference === option.value} onChange={() => setPreference(option.value)} />
+            {' '}{option.label}
+          </label>
+        ))}
+      </fieldset>
       {sessionLog && (
         <section className="session-log" aria-label="Registro de la sesión">
           <h3>Registro de la sesión</h3>

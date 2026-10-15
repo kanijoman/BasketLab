@@ -4,7 +4,8 @@ The feed has no positions, so replacements are chosen by ROLE similarity inferre
 season z-profiles (see ``profiles``). A candidate must be available (not fouled out, not in
 foul trouble, not overloaded with minutes), close enough in role, and must not unbalance
 the resulting quintet (rebounding, creation, spacing, interior). When there is a lever
-(the Four Factors weak spot) the candidate that improves it most is preferred.
+(the Four Factors weak spot) the candidate that improves it most is preferred. With the season's quintets of the package
+(``tables.lineups``, issue #132) the net rating of the quintet a swap makes also counts, shrunk by the time it played together.
 """
 
 from __future__ import annotations
@@ -12,10 +13,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .config import RuleConfig
+from .lineups import lineup_key
 from .profiles import role_distance
 from .rules_fouls import FOUL_OUT, evaluate_player_fouls
 from .rules_lineup import roster_known
 from .rules_rotation import fatigue_index
+
+GAME_SECONDS = 2400
 
 # lever -> (profile metric, +1 if higher is better else -1, Spanish label)
 LEVER_METRIC = {
@@ -39,10 +43,14 @@ BALANCE_DIMS = {
 
 class Recommender:
     def __init__(self, own_team_id: str, players_table: Dict[str, Dict[str, Any]],
-                 config: Optional[RuleConfig] = None, roster: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+                 config: Optional[RuleConfig] = None, roster: Optional[Dict[str, Dict[str, Any]]] = None,
+                 lineups: Optional[Dict[str, Dict[str, Any]]] = None, games_played: Optional[int] = None) -> None:
         self._own = own_team_id
+        self._lineups = lineups or {}       # quintet key (lineups.lineup_key) -> season row of the package
         self._table = players_table or {}
         self._cfg = config or RuleConfig()
+        # together time a quintet needs to count (#132): a floor, and a share of the season's minutes once there are games played
+        self._lineup_min_s = max(self._cfg.rec_lineup_min_s, self._cfg.rec_lineup_min_share * GAME_SECONDS * (games_played or 0))
         self._roster = roster or {}
         # With the roster of our team and a minimum of "formación" players on court, a swap must not break it (#272)
         self._formation_min = self._cfg.formation_min_on_court if roster_known(self._roster, own_team_id) else 0
@@ -105,6 +113,16 @@ class Recommender:
             return sum(self._z(pid)[m] for pid in ids if self._z(pid) for m in metrics)
 
         return {name: round(total(after, m) - total(on_court, m), 3) for name, m in BALANCE_DIMS.items()}
+
+    def _lineup_signal(self, snap: Dict[str, Any], swap_out: str, swap_in: str) -> Dict[str, Any]:
+        """The season of the quintet the swap makes: its net rating per 40 min, the seconds together and the score it is worth."""
+        on_court = [pid for pid, p in snap["players"].items() if p["on_court"] and p["team_id"] == self._own]
+        season = self._lineups.get(lineup_key([swap_in if pid == swap_out else pid for pid in on_court]))
+        if not season or season["seconds"] < self._lineup_min_s:
+            return {"net40": None, "seconds": 0, "bonus": 0.0}
+        seconds = season["seconds"]
+        shrunk = season["net40"] * seconds / (seconds + self._cfg.rec_lineup_prior_s)
+        return {"net40": season["net40"], "seconds": seconds, "bonus": self._cfg.rec_lineup_weight * shrunk}
 
     # -- public -----------------------------------------------------------------------
 
@@ -198,12 +216,16 @@ class Recommender:
         elif gain is not None and gain <= -_CLAIM_GAIN:
             message += f" (cede algo en {label}: {gain:+.1f} σ)"
         message += f". Rol similar (distancia {distance:.1f})"
+        lineup = self._lineup_signal(snap, out_pid, in_pid)
+        if lineup["net40"] is not None:
+            message += f". El quinteto resultante: {lineup['net40']:+.1f} por 40 min en {lineup['seconds'] // 60} min juntos"
         if weak:
             message += f". Ojo: descompensa el quinteto ({', '.join(weak)})"
         return {
             "type": "sub", "out_id": out_pid, "out_name": out_name,
             "in_id": in_pid, "in_name": in_name,
-            "score": round(base - self._cfg.rec_distance_weight * distance, 3),
+            "score": round(base - self._cfg.rec_distance_weight * distance + lineup["bonus"], 3),
+            "lineup_net40": lineup["net40"], "lineup_seconds": lineup["seconds"],
             "role_distance": round(distance, 3),
             "lever": lever if gain is not None else None,
             "lever_gain": round(gain, 3) if gain is not None else 0.0,

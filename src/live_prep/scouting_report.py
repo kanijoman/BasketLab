@@ -72,6 +72,7 @@ ALERTS: Dict[str, Any] = {
     "points_off_turnovers": ("Puntos del rival tras sus pérdidas", "exploit", None),
     "formation_lineup": ("Alineación indebida (jugadoras de formación)", "exploit", None),
     "four_factors_lever": ("Palanca de los Four Factors", "exploit", None),
+    "win_flip": ("Caídas bruscas de su probabilidad de victoria", "exploit", None),
 }
 
 

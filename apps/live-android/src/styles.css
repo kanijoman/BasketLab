@@ -35,7 +35,6 @@ body {
 .team { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
 .team .name { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
 .team .pts { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.own-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); }
 .clock { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .team-logo { border-radius: 50%; object-fit: contain; background: rgb(var(--text-rgb) / 0.06); }
 .team-logo-initials { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
@@ -106,6 +105,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .alert-category[data-category='alineacion'] { --cat: var(--cat-alineacion); }
 .alert-category[data-category='descanso'] { --cat: var(--cat-descanso); }
 .alert-category[data-category='resumen'] { --cat: var(--cat-resumen); }
+.alert-category[data-category='probabilidad'] { --cat: var(--cat-probabilidad); }
 .alert-message { margin: 6px 0 4px; }
 .proposals { margin: 4px 0 0; padding-left: 0; list-style: none; color: var(--text); font-weight: 600; }
 .proposals li { display: flex; align-items: center; gap: 6px; }
@@ -239,3 +239,10 @@ button:active { transform: scale(0.96); }
 /* A little depth (#312): the cards were flat. A soft shadow, and the scoreboard with an accent edge that says what the screen is about. */
 .scoreboard, .panel, .alert, .pace-card, .wp-card { box-shadow: 0 1px 3px rgb(0 0 0 / 0.22); }
 .scoreboard { border-top: 3px solid var(--accent); background: linear-gradient(180deg, rgb(var(--accent-rgb, 232 101 26) / 0.07), var(--card) 55%); }
+/* The counters of the alert list are the severity filter (#322): buttons the size of a thumb, dimmed while that severity is hidden */
+button.count { min-height: 44px; padding: 4px 12px; border-radius: 999px; border-width: 1px; border-style: solid; font-weight: 600; cursor: pointer; }
+button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-decoration: line-through; }
+/* Light or dark (#322): the switch in the header and the choice in Acerca de */
+.brand-header .theme-toggle { margin-left: auto; width: 44px; height: 44px; min-height: 44px; }
+.appearance { margin: 12px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; gap: 16px; flex-wrap: wrap; }
+.appearance label { display: flex; align-items: center; gap: 6px; min-height: 44px; }

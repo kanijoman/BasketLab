@@ -17,7 +17,7 @@ RULE_IDS: Tuple[str, ...] = (
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
     "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
     "after_timeout_scoring", "own_orb_player", "static_offense",
-    "period_edges", "comeback_plan",
+    "period_edges", "comeback_plan", "win_flip",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
 FEATURE_IDS: Tuple[str, ...] = ("game_context",)
@@ -207,6 +207,14 @@ class RuleConfig:
     rec_distance_weight: float = 0.5
     rec_balance_tolerance: float = 1.5
     rec_max_results: int = 3
+    # Quintets of the package in the recommender (#132): the net rating per 40 min of the quintet a swap makes is shrunk to zero by this
+    # many seconds together, and each shrunk point moves the score (sigma) by this weight. Needs ``rec_lineup_min_s`` together.
+    # Together time a quintet needs to count: at least ``rec_lineup_min_s`` and at least this share of the minutes the own team has played
+    # in the season (``rec_lineup_min_share`` of games played x 40 min; adaptive: the more games, the more a quintet must have played).
+    rec_lineup_min_s: int = 120
+    rec_lineup_min_share: float = 0.01
+    rec_lineup_prior_s: int = 1800
+    rec_lineup_weight: float = 0.03
     rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever
     # Rival players producing far above their season rate: minutes needed, excess in Poisson
     # standard deviations over the expected count, and the minimum count per metric.
@@ -243,6 +251,10 @@ class RuleConfig:
     # Levers (#256): how much faster or slower the pace is tried, and the smallest probability gain worth listing.
     wp_pace_change: float = 0.10
     wp_lever_min_gain: float = 0.01
+    # Flip alert (#258): the probability of winning falls this much (0-1) within this many game-seconds. Provisional: to confirm with the
+    # staff, and the probability itself is experimental in the app (#257).
+    wp_flip_drop: float = 0.20
+    wp_flip_window_s: int = 300
     # No timeout is proposed right after the own team called one (issue #318): window in game-seconds (0 = always propose).
     timeout_recent_s: int = 120
     # Fouls of who comes in (issue #317): in the first quarter this many personal fouls already make a player a risk (she does not come

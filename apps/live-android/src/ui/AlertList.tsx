@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import AlertCard, { CATEGORY_LABEL } from './AlertCard'
 import type { Alert } from '../engine/types'
 import type { Verdict } from '../feedback/store'
+import { useAlertFilter } from './useAlertFilter'
 
 export interface AlertEntry { alert: Alert; at: string }
 
@@ -43,24 +44,35 @@ interface ListProps {
 
 /**
  * One chronological flow, the latest alert on top (issue #313; before it the list was grouped by severity, #229). Severity and
- * category are marks of each card (colour, icon, label), the header counts them. The 20 latest are visible, the rest collapsed.
+ * category are marks of each card (colour, icon, label); the counters of the header count them and are also the filter (#322): pressing
+ * one hides or shows that severity. The filter goes first, then the 20 latest are visible and the rest collapsed.
  */
 export default function AlertList({ entries, verdicts = {}, onVerdict }: ListProps) {
   const { critical, warning, info } = countBySeverity(entries)
   const fresh = useFreshKeys(entries)
+  const { hidden, toggle } = useAlertFilter()
+  const counter = (severity: Alert['severity'], n: number, one: string, many: string) => n > 0 && (
+    <button type="button" className={`count count-${severity}`} aria-pressed={!hidden.has(severity)} onClick={() => toggle(severity)}>
+      {plural(n, one, many)}
+    </button>
+  )
+  const shown = entries.filter(e => !hidden.has(e.alert.severity))
   const card = (e: AlertEntry) => (
     <AlertCard key={e.alert.key} alert={e.alert} at={e.at} verdict={verdicts[e.alert.key] ?? null} fresh={fresh.has(e.alert.key)}
       onVerdict={onVerdict && (v => onVerdict(e.alert.key, v))} />
   )
-  const older = entries.slice(VISIBLE_ALERTS)
+  const older = shown.slice(VISIBLE_ALERTS)
   return (
     <div className="alert-list">
       <p className="alert-counts" aria-label="Resumen de alertas">
-        {critical > 0 && <span className="count count-critical">{plural(critical, 'crítica', 'críticas')}</span>}
-        {warning > 0 && <span className="count count-warning">{plural(warning, 'aviso', 'avisos')}</span>}
-        {info > 0 && <span className="count count-info">{plural(info, 'informativa', 'informativas')}</span>}
+        {counter('critical', critical, 'crítica', 'críticas')}
+        {counter('warning', warning, 'aviso', 'avisos')}
+        {counter('info', info, 'informativa', 'informativas')}
       </p>
-      <ul className="alerts">{entries.slice(0, VISIBLE_ALERTS).map(card)}</ul>
+      {shown.length === 0 && entries.length > 0 && (
+        <p className="detail">Has ocultado todas las alertas: pulsa un contador para volver a verlas.</p>
+      )}
+      <ul className="alerts">{shown.slice(0, VISIBLE_ALERTS).map(card)}</ul>
       {older.length > 0 && (
         <details className="alerts-older">
           <summary>{older.length === 1 ? 'Ver la 1 anterior' : `Ver las ${older.length} anteriores`}</summary>

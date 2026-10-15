@@ -18,11 +18,9 @@ describe('Scoreboard', () => {
     expect(screen.getByText('Q4 00:00')).toBeTruthy()
   })
 
-  it('marks which one is our team', () => {
+  it('does not label either team as "ours": the app is not only for one club (#322)', () => {
     render(<Scoreboard own={OWN} rival={RIVAL} homeId="1008898" score={{}} clock="Q1 10:00" />)
-    const [left, right] = sides()
-    expect(within(right).getByText(/tu equipo/i)).toBeTruthy()
-    expect(within(left).queryByText(/tu equipo/i)).toBeNull()
+    expect(screen.queryByText(/tu equipo/i)).toBeNull()
   })
 
   it('without a score yet it shows zeros, and our team is on the left when nothing says otherwise', () => {

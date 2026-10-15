@@ -116,6 +116,8 @@ export interface FormationStatus {
   unknown: number
   /** Own players on court now (5 unless a substitution is in progress). */
   players: number
+  /** The same for the rival (issue #322: the rule watches both teams); missing in an engine that predates it. */
+  rival?: { known: boolean; on_court: number | null; unknown: number; players: number }
 }
 
 /** Win probability of the own team, from src/live_core/win_prob.py (issue #254; experimental in the app, #257). */

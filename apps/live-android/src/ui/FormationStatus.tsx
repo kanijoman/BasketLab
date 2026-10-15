@@ -1,30 +1,25 @@
-/** Formación players on court against the minimum of the competition (issue #272), under the scoreboard. */
-import type { FormationStatus as Status } from '../engine/types'
+/** A note under the scoreboard ONLY when a team's formación lineup is not being watched (issue #322). The lineup of each team is
+ *  watched by the engine and an illegal one is a critical alert (src/live_core/rules_lineup.py); a card that is always there said
+ *  nothing and did not say whose lineup it was. Without the FEB roster of a team in the package there is nothing to watch: that is what
+ *  is worth a line. */
+import type { FormationStatus as Status, TeamRef } from '../engine/types'
 
-const LINEUP = 5
+interface Props {
+  formation?: Status | null
+  own: TeamRef
+  rival: TeamRef
+}
 
-export default function FormationStatus({ formation }: { formation?: Status | null }) {
+export default function FormationStatus({ formation, own, rival }: Props) {
   if (!formation || formation.min <= 0) return null
-  if (!formation.known) {
-    return (
-      <p className="formation-status" data-state="unknown" role="status">
-        Sin plantilla de FEB: no se vigila la alineación de formación.
-      </p>
-    )
-  }
-  const { min, unknown, players } = formation
-  const count = formation.on_court ?? 0
-  const incomplete = players < LINEUP                     // a substitution is in progress: not a violation yet
-  const bad = !incomplete && count + unknown < min        // even the players without data could not reach the minimum
-  const state = bad ? 'bad' : incomplete ? 'pending' : count <= min ? 'limit' : 'ok'
-  const notes = [
-    unknown > 0 ? `${unknown} sin datos` : null,
-    incomplete ? 'cambio en curso' : null,
-    bad ? 'por debajo del mínimo' : null,
-  ].filter(Boolean)
+  const unwatched = [
+    !formation.known ? own.name : null,
+    formation.rival && !formation.rival.known ? rival.name : null,
+  ].filter((name): name is string => name !== null)
+  if (unwatched.length === 0) return null
   return (
-    <p className="formation-status" data-state={state} role={bad ? 'alert' : 'status'}>
-      Formación en pista: {count} (mínimo {min}){notes.length > 0 && ` · ${notes.join(' · ')}`}
+    <p className="formation-status" data-state="unknown" role="status">
+      Sin plantilla de FEB: no se vigila la alineación de formación de {unwatched.join(' ni de ')}.
     </p>
   )
 }

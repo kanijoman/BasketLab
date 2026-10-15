@@ -8,6 +8,8 @@ interface Props {
   matchCode: string | null
   state: FeedState
   running: boolean
+  /** Whether the screen is being kept on while connected (null: not connected). */
+  awake?: boolean | null
   onStart: (code: string) => void
   onStop: () => void
 }
@@ -46,7 +48,7 @@ function Status({ state, now }: { state: FeedState; now: number }) {
   }
 }
 
-export default function LiveConnect({ matchCode, state, running, onStart, onStop }: Props) {
+export default function LiveConnect({ matchCode, state, running, awake = null, onStart, onStop }: Props) {
   const [typed, setTyped] = useState('')
   const now = useNow(state.kind === 'live' || state.kind === 'gap')
   const code = (matchCode ?? typed).trim()
@@ -71,6 +73,10 @@ export default function LiveConnect({ matchCode, state, running, onStart, onStop
         </HelpHint>
       )}
       <Status state={state} now={now} />
+      {running && awake === true && <p className="detail">Pantalla encendida mientras dure la conexión.</p>}
+      {running && awake === false && (
+        <p className="status warn">No se pudo mantener la pantalla encendida: desactiva el bloqueo automático de la tablet durante el partido.</p>
+      )}
       {running
         ? <button className="secondary" onClick={onStop}>Desconectar</button>
         : <button disabled={!valid} onClick={() => onStart(code)}>Conectar con FEB</button>}

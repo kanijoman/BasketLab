@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import AlertList, { CATEGORY_LABEL, type AlertEntry } from './AlertList'
 import type { Alert } from '../engine/types'
@@ -81,8 +81,62 @@ describe('AlertList (issue #229)', () => {
   })
 
   it('knows the categories the engine emits and falls back for an unknown one', () => {
-    expect(Object.keys(CATEGORY_LABEL).sort()).toEqual(['alineacion', 'descanso', 'faltas', 'four_factors', 'gestion', 'resumen', 'rival', 'rotacion'])
+    expect(Object.keys(CATEGORY_LABEL).sort()).toEqual(['alineacion', 'descanso', 'faltas', 'four_factors', 'gestion', 'probabilidad', 'resumen', 'rival', 'rotacion'])
     render(<AlertList entries={[entry('x', 'warning', 'nueva')]} />)
     expect(screen.getByText('nueva')).toBeTruthy()
+  })
+})
+
+describe('severity filter on the counters (issue #322)', () => {
+  const flow = () => Array.from(document.querySelectorAll('.alert-list li.alert')).map(li => li.querySelector('.alert-message')?.textContent)
+  const counter = (text: string) => screen.getByRole('button', { name: text })
+
+  it('the counters are toggle buttons, all on at the start', () => {
+    render(<AlertList entries={MIX} />)
+    for (const name of ['1 crítica', '2 avisos', '2 informativas']) expect(counter(name).getAttribute('aria-pressed')).toBe('true')
+    expect(flow()).toEqual(['w1', 'i1', 'c1', 'w2', 'i2'])
+  })
+
+  it('pressing one hides that severity and pressing it again shows it, keeping the chronological order', () => {
+    render(<AlertList entries={MIX} />)
+    fireEvent.click(counter('2 informativas'))
+    expect(counter('2 informativas').getAttribute('aria-pressed')).toBe('false')
+    expect(flow()).toEqual(['w1', 'c1', 'w2'])
+    fireEvent.click(counter('2 avisos'))
+    expect(flow()).toEqual(['c1'])
+    fireEvent.click(counter('2 informativas'))
+    expect(flow()).toEqual(['i1', 'c1', 'i2'])
+  })
+
+  it('the counters keep counting everything, hidden or not', () => {
+    render(<AlertList entries={MIX} />)
+    fireEvent.click(counter('2 avisos'))
+    expect(screen.getByRole('button', { name: '2 avisos' })).toBeTruthy()
+  })
+
+  it('the filter goes first, then the 20 latest and the rest collapsed', () => {
+    const entries = Array.from({ length: 30 }, (_, i) => entry(`a${i}`, i % 3 === 0 ? 'info' : 'warning'))      // 10 info, 20 warnings
+    render(<AlertList entries={entries} />)
+    expect(screen.getByText('Ver las 10 anteriores', { selector: 'summary' })).toBeTruthy()
+    fireEvent.click(counter('10 informativas'))
+    expect(document.querySelector('details')).toBeNull()                                   // 20 warnings fit in the 20 visible
+    expect(document.querySelectorAll('.alert-list > .alerts > li')).toHaveLength(20)
+  })
+
+  it('with every severity hidden it says so and how to get them back', () => {
+    render(<AlertList entries={[entry('c1', 'critical')]} />)
+    fireEvent.click(counter('1 crítica'))
+    expect(screen.getByText(/has ocultado todas las alertas/i)).toBeTruthy()
+    fireEvent.click(counter('1 crítica'))
+    expect(flow()).toEqual(['c1'])
+  })
+
+  it('the filter is remembered for the next time', () => {
+    const first = render(<AlertList entries={MIX} />)
+    fireEvent.click(counter('2 informativas'))
+    first.unmount()
+    render(<AlertList entries={MIX} />)
+    expect(counter('2 informativas').getAttribute('aria-pressed')).toBe('false')
+    expect(flow()).toEqual(['w1', 'c1', 'w2'])
   })
 })

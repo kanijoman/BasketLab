@@ -57,6 +57,16 @@ def test_one_formacion_player_on_court_is_an_illegal_lineup_after_two_evaluation
     assert a.severity == "critical" and a.category == "alineacion"
     assert a.evidence["on_court_formation"] == 1 and a.evidence["minimum"] == 2
     assert "formación" in a.message and "1" in a.message and "2" in a.message
+    assert "Alineación indebida de " + OWN in a.message     # it names the team (the app is not only for one club, #322)
+
+
+def test_the_alert_names_the_team_from_the_snapshot():
+    s, roster = board([YES, NO, NO, NO, NO])
+    s["teams"][OWN]["name"] = "RECOLETAS ZAMORA"
+    eng = engine(roster)
+    eng.evaluate(s)
+    [a] = formation_alerts(eng, s)
+    assert a.message.startswith("Alineación indebida de RECOLETAS ZAMORA: solo 1 de formación")
 
 
 @pytest.mark.parametrize("marks", [[YES, YES, NO, NO, NO], [YES, YES, YES, NO, NO], [YES] * 5])
@@ -285,12 +295,12 @@ def test_the_note_is_not_added_when_there_is_room_or_the_player_is_not_formacion
 
 def test_the_analysis_tells_the_app_how_many_formacion_players_are_on_court():
     s, roster = board([YES, NO, YES, NO, NO])
-    assert engine(roster).analyze(s)["formation"] == {"min": 2, "known": True, "on_court": 2, "unknown": 0, "players": 5}
+    assert engine(roster).analyze(s)["formation"] == {"min": 2, "known": True, "on_court": 2, "unknown": 0, "players": 5, "rival": {"known": False, "on_court": None, "unknown": 0, "players": 0}}
 
 
 def test_the_analysis_says_when_the_roster_is_unknown_so_the_app_can_warn():
     s, _ = board([NO] * 5)
-    assert engine(None).analyze(s)["formation"] == {"min": 2, "known": False, "on_court": None, "unknown": 0, "players": 5}
+    assert engine(None).analyze(s)["formation"] == {"min": 2, "known": False, "on_court": None, "unknown": 0, "players": 5, "rival": {"known": False, "on_court": None, "unknown": 0, "players": 0}}
 
 
 def test_the_analysis_has_nothing_to_say_when_the_rule_is_switched_off():
@@ -337,3 +347,86 @@ def test_with_a_stricter_minimum_it_fires_only_when_both_players_who_are_not_for
     for a in alerts:
         assert a["severity"] == "critical" and a["evidence"]["on_court_formation"] == 3
         assert not_formacion <= set(a["evidence"]["lineup"])
+
+
+# --- the rival too (issue #322): the rule is about BOTH teams -------------------------------------------------------
+
+def rival_board(own_marks, rival_marks, elapsed=1500, period=3):
+    """Both teams on court: own players p1.., rival players r1.., and a roster that has both."""
+    players, roster = {}, {}
+    for i, mark in enumerate(own_marks, 1):
+        players[f"p{i}"] = _player(f"Jug {i}", OWN, on_court=True)
+        roster[f"p{i}"] = entry(mark, OWN)
+    for i, mark in enumerate(rival_marks, 1):
+        players[f"r{i}"] = _player(f"Rival {i}", RIVAL, on_court=True)
+        roster[f"r{i}"] = entry(mark, RIVAL)
+    return snap(elapsed=elapsed, period=period, players=players), roster
+
+
+def lineup_alerts(eng, snapshot):
+    return [a for a in eng.evaluate(snapshot) if a.id in ("formation_lineup", "rival_formation_lineup")]
+
+
+def test_the_rival_in_an_illegal_lineup_is_a_critical_alert_too():
+    s, roster = rival_board([YES, YES, NO, NO, NO], [YES, NO, NO, NO, NO])
+    eng = engine(roster)
+    assert lineup_alerts(eng, s) == []                    # confirmed after two evaluations, like ours
+    [a] = lineup_alerts(eng, s)
+    assert a.id == "rival_formation_lineup" and a.severity == "critical" and a.category == "alineacion"
+    assert "Alineación indebida de " + RIVAL in a.message and "1" in a.message and "2" in a.message
+    assert "Valorar avisar a la mesa" in a.message         # what to do differs: it is not our lineup to fix
+    assert a.evidence["team_id"] == RIVAL and a.evidence["on_court_formation"] == 1 and a.evidence["minimum"] == 2
+
+
+def test_each_team_gets_its_own_alert_and_a_legal_team_none():
+    s, roster = rival_board([YES, NO, NO, NO, NO], [YES, NO, NO, NO, NO])
+    eng = engine(roster)
+    lineup_alerts(eng, s)
+    both = lineup_alerts(eng, s)
+    assert sorted(a.id for a in both) == ["formation_lineup", "rival_formation_lineup"]
+    own_only, roster2 = rival_board([YES, NO, NO, NO, NO], [YES, YES, NO, NO, NO])
+    eng2 = engine(roster2)
+    lineup_alerts(eng2, own_only)
+    assert [a.id for a in lineup_alerts(eng2, own_only)] == ["formation_lineup"]
+
+
+def test_the_rival_is_only_watched_when_the_roster_has_its_players():
+    s, roster = rival_board([YES, YES, NO, NO, NO], [NO] * 5)
+    own_roster_only = {k: v for k, v in roster.items() if v["team_id"] == OWN}
+    eng = engine(own_roster_only)
+    lineup_alerts(eng, s)
+    assert lineup_alerts(eng, s) == []                    # no roster of the rival: nothing is said about it
+
+
+def test_the_doubt_about_the_rival_also_goes_in_its_favour():
+    s, roster = rival_board([YES, YES, NO, NO, NO], [YES, UNKNOWN, UNKNOWN, NO, NO])
+    eng = engine(roster)
+    lineup_alerts(eng, s)
+    assert lineup_alerts(eng, s) == []                    # two players the roster does not settle count as formación
+
+
+def test_the_rival_alert_has_its_own_key_and_does_not_hide_ours():
+    s, roster = rival_board([YES, NO, NO, NO, NO], [YES, NO, NO, NO, NO])
+    eng = engine(roster)
+    lineup_alerts(eng, s)
+    keys = [a.key for a in lineup_alerts(eng, s)]
+    assert len(set(keys)) == 2 and any(k.startswith("rival_formation:") for k in keys)
+
+
+def test_the_rival_alert_survives_a_decided_game():
+    from src.live_core.game_context import kept_when_decided
+
+    s, roster = rival_board([YES, YES, NO, NO, NO], [YES, NO, NO, NO, NO])
+    eng = engine(roster)
+    lineup_alerts(eng, s)
+    [a] = lineup_alerts(eng, s)
+    assert kept_when_decided(a)
+
+
+def test_the_analysis_says_for_both_teams_whether_they_are_watched():
+    s, roster = rival_board([YES, YES, NO, NO, NO], [NO] * 5)
+    analysis = engine(roster).analyze(s)["formation"]
+    assert analysis["known"] is True and analysis["rival"]["known"] is True
+    assert analysis["rival"]["on_court"] == 0
+    only_own = {k: v for k, v in roster.items() if v["team_id"] == OWN}
+    assert engine(only_own).analyze(s)["formation"]["rival"]["known"] is False

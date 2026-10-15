@@ -120,8 +120,9 @@ def fetch_team_roster(team_id: Any, get: Optional[Callable[..., Any]] = None, ti
 
 
 def fetch_rosters(team_ids: Iterable[Any], get: Optional[Callable[..., Any]] = None) -> Optional[Dict[str, Dict[str, Any]]]:
-    """The rosters of several teams merged into one table; a team that fails is left out, none at all is None."""
+    """The rosters of several teams merged into one table; a team that fails is asked once more (a hiccup of FEB's website
+    must not leave the rival out of the package, #322) and, if it still fails, is left out; none at all is None."""
     merged: Dict[str, Dict[str, Any]] = {}
     for team_id in dict.fromkeys(str(t) for t in team_ids):
-        merged.update(fetch_team_roster(team_id, get=get) or {})
+        merged.update(fetch_team_roster(team_id, get=get) or fetch_team_roster(team_id, get=get) or {})
     return merged or None

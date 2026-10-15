@@ -164,3 +164,27 @@ def test_the_same_team_is_not_requested_twice():
     get = fake_get({ROSTER_URL.format(team_id=TEAM): Response(page([player("1")]).encode("utf-8"))})
     fetch_rosters([TEAM, TEAM], get=get)
     assert len(get.calls) == 1
+
+
+def test_a_team_whose_page_fails_once_is_asked_again_so_the_package_keeps_both_rosters_regression():
+    """Bug: one hiccup of FEB's website left the rival out of the package and the rule watched only our team (#322)."""
+    ok = Response(page([player("1")]).encode("utf-8"))
+    answers = {"A": iter([ConnectionError("blip"), ok]), "B": iter([Response(page([player("2")], team="B").encode("utf-8"))])}
+    calls = []
+
+    def get(url, headers=None, timeout=None):
+        team = url.rsplit("/", 1)[1]
+        calls.append(team)
+        item = next(answers[team])
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    assert sorted(fetch_rosters(["A", "B"], get=get)) == ["1", "2"]
+    assert calls == ["A", "A", "B"]
+
+
+def test_a_team_that_keeps_failing_is_asked_only_twice():
+    get = fake_get({ROSTER_URL.format(team_id="A"): ConnectionError("down")})
+    assert fetch_rosters(["A"], get=get) is None
+    assert len(get.calls) == 2

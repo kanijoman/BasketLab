@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { EngineApi } from '../engine/client'
 import type { EngineOutput } from '../engine/types'
+import { capacitorDevice, type Device } from './device'
 import { FebClient, defaultHttp, type HttpGet } from './febClient'
 import { LiveFeed, type FeedState, type LiveFeedOptions } from './liveFeed'
 
@@ -10,6 +11,10 @@ export type FeedTiming = Pick<LiveFeedOptions, 'intervalMs' | 'waitingIntervalMs
 interface Options {
   engine: EngineApi
   http?: HttpGet
+  /** The tablet (screen on, back to the foreground, network back); the Capacitor one unless a test gives its own. */
+  device?: Device
+  /** Notes the live mode wants in the session log (issue #309). */
+  onNote?: (text: string) => void
   timing?: FeedTiming
   /** Called with the engine output of every document of the feed. */
   onOutput: (output: EngineOutput) => void
@@ -19,8 +24,10 @@ interface Options {
 
 const RUNNING = new Set<FeedState['kind']>(['connecting', 'waiting', 'live', 'gap'])
 
-export function useLiveFeed({ engine, http = defaultHttp, timing, onOutput, restart }: Options) {
+export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevice, onNote, timing, onOutput, restart }: Options) {
   const [state, setState] = useState<FeedState>({ kind: 'idle' })
+  /** Whether the screen is being kept on (null: no connection running). */
+  const [awake, setAwake] = useState<boolean | null>(null)
   const feed = useRef<LiveFeed | null>(null)
 
   /** The feed goes silent when stopped, so "disconnected" is reported here. */
@@ -43,5 +50,19 @@ export function useLiveFeed({ engine, http = defaultHttp, timing, onOutput, rest
 
   useEffect(() => () => feed.current?.stop(), [])
 
-  return { state, running: RUNNING.has(state.kind), connect, disconnect }
+  const running = RUNNING.has(state.kind)
+  // While connected (issues #219, #220): the screen stays on, and coming back to the foreground or getting the network back
+  // polls FEB at once instead of waiting for the frozen timer.
+  useEffect(() => {
+    if (!running) return
+    let cancelled = false
+    void device.keepAwake().then(ok => { if (!cancelled) setAwake(ok) })
+    const stopListening = device.onResume(reason => {
+      feed.current?.poke()
+      onNote?.(reason === 'foreground' ? 'La app vuelve a primer plano: se consulta FEB de inmediato' : 'Red recuperada: se consulta FEB de inmediato')
+    })
+    return () => { cancelled = true; stopListening(); setAwake(null); void device.allowSleep() }
+  }, [running, device, onNote])
+
+  return { state, running, awake, connect, disconnect }
 }

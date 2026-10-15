@@ -148,4 +148,28 @@ describe('LiveFeed', () => {
     expect(documents).toEqual([])
     expect(states.map(s => s.kind)).toEqual(['connecting'])  // nothing after the stop, not even "stopped"
   })
+
+  // Issue #220: the WebView freezes its timers in the background; on coming back the loop must not wait out the rest of its sleep.
+  it('poke() ends the wait between rounds at once and polls now (the app came back to the foreground or the network is back)', async () => {
+    const t = setup({ boxscore: [box('2')] })
+    let sleeps = 0
+    const feed = new LiveFeed({
+      client: t.client, code: '777', onDocument: json => { t.documents.push({ doc: JSON.parse(json) }) }, onState: () => undefined,
+      sleep: () => { sleeps++; return new Promise<void>(() => undefined) }, now: () => 0,   // never wakes up by itself
+    })
+    void feed.start()
+    await vi.waitFor(() => expect(sleeps).toBe(1))
+    expect(t.documents).toHaveLength(1)
+    feed.poke()
+    await vi.waitFor(() => expect(t.documents).toHaveLength(2))   // a second round although the sleep never finished
+    await vi.waitFor(() => expect(sleeps).toBe(2))
+    feed.stop()
+  })
+
+  it('poke() before start() or after stop() does nothing harmful', () => {
+    const t = setup({ boxscore: [box('2')] })
+    expect(() => t.feed.poke()).not.toThrow()
+    t.feed.stop()
+    expect(() => t.feed.poke()).not.toThrow()
+  })
 })
