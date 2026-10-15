@@ -258,6 +258,9 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 .appearance { margin: 12px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; gap: 16px; flex-wrap: wrap; }
 .appearance label { display: flex; align-items: center; gap: 6px; min-height: 44px; }
 /* The alert modes (#130, #336): one row each, the radio on the left and the name with its help stacked on the right */
+/* With a package loaded: its match or the recorded ones (#344) */
+.review-switch { margin: 0 0 12px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: grid; gap: 2px; }
+.review-switch label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
 .alert-mode { margin: 12px 0 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: grid; gap: 4px; }
 .alert-mode label { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 2px 10px; min-height: 44px; padding: 6px 0; }
 .alert-mode label > input { margin-top: 4px; }
