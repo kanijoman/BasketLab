@@ -44,6 +44,8 @@ interface Round {
 
 export class LiveFeed {
   private stopped = false
+  /** Ends the current wait between rounds (set only while the loop is waiting). */
+  private wake: (() => void) | null = null
   private readonly o: Required<LiveFeedOptions>
 
   constructor(options: LiveFeedOptions) {
@@ -55,6 +57,20 @@ export class LiveFeed {
 
   stop(): void {
     this.stopped = true
+    this.poke()
+  }
+
+  /** Polls now instead of waiting out the rest of the sleep (issue #220: the app is back in the foreground or the network is back,
+   *  and the WebView had frozen its timers). It does nothing while a round is running: that one is already asking FEB. */
+  poke(): void {
+    this.wake?.()
+  }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise<void>(resolve => {
+      this.wake = () => { this.wake = null; resolve() }
+      void this.o.sleep(ms).then(() => this.wake?.())
+    })
   }
 
   private async round(seenLive: boolean): Promise<Round> {
@@ -115,7 +131,7 @@ export class LiveFeed {
       } else {
         this.report({ kind: 'gap', lastOkAt, message: round.failure })
       }
-      await this.o.sleep(round.notStarted ? this.o.waitingIntervalMs : this.o.intervalMs)
+      await this.wait(round.notStarted ? this.o.waitingIntervalMs : this.o.intervalMs)
     }
   }
 }

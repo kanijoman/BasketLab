@@ -21,6 +21,7 @@ import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
 import type { HttpGet } from '../feed/febClient'
+import type { Device } from '../feed/device'
 import BrandHeader from './BrandHeader'
 import PaceCard from './PaceCard'
 import Splash from './Splash'
@@ -50,6 +51,8 @@ interface Props {
   febHttp?: HttpGet
   /** Polling timing of the live mode (defaults: 10 s; injected in tests). */
   feedTiming?: FeedTiming
+  /** Screen on and back-to-foreground events of the tablet (injected in tests; the default uses the Capacitor plugins). */
+  device?: Device
   store?: PackageStore
   /** Network access of the published-packages list (injected in tests). */
   remoteFetcher?: Fetcher
@@ -60,7 +63,7 @@ interface Props {
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming, appUpdate }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming, device, appUpdate }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -181,7 +184,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const saved = await store.load()
     if (saved) setMeta(await engine.start(saved.plaintext))
   }, [engine, store])
-  const live = useLiveFeed({ engine, http: febHttp, timing: feedTiming, onOutput: handleOutput, restart: restartLive })
+  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleOutput, restart: restartLive })
   const update = useAppUpdate(appUpdate)
 
   const step = useCallback(async (to: number) => {
@@ -282,7 +285,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
 
       {pkg ? (
-        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running}
+        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
           onStart={code => void live.connect(code)} onStop={live.disconnect} />
       ) : (
         <>
