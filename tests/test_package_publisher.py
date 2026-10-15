@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.live_prep.package_crypto import decrypt_package
-from src.live_prep.publisher import build_index, load_config, main, publish_all
+from src.live_prep.publisher import build_index, load_config, main, publish_all, publish_round_bundles
 
 OWN, R1, R2 = "1008631", "2001", "2002"
 PASSWORD = "clave-larga-de-prueba"
@@ -93,6 +93,82 @@ class TestPublishAll:
         assert not old.exists() and (tmp_path / OWN / f"{R1}.bpkg").exists()
 
 
+def _round_service(rounds):
+    """``rounds``: collection -> the answer of next_round (a dict) or an exception to raise."""
+    service = MagicMock()
+
+    def next_round(collection):
+        answer = rounds[collection]
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    service.next_round.side_effect = next_round
+    return service
+
+
+def _round(rnd, *pairs):
+    return {"round": rnd, "calendar_url": "u", "warning": None, "matches": [
+        {"code": str(i), "start": "2026-10-17T17:00", "round": rnd, "home": {"id": h, "name": f"EQ {h}"}, "away": {"id": a, "name": f"EQ {a}"}}
+        for i, (h, a) in enumerate(pairs, 1)]}
+
+
+def _round_builder(calls):
+    def build(db, collection, matches, club_team_id=None, roster_source=None, season=None):
+        calls.append((collection, [m["code"] for m in matches], club_team_id))
+        package = MagicMock()
+        package.dumps.return_value = json.dumps({"c": collection})
+        return [{"match": {k: m[k] for k in ("code", "start", "round", "home", "away")}, "own_id": m["home"]["id"],
+                 "rival_id": m["away"]["id"], "is_club": OWN in (m["home"]["id"], m["away"]["id"]), "package": package} for m in matches]
+    return build
+
+
+class TestPublishRoundBundles:
+    """One bundle per competition with the whole next round (issues #286, #172)."""
+
+    def test_one_bundle_per_competition_with_every_match_of_its_next_round(self, tmp_path):
+        service = _round_service({"A": _round(4, (OWN, R1), (R2, "3003")), "B": _round(9, ("5001", "5002"))})
+        calls = []
+        entries = publish_round_bundles(object(), tmp_path, PASSWORD, ["A", "B"], OWN, service=service, build=_round_builder(calls))
+        assert calls == [("A", ["1", "2"], OWN), ("B", ["1"], OWN)]
+        assert [(e["collection"], e["round"], e["club"], len(e["matches"])) for e in entries] == [("A", 4, True, 2), ("B", 9, False, 1)]
+        assert all((tmp_path / e["file"]).exists() for e in entries)
+
+    def test_a_competition_without_matches_to_play_gets_no_bundle(self, tmp_path):
+        service = _round_service({"A": {"round": None, "matches": [], "calendar_url": None, "warning": "sin calendario"}})
+        assert publish_round_bundles(object(), tmp_path, PASSWORD, ["A"], OWN, service=service, build=_round_builder([])) == []
+
+    def test_a_failing_competition_is_reported_and_the_others_still_go(self, tmp_path):
+        service = _round_service({"A": _round(1, (OWN, R1)), "B": _round(2, ("5001", "5002"))})
+
+        def build(db, collection, matches, **kw):
+            if collection == "A":
+                raise MemoryError("sin memoria")
+            return _round_builder([])(db, collection, matches, **kw)
+
+        errors = []
+        entries = publish_round_bundles(object(), tmp_path, PASSWORD, ["A", "B"], OWN, service=service, build=build, errors=errors)
+        assert [e["collection"] for e in entries] == ["B"] and "A" in errors[0] and "MemoryError" in errors[0]
+
+    def test_a_calendar_that_raises_is_a_reported_error_not_a_crash(self, tmp_path):
+        service = _round_service({"A": ConnectionError("feb down")})
+        errors = []
+        assert publish_round_bundles(object(), tmp_path, PASSWORD, ["A"], OWN, service=service, build=_round_builder([]), errors=errors) == []
+        assert "A" in errors[0] and "feb down" in errors[0]
+
+    def test_stale_bundles_of_a_previous_run_are_removed(self, tmp_path):
+        (tmp_path / "rounds").mkdir()
+        (tmp_path / "rounds" / "OLD__r1.bpkgz").write_text("x", encoding="utf-8")
+        publish_round_bundles(object(), tmp_path, PASSWORD, ["A"], OWN, service=_round_service({"A": _round(1, (OWN, R1))}), build=_round_builder([]))
+        assert not (tmp_path / "rounds" / "OLD__r1.bpkgz").exists()
+
+    def test_the_index_lists_the_rounds_and_the_club_without_changing_the_old_fields(self):
+        entry = {"collection": "A", "round": 4, "file": "rounds/A__r4.bpkgz", "sha256": "h", "bytes": 5, "club": True, "matches": []}
+        index = build_index([], rounds=[entry], club_team_id=OWN, now="2026-10-09T12:00:00+00:00")
+        assert index == {"v": 1, "generated_at": "2026-10-09T12:00:00+00:00", "packages": [], "rounds": [entry], "club_team_id": OWN}
+        assert "rounds" not in build_index([], now="n"), "without rounds the index is what it was"
+
+
 class TestVercelGuard:
     def test_the_published_branch_tells_vercel_not_to_deploy_it_regression(self, tmp_path):
         """Bug: Vercel's Git integration built the live-packages branch on every publish and failed
@@ -114,7 +190,12 @@ class TestConfigAndCli:
     def test_config_lists_the_club_and_how_many_matches_to_prepare(self, tmp_path):
         path = tmp_path / "c.json"
         path.write_text(json.dumps({"team_id": OWN, "upcoming": 3}), encoding="utf-8")
-        assert load_config(path) == {"team_id": OWN, "upcoming": 3}
+        assert load_config(path) == {"team_id": OWN, "upcoming": 3, "rounds": True}
+
+    def test_the_bundles_of_the_rounds_can_be_switched_off_in_the_config(self, tmp_path):
+        path = tmp_path / "c.json"
+        path.write_text(json.dumps({"team_id": OWN, "rounds": False}), encoding="utf-8")
+        assert load_config(path)["rounds"] is False
 
     def test_config_without_team_is_rejected(self, tmp_path):
         path = tmp_path / "c.json"

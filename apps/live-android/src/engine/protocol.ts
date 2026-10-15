@@ -2,6 +2,7 @@
 
 export type WorkerRequest =
   | { id: number; type: 'start'; payload: string }
+  | { id: number; type: 'setMode'; payload: string | null }
   | { id: number; type: 'loadReplay'; payload: string }
   | { id: number; type: 'replay'; payload: number }
   | { id: number; type: 'update'; payload: string }

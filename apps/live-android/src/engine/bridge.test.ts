@@ -64,6 +64,26 @@ describe('LiveBridge on Pyodide', () => {
     expect(performance.now() - t0).toBeLessThan(1000)
   })
 
+describe('alert modes on Pyodide (issue #130)', () => {
+  function alertsIn(mode: string | null): number {
+    bridge.setMode(mode)
+    bridge.start(realPackage)
+    bridge.loadRecording(recording)
+    let total = 0
+    for (let s = 0; s <= 7200; s += 60) total += bridge.playRecording(s).output?.alerts.length ?? 0
+    return total
+  }
+
+  it('the mode chosen before the session starts applies to it, and it can change while the session runs', () => {
+    const aggressive = alertsIn('aggressive')
+    const conservative = alertsIn('conservative')
+    expect(aggressive).toBeGreaterThan(conservative)
+    expect(alertsIn(null)).toBeGreaterThan(conservative)                  // no mode: the medium one
+    bridge.setMode('conservative')                                         // with a session running: no error
+    expect(() => bridge.playRecording(3000)).not.toThrow()
+  }, 300_000)
+})
+
 describe('real recorded match on Pyodide (issue #174)', () => {
   it('plays the recording through the engine: not there yet, a moment, a real 404, the end', () => {
     bridge.start(realPackage)

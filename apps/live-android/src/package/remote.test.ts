@@ -1,6 +1,6 @@
 import { webcrypto } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { PACKAGES_BASE_URL, fetchIndex, fetchPackageText, type PackageIndexEntry } from './remote'
+import { PACKAGES_BASE_URL, fetchIndex, fetchPackageText, fetchRoundText, orderRounds, parseRoundBundle, type PackageIndexEntry, type RoundIndexEntry } from './remote'
 
 const TEXT = '{"v":1,"alg":"AES-256-GCM"}'
 async function sha(text: string) {
@@ -36,6 +36,48 @@ describe('fetchIndex', () => {
   it('reports being offline', async () => {
     await expect(fetchIndex(vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))).rejects.toThrow(/conexión/i)
     await expect(fetchIndex(vi.fn().mockRejectedValue(new TypeError('x')))).rejects.toThrow(/revisa la conexión/i)  // what to do (#225)
+  })
+})
+
+const round = (over: Partial<RoundIndexEntry> = {}): RoundIndexEntry => ({
+  collection: 'LF_CHALLENGE_2026', round: 3, file: 'rounds/LF_CHALLENGE_2026__r3.bpkgz', sha256: 'x', bytes: 70_000, club: false,
+  matches: [], ...over,
+})
+const roundMatch = (code: string, start: string, isClub = false) => ({
+  code, start, home: { id: `h${code}`, name: `H${code}` }, away: { id: `a${code}`, name: `A${code}` }, own_id: `h${code}`, is_club: isClub,
+})
+
+describe('rounds of the index (issues #286, #172)', () => {
+  it('keeps the rounds and the club of the index; an index without them is just the club packages', async () => {
+    const withRounds = await fetchIndex(reply(JSON.stringify({ v: 1, packages: [], rounds: [round()], club_team_id: '1008631' })))
+    expect(withRounds.rounds).toHaveLength(1)
+    expect(withRounds.club_team_id).toBe('1008631')
+    const old = await fetchIndex(reply(JSON.stringify({ v: 1, packages: [entry()] })))
+    expect(old.rounds).toEqual([])
+  })
+
+  it('downloads a bundle and checks its SHA-256 like a package', async () => {
+    const f = reply(TEXT)
+    expect(await fetchRoundText(round({ sha256: await sha(TEXT) }), f)).toBe(TEXT)
+    expect(f.mock.calls[0][0]).toBe(`${PACKAGES_BASE_URL}/rounds/LF_CHALLENGE_2026__r3.bpkgz`)
+    await expect(fetchRoundText(round({ sha256: 'deadbeef' }), reply(TEXT))).rejects.toThrow(/no coincide/i)
+  })
+
+  it('puts the competition of the club first, and in each round the matches of the club first, then by time', () => {
+    const ordered = orderRounds([
+      round({ collection: 'A', matches: [roundMatch('1', '2026-10-17T19:00')] }),
+      round({ collection: 'B', club: true, matches: [roundMatch('2', '2026-10-17T12:00'), roundMatch('3', '2026-10-17T17:00', true), roundMatch('4', '2026-10-17T10:00')] }),
+    ])
+    expect(ordered.map(r => r.collection)).toEqual(['B', 'A'])
+    expect(ordered[0].matches.map(m => m.code)).toEqual(['3', '4', '2'])
+  })
+
+  it('parses a bundle and refuses one of another version or shape', () => {
+    const ok = { v: 1, collection: 'A', round: 3, matches: [{ match: roundMatch('1', 's'), own_id: 'h1', rival_id: 'a1', is_club: false, package: '{}' }] }
+    expect(parseRoundBundle(JSON.stringify(ok)).matches[0].package).toBe('{}')
+    expect(() => parseRoundBundle(JSON.stringify({ ...ok, v: 9 }))).toThrow(/versión/i)
+    expect(() => parseRoundBundle('no json')).toThrow(/jornada/i)
+    expect(() => parseRoundBundle(JSON.stringify({ v: 1 }))).toThrow(/jornada/i)
   })
 })
 

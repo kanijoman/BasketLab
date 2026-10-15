@@ -106,3 +106,36 @@ def test_committed_demo_bpkg_decrypts_to_the_demo_package():
     envelope = json.loads((root / "tests/live_vectors/demo.bpkg").read_text(encoding="utf-8"))
     vectors = json.loads((root / "tests/live_vectors/vectors.json").read_text(encoding="utf-8"))
     assert decrypt_package(envelope, "clave-de-prueba-1") == vectors["engine"]["package"]
+
+
+# --- compressed envelope (issue #286): a bundle of packages is compressed BEFORE it is encrypted (ciphertext does not compress) ---
+
+def test_a_compressed_envelope_says_so_roundtrips_and_is_smaller():
+    text = json.dumps({"rows": [{"name": "jugadora", "points": 12}] * 400})
+    plain = encrypt_package(text, "pw", iterations=ITER)
+    packed = encrypt_package(text, "pw", iterations=ITER, compress=True)
+    assert "z" not in plain and packed["z"] == "gzip"
+    assert decrypt_package(packed, "pw") == text
+    assert len(packed["ciphertext"]) < len(plain["ciphertext"]) / 3
+
+
+def test_an_unknown_compression_is_refused_and_the_wrong_password_still_fails():
+    env = encrypt_package("x", "pw", iterations=ITER, compress=True)
+    with pytest.raises(DecryptionError):
+        decrypt_package({**env, "z": "brotli"}, "pw")
+    with pytest.raises(DecryptionError):
+        decrypt_package(env, "otra")
+
+
+def test_committed_demo_round_bundle_decrypts_to_three_matches_with_the_demo_package():
+    """The compressed bundle the app is tested against (gzip + AES-GCM) must stay readable by the Python side (issue #286)."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    envelope = json.loads((root / "tests/live_vectors/demo_round.bpkgz").read_text(encoding="utf-8"))
+    vectors = json.loads((root / "tests/live_vectors/vectors.json").read_text(encoding="utf-8"))
+    assert envelope["z"] == "gzip"
+    bundle = json.loads(decrypt_package(envelope, "clave-de-prueba-1"))
+    assert bundle["collection"] == "DEMO_2026" and bundle["round"] == 4
+    assert [(m["match"]["code"], m["is_club"]) for m in bundle["matches"]] == [("101", False), ("102", True), ("103", False)]
+    assert all(m["package"] == vectors["engine"]["package"] for m in bundle["matches"])

@@ -6,7 +6,7 @@ import { FeedbackStore, feedbackFileName, type FeedbackRecord, type StorageLike,
  * Feedback of the staff on the alerts of one match (``context``). ``register`` is stable so the engine output
  * handler can call it; the store follows the context, so a change of match starts a separate history.
  */
-export function useFeedback(context: string, packageId: string | null, storage?: StorageLike | null) {
+export function useFeedback(context: string, packageId: string | null, storage?: StorageLike | null, alertMode?: string) {
   const store = useMemo(() => new FeedbackStore(context, packageId, storage), [context, packageId, storage])
   const latest = useRef(store)
   latest.current = store
@@ -27,7 +27,7 @@ export function useFeedback(context: string, packageId: string | null, storage?:
   // `version` makes the derived values follow every change of the store.
   const records: FeedbackRecord[] = useMemo(() => store.records(), [store, version])  // eslint-disable-line react-hooks/exhaustive-deps
   const verdicts = useMemo(() => Object.fromEntries(records.map(r => [r.key, r.verdict])), [records])
-  const exportJson = useCallback(() => JSON.stringify(store.export(new Date().toISOString()), null, 2), [store])
+  const exportJson = useCallback(() => JSON.stringify(store.export(new Date().toISOString(), alertMode), null, 2), [store, alertMode])
   const fileName = useCallback(() => feedbackFileName(context, new Date().toISOString()), [context])
 
   return { records, verdicts, register, setVerdict, clear, exportJson, fileName }

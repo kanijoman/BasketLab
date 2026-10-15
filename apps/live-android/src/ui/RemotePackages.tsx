@@ -1,11 +1,12 @@
 /** Packages published by BasketLab for the next matches: list, download, decrypt and install (issue #175). */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { EngineApi } from '../engine/client'
 import { decryptEnvelope } from '../package/crypto'
 import { installPackage } from '../package/install'
 import HelpHint from './HelpHint'
 import { loadPassphrase, savePassphrase } from '../package/passphrase'
-import { fetchIndex, fetchPackageText, type Fetcher, type PackageIndexEntry } from '../package/remote'
+import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, type Fetcher, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import RoundPackages from './RoundPackages'
 import type { PackageStore } from '../package/storage'
 import type { PackageSummary } from '../package/summary'
 
@@ -25,6 +26,8 @@ function when(entry: PackageIndexEntry): string {
 
 export default function RemotePackages({ engine, store, onLoaded, fetcher }: Props) {
   const [entries, setEntries] = useState<PackageIndexEntry[] | null>(null)
+  const [rounds, setRounds] = useState<RoundIndexEntry[]>([])
+  const bundles = useRef(new Map<string, RoundBundle>())   // a bundle is downloaded and decrypted once, however many of its matches are used
   const [pass, setPass] = useState(loadPassphrase)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -32,9 +35,12 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
   const refresh = useCallback(async () => {
     setError(null)
     try {
-      setEntries((await fetchIndex(fetcher)).packages)
+      const index = await fetchIndex(fetcher)
+      setEntries(index.packages)
+      setRounds(index.rounds)
     } catch (e) {
       setEntries(null)
+      setRounds([])
       setError(e instanceof Error ? e.message : String(e))
     }
   }, [fetcher])
@@ -56,11 +62,34 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
     }
   }
 
+  async function downloadRoundMatch(round: RoundIndexEntry, match: RoundMatch) {
+    setBusy(`${round.file}#${match.code}`)
+    setError(null)
+    try {
+      let bundle = bundles.current.get(round.file)
+      if (!bundle) {
+        bundle = parseRoundBundle(await decryptEnvelope(await fetchRoundText(round, fetcher), pass))
+        bundles.current.set(round.file, bundle)
+      }
+      const item = bundle.matches.find(m => m.match.code === match.code)
+      if (!item) throw new Error('El partido ya no está en la jornada publicada. Actualiza la lista.')
+      const summary = await installPackage(engine, store, item.package)
+      savePassphrase(pass)
+      onLoaded(summary)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const anything = (entries !== null && entries.length > 0) || rounds.length > 0
+
   return (
     <section className="panel">
       <h2>Próximos partidos</h2>
       {entries?.length === 0 && <p className="detail">No hay paquetes publicados todavía.</p>}
-      {entries && entries.length > 0 && (
+      {anything && (
         <>
           <label className="remote-packages-pass">
             Contraseña de los paquetes publicados
@@ -71,7 +100,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
             secreto PACKAGE_PASSWORD). Se escribe una vez y queda guardada en este dispositivo.
           </HelpHint>
           <ul className="remote-packages">
-            {entries.map(entry => (
+            {(entries ?? []).map(entry => (
               <li key={entry.file}>
                 <span>
                   <strong>{entry.rival}</strong>
@@ -83,6 +112,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher }: Pro
               </li>
             ))}
           </ul>
+          <RoundPackages rounds={rounds} pass={pass} busy={busy} onDownload={(round, match) => void downloadRoundMatch(round, match)} />
         </>
       )}
       <button className="secondary" disabled={busy !== null} onClick={() => void refresh()}>Actualizar lista</button>

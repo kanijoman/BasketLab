@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import markUrl from '@design/brand/live-mark.svg'
 import { useTheme, type ThemePreference } from './useTheme'
+import { ALERT_MODES, type AlertMode } from './useAlertMode'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
@@ -54,6 +55,8 @@ interface Props {
   sessionLog?: string[]
   /** Experimental features the staff can switch off on this device (issue #257). */
   experimental?: { winProb: boolean; onWinProb: (on: boolean) => void }
+  /** How many alerts the staff wants (issue #130). */
+  alertMode?: { mode: AlertMode; onMode: (mode: AlertMode) => void }
   engineVersion?: string | null
   schemaVersion?: number | null
   version: AppVersion | null
@@ -83,7 +86,7 @@ const APPEARANCE: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'Sistema' }, { value: 'light', label: 'Claro' }, { value: 'dark', label: 'Oscuro' },
 ]
 
-export default function AboutPanel({ sessionLog, experimental, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
+export default function AboutPanel({ sessionLog, experimental, alertMode, engineVersion, schemaVersion, version, update, checking, onCheck, onOpen, diagnostics }: Props) {
   const { preference, setPreference } = useTheme()
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
@@ -131,6 +134,18 @@ export default function AboutPanel({ sessionLog, experimental, engineVersion, sc
           </label>
         ))}
       </fieldset>
+      {alertMode && (
+        <fieldset className="alert-mode" role="radiogroup" aria-label="Modo de alertas">
+          <legend>Modo de alertas</legend>
+          {ALERT_MODES.map(option => (
+            <label key={option.id}>
+              <input type="radio" name="alert-mode" checked={alertMode.mode === option.id} onChange={() => alertMode.onMode(option.id)} />
+              {' '}<strong>{option.label}</strong>
+              <span className="detail"> · {option.help}</span>
+            </label>
+          ))}
+        </fieldset>
+      )}
       {sessionLog && (
         <section className="session-log" aria-label="Registro de la sesión">
           <h3>Registro de la sesión</h3>

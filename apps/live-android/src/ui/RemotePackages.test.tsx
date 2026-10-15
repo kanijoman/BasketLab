@@ -140,3 +140,75 @@ describe('RemotePackages help (issue #225)', () => {
     expect(text).toMatch(/queda guardada en este dispositivo/i)
   })
 })
+
+// --- the whole round of every competition (issues #286, #172) ---------------------------------------------------------------------
+
+const roundFixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo_round.bpkgz'), 'utf8')
+
+async function roundFetcher(over: { club?: boolean } = {}) {
+  const side = (id: string, name: string) => ({ id, name })
+  const matches = [
+    { code: '101', start: '2026-10-17T12:00', home: side('11', 'EQ 11'), away: side('12', 'EQ 12'), own_id: '11', is_club: false },
+    { code: '102', start: '2026-10-17T17:00', home: side('1008631', 'LEON'), away: side('1008898', 'ZAMORA'), own_id: '1008631', is_club: true },
+    { code: '103', start: '2026-10-17T19:00', home: side('31', 'EQ 31'), away: side('32', 'EQ 32'), own_id: '31', is_club: false },
+  ]
+  const index = {
+    v: 1, packages: [], club_team_id: '1008631', rounds: [
+      { collection: 'OTRA_COMPETICION_2026', round: 2, file: 'rounds/OTRA__r2.bpkgz', sha256: 'x', bytes: 1000, club: false,
+        matches: [{ code: '900', start: '2026-10-17T10:00', home: side('91', 'LOCAL 91'), away: side('92', 'VISIT 92'), own_id: '91', is_club: false }] },
+      { collection: 'DEMO_2026', round: 4, file: 'rounds/DEMO__r4.bpkgz', sha256: await sha(roundFixture), bytes: 70000, club: over.club ?? true, matches },
+    ],
+  }
+  return vi.fn(async (url: string) => {
+    const body = url.endsWith('index.json') ? JSON.stringify(index) : roundFixture
+    return { ok: true, status: 200, text: async () => body, json: async () => JSON.parse(body) }
+  })
+}
+
+describe('RemotePackages: the round of every competition', () => {
+  it('lists the competitions with the club first, and in the round the club match first', async () => {
+    const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
+    await screen.findByText(/DEMO 2026/)
+    const headings = Array.from(container.querySelectorAll('.round-packages h3')).map(h => h.textContent)
+    expect(headings[0]).toMatch(/DEMO 2026.*jornada 4/)
+    expect(headings[1]).toMatch(/OTRA COMPETICION 2026.*jornada 2/)
+    const rows = Array.from(container.querySelectorAll('.round-packages')[0].querySelectorAll('li')).map(li => li.textContent)
+    expect(rows[0]).toMatch(/LEON.*ZAMORA/)
+    expect(rows[1]).toMatch(/EQ 11/)
+    expect(rows[2]).toMatch(/EQ 31/)
+  })
+
+  it('downloads the bundle once, decrypts it once and installs the package of the chosen match', async () => {
+    const store = memoryStore()
+    const eng = engine()
+    const onLoaded = vi.fn()
+    const f = await roundFetcher()
+    render(<RemotePackages engine={eng} store={store} onLoaded={onLoaded} fetcher={f} />)
+    await screen.findByText(/DEMO 2026/)
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
+    fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32/i }))
+    await waitFor(() => expect(onLoaded).toHaveBeenCalledTimes(1))
+    expect(eng.start).toHaveBeenCalledWith(demoPackage)
+    expect(store.saved?.plaintext).toBe(demoPackage)
+    fireEvent.click(screen.getByRole('button', { name: /descargar EQ 11 contra EQ 12/i }))
+    await waitFor(() => expect(onLoaded).toHaveBeenCalledTimes(2))
+    expect(f.mock.calls.filter(c => String(c[0]).endsWith('.bpkgz'))).toHaveLength(1)     // the bundle is not downloaded twice
+    expect(localStorage.getItem(PASS_KEY)).toBe(PASS)
+  })
+
+  it('a wrong password says so and installs nothing', async () => {
+    const store = memoryStore()
+    render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
+    await screen.findByText(/DEMO 2026/)
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
+    fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/contraseña/i)
+    expect(store.saved).toBeNull()
+  })
+
+  it('an index without rounds shows only the club packages, as before', async () => {
+    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    expect(screen.queryByText(/jornada completa/i)).toBeNull()
+  })
+})

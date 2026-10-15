@@ -4,6 +4,9 @@
 of ``config/atlas_refresh.json``, builds one encrypted package per upcoming rival and writes
 ``<dir>/<team_id>/<rival_id>.bpkg`` plus ``<dir>/index.json``. The workflow ``live-packages.yml`` pushes that
 directory to the ``live-packages`` branch, which the app reads through raw.githubusercontent.com.
+With ``"rounds": true`` (the default) it also writes, for EVERY competition kept fresh by the Atlas refresh, one compressed encrypted
+bundle with the packages of all the matches of its next round (``rounds/<collection>__r<round>.bpkgz``, see ``round_packages``) and lists
+them under ``rounds`` in the index (issues #286, #172); an app that predates it only reads ``packages``.
 Exit code 2 when the password (``PACKAGE_PASSWORD``, >= 8 characters) or the connection is missing.
 """
 
@@ -29,11 +32,15 @@ def load_config(path: Any = DEFAULT_CONFIG) -> Dict[str, Any]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not data.get("team_id"):
         raise ValueError("config lacks: team_id")
-    return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3))}
+    return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3)), "rounds": bool(data.get("rounds", True))}
 
 
-def build_index(packages: List[Dict[str, Any]], now: Optional[str] = None) -> Dict[str, Any]:
-    return {"v": INDEX_VERSION, "generated_at": now or datetime.now(timezone.utc).isoformat(), "packages": packages}
+def build_index(packages: List[Dict[str, Any]], now: Optional[str] = None, rounds: Optional[List[Dict[str, Any]]] = None,
+                club_team_id: Optional[str] = None) -> Dict[str, Any]:
+    index: Dict[str, Any] = {"v": INDEX_VERSION, "generated_at": now or datetime.now(timezone.utc).isoformat(), "packages": packages}
+    if rounds is not None:
+        index.update({"rounds": rounds, "club_team_id": club_team_id})
+    return index
 
 
 def _match_meta(match: Dict[str, Any]) -> Dict[str, Any]:
@@ -108,6 +115,32 @@ def publish_all(db: Any, out: Any, passphrase: str, collections: List[str], team
     return entries
 
 
+def publish_round_bundles(db: Any, out: Any, passphrase: str, collections: List[str], team_id: str, service: Any = None,
+                          build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    """One bundle per competition with every match of its next round; a competition that fails is reported in ``errors`` and skipped."""
+    from src.live_prep.roster_fetcher import fetch_rosters
+    from src.live_prep.round_packages import ROUNDS_DIR, build_round_packages_from_db, publish_rounds
+    from src.services.match_schedule_service import MatchScheduleService
+
+    service = service or MatchScheduleService(db)
+    build = build or functools.partial(build_round_packages_from_db, roster_source=fetch_rosters)
+    out = Path(out)
+    for old in (out / ROUNDS_DIR).glob("*.bpkgz"):
+        old.unlink()
+    entries: List[Dict[str, Any]] = []
+    for collection in collections:
+        try:
+            upcoming = service.next_round(collection)
+            if not upcoming["matches"]:
+                continue
+            built = build(db, collection, upcoming["matches"], club_team_id=team_id)
+            entries.append(publish_rounds(out, passphrase, collection, upcoming["round"], built, team_id))
+        except Exception as exc:  # noqa: BLE001 - one competition must not block the others
+            if errors is not None:
+                errors.append(f"{collection}: {type(exc).__name__}: {exc}")
+    return entries
+
+
 def _collections() -> List[str]:
     """Collections of the competitions kept fresh by the Atlas refresh (single source of truth)."""
     from src.database import get_collection_name
@@ -138,8 +171,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     errors: List[str] = []
     entries = publish_all(db, args.out, passphrase, _collections(), config["team_id"],
                           upcoming=config["upcoming"], errors=errors)
+    rounds: List[Dict[str, Any]] = []
+    if config["rounds"]:
+        rounds = publish_round_bundles(db, args.out, passphrase, _collections(), config["team_id"], errors=errors)
+        (Path(args.out) / "index.json").write_text(
+            json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"]), ensure_ascii=False, indent=1), encoding="utf-8")
     lines = [f"# Paquetes live ({len(entries)})", ""]
     lines += [f"- {e['match']['start']} · {e['rival']} · {e['bytes'] // 1024} KB" for e in entries]
+    lines += ["", f"## Jornadas completas ({len(rounds)})", ""]
+    lines += [f"- {r['collection']} · jornada {r['round']} · {len(r['matches'])} partidos · {r['bytes'] // 1024} KB" for r in rounds]
     lines += [f"- **Error**: {e}" for e in errors]
     text = "\n".join(lines)
     print(text)

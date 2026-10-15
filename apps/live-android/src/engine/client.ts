@@ -4,6 +4,8 @@ import type { EngineOutput, RecordingFrame, RecordingInfo, ReplayInfo, SessionMe
 
 export interface EngineApi {
   start(packageText: string): Promise<SessionMeta>
+  /** Alert mode of the engine (issue #130): applies to the next session and, if one is running, to it. */
+  setMode(mode: string | null): Promise<void>
   loadReplay(gameJson: string): Promise<ReplayInfo>
   replay(elapsed: number): Promise<EngineOutput>
   update(docJson: string): Promise<EngineOutput>
@@ -57,6 +59,7 @@ export class EngineClient implements EngineApi {
   }
 
   start(packageText: string) { return this.call<SessionMeta>({ type: 'start', payload: packageText }) }
+  async setMode(mode: string | null) { await this.call<unknown>({ type: 'setMode', payload: mode }) }
   loadReplay(gameJson: string) { return this.call<ReplayInfo>({ type: 'loadReplay', payload: gameJson }) }
   replay(elapsed: number) { return this.call<EngineOutput>({ type: 'replay', payload: elapsed }) }
   update(docJson: string) { return this.call<EngineOutput>({ type: 'update', payload: docJson }) }

@@ -1,7 +1,8 @@
 /**
  * Decrypts the .bpkg envelope written by src/live_prep/package_crypto.py:
  *   {"v":1,"alg":"AES-256-GCM","kdf":"PBKDF2-SHA256","iterations":N,"salt","iv","ciphertext"}
- * (binary fields base64; ciphertext = data || 16-byte GCM tag). Uses WebCrypto only.
+ * (binary fields base64; ciphertext = data || 16-byte GCM tag). Uses WebCrypto only. A bundle of packages (issue #286) carries
+ * `"z": "gzip"`: it was compressed BEFORE it was encrypted, so after decrypting it is inflated with the WebView's DecompressionStream.
  */
 export class PackageDecryptError extends Error {}
 
@@ -16,6 +17,7 @@ interface Envelope {
   salt: string
   iv: string
   ciphertext: string
+  z?: string
 }
 
 function parseEnvelope(text: string): Envelope {
@@ -32,11 +34,17 @@ function parseEnvelope(text: string): Envelope {
   if (env.alg !== 'AES-256-GCM' || env.kdf !== 'PBKDF2-SHA256') {
     throw new PackageDecryptError('Algoritmo de cifrado no soportado.')
   }
+  if (env.z !== undefined && env.z !== 'gzip') throw new PackageDecryptError('Compresión del paquete no soportada. Actualiza la app.')
   const iterations = Number(env.iterations)
   if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_ITERATIONS) {
     throw new PackageDecryptError('Número de iteraciones no soportado.')
   }
   return env as Envelope
+}
+
+async function gunzip(bytes: ArrayBuffer): Promise<ArrayBuffer> {
+  const stream = new Response(bytes).body!.pipeThrough(new DecompressionStream('gzip'))
+  return new Response(stream).arrayBuffer()
 }
 
 function fromBase64(value: string): Uint8Array {
@@ -57,7 +65,7 @@ export async function decryptEnvelope(text: string, passphrase: string): Promise
     const plain = await subtle.decrypt(
       { name: 'AES-GCM', iv: fromBase64(env.iv) as BufferSource }, key, fromBase64(env.ciphertext) as BufferSource,
     )
-    return new TextDecoder().decode(plain)
+    return new TextDecoder().decode(env.z === 'gzip' ? await gunzip(plain) : plain)
   } catch {
     throw new PackageDecryptError('No se pudo descifrar: contraseña incorrecta o fichero dañado. Usa la que fijó quien genera los paquetes.')
   }

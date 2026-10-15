@@ -134,6 +134,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .remote-packages li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
 .remote-packages li > span { min-width: 0; overflow-wrap: anywhere; }
 .remote-packages li button { flex: none; }
+.round-packages h3 { margin: 12px 0 4px; font-size: 1rem; }
 
 /* Game pace card */
 .pace-card { margin: 12px 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }

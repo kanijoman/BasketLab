@@ -22,10 +22,36 @@ export interface PackageIndexEntry {
   }
 }
 
+/** One match of a published round (issues #286, #172): enough to list it without downloading the bundle. */
+export interface RoundMatch {
+  code: string
+  start?: string | null
+  home: { id: string; name: string }
+  away: { id: string; name: string }
+  /** The team whose point of view the package has (the club's when it plays the match, else the home team). */
+  own_id: string
+  is_club: boolean
+}
+
+/** The bundle of the next round of a competition: ONE encrypted, compressed file with the package of every match. */
+export interface RoundIndexEntry {
+  collection: string
+  round: number | null
+  file: string
+  sha256: string
+  bytes: number
+  /** The club plays in this round. */
+  club: boolean
+  matches: RoundMatch[]
+}
+
 export interface PackageIndex {
   v: number
   generated_at?: string
   packages: PackageIndexEntry[]
+  /** Rounds of every competition; absent in an index that predates them. */
+  rounds: RoundIndexEntry[]
+  club_team_id?: string | null
 }
 
 /** The part of ``fetch`` that is used (so tests can pass a light fake). */
@@ -48,7 +74,7 @@ async function get(url: string, fetcher: Fetcher): Promise<Awaited<ReturnType<Fe
 export async function fetchIndex(fetcher: Fetcher = (u, i) => fetch(u, i)): Promise<PackageIndex> {
   const index = (await (await get(`${PACKAGES_BASE_URL}/index.json`, fetcher)).json()) as PackageIndex
   if (index.v !== INDEX_VERSION) throw new Error(`Versión del índice de paquetes no soportada (${index.v}). Actualiza la app.`)
-  return { ...index, packages: index.packages ?? [] }
+  return { ...index, packages: index.packages ?? [], rounds: index.rounds ?? [] }
 }
 
 async function sha256Hex(text: string): Promise<string> {
@@ -63,4 +89,43 @@ export async function fetchPackageText(entry: PackageIndexEntry, fetcher: Fetche
     throw new Error('El paquete descargado no coincide con el índice (caché o fichero dañado). Reintenta en unos minutos.')
   }
   return text
+}
+
+/** The encrypted bundle text of a round, verified against the checksum of the index. */
+export async function fetchRoundText(entry: RoundIndexEntry, fetcher: Fetcher = (u, i) => fetch(u, i)): Promise<string> {
+  const text = await (await get(`${PACKAGES_BASE_URL}/${entry.file}`, fetcher)).text()
+  if ((await sha256Hex(text)) !== entry.sha256) {
+    throw new Error('La jornada descargada no coincide con el índice (caché o fichero dañado). Reintenta en unos minutos.')
+  }
+  return text
+}
+
+/** The competition of the club first; in each round the matches of the club first, then by kick-off. */
+export function orderRounds(rounds: RoundIndexEntry[]): RoundIndexEntry[] {
+  const byTime = (a: RoundMatch, b: RoundMatch) => Number(b.is_club) - Number(a.is_club) || (a.start ?? '').localeCompare(b.start ?? '')
+  return [...rounds]
+    .sort((a, b) => Number(b.club) - Number(a.club) || a.collection.localeCompare(b.collection))
+    .map(round => ({ ...round, matches: [...round.matches].sort(byTime) }))
+}
+
+export interface RoundBundle {
+  v: number
+  collection: string
+  round: number | null
+  matches: { match: RoundMatch & { round?: number | null }; own_id: string; rival_id: string; is_club: boolean; /** the package envelope text */ package: string }[]
+}
+
+const BUNDLE_VERSION = 1
+
+/** The plaintext of a decrypted bundle; refuses another version or something that is not a round. */
+export function parseRoundBundle(text: string): RoundBundle {
+  let bundle: Partial<RoundBundle>
+  try {
+    bundle = JSON.parse(text)
+  } catch {
+    throw new Error('El fichero descargado no es una jornada de BasketLab.')
+  }
+  if (!bundle || typeof bundle !== 'object' || !Array.isArray(bundle.matches)) throw new Error('El fichero descargado no es una jornada de BasketLab.')
+  if (bundle.v !== BUNDLE_VERSION) throw new Error(`Versión de jornada no soportada (${bundle.v}). Actualiza la app.`)
+  return bundle as RoundBundle
 }

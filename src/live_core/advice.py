@@ -21,6 +21,7 @@ from .game_context import adjust_for_phase, game_phase, kept_when_decided
 from .pace import PaceModel
 from .proposals import timeout_proposal
 from .lineups import lineup_key
+from .modes import mode_overrides
 from .recommender import Recommender
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
@@ -103,12 +104,13 @@ class AdviceEngine:
         self._count: Dict[str, int] = {}
 
     @classmethod
-    def from_package(cls, package: Any) -> "AdviceEngine":
+    def from_package(cls, package: Any, mode: Optional[str] = None) -> "AdviceEngine":
+        """The engine of a package; ``mode`` (issue #130) sets the thresholds under what the package's own ``rule_config`` says."""
         return cls(
             own_team_id=str(package.team["id"]),
             rival_team_id=str(package.rival["id"]),
             baselines=(package.tables or {}).get("players", {}),
-            config=RuleConfig.from_dict(package.rule_config),
+            config=RuleConfig.from_dict({**mode_overrides(mode), **(package.rule_config or {})}),
             team_baselines=package.baselines,
             rival_baselines=(package.tables or {}).get("rival_players", {}),
             impact_league=(package.baselines or {}).get("impact_league"),

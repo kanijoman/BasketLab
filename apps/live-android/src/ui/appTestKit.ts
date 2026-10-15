@@ -33,6 +33,7 @@ export function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
       s < 3 ? { feed: 'waiting' as const, output: null }
         : s < 6 ? { feed: 'gap' as const, output: null }
           : { feed: 'ok' as const, output: out(s, s >= 8 ? [ALERT] : []) }),
+    setMode: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
     ...over,
   }
