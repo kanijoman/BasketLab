@@ -114,7 +114,7 @@ class Recommender:
         """The season of the quintet the swap makes: its net rating per 40 min, the seconds together and the score it is worth."""
         on_court = [pid for pid, p in snap["players"].items() if p["on_court"] and p["team_id"] == self._own]
         season = self._lineups.get(lineup_key([swap_in if pid == swap_out else pid for pid in on_court]))
-        if not season or season["seconds"] < self._cfg.lineup_season_min_s:
+        if not season or season["seconds"] < self._cfg.rec_lineup_min_s:
             return {"net40": None, "seconds": 0, "bonus": 0.0}
         seconds = season["seconds"]
         shrunk = season["net40"] * seconds / (seconds + self._cfg.rec_lineup_prior_s)

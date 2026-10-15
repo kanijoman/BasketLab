@@ -46,10 +46,19 @@ def test_it_can_change_who_comes_in_first():
 
 
 def test_a_quintet_with_little_time_together_says_nothing():
-    lineups = {after("b1", "b3"): row(after("b1", "b3"), 40.0, 120), after("b1", "b2"): row(after("b1", "b2"), -40.0, 120)}
+    lineups = {after("b1", "b3"): row(after("b1", "b3"), 40.0, 90), after("b1", "b2"): row(after("b1", "b2"), -40.0, 90)}
     assert best_of(rec(lineups)) == best_of(rec())
     candidate = rec(lineups).suggest_swaps(snap(), "b1")[0]
     assert candidate["lineup_net40"] is None and "quinteto resultante" not in candidate["message"].lower()
+
+
+def test_two_minutes_together_are_enough_to_count_and_the_threshold_is_its_own_setting():
+    key = after("b1", "b2")
+    at_two_minutes = rec({key: row(key, 20.0, 120)}).suggest_swaps(snap(), "b1")[0]
+    assert at_two_minutes["in_id"] == "b2" and at_two_minutes["lineup_net40"] == pytest.approx(20.0)
+    assert rec({key: row(key, 20.0, 120)}, rec_lineup_min_s=300).suggest_swaps(snap(), "b1")[0]["lineup_net40"] is None
+    # the recommender's threshold does not move the one of the lineup_net alert
+    assert RuleConfig().lineup_season_min_s == 600 and RuleConfig().rec_lineup_min_s == 120
 
 
 def test_the_same_net_rating_counts_less_the_less_they_played_together():

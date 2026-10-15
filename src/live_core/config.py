@@ -208,7 +208,8 @@ class RuleConfig:
     rec_balance_tolerance: float = 1.5
     rec_max_results: int = 3
     # Quintets of the package in the recommender (#132): the net rating per 40 min of the quintet a swap makes is shrunk to zero by this
-    # many seconds together, and each shrunk point moves the score (sigma) by this weight. Needs ``lineup_season_min_s`` together.
+    # many seconds together, and each shrunk point moves the score (sigma) by this weight. Needs ``rec_lineup_min_s`` together.
+    rec_lineup_min_s: int = 120   # provisional: to adjust (maybe by the share of the minutes the season covers) with more data
     rec_lineup_prior_s: int = 1800
     rec_lineup_weight: float = 0.03
     rec_min_lever_gain: float = 0.5   # smallest improvement (sigma) worth proposing for a lever
