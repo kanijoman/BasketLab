@@ -372,6 +372,38 @@
     "deleted": false,
     "elapsed": 870,
     "foul_type": null,
+    "kind": "fg2",
+    "made": true,
+    "name": "X",
+    "num": 7,
+    "period": 2,
+    "pf_count": null,
+    "player_id": "P1",
+    "points": 2,
+    "remaining": 330,
+    "team_id": "T1",
+    "text": "(A) X: MATE ANOTADO (Puntos: 12)"
+   },
+   {
+    "deleted": false,
+    "elapsed": 870,
+    "foul_type": null,
+    "kind": "fg2",
+    "made": false,
+    "name": "X",
+    "num": 7,
+    "period": 2,
+    "pf_count": null,
+    "player_id": "P1",
+    "points": 0,
+    "remaining": 330,
+    "team_id": "T1",
+    "text": "(A) X: MATE FALLADO"
+   },
+   {
+    "deleted": false,
+    "elapsed": 870,
+    "foul_type": null,
     "kind": "ft",
     "made": true,
     "name": "X",
@@ -5973,6 +6005,40 @@
      "scoreA": null,
      "scoreB": null,
      "text": "(A) X: TIRO DE 3 FALLADO",
+     "time": "05:30"
+    }
+   ],
+   "fn": "events.parse_line"
+  },
+  {
+   "args": [
+    {
+     "action": "shoot",
+     "deleted": null,
+     "idPlayer": "P1",
+     "idTeam": "T1",
+     "num": "7",
+     "quarter": "2",
+     "scoreA": null,
+     "scoreB": null,
+     "text": "(A) X: MATE ANOTADO (Puntos: 12)",
+     "time": "05:30"
+    }
+   ],
+   "fn": "events.parse_line"
+  },
+  {
+   "args": [
+    {
+     "action": "shoot",
+     "deleted": null,
+     "idPlayer": "P1",
+     "idTeam": "T1",
+     "num": "7",
+     "quarter": "2",
+     "scoreA": null,
+     "scoreB": null,
+     "text": "(A) X: MATE FALLADO",
      "time": "05:30"
     }
    ],

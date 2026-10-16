@@ -64,6 +64,7 @@ def unit_cases():
         line("subst", "(A) J. PEREZ: Sustitución (Entra a pista)"),
         line("subst", "(A) J. PEREZ: Sustituci�n (Sale de pista)"),
         line("shoot", "(A) X: TIRO DE 2 ANOTADO (Puntos: 10)"), line("shoot", "(A) X: TIRO DE 3 FALLADO"),
+        line("shoot", "(A) X: MATE ANOTADO (Puntos: 12)"), line("shoot", "(A) X: MATE FALLADO"),  # dunks (#365)
         line("fthrow", "(A) X: TIRO DE 1 ANOTADO (Puntos: 5)"), line("fthrow", "(A) X: TIRO DE 1 FALLADO"),
         line("foul", "(A) X: FALTA Personal (Faltas: 3. Faltas de equipo: 17). Tiros libres: 2"),
         line("foul", "(A) X: FALTA Antideportiva (Faltas: 2. Faltas de equipo: 4). Tiros libres: 2"),
