@@ -37,6 +37,8 @@ def test_clock_and_elapsed():
         ("(A) X: TIRO DE 2 FALLADO", "fg2", False, 0),
         ("(A) X: TIRO DE 3 ANOTADO (Puntos: 3)", "fg3", True, 3),
         ("(A) X: TIRO DE 3 FALLADO", "fg3", False, 0),
+        ("(A) X: MATE ANOTADO (Puntos: 12)", "fg2", True, 2),  # dunks are 2-point field goals (#365)
+        ("(A) X: MATE FALLADO", "fg2", False, 0),
     ],
 )
 def test_field_goals(text, kind, made, points):

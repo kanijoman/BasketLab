@@ -14,7 +14,8 @@ from typing import Any, Dict, Optional
 from .clock import elapsed_seconds, parse_clock
 
 _NAME_RE = re.compile(r"^\([^)]*\)\s*([^:]+):")
-_SHOT_RE = re.compile(r"TIRO DE (\d) (ANOTADO|FALLADO)", re.IGNORECASE)
+# "TIRO DE 2 ANOTADO", or "MATE ANOTADO" for a dunk (a 2-point field goal; #365)
+_SHOT_RE = re.compile(r"(?:TIRO DE (\d)|(MATE)) (ANOTADO|FALLADO)", re.IGNORECASE)
 _PF_RE = re.compile(r"Faltas:\s*(\d+)\.")
 
 _SIMPLE_KINDS = {
@@ -77,7 +78,7 @@ def _classify(action: str, text: str) -> Dict[str, Any]:
         match = _SHOT_RE.search(text)
         if not match:
             return {"kind": "other"}
-        value, made = int(match.group(1)), match.group(2).upper() == "ANOTADO"
+        value, made = int(match.group(1) or 2), match.group(3).upper() == "ANOTADO"
         kind = "ft" if action == "fthrow" or value == 1 else f"fg{value}"
         return {"kind": kind, "made": made, "points": (1 if kind == "ft" else value) if made else 0}
     if action == "foul":
