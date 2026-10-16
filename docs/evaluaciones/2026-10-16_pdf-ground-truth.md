@@ -26,10 +26,10 @@
 | PER del PDF − `to` de Mongo = `tov_team` del motor live | 32/32 |
 | Puntos de banquillo del PDF = suma de jugadores con `inn != 1` de Mongo | 32/32 (derivable del boxscore, sin PDF) |
 | ORB de **jugador** del motor live = `ro` de Mongo | 31/32 (1 rebote de diferencia en un partido) |
-| ORB/DRB **de equipo** del motor live = PDF | 10 de 32 equipos-partido fallan por ±1–2 |
+| ORB/DRB **de equipo** del motor live = PDF | 10 de 32 equipos-partido fallan por ±1–2 (con la regla del spike #350, ver abajo: 32/32) |
 | `detect_offensive_rebounds` (`possession_core`) = ORB total del PDF | 22/32 |
 
-**Conclusión sobre rebotes**: el pbp contiene todos los rebotes (jugador y equipo) y su **total es exacto**. Lo que no se puede inferir con fiabilidad es el **reparto ofensivo/defensivo de los rebotes de equipo** (la inferencia «mismo equipo que el último fallo» falla en ~31 % de los equipos-partido, siempre por 1–2 rebotes). El PDF da el reparto oficial. La regla acordada (pbp ≥ boxscore, si no fallback) es coherente en FEB (por construcción el pbp con equipo ≥ boxscore; solo saltó en 1/32 para el ORB, por un rebote de jugador mal clasificado), pero **no detecta** los errores de reparto de los rebotes de equipo.
+**Conclusión sobre rebotes** (corregida tras el spike de #350): el pbp contiene todos los rebotes (jugador y equipo) y su **total es exacto**. El reparto ofensivo/defensivo de los **de jugador** se infiere bien con la regla «mismo equipo que el último fallo» (32/32 contra `ro/rd` de Mongo, una vez arreglados los mates, #365). El de los **de equipo** fallaba en 10/32 equipos-partido, pero el spike encontró la causa: **un rebote de equipo que sigue a un tiro libre fallado se clasifica al revés**; con esa única inversión el reparto coincide con el PDF en **32/32** (solo 13 rebotes de equipo en los 16 partidos siguen a un tiro libre fallado: 6 del equipo que tiró y 7 del rival). Ni el orden de los eventos (`num`, reloj, `LogTime`), ni los tiros libres no finales, ni las pérdidas, ni el tapón, el triple o el hueco de reloj lo explican, y el feed no trae ningún campo con el tipo de rebote (`logParam1` solo codifica local/visitante). La regla se ha ajustado con 16 partidos de una competición: hay que reconfirmarla con más PDFs (#361). La regla acordada (pbp ≥ boxscore, si no fallback) sigue siendo válida.
 
 ## Resultados FBCYL (6 partidos, 12 equipos-partido)
 - El pbp real **sí trae «Rebote ofensivo» y «Rebote defensivo» explícitos**, siempre con jugador (la muestra del repo no los tenía). No hay rebotes de equipo en el pbp.
