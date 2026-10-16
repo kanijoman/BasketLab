@@ -10,7 +10,7 @@ estimate (``possessions_reason``). FEB only: other documents give ``None`` and t
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from src.live_core.four_factors import FT_POSSESSION_COST
 from src.live_core.possessions import track
@@ -58,8 +58,16 @@ def _validated(pbp: int, box: int) -> tuple:
     return (pbp, "pbp") if pbp >= box else (box, "boxscore")
 
 
-def team_game_possessions(game_doc: Dict[str, Any]) -> Optional[Dict[str, Dict[str, Any]]]:
-    """Per team id: possessions (with source, reason and quality), rebounds and turnovers; None if the game cannot be read."""
+class GameAnalysis(NamedTuple):
+    """What the tracker found in a game: the per-team figures, the possessions and the quality of the feed."""
+
+    teams: Dict[str, Dict[str, Any]]
+    possessions: List[Any]
+    quality: Any
+
+
+def analyse_game(game_doc: Dict[str, Any]) -> Optional[GameAnalysis]:
+    """Run the tracker on a FEB game; ``None`` if it has no play-by-play or box score to read."""
     teams = (game_doc.get("BOXSCORE") or {}).get("TEAM") or []
     if len(teams) != 2 or not (game_doc.get("PLAYBYPLAY") or {}).get("LINES"):
         return None
@@ -89,7 +97,13 @@ def team_game_possessions(game_doc: Dict[str, Any]) -> Optional[Dict[str, Dict[s
             "quality_level": quality.level, "breaks_raw": quality.breaks_raw, "game_minutes": minutes,
         }
     _choose_possessions(out, quality.level)
-    return out
+    return GameAnalysis(out, possessions, quality)
+
+
+def team_game_possessions(game_doc: Dict[str, Any]) -> Optional[Dict[str, Dict[str, Any]]]:
+    """Per team id: possessions (with source, reason and quality), rebounds and turnovers; None if the game cannot be read."""
+    analysis = analyse_game(game_doc)
+    return None if analysis is None else analysis.teams
 
 
 def _choose_possessions(teams: Dict[str, Dict[str, Any]], level: str) -> None:

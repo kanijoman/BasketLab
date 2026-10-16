@@ -5874,6 +5874,7 @@
      "inferred": 0,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -5959,6 +5960,7 @@
      "inferred": 0,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -6088,6 +6090,7 @@
      "inferred": 1,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -6155,6 +6158,7 @@
      "inferred": 0,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -6242,6 +6246,11 @@
      "inferred": 0,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {
+      "B": {
+       "b1": 1
+      }
+     },
      "technical_ft": 2,
      "technical_points": {
       "B": 1
@@ -6308,6 +6317,11 @@
      "inferred": 0,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {
+      "A": {
+       "a2": 1
+      }
+     },
      "technical_ft": 1,
      "technical_points": {
       "A": 1
@@ -6399,6 +6413,7 @@
      "inferred": 0,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -6573,6 +6588,7 @@
      "inferred": 3,
      "level": "ok",
      "repaired_rebounds": 1,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -6681,6 +6697,7 @@
      "inferred": 1,
      "level": "ok",
      "repaired_rebounds": 0,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
@@ -8143,6 +8160,7 @@
      "inferred": 1,
      "level": "ok",
      "repaired_rebounds": 1,
+     "technical_by_player": {},
      "technical_ft": 0,
      "technical_points": {}
     }
