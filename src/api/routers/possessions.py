@@ -18,6 +18,7 @@ from src.api.deps import get_db
 from src.services import TeamStatsService
 from src.services.possession_export_service import PossessionExportService
 from src.services.pbp_quality_service import PBPQualityService
+from src.services.pbp_extended_stats_service import PBPExtendedStatsService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -56,6 +57,15 @@ def get_possession_stats(
     svc = TeamStatsService(db)
     logger.info("possessions: collection_name=%r", collection)
     return svc.get_possession_stats(collection)
+
+
+@router.get("/{collection}/points-by-origin", summary="Season points by origin, bench and paint per team")
+def get_points_by_origin(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
+    """Per team (FEB): points per game after turnovers, steals and offensive rebounds (second chance), bench and paint, their
+    efficiency per origin (points per 100 possessions that started that way), the bench share and the same figures conceded
+    (``opp_``). Games with an ``unreliable`` play-by-play are left out (``games_unreliable``). Empty for collections whose
+    games lack ``DERIVED`` (FBCYL, or FEB games not backfilled: ``python run_backfill_derived.py``)."""
+    return PBPExtendedStatsService(db).get_points_by_origin(collection)
 
 
 @router.get("/{collection}/export/csv", summary="Export per-possession data as CSV")

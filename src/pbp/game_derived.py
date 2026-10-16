@@ -12,7 +12,7 @@ from .game_possessions import analyse_game
 from .points_by_origin import paint_points, starters, team_points_by_origin
 
 DERIVED_VERSION = 2
-_FIELDS = ("possessions", "possessions_source", "quality_level",
+_FIELDS = ("pts", "possessions", "possessions_source", "quality_level",
            "orb", "orb_source", "drb", "drb_source", "tov", "tov_source")
 
 
