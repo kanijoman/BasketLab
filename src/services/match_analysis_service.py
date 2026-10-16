@@ -9,7 +9,9 @@ Supports both FEB and FBCYL document schemas.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+from src.pbp.game_possessions import estimate_possessions, team_game_possessions
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -103,8 +105,12 @@ class MatchAnalysisService:
         teams = doc.get("BOXSCORE", {}).get("TEAM", [{}, {}])
         home_raw = self._stats_feb(teams[0] if teams else {})
         away_raw = self._stats_feb(teams[1] if len(teams) > 1 else {})
-        home_adv = _compute_advanced(home_raw, away_raw)
-        away_adv = _compute_advanced(away_raw, home_raw)
+        # With play-by-play: exact possessions and rebounds/turnovers validated against the box score (#351)
+        exact = team_game_possessions(doc) or {}
+        home_raw, home_poss = _with_pbp(home_raw, exact.get(str(teams[0].get("id"))) if teams else None)
+        away_raw, away_poss = _with_pbp(away_raw, exact.get(str(teams[1].get("id"))) if len(teams) > 1 else None)
+        home_adv = _compute_advanced(home_raw, away_raw, home_poss, away_poss)
+        away_adv = _compute_advanced(away_raw, home_raw, away_poss, home_poss)
         home = {**home_raw, **home_adv}
         away = {**away_raw, **away_adv}
         return {
@@ -278,8 +284,17 @@ def _build_raw_stats(
     }
 
 
-def _compute_advanced(stats: Dict, opp: Dict) -> Dict:
-    """Compute Four Factors + possession-based ratings for one team."""
+def _with_pbp(stats: Dict, game: Optional[Dict]) -> Tuple[Dict, Optional[float]]:
+    """Stats with the validated pbp rebounds and turnovers (team ones included) and the exact possessions, if any."""
+    if not game:
+        return stats, None
+    merged = {**stats, "orb": game["orb"], "drb": game["drb"], "reb": game["orb"] + game["drb"], "tov": game["tov"],
+              "possessions_source": game["possessions_source"], "quality_level": game["quality_level"]}
+    return merged, game["possessions"]
+
+
+def _compute_advanced(stats: Dict, opp: Dict, poss: Optional[float] = None, opp_poss: Optional[float] = None) -> Dict:
+    """Compute Four Factors + possession-based ratings for one team (``poss``: exact possessions, else the estimate)."""
     fga, fgm  = stats["fga"], stats["fgm"]
     p3m, p3a  = stats["p3m"], stats["p3a"]
     p1a       = stats["p1a"]
@@ -288,8 +303,8 @@ def _compute_advanced(stats: Dict, opp: Dict) -> Dict:
     tov       = stats["tov"]
     pts       = stats["pts"]
 
-    poss = max(fga - orb + tov + 0.44 * p1a, 1.0)
-    opp_poss = max(opp["fga"] - opp["orb"] + opp["tov"] + 0.44 * opp["p1a"], 1.0)
+    poss = max(estimate_possessions(fga, orb, tov, p1a) if poss is None else poss, 1.0)
+    opp_poss = max(estimate_possessions(opp["fga"], opp["orb"], opp["tov"], opp["p1a"]) if opp_poss is None else opp_poss, 1.0)
 
     efg_pct = round((fgm + 0.5 * p3m) / fga * 100, 2) if fga else 0.0
     tov_pct = round(tov / (fga + 0.44 * p1a + tov) * 100, 2) if (fga + 0.44 * p1a + tov) else 0.0
