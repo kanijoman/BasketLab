@@ -33,6 +33,22 @@ def extract_feb_team_raw(team_box: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _apply_derived(doc: Dict[str, Any], raws: tuple) -> Dict[str, float]:
+    """Overwrite rebounds and turnovers with the validated ones of ``DERIVED`` (stored, else derived from the pbp; #372).
+
+    Returns the possessions per team id."""
+    from src.pbp.game_derived import derive_game_fields
+
+    derived = ((doc.get("DERIVED") or derive_game_fields(doc)) or {}).get("TEAM") or []
+    exact: Dict[str, float] = {}
+    for raw, stored in zip(raws, derived):
+        if str(stored.get("id")) != raw["team_id"]:
+            continue
+        raw["oreb"], raw["dreb"], raw["tov"] = stored["orb"], stored["drb"], stored["tov"]
+        exact[raw["team_id"]] = stored["possessions"]
+    return exact
+
+
 def normalize_feb_match(
     doc: Dict[str, Any],
     season: str,
@@ -70,10 +86,12 @@ def normalize_feb_match(
 
     raw0 = extract_feb_team_raw(teams_box[0])
     raw1 = extract_feb_team_raw(teams_box[1])
+    exact = _apply_derived(doc, (raw0, raw1))
 
     docs = []
     for my_raw, opp_raw in ((raw0, raw1), (raw1, raw0)):
         derived = compute_derived(
+            exact_poss=exact.get(my_raw["team_id"]), exact_opp_poss=exact.get(opp_raw["team_id"]),
             pts=my_raw["pts"],
             opp_pts=opp_raw["pts"],
             fg2m=my_raw["fg2m"],

@@ -1,7 +1,9 @@
 """Derived basketball stats computation — extracted from historical_ingestion_service.py."""
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from src.pbp.game_possessions import estimate_possessions
 
 
 def _efg(fgm: int, fg3m: int, fga: int) -> float:
@@ -37,22 +39,22 @@ def compute_derived(
     opp_oreb: int,
     opp_tov: int,
     opp_pts_check: int,
+    exact_poss: Optional[float] = None,
+    exact_opp_poss: Optional[float] = None,
 ) -> Dict[str, float]:
     """Compute possession-based derived stats.
 
     All formulas are identical to those in ``StatsCalculator`` so both layers
-    stay consistent.  Uses the same 0.45 FT coefficient.
+    stay consistent.  ``exact_poss`` / ``exact_opp_poss`` (the stored possessions of the game, #372) replace the box-score
+    estimate; without them it falls back to ``estimate_possessions``.
     ``efg_pct`` and ``opp_efg_pct`` are initialised to 0.0 and must be
     overwritten by the caller using :func:`_efg` on the actual field-goal data.
     """
     fga = fg2a + fg3a
     opp_fga = opp_fg2a + opp_fg3a
 
-    poss = fga + 0.45 * fta + tov - oreb
-    poss = max(poss, 1.0)
-
-    opp_poss = opp_fga + 0.45 * opp_fta + opp_tov - opp_oreb
-    opp_poss = max(opp_poss, 1.0)
+    poss = max(exact_poss if exact_poss else estimate_possessions(fga, oreb, tov, fta), 1.0)
+    opp_poss = max(exact_opp_poss if exact_opp_poss else estimate_possessions(opp_fga, opp_oreb, opp_tov, opp_fta), 1.0)
 
     pace = (poss + opp_poss) / 2.0
     ortg = pts / poss * 100.0

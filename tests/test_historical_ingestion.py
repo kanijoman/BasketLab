@@ -204,9 +204,22 @@ class TestNormalizeFebMatch:
         doc = _make_feb_doc(home_pts=74)
         results = normalize_feb_match(doc, "2024-25", "LF2", "A", "FEB_LF2_2025_A")
         home_doc = results[0]
-        # poss = FGA + 0.45*FTA + TOV - OREB  (team_box defaults: p2a=20,p3a=15,p1a=10,to=8,ro=5)
-        expected_poss = (20 + 15) + 0.45 * 10 + 8 - 5
+        # poss = FGA + 0.44*FTA + TOV - OREB  (estimate_possessions; team_box defaults: p2a=20,p3a=15,p1a=10,to=8,ro=5)
+        expected_poss = (20 + 15) + 0.44 * 10 + 8 - 5
         assert abs(home_doc["poss"] - expected_poss) < 0.5
+
+    def test_derived_possessions_and_validated_rebounds_replace_the_box_score_figures(self):
+        """A game with DERIVED fields (#372) uses its exact possessions and validated rebounds / turnovers."""
+        doc = _make_feb_doc(home_id="H", away_id="V")
+        doc["DERIVED"] = {"v": 1, "TEAM": [
+            {"id": "H", "possessions": 70.0, "orb": 9, "drb": 24, "tov": 11},
+            {"id": "V", "possessions": 68.0, "orb": 6, "drb": 20, "tov": 12},
+        ]}
+        home, away = normalize_feb_match(doc, "2024-25", "LF2", "A", "COL")
+
+        assert (home["poss"], home["opp_poss"], away["poss"]) == (70.0, 68.0, 68.0)
+        assert (home["oreb"], home["dreb"], home["tov"]) == (9, 24, 11)
+        assert home["pace"] == 69.0
 
     def test_invalid_doc_with_wrong_team_count_returns_empty(self):
         doc = {"_id": 1, "HEADER": {"game_code": 1, "TEAM": [], "starttime": ""},
