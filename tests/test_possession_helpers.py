@@ -44,14 +44,14 @@ class TestGetTimestampRegular:
         assert get_timestamp(_feb_move(4, "0:00"), False) == 2400
 
     def test_fbcyl_p1_start_is_0(self):
-        assert get_timestamp(_fbcyl_move(1, 0, 0), True) == 0
+        assert get_timestamp(_fbcyl_move(1, 10, 0), True) == 0
 
     def test_fbcyl_p1_end_is_600(self):
-        assert get_timestamp(_fbcyl_move(1, 10, 0), True) == 600
+        assert get_timestamp(_fbcyl_move(1, 0, 0), True) == 600
 
     def test_fbcyl_p5_start_is_2400(self):
-        """Period 5 (1st OT) elapsed 0:00 → 2400. Already correct in current code."""
-        assert get_timestamp(_fbcyl_move(5, 0, 0), True) == 2400
+        """Period 5 (1st OT) 5:00 remaining → 2400. Already correct in current code."""
+        assert get_timestamp(_fbcyl_move(5, 5, 0), True) == 2400
 
 
 # ---------------------------------------------------------------------------
@@ -86,17 +86,17 @@ class TestGetTimestampOT:
     # --- FBCYL ---
 
     def test_fbcyl_ot2_start_is_2700(self):
-        """Period 6 (2nd OT) elapsed 0:00 → 2700s. BUG: current gives 3000."""
-        assert get_timestamp(_fbcyl_move(6, 0, 0), True) == 2700
+        """Period 6 (2nd OT) 5:00 remaining → 2700s. BUG: current gives 3000."""
+        assert get_timestamp(_fbcyl_move(6, 5, 0), True) == 2700
 
     def test_fbcyl_ot2_mid_is_2850(self):
-        """Period 6 elapsed 2:30 → 2700 + 150 = 2850."""
+        """Period 6 2:30 remaining → 2700 + 150 = 2850."""
         assert get_timestamp(_fbcyl_move(6, 2, 30), True) == 2850
 
     def test_fbcyl_ot2_end_is_3000(self):
-        """Period 6 elapsed 5:00 → 3000s."""
-        assert get_timestamp(_fbcyl_move(6, 5, 0), True) == 3000
+        """Period 6 0:00 remaining → 3000s."""
+        assert get_timestamp(_fbcyl_move(6, 0, 0), True) == 3000
 
     def test_fbcyl_ot3_start_is_3000(self):
-        """Period 7 (3rd OT) elapsed 0:00 → 3000s. BUG: current gives 3600."""
-        assert get_timestamp(_fbcyl_move(7, 0, 0), True) == 3000
+        """Period 7 (3rd OT) 5:00 remaining → 3000s. BUG: current gives 3600."""
+        assert get_timestamp(_fbcyl_move(7, 5, 0), True) == 3000
