@@ -83,7 +83,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 - Operaciones largas: `BackgroundTasks`, nunca bloquear el event loop. Imports perezosos (`from src.services.x import X` dentro de la función) para dependencias pesadas opcionales.
 - **Memoria (Render 512 MB)**: un documento de partido ≈ 1 MB en RAM. Proyección siempre en colecciones de partidos; iterar cursores/generadores, no listas de documentos o tiros; 1 worker (ver docs/OPERATIONS.md).
 - **MongoDB**: NUNCA `list(col.find({}))` y filtrar en Python → filtra en BD / `AggregationPipelineBuilder`. Índices siempre `background=True` y registrados en `IndexManager`.
-- **Posesiones**: exactas del tracker único (`src/live_core/possessions.py`, FEB y FBCYL; el nivel de calidad del partido manda: `unreliable` → usar la estimación `FGA - ORB + TOV + 0.44*FTA`); normalizar `(stat/posesiones)*40`. Rebote ofensivo = rebota el equipo que falló, siempre (ver DATA_FORMATS).
+- **Posesiones**: exactas del tracker único (`src/live_core/possessions.py`, FEB y FBCYL; el nivel de calidad del partido manda: `unreliable` → usar la estimación `FGA - ORB + TOV + 0.44*FTA`); normalizar `(stat/posesiones)*40`. Cada partido FEB guarda `DERIVED` (posesiones y rebotes/pérdidas validados) y los pipelines de temporada lo leen con respaldo al boxscore; rellenar lo antiguo con `run_backfill_derived.py` (OPERATIONS). Rebote ofensivo = rebota el equipo que falló, siempre (ver DATA_FORMATS).
 - **Cuartiles**: Q1 verde … Q4 rojo, `reverse=True` para pérdidas/faltas.
 
 ## Pitfalls
