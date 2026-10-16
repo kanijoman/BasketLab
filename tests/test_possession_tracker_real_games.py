@@ -1,4 +1,4 @@
-"""The possession tracker on real games (#350): 16 of LF Challenge 2026-27 and 24 historical ones.
+"""The possession tracker on real games (#350): 16 of LF Challenge 2026-27, 24 historical ones and 6 FBCYL.
 
 ``tests/fixtures/pbp_possessions.json.gz`` holds the reduced pbp (no substitutions) of each game, the official points
 and the tracker output when it was written. Invariants must hold for every game; the quality figures are a
@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from src.live_core.events import parse_line
+from src.live_core.events_fbcyl import parse_moves
 from src.live_core.possessions import track
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "pbp_possessions.json.gz"
@@ -27,7 +28,10 @@ _IDS = [f"{g['group']}-{g['game']}" for g in GAMES]
 
 
 def _track(game):
-    events = [e for e in (parse_line(line) for line in game["lines"]) if e is not None]
+    if game.get("format") == "fbcyl":
+        events = parse_moves(game["lines"])
+    else:
+        events = [e for e in (parse_line(line) for line in game["lines"]) if e is not None]
     return track(events, game["teams"])
 
 
@@ -35,9 +39,11 @@ def _track(game):
 def test_points_of_the_possessions_add_up_to_the_official_score(game):
     possessions, quality = _track(game)
 
-    for team, official in zip(game["teams"], game["points"]):
-        scored = sum(p.points for p in possessions if p.team_id == team) + quality.technical_points.get(team, 0)
-        assert scored == official, f"{team}: possessions {scored} vs official {official}"
+    scored = [sum(p.points for p in possessions if p.team_id == team) + quality.technical_points.get(team, 0)
+              for team in game["teams"]]
+    if game.get("format") == "fbcyl":      # the final score does not say which team is which: compare as a pair
+        scored = sorted(scored)
+    assert scored == game["points"], f"possessions {scored} vs official {game['points']}"
 
 
 @pytest.mark.parametrize("game", GAMES, ids=_IDS)
