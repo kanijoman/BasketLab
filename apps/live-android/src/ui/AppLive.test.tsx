@@ -88,6 +88,32 @@ describe('live mode with a package', () => {
     await waitFor(() => expect(screen.getByText(/partido finalizado/i)).toBeTruthy())
   })
 
+  it('presents a burst of alerts one by one instead of in a block (issue #375)', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 10
+    const burst = ['uno', 'dos', 'tres'].map(k => ({ ...ALERT, key: `burst:${k}`, severity: 'warning' as const, message: `Aviso ${k}` }))
+    const engine = fakeEngine({ update: vi.fn(async () => out(burst)) })
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} alertCooldownMs={150} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+
+    expect(await screen.findByText('Aviso uno')).toBeTruthy()
+    expect(screen.queryByText('Aviso tres')).toBeNull()                // the others wait their turn
+    expect(await screen.findByText('Aviso tres', {}, { timeout: 3000 })).toBeTruthy()
+    expect(screen.getAllByText('Aviso uno')).toHaveLength(1)           // nothing is shown twice
+  })
+
+  it('a critical alert of the burst is not made to wait (issue #375)', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 10
+    const burst = [{ ...ALERT, key: 'burst:w', severity: 'warning' as const, message: 'Aviso previo' }, ALERT]
+    const engine = fakeEngine({ update: vi.fn(async () => out(burst)) })
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} alertCooldownMs={2000} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+
+    expect(await screen.findByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy()   // at once, before the 2 s cooldown
+    expect(screen.queryByText('Aviso previo')).toBeNull()
+  })
+
   it('shows the score and the clock coming from the engine', async () => {
     const feb = new FakeFeb(pack)
     feb.at = 10

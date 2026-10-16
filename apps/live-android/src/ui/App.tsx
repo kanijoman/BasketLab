@@ -16,6 +16,7 @@ import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import { clockLabel } from './AlertCard'
 import AlertList, { type AlertEntry } from './AlertList'
+import { useAlertPacer } from './useAlertPacer'
 import DemoControls, { SAMPLE, mmss, type DemoSource, type SourceOption } from './DemoControls'
 import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
@@ -60,12 +61,14 @@ interface Props {
   remoteFetcher?: Fetcher
   /** Version and update check (injected in tests; the defaults use the app's own plugins and GitHub). */
   appUpdate?: AppUpdateDeps
+  /** Time between two alerts of a burst of the live feed (issue #375; tests shorten it). */
+  alertCooldownMs?: number
 }
 
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming, device, appUpdate }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -81,6 +84,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const liveMode = pkg !== null && !reviewing
   const [out, setOut] = useState<EngineOutput | null>(null)
   const [entries, setEntries] = useState<Entry[]>([])
+  // the alerts of the live feed are presented one by one (issue #375); the rest (replays, jumps, a loaded match) all at once
+  const pacer = useAlertPacer(useCallback((items: Entry[]) => setEntries(prev => [...items, ...prev]), []), alertCooldownMs)
   const [elapsed, setElapsed] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
@@ -108,9 +113,10 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
 
   const reset = useCallback(() => {
     seen.current.clear()
+    pacer.clear()
     elapsedRef.current = 0
     setEntries([]); setOut(null); setElapsed(0); setPlaying(false); setInfo(null); setFeed('ok'); setNotice(null)
-  }, [])
+  }, [pacer])
 
   const beginDemo = useCallback(async (data: DemoData) => {
     setPhase({ kind: 'loading' })
@@ -192,21 +198,23 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const finished = info !== null && elapsed >= info.duration
 
   /** What the screen shows for an engine output: the snapshot and the alerts not seen before. */
-  const handleOutput = useCallback((result: EngineOutput) => {
+  const handleOutput = useCallback((result: EngineOutput, paced = false) => {
     setOut(result)
     const at = clockLabel(result.snapshot.period, result.snapshot.remaining)
     const fresh = result.alerts.filter(a => !seen.current.has(a.key))
     fresh.forEach(a => { seen.current.add(a.key); registerAlert(a, result.snapshot.elapsed) })
-    if (fresh.length) setEntries(prev => [...fresh.map(alert => ({ alert, at })), ...prev])
-  }, [registerAlert])
+    pacer.push(fresh, at, paced)
+  }, [registerAlert, pacer])
+  const handleLiveOutput = useCallback((result: EngineOutput) => handleOutput(result, true), [handleOutput])
 
   const restartLive = useCallback(async () => {
     seen.current.clear()
+    pacer.clear()
     setEntries([]); setOut(null)
     const saved = await store.load()
     if (saved) setMeta(await engine.start(saved.plaintext))
-  }, [engine, store])
-  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleOutput, restart: restartLive })
+  }, [engine, store, pacer])
+  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive })
   const update = useAppUpdate(appUpdate)
 
   const step = useCallback(async (to: number) => {
