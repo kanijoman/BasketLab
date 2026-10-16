@@ -18,10 +18,9 @@ def _move(number, team_id, text, action, clock):
 def test_missed_shot_by_other_team_closes_the_stale_possession():
     """A missed shot must correct possession ownership before rebound handling.
 
-    Uses the unfiltered core directly: the stale-possession correction closes as
-    an 'otro'+0pts artifact, which the CSV exporter now drops (see
-    test_possession_export_service.py) but the reconstruction engine must still
-    produce internally to keep ownership tracking correct.
+    Uses the unfiltered rows: the possession of the team that cannot have the ball is closed
+    as an inferred 'otro' row (a feed gap), which the CSV exporter drops (see
+    test_possession_export_service.py) but the tracker keeps to account for the time.
     """
     game = {
         "HEADER": {"TEAM": [
@@ -44,8 +43,8 @@ def test_missed_shot_by_other_team_closes_the_stale_possession():
         game_data=game, is_fbcyl=False, game_id="TEST", team_info=team_info,
     )
 
-    stale_possession = next(row for row in rows if row["Equipo_ID"] == "T2" and row["Tiempo_de_juego"] == "7:36")
-    missed_shot = next(row for row in rows if row["Equipo_ID"] == "T1" and row["Tiempo_de_juego"] == "7:04")
+    stale_possession = next(row for row in rows if row["Equipo_ID"] == "T2" and row["Tiempo_de_juego"] == "07:36")
+    missed_shot = next(row for row in rows if row["Equipo_ID"] == "T1" and row["Tiempo_de_juego"] == "07:04")
     assert stale_possession["Duracion_posesion"] == 32
     assert missed_shot["Tipo_finalizacion"] == "tiro_fallado"
     assert missed_shot["Duracion_posesion"] == 0

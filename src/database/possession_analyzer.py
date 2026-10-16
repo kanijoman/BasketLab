@@ -3,14 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from src.pbp.event_helpers import (
-    get_opponent_team,
-    get_timestamp,
-    points_from_move,
-)
 from src.pbp.possession_core import extract_possession_rows, is_tab_evaluated_possession
-
-_NEUTRAL = frozenset(("subst", "foul", "timeout", "assist"))
 
 
 class PossessionAnalyzer:
@@ -153,35 +146,3 @@ class PossessionAnalyzer:
                 ">16s":  _bucket(long_),
             },
         }
-
-    # ------------------------------------------------------------------
-    # Backward-compatible wrappers (used by existing tests)
-    # ------------------------------------------------------------------
-
-    def _get_timestamp(self, move: Dict) -> int:
-        return get_timestamp(move, self.is_fbcyl)
-
-    def _get_points_from_move(self, move: Dict) -> int:
-        return points_from_move(move, self.is_fbcyl)
-
-    def _get_opponent_team(self, team_id: str, moves: List[Dict]) -> str:
-        return get_opponent_team(team_id, moves)
-
-    def _is_possession_ending_event(self, move: Dict) -> bool:
-        text = str(move.get("move") or "") if self.is_fbcyl else str(move.get("text") or "")
-        text_u = text.upper()
-        action = str(move.get("action") or "").lower()
-        if self.is_fbcyl:
-            return (
-                "Canasta de 2" in text or "Canasta de 3" in text
-                or "Pérdida" in text or "pérdida" in text
-                or "Canasta de 1" in text
-            )
-        made_fg = (
-            ("TIRO DE 2" in text_u or "CANASTA DE 2" in text_u
-             or "TIRO DE 3" in text_u or "CANASTA DE 3" in text_u or "TRIPLE" in text_u)
-            and "FALLADO" not in text_u and "FALLA" not in text_u
-        )
-        turnover = "PÉRDIDA" in text_u or "PERDIDA" in text_u or action in ("turnover", "lose")
-        made_ft = "TIRO LIBRE" in text_u and "ANOTADO" in text_u
-        return made_fg or turnover or made_ft

@@ -8,7 +8,7 @@ src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from src.pbp.possession_core import extract_possession_rows, order_possession_moves
+from src.pbp.possession_core import extract_possession_rows
 
 
 def _move(number, team_id, text, action, clock):
@@ -20,17 +20,6 @@ def _move(number, team_id, text, action, clock):
         "quarter": "1",
         "time": clock,
     }
-
-
-def test_order_possession_moves_sorts_feb_same_timestamp_by_event_number():
-    moves = [
-        _move(45, "T2", "REBOTE", "rebound", "5:32"),
-        _move(44, "T1", "TIRO DE 3 FALLADO", "shoot", "5:32"),
-    ]
-
-    ordered = order_possession_moves(moves, is_fbcyl=False)
-
-    assert [m["num"] for m in ordered] == ["44", "45"]
 
 
 def test_tracker_correction_still_produces_otro_row_at_core_level():

@@ -1,9 +1,9 @@
 """Regression test for the possession-stats Mongo projection.
 
-Guards against dropping 'num' from the FEB projection: order_possession_moves()
-uses it to break ties between same-timestamp events. Without it, same-second
-sequences (rebound scrums, steal chains) sort unpredictably and fragment real
-possessions into spurious extra ones, silently corrupting pace/OER.
+Guards against dropping 'num' from the FEB projection: the possession tracker uses it to break ties between
+same-timestamp events. Without it, same-second sequences (rebound scrums, steal chains) sort unpredictably and
+fragment real possessions into spurious extra ones, silently corrupting pace/OER. It also needs 'idPlayer' (a rebound
+without player is a team rebound) and 'deleted' (corrected lines must be ignored), and 'actorId' for FBCYL.
 """
 import sys
 from pathlib import Path
@@ -30,7 +30,12 @@ def test_feb_projection_still_includes_required_fields():
         assert projection.get(field) == 1
 
 
+def test_feb_projection_includes_what_the_tracker_needs_to_tell_players_and_deleted_lines():
+    projection = _possession_projection(is_fbcyl=False)
+    assert projection.get("PLAYBYPLAY.LINES.idPlayer") == 1 and projection.get("PLAYBYPLAY.LINES.deleted") == 1
+
+
 def test_fbcyl_projection_unaffected():
     projection = _possession_projection(is_fbcyl=True)
     assert "PLAYBYPLAY.LINES.num" not in projection
-    assert projection.get("moves.idTeam") == 1
+    assert projection.get("moves.idTeam") == 1 and projection.get("moves.actorId") == 1

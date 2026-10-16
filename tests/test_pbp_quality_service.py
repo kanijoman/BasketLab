@@ -179,7 +179,7 @@ def test_accuracy_perfect_match():
     lines = [
         _feb_m("T1", "TIRO DE 2 ANOTADO"),
         _feb_m("T1", "TIRO DE 2 FALLADO", time="8:00"),
-        _feb_m("T1", "TRIPLE ANOTADO", time="7:00"),
+        _feb_m("T1", "TIRO DE 3 ANOTADO", time="7:00"),
     ]
     box = {"p2m": 1, "p2a": 2, "p3m": 1, "p3a": 1}
     game = _feb_game(lines=lines, t1_box=box, t2_box={})

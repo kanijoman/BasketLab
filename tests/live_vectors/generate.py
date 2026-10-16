@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / "tests"))
 from live_helpers import ON_COURT, OWN, RIVAL, TABLE, player, snap  # noqa: E402
 from context_cases import context_cases  # noqa: E402
 from formation_cases import formation_cases  # noqa: E402
+from possession_cases import possession_cases  # noqa: E402
 from src.live_core.profiles import DEFAULT_LEAGUE  # noqa: E402
 from src.live_core.vectors import run_suite, unwrap_extended_json  # noqa: E402
 from src.live_prep.package_builder import build_package  # noqa: E402
@@ -51,7 +52,7 @@ def mk(period, elapsed, players):
     return s
 
 
-def unit_cases():
+def unit_cases(game_lines):
     rng = random.Random(2026)
     cases = []
     # clock
@@ -137,6 +138,7 @@ def unit_cases():
     cases += windows_cases()
     cases += context_cases(case)
     cases += formation_cases(case)
+    cases += possession_cases(case, game_lines)
     return cases
 
 
@@ -225,7 +227,7 @@ def build_suite():
     package = build_package([game], "FEB_VECTORS", "2025-2026", "982047", "981204", created_at="2026-01-01T00:00:00Z")
     suite = {
         "version": 1,
-        "unit": unit_cases(),
+        "unit": unit_cases(game["PLAYBYPLAY"]["LINES"]),
         "engine": {"package": package.dumps(),
                    "checkpoints": [[1, 300], [1, 0], [2, 300], [2, 0], [3, 450], [3, 0], [4, 600], [4, 300], [4, 60], [4, 0]]},
     }

@@ -117,14 +117,16 @@ def test_feb_game_saque_fondo_only_after_score(unfiltered_feb_rows):
         prev_ending[r["Equipo_ID"]] = r["Tipo_finalizacion"]
 
 
-def test_feb_game_tipoff_count(feb_rows):
-    """Exactly one saque_inicial_periodo per quarter (4 in a standard game).
+def test_feb_game_tipoff_count(feb_rows, unfiltered_feb_rows):
+    """One saque_inicial_periodo per quarter among all rows (4 in a standard game).
 
-    Uses the filtered (real-possession) view: ownership-correction phantoms can
-    also carry this origin tag internally but are dropped by the exporter.
+    The export keeps only the real possessions: the sample has a feed gap at the start of period 1, so that
+    tip-off is inferred and dropped (3 exported).
     """
-    tipoffs = [r for r in feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
-    assert len(tipoffs) == 4, f"Expected 4 tip-offs (one per quarter), got {len(tipoffs)}"
+    all_tipoffs = [r for r in unfiltered_feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
+    assert len(all_tipoffs) == 4, f"Expected 4 tip-offs (one per quarter), got {len(all_tipoffs)}"
+    exported = [r for r in feb_rows if r["Origen_posesion"] == "saque_inicial_periodo"]
+    assert len(exported) == 3
 
 
 def _boxscore_tov_st(game_data: dict) -> dict:
@@ -319,7 +321,7 @@ def test_zero_second_scoring_is_flagged_as_controversial():
     """A scoreless same-timestamp turnover remains valid and unflagged."""
     lines = [
         _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:05"),
-        _m("T2", "PÉRDIDA DE BALÓN", "turnover", 1, "9:05"),
+        _m("T2", "PÉRDIDA DE BALÓN", "lose", 1, "9:05"),
     ]
     rows = _feb_svc(lines)
     t2_rows = [r for r in rows if r["Equipo_ID"] == "T2"]
@@ -335,8 +337,8 @@ def test_zero_second_scoring_is_flagged_as_controversial():
 def test_zero_second_score_is_flagged_as_controversial():
     """A zero-second scored possession should be marked for review without being dropped."""
     lines = [
-        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:00"),
         _m("T2", "TIRO DE 2 ANOTADO", "shoot", 1, "9:00"),
+        _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:00"),
     ]
     rows = _feb_svc(lines)
     t1_rows = [r for r in rows if r["Equipo_ID"] == "T1"]
@@ -353,7 +355,7 @@ def test_period_opening_score_uses_period_boundary_and_updates_next_differential
     """The first score in a period begins at 10:00 and updates the inbound score."""
     lines = [
         _m("T1", "TIRO DE 2 ANOTADO", "shoot", 1, "9:42"),
-        _m("T2", "PÉRDIDA DE BALÓN", "turnover", 1, "9:42"),
+        _m("T2", "PÉRDIDA DE BALÓN", "lose", 1, "9:42"),
     ]
 
     rows = _feb_svc(lines)

@@ -83,7 +83,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 - Operaciones largas: `BackgroundTasks`, nunca bloquear el event loop. Imports perezosos (`from src.services.x import X` dentro de la función) para dependencias pesadas opcionales.
 - **Memoria (Render 512 MB)**: un documento de partido ≈ 1 MB en RAM. Proyección siempre en colecciones de partidos; iterar cursores/generadores, no listas de documentos o tiros; 1 worker (ver docs/OPERATIONS.md).
 - **MongoDB**: NUNCA `list(col.find({}))` y filtrar en Python → filtra en BD / `AggregationPipelineBuilder`. Índices siempre `background=True` y registrados en `IndexManager`.
-- **Posesiones**: `FGA - ORB + TOV + 0.44*FTA`; normalizar `(stat/posesiones)*40`.
+- **Posesiones**: exactas del tracker único (`src/live_core/possessions.py`, FEB y FBCYL; el nivel de calidad del partido manda: `unreliable` → usar la estimación `FGA - ORB + TOV + 0.44*FTA`); normalizar `(stat/posesiones)*40`. Rebote ofensivo = rebota el equipo que falló, siempre (ver DATA_FORMATS).
 - **Cuartiles**: Q1 verde … Q4 rojo, `reverse=True` para pérdidas/faltas.
 
 ## Pitfalls
@@ -94,6 +94,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | ruta de credenciales fija | `get_mongodb_connection_string()` (`src/database/db_config.py`: env → `db_credentials.txt`) |
 | `import src.x` y `import x` mezclados | usa siempre `src.…` |
 | texto de UI en inglés | UI en español |
+| leer `min`/`sec` de FBCYL como tiempo transcurrido | es tiempo **restante** (#370) |
 
 ## Decisiones tomadas (no re-debatir)
 MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · matplotlib (precisión FIBA) · pymongo síncrono · FastAPI + React/Vite · motor live en biblioteca estándar ejecutado en la tablet con Pyodide (ver LIVE) · sin LLMs · **app live: release cada viernes por la mañana (puede haber partidos viernes tarde/noche) con todo lo integrado, automática (`live-android-release.yml`); el staff actualiza con el botón de la app** (ver OPERATIONS) · **caminos no felices: pantalla encendida y reconexión ya implementados (#219, #220), pendientes de probar en tablet real; el resto se prevé técnicamente sin priorizarlo hasta el uso real**.
