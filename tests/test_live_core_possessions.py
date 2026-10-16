@@ -289,3 +289,39 @@ def test_quality_reports_the_difference_between_teams():
     _, tracker = _run(_Feed().made("A", "09:50").made("B", "09:30").made("A", "09:10"))
 
     assert tracker.quality().difference == 1
+
+
+# ---------------------------------------------------------------- kind of shot that closed the possession
+
+@pytest.mark.parametrize("feed, kind", [
+    (_Feed().made("A", "09:50", 3), "fg3"),
+    (_Feed().made("A", "09:50", 2), "fg2"),
+    (_Feed().add("A", "shoot", "A. P: MATE ANOTADO (Puntos: 12)", "09:50"), "dunk"),
+    (_Feed().foul("B", "09:50").ft("A", "09:50").ft("A", "09:50"), "ft"),
+    (_Feed().miss("A", "09:50", 3).reb("B", "09:49").made("B", "09:30"), "fg3"),
+    (_Feed().foul("B", "09:50").ft("A", "09:50", False).reb("B", "09:49").made("B", "09:30"), "ft"),
+])
+def test_possession_records_the_kind_of_shot_that_closed_it(feed, kind):
+    out, _ = _run(feed)
+
+    assert out[0].shot_kind == kind
+
+
+def test_turnover_has_no_shot_kind():
+    out, _ = _run(_Feed().tov("A", "09:50"))
+
+    assert out[0].shot_kind == ""
+
+
+def test_missing_rebound_the_miss_closes_the_possession_and_the_rival_starts_at_the_miss():
+    """No rebound line: the rival's next action shows it got the ball, but the shooter's possession ended at the miss."""
+    out, _ = _run(_Feed().miss("A", "09:50").made("B", "09:30"))
+
+    assert [(p.team_id, p.outcome, p.end_elapsed) for p in out] == [("A", "missed_shot", 10), ("B", "made_fg", 30)]
+    assert out[1].start_elapsed == 10 and out[1].duration == 20
+
+
+def test_a_miss_at_the_buzzer_ends_at_the_time_of_the_miss():
+    out, _ = _run(_Feed().miss("A", "00:20").period("Fin del Cuarto 1", "00:00"))
+
+    assert out[0].end_elapsed == 580

@@ -64,11 +64,13 @@ class PossessionTracker:
     def _reset_period(self) -> None:
         self._cur = None
         self._pending: Optional[str] = None             # team whose miss waits for its rebound
+        self._pending_ev: Optional[Event] = None        # that miss
         self._hold: Optional[_Hold] = None
         self._foul_type: Optional[str] = None
         self._fouls_since: Set[Optional[str]] = set()
         self._timeouts: List[Tuple[str, int]] = []
         self._after_oreb = False
+        self._last_shot = ""
         self._steal_seen: Optional[Tuple[str, int]] = None
         self._last_turnover: Optional[Possession] = None
         self._last_elapsed = self._last_num = 0
@@ -134,11 +136,12 @@ class PossessionTracker:
     def _shot(self, out: List[Possession], ev: Event) -> None:
         self._own(out, ev)
         self._foul_type = None
+        self._last_shot = "dunk" if "MATE" in ev.text.upper() else ev.kind
         if ev.made:
             self._score(ev)
             self._hold, self._fouls_since = _Hold("fg", ev.team_id, ev), set()
         else:
-            self._pending = ev.team_id
+            self._pending, self._pending_ev = ev.team_id, ev
 
     def _free_throw(self, out: List[Possession], ev: Event) -> None:
         if self._foul_type == "technical":     # no possession, the ball goes back to whoever had it
@@ -147,6 +150,7 @@ class PossessionTracker:
                 self.technical_points[ev.team_id] += ev.points
             return
         self._own(out, ev)
+        self._last_shot = "ft"
         if ev.made:
             self._score(ev)
         self._hold = _Hold("ft", ev.team_id, ev, trip=self._foul_type)
@@ -207,10 +211,10 @@ class PossessionTracker:
         elif team == pending:                     # it acts again: it kept the ball
             self._pending, self._after_oreb = None, True
             self._implicit_off += 1
-        else:                                     # the rival acts: it got the ball
+        else:                                     # the rival acts: it got the ball, back at the time of the miss
             self._pending = None
             self._implicit_def += 1
-            self._end(out, "missed_shot", ev)
+            self._end(out, "missed_shot", self._pending_ev)
         return False
 
     def _settle(self, out: List[Possession], ev: Optional[Event]) -> None:
@@ -233,7 +237,7 @@ class PossessionTracker:
             elif hold.ev.made:
                 self._end(out, "ft_made", hold.ev)
             else:
-                self._pending = hold.team                       # live ball after the last free throw
+                self._pending, self._pending_ev = hold.team, hold.ev   # live ball after the last free throw
         elif (ev is not None and ev.team_id == hold.team and (ev.kind in ("fg2", "fg3", "turnover")
                                                               or (ev.kind == "ft" and self._foul_type != "technical"))):
             self._cur.repaired_orebs += 1                       # the rebound was credited to the wrong team
@@ -279,6 +283,7 @@ class PossessionTracker:
         """Close the current possession with an event of the feed and hand the ball over."""
         cur = self._cur
         cur.end_elapsed, cur.end_num, cur.outcome, cur.counted = ev.elapsed, ev.num, outcome, True
+        cur.shot_kind = "" if outcome == "turnover" else self._last_shot
         out.append(cur)
         self._note_end(cur, actual=True, raw=raw)
         team = cur.team_id if same_team else self._opp[cur.team_id]
@@ -301,7 +306,9 @@ class PossessionTracker:
         self._settle(out, None)
         cur = self._cur
         if cur is not None and self._pending is not None:
-            cur.end_elapsed, cur.end_num, cur.outcome, cur.counted = self._last_elapsed, self._last_num, "missed_shot", True
+            miss = self._pending_ev
+            cur.end_elapsed, cur.end_num, cur.outcome, cur.counted = miss.elapsed, miss.num, "missed_shot", True
+            cur.shot_kind = self._last_shot
             out.append(cur)
             self._note_end(cur, actual=True, raw=True)
         elif cur is not None:

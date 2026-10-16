@@ -49,6 +49,7 @@ class Possession:
     steal: bool = False
     gap_before: bool = False
     repaired: bool = False
+    shot_kind: str = ""      # fg2 | fg3 | dunk | ft: the last shot attempt when it ended with a shot ("" for a turnover)
 
     @property
     def duration(self) -> int:
