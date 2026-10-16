@@ -1,4 +1,4 @@
-﻿"""MongoDB aggregation pipeline builder -- backward-compatible facade.
+"""MongoDB aggregation pipeline builder -- backward-compatible facade.
 
 The concrete class AggregationPipelineBuilder inherits all pipeline builders
 from TeamStatsPipelineMixin (team/opponent stats + shared helpers) and
@@ -11,11 +11,13 @@ from .basic_stats import get_shooting_percentages, get_per_game_stats, get_posse
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 
 from .pipeline_team_stats import TeamStatsPipelineMixin
+from .pipeline_team_per_game import TeamPerGamePipelineMixin
+from .pipeline_opponent_stats import OpponentStatsPipelineMixin
 from .pipeline_player_stats import PlayerStatsPipelineMixin
 from .pipeline_player_per_game import PlayerPerGamePipelineMixin
 
 
-class AggregationPipelineBuilder(TeamStatsPipelineMixin, PlayerStatsPipelineMixin, PlayerPerGamePipelineMixin):
+class AggregationPipelineBuilder(TeamStatsPipelineMixin, TeamPerGamePipelineMixin, OpponentStatsPipelineMixin, PlayerStatsPipelineMixin, PlayerPerGamePipelineMixin):
     """Builds MongoDB aggregation pipeline for basketball statistics.
 
     Combines team stats, opponent stats, player stats and FBCYL timeline builders.
