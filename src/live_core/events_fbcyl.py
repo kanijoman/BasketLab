@@ -68,10 +68,13 @@ def _classify(text: str) -> Dict[str, Any]:
 
 
 def parse_move(move: Dict[str, Any], index: int) -> Optional[Event]:
-    """One FBCYL move -> ``Event``; None when it lacks a usable period or clock. ``index`` is its position in the game."""
+    """One FBCYL move -> ``Event`` (None if its period or clock is not a number). ``index`` is its position in the game.
+
+    A move without clock is placed at 0:00 of period 1: the order of the list is then the order of the events."""
     try:
-        period, remaining = int(move["period"]), int(move["min"]) * 60 + int(move["sec"])
-    except (KeyError, TypeError, ValueError):
+        period = int(move.get("period") or 1)
+        remaining = int(move.get("min") or 0) * 60 + int(move.get("sec") or 0)
+    except (TypeError, ValueError):
         return None
     team = move.get("idTeam")
     actor = move.get("actorId")

@@ -25,7 +25,7 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from .clock import period_length, period_start
 from .events import Event
-from .possession_types import Possession, PossessionQuality, level_for_breaks
+from .possession_types import Possession, PossessionQuality, QualityLog, level_for_breaks
 
 __all__ = ["Possession", "PossessionQuality", "PossessionTracker", "level_for_breaks", "track"]
 
@@ -52,11 +52,7 @@ class PossessionTracker:
             raise ValueError("a game has exactly two teams")
         self._opp = {ids[0]: ids[1], ids[1]: ids[0]}
         self.technical_points: Counter = Counter()
-        self._counted: Counter = Counter()
-        self._breaks = self._breaks_raw = 0
-        self._last_end: Optional[Tuple[str, int, str]] = None       # (team, period, outcome) of the last counted end
-        self._last_end_raw: Optional[Tuple[str, int, str]] = None   # same, before repairing rebounds
-        self._repaired = self._inferred = self._implicit_off = self._implicit_def = self._technical_ft = 0
+        self._q = QualityLog()
         self._cur: Optional[Possession] = None
         self._period: Optional[int] = None
         self._reset_period()
@@ -107,13 +103,7 @@ class PossessionTracker:
         return out
 
     def quality(self) -> PossessionQuality:
-        counted = dict(self._counted)
-        teams = list(self._opp)
-        return PossessionQuality(
-            counted=counted, breaks_raw=self._breaks_raw, breaks=self._breaks, repaired_rebounds=self._repaired,
-            inferred=self._inferred, implicit_offensive=self._implicit_off, implicit_defensive=self._implicit_def,
-            technical_ft=self._technical_ft, level=level_for_breaks(self._breaks_raw),
-            difference=abs(counted.get(teams[0], 0) - counted.get(teams[1], 0)), technical_points=dict(self.technical_points))
+        return self._q.build(list(self._opp), self.technical_points)
 
     # -- events --------------------------------------------------------------------------------------------------
 
@@ -145,7 +135,7 @@ class PossessionTracker:
 
     def _free_throw(self, out: List[Possession], ev: Event) -> None:
         if self._foul_type == "technical":     # no possession, the ball goes back to whoever had it
-            self._technical_ft += 1
+            self._q.technical_ft += 1
             if ev.made:
                 self.technical_points[ev.team_id] += ev.points
             return
@@ -203,17 +193,17 @@ class PossessionTracker:
                 self._cur.orebs += 1
                 self._after_oreb = True
             else:    # the possession is closed with the next event, in case the rebound was misattributed
-                self._note_end(self._cur, outcome="missed_shot", actual=False)
+                self._q.note_end(self._cur.team_id, self._cur.period, "missed_shot", actual=False)
                 self._hold = _Hold("dr", pending, ev, team_reb=ev.player_id is None)
             return True
         if kind == "ft" and team == pending:     # shooting foul on the miss: the trip follows
             self._pending = None
         elif team == pending:                     # it acts again: it kept the ball
             self._pending, self._after_oreb = None, True
-            self._implicit_off += 1
+            self._q.implicit_off += 1
         else:                                     # the rival acts: it got the ball, back at the time of the miss
             self._pending = None
-            self._implicit_def += 1
+            self._q.implicit_def += 1
             self._end(out, "missed_shot", self._pending_ev)
         return False
 
@@ -243,7 +233,7 @@ class PossessionTracker:
             self._cur.repaired_orebs += 1                       # the rebound was credited to the wrong team
             self._cur.repaired = True
             self._after_oreb = True
-            self._repaired += 1
+            self._q.repaired += 1
         else:
             origin = "team_def_rebound" if hold.team_reb else "def_rebound"
             self._end(out, "missed_shot", hold.ev, origin=origin, raw=False)
@@ -267,7 +257,7 @@ class PossessionTracker:
             self._cur = self._new(ev.team_id, ev, "period_start", start=period_start(ev.period))
             return
         self._close_inferred(out, ev)
-        self._inferred += 1
+        self._q.inferred += 1
         self._cur = self._new(ev.team_id, ev, "unknown", gap=True)
 
     def _score(self, ev: Event) -> None:
@@ -285,7 +275,7 @@ class PossessionTracker:
         cur.end_elapsed, cur.end_num, cur.outcome, cur.counted = ev.elapsed, ev.num, outcome, True
         cur.shot_kind = "" if outcome == "turnover" else self._last_shot
         out.append(cur)
-        self._note_end(cur, actual=True, raw=raw)
+        self._q.note_end(cur.team_id, cur.period, outcome, actual=True, raw=raw)
         team = cur.team_id if same_team else self._opp[cur.team_id]
         self._cur = self._new(team, ev, origin or _NEXT_ORIGIN.get(outcome, "unknown"))
         return cur
@@ -310,7 +300,7 @@ class PossessionTracker:
             cur.end_elapsed, cur.end_num, cur.outcome, cur.counted = miss.elapsed, miss.num, "missed_shot", True
             cur.shot_kind = self._last_shot
             out.append(cur)
-            self._note_end(cur, actual=True, raw=True)
+            self._q.note_end(cur.team_id, cur.period, "missed_shot", actual=True, raw=True)
         elif cur is not None:
             if to_period_end:
                 cur.end_elapsed = period_start(cur.period) + period_length(cur.period)
@@ -318,22 +308,6 @@ class PossessionTracker:
             if cur.duration > 0 or cur.points:
                 out.append(cur)
         self._reset_period()
-
-    def _note_end(self, poss: Possession, outcome: Optional[str] = None, actual: bool = True, raw: bool = True) -> None:
-        """Count a possession end and any alternation break (same team twice in a row inside a period)."""
-        outcome = outcome or poss.outcome
-        end = (poss.team_id, poss.period, outcome)
-        if raw:
-            prev = self._last_end_raw
-            if prev and prev[0] == end[0] and prev[1] == end[1] and prev[2] != "trip":
-                self._breaks_raw += 1
-            self._last_end_raw = end
-        if actual:
-            self._counted[poss.team_id] += 1
-            prev = self._last_end
-            if prev and prev[0] == end[0] and prev[1] == end[1] and prev[2] != "trip":
-                self._breaks += 1
-            self._last_end = end
 
 
 def track(events: Sequence[Event], team_ids: Sequence[str]) -> Tuple[List[Possession], PossessionQuality]:

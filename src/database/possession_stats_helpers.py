@@ -7,8 +7,8 @@ from typing import Dict, Tuple
 def possession_projection(is_fbcyl: bool) -> Dict:
     """Return the narrow Mongo projection used to load play-by-play for possession stats.
 
-    FEB must include 'num': order_possession_moves() uses it to break ties between
-    same-timestamp events, without it same-second sequences sort unpredictably.
+    FEB must include 'num' (the possession tracker uses it to break ties between same-timestamp events), 'idPlayer'
+    (a rebound without player is a team rebound) and 'deleted' (corrected lines are ignored); FBCYL 'actorId'.
     """
     if is_fbcyl:
         return {
@@ -17,6 +17,7 @@ def possession_projection(is_fbcyl: bool) -> Dict:
             "moves.min":    1,
             "moves.sec":    1,
             "moves.idTeam": 1,
+            "moves.actorId": 1,
             "stats.teams.teamIdIntern": 1,
             "stats.teams.teamIdExtern": 1,
             "_id": 0,
@@ -28,6 +29,8 @@ def possession_projection(is_fbcyl: bool) -> Dict:
         "PLAYBYPLAY.LINES.time":    1,
         "PLAYBYPLAY.LINES.action":  1,
         "PLAYBYPLAY.LINES.idTeam":  1,
+        "PLAYBYPLAY.LINES.idPlayer": 1,
+        "PLAYBYPLAY.LINES.deleted": 1,
         "HEADER.TEAM.id":           1,
         "_id": 0,
     }

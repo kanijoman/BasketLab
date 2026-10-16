@@ -17,7 +17,7 @@ import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from . import clock, events, four_factors, game_context, profiles, rules_fouls, timeouts, windows, zones
+from . import clock, events, four_factors, game_context, possessions, profiles, rules_fouls, timeouts, windows, zones
 from .advice import AdviceEngine
 from .config import RuleConfig
 from .engine import LiveEngine
@@ -117,11 +117,20 @@ def _recommender(method: str) -> Callable[[Dict[str, Any]], Any]:
     return call
 
 
+def _possessions_track(args: Any) -> Any:
+    """[FEB lines, team ids] -> the possessions of the game and the quality of its feed."""
+    lines, team_ids = args
+    parsed = [e for e in (events.parse_line(line) for line in lines) if e is not None]
+    found, quality = possessions.track(parsed, team_ids)
+    return {"possessions": found, "quality": quality}
+
+
 UNIT_FUNCTIONS: Dict[str, Callable[[Any], Any]] = {
     "clock.elapsed_seconds": lambda a: clock.elapsed_seconds(*a),
     "clock.parse_clock": lambda a: clock.parse_clock(*a),
     "clock.period_and_remaining": lambda a: clock.period_and_remaining(*a),
     "events.parse_line": lambda a: events.parse_line(a[0]),
+    "possessions.track": _possessions_track,
     "fouls.warn_threshold": lambda a: rules_fouls.warn_threshold(*a),
     "fouls.evaluate": lambda a: rules_fouls.evaluate_player_fouls(*a),
     "fatigue.index": lambda a: fatigue_index(*a),

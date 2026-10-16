@@ -129,8 +129,7 @@ def test_extraction_and_quality_counts_do_not_change(name, is_fbcyl, feb_game_do
 def test_public_names_stay_importable_from_possession_core():
     """Consumers import these from ``src.pbp.possession_core`` (the split keeps it as the facade)."""
     for name in (
-        "extract_possession_rows", "count_quality_pbp_metrics",
-        "previous_missed_shot_index", "is_controversial_possession", "is_tab_evaluated_possession",
+        "extract_possession_rows", "count_quality_pbp_metrics", "is_controversial_possession", "is_tab_evaluated_possession",
         "QUALITY_METRICS",
     ):
         assert hasattr(possession_core, name), name

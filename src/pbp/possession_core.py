@@ -8,15 +8,15 @@ from __future__ import annotations
 from typing import Dict, List, Sequence
 
 from src.live_core.clock import period_length, period_start
-from src.live_core.events import Event, parse_line
-from src.live_core.events_fbcyl import parse_moves
+from src.live_core.events import Event
 from src.live_core.possessions import Possession, track
 
-from .possession_quality import QUALITY_METRICS, count_quality_pbp_metrics, previous_missed_shot_index
+from .game_events import game_events
+from .possession_quality import QUALITY_METRICS, count_quality_pbp_metrics
 
 __all__ = [
     "QUALITY_METRICS", "count_quality_pbp_metrics", "extract_possession_rows", "is_controversial_possession",
-    "is_tab_evaluated_possession", "previous_missed_shot_index",
+    "is_tab_evaluated_possession",
 ]
 
 _ZERO_DURATION_VALID_ENDINGS = frozenset(("violacion", "recuperacion"))
@@ -50,7 +50,7 @@ def is_tab_evaluated_possession(row: Dict) -> bool:
 
 def extract_possession_rows(game_data: Dict, is_fbcyl: bool, game_id: str, team_info: Dict[str, Dict]) -> List[Dict]:
     """Return canonical possession rows used by exporter and analyzer."""
-    events = _events(game_data, is_fbcyl)
+    events = game_events(game_data, is_fbcyl)
     team_ids = _team_ids(team_info, events)
     if len(team_ids) != 2:
         return []
@@ -62,15 +62,6 @@ def extract_possession_rows(game_data: Dict, is_fbcyl: bool, game_id: str, team_
         rows.append(_row(poss, rival, score[poss.team_id] - score[rival], game_id, team_info))
         score[poss.team_id] += poss.points
     return rows
-
-
-def _events(game_data: Dict, is_fbcyl: bool) -> List[Event]:
-    if is_fbcyl:
-        return parse_moves(game_data.get("moves") or [])
-    lines = (game_data.get("PLAYBYPLAY") or {}).get("LINES") or []
-    # the real feed always has a line number; without one the position in the list is the order
-    numbered = [line if line.get("num") not in (None, "") else {**line, "num": str(i + 1)} for i, line in enumerate(lines)]
-    return [e for e in (parse_line(line) for line in numbered) if e is not None]
 
 
 def _team_ids(team_info: Dict[str, Dict], events: Sequence[Event]) -> List[str]:

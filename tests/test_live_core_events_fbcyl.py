@@ -70,9 +70,12 @@ def test_team_actions_and_period_markers():
     assert (end.kind, end.team_id) == ("period_end", None)
 
 
-def test_moves_without_period_or_clock_are_dropped():
-    assert parse_move({"move": "Canasta de 2", "idTeam": 1}, 0) is None
-    assert parse_moves([_move("Canasta de 2"), {"move": "x"}]) and len(parse_moves([_move("Canasta de 2"), {"move": "x"}])) == 1
+def test_a_move_without_clock_keeps_its_place_in_the_list_and_a_bad_clock_is_dropped():
+    bare = parse_move({"move": "Canasta de 2", "idTeam": 1}, 3)
+
+    assert (bare.period, bare.remaining, bare.num) == (1, 0, 4)
+    assert parse_move({"move": "Canasta de 2", "idTeam": 1, "period": "x"}, 0) is None
+    assert len(parse_moves([_move("Canasta de 2"), {"move": "x"}])) == 2
 
 
 def test_tracker_on_the_sample_game_adds_up_to_its_score():

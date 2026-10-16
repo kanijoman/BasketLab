@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
 # Quality of the source data, from the alternation breaks of a game (two counted possessions of the same team in
 # a row inside one period). Thresholds agreed on 16/10/2026 after measuring 1,709 historical games (85 % / 11 % / 4 %).
@@ -71,3 +72,37 @@ class PossessionQuality:
     level: str
     difference: int       # |possessions of one team - the other|: 0-1 when the feed is complete
     technical_points: Dict[str, int] = field(default_factory=dict)   # free throws of technical fouls: no possession
+
+
+class QualityLog:
+    """Counters the tracker updates while it works; ``build`` turns them into a ``PossessionQuality``."""
+
+    def __init__(self) -> None:
+        self.counted: Counter = Counter()
+        self.breaks = self.breaks_raw = 0
+        self.repaired = self.inferred = self.implicit_off = self.implicit_def = self.technical_ft = 0
+        self._last: Optional[Tuple[str, int, str]] = None        # (team, period, outcome) of the last counted end
+        self._last_raw: Optional[Tuple[str, int, str]] = None    # same, before repairing rebounds
+
+    def note_end(self, team: str, period: int, outcome: str, actual: bool = True, raw: bool = True) -> None:
+        """Count a possession end and any alternation break (same team twice in a row inside a period)."""
+        end = (team, period, outcome)
+        if raw:
+            self.breaks_raw += self._is_break(self._last_raw, end)
+            self._last_raw = end
+        if actual:
+            self.counted[team] += 1
+            self.breaks += self._is_break(self._last, end)
+            self._last = end
+
+    @staticmethod
+    def _is_break(prev: Optional[Tuple[str, int, str]], end: Tuple[str, int, str]) -> bool:
+        return bool(prev and prev[0] == end[0] and prev[1] == end[1] and prev[2] != "trip")
+
+    def build(self, teams: List[str], technical_points: Dict[str, int]) -> PossessionQuality:
+        counted = dict(self.counted)
+        return PossessionQuality(
+            counted=counted, breaks_raw=self.breaks_raw, breaks=self.breaks, repaired_rebounds=self.repaired,
+            inferred=self.inferred, implicit_offensive=self.implicit_off, implicit_defensive=self.implicit_def,
+            technical_ft=self.technical_ft, level=level_for_breaks(self.breaks_raw),
+            difference=abs(counted.get(teams[0], 0) - counted.get(teams[1], 0)), technical_points=dict(technical_points))
