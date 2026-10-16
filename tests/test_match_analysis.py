@@ -483,3 +483,76 @@ class TestTotalBlockRegression:
         assert result is not None
         pts_row = next(r for r in result["comparison"] if r["stat_key"] == "pts")
         assert pts_row["home_value"] == 60
+
+
+# ---------------------------------------------------------------------------
+# With play-by-play (#351): possessions, rebounds and turnovers validated against the box score
+# ---------------------------------------------------------------------------
+
+def _pbp_line(num: int, team: str, action: str, text: str, clock: str, player: Any = "p") -> Dict:
+    return {"num": str(num), "idTeam": team, "idPlayer": player, "action": action, "text": f"(X) {text}",
+            "quarter": "1", "time": clock, "deleted": None}
+
+
+def _doc_with_pbp(lines: List[Dict], home_box: Dict = None, away_box: Dict = None) -> Dict:
+    doc = _make_feb_doc(match_id=7)
+    for block, kw in zip(doc["BOXSCORE"]["TEAM"], (home_box or {}, away_box or {})):
+        block["TOTAL"].update({k: str(v) for k, v in kw.items()})
+    doc["PLAYBYPLAY"] = {"LINES": lines}
+    return doc
+
+
+def _alternating_baskets(n: int) -> List[Dict]:
+    return [_pbp_line(i + 1, "111" if i % 2 == 0 else "222", "shoot", "P: TIRO DE 2 ANOTADO (Puntos: 2)",
+                      f"{(590 - 10 * i) // 60:02d}:{(590 - 10 * i) % 60:02d}") for i in range(n)]
+
+
+class TestMatchAnalysisWithPlayByPlay:
+    def _analyse(self, doc):
+        return _make_service([doc]).get_match_analysis(match_id=7, is_fbcyl=False)
+
+    def test_possessions_are_the_exact_count_of_the_pbp_when_it_is_reliable(self):
+        box = dict(p2a=5, p2m=5, p3a=0, p3m=0, p1a=0, p1m=0, ro=0, rd=0, to=0, pts=10)
+        result = self._analyse(_doc_with_pbp(_alternating_baskets(10), box, box))
+
+        assert result["home"]["possessions"] == 5 and result["away"]["possessions"] == 5
+        assert result["home"]["possessions_source"] == "pbp" and result["home"]["quality_level"] == "ok"
+
+    def test_oer_and_der_use_the_exact_possessions(self):
+        box = dict(p2a=5, p2m=5, p3a=0, p3m=0, p1a=0, p1m=0, ro=0, rd=0, to=0, pts=10)
+        result = self._analyse(_doc_with_pbp(_alternating_baskets(10), box, box))
+
+        assert result["home"]["oer"] == 200.0 and result["home"]["der"] == 200.0
+
+    def test_team_rebounds_and_turnovers_missing_from_the_box_score_are_included(self):
+        lines = [
+            _pbp_line(1, "111", "shoot", "P: TIRO DE 2 FALLADO", "09:50"),
+            _pbp_line(2, "111", "rebound", "REBOTE (Rebotes: 5)", "09:49", player=None),   # team offensive rebound
+            _pbp_line(3, "111", "lose", "Equipo: PÉRDIDA (Pérdidas: 1)", "09:40", player=None),
+        ]
+        box = dict(p2a=1, p2m=0, p3a=0, p3m=0, p1a=0, p1m=0, ro=0, rd=0, to=0)
+        result = self._analyse(_doc_with_pbp(lines, box, dict(box, p2a=0)))
+
+        assert result["home"]["orb"] == 1 and result["home"]["tov"] == 1
+
+    def test_fewer_pbp_rebounds_than_the_box_score_keep_the_box_score_value(self):
+        lines = [_pbp_line(1, "111", "shoot", "P: TIRO DE 2 FALLADO", "09:50"), _pbp_line(2, "111", "rebound", "P: REBOTE (Rebotes: 1)", "09:49")]
+        box = dict(p2a=1, p2m=0, p3a=0, p3m=0, p1a=0, p1m=0, ro=4, rd=0, to=0)
+        result = self._analyse(_doc_with_pbp(lines, box, dict(box, p2a=0, ro=0)))
+
+        assert result["home"]["orb"] == 4
+
+    def test_an_unreliable_feed_uses_the_estimate_and_says_so(self):
+        lines = [_pbp_line(i + 1, "111", "shoot", "P: TIRO DE 2 ANOTADO (Puntos: 2)", f"{(590 - 10 * i) // 60:02d}:{(590 - 10 * i) % 60:02d}")
+                 for i in range(12)]
+        box = dict(p2a=12, p2m=12, p3a=0, p3m=0, p1a=0, p1m=0, ro=0, rd=0, to=0)
+        result = self._analyse(_doc_with_pbp(lines, box, dict(box, p2a=3, p2m=3)))
+
+        assert result["home"]["possessions_source"] == "estimate" and result["home"]["quality_level"] == "unreliable"
+        assert result["home"]["possessions"] == 12.0
+
+    def test_a_game_without_pbp_keeps_the_box_score_formula(self):
+        result = self._analyse(_make_feb_doc(match_id=7))
+
+        assert "possessions_source" not in result["home"]
+        assert result["home"]["possessions"] == 61.4

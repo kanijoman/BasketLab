@@ -1,7 +1,10 @@
 """Pure helpers of the possession-stats repository mixin (no database access): projections, per-game
 aggregation, the boxscore-based estimate, reconciliation and the empty result.
 """
-from typing import Dict, Tuple
+from collections import Counter
+from typing import Any, Dict, List, Optional, Tuple
+
+from src.pbp.game_possessions import estimate_possessions, team_game_possessions
 
 
 def possession_projection(is_fbcyl: bool) -> Dict:
@@ -31,6 +34,8 @@ def possession_projection(is_fbcyl: bool) -> Dict:
         "PLAYBYPLAY.LINES.idTeam":  1,
         "PLAYBYPLAY.LINES.idPlayer": 1,
         "PLAYBYPLAY.LINES.deleted": 1,
+        "BOXSCORE.TEAM.id": 1,
+        "BOXSCORE.TEAM.TOTAL": 1,
         "HEADER.TEAM.id":           1,
         "_id": 0,
     }
@@ -89,7 +94,7 @@ def boxscore_possession_stats(games: list, team_id: str, is_fbcyl: bool) -> Dict
                         fta = team.get("FTA", 0)
                         pts = team.get("PTS", 0)
 
-                        poss = fga - orb + tov + 0.44 * fta
+                        poss = estimate_possessions(fga, orb, tov, fta)
                         if poss > 0:
                             total_possessions += poss
                             total_points += pts
@@ -109,7 +114,7 @@ def boxscore_possession_stats(games: list, team_id: str, is_fbcyl: bool) -> Dict
                         fta = int(total.get("p1a", 0))
                         pts = int(total.get("pts", 0))
 
-                        poss = fga - orb + tov + 0.44 * fta
+                        poss = estimate_possessions(fga, orb, tov, fta)
                         if poss > 0:
                             total_possessions += poss
                             total_points += pts
@@ -198,4 +203,45 @@ def empty_possession_result() -> Dict:
         "rival_oer_fast": None,
         "rival_oer_medium": None,
         "rival_oer_slow": None,
+    }
+
+
+def exact_season_stats(games: List[Dict[str, Any]], team_id: str) -> Optional[Dict[str, Any]]:
+    """Season figures of a FEB team from its games' play-by-play, validated against the box score (#351).
+
+    Possessions per game and per 40 minutes, OER/DER and ORB%/DRB% with team rebounds included, and how many games
+    used the exact count or the estimate and which data quality they had. None if no game can be read.
+    """
+    games_n = 0
+    poss = opp_poss = pts = opp_pts = orb = drb = opp_orb = opp_drb = 0.0
+    pace_sum = 0.0
+    sources: Counter = Counter()
+    levels: Counter = Counter()
+    rebound_fallbacks = 0
+    for game in games:
+        per_team = team_game_possessions(game)
+        if not per_team or str(team_id) not in per_team:
+            continue
+        mine = per_team[str(team_id)]
+        rival = next(t for tid, t in per_team.items() if tid != str(team_id))
+        games_n += 1
+        poss, opp_poss, pts, opp_pts = poss + mine["possessions"], opp_poss + rival["possessions"], pts + mine["pts"], opp_pts + rival["pts"]
+        orb, drb, opp_orb, opp_drb = orb + mine["orb"], drb + mine["drb"], opp_orb + rival["orb"], opp_drb + rival["drb"]
+        pace_sum += mine["possessions"] * 40 / mine["game_minutes"]
+        sources[mine["possessions_source"]] += 1
+        levels[mine["quality_level"]] += 1
+        rebound_fallbacks += "boxscore" in (mine["orb_source"], mine["drb_source"])
+    if not games_n:
+        return None
+    oer = pts / poss * 100 if poss else 0.0
+    der = opp_pts / opp_poss * 100 if opp_poss else 0.0
+    return {
+        "games": games_n,
+        "possessions_per_game": round(poss / games_n, 2),
+        "pace": round(pace_sum / games_n, 2),
+        "oer": round(oer, 2), "der": round(der, 2), "net_rating": round(oer - der, 2),
+        "orb_pct": round(orb / (orb + opp_drb) * 100, 2) if orb + opp_drb else 0.0,
+        "drb_pct": round(drb / (drb + opp_orb) * 100, 2) if drb + opp_orb else 0.0,
+        "possessions_source": next(iter(sources)) if len(sources) == 1 else "mixed",
+        "games_by_source": dict(sources), "games_by_quality": dict(levels), "rebound_fallbacks": rebound_fallbacks,
     }

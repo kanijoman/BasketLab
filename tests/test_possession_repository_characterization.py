@@ -2,7 +2,8 @@
 
 Written before extracting the pure helpers out of ``src/database/repository_possession.py`` (#360): the
 whole result (PBP stats, rival breakdown, boxscore fallback and reconciliation) must stay identical. Regenerated
-on purpose in #350: the possessions now come from the tracker (fewer phantom possessions, FBCYL clock fixed).
+on purpose in #350 (the possessions come from the tracker) and #351 (FEB: the new "exact" block of possessions
+validated against the box score).
 Regenerate the goldens, if a behaviour change is deliberate, with
 ``python -c "from tests.test_possession_repository_characterization import print_goldens; print_goldens()"``.
 """
@@ -67,6 +68,18 @@ GOLDENS = {'fbcyl': {'33865': {'avg_duration': 19.78,
                     'boxscore_oer': 75.19,
                     'boxscore_possessions': 74.5,
                     'data_quality_score': 85,
+                    'exact': {'der': 110.45,
+                              'drb_pct': 62.86,
+                              'games': 1,
+                              'games_by_quality': {'ok': 1},
+                              'games_by_source': {'pbp': 1},
+                              'net_rating': -30.45,
+                              'oer': 80.0,
+                              'orb_pct': 13.89,
+                              'pace': 70.0,
+                              'possessions_per_game': 70.0,
+                              'possessions_source': 'pbp',
+                              'rebound_fallbacks': 0},
                     'games_analyzed': 1,
                     'mismatch_pct': 7.9,
                     'possessions_by_duration': {'8-16s': {'count': 25, 'oer': 76.0, 'total_points': 19},
@@ -87,6 +100,18 @@ GOLDENS = {'fbcyl': {'33865': {'avg_duration': 19.78,
                     'boxscore_oer': 112.05,
                     'boxscore_possessions': 66.0,
                     'data_quality_score': 98,
+                    'exact': {'der': 80.0,
+                              'drb_pct': 86.11,
+                              'games': 1,
+                              'games_by_quality': {'ok': 1},
+                              'games_by_source': {'pbp': 1},
+                              'net_rating': 30.45,
+                              'oer': 110.45,
+                              'orb_pct': 37.14,
+                              'pace': 67.0,
+                              'possessions_per_game': 67.0,
+                              'possessions_source': 'pbp',
+                              'rebound_fallbacks': 0},
                     'games_analyzed': 1,
                     'mismatch_pct': 1.4,
                     'possessions_by_duration': {'8-16s': {'count': 24, 'oer': 112.5, 'total_points': 27},

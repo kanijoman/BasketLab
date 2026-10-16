@@ -10,6 +10,7 @@ from .possession_stats_helpers import (
     boxscore_possession_stats,
     boxscore_projection,
     empty_possession_result as _empty_possession_result,
+    exact_season_stats,
     opponent_id_from_game,
     possession_projection as _possession_projection,
     reconciliation_metrics,
@@ -56,6 +57,9 @@ class PossessionRepositoryMixin:
                 return _empty_possession_result()
 
             pbp_stats = self._accumulate_possession_stats(games, team_id, is_fbcyl)
+            exact = None if is_fbcyl else exact_season_stats(games, team_id)    # FEB only for now (#351)
+            if exact:
+                pbp_stats["exact"] = exact
 
             # Rival (opponent) possession breakdown — reuses the same PBP games list
             rival_stats = self._accumulate_rival_possession_stats(games, team_id, is_fbcyl)
