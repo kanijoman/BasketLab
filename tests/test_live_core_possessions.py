@@ -180,6 +180,14 @@ def test_technical_free_throws_do_not_change_possession_and_are_not_a_possession
     assert tracker.technical_points == {"B": 1}
 
 
+def test_technical_free_throw_points_are_kept_per_player_for_the_bench_count():
+    """Bug (#352): the 1-2 points of a bench player's technical free throws belong to nobody, so the bench points fell short."""
+    feed = _Feed().tov("B", "09:55").foul("A", "09:40", "Técnica").ft("B", "09:40", True, "b").ft("B", "09:40", True, "c")
+    out, tracker = _run(feed)
+
+    assert tracker.quality().technical_by_player == {"B": {"b": 1, "c": 1}}
+
+
 def test_technical_between_a_miss_and_its_rebound_keeps_the_miss_pending():
     feed = _Feed().miss("A", "09:50").foul("B", "09:49", "Técnica").ft("A", "09:49", True).reb("B", "09:48").made("B", "09:30")
     out, _ = _run(feed)

@@ -22,11 +22,11 @@ def derive_game_fields(game_doc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if analysis is None:
         return None
     shots = (game_doc.get("SHOTCHART") or {}).get("SHOTS")
-    technical = analysis.quality.technical_points
+    technical = analysis.quality.technical_by_player
     teams = []
     for index, team in enumerate(game_doc["BOXSCORE"]["TEAM"]):
         tid = str(team.get("id"))
         paint = paint_points(shots, index) if shots else None
-        figures = team_points_by_origin(analysis.possessions, tid, starters(team), technical.get(tid, 0), paint)
+        figures = team_points_by_origin(analysis.possessions, tid, starters(team), technical.get(tid, {}), paint)
         teams.append({"id": tid, **{key: analysis.teams[tid][key] for key in _FIELDS}, **figures})
     return {"v": DERIVED_VERSION, "TEAM": teams}

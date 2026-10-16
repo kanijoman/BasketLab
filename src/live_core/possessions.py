@@ -52,6 +52,7 @@ class PossessionTracker:
             raise ValueError("a game has exactly two teams")
         self._opp = {ids[0]: ids[1], ids[1]: ids[0]}
         self.technical_points: Counter = Counter()
+        self.technical_by_player: Dict[str, Dict[str, int]] = {}
         self._q = QualityLog()
         self._cur: Optional[Possession] = None
         self._period: Optional[int] = None
@@ -103,7 +104,7 @@ class PossessionTracker:
         return out
 
     def quality(self) -> PossessionQuality:
-        return self._q.build(list(self._opp), self.technical_points)
+        return self._q.build(list(self._opp), self.technical_points, self.technical_by_player)
 
     # -- events --------------------------------------------------------------------------------------------------
 
@@ -138,6 +139,9 @@ class PossessionTracker:
             self._q.technical_ft += 1
             if ev.made:
                 self.technical_points[ev.team_id] += ev.points
+                if ev.player_id:
+                    mine = self.technical_by_player.setdefault(ev.team_id, {})
+                    mine[ev.player_id] = mine.get(ev.player_id, 0) + ev.points
             return
         self._own(out, ev)
         self._last_shot = "ft"

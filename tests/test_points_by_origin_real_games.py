@@ -1,6 +1,6 @@
 """Points by origin on the 16 real games of LF Challenge 2026-27, against the official PDF (#352).
 
-What the PDF confirms (32 team-games): the bench points (``inn`` starters; within a point) and the paint points (made shots of
+What the PDF confirms (32 team-games): the bench points (``inn`` starters, technical free throws included: all 32 exact) and the paint points (made shots of
 the ``SHOTCHART`` in the rim and key zones; never above the PDF, 21 of 32 exact, one point short on average, 8 at most).
 Points after turnovers and second chance are defined per possession here, which is more generous than the FEB's own definition
 (not reproducible from the play-by-play): never below the PDF, on average 3-4 points above, 14 at most. The bounds are
@@ -49,9 +49,9 @@ def test_points_by_origin_add_up_to_the_points_of_the_game(gid):
 
 
 @pytest.mark.parametrize("gid", IDS)
-def test_bench_points_are_within_a_point_of_the_pdf(gid):
+def test_bench_points_equal_the_pdf(gid):
     for ours, pdf in _pairs(gid):
-        assert abs(ours["pts_bench"] - pdf["bench_pts"]) <= 1
+        assert ours["pts_bench"] == pdf["bench_pts"]
 
 
 @pytest.mark.parametrize("gid", IDS)
@@ -67,8 +67,7 @@ def test_points_after_turnovers_and_second_chance_are_never_below_the_pdf_and_cl
         assert 0 <= ours["pts_second_chance"] - pdf["second_chance_pts"] <= 14
 
 
-def test_mean_paint_error_is_about_a_point_and_bench_is_almost_exact():
+def test_mean_paint_error_is_about_a_point():
     pairs = [pair for gid in IDS for pair in _pairs(gid)]
 
     assert sum(abs(o["pts_paint"] - p["paint_pts"]) for o, p in pairs) / len(pairs) <= 1.5
-    assert sum(o["pts_bench"] == p["bench_pts"] for o, p in pairs) >= 27

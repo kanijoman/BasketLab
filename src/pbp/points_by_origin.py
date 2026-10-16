@@ -1,7 +1,7 @@
 """Points of each team by the origin of its possessions, bench and paint (#352).
 
 ``pts_by_origin`` partitions the points of a team by the way its possession started (``Possession.origin``); the free
-throws of technical fouls, which are not a possession, go under ``technical``. Views on top of it: points and possessions
+throws of technical fouls, which are not a possession, go under ``technical`` (their points still count for the bench). Views on top of it: points and possessions
 after a turnover (a steal included) or a steal, second chance (points after an offensive rebound of the same possession),
 points of the bench (players who did not start: ``inn`` of the box score) and points in the paint (made shots of the
 ``SHOTCHART`` in the zones "aro" and "zona"). The official fast-break points are not derived: their definition cannot be
@@ -35,7 +35,7 @@ def paint_points(shots: Iterable[Dict[str, Any]], team_index: int) -> int:
     return total
 
 
-def team_points_by_origin(possessions: List[Any], team_id: str, starting: Set[str], technical_points: int,
+def team_points_by_origin(possessions: List[Any], team_id: str, starting: Set[str], technical_by_player: Dict[str, int],
                           paint: Optional[int]) -> Dict[str, Any]:
     """The figures of one team from its possessions (``counted`` or not: all of them carry their points)."""
     mine = [p for p in possessions if p.team_id == team_id]
@@ -43,12 +43,14 @@ def team_points_by_origin(possessions: List[Any], team_id: str, starting: Set[st
     for p in mine:
         if p.points:
             by_origin[p.origin] += p.points
+    technical_points = sum(technical_by_player.values())
     if technical_points:
         by_origin["technical"] += technical_points
     after_tov = [p for p in mine if p.origin in _AFTER_TURNOVER and p.counted]
     after_steal = [p for p in after_tov if p.origin == "steal"]
     second = [p for p in mine if p.orebs and p.counted]
     bench = sum(pts for p in mine for player, pts in p.points_by_player.items() if player not in starting)
+    bench += sum(pts for player, pts in technical_by_player.items() if player not in starting)
     return {
         "pts_by_origin": dict(by_origin),
         "pts_off_tov": sum(p.points for p in after_tov), "poss_off_tov": len(after_tov),

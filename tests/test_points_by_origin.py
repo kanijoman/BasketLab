@@ -87,6 +87,17 @@ def test_technical_free_throws_go_under_technical_and_do_not_open_a_possession()
     assert teams["A"]["pts_by_origin"] == {"period_start": 2, "technical": 1}
 
 
+def test_bench_points_include_the_technical_free_throws_of_bench_players():
+    """Bug: technical free throws belong to no possession, so the bench points left them out (3 of 32 team-games of the PDF)."""
+    feed = _Feed()
+    feed.made("A", "09:50", 2, "p1")
+    feed.foul("A", "09:45", "Técnica").ft("B", "09:44", True, "p")      # bench player of B
+    feed.ft("B", "09:44", True, "s")                                    # starter of B
+    teams = _teams(feed)
+
+    assert teams["B"]["pts_bench"] == 1 and teams["B"]["pts_by_origin"] == {"technical": 2}
+
+
 def test_paint_points_come_from_the_made_shots_of_the_shotchart_in_the_rim_and_key_zones():
     shots = [
         {"m": "1", "x": 6.0, "y": 50.0, "team": 0, "quarter": 1, "t": "09:50", "player": "1"},     # at the rim: counts
