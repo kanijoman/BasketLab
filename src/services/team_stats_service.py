@@ -18,6 +18,11 @@ if TYPE_CHECKING:
 from src.database.team_stats_aggregator import TeamStatsAggregator
 from src.utils.team_utils import get_available_teams_from_collection
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+from src.services._possession_stats_builder import (
+    apply_pace_impact,
+    apply_pbp_fields,
+    base_possession_entry,
+)
 from src.services._consistency_calculator import (
     build_cv_map,
     add_derived_indexes,
@@ -32,22 +37,6 @@ _add_derived_indexes = add_derived_indexes
 
 # Cache possession stats per collection for 1 hour — play-by-play analysis is expensive
 _possession_cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
-
-
-def _rival_avg_duration_general(
-    breakdown: Dict[str, Dict[str, float]],
-    avg_duration_by_id: Dict[str, float],
-) -> Optional[float]:
-    """Weight each faced rival's own season avg_duration by possessions they played against us."""
-    weighted_sum = 0.0
-    total_weight = 0.0
-    for opp_id, data in breakdown.items():
-        opp_general = avg_duration_by_id.get(opp_id)
-        if opp_general is None:
-            continue
-        weighted_sum += opp_general * data["possessions"]
-        total_weight += data["possessions"]
-    return round(weighted_sum / total_weight, 2) if total_weight > 0 else None
 
 
 class TeamStatsService:
@@ -331,95 +320,15 @@ class TeamStatsService:
         result = []
         poss_by_team_id: Dict[str, Dict[str, Any]] = {}
         for t in raw:
-            team_name = t.get("team_name", "")
-            team_id = name_to_id.get(team_name)
-
-            entry: Dict[str, Any] = {
-                "team_name":            team_name,
-                "team_id":              str(team_id) if team_id else None,
-                "possessions_per_game": round(float(t.get("possessions_per_game") or 0), 2),
-                "pace":                 round(float(t.get("possessions_per_game") or 0), 2),
-                "oer":                  round(float(t.get("offensive_rating") or 0), 2),
-                "der":                  round(float(t.get("defensive_rating") or 0), 2),
-                "net_rating":           round(float(t.get("net_rating") or 0), 2),
-                "total_games":          int(t.get("total_games") or 0),
-                # Play-by-play derived fields — None when no PBP data available
-                "avg_duration":           None,
-                "pct_fast":               None,
-                "pct_medium":             None,
-                "pct_slow":               None,
-                "oer_fast":               None,
-                "oer_medium":             None,
-                "oer_slow":               None,
-                "est_possessions_per_game": None,
-            }
-
+            team_id = name_to_id.get(t.get("team_name", ""))
+            entry = base_possession_entry(t, team_id)
             if team_id:
-                poss = self._db.repository.get_team_possession_stats(
-                    collection_name, team_id
-                )
+                poss = self._db.repository.get_team_possession_stats(collection_name, team_id)
                 poss_by_team_id[str(team_id)] = poss
-                total = poss.get("total_possessions", 0) if poss else 0
-                if total > 0:
-                    avg_dur = poss["avg_duration"]
-                    by_dur  = poss.get("possessions_by_duration", {})
-                    fast    = by_dur.get("<=8s",  {})
-                    medium  = by_dur.get("8-16s", {})
-                    slow    = by_dur.get(">16s",  {})
-                    
-                    # Reconciliation metadata — general OER is untouched (already boxscore-formula from pipeline)
-                    recommendation = poss.get("recommendation", "use_playbyplay")
-                    phantom_pct = poss.get("phantom_pct", 0)
-                    data_quality_score = poss.get("data_quality_score", 100)
-
-                    def _pct(count: int) -> Optional[float]:
-                        return round(count / total * 100, 1) if total > 0 else None
-
-                    entry["avg_duration"]             = avg_dur
-                    entry["pct_fast"]                 = _pct(fast.get("count", 0))
-                    entry["pct_medium"]               = _pct(medium.get("count", 0))
-                    entry["pct_slow"]                 = _pct(slow.get("count", 0))
-                    entry["oer_fast"]                 = fast.get("oer")
-                    entry["oer_medium"]               = medium.get("oer")
-                    entry["oer_slow"]                 = slow.get("oer")
-                    entry["est_possessions_per_game"] = (
-                        round(2400 / avg_dur / 2, 1) if avg_dur and avg_dur > 0 else None
-                    )
-                    
-                    # Add data quality fields
-                    entry["data_quality_score"]       = data_quality_score
-                    entry["phantom_pct"]              = phantom_pct
-                    entry["reconciliation"]           = recommendation
-                    entry["boxscore_oer"]             = poss.get("boxscore_oer", 0)
-
-                    # Rival (opponent) possession breakdown
-                    entry["rival_pct_fast"]   = poss.get("rival_pct_fast")
-                    entry["rival_pct_medium"] = poss.get("rival_pct_medium")
-                    entry["rival_pct_slow"]   = poss.get("rival_pct_slow")
-                    entry["rival_oer_fast"]   = poss.get("rival_oer_fast")
-                    entry["rival_oer_medium"] = poss.get("rival_oer_medium")
-                    entry["rival_oer_slow"]   = poss.get("rival_oer_slow")
-                    entry["rival_avg_duration"] = poss.get("rival_avg_duration")
-
+                apply_pbp_fields(entry, poss)
             result.append(entry)
 
-        # Pace-impact: compare each team's rivals' pace against us to those same
-        # rivals' own season-wide pace (weighted by possessions played against us).
-        avg_duration_by_id = {
-            r["team_id"]: r["avg_duration"]
-            for r in result
-            if r.get("team_id") and r.get("avg_duration") is not None
-        }
-        for entry in result:
-            tid = entry.get("team_id")
-            poss = poss_by_team_id.get(tid) if tid else None
-            breakdown = poss.get("rival_opponent_breakdown") if poss else None
-            general = _rival_avg_duration_general(breakdown, avg_duration_by_id) if breakdown else None
-            entry["rival_avg_duration_general"] = general
-            rival_avg = entry.get("rival_avg_duration")
-            entry["rival_pace_differential"] = (
-                round(rival_avg - general, 2) if general is not None and rival_avg is not None else None
-            )
+        apply_pace_impact(result, poss_by_team_id)
 
         _possession_cache[collection_name] = result
         return result
