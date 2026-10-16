@@ -187,41 +187,60 @@ class TestFebTimeConversion(unittest.TestCase):
 # ===========================================================================
 
 class TestFbcylTimeConversion(unittest.TestCase):
+    """FBCYL ``min``/``sec`` is the time REMAINING in the period (bug #370)."""
 
     def setUp(self):
         self.analyzer = PlayByPlayAnalyzer(_fbcyl_game(), is_fbcyl=True)
 
     def test_period1_start(self):
-        """Period 1, 0:00 → 0 seconds elapsed."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(1, 0, 0), 0)
+        """Period 1, 10:00 remaining -> 0 seconds elapsed."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(1, 10, 0), 0)
 
     def test_period1_end(self):
-        """Period 1, 10:00 → 600 seconds elapsed."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(1, 10, 0), 600)
+        """Period 1, 0:00 remaining -> 600 seconds elapsed."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(1, 0, 0), 600)
+
+    def test_period1_ten_seconds_in_regression(self):
+        """Period 1, 9:50 remaining -> 10 seconds elapsed (was read as 590)."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(1, 9, 50), 10)
 
     def test_period2_start(self):
-        """Period 2, 0:00 → 600 seconds."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(2, 0, 0), 600)
+        """Period 2, 10:00 remaining -> 600 seconds."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(2, 10, 0), 600)
 
     def test_period3_midpoint(self):
-        """Period 3, 5:30 → 1200 + 330 = 1530 seconds."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(3, 5, 30), 1530)
+        """Period 3, 5:30 remaining -> 1200 + 270 = 1470 seconds."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(3, 5, 30), 1470)
 
     def test_period4_end(self):
-        """Period 4, 10:00 → 2400 seconds."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(4, 10, 0), 2400)
+        """Period 4, 0:00 remaining -> 2400 seconds."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(4, 0, 0), 2400)
 
     def test_period5_ot_start_regression(self):
-        """Period 5 (OT), 0:00 elapsed -> total = 2400."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(5, 0, 0), 2400)
+        """Period 5 (OT, 5 min), 5:00 remaining -> 2400."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(5, 5, 0), 2400)
 
     def test_period5_ot_end_regression(self):
-        """Period 5 (OT periods are 5min), 5:00 elapsed -> total = 2400 + 300 = 2700."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(5, 5, 0), 2700)
+        """Period 5, 0:00 remaining -> 2700."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(5, 0, 0), 2700)
 
     def test_period6_second_ot_regression(self):
-        """Period 6 (2nd OT, 5min periods), 5:00 elapsed -> total = 2400 + 300 + 300 = 3000."""
-        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(6, 5, 0), 3000)
+        """Period 6 (2nd OT), 0:00 remaining -> 3000."""
+        self.assertEqual(self.analyzer._fbcyl_time_to_seconds(6, 0, 0), 3000)
+
+
+class TestFbcylActionsOnCourtUseRemainingClock(unittest.TestCase):
+    """Bug #370: a move at 9:50 remaining is 10 s into the game, so it falls inside a 0-60 s stint."""
+
+    def test_move_early_in_the_period_is_on_court_for_a_starter_who_leaves_after_one_minute(self):
+        teams = [{"teamIdIntern": 1001, "name": "LOCAL", "players": [
+            {"actorId": 501, "name": "ONE", "inOutsList": [{"type": "OUT_TYPE", "minuteAbsolut": 1}]}]},
+            {"teamIdIntern": 1002, "name": "VISITOR", "players": []}]
+        early = {"period": 1, "min": 9, "sec": 50, "idTeam": 1001, "move": "Canasta de 2"}
+        late = {"period": 1, "min": 2, "sec": 0, "idTeam": 1001, "move": "Canasta de 2"}
+        analyzer = PlayByPlayAnalyzer(_fbcyl_game([early, late], teams), is_fbcyl=True)
+
+        self.assertEqual(analyzer.get_actions_when_on_court(501), [early])
 
 
 # ===========================================================================
