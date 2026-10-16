@@ -1,0 +1,1009 @@
+{
+ "_comment": "Ground truth del PDF oficial de FEB (BoxScore.aspx?p=<partido>&c=4&qd=4&t=FINAL), extraido con pdftotext -raw el 2026-10-16. LF Challenge 2026-27. reb_total incluye los rebotes de equipo (reb_team); el boxscore de Mongo (BOXSCORE.TEAM.TOTAL.ro/rd) NO los incluye. turnovers_total incluye las perdidas de equipo. El PDF es siempre el partido completo: c y qd no cambian el contenido.",
+ "games": {
+  "2524455": {
+   "quarters_home_away": [
+    [
+     14,
+     19
+    ],
+    [
+     36,
+     17
+    ],
+    [
+     31,
+     11
+    ],
+    [
+     20,
+     24
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008811",
+     "side": "home",
+     "reb_total": {
+      "o": 18,
+      "d": 22,
+      "t": 40
+     },
+     "reb_team": {
+      "o": 2,
+      "d": 2,
+      "t": 4
+     },
+     "turnovers_total": 15,
+     "second_chance_pts": 16,
+     "fast_break_pts": 22,
+     "paint_pts": 58,
+     "pts_off_turnovers": 34,
+     "bench_pts": 61
+    },
+    {
+     "team_id": "1008868",
+     "side": "away",
+     "reb_total": {
+      "o": 17,
+      "d": 30,
+      "t": 47
+     },
+     "reb_team": {
+      "o": 6,
+      "d": 6,
+      "t": 12
+     },
+     "turnovers_total": 36,
+     "second_chance_pts": 9,
+     "fast_break_pts": 8,
+     "paint_pts": 42,
+     "pts_off_turnovers": 6,
+     "bench_pts": 30
+    }
+   ]
+  },
+  "2524456": {
+   "quarters_home_away": [
+    [
+     25,
+     15
+    ],
+    [
+     16,
+     11
+    ],
+    [
+     14,
+     22
+    ],
+    [
+     18,
+     16
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008968",
+     "side": "home",
+     "reb_total": {
+      "o": 15,
+      "d": 26,
+      "t": 41
+     },
+     "reb_team": {
+      "o": 2,
+      "d": 1,
+      "t": 3
+     },
+     "turnovers_total": 17,
+     "second_chance_pts": 20,
+     "fast_break_pts": 2,
+     "paint_pts": 42,
+     "pts_off_turnovers": 11,
+     "bench_pts": 20
+    },
+    {
+     "team_id": "1008898",
+     "side": "away",
+     "reb_total": {
+      "o": 17,
+      "d": 22,
+      "t": 39
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 1,
+      "t": 2
+     },
+     "turnovers_total": 14,
+     "second_chance_pts": 18,
+     "fast_break_pts": 8,
+     "paint_pts": 38,
+     "pts_off_turnovers": 17,
+     "bench_pts": 9
+    }
+   ]
+  },
+  "2524457": {
+   "quarters_home_away": [
+    [
+     24,
+     20
+    ],
+    [
+     15,
+     17
+    ],
+    [
+     23,
+     20
+    ],
+    [
+     9,
+     14
+    ],
+    [
+     11,
+     12
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008685",
+     "side": "home",
+     "reb_total": {
+      "o": 18,
+      "d": 34,
+      "t": 52
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 4,
+      "t": 5
+     },
+     "turnovers_total": 20,
+     "second_chance_pts": 16,
+     "fast_break_pts": 8,
+     "paint_pts": 32,
+     "pts_off_turnovers": 4,
+     "bench_pts": 27
+    },
+    {
+     "team_id": "1008920",
+     "side": "away",
+     "reb_total": {
+      "o": 19,
+      "d": 32,
+      "t": 51
+     },
+     "reb_team": {
+      "o": 4,
+      "d": 6,
+      "t": 10
+     },
+     "turnovers_total": 15,
+     "second_chance_pts": 15,
+     "fast_break_pts": 17,
+     "paint_pts": 36,
+     "pts_off_turnovers": 18,
+     "bench_pts": 34
+    }
+   ]
+  },
+  "2524458": {
+   "quarters_home_away": [
+    [
+     19,
+     21
+    ],
+    [
+     18,
+     15
+    ],
+    [
+     17,
+     21
+    ],
+    [
+     19,
+     16
+    ],
+    [
+     10,
+     12
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008392",
+     "side": "home",
+     "reb_total": {
+      "o": 11,
+      "d": 32,
+      "t": 43
+     },
+     "reb_team": {
+      "o": 3,
+      "d": 2,
+      "t": 5
+     },
+     "turnovers_total": 16,
+     "second_chance_pts": 6,
+     "fast_break_pts": 12,
+     "paint_pts": 46,
+     "pts_off_turnovers": 19,
+     "bench_pts": 46
+    },
+    {
+     "team_id": "1008987",
+     "side": "away",
+     "reb_total": {
+      "o": 15,
+      "d": 32,
+      "t": 47
+     },
+     "reb_team": {
+      "o": 5,
+      "d": 5,
+      "t": 10
+     },
+     "turnovers_total": 15,
+     "second_chance_pts": 19,
+     "fast_break_pts": 6,
+     "paint_pts": 30,
+     "pts_off_turnovers": 22,
+     "bench_pts": 23
+    }
+   ]
+  },
+  "2524459": {
+   "quarters_home_away": [
+    [
+     20,
+     23
+    ],
+    [
+     18,
+     33
+    ],
+    [
+     13,
+     14
+    ],
+    [
+     22,
+     14
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008631",
+     "side": "home",
+     "reb_total": {
+      "o": 10,
+      "d": 18,
+      "t": 28
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 0,
+      "t": 1
+     },
+     "turnovers_total": 10,
+     "second_chance_pts": 11,
+     "fast_break_pts": 3,
+     "paint_pts": 44,
+     "pts_off_turnovers": 12,
+     "bench_pts": 30
+    },
+    {
+     "team_id": "1008988",
+     "side": "away",
+     "reb_total": {
+      "o": 11,
+      "d": 28,
+      "t": 39
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 1,
+      "t": 2
+     },
+     "turnovers_total": 16,
+     "second_chance_pts": 7,
+     "fast_break_pts": 7,
+     "paint_pts": 24,
+     "pts_off_turnovers": 12,
+     "bench_pts": 30
+    }
+   ]
+  },
+  "2524460": {
+   "quarters_home_away": [
+    [
+     18,
+     16
+    ],
+    [
+     14,
+     16
+    ],
+    [
+     14,
+     17
+    ],
+    [
+     8,
+     19
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008708",
+     "side": "home",
+     "reb_total": {
+      "o": 23,
+      "d": 37,
+      "t": 60
+     },
+     "reb_team": {
+      "o": 6,
+      "d": 4,
+      "t": 10
+     },
+     "turnovers_total": 22,
+     "second_chance_pts": 10,
+     "fast_break_pts": 0,
+     "paint_pts": 40,
+     "pts_off_turnovers": 5,
+     "bench_pts": 7
+    },
+    {
+     "team_id": "1008402",
+     "side": "away",
+     "reb_total": {
+      "o": 15,
+      "d": 28,
+      "t": 43
+     },
+     "reb_team": {
+      "o": 0,
+      "d": 4,
+      "t": 4
+     },
+     "turnovers_total": 13,
+     "second_chance_pts": 14,
+     "fast_break_pts": 6,
+     "paint_pts": 28,
+     "pts_off_turnovers": 11,
+     "bench_pts": 19
+    }
+   ]
+  },
+  "2524461": {
+   "quarters_home_away": [
+    [
+     18,
+     20
+    ],
+    [
+     14,
+     11
+    ],
+    [
+     11,
+     24
+    ],
+    [
+     21,
+     15
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008777",
+     "side": "home",
+     "reb_total": {
+      "o": 15,
+      "d": 27,
+      "t": 42
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 3,
+      "t": 4
+     },
+     "turnovers_total": 19,
+     "second_chance_pts": 11,
+     "fast_break_pts": 0,
+     "paint_pts": 33,
+     "pts_off_turnovers": 10,
+     "bench_pts": 16
+    },
+    {
+     "team_id": "1008377",
+     "side": "away",
+     "reb_total": {
+      "o": 7,
+      "d": 28,
+      "t": 35
+     },
+     "reb_team": {
+      "o": 0,
+      "d": 0,
+      "t": 0
+     },
+     "turnovers_total": 17,
+     "second_chance_pts": 10,
+     "fast_break_pts": 0,
+     "paint_pts": 34,
+     "pts_off_turnovers": 16,
+     "bench_pts": 29
+    }
+   ]
+  },
+  "2524462": {
+   "quarters_home_away": [
+    [
+     15,
+     11
+    ],
+    [
+     18,
+     15
+    ],
+    [
+     15,
+     12
+    ],
+    [
+     15,
+     19
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1009061",
+     "side": "home",
+     "reb_total": {
+      "o": 18,
+      "d": 30,
+      "t": 48
+     },
+     "reb_team": {
+      "o": 3,
+      "d": 1,
+      "t": 4
+     },
+     "turnovers_total": 13,
+     "second_chance_pts": 4,
+     "fast_break_pts": 4,
+     "paint_pts": 36,
+     "pts_off_turnovers": 6,
+     "bench_pts": 17
+    },
+    {
+     "team_id": "1008895",
+     "side": "away",
+     "reb_total": {
+      "o": 13,
+      "d": 31,
+      "t": 44
+     },
+     "reb_team": {
+      "o": 3,
+      "d": 2,
+      "t": 5
+     },
+     "turnovers_total": 17,
+     "second_chance_pts": 3,
+     "fast_break_pts": 7,
+     "paint_pts": 20,
+     "pts_off_turnovers": 13,
+     "bench_pts": 5
+    }
+   ]
+  },
+  "2524463": {
+   "quarters_home_away": [
+    [
+     16,
+     17
+    ],
+    [
+     9,
+     14
+    ],
+    [
+     11,
+     10
+    ],
+    [
+     11,
+     20
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008402",
+     "side": "home",
+     "reb_total": {
+      "o": 16,
+      "d": 20,
+      "t": 36
+     },
+     "reb_team": {
+      "o": 0,
+      "d": 0,
+      "t": 0
+     },
+     "turnovers_total": 12,
+     "second_chance_pts": 10,
+     "fast_break_pts": 2,
+     "paint_pts": 24,
+     "pts_off_turnovers": 10,
+     "bench_pts": 13
+    },
+    {
+     "team_id": "1009061",
+     "side": "away",
+     "reb_total": {
+      "o": 11,
+      "d": 37,
+      "t": 48
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 3,
+      "t": 4
+     },
+     "turnovers_total": 22,
+     "second_chance_pts": 6,
+     "fast_break_pts": 7,
+     "paint_pts": 34,
+     "pts_off_turnovers": 13,
+     "bench_pts": 22
+    }
+   ]
+  },
+  "2524464": {
+   "quarters_home_away": [
+    [
+     15,
+     22
+    ],
+    [
+     27,
+     7
+    ],
+    [
+     24,
+     10
+    ],
+    [
+     9,
+     13
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008920",
+     "side": "home",
+     "reb_total": {
+      "o": 11,
+      "d": 25,
+      "t": 36
+     },
+     "reb_team": {
+      "o": 0,
+      "d": 0,
+      "t": 0
+     },
+     "turnovers_total": 12,
+     "second_chance_pts": 10,
+     "fast_break_pts": 14,
+     "paint_pts": 28,
+     "pts_off_turnovers": 20,
+     "bench_pts": 46
+    },
+    {
+     "team_id": "1008392",
+     "side": "away",
+     "reb_total": {
+      "o": 15,
+      "d": 30,
+      "t": 45
+     },
+     "reb_team": {
+      "o": 3,
+      "d": 4,
+      "t": 7
+     },
+     "turnovers_total": 22,
+     "second_chance_pts": 8,
+     "fast_break_pts": 4,
+     "paint_pts": 34,
+     "pts_off_turnovers": 10,
+     "bench_pts": 11
+    }
+   ]
+  },
+  "2524465": {
+   "quarters_home_away": [
+    [
+     13,
+     16
+    ],
+    [
+     15,
+     16
+    ],
+    [
+     21,
+     6
+    ],
+    [
+     30,
+     15
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008895",
+     "side": "home",
+     "reb_total": {
+      "o": 18,
+      "d": 38,
+      "t": 56
+     },
+     "reb_team": {
+      "o": 4,
+      "d": 5,
+      "t": 9
+     },
+     "turnovers_total": 9,
+     "second_chance_pts": 13,
+     "fast_break_pts": 8,
+     "paint_pts": 36,
+     "pts_off_turnovers": 5,
+     "bench_pts": 35
+    },
+    {
+     "team_id": "1008777",
+     "side": "away",
+     "reb_total": {
+      "o": 12,
+      "d": 28,
+      "t": 40
+     },
+     "reb_team": {
+      "o": 4,
+      "d": 2,
+      "t": 6
+     },
+     "turnovers_total": 6,
+     "second_chance_pts": 4,
+     "fast_break_pts": 0,
+     "paint_pts": 32,
+     "pts_off_turnovers": 4,
+     "bench_pts": 22
+    }
+   ]
+  },
+  "2524466": {
+   "quarters_home_away": [
+    [
+     16,
+     19
+    ],
+    [
+     10,
+     21
+    ],
+    [
+     13,
+     22
+    ],
+    [
+     27,
+     14
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008987",
+     "side": "home",
+     "reb_total": {
+      "o": 17,
+      "d": 21,
+      "t": 38
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 4,
+      "t": 5
+     },
+     "turnovers_total": 22,
+     "second_chance_pts": 6,
+     "fast_break_pts": 6,
+     "paint_pts": 30,
+     "pts_off_turnovers": 13,
+     "bench_pts": 34
+    },
+    {
+     "team_id": "1008811",
+     "side": "away",
+     "reb_total": {
+      "o": 15,
+      "d": 31,
+      "t": 46
+     },
+     "reb_team": {
+      "o": 3,
+      "d": 5,
+      "t": 8
+     },
+     "turnovers_total": 26,
+     "second_chance_pts": 12,
+     "fast_break_pts": 8,
+     "paint_pts": 34,
+     "pts_off_turnovers": 14,
+     "bench_pts": 36
+    }
+   ]
+  },
+  "2524467": {
+   "quarters_home_away": [
+    [
+     16,
+     12
+    ],
+    [
+     19,
+     15
+    ],
+    [
+     22,
+     25
+    ],
+    [
+     20,
+     20
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008377",
+     "side": "home",
+     "reb_total": {
+      "o": 14,
+      "d": 29,
+      "t": 43
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 1,
+      "t": 2
+     },
+     "turnovers_total": 18,
+     "second_chance_pts": 10,
+     "fast_break_pts": 6,
+     "paint_pts": 12,
+     "pts_off_turnovers": 20,
+     "bench_pts": 13
+    },
+    {
+     "team_id": "1008708",
+     "side": "away",
+     "reb_total": {
+      "o": 8,
+      "d": 34,
+      "t": 42
+     },
+     "reb_team": {
+      "o": 1,
+      "d": 1,
+      "t": 2
+     },
+     "turnovers_total": 18,
+     "second_chance_pts": 10,
+     "fast_break_pts": 10,
+     "paint_pts": 38,
+     "pts_off_turnovers": 10,
+     "bench_pts": 20
+    }
+   ]
+  },
+  "2524468": {
+   "quarters_home_away": [
+    [
+     20,
+     16
+    ],
+    [
+     17,
+     19
+    ],
+    [
+     14,
+     8
+    ],
+    [
+     21,
+     14
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008988",
+     "side": "home",
+     "reb_total": {
+      "o": 13,
+      "d": 34,
+      "t": 47
+     },
+     "reb_team": {
+      "o": 2,
+      "d": 1,
+      "t": 3
+     },
+     "turnovers_total": 21,
+     "second_chance_pts": 9,
+     "fast_break_pts": 0,
+     "paint_pts": 16,
+     "pts_off_turnovers": 14,
+     "bench_pts": 28
+    },
+    {
+     "team_id": "1008685",
+     "side": "away",
+     "reb_total": {
+      "o": 8,
+      "d": 21,
+      "t": 29
+     },
+     "reb_team": {
+      "o": 0,
+      "d": 1,
+      "t": 1
+     },
+     "turnovers_total": 18,
+     "second_chance_pts": 11,
+     "fast_break_pts": 0,
+     "paint_pts": 12,
+     "pts_off_turnovers": 15,
+     "bench_pts": 28
+    }
+   ]
+  },
+  "2524469": {
+   "quarters_home_away": [
+    [
+     17,
+     11
+    ],
+    [
+     16,
+     25
+    ],
+    [
+     15,
+     14
+    ],
+    [
+     23,
+     21
+    ],
+    [
+     6,
+     10
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008868",
+     "side": "home",
+     "reb_total": {
+      "o": 15,
+      "d": 39,
+      "t": 54
+     },
+     "reb_team": {
+      "o": 2,
+      "d": 3,
+      "t": 5
+     },
+     "turnovers_total": 26,
+     "second_chance_pts": 6,
+     "fast_break_pts": 12,
+     "paint_pts": 38,
+     "pts_off_turnovers": 7,
+     "bench_pts": 35
+    },
+    {
+     "team_id": "1008968",
+     "side": "away",
+     "reb_total": {
+      "o": 19,
+      "d": 28,
+      "t": 47
+     },
+     "reb_team": {
+      "o": 2,
+      "d": 4,
+      "t": 6
+     },
+     "turnovers_total": 12,
+     "second_chance_pts": 15,
+     "fast_break_pts": 19,
+     "paint_pts": 46,
+     "pts_off_turnovers": 19,
+     "bench_pts": 18
+    }
+   ]
+  },
+  "2524470": {
+   "quarters_home_away": [
+    [
+     16,
+     13
+    ],
+    [
+     14,
+     6
+    ],
+    [
+     18,
+     11
+    ],
+    [
+     11,
+     8
+    ]
+   ],
+   "teams": [
+    {
+     "team_id": "1008898",
+     "side": "home",
+     "reb_total": {
+      "o": 15,
+      "d": 30,
+      "t": 45
+     },
+     "reb_team": {
+      "o": 5,
+      "d": 8,
+      "t": 13
+     },
+     "turnovers_total": 15,
+     "second_chance_pts": 12,
+     "fast_break_pts": 6,
+     "paint_pts": 34,
+     "pts_off_turnovers": 20,
+     "bench_pts": 17
+    },
+    {
+     "team_id": "1008631",
+     "side": "away",
+     "reb_total": {
+      "o": 10,
+      "d": 28,
+      "t": 38
+     },
+     "reb_team": {
+      "o": 2,
+      "d": 4,
+      "t": 6
+     },
+     "turnovers_total": 19,
+     "second_chance_pts": 4,
+     "fast_break_pts": 4,
+     "paint_pts": 20,
+     "pts_off_turnovers": 2,
+     "bench_pts": 12
+    }
+   ]
+  }
+ }
+}
