@@ -261,11 +261,11 @@ class EvolutionService:
                     "fg3a": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p3a"},
                     "ftm":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1m"},
                     "fta":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1a"},
-                    "drb":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
-                    "orb":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
+                    "drb":  mixin._conditional_field("team_0_def_reb", "team_1_def_reb"),
+                    "orb":  mixin._conditional_field("team_0_off_reb", "team_1_off_reb"),
                     "ast":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
                     "stl":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
-                    "tov":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
+                    "tov":  mixin._conditional_field("team_0_turnovers", "team_1_turnovers"),
                     "blk":  {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
                     # Opponent points (from pre-captured localPoints/awayPoints)
                     "opp_pts": {
@@ -288,6 +288,9 @@ class EvolutionService:
                     "opp_stl":  opp("team_0_steals",    "team_1_steals"),
                     "opp_tov":  opp("team_0_turnovers", "team_1_turnovers"),
                     "opp_blk":  opp("team_0_blocks",    "team_1_blocks"),
+                    # Exact possessions of the game (None when it has no DERIVED fields)
+                    "poss":     {"$arrayElemAt": ["$DERIVED.TEAM.possessions", "$teamIndex"]},
+                    "opp_poss": {"$arrayElemAt": ["$DERIVED.TEAM.possessions", {"$subtract": [1, "$teamIndex"]}]},
                 },
             },
             {"$sort": {"game_date": 1}},
@@ -316,6 +319,7 @@ class EvolutionService:
             "opp_drb":  si(d.get("opp_drb")),  "opp_orb":  si(d.get("opp_orb")),
             "opp_ast":  si(d.get("opp_ast")),  "opp_stl":  si(d.get("opp_stl")),
             "opp_tov":  si(d.get("opp_tov")),  "opp_blk":  si(d.get("opp_blk")),
+            "poss": d.get("poss"), "opp_poss": d.get("opp_poss"),
         }
 
     # ------------------------------------------------------------------
@@ -428,8 +432,8 @@ class EvolutionService:
         fga = fg2a + fg3a
         fgm = fg2m + fg3m
         opp_fga = opp_fg2a + opp_fg3a
-        poss     = max(fga     + 0.44 * fta     + tov     - orb,     1.0)
-        opp_poss = max(opp_fga + 0.44 * opp_fta + opp_tov - opp_orb, 1.0)
+        poss     = row.get("poss") or max(fga     + 0.44 * fta     + tov     - orb,     1.0)
+        opp_poss = row.get("opp_poss") or max(opp_fga + 0.44 * opp_fta + opp_tov - opp_orb, 1.0)
 
         lookup: Dict[str, Any] = {
             # Basic — counting
