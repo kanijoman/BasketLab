@@ -1,8 +1,9 @@
 """Team and opponent aggregation pipeline builders."""
 
 from typing import List, Dict, Optional
-from .basic_stats import get_shooting_percentages, get_per_game_stats, get_possessions_calculation
+from .basic_stats import get_shooting_percentages, get_per_game_stats
 from .advanced_stats import get_all_advanced_stats
+from .possession_expr import DERIVED_OR_BOX, derived_or_box, possessions_per_40
 
 
 class TeamStatsPipelineMixin:
@@ -50,52 +51,6 @@ class TeamStatsPipelineMixin:
                 "then": f"${team_1_field}",
                 "else": f"${team_0_field}"
             }
-        }
-
-    @staticmethod
-    def _calculate_possessions(fg2_att: Dict, fg3_att: Dict, ft_att: Dict, turnovers: Dict, off_reb: Dict) -> Dict:
-        """
-        Calculate possessions adjusted for game duration (including overtime).
-        Formula: (FGA2 + FGA3 + (0.45 * FTA) + TO - OREB) * (40 / total_minutes)
-
-        Args:
-            fg2_att: Field or expression for FG2 attempts
-            fg3_att: Field or expression for FG3 attempts
-            ft_att: Field or expression for FT attempts
-            turnovers: Field or expression for turnovers
-            off_reb: Field or expression for offensive rebounds
-
-        Returns:
-            MongoDB expression for possessions calculation
-        """
-        raw_possessions = {
-            "$add": [
-                fg2_att,
-                fg3_att,
-                {"$multiply": [0.45, ft_att]},
-                turnovers,
-                {"$multiply": [-1, off_reb]}
-            ]
-        }
-
-        # Calculate total minutes based on number of quarters
-        num_quarters = {"$size": "$HEADER.QUARTERS.QUARTER"}
-        total_minutes = {
-            "$add": [
-                40,
-                {"$multiply": [
-                    {"$subtract": [num_quarters, 4]},
-                    5
-                ]}
-            ]
-        }
-
-        # Adjust possessions: raw_possessions * (40 / total_minutes)
-        return {
-            "$multiply": [
-                raw_possessions,
-                {"$divide": [40, total_minutes]}
-            ]
         }
 
     @staticmethod
@@ -209,12 +164,30 @@ class TeamStatsPipelineMixin:
 
         # Add all team field mappings
         mappings = TeamStatsPipelineMixin._create_team_field_mappings()
-        for field_data in mappings.values():
+        for purpose, field_data in mappings.items():
             path, team_0_name, team_1_name = field_data
-            fields[team_0_name] = {"$toInt": {"$arrayElemAt": [path, 0]}}
-            fields[team_1_name] = {"$toInt": {"$arrayElemAt": [path, 1]}}
+            for index, name in enumerate((team_0_name, team_1_name)):
+                if purpose in DERIVED_OR_BOX:
+                    fields[name] = derived_or_box(*DERIVED_OR_BOX[purpose], index)
+                else:
+                    fields[name] = {"$toInt": {"$arrayElemAt": [path, index]}}
+
+        for index in (0, 1):
+            fields[f"team_{index}_poss"] = TeamStatsPipelineMixin._team_possessions(index)
 
         return {"$addFields": fields}
+
+    @staticmethod
+    def _team_possessions(index: int) -> Dict:
+        """Possessions of team ``index`` per 40 minutes (stored exact count, else the box-score estimate)."""
+        def box(field: str) -> Dict:
+            return {"$toInt": {"$arrayElemAt": [f"$BOXSCORE.TEAM.TOTAL.{field}", index]}}
+
+        return possessions_per_40(
+            index,
+            fga={"$add": [box("p2a"), box("p3a")]}, fta=box("p1a"),
+            orb=derived_or_box(*DERIVED_OR_BOX["off_reb"], index), tov=derived_or_box(*DERIVED_OR_BOX["turnovers"], index),
+        )
 
     @staticmethod
     def _unwind_teams() -> Dict:
@@ -241,15 +214,6 @@ class TeamStatsPipelineMixin:
         """
         builder = TeamStatsPipelineMixin
 
-        # Calculate opponent possessions
-        opponent_poss = builder._calculate_possessions(
-            builder._opponent_conditional_field("team_0_fg2_att", "team_1_fg2_att"),
-            builder._opponent_conditional_field("team_0_fg3_att", "team_1_fg3_att"),
-            builder._opponent_conditional_field("team_0_ft_att", "team_1_ft_att"),
-            builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
-            builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb")
-        )
-
         return {
             "$project": {
                 "team_id": "$BOXSCORE.TEAM.id",
@@ -262,8 +226,8 @@ class TeamStatsPipelineMixin:
                 "fg3_attempts": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p3a"},
                 "ft_made": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1m"},
                 "ft_attempts": {"$toInt": "$BOXSCORE.TEAM.TOTAL.p1a"},
-                "def_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
-                "off_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
+                "def_rebounds": builder._conditional_field("team_0_def_reb", "team_1_def_reb"),
+                "off_rebounds": builder._conditional_field("team_0_off_reb", "team_1_off_reb"),
                 "opponent_def_rebounds": builder._opponent_conditional_field("team_0_def_reb", "team_1_def_reb"),
                 "opponent_off_rebounds": builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb"),
                 # Opponent counting stats — kept here so they survive this $project
@@ -279,10 +243,10 @@ class TeamStatsPipelineMixin:
                 "opponent_turnovers":     builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
                 "opponent_blocks":        builder._opponent_conditional_field("team_0_blocks",    "team_1_blocks"),
                 "assists": {"$toInt": "$BOXSCORE.TEAM.TOTAL.assist"},
-                "possessions": get_possessions_calculation(),
-                "opponent_possessions": opponent_poss,
+                "possessions": builder._conditional_field("team_0_poss", "team_1_poss"),
+                "opponent_possessions": builder._opponent_conditional_field("team_0_poss", "team_1_poss"),
                 "steals": {"$toInt": "$BOXSCORE.TEAM.TOTAL.st"},
-                "turnovers": {"$toInt": "$BOXSCORE.TEAM.TOTAL.to"},
+                "turnovers": builder._conditional_field("team_0_turnovers", "team_1_turnovers"),
                 "blocks": {"$toInt": "$BOXSCORE.TEAM.TOTAL.bs"},
                 "match_id": "$_id",
                 "is_local": {"$eq": ["$teamIndex", 0]},

@@ -1,7 +1,7 @@
 """Opponent-stats and team-timeline pipeline builders."""
 
 from typing import List, Dict, Optional
-from .basic_stats import get_shooting_percentages, get_per_game_stats, get_possessions_calculation  # noqa: F401
+from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin
 
@@ -105,15 +105,6 @@ class OpponentStatsPipelineMixin:
         """
         builder = TeamStatsPipelineMixin
 
-        # Calculate opponent's possessions
-        opponent_poss = builder._calculate_possessions(
-            builder._opponent_conditional_field("team_0_fg2_att", "team_1_fg2_att"),
-            builder._opponent_conditional_field("team_0_fg3_att", "team_1_fg3_att"),
-            builder._opponent_conditional_field("team_0_ft_att", "team_1_ft_att"),
-            builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
-            builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb")
-        )
-
         return {
             "$project": {
                 "team_id": "$BOXSCORE.TEAM.id",
@@ -133,13 +124,13 @@ class OpponentStatsPipelineMixin:
                 "def_rebounds": builder._opponent_conditional_field("team_0_def_reb", "team_1_def_reb"),
                 "off_rebounds": builder._opponent_conditional_field("team_0_off_reb", "team_1_off_reb"),
                 # This team's rebounds (for rate calculations)
-                "opponent_def_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.rd"},
-                "opponent_off_rebounds": {"$toInt": "$BOXSCORE.TEAM.TOTAL.ro"},
+                "opponent_def_rebounds": builder._conditional_field("team_0_def_reb", "team_1_def_reb"),
+                "opponent_off_rebounds": builder._conditional_field("team_0_off_reb", "team_1_off_reb"),
                 # Opponent's other stats
                 "assists": builder._opponent_conditional_field("team_0_assists", "team_1_assists"),
-                "possessions": opponent_poss,
+                "possessions": builder._opponent_conditional_field("team_0_poss", "team_1_poss"),
                 # Team's possessions (for DER calculation)
-                "opponent_possessions": get_possessions_calculation(),
+                "opponent_possessions": builder._conditional_field("team_0_poss", "team_1_poss"),
                 "steals": builder._opponent_conditional_field("team_0_steals", "team_1_steals"),
                 "turnovers": builder._opponent_conditional_field("team_0_turnovers", "team_1_turnovers"),
                 "blocks": builder._opponent_conditional_field("team_0_blocks", "team_1_blocks"),

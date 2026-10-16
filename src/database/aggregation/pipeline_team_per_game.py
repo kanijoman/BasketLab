@@ -1,7 +1,7 @@
 """Per-game raw team pipeline (one document per team per match)."""
 
 from typing import List, Dict, Optional
-from .basic_stats import get_shooting_percentages, get_per_game_stats, get_possessions_calculation  # noqa: F401
+from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin
 
@@ -148,7 +148,7 @@ class TeamPerGamePipelineMixin:
                     "total_rebounds": 1,
                     "def_rebounds": 1, "off_rebounds": 1,
                     "assists": 1, "steals": 1, "turnovers": 1, "blocks": 1,
-                    "possessions": 1,
+                    "possessions": 1, "opponent_possessions": 1,
                     # Advanced computed fields
                     "oer_game": 1, "der_game": 1, "net_game": 1,
                     "efg_pct_game": 1, "ts_pct_game": 1, "tov_pct_game": 1,
@@ -194,14 +194,7 @@ class TeamPerGamePipelineMixin:
             # Must be a separate stage so Stage B can reference these new fields.
             {
                 "$addFields": {
-                    "opp_possessions": {
-                        "$subtract": [
-                            {"$add": ["$opp_fg2_attempts", "$opp_fg3_attempts",
-                                      {"$multiply": [0.45, "$opp_ft_attempts"]},
-                                      "$opp_turnovers"]},
-                            "$opp_off_rebounds"
-                        ]
-                    },
+                    "opp_possessions": "$opponent_possessions",
                     "opp_fga_game": {"$add": ["$opp_fg2_attempts", "$opp_fg3_attempts"]},
                     "opp_fgm_game": {"$add": ["$opp_fg2_made",     "$opp_fg3_made"]},
                     # Own helpers: fga_game was dropped by the earlier $project

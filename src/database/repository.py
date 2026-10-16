@@ -15,6 +15,18 @@ from .repository_possession import PossessionRepositoryMixin
 from .repository_lineup import LineupRepositoryMixin
 
 
+def _attach_derived_fields(game: Dict) -> None:
+    """Store the exact possessions and validated rebounds of the game (``DERIVED``, #372); never fails the insert."""
+    try:
+        from src.pbp.game_derived import derive_game_fields
+
+        derived = derive_game_fields(game)
+    except Exception:  # noqa: BLE001 - the season pipelines fall back to the box score without it
+        return
+    if derived:
+        game["DERIVED"] = derived
+
+
 class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, PossessionRepositoryMixin, LineupRepositoryMixin):
     """Repository for basketball data CRUD operations."""
 
@@ -72,6 +84,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
         try:
             collection = self.connection.get_collection(collection_name)
             boxscore["_id"] = int(match_code)
+            _attach_derived_fields(boxscore)
             collection.insert_one(boxscore)
             return True
         except PyMongoError as e:

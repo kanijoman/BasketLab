@@ -7,7 +7,7 @@ All existing call sites are unchanged.
 """
 
 from typing import List, Dict, Optional  # noqa: F401 -- re-exported for consumers
-from .basic_stats import get_shooting_percentages, get_per_game_stats, get_possessions_calculation  # noqa: F401
+from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 
 from .pipeline_team_stats import TeamStatsPipelineMixin
