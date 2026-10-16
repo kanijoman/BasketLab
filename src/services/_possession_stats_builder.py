@@ -81,6 +81,18 @@ def apply_pbp_fields(entry: Dict[str, Any], poss: Optional[Dict[str, Any]]) -> N
         entry[key] = poss.get(key)
 
 
+def apply_exact_fields(entry: Dict[str, Any], poss: Optional[Dict[str, Any]]) -> None:
+    """Use the exact possessions of the play-by-play for pace and ratings, and say where they come from (#351)."""
+    exact = (poss or {}).get("exact")
+    if not exact:
+        return
+    entry.update(
+        pace=exact["pace"], possessions_per_game=exact["pace"], oer=exact["oer"], der=exact["der"],
+        net_rating=exact["net_rating"], possessions_source=exact["possessions_source"],
+        games_by_source=exact["games_by_source"], games_by_quality=exact["games_by_quality"],
+        offensive_rebound_pct=exact["orb_pct"], defensive_rebound_pct=exact["drb_pct"])
+
+
 def apply_pace_impact(entries: List[Dict[str, Any]], poss_by_team_id: Dict[str, Dict[str, Any]]) -> None:
     """Compare each team's rivals' pace against us to those same rivals' own season-wide pace.
 

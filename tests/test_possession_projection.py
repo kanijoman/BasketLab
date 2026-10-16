@@ -39,3 +39,8 @@ def test_fbcyl_projection_unaffected():
     projection = _possession_projection(is_fbcyl=True)
     assert "PLAYBYPLAY.LINES.num" not in projection
     assert projection.get("moves.idTeam") == 1 and projection.get("moves.actorId") == 1
+
+
+def test_feb_projection_includes_the_box_score_totals_the_exact_possessions_are_validated_against():
+    projection = _possession_projection(is_fbcyl=False)
+    assert projection.get("BOXSCORE.TEAM.id") == 1 and projection.get("BOXSCORE.TEAM.TOTAL") == 1

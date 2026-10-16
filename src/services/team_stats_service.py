@@ -19,6 +19,7 @@ from src.database.team_stats_aggregator import TeamStatsAggregator
 from src.utils.team_utils import get_available_teams_from_collection
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 from src.services._possession_stats_builder import (
+    apply_exact_fields,
     apply_pace_impact,
     apply_pbp_fields,
     base_possession_entry,
@@ -326,6 +327,7 @@ class TeamStatsService:
                 poss = self._db.repository.get_team_possession_stats(collection_name, team_id)
                 poss_by_team_id[str(team_id)] = poss
                 apply_pbp_fields(entry, poss)
+                apply_exact_fields(entry, poss)
             result.append(entry)
 
         apply_pace_impact(result, poss_by_team_id)
