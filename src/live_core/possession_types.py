@@ -72,6 +72,7 @@ class PossessionQuality:
     level: str
     difference: int       # |possessions of one team - the other|: 0-1 when the feed is complete
     technical_points: Dict[str, int] = field(default_factory=dict)   # free throws of technical fouls: no possession
+    technical_by_player: Dict[str, Dict[str, int]] = field(default_factory=dict)   # the same points per team and player
 
 
 class QualityLog:
@@ -99,10 +100,12 @@ class QualityLog:
     def _is_break(prev: Optional[Tuple[str, int, str]], end: Tuple[str, int, str]) -> bool:
         return bool(prev and prev[0] == end[0] and prev[1] == end[1] and prev[2] != "trip")
 
-    def build(self, teams: List[str], technical_points: Dict[str, int]) -> PossessionQuality:
+    def build(self, teams: List[str], technical_points: Dict[str, int],
+              technical_by_player: Optional[Dict[str, Dict[str, int]]] = None) -> PossessionQuality:
         counted = dict(self.counted)
         return PossessionQuality(
             counted=counted, breaks_raw=self.breaks_raw, breaks=self.breaks, repaired_rebounds=self.repaired,
             inferred=self.inferred, implicit_offensive=self.implicit_off, implicit_defensive=self.implicit_def,
             technical_ft=self.technical_ft, level=level_for_breaks(self.breaks_raw),
-            difference=abs(counted.get(teams[0], 0) - counted.get(teams[1], 0)), technical_points=dict(technical_points))
+            difference=abs(counted.get(teams[0], 0) - counted.get(teams[1], 0)), technical_points=dict(technical_points),
+            technical_by_player={t: dict(p) for t, p in (technical_by_player or {}).items()})

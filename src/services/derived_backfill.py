@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 from src.pbp.game_derived import DERIVED_VERSION, derive_game_fields
 
-_PROJECTION = {"BOXSCORE.TEAM": 1, "PLAYBYPLAY.LINES": 1}
+_PROJECTION = {"BOXSCORE.TEAM": 1, "PLAYBYPLAY.LINES": 1, "SHOTCHART.SHOTS": 1}
 
 
 def backfill_collection(collection: Any) -> Dict[str, int]:

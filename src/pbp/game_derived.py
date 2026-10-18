@@ -1,4 +1,4 @@
-"""Derived per-game fields stored in the match document (#372).
+"""Derived per-game fields stored in the match document (#372, #352).
 
 The season pipelines only read aggregated box-score fields, so the exact possessions and the validated rebounds and
 turnovers of ``team_game_possessions`` are computed once, when the game is ingested, and stored in ``DERIVED.TEAM``
@@ -8,20 +8,25 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from .game_possessions import team_game_possessions
+from .game_possessions import analyse_game
+from .points_by_origin import paint_points, starters, team_points_by_origin
 
-DERIVED_VERSION = 1
-_FIELDS = ("possessions", "possessions_source", "quality_level",
+DERIVED_VERSION = 2
+_FIELDS = ("pts", "possessions", "possessions_source", "quality_level",
            "orb", "orb_source", "drb", "drb_source", "tov", "tov_source")
 
 
 def derive_game_fields(game_doc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """``{"v": n, "TEAM": [...]}`` for a FEB game with play-by-play, ``None`` when it cannot be read (FBCYL included)."""
-    per_team = team_game_possessions(game_doc)
-    if per_team is None:
+    analysis = analyse_game(game_doc)
+    if analysis is None:
         return None
+    shots = (game_doc.get("SHOTCHART") or {}).get("SHOTS")
+    technical = analysis.quality.technical_by_player
     teams = []
-    for team in game_doc["BOXSCORE"]["TEAM"]:
+    for index, team in enumerate(game_doc["BOXSCORE"]["TEAM"]):
         tid = str(team.get("id"))
-        teams.append({"id": tid, **{key: per_team[tid][key] for key in _FIELDS}})
+        paint = paint_points(shots, index) if shots else None
+        figures = team_points_by_origin(analysis.possessions, tid, starters(team), technical.get(tid, {}), paint)
+        teams.append({"id": tid, **{key: analysis.teams[tid][key] for key in _FIELDS}, **figures})
     return {"v": DERIVED_VERSION, "TEAM": teams}
