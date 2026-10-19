@@ -15,6 +15,7 @@ from . import clutch as clutch_mod
 from .clock import period_length, period_start
 from .events import Event
 from .lineups import LineupTracker
+from .live_possessions import PossessionCounters
 
 STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "tov_team",
              "stl", "ast", "blk", "pts")
@@ -80,6 +81,7 @@ class LiveGame:
         self._last_miss_team: Optional[str] = None
         self._in_clutch = False   # is the event being applied inside the clutch window (margin before it)?
         self.lineups = LineupTracker(list(self.teams))
+        self.possessions = PossessionCounters(list(self.teams))   # exact possessions and points by origin (#357)
         self._rested_through = 1  # last period whose opening break has been credited
         # Chronological [elapsed, team_id, kind, value, player_id] (player None when the event has none):
         # pts (points of a made shot), fg2/fg3/ft (an attempt: 1 made, 0 missed), tov, orb, stl, timeout.
@@ -131,6 +133,7 @@ class LiveGame:
         if handler:
             handler(ev, player, team)
         self.lineups.refresh(self.players, ev.elapsed)
+        self.possessions.feed(ev)
 
     def _player_for(self, ev: Event) -> Optional[_Player]:
         if not ev.player_id or ev.kind not in _PLAYER_KINDS:
@@ -305,6 +308,7 @@ class LiveGame:
             "period": self.period, "remaining": self.remaining, "elapsed": self.elapsed,
             "last_num": self.last_num, "score": dict(self.score), "teams": teams, "players": players,
             "log": [list(e) for e in self.log],
+            "possessions": self.possessions.snapshot(),
             # the first team of FEB's header is the local one; the session JSON sorts keys, so say it explicitly
             "home_id": next(iter(self.teams), None),
             **self.lineups.snapshot(),
