@@ -12,6 +12,7 @@ const sc = ok({ SHOTCHART: { SHOTS: [] } })
 
 /** One scripted answer per poll and endpoint; the last one repeats. */
 function setup(script: Partial<Script>, opts: { tailPolls?: number } = {}) {
+  const failures: string[] = []
   const full: Script = { boxscore: [notFound], keyfacts: [kf(0)], shotchart: [sc], ...script }
   const used = { boxscore: 0, keyfacts: 0, shotchart: 0 }
   const client = {
@@ -30,10 +31,11 @@ function setup(script: Partial<Script>, opts: { tailPolls?: number } = {}) {
     client, code: '777', tailPolls: opts.tailPolls ?? 2,
     onDocument: json => { documents.push({ doc: JSON.parse(json) }) },
     onState: s => states.push(s),
+    onFailure: endpoint => failures.push(endpoint),
     sleep: async ms => { sleeps.push(ms); clock += ms },
     now: () => clock,
   })
-  return { feed, client, documents, states, sleeps, kinds: () => states.map(s => s.kind) }
+  return { feed, client, documents, states, sleeps, failures, kinds: () => states.map(s => s.kind) }
 }
 
 describe('LiveFeed', () => {
@@ -171,5 +173,18 @@ describe('LiveFeed', () => {
     expect(() => t.feed.poke()).not.toThrow()
     t.feed.stop()
     expect(() => t.feed.poke()).not.toThrow()
+  })
+
+  // #416: the failed endpoint is reported, so the recording keeps the gap of the middle of the match
+  it('reports which endpoint failed in a round, only once the match is on', async () => {
+    const t = setup({ boxscore: [notFound, box('2'), box('2'), box('3')], shotchart: [sc, notFound, sc, sc], keyfacts: [kf(1)] }, { tailPolls: 0 })
+    await t.feed.start()
+    expect(t.failures).toEqual(['shotchart'])
+  })
+
+  it('reports the box score when it answers 404 in the middle of the match, and a network error as the box score too', async () => {
+    const t = setup({ boxscore: [box('2'), notFound, new Error('network'), box('3')] }, { tailPolls: 0 })
+    await t.feed.start()
+    expect(t.failures).toEqual(['boxscore', 'boxscore'])
   })
 })

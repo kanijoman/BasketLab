@@ -8,7 +8,13 @@ export interface EngineApi {
   setMode(mode: string | null): Promise<void>
   loadReplay(gameJson: string): Promise<ReplayInfo>
   replay(elapsed: number): Promise<EngineOutput>
-  update(docJson: string): Promise<EngineOutput>
+  /** ``at``: seconds since the first poll of the feed; with it the document is recorded (issue #416). */
+  update(docJson: string, at?: number): Promise<EngineOutput>
+  /** Starts keeping a recording of the feed (the format of the CI recorder) from the documents ``update`` is given a time for. */
+  beginRecording(match: string, startedIso: string): Promise<void>
+  recordGap(endpoint: string, at: number): Promise<void>
+  /** The recording so far, as an object of the recording format, or null. */
+  recording(): Promise<unknown>
   loadRecording(recordingJson: string): Promise<RecordingInfo>
   playRecording(t: number): Promise<RecordingFrame>
   /** The post-match report (issue #409) of a finished game (its last FEB document, JSON text) for ``ownTeamId``; needs no running session. */
@@ -64,7 +70,10 @@ export class EngineClient implements EngineApi {
   async setMode(mode: string | null) { await this.call<unknown>({ type: 'setMode', payload: mode }) }
   loadReplay(gameJson: string) { return this.call<ReplayInfo>({ type: 'loadReplay', payload: gameJson }) }
   replay(elapsed: number) { return this.call<EngineOutput>({ type: 'replay', payload: elapsed }) }
-  update(docJson: string) { return this.call<EngineOutput>({ type: 'update', payload: docJson }) }
+  update(docJson: string, at?: number) { return this.call<EngineOutput>({ type: 'update', payload: { doc: docJson, at } }) }
+  async beginRecording(match: string, startedIso: string) { await this.call<unknown>({ type: 'beginRecording', payload: { match, startedIso } }) }
+  async recordGap(endpoint: string, at: number) { await this.call<unknown>({ type: 'recordGap', payload: { endpoint, at } }) }
+  recording() { return this.call<unknown>({ type: 'recording' }) }
   loadRecording(recordingJson: string) { return this.call<RecordingInfo>({ type: 'loadRecording', payload: recordingJson }) }
   playRecording(t: number) { return this.call<RecordingFrame>({ type: 'playRecording', payload: t }) }
   report(game: string, alerts: LoggedAlert[], ownTeamId: string) {

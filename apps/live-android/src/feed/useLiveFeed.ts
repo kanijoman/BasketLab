@@ -22,39 +22,60 @@ interface Options {
   restart: () => Promise<void>
   /** Called when the match ends, with the last merged FEB document (JSON text) so it can be kept for a later review (issue #407). */
   onFinished?: (lastDocument: string, code: string) => void
+  /** Called when the connection ends (the match is over, or the staff disconnects) with the recording the engine kept of the feed (issue #416). */
+  onRecording?: (recording: { code: string; recording: unknown; complete: boolean }) => void
 }
 
 const RUNNING = new Set<FeedState['kind']>(['connecting', 'waiting', 'live', 'gap'])
 
-export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevice, onNote, timing, onOutput, restart, onFinished }: Options) {
+export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevice, onNote, timing, onOutput, restart, onFinished, onRecording }: Options) {
   const [state, setState] = useState<FeedState>({ kind: 'idle' })
   /** Whether the screen is being kept on (null: no connection running). */
   const [awake, setAwake] = useState<boolean | null>(null)
   const feed = useRef<LiveFeed | null>(null)
   const lastDocument = useRef<string | null>(null)
+  /** The match being recorded, until its recording is handed over (so a disconnection after the end does not save it twice). */
+  const recording = useRef<string | null>(null)
 
   /** The feed goes silent when stopped, so "disconnected" is reported here. */
+  const keepRecording = useCallback(async (complete: boolean) => {
+    const code = recording.current
+    recording.current = null
+    if (code === null) return
+    const kept = await engine.recording()
+    if (kept) onRecording?.({ code, recording: kept, complete })
+  }, [engine, onRecording])
+
   const disconnect = useCallback(() => {
     feed.current?.stop()
     setState({ kind: 'stopped' })
-  }, [])
+    void keepRecording(false)
+  }, [keepRecording])
 
   const connect = useCallback(async (code: string) => {
     feed.current?.stop()
     setState({ kind: 'connecting' })
     await restart()
     lastDocument.current = null
+    const clock = timing?.now ?? Date.now
+    const started = clock()
+    const at = () => (clock() - started) / 1000          // seconds since the first poll: the time of the recording
+    await engine.beginRecording(code, new Date(started).toISOString())
+    recording.current = code
     const next = new LiveFeed({
       ...timing, client: new FebClient(http), code,
       onState: state => {
         setState(state)
-        if (state.kind === 'finished' && lastDocument.current !== null) onFinished?.(lastDocument.current, code)
+        if (state.kind !== 'finished') return
+        if (lastDocument.current !== null) onFinished?.(lastDocument.current, code)
+        void keepRecording(true)
       },
-      onDocument: async json => { lastDocument.current = json; onOutput(await engine.update(json)) },
+      onFailure: endpoint => void engine.recordGap(endpoint, at()),
+      onDocument: async json => { lastDocument.current = json; onOutput(await engine.update(json, at())) },
     })
     feed.current = next
     void next.start()
-  }, [engine, http, timing, onOutput, restart, onFinished])
+  }, [engine, http, timing, onOutput, restart, onFinished, keepRecording])
 
   useEffect(() => () => feed.current?.stop(), [])
 

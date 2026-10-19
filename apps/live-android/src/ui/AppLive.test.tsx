@@ -8,6 +8,7 @@ import type { EngineOutput } from '../engine/types'
 import { FakeFeb, type Pack } from '../feed/fakeFeb'
 import type { PackageStore, StoredPackage } from '../package/storage'
 import { memoryFinishedStore, type FinishedMatch } from '../feed/finishedStore'
+import { decodeRecording, memoryRecordingStore, type SavedRecording } from '../feed/recordingStore'
 
 const META = {
   package_id: 'p', schema_version: 1, created_at: '', collection: 'c', season: '2025',
@@ -34,6 +35,9 @@ function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
     loadRecording: vi.fn(),
     playRecording: vi.fn(),
     report: vi.fn(),
+    beginRecording: vi.fn().mockResolvedValue(undefined),
+    recordGap: vi.fn().mockResolvedValue(undefined),
+    recording: vi.fn().mockResolvedValue(null),
     setMode: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
     ...over,
@@ -259,5 +263,80 @@ describe('package of another match (issue #417)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     expect(await screen.findByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy()
     expect(screen.queryByRole('alert', { name: /paquete de otro partido/i })).toBeNull()
+  })
+})
+
+// #416: the app keeps its own recording of the match it follows live, and the staff can share it
+describe('recording of the live feed (issue #416)', () => {
+  const RECORDING = { v: 1, match: '2524475', started: '2026-10-19T18:30:00.000Z', frames: [{ t: 0 }, { t: 10 }, { t: 20 }], lines: [], shots: [], gaps: {} }
+
+  const connect = async (over: { engine?: EngineApi; recordingStore?: ReturnType<typeof memoryRecordingStore>; feb?: FakeFeb; get?: unknown } = {}) => {
+    const feb = over.feb ?? new FakeFeb(pack)
+    if (!over.feb) feb.at = 10
+    const engine = over.engine ?? fakeEngine({ recording: vi.fn().mockResolvedValue(RECORDING) })
+    const recordingStore = over.recordingStore ?? memoryRecordingStore()
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={(over.get as typeof feb.get) ?? feb.get} feedTiming={instant}
+      finishedStore={memoryFinishedStore()} recordingStore={recordingStore} shareFile={vi.fn().mockResolvedValue(undefined)} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    return { engine, recordingStore }
+  }
+
+  it('starts recording when it connects and gives every document its time since the first poll', async () => {
+    const { engine } = await connect()
+    await waitFor(() => expect(engine.update).toHaveBeenCalled())
+    expect(engine.beginRecording).toHaveBeenCalledWith('2524475', expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/))
+    const [json, at] = (engine.update as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(typeof json).toBe('string')
+    expect(at).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps the recording, complete, when the match ends', async () => {
+    const { recordingStore } = await connect()
+    const saved = await waitFor(async () => { const r = await recordingStore.load('2524475'); if (!r) throw new Error('not yet'); return r })
+    expect(saved).toMatchObject({ complete: true, frames: 3, title: 'EQUIPO PROPIO – EQUIPO RIVAL' })
+    expect(JSON.parse(await decodeRecording(saved))).toEqual(RECORDING)
+  })
+
+  it('keeps what was recorded, marked incomplete, when the staff disconnects halfway', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 0
+    const { recordingStore } = await connect({ feb })
+    await screen.findByText(/en directo/i)
+    fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
+    const saved = await waitFor(async () => { const r = await recordingStore.load('2524475'); if (!r) throw new Error('not yet'); return r })
+    expect(saved.complete).toBe(false)
+  })
+
+  it('keeps nothing when no document was recorded', async () => {
+    const engine = fakeEngine({ recording: vi.fn().mockResolvedValue(null) })
+    const feb = new FakeFeb(pack)
+    feb.at = 0
+    const { recordingStore } = await connect({ engine, feb })
+    await screen.findByText(/en directo/i)
+    fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
+    await waitFor(() => expect(engine.recording).toHaveBeenCalled())
+    expect(await recordingStore.list()).toEqual([])
+  })
+
+  it('tells the recording when FEB fails in the middle of the match', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 0                                  // the match is on: the feed keeps polling
+    let shots = 0
+    const get = ((url: string, headers?: Record<string, string>) =>
+      url.includes('/ShotChart/') && ++shots === 2 ? Promise.resolve({ status: 404, json: null, text: '' }) : feb.get(url, headers))
+    const { engine } = await connect({ feb, get })
+    await waitFor(() => expect(engine.recordGap).toHaveBeenCalledWith('shotchart', expect.any(Number)))
+  })
+
+  it('lists the recordings and shares the file as it is, with a name that says the match', async () => {
+    const bytes = new Uint8Array([0x1f, 0x8b, 8, 0])
+    const old: SavedRecording = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', complete: false, frames: 120, encoding: 'gzip', bytes }
+    const shareFile = vi.fn().mockResolvedValue(undefined)
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+      recordingStore={memoryRecordingStore([old])} shareFile={shareFile} />)
+    expect(await screen.findByText(/incompleta/i)).toBeTruthy()
+    fireEvent.click(await screen.findByRole('button', { name: /compartir grabación de leon – unibasket/i }))
+    await waitFor(() => expect(shareFile).toHaveBeenCalled())
+    expect(shareFile).toHaveBeenCalledWith(bytes, 'grabacion-9.rec.json.gz', expect.stringContaining('LEON – UNIBASKET'), 'application/gzip')
   })
 })
