@@ -38,4 +38,15 @@ describe('styles of the published packages list (issue #210)', () => {
     expect(field).toContain('min-height: 44px')
     expect(rule('.remote-packages-pass')).toContain('display: grid')
   })
+
+  // Regression (#404): "Seguir como <equipo>" overflowed the card with a long team name: the buttons had no way to shrink or wrap.
+  it('lets the "Seguir como" buttons shrink and wrap a long team name inside the card', () => {
+    const sides = rule('.round-sides')
+    expect(sides).toContain('min-width: 0')
+    const button = rule('.remote-packages li.round-match .round-sides button')
+    expect(button).toContain('min-width: 0')
+    expect(button).toContain('overflow-wrap: anywhere')
+    expect(button).toContain('height: auto')
+    expect(rule('.remote-packages li.round-match')).toContain('min-width: 0')
+  })
 })
