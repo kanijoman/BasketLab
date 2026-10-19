@@ -13,6 +13,7 @@
  *   /:collection/team-report  → TeamReportPage
  *   /:collection/live-prep    → LivePrepPage
  *   /:collection/possessions  → PossessionsPage
+ *   /:collection/pbp          → PbpAnalysisPage
  *   /:collection/inout        → InOutPage
  *   /:collection/lineups      → LineupsPage
  *   /:collection/rotaciones   → RotacionesPage
@@ -40,6 +41,7 @@ import TeamReportPage from '@/pages/TeamReportPage'
 import LivePrepPage from '@/pages/LivePrepPage'
 import ScoutingRivalPage from '@/pages/ScoutingRivalPage'
 import PossessionsPage from '@/pages/PossessionsPage'
+import PbpAnalysisPage from '@/pages/PbpAnalysisPage'
 import InOutPage from '@/pages/InOutPage'
 import AdminPage from '@/pages/AdminPage'
 import PredictivePage from '@/pages/PredictivePage'
@@ -71,6 +73,7 @@ export default function App() {
               <Route path="live-prep"   element={<LivePrepPage />} />
               <Route path="scouting-rival" element={<ScoutingRivalPage />} />
               <Route path="possessions" element={<PossessionsPage />} />
+              <Route path="pbp"         element={<PbpAnalysisPage />} />
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />
               <Route path="predictive"  element={<PredictivePage />} />
