@@ -2,7 +2,8 @@ name: Atlas refresh
 
 # Keeps the production database (Atlas) up to date with FEB (issue #177): scrapes the competitions in
 # config/atlas_refresh.json (incremental, only finished matches not stored yet) and checks each
-# collection against FEB's calendar. Fails (red run) if a competition errors or still lacks played matches.
+# collection against FEB's calendar. Fails (red run) if a competition errors or still lacks played matches. A last step fills
+# DERIVED in the games stored before the current DERIVED_VERSION (run_backfill_derived.py).
 # Needs the repository secret ATLAS_WRITE_URI (Atlas user with readWrite on BASKETBALL); see docs/OPERATIONS.md.
 
 on:
@@ -12,6 +13,8 @@ on:
   pull_request:
     paths:
       - "run_atlas_refresh.py"
+      - "run_backfill_derived.py"
+      - "src/services/derived_backfill.py"
       - "src/services/atlas_refresh.py"
       - "src/services/feb_match_ingest.py"
       - "config/atlas_refresh.json"
@@ -39,9 +42,16 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Validate the configuration (pull requests)
         if: github.event_name == 'pull_request'
-        run: python -c "import run_atlas_refresh; from src.services.atlas_refresh import load_config; print(len(load_config()), 'competitions configured')"
+        run: python -c "import run_atlas_refresh, run_backfill_derived; from src.services.atlas_refresh import load_config; print(len(load_config()), 'competitions configured')"
       - name: Refresh Atlas
         if: github.event_name != 'pull_request'
         env:
           MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_WRITE_URI }}
         run: python run_atlas_refresh.py --require-env
+      # Games stored before a new DERIVED_VERSION (exact possessions, points by origin; #372, #352, #382) get the field here:
+      # idempotent and cheap (only the games without the current version). Runs even if the refresh reported missing matches.
+      - name: Fill DERIVED in the stored games
+        if: github.event_name != 'pull_request' && !cancelled()
+        env:
+          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_WRITE_URI }}
+        run: python run_backfill_derived.py --require-env

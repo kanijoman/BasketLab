@@ -6,6 +6,7 @@ before, and re-computes the ones with an older ``DERIVED.v``. Idempotent. Iterat
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from typing import Any, Dict, Optional
 
@@ -39,7 +40,11 @@ def feb_collection_names(db: Any) -> list:
 def main(argv: Optional[list] = None) -> int:
     parser = argparse.ArgumentParser(description="Backfill DERIVED in the stored FEB games")
     parser.add_argument("--collection", help="only this collection (default: every FEB games collection)")
+    parser.add_argument("--require-env", action="store_true", help="fail unless MONGODB_CONNECTION_STRING is set (CI)")
     args = parser.parse_args(argv)
+    if args.require_env and not os.environ.get("MONGODB_CONNECTION_STRING"):
+        print("MONGODB_CONNECTION_STRING is not set (GitHub secret ATLAS_WRITE_URI)", file=sys.stderr)
+        return 2
 
     from pymongo import MongoClient
 
