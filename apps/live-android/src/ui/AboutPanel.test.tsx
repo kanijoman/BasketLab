@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics, REPO_URL, RELEASES_URL } from './AboutPanel'
+import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics, RELEASES_URL } from './AboutPanel'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
@@ -65,10 +65,9 @@ describe('AboutPanel (issues #226 and #227)', () => {
     expect(screen.getByText(/esquema de paquete 1/i)).toBeTruthy()
   })
 
-  it('opens the repository and the release notes', () => {
+  it('opens the release notes and has no link to the repository (#408)', () => {
     const p = panel()
-    fireEvent.click(screen.getByRole('button', { name: /repositorio/i }))
-    expect(p.onOpen).toHaveBeenCalledWith(REPO_URL)
+    expect(screen.queryByRole('button', { name: /repositorio/i })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /notas de la versión/i }))
     expect(p.onOpen).toHaveBeenCalledWith(RELEASES_URL)
   })
