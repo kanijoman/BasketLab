@@ -11,7 +11,7 @@ class StatDef(NamedTuple):
     theme: str
 
 
-GROUPS = ("Básicas", "Tiro", "Four Factors", "Juego colectivo", "Eficiencia")
+GROUPS = ("Básicas", "Tiro", "Four Factors", "Juego colectivo", "Eficiencia", "Origen de los puntos")
 
 CATALOG: Tuple[StatDef, ...] = (
     StatDef("points_per_game", "Puntos por partido", "Básicas", True, False, "scoring"),
@@ -41,6 +41,14 @@ CATALOG: Tuple[StatDef, ...] = (
     StatDef("offensive_rating", "Rating ofensivo (ORtg)", "Eficiencia", True, False, "off_rating"),
     StatDef("defensive_rating", "Rating defensivo (DRtg)", "Eficiencia", False, False, "def_rating"),
     StatDef("net_rating", "Net Rating", "Eficiencia", True, False, "net_rating"),
+    # From the play-by-play (#358), the ones that are stable from game to game; "opp_" = what the team concedes. The bench share is style.
+    StatDef("pts_off_tov_per_game", "Puntos tras pérdida rival por partido", "Origen de los puntos", True, False, "turnover_points"),
+    StatDef("opp_pts_off_tov_per_game", "Puntos concedidos tras pérdida propia", "Origen de los puntos", False, False, "turnover_points_conceded"),
+    StatDef("pts_second_chance_per_game", "Puntos de 2ª oportunidad por partido", "Origen de los puntos", True, False, "second_chance"),
+    StatDef("opp_pts_second_chance_per_game", "Puntos de 2ª oportunidad concedidos", "Origen de los puntos", False, False, "second_chance_conceded"),
+    StatDef("pts_paint_per_game", "Puntos en la pintura por partido", "Origen de los puntos", True, False, "paint_scoring"),
+    StatDef("opp_pts_paint_per_game", "Puntos en la pintura concedidos", "Origen de los puntos", False, False, "paint_defense"),
+    StatDef("bench_pct", "% de puntos del banquillo", "Origen de los puntos", None, True, "bench"),
 )
 
 BY_KEY: Dict[str, StatDef] = {s.key: s for s in CATALOG}
