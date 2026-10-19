@@ -7,6 +7,7 @@ for the substitutions; the alert is not lost, it comes with the next event if th
 """
 from pathlib import Path
 
+from src.live_core.events import parse_line
 from src.live_core.session import LiveSession
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, engine, snap
 
@@ -50,3 +51,30 @@ def test_no_fatigue_alert_on_the_recorded_match_names_a_player_who_is_about_to_l
         open_stoppage = any(e[2] == "timeout" and e[0] == snapshot["elapsed"] for e in snapshot["log"])
         at_timeout += [a for a in out["alerts"] if a["id"] == "fatigue_high" and open_stoppage]
     assert at_timeout == []
+
+
+def _replay_leon_unibasket():
+    """Leon-Unibasket (2524475, the match of the feedback): FEB logged the timeout of Q2 at 19:12:40 and its substitutions at 19:14:01.
+
+    There is no package of that match: the engine reads it with the one of Zamora-Leon, where Leon is also the own team.
+    Returns the fatigue alerts with the snapshot they came with, and the numbers of the timeout lines.
+    """
+    session = LiveSession((RECORDINGS / "2524470.package.json").read_text(encoding="utf-8"))
+    session.load_recording((RECORDINGS / "2524475.rec.json.gz").read_bytes())
+    final = session._feed.document_at(session._feed.duration)
+    timeouts = {e.num for e in map(parse_line, final["PLAYBYPLAY"]["LINES"]) if e and e.kind == "timeout"}
+    alerts = []
+    for t in range(0, 8000, 5):
+        out = session.play(t)["output"]
+        if out:
+            alerts += [(a, out["snapshot"]) for a in out["alerts"] if a["id"] == "fatigue_high"]
+    return alerts, timeouts
+
+
+def test_celaya_gets_no_fatigue_alert_at_the_timeouts_of_q2_and_q4_regression():
+    """#400: with Celaya on the bench (Q2 0:40, event 237 the timeout, 238 her exit) the app kept showing fatigue alerts about her."""
+    alerts, timeouts = _replay_leon_unibasket()
+    celaya = [(a, sn) for a, sn in alerts if a["evidence"]["player_id"] == "2053644"]
+    assert celaya, "the replay must produce fatigue alerts about her for the check to mean something"
+    assert not [a["key"] for a, sn in celaya if sn["last_num"] in timeouts], "an alert came with a timeout as the last event"
+    assert not [a["key"] for a, sn in alerts if sn["last_num"] in timeouts]
