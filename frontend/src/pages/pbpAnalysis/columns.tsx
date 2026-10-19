@@ -83,8 +83,8 @@ export function originColumns(view: OriginView): Col[] {
       num(`${p}pts_paint_per_game`, 'Pts/P', `Puntos por partido de canastas en el aro y la zona${who}`),
     ]),
     group('fastbreak', 'Contraataque (est.)', [
-      num(`${p}pts_fastbreak_per_game`, 'Pts/P', `Estimación propia: puntos por partido de canastas en ≤ 6 s tras robo o rebote defensivo${who}`),
-      num(`${p}oer_fastbreak`, 'OER', `Puntos de contraataque por 100 posesiones que empiezan en robo o rebote defensivo${who}`),
+      num(`${p}pts_fastbreak_per_game`, 'Pts/P', `Estimación propia: puntos por partido de canastas en ≤ 6 s tras pérdida rival (con o sin robo) o rebote defensivo${who}`),
+      num(`${p}oer_fastbreak`, 'OER', `Puntos de contraataque por 100 posesiones que empiezan en pérdida rival o rebote defensivo${who}`),
     ]),
   ]
 }

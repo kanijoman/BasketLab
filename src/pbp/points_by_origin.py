@@ -15,9 +15,10 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 from src.live_core.zones import classify_shot
 
 _AFTER_TURNOVER = ("turnover", "steal")
-# Fast break, our own estimate (#398: the FEB definition is not reproducible from the play-by-play): field goals of a possession that starts with
-# a steal or a defensive rebound and ends in a made basket within FASTBREAK_MAX_S seconds (provisional; 6 s fits the official PDF best).
-FASTBREAK_ORIGINS = ("steal", "def_rebound", "team_def_rebound")
+# Fast break, our own estimate (#398: the FEB definition is not reproducible from the play-by-play): field goals of a possession that starts with a
+# rival turnover (a steal or not: violations, out of bounds...) or a defensive rebound and ends in a made basket within FASTBREAK_MAX_S seconds
+# (provisional; 6 s fits the official PDF best).
+FASTBREAK_ORIGINS = ("turnover", "steal", "def_rebound", "team_def_rebound")
 FASTBREAK_MAX_S = 6
 _PAINT_ZONES = ("restricted_area", "key_area")
 _MADE_SHOT_POINTS = 2
