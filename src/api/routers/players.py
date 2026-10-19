@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, Query
 
 from src.api.deps import get_db
+from src.pbp.game_possessions import estimate_possessions
 from src.services import PlayerStatsService
 
 router = APIRouter()
@@ -44,8 +45,8 @@ def _enrich_stat_block(block: Dict) -> Dict:
     opp_fga = opp_fg2a + opp_fg3a
 
     # Possessions
-    poss     = fga  + 0.45 * fta  + tov  - orb  if (fga + fta + tov) > 0 else 0
-    opp_poss = opp_fga + 0.45 * opp_fta_ + opp_tov - opp_orb if (opp_fga + opp_fta_ + opp_tov) > 0 else 0
+    poss     = estimate_possessions(fga, orb, tov, fta) if (fga + fta + tov) > 0 else 0
+    opp_poss = estimate_possessions(opp_fga, opp_orb, opp_tov, opp_fta_) if (opp_fga + opp_fta_ + opp_tov) > 0 else 0
 
     def _pct(a, b): return round(a / b * 100, 2) if b > 0 else 0.0
 

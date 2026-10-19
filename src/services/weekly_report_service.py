@@ -403,6 +403,29 @@ class WeeklyReportService:
     # Last match (1 PNG per team in General/)
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _feb_last_match_stats(calc, last: Dict[str, Any], sel_idx: Optional[int], team_name: str):
+        """``(team stats, opponent stats, opponent name, date)`` of a FEB game, or None if it cannot be read.
+
+        Uses the exact possessions and validated rebounds / turnovers of the game (``DERIVED``, #379) when it has them, so the
+        figures match the season rows; otherwise the box score with the common estimate.
+        """
+        from src.stats.match_derived import with_derived
+        from src.utils.team_utils import get_team_data_by_name
+
+        teams_box = last.get('BOXSCORE', {}).get('TEAM', [])
+        if len(teams_box) != 2:
+            return None
+        if sel_idx is None:
+            sel_dict, sel_idx = get_team_data_by_name(last, team_name)
+            if sel_dict is None:
+                return None
+        sel_total, opp_total = teams_box[sel_idx].get('TOTAL', {}), teams_box[1 - sel_idx].get('TOTAL', {})
+        sel_total, opp_total, sel_poss, opp_poss = with_derived(sel_total, opp_total, last, sel_idx)
+        sel_stats = calc.calculate_single_match_stats(sel_total, opp_total, possessions=sel_poss, opp_possessions=opp_poss)
+        opp_stats = calc.calculate_single_match_stats(opp_total, sel_total, possessions=opp_poss, opp_possessions=sel_poss)
+        return sel_stats, opp_stats, opp_total.get('name', ''), str(last.get('HEADER', {}).get('starttime', ''))[:10]
+
     def _gen_last_match(
         self, zf: zipfile.ZipFile, collection: str, team_name: str,
     ) -> None:
@@ -432,19 +455,10 @@ class WeeklyReportService:
                 opp_name   = opp_dict.get('name', '')
                 match_date = last['stats'].get('startDate', '')[:10]
             else:
-                boxscore  = last.get('BOXSCORE', {})
-                teams_box = boxscore.get('TEAM', [])
-                if len(teams_box) != 2:
+                found = self._feb_last_match_stats(self._calc, last, None, team_name)
+                if found is None:
                     return
-                sel_dict, sel_idx = get_team_data_by_name(last, team_name)
-                if sel_dict is None:
-                    return
-                sel_total  = teams_box[sel_idx].get('TOTAL', {})
-                opp_total  = teams_box[1 - sel_idx].get('TOTAL', {})
-                sel_stats  = self._calc.calculate_single_match_stats(sel_total, opp_total)
-                opp_stats  = self._calc.calculate_single_match_stats(opp_total, sel_total)
-                opp_name   = opp_total.get('name', '')
-                match_date = str(last.get('HEADER', {}).get('starttime', ''))[:10]
+                sel_stats, opp_stats, opp_name, match_date = found
 
             sel_season = next((t for t in season_ts if t.get('team_name') == team_name), None)
             opp_season = next((t for t in season_ts if t.get('team_name') == opp_name), None)

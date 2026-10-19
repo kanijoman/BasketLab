@@ -6,6 +6,8 @@ Extracted from repository_inout.py to reduce its size.
 
 from typing import Dict, Iterable, List, Tuple
 
+from src.pbp.game_possessions import estimate_possessions
+
 
 class InOutHelpersMixin:
     """Pure-computation helpers used by InOutRepositoryMixin."""
@@ -250,12 +252,12 @@ class InOutHelpersMixin:
     # ------------------------------------------------------------------
 
     def _calculate_possessions_from_stats(self, stats: Dict) -> float:
-        """Calculate team possessions: FGA + (0.45*FTA) + TOV - ORB."""
+        """Calculate team possessions: FGA + (0.44*FTA) + TOV - ORB (the common estimate, #379)."""
         fga = stats.get('fga_2', 0) + stats.get('fga_3', 0)
         fta = stats.get('fta', 0)
         tov = stats.get('tov', 0)
         orb = stats.get('orb', 0)
-        return max(fga + (0.45 * fta) + tov - orb, 1)
+        return max(estimate_possessions(fga, orb, tov, fta), 1)
 
     def _normalize_player_stats_per_100poss(self, stats: Dict, possessions: float) -> Dict:
         """Normalize player individual statistics per 100 possessions."""

@@ -12,6 +12,8 @@ The calculator uses safe conversion methods to handle missing or invalid data gr
 from typing import Dict, Optional
 from utils.numeric_utils import safe_int, safe_float
 
+from src.pbp.game_possessions import estimate_possessions
+
 
 class StatsCalculator:
     """Calculate statistics from basketball match data."""
@@ -91,13 +93,16 @@ class StatsCalculator:
             'opp_turnovers': safe_int(opponent_data.get('to', 0)),
         }
 
-    def calculate_single_match_stats(self, team_data: Dict, opponent_data: Dict) -> Dict:
+    def calculate_single_match_stats(self, team_data: Dict, opponent_data: Dict, possessions: Optional[float] = None,
+                                     opp_possessions: Optional[float] = None) -> Dict:
         """
         Calculate statistics from a single match boxscore.
 
         Args:
             team_data: Team data (FEB or FBCYL format)
             opponent_data: Opponent data (FEB or FBCYL format)
+            possessions: Exact possessions of the team in the game (``DERIVED``); the estimate when not given.
+            opp_possessions: The same for the opponent.
 
         Returns:
             Dictionary with calculated statistics
@@ -120,9 +125,10 @@ class StatsCalculator:
         opp_ft_att   = v['opp_ft_att'];   opp_turnovers = v['opp_turnovers']
         tot_reb = off_reb + def_reb
 
-        # Calculate possessions
-        poss = fg2_att + fg3_att + (0.45 * ft_att) + turnovers - off_reb
-        opp_poss = opp_fg2_att + opp_fg3_att + (0.45 * opp_ft_att) + opp_turnovers - opp_off_reb
+        # Possessions: the exact ones of the game when given, else the estimate (the same free-throw cost as everywhere, #379)
+        poss = possessions if possessions is not None else estimate_possessions(fg2_att + fg3_att, off_reb, turnovers, ft_att)
+        opp_poss = (opp_possessions if opp_possessions is not None
+                    else estimate_possessions(opp_fg2_att + opp_fg3_att, opp_off_reb, opp_turnovers, opp_ft_att))
 
         # Calculate percentages
         fg2_pct = (fg2_made / fg2_att * 100) if fg2_att > 0 else 0
@@ -319,8 +325,8 @@ class StatsCalculator:
         opp_ft_att   = v['opp_ft_att'];   opp_turnovers = v['opp_turnovers']
 
         # Calculate possessions
-        poss = fg2_att + fg3_att + (0.45 * ft_att) + turnovers - off_reb
-        opp_poss = opp_fg2_att + opp_fg3_att + (0.45 * opp_ft_att) + opp_turnovers - opp_off_reb
+        poss = estimate_possessions(fg2_att + fg3_att, off_reb, turnovers, ft_att)
+        opp_poss = estimate_possessions(opp_fg2_att + opp_fg3_att, opp_off_reb, opp_turnovers, opp_ft_att)
         poss = max(poss, 1)  # Avoid division by zero
         opp_poss = max(opp_poss, 1)
 

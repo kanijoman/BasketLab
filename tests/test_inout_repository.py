@@ -149,15 +149,15 @@ class TestPlayerIndividualStats(unittest.TestCase):
         stats = {
             'fga_2': 40,
             'fga_3': 20,  # Total FGA = 60
-            'fta': 20,    # 0.45 * 20 = 9
+            'fta': 20,    # 0.44 * 20 = 8.8 (the cost of a free throw of estimate_possessions, #379)
             'tov': 15,
             'orb': 10
         }
-        # Expected: 60 + 9 + 15 - 10 = 74
-        
+        # Expected: 60 + 8.8 + 15 - 10 = 73.8
+
         possessions = self.repo._calculate_possessions_from_stats(stats)
-        
-        self.assertEqual(possessions, 74.0)
+
+        self.assertAlmostEqual(possessions, 73.8)
     
     def test_normalize_player_stats_per_100poss(self):
         """Test per-100-possession normalization."""
