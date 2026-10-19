@@ -6,8 +6,6 @@ import { ALERT_MODES, type AlertMode } from './useAlertMode'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
-export const REPO_URL = 'https://github.com/kanijoman/BasketLab'
-export const RELEASES_URL = `${REPO_URL}/releases`
 
 interface DiagnosticsInput {
   version: AppVersion | null
@@ -122,8 +120,6 @@ export default function AboutPanel({ sessionLog, experimental, alertMode, engine
           </button>
         )}
         <button type="button" className="secondary" onClick={() => void copy()}>Copiar diagnóstico</button>
-        <button type="button" className="secondary" onClick={() => onOpen(REPO_URL)}>Repositorio</button>
-        <button type="button" className="secondary" onClick={() => onOpen(RELEASES_URL)}>Notas de la versión</button>
       </div>
       <fieldset className="appearance" role="radiogroup" aria-label="Apariencia">
         <legend>Apariencia</legend>

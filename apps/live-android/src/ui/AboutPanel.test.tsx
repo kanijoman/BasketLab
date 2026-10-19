@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics, REPO_URL, RELEASES_URL } from './AboutPanel'
+import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import type { AppVersion } from '../about/appInfo'
 import type { LatestInfo, UpdateResult } from '../about/update'
 
@@ -65,12 +65,10 @@ describe('AboutPanel (issues #226 and #227)', () => {
     expect(screen.getByText(/esquema de paquete 1/i)).toBeTruthy()
   })
 
-  it('opens the repository and the release notes', () => {
-    const p = panel()
-    fireEvent.click(screen.getByRole('button', { name: /repositorio/i }))
-    expect(p.onOpen).toHaveBeenCalledWith(REPO_URL)
-    fireEvent.click(screen.getByRole('button', { name: /notas de la versión/i }))
-    expect(p.onOpen).toHaveBeenCalledWith(RELEASES_URL)
+  it('has no link to the repository nor to the release notes (#408)', () => {
+    panel()
+    expect(screen.queryByRole('button', { name: /repositorio/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /notas de la versión/i })).toBeNull()
   })
 
   it('copies the diagnostics for an issue', async () => {

@@ -1,4 +1,4 @@
-/** Game pace: current pace, projection to the end and +/- against the habitual pace of both teams. */
+/** Game pace: the current value, and (collapsed, #405) the projection to the end and +/- against the habitual pace of both teams. */
 import type { PaceAnalysis, TeamRef } from '../engine/types'
 
 interface Props {
@@ -57,14 +57,15 @@ export default function PaceCard({ pace, own, rival }: Props) {
           <span className="pace-value">{fmt(pace.current40)}</span>
           <span className="detail"> actual</span>
         </div>
-        <div className="detail">
-          Proyección final: ≈ {Math.round(pace.projected_possessions)} posesiones por equipo
-        </div>
       </div>
-      <ul className="pace-rows" aria-label="Ritmo frente al habitual">
-        <HabitRow team={own} habit={pace.habit_own40} delta={pace.delta_own} games={pace.sample_games.own} />
-        <HabitRow team={rival} habit={pace.habit_rival40} delta={pace.delta_rival} games={pace.sample_games.rival} />
-      </ul>
+      <details className="card-details">
+        <summary>Ver detalle</summary>
+        <p className="detail">Proyección final: ≈ {Math.round(pace.projected_possessions)} posesiones por equipo</p>
+        <ul className="pace-rows" aria-label="Ritmo frente al habitual">
+          <HabitRow team={own} habit={pace.habit_own40} delta={pace.delta_own} games={pace.sample_games.own} />
+          <HabitRow team={rival} habit={pace.habit_rival40} delta={pace.delta_rival} games={pace.sample_games.rival} />
+        </ul>
+      </details>
     </section>
   )
 }

@@ -100,4 +100,16 @@ describe('useExperimental', () => {
     act(() => result.current[1](false))
     expect(result.current[0]).toBe(false)
   })
+
+  // #405: only the value is shown; the rest is collapsible
+  it('shows only the percentage and keeps the margin, the chart and the levers collapsed', () => {
+    const { container } = render(<WinProbCard winProb={WP} levers={LEVERS} own={OWN} history={[{ t: 0, p: 0.5 }, { t: 600, p: 0.6 }]} />)
+    const details = container.querySelector('details') as HTMLDetailsElement
+    expect(details.open).toBe(false)
+    expect(details.contains(screen.getByText('64 %'))).toBe(false)
+    expect(details.contains(screen.getByText(/margen proyectado/i))).toBe(true)
+    expect(details.contains(screen.getByText(/lo que más la mueve/i))).toBe(true)
+    expect(details.contains(screen.getByRole('img', { name: /evolución/i }))).toBe(true)
+    expect(details.contains(screen.getByText(/puede desviarse/i))).toBe(true)
+  })
 })

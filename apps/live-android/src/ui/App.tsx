@@ -32,6 +32,8 @@ import { ALERT_MODES, useAlertMode, type AlertMode } from './useAlertMode'
 import { useSessionLog } from './useSessionLog'
 import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
+import FinishedMatches from './FinishedMatches'
+import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab from './PackagesTab'
@@ -57,6 +59,8 @@ interface Props {
   /** Screen on and back-to-foreground events of the tablet (injected in tests; the default uses the Capacitor plugins). */
   device?: Device
   store?: PackageStore
+  /** Finished live matches kept for a later review (injected in tests). */
+  finishedStore?: FinishedStore
   /** Network access of the published-packages list (injected in tests). */
   remoteFetcher?: Fetcher
   /** Version and update check (injected in tests; the defaults use the app's own plugins and GitHub). */
@@ -65,12 +69,18 @@ interface Props {
   alertCooldownMs?: number
 }
 
+const FINISHED = 'finished:'
+/** Whether the source is replayed from one final document (the sample game and the finished live matches) and not from a recording. */
+const isReplayDoc = (source: DemoSource) => source === SAMPLE || source.startsWith(FINISHED)
+
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
+  const [finishedStore] = useState<FinishedStore>(() => injectedFinished ?? safeFinishedStore(new IndexedDbFinishedStore()))
+  const [finishedMatches, setFinishedMatches] = useState<FinishedMatch[]>([])
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [meta, setMeta] = useState<SessionMeta | null>(null)
   const [info, setInfo] = useState<ReplayInfo | null>(null)
@@ -133,6 +143,24 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     }
   }, [engine, reset])
 
+  /** A live match that ended and was kept (issue #407): its package and its last document replay like the sample game. */
+  const beginFinished = useCallback(async (code: string) => {
+    const saved = await finishedStore.load(code)
+    if (!saved) { setNotice('No se encontró el partido guardado'); return }
+    setPhase({ kind: 'loading' })
+    reset()
+    setReviewing(true)
+    try {
+      setMeta(await engine.start(saved.plaintext))
+      setInfo(await engine.loadReplay(saved.game))
+      setEvents([])
+      setSource(`${FINISHED}${code}`)
+      setPhase({ kind: 'ready' })
+    } catch (e) {
+      setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
+    }
+  }, [engine, reset, finishedStore])
+
   /** A recorded match: the engine is fed with what FEB served (404 windows included). */
   const beginRecorded = useCallback(async (match: DemoMatch, fallback: DemoData) => {
     setPhase({ kind: 'loading' })
@@ -194,6 +222,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }, [loadDemo, loadManifest, store, beginDefault, beginPackage])
 
   useEffect(() => () => { if (!injected) engine.dispose() }, [engine, injected])
+  useEffect(() => { void finishedStore.list().then(setFinishedMatches) }, [finishedStore])
 
   const finished = info !== null && elapsed >= info.duration
 
@@ -214,7 +243,21 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const saved = await store.load()
     if (saved) setMeta(await engine.start(saved.plaintext))
   }, [engine, store, pacer])
-  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive })
+  const metaRef = useRef<SessionMeta | null>(null)
+  metaRef.current = meta
+  /** The match ended: keep it on the device so it can be reviewed afterwards (issue #407). */
+  const keepFinished = useCallback(async (game: string, code: string) => {
+    const saved = await store.load()
+    const current = metaRef.current
+    if (!saved || !current) return
+    const match: FinishedMatch = {
+      code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), plaintext: saved.plaintext, game,
+    }
+    await finishedStore.save(match)
+    setFinishedMatches(await finishedStore.list())
+    session.record(`Partido ${code} finalizado y guardado para revisarlo`)
+  }, [store, finishedStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
+  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive, onFinished: keepFinished })
   const update = useAppUpdate(appUpdate)
 
   const step = useCallback(async (to: number) => {
@@ -223,7 +266,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     try {
       const t0 = performance.now()
       let result: EngineOutput | null
-      if (source !== SAMPLE) {
+      if (!isReplayDoc(source)) {
         const frame = await engine.playRecording(to)
         setFeed(frame.feed)
         result = frame.output
@@ -287,8 +330,11 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const own = meta!.team
   const rival = meta!.rival
   const snap = out?.snapshot
-  const sources: SourceOption[] = [...matches.map(m => ({ value: m.code, label: m.title })), { value: SAMPLE, label: 'Partido de ejemplo' }]
+  const current = source.startsWith(FINISHED) ? finishedMatches.find(m => `${FINISHED}${m.code}` === source) : undefined
+  const sources: SourceOption[] = [...(current ? [{ value: source, label: current.title }] : []),
+    ...matches.map(m => ({ value: m.code, label: m.title })), { value: SAMPLE, label: 'Partido de ejemplo' }]
   const pickSource = (value: DemoSource) => {
+    if (value.startsWith(FINISHED)) { void beginFinished(value.slice(FINISHED.length)); return }
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
   }
@@ -309,7 +355,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setPlaying(false)
     if (to < elapsedRef.current && demo) {
       const match = matches.find(m => m.code === source)
-      await (match ? beginRecorded(match, demo) : beginDemo(demo))
+      if (source.startsWith(FINISHED)) await beginFinished(source.slice(FINISHED.length))
+      else await (match ? beginRecorded(match, demo) : beginDemo(demo))
     }
     elapsedRef.current = to
     setElapsed(to)
@@ -323,6 +370,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const matchTab = (
     <>
       {pkg && <ReviewSwitch reviewing={reviewing} disabled={live.running} onLive={backToPackage} onReview={reviewRecorded} />}
+      <FinishedMatches matches={finishedMatches} disabled={live.running} onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code) }} />
       {!pkg && (
         <p className="notice">
           Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}
@@ -332,15 +380,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
-      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
-
-      <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
-      {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
-
-      {liveMode ? (
-        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
-          onStart={code => void live.connect(code)} onStop={live.disconnect} />
-      ) : (
+      {/* the playback controls stay under the scoreboard to play comfortably (#405) */}
+      {!liveMode && (
         <>
           <DemoControls
             source={source} sources={sources}
@@ -357,12 +398,24 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
         </>
       )}
 
+      {/* the order of the screen (#405): scoreboard, (playback controls), pace, win probability, alerts; the rest goes after them */}
+      <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
+      {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
+
       <section>
         <h2>Alertas</h2>
         {entries.length === 0
           ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
-          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
+          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict}
+              clock={snap ? { period: snap.period, remaining: snap.remaining } : undefined} />}
       </section>
+
+      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
+
+      {liveMode && (
+        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
+          onStart={code => void live.connect(code)} onStop={live.disconnect} />
+      )}
 
       {shownFeedback.length > 0 && (
         <FeedbackPanel records={shownFeedback} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
