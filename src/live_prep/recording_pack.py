@@ -4,7 +4,8 @@
 
 The recorder keeps every body that changed (58 MB for one match); the play-by-play is append-only, so each
 line is stored once with the frame it first appeared in (see ``src/live_core/recorded_feed.py`` for the layout
-and the player). Per-endpoint 404 windows of the middle of the match are kept too.
+and the player; the packing itself is ``src/live_core/recording_builder.py``, shared with the app, which records the feed it follows).
+Per-endpoint 404 windows of the middle of the match are kept too.
 """
 
 from __future__ import annotations
@@ -16,8 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from src.live_core.recorded_feed import ENDPOINTS, FORMAT_VERSION
-from src.live_core.replay import _ROSTER_FIELDS, _TEAM_FIELDS
+from src.live_core.recorded_feed import ENDPOINTS
+from src.live_core.recording_builder import RecordingBuilder
 from src.live_prep.recording_report import _read_polls, merged_documents
 
 Docs = List[Tuple[str, Dict[str, Any]]]
@@ -25,59 +26,6 @@ Docs = List[Tuple[str, Dict[str, Any]]]
 
 def _seconds(iso: str, start: datetime) -> float:
     return round((datetime.fromisoformat(iso) - start).total_seconds(), 3)
-
-
-def _slim_base(doc: Dict[str, Any]) -> Dict[str, Any]:
-    """The part of a document that does not change over the match, without box-score statistics."""
-    return {
-        "HEADER": json.loads(json.dumps(doc["HEADER"])),
-        "BOXSCORE": {"TEAM": [
-            {**{k: team[k] for k in _TEAM_FIELDS if k in team},
-             "PLAYER": [{k: p[k] for k in _ROSTER_FIELDS if k in p} for p in team.get("PLAYER", [])]}
-            for team in doc["BOXSCORE"]["TEAM"]]},
-        "PLAYBYPLAY": {k: v for k, v in (doc.get("PLAYBYPLAY") or {}).items() if k != "LINES"},
-        "SHOTCHART": {**{k: v for k, v in (doc.get("SHOTCHART") or {}).items() if k not in ("SHOTS", "TEAM")}, "TEAM": []},
-    }
-
-
-def _pack_lines(docs: Docs) -> List[Dict[str, Any]]:
-    entries: Dict[str, Dict[str, Any]] = {}
-    for frame, (_, doc) in enumerate(docs):
-        seen = set()
-        for line in doc["PLAYBYPLAY"]["LINES"]:
-            num = str(line["num"])
-            seen.add(num)
-            entry = entries.get(num)
-            if entry is None:
-                entries[num] = {"f": frame, "l": line, "_cur": line}
-                continue
-            entry.pop("r", None)
-            if line != entry["_cur"]:
-                entry.setdefault("fix", []).append([frame, line])
-                entry["_cur"] = line
-        for num, entry in entries.items():
-            if num not in seen and "r" not in entry:
-                entry["r"] = frame
-    final_order = [str(line["num"]) for line in docs[-1][1]["PLAYBYPLAY"]["LINES"]]
-    ordered = [entries[n] for n in final_order]
-    for num, entry in entries.items():  # lines removed before the end: keep them where their number belongs
-        if num not in final_order:
-            position = next((i for i, e in enumerate(ordered) if int(e["l"]["num"]) < int(num)), len(ordered))
-            ordered.insert(position, entry)
-    return [{k: v for k, v in entry.items() if k != "_cur"} for entry in ordered]
-
-
-def _pack_shots(docs: Docs) -> List[Dict[str, Any]]:
-    entries: Dict[str, Dict[str, Any]] = {}
-    for frame, (_, doc) in enumerate(docs):
-        now = {json.dumps(s, sort_keys=True): s for s in (doc.get("SHOTCHART") or {}).get("SHOTS") or []}
-        for key, shot in now.items():
-            entries.setdefault(key, {"f": frame, "s": shot}).pop("r", None)
-        for key, entry in entries.items():
-            if key not in now and "r" not in entry:
-                entry["r"] = frame
-    final = [json.dumps(s, sort_keys=True) for s in (docs[-1][1].get("SHOTCHART") or {}).get("SHOTS") or []]
-    return [entries[k] for k in final] + [e for k, e in entries.items() if k not in final]
 
 
 def _pack_gaps(polls: List[Dict[str, Any]], start: datetime) -> Dict[str, List[List[float]]]:
@@ -113,15 +61,12 @@ def pack_recording(directory: Any) -> Dict[str, Any]:
     meta_path = directory / "meta.json"
     match = json.loads(meta_path.read_text(encoding="utf-8")).get("match_code") if meta_path.exists() else directory.name
 
-    frames = []
+    builder = RecordingBuilder(str(match), start.isoformat())
     for iso, doc in docs:
-        header = doc["HEADER"]
-        frames.append({"t": _seconds(iso, start), "h": {
-            "status": str(header.get("status")), "statusText": header.get("statusText"),
-            "quarter": header.get("quarter"), "time": header.get("time"),
-            "pts": {str(t["id"]): int(t.get("pts") or 0) for t in header.get("TEAM", [])}}})
-    return {"v": FORMAT_VERSION, "match": str(match), "started": start.isoformat(), "base": _slim_base(docs[-1][1]),
-            "lines": _pack_lines(docs), "shots": _pack_shots(docs), "frames": frames, "gaps": _pack_gaps(polls, start)}
+        builder.add(_seconds(iso, start), doc)
+    data = builder.pack()
+    data["gaps"] = _pack_gaps(polls, start)         # per-endpoint 404 windows, from the poll log
+    return data
 
 
 def write_pack(directory: Any, out: Any) -> Path:
