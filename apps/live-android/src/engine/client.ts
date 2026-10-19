@@ -1,6 +1,6 @@
 /** Promise-based client for the engine Web Worker (keeps the UI thread free while Python runs). */
 import type { WorkerRequest, WorkerResponse } from './protocol'
-import type { EngineOutput, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
+import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
 
 export interface EngineApi {
   start(packageText: string): Promise<SessionMeta>
@@ -11,6 +11,8 @@ export interface EngineApi {
   update(docJson: string): Promise<EngineOutput>
   loadRecording(recordingJson: string): Promise<RecordingInfo>
   playRecording(t: number): Promise<RecordingFrame>
+  /** The post-match report (issue #409) of a finished game (its last FEB document, JSON text) for ``ownTeamId``; needs no running session. */
+  report(game: string, alerts: LoggedAlert[], ownTeamId: string): Promise<PostMatchReport>
   dispose(): void
 }
 
@@ -65,6 +67,9 @@ export class EngineClient implements EngineApi {
   update(docJson: string) { return this.call<EngineOutput>({ type: 'update', payload: docJson }) }
   loadRecording(recordingJson: string) { return this.call<RecordingInfo>({ type: 'loadRecording', payload: recordingJson }) }
   playRecording(t: number) { return this.call<RecordingFrame>({ type: 'playRecording', payload: t }) }
+  report(game: string, alerts: LoggedAlert[], ownTeamId: string) {
+    return this.call<PostMatchReport>({ type: 'report', payload: { game, alerts, ownTeamId } })
+  }
 
   dispose() {
     this.disposed = true

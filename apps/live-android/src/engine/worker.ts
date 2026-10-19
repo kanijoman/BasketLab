@@ -28,6 +28,7 @@ function run(bridge: LiveBridge, msg: WorkerRequest): unknown {
     case 'update': return bridge.update(msg.payload)
     case 'loadRecording': return bridge.loadRecording(msg.payload)
     case 'playRecording': return bridge.playRecording(msg.payload)
+    case 'report': return bridge.report(msg.payload.game, msg.payload.alerts, msg.payload.ownTeamId)
   }
 }
 

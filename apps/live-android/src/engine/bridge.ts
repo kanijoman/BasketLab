@@ -4,7 +4,7 @@
  * Runs wherever a Pyodide instance exists (the Web Worker in the app, Node in the tests).
  * Only strings cross the boundary: JSON in, JSON out.
  */
-import type { EngineOutput, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
+import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
 
 /** The part of the Pyodide API the bridge uses. */
 export interface PyodideLike {
@@ -21,7 +21,7 @@ type PyFn = (...args: unknown[]) => string
 
 export class LiveBridge {
   private readonly fn: Record<
-    'start_json' | 'set_mode_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json',
+    'start_json' | 'set_mode_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json' | 'report_json',
     PyFn
   >
 
@@ -41,6 +41,7 @@ export class LiveBridge {
       update_json: get('update_json'),
       load_recording_json: get('load_recording_json'),
       play_recording_json: get('play_recording_json'),
+      report_json: get('report_json'),
     }
   }
 
@@ -79,5 +80,10 @@ export class LiveBridge {
   /** The engine fed with what FEB served `t` seconds after the first poll of the recording. */
   playRecording(t: number): RecordingFrame {
     return JSON.parse(this.fn.play_recording_json(t))
+  }
+
+  /** The post-match report (issue #409) of a finished game, from the point of view of ``ownTeamId``; it needs no running session. */
+  report(gameJson: string, alerts: LoggedAlert[], ownTeamId: string): PostMatchReport {
+    return JSON.parse(this.fn.report_json(gameJson, JSON.stringify(alerts), ownTeamId))
   }
 }

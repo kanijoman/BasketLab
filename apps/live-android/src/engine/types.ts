@@ -165,3 +165,70 @@ export interface EngineOutput {
     formation?: FormationStatus; win_prob?: WinProb; win_levers?: WinLever[]
   }
 }
+
+/** An alert with the game clock label under which the app showed it ("Q2 05:30"); the unit of the alert log of a match (issue #409). */
+export interface LoggedAlert { alert: Alert; at: string }
+
+export interface ReportRun {
+  team: 'own' | 'rival'
+  start: number
+  end: number
+  pts: number
+  /** Points the other team scored inside the run (at most 2). */
+  against: number
+  period: number
+  clock: string
+  score_before: [number, number]
+  score_after: [number, number]
+  lineup: string[]
+  entered: string[]
+  left: string[]
+  explanation: string
+}
+
+export interface ReportPeriod { period: number; label: string; own: number; rival: number; net: number; keys: string[]; adjustments: string[] }
+export interface ReportLineup { players: string[]; seconds: number; pts_for: number; pts_against: number; net: number }
+export interface ReportPlayer { name: string; pm: number; pts: number; minutes: number }
+export interface ReportFactors { efg: number; tov: number; orb: number; ftr: number }
+export interface ReportAlert {
+  key: string
+  id: string
+  severity: Alert['severity']
+  category: string
+  message: string
+  proposal: string[]
+  period: number | null
+  clock: string | null
+  elapsed: number | null
+  score: [number, number] | null
+}
+
+/** The post-match report of src/live_core/postmatch.py. */
+export interface PostMatchReport {
+  version: number
+  match: {
+    own: TeamRef
+    rival: TeamRef
+    home_id: string | null
+    score: { own: number; rival: number }
+    result: 'win' | 'loss' | 'tie'
+    periods: ReportPeriod[]
+  }
+  evolution: {
+    lead_changes: number
+    ties: number
+    max_lead: { margin: number; elapsed: number }
+    max_deficit: { margin: number; elapsed: number }
+    timeline: [number, number][]
+    narrative: string[]
+  }
+  timeline: [number, [number, number]][]
+  runs: ReportRun[]
+  lineups: { best: ReportLineup[]; worst: ReportLineup[] }
+  players: { top: ReportPlayer[]; bottom: ReportPlayer[] }
+  four_factors: { own: ReportFactors; rival: ReportFactors }
+  team: Record<'own' | 'rival', { possessions: number; rating: number; factors: ReportFactors; stats: Record<string, number> }>
+  went_well: string[]
+  to_improve: string[]
+  alerts: ReportAlert[]
+}

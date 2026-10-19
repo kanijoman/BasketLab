@@ -10,7 +10,7 @@ import {
   loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch,
   type DemoData, type DemoMatch, type RealDemoData,
 } from '../engine/demo'
-import type { EngineOutput, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
+import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
 import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
@@ -33,6 +33,8 @@ import { useSessionLog } from './useSessionLog'
 import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
 import FinishedMatches from './FinishedMatches'
+import { reportBlocks } from '../postmatch/blocks'
+import { fileNameFor, sharePdf } from '../postmatch/share'
 import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
@@ -59,6 +61,8 @@ interface Props {
   /** Screen on and back-to-foreground events of the tablet (injected in tests; the default uses the Capacitor plugins). */
   device?: Device
   store?: PackageStore
+  /** Draws and shares the post-match PDF (injected in tests; the defaults use jsPDF and the share sheet of the tablet). */
+  pdf?: PdfDeps
   /** Finished live matches kept for a later review (injected in tests). */
   finishedStore?: FinishedStore
   /** Network access of the published-packages list (injected in tests). */
@@ -73,14 +77,27 @@ const FINISHED = 'finished:'
 /** Whether the source is replayed from one final document (the sample game and the finished live matches) and not from a recording. */
 const isReplayDoc = (source: DemoSource) => source === SAMPLE || source.startsWith(FINISHED)
 
+export interface PdfDeps {
+  render(report: PostMatchReport): Promise<Uint8Array>
+  share(bytes: Uint8Array, fileName: string, title: string): Promise<void>
+}
+const defaultPdf: PdfDeps = {
+  render: async report => (await import('../postmatch/pdf')).renderPdf(reportBlocks(report)),
+  share: (bytes, fileName, title) => sharePdf(bytes, fileName, title),
+}
+
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, pdf = defaultPdf, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [finishedStore] = useState<FinishedStore>(() => injectedFinished ?? safeFinishedStore(new IndexedDbFinishedStore()))
   const [finishedMatches, setFinishedMatches] = useState<FinishedMatch[]>([])
+  const [reporting, setReporting] = useState<string | null>(null)
+  const [reportError, setReportError] = useState<string | null>(null)
+  /** Every alert of the match being followed, with its clock label: the annex of the post-match report (issue #409). */
+  const alertLog = useRef<LoggedAlert[]>([])
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [meta, setMeta] = useState<SessionMeta | null>(null)
   const [info, setInfo] = useState<ReplayInfo | null>(null)
@@ -123,6 +140,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
 
   const reset = useCallback(() => {
     seen.current.clear()
+    alertLog.current = []
     pacer.clear()
     elapsedRef.current = 0
     setEntries([]); setOut(null); setElapsed(0); setPlaying(false); setInfo(null); setFeed('ok'); setNotice(null)
@@ -160,6 +178,24 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     }
   }, [engine, reset, finishedStore])
+
+  /** The post-match analysis of a kept match as a PDF the staff can share (issue #409). */
+  const reportFinished = useCallback(async (code: string) => {
+    setReporting(code)
+    setReportError(null)
+    try {
+      const saved = await finishedStore.load(code)
+      if (!saved) throw new Error('el partido ya no está guardado')
+      const report = await engine.report(saved.game, saved.alerts ?? [], saved.ownId)
+      const title = `Informe del partido ${report.match.own.name.trim()} – ${report.match.rival.name.trim()}`
+      await pdf.share(await pdf.render(report), fileNameFor(report.match.own.name, report.match.rival.name, code), title)
+      session.record(`Informe PDF del partido ${code}`)
+    } catch (e) {
+      setReportError(`No se pudo generar el informe: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setReporting(null)
+    }
+  }, [engine, finishedStore, pdf, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
 
   /** A recorded match: the engine is fed with what FEB served (404 windows included). */
   const beginRecorded = useCallback(async (match: DemoMatch, fallback: DemoData) => {
@@ -231,13 +267,14 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setOut(result)
     const at = clockLabel(result.snapshot.period, result.snapshot.remaining)
     const fresh = result.alerts.filter(a => !seen.current.has(a.key))
-    fresh.forEach(a => { seen.current.add(a.key); registerAlert(a, result.snapshot.elapsed) })
+    fresh.forEach(a => { seen.current.add(a.key); registerAlert(a, result.snapshot.elapsed); alertLog.current.push({ alert: a, at }) })
     pacer.push(fresh, at, paced)
   }, [registerAlert, pacer])
   const handleLiveOutput = useCallback((result: EngineOutput) => handleOutput(result, true), [handleOutput])
 
   const restartLive = useCallback(async () => {
     seen.current.clear()
+    alertLog.current = []
     pacer.clear()
     setEntries([]); setOut(null)
     const saved = await store.load()
@@ -251,7 +288,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const current = metaRef.current
     if (!saved || !current) return
     const match: FinishedMatch = {
-      code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), plaintext: saved.plaintext, game,
+      code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), ownId: current.team.id,
+      alerts: [...alertLog.current], plaintext: saved.plaintext, game,
     }
     await finishedStore.save(match)
     setFinishedMatches(await finishedStore.list())
@@ -370,7 +408,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const matchTab = (
     <>
       {pkg && <ReviewSwitch reviewing={reviewing} disabled={live.running} onLive={backToPackage} onReview={reviewRecorded} />}
-      <FinishedMatches matches={finishedMatches} disabled={live.running} onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code) }} />
+      <FinishedMatches matches={finishedMatches} disabled={live.running} onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code) }}
+        onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
       {!pkg && (
         <p className="notice">
           Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}

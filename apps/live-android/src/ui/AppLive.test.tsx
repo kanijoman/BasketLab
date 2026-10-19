@@ -33,6 +33,7 @@ function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
     update: vi.fn(async () => out()),
     loadRecording: vi.fn(),
     playRecording: vi.fn(),
+    report: vi.fn(),
     setMode: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
     ...over,
@@ -178,10 +179,43 @@ describe('finished matches (issue #407)', () => {
   })
 
   it('the matches saved in earlier sessions are listed from the start', async () => {
-    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
     render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} />)
     expect(await screen.findByRole('button', { name: /revisar leon – unibasket/i })).toBeTruthy()
+  })
+
+  it('keeps with the match the own team and every alert the engine raised, with the clock it was shown at (#409)', async () => {
+    const engine = fakeEngine({ update: vi.fn(async () => out([ALERT])) })
+    const { finishedStore } = await connectAndFinish(memoryFinishedStore(), engine)
+    const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    expect(saved.ownId).toBe('1')
+    expect(saved.alerts).toHaveLength(1)
+    expect(saved.alerts[0]).toMatchObject({ at: 'Q1 09:53', alert: { key: ALERT.key, message: ALERT.message } })
+  })
+
+  it('builds the PDF report of a saved match from its document and alerts, and shares it (#409)', async () => {
+    const alerts = [{ alert: ALERT, at: 'Q2 03:00' }]
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts, plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const report = { match: { own: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' } } }
+    const engine = fakeEngine({ report: vi.fn().mockResolvedValue(report) })
+    const pdf = { render: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])), share: vi.fn().mockResolvedValue(undefined) }
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+      finishedStore={memoryFinishedStore([old])} pdf={pdf} />)
+    fireEvent.click(await screen.findByRole('button', { name: /informe pdf de leon – unibasket/i }))
+    await waitFor(() => expect(pdf.share).toHaveBeenCalled())
+    expect(engine.report).toHaveBeenCalledWith(old.game, alerts, '1')
+    expect(pdf.render).toHaveBeenCalledWith(report)
+    expect(pdf.share).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'informe-equipo-propio-equipo-rival-9.pdf', expect.stringContaining('EQUIPO PROPIO'))
+  })
+
+  it('says so when the report cannot be built', async () => {
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{}' }
+    const engine = fakeEngine({ report: vi.fn().mockRejectedValue(new Error('boom')) })
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+      finishedStore={memoryFinishedStore([old])} pdf={{ render: vi.fn(), share: vi.fn() }} />)
+    fireEvent.click(await screen.findByRole('button', { name: /informe pdf de leon – unibasket/i }))
+    expect(await screen.findByText(/no se pudo generar el informe/i)).toBeTruthy()
   })
 
   it('a match that did not reach its end is not saved', async () => {
