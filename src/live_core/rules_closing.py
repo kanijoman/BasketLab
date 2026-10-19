@@ -14,7 +14,8 @@
   Provisional until the win-probability model (epic #261) gives a calibrated projection.
 * G1 ``pace_control``: the game is being played at the pace of the rival (closer to its habitual one than to ours, habits that
   differ by ``pace_gap`` possessions per 40) and we lose by ``pace_losing_margin`` or more: raise the pace if the rival slows the
-  game down, lower it if it speeds it up (``PaceModel``).
+  game down, lower it if it speeds it up (``PaceModel``). #401: only in the last ``pace_max_left_s`` (15:00) of the game and not
+  while we are winning the recent window (``pace_recovery_net`` in ``pace_recovery_window_s``): the comeback came with our pace.
 
 Thresholds are provisional, in ``RuleConfig``.
 """
@@ -24,9 +25,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
+from .clock import game_seconds_left
 from .game_context import game_phase
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import timeouts_left
+from .windows import window_stats
 
 LAST_PERIOD = 4
 GAME_SECONDS = 2400
@@ -135,9 +138,19 @@ def advantage_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
                   tactic_proposal("Evitar faltas innecesarias")])]
 
 
+def _recovering(snap: Dict[str, Any], ctx: RuleContext) -> bool:
+    """We won the recent window by ``pace_recovery_net`` points or more: whatever pace we play is working (issue #401)."""
+    cfg, now, log = ctx.config, snap["elapsed"], snap.get("log", [])
+    start = now - cfg.pace_recovery_window_s
+    net = window_stats(log, ctx.own_team_id, start, now)["pts"] - window_stats(log, ctx.rival_team_id, start, now)["pts"]
+    return net >= cfg.pace_recovery_net
+
+
 def pace_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     cfg, score, rival = ctx.config, snap.get("score") or {}, ctx.rival_team_id
     if ctx.pace is None or not rival or rival not in score or ctx.own_team_id not in score:
+        return []
+    if game_seconds_left(snap["period"], snap["remaining"]) > cfg.pace_max_left_s or _recovering(snap, ctx):
         return []
     margin = score[ctx.own_team_id] - score[rival]
     pace = ctx.pace.evaluate(snap)

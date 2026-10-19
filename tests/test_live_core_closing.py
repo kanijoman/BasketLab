@@ -226,12 +226,12 @@ POSSESSIONS = {"fg2m": 12, "fg2a": 20, "fg3m": 3, "fg3a": 10, "ftm": 8, "fta": 1
                "stl": 4, "ast": 9, "blk": 1, "pts": 0}          # 30 - 5 + 7 + 4.84 = 36.8 possessions in 20 minutes = 73.7 per 40
 
 
-def pace_engine(own, rival):
-    return engine(team_baselines={"pace_own_per_40": own, "pace_rival_per_40": rival})
+def pace_engine(own, rival, **kw):
+    return engine(team_baselines={"pace_own_per_40": own, "pace_rival_per_40": rival}, **kw)
 
 
-def pace_snap(margin=-8, period=2, elapsed=1200):
-    s = snap(elapsed=elapsed, period=period)
+def pace_snap(margin=-8, period=3, elapsed=1200, log=None):
+    s = snap(elapsed=elapsed, period=period, log=log)
     s["teams"][OWN]["stats"], s["teams"][RIVAL]["stats"] = dict(POSSESSIONS), dict(POSSESSIONS)
     s["score"] = {OWN: 40, RIVAL: 40 - margin}
     s["remaining"] = 300
@@ -265,6 +265,29 @@ def test_g1_without_the_habitual_paces_it_says_nothing_and_it_is_said_once_per_p
     e = pace_engine(80.0, 72.0)
     assert by_id(e.evaluate(pace_snap()), "pace_control")
     assert not by_id(e.evaluate(pace_snap(elapsed=1260)), "pace_control")
+
+
+def test_g1_it_does_not_speculate_with_much_game_left_regression():
+    """#401: it said 'bajar el ritmo' with 15 minutes still to play. Only in the last ``pace_max_left_s`` (15:00)."""
+    early = pace_snap(period=2)                           # 25:00 left
+    assert not by_id(pace_engine(66.0, 78.0).evaluate(early), "pace_control")
+    edge = pace_snap(period=3)                           # exactly 15:00 left
+    assert by_id(pace_engine(66.0, 78.0).evaluate(edge), "pace_control")
+    assert not by_id(pace_engine(66.0, 78.0, config=RuleConfig(pace_max_left_s=600)).evaluate(edge), "pace_control")
+
+
+def test_g1_it_does_not_say_to_slow_down_when_the_comeback_came_while_we_sped_up_regression():
+    """#401: the comeback arrived after raising the pace; telling the staff to change what is working is wrong."""
+    comeback = flat(*[pts(OWN, 950 + 25 * i, 2) for i in range(5)], pts(RIVAL, 1000, 2))   # +8 net in the last 5 minutes
+    s = pace_snap(margin=-8, log=comeback)
+    assert not by_id(pace_engine(66.0, 78.0).evaluate(s), "pace_control")
+
+
+def test_g1_a_recent_recovery_is_measured_with_the_net_points_of_the_window_only():
+    old = flat(*[pts(OWN, 300 + 25 * i, 2) for i in range(5)])                             # long before the window
+    assert by_id(pace_engine(66.0, 78.0).evaluate(pace_snap(log=old)), "pace_control")
+    small = flat(pts(OWN, 1100, 2), pts(OWN, 1150, 2))                                     # +4: below ``pace_recovery_net``
+    assert by_id(pace_engine(66.0, 78.0).evaluate(pace_snap(log=small)), "pace_control")
 
 
 def test_the_alerts_are_json_serialisable():

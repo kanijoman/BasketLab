@@ -115,6 +115,12 @@ class RuleConfig:
     advantage_remaining_s: int = 300
     pace_losing_margin: int = 5
     pace_gap: float = 3.0
+    # Feedback of the first real test (#401), provisional: no pace advice with more than this many seconds of game left (too early to
+    # speculate), nor when we won the last ``pace_recovery_window_s`` by ``pace_recovery_net`` points or more (the comeback is happening
+    # with the pace we play: do not ask to change it).
+    pace_max_left_s: int = 900
+    pace_recovery_window_s: int = 300
+    pace_recovery_net: int = 6
     # Summary of a quarter (the keys, in priority order): turnovers and rival offensive rebounds worse by this much, a rival scorer
     # with this many points, own free throws / threes / field goals poor with at least this many attempts, rival threes hot, team fouls.
     summary_tov_diff: int = 3
