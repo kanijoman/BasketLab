@@ -4,7 +4,7 @@ from typing import Dict, List
 from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME
 
 SUMMED = ("pts_off_tov", "poss_off_tov", "pts_off_steal", "poss_off_steal", "pts_second_chance", "poss_second_chance",
-          "pts_bench", "pts_paint", "pts")
+          "pts_bench", "pts_paint", "pts_fastbreak", "poss_transition", "pts")
 
 
 def build_points_origin_pipeline(min_version: int) -> List[Dict]:

@@ -17,6 +17,9 @@ export interface OriginRow {
   pts_second_chance: Num; pts_second_chance_per_game: Num; opp_pts_second_chance: Num; opp_pts_second_chance_per_game: Num
   pts_bench: Num; pts_bench_per_game: Num; opp_pts_bench: Num; opp_pts_bench_per_game: Num
   pts_paint: Num; pts_paint_per_game: Num; opp_pts_paint: Num; opp_pts_paint_per_game: Num
+  /** Our own estimate (≤ 6 s after a steal or a defensive rebound), not the FEB's. */
+  pts_fastbreak: Num; pts_fastbreak_per_game: Num; opp_pts_fastbreak: Num; opp_pts_fastbreak_per_game: Num
+  oer_fastbreak: Num; opp_oer_fastbreak: Num
   oer_off_tov: Num; oer_off_steal: Num; oer_second_chance: Num
   opp_oer_off_tov: Num; opp_oer_off_steal: Num; opp_oer_second_chance: Num
   bench_pct: Num; opp_bench_pct: Num

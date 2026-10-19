@@ -120,3 +120,104 @@ def test_the_derived_version_marks_the_points_by_origin():
 @pytest.mark.parametrize("field", ["pts_off_tov", "pts_off_steal", "pts_second_chance", "pts_bench", "poss_off_tov"])
 def test_every_metric_is_a_non_negative_number(field):
     assert all(t[field] >= 0 for t in _teams(_scenario()).values())
+
+
+# ---------------------------------------------------------------- fast break, our own estimate (#398)
+
+def _transition_scenario():
+    """B steals and scores 4 s later (fast break); later B rebounds and scores 10 s later (too slow), and again rebounds and scores 4 s later (fast break);
+    B also scores quickly after a made basket of A (not a transition) and a free throw trip after a steal (free throws do not count)."""
+    feed = _Feed()
+    feed.tov("A", "09:00", "p1").steal("B", "09:00", "s")
+    feed.made("B", "08:56", 2, "s")                                   # steal -> basket in 4 s: fast break (2)
+    feed.miss("A", "08:30", 2, "p1").reb("B", "08:30", "p")           # defensive rebound
+    feed.made("B", "08:20", 2, "p")                                   # 10 s later: not a fast break
+    feed.miss("A", "07:50", 3, "p1").reb("B", "07:50", "s")
+    feed.made("B", "07:46", 3, "s")                                   # 4 s after the rebound: fast break (3)
+    feed.made("A", "07:30", 2, "p1")
+    feed.made("B", "07:25", 2, "s")                                   # 5 s after a made basket: not a transition origin
+    feed.tov("A", "07:10", "p1")                                      # a turnover of the rival WITHOUT steal (violation, out of bounds...)
+    feed.made("B", "07:06", 2, "s")                                   # 4 s later: fast break (2)
+    return feed
+
+
+def test_fast_break_points_are_the_field_goals_scored_within_six_seconds_after_a_turnover_of_the_rival_or_a_defensive_rebound():
+    teams = _teams(_transition_scenario())
+
+    assert teams["B"]["pts_fastbreak"] == 7 and teams["A"]["pts_fastbreak"] == 0
+
+
+def test_transition_possessions_are_the_ones_that_start_with_a_rival_turnover_steal_or_not_or_a_defensive_rebound():
+    teams = _teams(_transition_scenario())
+
+    assert teams["B"]["poss_transition"] == 4 and teams["A"]["poss_transition"] == 0
+
+
+def test_the_window_is_six_seconds_and_a_basket_after_it_is_not_a_fast_break():
+    from src.pbp.points_by_origin import FASTBREAK_MAX_S
+
+    assert FASTBREAK_MAX_S == 6
+    feed = _Feed()
+    feed.tov("A", "09:00", "p1").steal("B", "09:00", "s")
+    feed.made("B", "08:53", 2, "s")                                   # 7 s: out
+
+    assert _teams(feed)["B"]["pts_fastbreak"] == 0
+
+
+def test_free_throws_after_a_steal_are_not_fast_break_points():
+    feed = _Feed()
+    feed.tov("A", "09:00", "p1").steal("B", "09:00", "s")
+    feed.foul("A", "08:58", "Personal", "p1").ft("B", "08:57", True, "s").ft("B", "08:57", True, "s")
+
+    assert _teams(feed)["B"]["pts_fastbreak"] == 0
+
+
+def test_the_derived_version_marks_the_fast_break_figures():
+    assert DERIVED_VERSION >= 6
+
+
+# ---------------------------------------------------------------- second chance: only after an offensive rebound
+
+def _second_chance(feed):
+    return _teams(feed)["B"]["pts_second_chance"]
+
+
+def test_points_after_an_offensive_rebound_are_second_chance_baskets_and_free_throws_alike():
+    feed = _Feed()
+    feed.miss("B", "09:50", 2, "s").reb("B", "09:49", "p").made("B", "09:45", 2, "p")                         # basket after the rebound
+    feed.miss("A", "09:30", 2, "p1").reb("A", "09:29", "p1").made("A", "09:25", 2, "p1")                      # the other team
+    feed.miss("B", "09:10", 2, "s").reb("B", "09:09", "p").foul("A", "09:05", "Personal", "p1")
+    feed.ft("B", "09:04", True, "p").ft("B", "09:04", True, "p")                                              # free throws after the rebound
+
+    assert _second_chance(feed) == 4
+
+
+def test_points_after_a_defensive_rebound_or_a_turnover_or_a_made_basket_are_not_second_chance():
+    feed = _Feed()
+    feed.miss("A", "09:50", 2, "p1").reb("B", "09:49", "s").made("B", "09:45", 2, "s")                        # defensive rebound
+    feed.tov("A", "09:30", "p1").made("B", "09:26", 2, "s")                                                   # turnover of the rival
+    feed.made("A", "09:10", 2, "p1").made("B", "09:05", 2, "s")                                               # after a made basket
+
+    assert _second_chance(feed) == 0
+
+
+def test_free_throws_of_a_shooting_foul_on_a_miss_are_not_second_chance():
+    feed = _Feed()
+    feed.miss("B", "09:50", 2, "s").foul("A", "09:49", "Personal", "p1")
+    feed.ft("B", "09:48", True, "s").ft("B", "09:48", True, "s")                                              # a trip: the ball was never lost
+
+    assert _second_chance(feed) == 0
+
+
+def test_a_basket_after_the_team_keeps_the_ball_with_no_rebound_recorded_is_second_chance():
+    """The feed lacks the rebound but the same team shoots again: it kept the ball, an implicit offensive rebound."""
+    feed = _Feed()
+    feed.miss("B", "09:50", 2, "s").made("B", "09:45", 2, "p")
+
+    assert _second_chance(feed) == 2
+
+
+def test_second_chance_points_are_a_part_of_the_points_of_the_origin_that_opened_the_possession():
+    teams = _teams(_scenario())
+
+    assert teams["B"]["pts_second_chance"] <= sum(teams["B"]["pts_by_origin"].values())

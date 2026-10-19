@@ -4,7 +4,7 @@
 throws of technical fouls, which are not a possession, go under ``technical`` (their points still count for the bench). Views on top of it: points and possessions
 after a turnover (a steal included) or a steal, second chance (points after an offensive rebound of the same possession),
 points of the bench (players who did not start: ``inn`` of the box score) and points in the paint (made shots of the
-``SHOTCHART`` in the zones "aro" and "zona"). The official fast-break points are not derived: their definition cannot be
+``SHOTCHART`` in the zones "aro" and "zona"). Fast-break points are an estimate of our own (``FASTBREAK_*``, #398): the official definition cannot be
 reproduced from the play-by-play (evaluated against the official PDF).
 """
 from __future__ import annotations
@@ -15,6 +15,11 @@ from typing import Any, Dict, Iterable, List, Optional, Set
 from src.live_core.zones import classify_shot
 
 _AFTER_TURNOVER = ("turnover", "steal")
+# Fast break, our own estimate (#398: the FEB definition is not reproducible from the play-by-play): field goals of a possession that starts with a
+# rival turnover (a steal or not: violations, out of bounds...) or a defensive rebound and ends in a made basket within FASTBREAK_MAX_S seconds
+# (provisional; 6 s fits the official PDF best).
+FASTBREAK_ORIGINS = ("turnover", "steal", "def_rebound", "team_def_rebound")
+FASTBREAK_MAX_S = 6
 _PAINT_ZONES = ("restricted_area", "key_area")
 _MADE_SHOT_POINTS = 2
 
@@ -49,6 +54,8 @@ def team_points_by_origin(possessions: List[Any], team_id: str, starting: Set[st
     after_tov = [p for p in mine if p.origin in _AFTER_TURNOVER and p.counted]
     after_steal = [p for p in after_tov if p.origin == "steal"]
     second = [p for p in mine if p.orebs and p.counted]
+    transition = [p for p in mine if p.origin in FASTBREAK_ORIGINS and p.counted]
+    fast = [p for p in transition if p.outcome == "made_fg" and p.duration <= FASTBREAK_MAX_S]
     bench = sum(pts for p in mine for player, pts in p.points_by_player.items() if player not in starting)
     bench += sum(pts for player, pts in technical_by_player.items() if player not in starting)
     return {
@@ -57,4 +64,5 @@ def team_points_by_origin(possessions: List[Any], team_id: str, starting: Set[st
         "pts_off_steal": sum(p.points for p in after_steal), "poss_off_steal": len(after_steal),
         "pts_second_chance": sum(p.second_chance_points for p in mine), "poss_second_chance": len(second),
         "pts_bench": bench, "pts_paint": paint,
+        "pts_fastbreak": sum(p.points for p in fast), "poss_transition": len(transition),
     }

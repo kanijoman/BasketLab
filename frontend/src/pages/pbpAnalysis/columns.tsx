@@ -82,12 +82,16 @@ export function originColumns(view: OriginView): Col[] {
     group('paint', 'Pintura', [
       num(`${p}pts_paint_per_game`, 'Pts/P', `Puntos por partido de canastas en el aro y la zona${who}`),
     ]),
+    group('fastbreak', 'Contraataque (est.)', [
+      num(`${p}pts_fastbreak_per_game`, 'Pts/P', `Estimación propia: puntos por partido de canastas en ≤ 6 s tras pérdida rival (con o sin robo) o rebote defensivo${who}`),
+      num(`${p}oer_fastbreak`, 'OER', `Puntos de contraataque por 100 posesiones que empiezan en pérdida rival o rebote defensivo${who}`),
+    ]),
   ]
 }
 
 const ORIGIN_NUMERIC = [
   'pts_off_tov_per_game', 'oer_off_tov', 'pts_off_steal_per_game', 'oer_off_steal', 'pts_second_chance_per_game', 'oer_second_chance',
-  'pts_bench_per_game', 'bench_pct', 'pts_paint_per_game',
+  'pts_bench_per_game', 'bench_pct', 'pts_paint_per_game', 'pts_fastbreak_per_game', 'oer_fastbreak',
 ]
 export const ORIGIN_KEYS = [...ORIGIN_NUMERIC, ...ORIGIN_NUMERIC.map(k => `opp_${k}`)]
 /** Lower is better only for what the rival scores against the team; the bench share conceded is not good or bad. */
