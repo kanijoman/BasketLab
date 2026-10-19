@@ -50,6 +50,21 @@ describe('LiveBridge on Pyodide', () => {
     }
   }, 60_000)
 
+  it('builds the post-match report of the finished game inside Pyodide (issue #409)', () => {
+    const meta = bridge.start(demoPackage)
+    const alerts = [{ alert: { key: 'k', id: 'fatigue_high', severity: 'info', category: 'rotacion', message: 'm', evidence: {}, proposal: [], rearm_s: null }, at: 'Q2 03:00' }]
+    const report = bridge.report(demoGame, alerts as never, meta.team.id)
+    expect(report.match.own.name.trim()).toBe('ACEITES ABRIL ADBA SANFER')
+    expect(report.match.periods.length).toBeGreaterThanOrEqual(4)
+    expect(['win', 'loss']).toContain(report.match.result)
+    expect(report.match.periods.reduce((n, p) => n + p.own, 0)).toBe(report.match.score.own)
+    expect(report.alerts[0]).toMatchObject({ key: 'k', period: 2, clock: '03:00' })
+    // the own team is given, so the other side of the same game can be reported without restarting the session
+    const rival = bridge.report(demoGame, [], meta.rival.id)
+    expect(rival.match.own.id).toBe(meta.rival.id)
+    expect(rival.match.score.own).toBe(report.match.score.rival)
+  }, 60_000)
+
   it('rejects a corrupted package with a readable error', () => {
     const broken = JSON.parse(demoPackage)
     broken.package.team.name = 'otro'

@@ -150,3 +150,11 @@ def test_the_session_builds_the_report_for_its_own_team_from_json_text(doc):
     assert via_json == direct and via_json["match"]["own"]["id"] == "1008631"
     assert [a["key"] for a in via_json["alerts"]] == ["k"] and via_json["alerts"][0]["period"] == 2
     assert json.loads(report_json(json.dumps(doc)))["alerts"] == []
+
+
+def test_the_report_needs_no_session_when_the_own_team_is_given(doc):
+    """The app builds the report of a finished match kept on the device while another session may be running."""
+    import src.live_core.session as session
+    session._SESSION = None
+    data = json.loads(session.report_json(json.dumps(doc), None, "1008898"))
+    assert data["match"]["own"]["id"] == "1008898" and data["match"]["result"] == "win"

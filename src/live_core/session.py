@@ -147,6 +147,10 @@ def play_recording_json(t: float) -> str:
     return _dump(_session().play(t))
 
 
-def report_json(game_json: str, alerts_json: Optional[str] = None) -> str:
-    alerts = json.loads(alerts_json) if alerts_json else None
-    return _dump(_session().report(unwrap_extended_json(json.loads(game_json)), alerts))
+def report_json(game_json: str, alerts_json: Optional[str] = None, own_team_id: Optional[str] = None) -> str:
+    """The post-match report. With ``own_team_id`` it needs no session (a finished match kept on the device is reported while another
+    session may be running); without it the session's team is the own one."""
+    game, alerts = unwrap_extended_json(json.loads(game_json)), (json.loads(alerts_json) if alerts_json else None)
+    if own_team_id is not None:
+        return _dump(to_jsonable(build_report(game, str(own_team_id), alerts)))
+    return _dump(_session().report(game, alerts))
