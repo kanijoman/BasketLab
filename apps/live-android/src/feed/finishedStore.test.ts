@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { IndexedDbFinishedStore, MAX_FINISHED, memoryFinishedStore, safeFinishedStore, type FinishedMatch } from './finishedStore'
 
 const match = (code: string, savedAt: string): FinishedMatch => ({
-  code, title: `Local ${code} – Visitante`, savedAt, plaintext: `PKG-${code}`, game: JSON.stringify({ PLAYBYPLAY: { LINES: [] }, code }),
+  code, title: `Local ${code} – Visitante`, savedAt, ownId: '1', alerts: [], plaintext: `PKG-${code}`, game: JSON.stringify({ PLAYBYPLAY: { LINES: [] }, code }),
 })
 
 describe.each([

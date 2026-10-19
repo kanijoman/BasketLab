@@ -16,13 +16,22 @@ def score(t, team, value=2):
     return (t, team, value)
 
 
-# --- runs: unanswered scoring ------------------------------------------------------------------------------------------------
+# --- runs: streaks with almost no answer ---------------------------------------------------------------------------------------
 
-def test_a_run_is_a_streak_of_unanswered_points_of_at_least_the_minimum():
+def test_a_run_is_a_streak_of_at_least_the_minimum_points_with_at_most_two_conceded():
     scores = [score(10, OWN), score(50, RIVAL), score(100, OWN, 3), score(130, OWN), score(160, OWN, 3), score(200, OWN), score(240, RIVAL)]
     [run] = find_runs(scores, OWN, RIVAL, min_pts=8)
-    assert (run["team"], run["start"], run["end"], run["pts"]) == (OWN, 100, 200, 10)
-    assert run["score_before"] == [2, 2] and run["score_after"] == [12, 2]
+    # the first basket and the rival's one (2) are inside: 12-2 from the first own basket to the last
+    assert (run["team"], run["start"], run["end"], run["pts"], run["against"]) == (OWN, 10, 200, 12, 2)
+    assert run["score_before"] == [0, 0] and run["score_after"] == [12, 2]
+
+
+def test_a_small_answer_inside_the_streak_does_not_break_it_but_a_bigger_one_does():
+    answered = [score(10, OWN, 3), score(20, OWN, 3), score(30, RIVAL), score(40, OWN), score(50, OWN, 3)]
+    [run] = find_runs(answered, OWN, RIVAL, min_pts=8)
+    assert (run["pts"], run["against"], run["start"], run["end"]) == (11, 2, 10, 50)
+    broken = [score(10, OWN, 3), score(20, OWN, 3), score(30, RIVAL, 3), score(40, OWN), score(50, OWN, 3)]
+    assert find_runs(broken, OWN, RIVAL, min_pts=8) == []
 
 
 def test_shorter_streaks_and_alternating_scoring_are_not_runs():
@@ -34,7 +43,12 @@ def test_runs_of_both_teams_come_in_game_order_and_free_throws_count_as_points()
     scores = [score(10, RIVAL, 3), score(20, RIVAL), score(30, RIVAL, 3), score(40, OWN, 1), score(50, OWN, 1)]
     scores += [score(60 + 10 * i, OWN) for i in range(5)]
     runs = find_runs(scores, OWN, RIVAL, min_pts=8)
-    assert [(r["team"], r["pts"]) for r in runs] == [(RIVAL, 8), (OWN, 12)]
+    assert [(r["team"], r["pts"], r["against"]) for r in runs] == [(RIVAL, 8, 2), (OWN, 12, 0)]     # the free throws of the other side are the answer
+
+
+def test_a_streak_is_reported_once_and_not_as_nested_pieces():
+    scores = [score(10 * i, OWN) for i in range(1, 9)]          # 16-0
+    assert len(find_runs(scores, OWN, RIVAL, min_pts=8)) == 1
 
 
 # --- evolution -----------------------------------------------------------------------------------------------------------------

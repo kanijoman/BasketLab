@@ -24,7 +24,8 @@ from .state import LiveGame
 from .windows import window_stats
 
 REPORT_VERSION = 1
-RUN_MIN_PTS = 8            # unanswered points that make a run
+RUN_MIN_PTS = 8            # points scored in a run...
+RUN_MAX_AGAINST = 2        # ...while the rival scores this many or fewer
 TIMELINE_STEP_S = 60
 LINEUP_MIN_S = 120         # a lineup needs these game-seconds to be ranked
 PLAYER_MIN_S = 300         # and a player these to be ranked by plus/minus
@@ -34,23 +35,48 @@ Score = Tuple[int, str, int]    # (elapsed, team id, points)
 _LABEL = re.compile(r"^(Q|PR)(\d+)\s+(\d{1,2}):(\d{2})")
 
 
-def find_runs(scores: Sequence[Score], own: str, rival: str, min_pts: int = RUN_MIN_PTS) -> List[Dict[str, Any]]:
-    """The streaks of unanswered points of ``min_pts`` or more, in game order (free throws count)."""
-    runs: List[Dict[str, Any]] = []
-    totals = {own: 0, rival: 0}
-    streak: Optional[Dict[str, Any]] = None
-    for t, team, value in scores:
-        if streak is None or streak["team"] != team:
-            if streak and streak["pts"] >= min_pts:
-                runs.append(streak)
-            streak = {"team": team, "start": t, "end": t, "pts": 0, "score_before": [totals[own], totals[rival]]}
-        streak["pts"] += value
-        streak["end"] = t
-        totals[team] += value
-        streak["score_after"] = [totals[own], totals[rival]]
-    if streak and streak["pts"] >= min_pts:
-        runs.append(streak)
-    return runs
+def _streaks(scores: Sequence[Score], team: str, other: str, min_pts: int, max_against: int) -> List[Dict[str, Any]]:
+    """The streaks of ``team``: it scores ``min_pts`` or more while ``other`` scores ``max_against`` or less, as maximal stretches."""
+    before = {team: 0, other: 0}
+    out: List[Dict[str, Any]] = []
+    cur: Optional[Dict[str, Any]] = None
+
+    def close() -> None:
+        if cur and cur["pts"] >= min_pts:
+            out.append(cur)
+
+    for t, who, value in scores:
+        if who == team:
+            if cur is None:
+                cur = {"team": team, "start": t, "end": t, "pts": 0, "against": 0, "score_before": dict(before)}
+            cur["pts"] += value
+            cur["end"] = t
+            cur["after"] = dict(before)
+            cur["after"][team] += value
+        elif who == other and cur is not None:
+            if cur["against"] + value <= max_against:
+                cur["against"] += value
+            else:
+                close()
+                cur = None
+        before[who] = before.get(who, 0) + value
+        if cur is not None and who == team:
+            cur["after"] = dict(before)
+    close()
+    return out
+
+
+def find_runs(scores: Sequence[Score], own: str, rival: str, min_pts: int = RUN_MIN_PTS,
+              max_against: int = RUN_MAX_AGAINST) -> List[Dict[str, Any]]:
+    """The runs of the game in game order: a team scores ``min_pts`` or more while the other scores ``max_against`` or less
+    (8-0, 10-2...); free throws count. Each carries the score before and after (own, rival)."""
+    runs = []
+    for team, other in ((own, rival), (rival, own)):
+        for streak in _streaks(scores, team, other, min_pts, max_against):
+            before, after = streak.pop("score_before"), streak.pop("after")
+            streak["score_before"], streak["score_after"] = [before[own], before[rival]], [after[own], after[rival]]
+            runs.append(streak)
+    return sorted(runs, key=lambda r: r["start"])
 
 
 def evolution(scores: Sequence[Score], own: str, rival: str, end: int) -> Dict[str, Any]:
@@ -146,6 +172,7 @@ def _run_row(run: Dict[str, Any], baskets: List[Tuple[Score, List[str]]], snap: 
     stats = {t: window_stats(snap["log"], t, run["start"], run["end"]) for t in (own, rival)}
     return {
         "team": "own" if run["team"] == own else "rival", "start": run["start"], "end": run["end"], "pts": run["pts"],
+        "against": run["against"],
         "period": period, "clock": clock_text(period, remaining), "score_before": run["score_before"],
         "score_after": run["score_after"], "lineup": [names.get(pid, pid) for pid in on_court], "entered": entered, "left": left,
         "explanation": explain_run(run["team"] == own, stats[own], stats[rival], names, entered, left,

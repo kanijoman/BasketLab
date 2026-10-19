@@ -174,6 +174,8 @@ export interface ReportRun {
   start: number
   end: number
   pts: number
+  /** Points the other team scored inside the run (at most 2). */
+  against: number
   period: number
   clock: string
   score_before: [number, number]

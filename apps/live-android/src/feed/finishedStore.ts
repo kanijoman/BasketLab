@@ -1,3 +1,5 @@
+import type { LoggedAlert } from '../engine/types'
+
 /** Finished live matches kept on the device (issue #407), so the staff can review them later without the app being connected.
  *  What is kept is the package the match was followed with and the last merged FEB document (it has the whole play-by-play):
  *  the review replays it through the engine like the sample game. About 1 MB each, hence the limit. */
@@ -7,6 +9,10 @@ export interface FinishedMatch {
   /** "Local – Visitante". */
   title: string
   savedAt: string
+  /** Id of the own team: the post-match report is built from its point of view (issue #409). */
+  ownId: string
+  /** Every alert the engine raised during the match, with the clock label it was shown at: the annex of the report (#409). */
+  alerts: LoggedAlert[]
   /** The preparation package (decrypted JSON text) of the match. */
   plaintext: string
   /** The last merged FEB document (JSON text). */
