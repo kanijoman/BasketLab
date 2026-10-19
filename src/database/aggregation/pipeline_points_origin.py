@@ -1,7 +1,7 @@
 """Season sums of the points by origin stored in ``DERIVED`` (#352): per team, own figures and the rival's (``opp_``)."""
 from typing import Dict, List
 
-from .possession_expr import RELIABLE_GAME
+from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME
 
 SUMMED = ("pts_off_tov", "poss_off_tov", "pts_off_steal", "poss_off_steal", "pts_second_chance", "poss_second_chance",
           "pts_bench", "pts_paint", "pts")
@@ -17,6 +17,7 @@ def build_points_origin_pipeline(min_version: int) -> List[Dict]:
         "team_name": {"$first": "$name"},
         "games": {"$sum": used(1)},
         "games_unreliable": {"$sum": {"$cond": ["$used", 0, 1]}},
+        "games_doubtful": {"$sum": {"$cond": [DOUBTFUL_USED, 1, 0]}},
         "games_paint": {"$sum": {"$cond": [{"$and": ["$used", {"$isNumber": "$me.pts_paint"}]}, 1, 0]}},
     }
     for field in SUMMED:

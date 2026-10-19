@@ -8,7 +8,7 @@ from src.services.pbp_extended_stats_service import PBPExtendedStatsService, cle
 
 
 def _team(tid, **kw):  # noqa: D103
-    base = {"id": tid, "pts": 0, "possessions": 70.0, "reliable": True, "pts_off_tov": 0, "poss_off_tov": 0, "pts_off_steal": 0,
+    base = {"id": tid, "pts": 0, "possessions": 70.0, "reliable": True, "quality_level": "ok", "pts_off_tov": 0, "poss_off_tov": 0, "pts_off_steal": 0,
             "poss_off_steal": 0, "pts_second_chance": 0, "poss_second_chance": 0, "pts_bench": 0, "pts_paint": 0,
             "pts_by_origin": {}}
     base.update(kw)
@@ -70,6 +70,15 @@ def test_unreliable_games_are_left_out_and_counted():
                 _game(2, dict(pts_off_tov=50, poss_off_tov=9, reliable=False), dict()))["Local"]
 
     assert (out["games"], out["games_unreliable"], out["pts_off_tov"]) == (1, 1, 10)
+
+
+def test_games_used_with_alternation_breaks_are_counted_as_doubtful_but_not_the_ones_left_out():
+    row = _rows(_game(1, dict(quality_level="ok"), {}),
+                _game(2, dict(quality_level="doubtful"), {}),
+                _game(3, dict(quality_level="unreliable"), {}),                          # many breaks but reliable by its impact: used
+                _game(4, dict(quality_level="unreliable", reliable=False), {}))["Local"]   # left out: counted as excluded, not as doubtful
+
+    assert (row["games"], row["games_doubtful"], row["games_unreliable"]) == (3, 2, 1)
 
 
 def test_games_without_the_current_version_are_ignored():

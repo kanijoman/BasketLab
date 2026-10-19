@@ -37,3 +37,7 @@ def possessions_per_40(index: int, fga: Dict, fta: Dict, orb: Dict, tov: Dict) -
 # A game whose possession figures can be trusted (``DERIVED.TEAM[].reliable``, #390): a game is left out of the figures that depend on the
 # possessions when more than 10 % of its points have an unknown origin or its possession count is 10 % off the estimate.
 RELIABLE_GAME = {"$eq": ["$all.reliable", True]}
+
+# A game that is used but whose feed has alternation breaks (``quality_level`` is not ``ok``): how much a team's figures lean on inferred or
+# repaired data (#392, stored, not shown). Needs the ``used`` flag the pipelines add.
+DOUBTFUL_USED = {"$and": ["$used", {"$ne": ["$all.quality_level", "ok"]}]}

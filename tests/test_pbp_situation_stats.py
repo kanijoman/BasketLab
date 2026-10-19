@@ -30,8 +30,8 @@ def _tm(caller, pre_net, post_net, p=1, t=300):
     return {"p": p, "t": t, "caller": caller, "pre": side(pre_net), "post": side(post_net)}
 
 
-def _team(tid, reliable=True, **kw):
-    base = {"id": tid, "reliable": reliable, "ato_own": {"n": 0, "pts": 0}, "ato_rival": {"n": 0, "pts": 0},
+def _team(tid, reliable=True, quality="ok", **kw):
+    base = {"id": tid, "reliable": reliable, "quality_level": quality, "ato_own": {"n": 0, "pts": 0}, "ato_rival": {"n": 0, "pts": 0},
             "first_poss": {"n": 0, "pts": 0}, "edges": _edges(), "periods": [_period(1)], "timeouts": []}
     base.update(kw)
     return base
@@ -87,6 +87,19 @@ def test_unreliable_games_are_left_out_of_the_situations_and_counted():
                 _game(2, dict(ato_own={"n": 5, "pts": 9}, reliable=False), {}))["Local"]
 
     assert (row["games"], row["games_unreliable"], row["ato_own"]["n"]) == (1, 1, 1)
+
+
+def test_games_used_with_alternation_breaks_are_counted_as_doubtful_in_the_situations_and_the_timeouts():
+    games = [_game(1, dict(quality="ok", timeouts=[_tm("own", 0, 40)]), {}),
+             _game(2, dict(quality="doubtful", timeouts=[_tm("own", 0, 40)]), {}),
+             _game(3, dict(quality="unreliable"), {}),
+             _game(4, dict(quality="unreliable", reliable=False), {}),
+             _game(5, dict(quality="doubtful"), {})]                                 # no analysable timeouts: still a doubtful game used
+    situations = _rows("get_situations", *games)["Local"]
+    timeouts = _rows("get_timeout_effects", *games)["Local"]
+
+    assert (situations["games"], situations["games_doubtful"], situations["games_unreliable"]) == (4, 3, 1)
+    assert timeouts["games_doubtful"] == 3
 
 
 def test_ratios_without_possessions_are_none():

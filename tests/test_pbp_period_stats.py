@@ -16,13 +16,13 @@ def _period(p, **kw):
     return base
 
 
-def _team(tid, periods, reliable=True):
-    return {"id": tid, "reliable": reliable, "periods": periods}
+def _team(tid, periods, reliable=True, quality="ok"):
+    return {"id": tid, "reliable": reliable, "quality_level": quality, "periods": periods}
 
 
-def _game(match_id, a_periods, b_periods, reliable=True, version=5):
+def _game(match_id, a_periods, b_periods, reliable=True, version=5, quality="ok"):
     return {"_id": match_id, "HEADER": {"TEAM": [{"id": "A", "name": "Local"}, {"id": "B", "name": "Visitante"}]},
-            "DERIVED": {"v": version, "TEAM": [_team("A", a_periods, reliable), _team("B", b_periods, reliable)]}}
+            "DERIVED": {"v": version, "TEAM": [_team("A", a_periods, reliable, quality), _team("B", b_periods, reliable, quality)]}}
 
 
 def _service(*games):
@@ -75,6 +75,14 @@ def test_unreliable_games_are_left_out_and_counted():
     row = _team_rows(_game(1, [_period(1, pts=20)], []), _game(2, [_period(1, pts=50)], [], reliable=False))["Local"]
 
     assert (row["games"], row["games_unreliable"], row["periods"]["1"]["pts"]) == (1, 1, 20)
+
+
+def test_games_used_with_alternation_breaks_are_counted_as_doubtful():
+    row = _team_rows(_game(1, [_period(1, pts=10)], []), _game(2, [_period(1, pts=10)], [], quality="doubtful"),
+                     _game(3, [_period(1, pts=10)], [], quality="unreliable"),
+                     _game(4, [_period(1, pts=10)], [], reliable=False, quality="unreliable"))["Local"]
+
+    assert (row["games"], row["games_doubtful"], row["games_unreliable"]) == (3, 2, 1)
 
 
 def test_games_below_the_current_version_are_ignored_and_periods_missing_in_all_games_are_absent():

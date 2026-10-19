@@ -51,7 +51,7 @@ def _situation_row(raw: Dict[str, Any]) -> Dict[str, Any]:
     for w in ("start", "end"):
         a, b = edges[w]["net_rating"], edges["rest"]["net_rating"]
         edges[w]["vs_rest"] = a - b if a is not None and b is not None else None
-    return {"team_id": raw["_id"], "team_name": raw.get("team_name"), "games": games, "games_unreliable": raw["games_unreliable"],
+    return {"team_id": raw["_id"], "team_name": raw.get("team_name"), "games": games, "games_unreliable": raw["games_unreliable"], "games_doubtful": raw["games_doubtful"],
             "ato_own": _block(raw, "ato_own"), "ato_rival": _block(raw, "ato_rival"), "first_poss": _block(raw, "first_poss"),
             "edges": edges}
 
@@ -88,10 +88,11 @@ class PBPSituationStatsService:
             return cached
         teams: Dict[str, Dict[str, Any]] = {}
         for raw in self._collection(collection_name).aggregate(build_timeouts_pipeline(MIN_VERSION)):
-            team = teams.setdefault(raw["_id"]["team"], {"team_id": raw["_id"]["team"], "team_name": raw.get("team_name"), "groups": {}})
+            team = teams.setdefault(raw["_id"]["team"], {"team_id": raw["_id"]["team"], "team_name": raw.get("team_name"), "groups": {}, "doubtful": set()})
+            team["doubtful"].update(g for g in raw["doubtful"] if g is not None)
             if raw["_id"].get("caller") in ("own", "rival"):
                 team["groups"][raw["_id"]["caller"]] = raw
-        rows = sorted(({"team_id": t["team_id"], "team_name": t["team_name"],
+        rows = sorted(({"team_id": t["team_id"], "team_name": t["team_name"], "games_doubtful": len(t["doubtful"]),
                         "own": _timeout_group(t["groups"].get("own"), "own"), "rival": _timeout_group(t["groups"].get("rival"), "rival")}
                        for t in teams.values()), key=lambda r: str(r["team_name"]))
         _timeouts[collection_name] = rows
