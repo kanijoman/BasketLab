@@ -141,8 +141,8 @@ def test_c3_the_end_of_a_quarter_gets_a_summary_with_the_score_the_keys_and_adju
     assert alert.severity == "info" and alert.category == "resumen" and alert.key == "summary:1"
     msg = alert.message
     assert "Fin del 1.er cuarto" in msg and "4-10" in msg and "-6" in msg
-    assert "Pérdidas: 6 vs 1" in msg and "Rebotes ofensivos del rival: 4 vs 1" in msg
-    assert "Asegurar el balón" in msg and "Cerrar el rebote" in msg
+    assert "Parcial en contra: -10" in msg and "Pérdidas: 6 vs 1" in msg and "Rebotes ofensivos del rival: 4 vs 1" in msg
+    assert "Parar el parcial" in msg and "Asegurar el balón" in msg      # two adjustments at most: the third one is left out
     assert len(alert.evidence["keys"]) <= 3 and 1 <= len(alert.evidence["adjustments"]) <= 2
 
 
@@ -154,7 +154,7 @@ def test_c3_at_most_three_keys_in_priority_order_and_two_adjustments():
     log += [[[t, RIVAL, "pts", v, "r9"]] for t, v in ((120, 3), (220, 3), (320, 2))]
     [alert] = by_id(engine().evaluate(end_of(1, log, players=players)), "period_summary")
     keys = alert.evidence["keys"]
-    assert len(keys) == 3 and keys[:2] == ["turnovers", "rival_orb"] and "own_ft" not in keys
+    assert keys == ["collapse", "turnovers", "rival_orb"] and "own_ft" not in keys
     assert len(alert.evidence["adjustments"]) == 2
 
 
@@ -237,6 +237,21 @@ def test_c3_a_comeback_needs_a_real_deficit_and_a_real_recovery():
     assert "comeback" not in by_id(engine().evaluate(end_of(3, shallow)), "period_summary")[0].evidence["keys"]
     stuck = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 2, 40)]        # -12 and only +4 back
     assert "comeback" not in by_id(engine().evaluate(end_of(3, stuck)), "period_summary")[0].evidence["keys"]
+
+
+def test_c3_a_very_hard_run_conceded_in_the_quarter_is_a_key():
+    """#402, the complement of the comeback: the first half with +4 for us and then 0-14 against (net -14 from the peak)."""
+    log = [_pts_run(OWN, 650, 2, 20), _pts_run(RIVAL, 700, 7, 40), _pts_run(OWN, 1000, 1)]
+    [alert] = by_id(engine().evaluate(end_of(2, log)), "period_summary")
+    assert "collapse" in alert.evidence["keys"] and "Parcial en contra: -14" in alert.message
+    assert "Parar el parcial" in alert.message
+
+
+def test_c3_a_run_conceded_in_an_earlier_period_is_not_said_again_and_a_small_one_is_not_a_key():
+    early = [_pts_run(RIVAL, 100, 7, 40)]                                      # -14 in the 1st quarter
+    assert "collapse" not in by_id(engine().evaluate(end_of(3, early)), "period_summary")[0].evidence["keys"]
+    small = [_pts_run(RIVAL, 1250, 3, 40)]                                      # -6 in the 3rd
+    assert "collapse" not in by_id(engine().evaluate(end_of(3, small)), "period_summary")[0].evidence["keys"]
 
 
 def test_c3_winning_the_quarter_clearly_is_said_when_there_is_room():

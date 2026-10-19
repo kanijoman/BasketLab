@@ -134,6 +134,7 @@ class RuleConfig:
     summary_comeback_deficit: int = 8
     summary_comeback_recovery: int = 8
     summary_period_net: int = 8
+    summary_collapse_drop: int = 10   # the complement of the comeback: the net score fell this much from its best point within the period
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60
     # Volume of threes (issue #291): the share of the team's shots that are threes is this far above its habitual one, with at least
