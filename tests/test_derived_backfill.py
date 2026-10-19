@@ -46,3 +46,12 @@ def test_backfill_reads_the_shotchart_so_the_paint_points_are_not_lost_regressio
     backfill_collection(col)
 
     assert col.find_one({"_id": 1})["DERIVED"]["TEAM"][0]["pts_paint"] == 2
+
+
+def test_require_env_fails_without_the_connection_string_instead_of_trying_a_default_database(monkeypatch, capsys):
+    from src.services.derived_backfill import main
+
+    monkeypatch.delenv("MONGODB_CONNECTION_STRING", raising=False)
+
+    assert main(["--require-env"]) == 2
+    assert "MONGODB_CONNECTION_STRING" in capsys.readouterr().err
