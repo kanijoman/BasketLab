@@ -12,10 +12,9 @@
 * C2 ``comeback_plan`` (issue #253): ``comeback_margin`` (8) or more down in the last ``comeback_left_s`` (10:00) of the game: how many
   possessions each team has left at the current pace and how many net points per possession the comeback takes, against what we do.
   Provisional until the win-probability model (epic #261) gives a calibrated projection.
-* G1 ``pace_control``: the game is being played at the pace of the rival (closer to its habitual one than to ours, habits that
-  differ by ``pace_gap`` possessions per 40) and we lose by ``pace_losing_margin`` or more: raise the pace if the rival slows the
-  game down, lower it if it speeds it up (``PaceModel``). #401: only in the last ``pace_max_left_s`` (15:00) of the game and not
-  while we are winning the recent window (``pace_recovery_net`` in ``pace_recovery_window_s``): the comeback came with our pace.
+* G1 ``pace_control`` (#401): only in the last ``pace_max_left_s`` (6:00): the pace lever of the win probability (estimated possessions left,
+  estimated net rating and the score) says to lower the pace when ahead (avoid the flip) or raise it when behind, if it is worth at
+  least ``pace_min_gain`` of probability (``WinProbabilityModel.levers``).
 
 Thresholds are provisional, in ``RuleConfig``.
 """
@@ -29,7 +28,6 @@ from .clock import game_seconds_left
 from .game_context import game_phase
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import timeouts_left
-from .windows import window_stats
 
 LAST_PERIOD = 4
 GAME_SECONDS = 2400
@@ -138,36 +136,31 @@ def advantage_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
                   tactic_proposal("Evitar faltas innecesarias")])]
 
 
-def _recovering(snap: Dict[str, Any], ctx: RuleContext) -> bool:
-    """We won the recent window by ``pace_recovery_net`` points or more: whatever pace we play is working (issue #401)."""
-    cfg, now, log = ctx.config, snap["elapsed"], snap.get("log", [])
-    start = now - cfg.pace_recovery_window_s
-    net = window_stats(log, ctx.own_team_id, start, now)["pts"] - window_stats(log, ctx.rival_team_id, start, now)["pts"]
-    return net >= cfg.pace_recovery_net
-
-
 def pace_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
-    cfg, score, rival = ctx.config, snap.get("score") or {}, ctx.rival_team_id
-    if ctx.pace is None or not rival or rival not in score or ctx.own_team_id not in score:
+    """G1: in the last minutes the pace is advised from the score, the possessions left and the estimated net rating (#401).
+
+    It uses the pace lever of the win probability: ahead, fewer possessions cut the rival's chances of a flip; behind, more
+    possessions are the way back. Never earlier than ``pace_max_left_s`` from the end (before that it is speculation).
+    """
+    cfg, model, score = ctx.config, ctx.win_prob, snap.get("score") or {}
+    if model is None or ctx.model is None or ctx.own_team_id not in score or ctx.rival_team_id not in score:
         return []
-    if game_seconds_left(snap["period"], snap["remaining"]) > cfg.pace_max_left_s or _recovering(snap, ctx):
+    if game_seconds_left(snap["period"], snap["remaining"]) > cfg.pace_max_left_s:
         return []
-    margin = score[ctx.own_team_id] - score[rival]
-    pace = ctx.pace.evaluate(snap)
-    if margin > -cfg.pace_losing_margin or not pace or not pace["reliable"]:
+    four_factors = ctx.model.evaluate(snap)
+    lever = next((r for r in model.levers(snap, four_factors) if r["id"] == "pace" and r["gain"] >= cfg.pace_min_gain), None)
+    current = model.evaluate(snap, four_factors)
+    if lever is None or current is None:
         return []
-    own_habit, rival_habit, current = pace["habit_own40"], pace["habit_rival40"], pace["current40"]
-    if own_habit is None or rival_habit is None or abs(own_habit - rival_habit) < cfg.pace_gap:
-        return []
-    if abs(current - rival_habit) >= abs(current - own_habit):
-        return []                     # the game is closer to our pace than to theirs: they are not imposing theirs
-    direction = "up" if rival_habit < own_habit else "down"
+    direction, margin = lever["direction"], score[ctx.own_team_id] - score[ctx.rival_team_id]
     verb = "subir" if direction == "up" else "bajar"
+    goal = "forzar la remontada" if direction == "up" else "evitar el vuelco"
     return [Advice(
         key=f"pace:{direction}:{snap['period']}", id="pace_control", severity="info", category="gestion",
-        message=(f"El rival impone su ritmo ({current:.0f} posesiones por 40 min; el suyo {rival_habit:.0f}, el nuestro "
-                 f"{own_habit:.0f}) y vamos perdiendo ({margin:+d}): {verb} el ritmo."),
-        evidence={"direction": direction, "current40": current, "habit_own40": own_habit, "habit_rival40": rival_habit, "margin": margin},
+        message=(f"Quedan unas {current['poss_remaining']:.0f} posesiones por equipo con el marcador {margin:+d} (proyección "
+                 f"{current['projected_margin']:+.0f}): {verb} el ritmo para {goal} (+{lever['gain'] * 100:.0f} % de victoria, experimental)."),
+        evidence={"direction": direction, "margin": margin, "poss_remaining": current["poss_remaining"], "p": current["p"],
+                  "projected_margin": current["projected_margin"], "gain": lever["gain"], "gain_pts": lever["gain_pts"]},
         proposal=[tactic_proposal(f"{verb.capitalize()} el ritmo: " + ("correr más, transición rápida" if direction == "up"
                                                                          else "atacar más tiempo y cuidar cada posesión"))])]
 

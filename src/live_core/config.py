@@ -110,18 +110,13 @@ class RuleConfig:
     timeout_budget_s: int = 240
     timeout_pressure_margin: int = 10
     rival_pair_pf: int = 3
-    # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period. Pace: we lose by
-    # at least this many points while the rival's pace is imposed, and the habitual paces differ by at least this many possessions.
+    # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period.
     advantage_margin: int = 10
     advantage_remaining_s: int = 300
-    pace_losing_margin: int = 5
-    pace_gap: float = 3.0
-    # Feedback of the first real test (#401), provisional: no pace advice with more than this many seconds of game left (too early to
-    # speculate), nor when we won the last ``pace_recovery_window_s`` by ``pace_recovery_net`` points or more (the comeback is happening
-    # with the pace we play: do not ask to change it).
-    pace_max_left_s: int = 900
-    pace_recovery_window_s: int = 300
-    pace_recovery_net: int = 6
+    # Pace advice (#401, provisional): only in the last ``pace_max_left_s`` of the game (6:00) and when the pace lever of the win
+    # probability (estimated possessions left, estimated net rating and the score) is worth at least ``pace_min_gain`` of probability.
+    pace_max_left_s: int = 360
+    pace_min_gain: float = 0.01
     # Summary of a quarter (the keys, in priority order): turnovers and rival offensive rebounds worse by this much, a rival scorer
     # with this many points, own free throws / threes / field goals poor with at least this many attempts, rival threes hot, team fouls.
     summary_tov_diff: int = 3
