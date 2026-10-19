@@ -10,7 +10,7 @@ estimate (``possessions_reason``). FEB only: other documents give ``None`` and t
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, Iterator, List, NamedTuple, Optional, Tuple
 
 from src.live_core.four_factors import FT_POSSESSION_COST
 from src.live_core.possessions import track
@@ -33,23 +33,26 @@ def _int(value: Any) -> int:
         return 0
 
 
+def rebound_sides(events: List[Any]) -> Iterator[Tuple[Any, str]]:
+    """``(event, "orb" | "drb")`` for every rebound that follows a miss: the one who missed rebounds offensively, always."""
+    last_miss: Optional[str] = None
+    for ev in events:
+        if ev.kind in _SHOTS or ev.kind == "ft":
+            last_miss = ev.team_id if not ev.made else (last_miss if ev.kind == "ft" else None)
+        elif ev.kind == "rebound":
+            if last_miss is not None:
+                yield ev, ("orb" if last_miss == ev.team_id else "drb")
+            last_miss = None
+
+
 def _pbp_counts(events: List[Any], team_ids: List[str]) -> Dict[str, Dict[str, int]]:
     """Rebounds (player / team, offensive / defensive) and turnovers per team, with the real-game rebound rule."""
     counts = {t: {"orb_player": 0, "orb_team": 0, "drb_player": 0, "drb_team": 0, "tov": 0} for t in team_ids}
-    last_miss: Optional[str] = None
     for ev in events:
-        team = counts.get(ev.team_id)
-        if team is None:
-            continue
-        if ev.kind in _SHOTS or ev.kind == "ft":
-            last_miss = ev.team_id if not ev.made else (last_miss if ev.kind == "ft" else None)
-        elif ev.kind == "turnover":
-            team["tov"] += 1
-        elif ev.kind == "rebound":
-            if last_miss is not None:
-                side = "orb" if last_miss == ev.team_id else "drb"
-                team[f"{side}_{'team' if ev.player_id is None else 'player'}"] += 1
-            last_miss = None
+        if ev.kind == "turnover" and ev.team_id in counts:
+            counts[ev.team_id]["tov"] += 1
+    for ev, side in rebound_sides([e for e in events if e.team_id in counts]):
+        counts[ev.team_id][f"{side}_{'team' if ev.player_id is None else 'player'}"] += 1
     return counts
 
 

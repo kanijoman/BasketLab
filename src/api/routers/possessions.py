@@ -68,6 +68,15 @@ def get_points_by_origin(collection: str, db=Depends(get_db)) -> List[Dict[str, 
     return PBPExtendedStatsService(db).get_points_by_origin(collection)
 
 
+@router.get("/{collection}/by-period", summary="Season figures per team and period (Q1-Q4, OT)")
+def get_by_period(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
+    """Per team (FEB): points for and against, possessions, ORtg/DRtg, net rating, pace (per 40 min), eFG%, TOV%, ORB%/DRB%, FTr and
+    fouls in each of Q1-Q4 and OT (all the overtimes together), with the rival's (``opp_``: what the team concedes). Games with an
+    ``unreliable`` play-by-play are left out (``games_unreliable``). Empty for collections whose games lack ``DERIVED`` (FBCYL, or
+    games not backfilled: ``python run_backfill_derived.py``)."""
+    return PBPExtendedStatsService(db).get_by_period(collection)
+
+
 @router.get("/{collection}/export/csv", summary="Export per-possession data as CSV")
 def export_possessions_csv(
     collection: str,
