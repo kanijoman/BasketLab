@@ -2,7 +2,8 @@
 
 At the end of the 1st, 2nd (halftime: the first half) and 3rd periods (``remaining == 0``) one alert of category ``resumen`` says
 the score of the period, up to three keys and one or two adjustments. The keys are the first three that apply of a fixed list
-(priority order below), so the summary is deterministic and a quiet period says so. Thresholds are provisional, in ``RuleConfig``.
+(priority order below), so the summary is deterministic and a quiet period says so. #402: besides the weak points it has two positive
+keys, a comeback (first) and a clearly won period (last, only if there is room). Thresholds are provisional, in ``RuleConfig``.
 
 P6 (``period_edges``, issue #250) is delivered in the same pause: when the first ``edge_window_s`` (2:00) of the quarters played, or their
 last ``edge_window_s``, add up to ``edge_net`` (6) points against or worse, with at least ``edge_min_periods`` (2) negative quarters,
@@ -84,10 +85,36 @@ def _fouls(f: Facts) -> Optional[Tuple[str, str]]:
     return None
 
 
+def _comeback(f: Facts) -> Optional[Tuple[str, str]]:
+    worst, now = f["worst_net"], f["net"]
+    if -worst >= f["cfg"].summary_comeback_deficit and now - worst >= f["cfg"].summary_comeback_recovery:
+        return (f"Remontada: de {worst:+d} a {now:+d}",
+                "Mantener el ritmo y la intensidad que han permitido remontar")
+    return None
+
+
+def _period_net(f: Facts) -> Optional[Tuple[str, str]]:
+    net = f["own"]["pts"] - f["rival"]["pts"]
+    if net >= f["cfg"].summary_period_net:
+        return f"Parcial del cuarto: {net:+d}", "Mantener lo que ha funcionado"
+    return None
+
+
 _CANDIDATES: List[Tuple[str, _Candidate]] = [
-    ("turnovers", _turnovers), ("rival_orb", _rival_orb), ("rival_scorer", _rival_scorer), ("own_ft", _own_ft),
+    ("comeback", _comeback), ("turnovers", _turnovers), ("rival_orb", _rival_orb), ("rival_scorer", _rival_scorer), ("own_ft", _own_ft),
     ("own_threes", _own_threes), ("rival_threes", _rival_threes), ("own_fg", _own_fg), ("fouls", _fouls),
+    ("period_net", _period_net),
 ]
+
+
+def _net_swing(log: List[Any], own: str, rival: str, end: int) -> Tuple[int, int]:
+    """(worst, final) net points (own - rival) of the game up to ``end``: the deepest deficit and where it stands."""
+    net = worst = 0
+    for e in log:
+        if e[0] <= end and e[2] == "pts":
+            net += e[3] if e[1] == own else -e[3] if e[1] == rival else 0
+            worst = min(worst, net)
+    return worst, net
 
 
 def _facts(snap: Dict[str, Any], ctx: RuleContext, start: int, end: int, periods: List[int]) -> Facts:
@@ -96,8 +123,9 @@ def _facts(snap: Dict[str, Any], ctx: RuleContext, start: int, end: int, periods
                if p["team_id"] == rival]
     pts, name = max(scorers, default=(0, ""))
     own_fouls = ((snap["teams"].get(ctx.own_team_id) or {}).get("fouls_by_period") or {})
+    worst, net = _net_swing(log, ctx.own_team_id, rival, end)
     return {"cfg": ctx.config, "own": window_stats(log, ctx.own_team_id, start, end), "rival": window_stats(log, rival, start, end),
-            "scorer": (name, pts), "fouls": sum(own_fouls.get(str(p), 0) for p in periods)}
+            "scorer": (name, pts), "fouls": sum(own_fouls.get(str(p), 0) for p in periods), "worst_net": worst, "net": net}
 
 
 def _period_to_sum_up(snap: Dict[str, Any], grace_s: int) -> Optional[int]:

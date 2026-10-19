@@ -238,6 +238,31 @@ def pace_snap(margin=-8, period=3, elapsed=1200, log=None):
     return s
 
 
+def _pts_run(team, start, n, step=20, value=2):
+    return flat(*[pts(team, start + step * i, value) for i in range(n)])
+
+
+def test_c3_a_comeback_is_a_key_of_the_summary_regression():
+    """#402: after a +14 comeback the end of Q3 said 'Sin claves destacadas'. Down 10 at 12:00, ahead by 6 at the end of Q3 (+16 swing)."""
+    log = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 12, 40)]        # RIVAL +12 early (to 700), OWN +24 from 1010 to 1450
+    [alert] = by_id(engine().evaluate(end_of(3, log)), "period_summary")
+    assert "Sin claves" not in alert.message and "Remontada" in alert.message
+    assert alert.evidence["keys"][0] == "comeback" and "Mantener" in alert.message
+
+
+def test_c3_a_comeback_needs_a_real_deficit_and_a_real_recovery():
+    shallow = [_pts_run(RIVAL, 100, 2, 100), _pts_run(OWN, 1010, 4, 40)]      # -4, then +8: the deficit was small
+    assert "comeback" not in by_id(engine().evaluate(end_of(3, shallow)), "period_summary")[0].evidence["keys"]
+    stuck = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 2, 40)]        # -12 and only +4 back
+    assert "comeback" not in by_id(engine().evaluate(end_of(3, stuck)), "period_summary")[0].evidence["keys"]
+
+
+def test_c3_winning_the_quarter_clearly_is_said_when_there_is_room():
+    log = [_pts_run(OWN, 1210, 6, 40), _pts_run(RIVAL, 1250, 1, 40)]           # +10 in Q3, never behind
+    [alert] = by_id(engine().evaluate(end_of(3, log)), "period_summary")
+    assert alert.evidence["keys"] == ["period_net"] and "Parcial del cuarto: +10" in alert.message
+
+
 def test_g1_if_the_rival_slows_the_game_down_and_we_lose_the_advice_is_to_raise_the_pace():
     [alert] = by_id(pace_engine(80.0, 72.0).evaluate(pace_snap()), "pace_control")
     assert alert.severity == "info" and alert.category == "gestion" and "subir el ritmo" in alert.message

@@ -133,6 +133,11 @@ class RuleConfig:
     summary_fg_min_att: int = 10
     summary_fg_max_efg: float = 0.35
     summary_fouls: int = 5
+    # Positive keys (#402, provisional): a comeback (the worst deficit of the game so far was at least this many points and we won back at
+    # least as many since) and a clearly won period (net points of the summarised period; said only if the list has room).
+    summary_comeback_deficit: int = 8
+    summary_comeback_recovery: int = 8
+    summary_period_net: int = 8
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60
     # Volume of threes (issue #291): the share of the team's shots that are threes is this far above its habitual one, with at least
