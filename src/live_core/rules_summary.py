@@ -157,6 +157,13 @@ def _period_to_sum_up(snap: Dict[str, Any], grace_s: int) -> Optional[int]:
     return None
 
 
+def period_keys(snap: Dict[str, Any], ctx: RuleContext, period: int) -> Tuple[List[str], List[str]]:
+    """The keys and the adjustments of ONE period as the summary of the quarter would say them (used by the post-match report)."""
+    facts = _facts(snap, ctx, period_start(period), period_start(period) + period_length(period), [period])
+    found = [hit for _, test in _CANDIDATES if (hit := test(facts)) is not None][:MAX_KEYS]
+    return [text for text, _ in found], list(dict.fromkeys(adjustment for _, adjustment in found))[:MAX_ADJUSTMENTS]
+
+
 def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     period = _period_to_sum_up(snap, ctx.config.summary_grace_s)
     if period is None:

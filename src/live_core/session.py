@@ -16,6 +16,7 @@ from .clock import period_and_remaining, period_length, period_start
 from .engine import LiveEngine
 from .events import parse_line
 from .package import PreparationPackage
+from .postmatch import build_report
 from .replay import truncate_doc
 from .version import engine_version
 from .recorded_feed import RecordedFeed
@@ -54,6 +55,10 @@ class LiveSession:
             "alerts": self._advice.evaluate(snapshot),
             "analysis": self._advice.analyze(snapshot),
         })
+
+    def report(self, game_doc: Dict[str, Any], alerts: Optional[Any] = None) -> Dict[str, Any]:
+        """The post-match report (issue #409) of a finished game, from the point of view of the package's team."""
+        return to_jsonable(build_report(game_doc, str(self.package.team["id"]), alerts))
 
     def load_replay(self, game_doc: Dict[str, Any]) -> Dict[str, Any]:
         self._replay_doc = game_doc
@@ -140,3 +145,8 @@ def load_recording_json(recording_json: str) -> str:
 
 def play_recording_json(t: float) -> str:
     return _dump(_session().play(t))
+
+
+def report_json(game_json: str, alerts_json: Optional[str] = None) -> str:
+    alerts = json.loads(alerts_json) if alerts_json else None
+    return _dump(_session().report(unwrap_extended_json(json.loads(game_json)), alerts))
