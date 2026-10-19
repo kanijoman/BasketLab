@@ -19,6 +19,7 @@ from src.services import TeamStatsService
 from src.services.possession_export_service import PossessionExportService
 from src.services.pbp_quality_service import PBPQualityService
 from src.services.pbp_extended_stats_service import PBPExtendedStatsService
+from src.services.pbp_situation_stats_service import PBPSituationStatsService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -75,6 +76,23 @@ def get_by_period(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
     ``unreliable`` play-by-play are left out (``games_unreliable``). Empty for collections whose games lack ``DERIVED`` (FBCYL, or
     games not backfilled: ``python run_backfill_derived.py``)."""
     return PBPExtendedStatsService(db).get_by_period(collection)
+
+
+@router.get("/{collection}/situations", summary="Season after-timeout possessions, first possessions and first / last two minutes")
+def get_situations(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
+    """Per team (FEB): points per possession after a timeout it called (``ato_own``) or the rival called (``ato_rival``), of the first
+    possession of the periods it started (``first_poss``) and the first / last two minutes of the periods against the rest of them
+    (``edges``: net rating, points, turnover rate, ``vs_rest``). ``unreliable`` games are left out (``games_unreliable``). Empty for
+    collections whose games lack ``DERIVED`` v4 (FBCYL, or not backfilled)."""
+    return PBPSituationStatsService(db).get_situations(collection)
+
+
+@router.get("/{collection}/timeouts", summary="Season effect of the timeouts on the net rating")
+def get_timeout_effects(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
+    """Per team (FEB): the net rating of the 5 possessions of each team before and after each timeout it called (``own``) and each one
+    the rival called (``rival``), the change and the share of timeouts after which the caller improved. Timeouts of the last minute of a
+    period and those without a complete window are not analysed. Empty for collections without ``DERIVED`` v4."""
+    return PBPSituationStatsService(db).get_timeout_effects(collection)
 
 
 @router.get("/{collection}/export/csv", summary="Export per-possession data as CSV")
