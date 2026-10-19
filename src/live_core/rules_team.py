@@ -14,6 +14,8 @@ def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Own players close to fouling out."""
     period, out = snap["period"], []
     left = game_seconds_left(period, snap["remaining"])
+    if snap["remaining"] <= ctx.config.foul_quiet_last_s:
+        return out   # #403: not said, not lost: the key is only stored when emitted, so it comes with the first event after the break
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id:
             continue

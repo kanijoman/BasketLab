@@ -37,5 +37,5 @@ def snap(period=2, elapsed=900, overrides=None):
     players = {pid: player(pid, pid in ON_COURT) for pid in TABLE}
     for pid, changes in (overrides or {}).items():
         players[pid].update(changes)
-    return {"period": period, "elapsed": elapsed, "remaining": 0, "players": players,
+    return {"period": period, "elapsed": elapsed, "remaining": 300, "players": players,
             "teams": {}, "score": {}, "log": []}

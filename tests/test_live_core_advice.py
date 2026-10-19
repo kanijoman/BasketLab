@@ -21,7 +21,7 @@ def _player(name, team, pf=0, on_court=True, minutes=0, stint=0, pf_by_period=No
 def snap(elapsed=600, period=1, players=None, fouls_by_period=None, log=None):
     fouls_by_period = fouls_by_period or {}
     return {
-        "period": period, "remaining": 0, "elapsed": elapsed, "last_num": 1,
+        "period": period, "remaining": 300, "elapsed": elapsed, "last_num": 1,
         "score": {OWN: 0, RIVAL: 0},
         "teams": {tid: {"name": tid, "fouls_game": sum(fouls_by_period.get(tid, {}).values()),
                         "timeouts": [], "fouls_by_period": fouls_by_period.get(tid, {}),
