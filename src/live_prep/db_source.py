@@ -18,6 +18,7 @@ GAME_PROJECTION: Dict[str, int] = {
     "BOXSCORE.TEAM.PLAYER.name": 1,
     "PLAYBYPLAY.LINES": 1,
     "SHOTCHART.SHOTS": 1,
+    "DERIVED": 1,      # exact possessions and points by origin, stored per game (scouting reads them: no box score totals here)
 }
 
 _WITH_PBP = {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}

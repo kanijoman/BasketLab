@@ -26,8 +26,14 @@ const REPORT = {
   players: [{ id: 'p1', name: 'A. ESCOLTA', games: 6, minutes: 150, pts: 120, pts_per_game: 20, share: 0.31, clutch: { pts: 18, fga: 12 } }],
   alerts: [{ id: 'own_drought', label: 'Sequías de anotación', text: 'Sequías de anotación: 2,0 por partido (en 5 partidos, hacia el minuto 22).' }],
   comparison: [{ key: 'pace', label: 'Ritmo', group: 'Básicas', own_text: '70,0', rival_text: '74,0', advantage: 'rival' }],
-  zones: [], lineups: [], quarters: {}, edges: {}, timeouts: {}, games: [], collection: 'FEB_X',
+  zones: [], lineups: [], quarters: {}, edges: {}, timeouts: {}, games: [], collection: 'FEB_X', origin: [],
 }
+
+const ORIGIN = [
+  { key: 'pts_off_tov', label: 'Puntos tras pérdida rival', own: 18, conceded: 12, league: 15, own_delta_pct: 20, conceded_delta_pct: -20 },
+  { key: 'pts_second_chance', label: 'Puntos de 2.ª oportunidad', own: 9, conceded: 13.5, league: 11, own_delta_pct: -18.2, conceded_delta_pct: 22.7 },
+  { key: 'bench_pct', label: '% de puntos del banquillo', own: 33, conceded: null, league: 32, own_delta_pct: 3.1, conceded_delta_pct: null },
+]
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -92,6 +98,30 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(screen.getByText(/6 partidos/)).toBeTruthy()
     expect(screen.getByText(/sequías de anotación: 2,0 por partido/i)).toBeTruthy()
     expect(screen.getByText('Ritmo')).toBeTruthy()
+  })
+
+  it('shows the origin of the points of the team against the league when the report has it (#358)', async () => {
+    scouting.getScoutingReport.mockResolvedValue({ ...REPORT, origin: ORIGIN })
+    renderPage()
+    await choose('2', '')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500) })
+
+    expect(await screen.findByText('Origen de los puntos')).toBeTruthy()
+    expect(screen.getByText('Puntos tras pérdida rival')).toBeTruthy()
+    expect(screen.getByText('+20 %')).toBeTruthy()           // the team against the league
+    expect(screen.getByText('+23 %')).toBeTruthy()           // what it concedes against the league
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)   // the bench has no conceded figure
+  })
+
+  it('has no origin section when the report has no origin figures', async () => {
+    renderPage()
+    await choose('2', '')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500) })
+    await screen.findByText('Claves tácticas')
+
+    expect(screen.queryByText('Origen de los puntos')).toBeNull()
   })
 
   it('without our team it asks for no matchup', async () => {

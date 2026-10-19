@@ -32,6 +32,11 @@ function saveBlob(blob: Blob, filename: string) {
 const fmt = (n: number, digits = 1) => n.toFixed(digits).replace('.', ',')
 const ADVANTAGE_CLASS = { own: 'text-up', rival: 'text-down', even: 'text-ink-secondary', neutral: 'text-ink-secondary' } as const
 
+const delta = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v)} %`)
+/** Colour of a gap against the league: green when it favours the scouted team (more of its own, less conceded), red when not; small gaps are plain. */
+const deltaClass = (v: number | null, goodHigh: boolean) =>
+  v == null || Math.abs(v) < 10 ? 'text-ink-secondary' : (v > 0) === goodHigh ? 'text-up' : 'text-down'
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-1.5">
@@ -93,6 +98,26 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
                 <tr key={p.id} className="border-t border-surface-border text-ink-secondary">
                   <td className="py-1 text-ink-primary">{p.name}</td><td className="text-right">{p.games}</td>
                   <td className="text-right">{fmt(p.pts_per_game)}</td><td className="text-right">{Math.round(p.share * 100)} %</td><td className="text-right">{p.clutch.pts}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Section>
+      )}
+      {(report.origin?.length ?? 0) > 0 && (
+        <Section title="Origen de los puntos">
+          <p className="text-xs text-ink-secondary">Por partido, frente a la liga (definición por posesión). «Concede» = lo que anotan sus rivales.</p>
+          <table className="w-full text-sm">
+            <thead><tr className="text-left text-xs text-ink-secondary"><th></th><th className="text-right">Propio</th><th className="text-right">Liga</th><th className="text-right">Dif.</th><th className="text-right">Concede</th><th className="text-right">Dif.</th></tr></thead>
+            <tbody>
+              {report.origin.map(r => (
+                <tr key={r.key} className="border-t border-surface-border text-ink-secondary">
+                  <td className="py-1 text-ink-primary">{r.label}</td>
+                  <td className="text-right">{r.own == null ? '—' : fmt(r.own)}</td>
+                  <td className="text-right">{r.league == null ? '—' : fmt(r.league)}</td>
+                  <td className={`text-right ${deltaClass(r.own_delta_pct, true)}`}>{delta(r.own_delta_pct)}</td>
+                  <td className="text-right">{r.conceded == null ? '—' : fmt(r.conceded)}</td>
+                  <td className={`text-right ${deltaClass(r.conceded_delta_pct, false)}`}>{delta(r.conceded_delta_pct)}</td>
                 </tr>
               ))}
             </tbody>

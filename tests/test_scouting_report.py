@@ -162,3 +162,33 @@ def test_the_plan_takes_only_the_main_findings_of_the_engine_so_it_does_not_repe
     plan = build_scouting_report(many)["plan"]
     for side in ("neutralize", "exploit"):
         assert sum(1 for p in plan[side] if p["source"] == "motor") <= 3
+
+
+# ---------------------------------------------------------------- points by origin (#358)
+
+ORIGIN = {"games": 6,
+          "own": {"pts_off_tov": 18.0, "pts_second_chance": 9.0, "pts_paint": 36.0, "pts_bench": 25.0, "bench_pct": 33.0},
+          "conceded": {"pts_off_tov": 12.0, "pts_second_chance": 13.5, "pts_paint": 30.0},
+          "league": {"pts_off_tov": 15.0, "pts_second_chance": 11.0, "pts_paint": 32.0, "pts_bench": 24.0, "bench_pct": 32.0}}
+
+
+def test_the_origin_rows_compare_the_team_and_what_it_concedes_with_the_league():
+    rows = {r["key"]: r for r in build_scouting_report(collected(origin=ORIGIN))["origin"]}
+
+    assert rows["pts_off_tov"]["label"] == "Puntos tras pérdida rival"
+    assert (rows["pts_off_tov"]["own"], rows["pts_off_tov"]["league"], rows["pts_off_tov"]["conceded"]) == (18.0, 15.0, 12.0)
+    assert rows["pts_off_tov"]["own_delta_pct"] == pytest.approx(20.0)
+    assert rows["pts_off_tov"]["conceded_delta_pct"] == pytest.approx(-20.0)
+    assert rows["pts_second_chance"]["conceded_delta_pct"] == pytest.approx(22.7, abs=0.1)
+
+
+def test_the_bench_rows_have_no_conceded_figure():
+    rows = {r["key"]: r for r in build_scouting_report(collected(origin=ORIGIN))["origin"]}
+
+    assert rows["pts_bench"]["conceded"] is None and rows["bench_pct"]["conceded"] is None
+    assert rows["bench_pct"]["own_delta_pct"] == pytest.approx(3.1, abs=0.1)
+
+
+def test_without_origin_data_there_are_no_rows():
+    assert build_scouting_report(collected())["origin"] == []
+    assert build_scouting_report(collected(origin=None))["origin"] == []

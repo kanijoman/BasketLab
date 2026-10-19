@@ -101,3 +101,26 @@ def test_a_failing_rule_report_does_not_stop_the_scouting(db, docs):
     report = service(db, docs, BrokenReport()).build(COLLECTION, A)
     assert report["team"]["id"] == A
     assert any("informe por reglas" in n for n in report["notices"])
+
+
+# ---------------------------------------------------------------- the play-by-play figures in the matchup (#358)
+
+def test_the_matchup_includes_the_pbp_figures_of_both_teams(db, docs):
+    rows = {r["team_id"]: {"pts_second_chance_per_game": value} for r, value in ((({"team_id": A}), 12.0), (({"team_id": B}), 8.0))}
+    rival_service = ScoutingRivalService(db, stats=FakeStats(), report_service=FakeReport(), games=lambda handler, collection: iter(docs),
+                                         pbp=lambda collection: [{"team_id": t, **v} for t, v in rows.items()])
+
+    comparison = {c["key"]: c for c in rival_service.build(COLLECTION, B, own_team_id=A)["comparison"]}
+
+    assert comparison["pts_second_chance_per_game"]["own"] == 12.0 and comparison["pts_second_chance_per_game"]["rival"] == 8.0
+    assert comparison["pts_second_chance_per_game"]["advantage"] == "own"
+
+
+def test_a_failure_loading_the_pbp_figures_leaves_the_matchup_as_it_was(db, docs):
+    def boom(collection):
+        raise RuntimeError("db")
+
+    rival_service = ScoutingRivalService(db, stats=FakeStats(), report_service=FakeReport(), games=lambda handler, collection: iter(docs), pbp=boom)
+    comparison = rival_service.build(COLLECTION, B, own_team_id=A)["comparison"]
+
+    assert {c["key"] for c in comparison} >= {"points_per_game", "turnovers_per_game"}

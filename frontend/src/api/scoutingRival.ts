@@ -21,6 +21,17 @@ export interface ScoutingProgress {
 export interface ScoutingKey { area: string; action: 'exploit' | 'neutralize'; text: string }
 export interface ScoutingPlanItem { text: string; source: 'informe' | 'motor' }
 
+/** One row of «Origen de los puntos» (per game; ``conceded`` = what its rivals score; deltas in % against the league). */
+export interface ScoutingOriginRow {
+  key: string
+  label: string
+  own: number | null
+  conceded: number | null
+  league: number | null
+  own_delta_pct: number | null
+  conceded_delta_pct: number | null
+}
+
 export interface ScoutingReport {
   team: { id: string; name: string }
   own_team: { id: string; name: string } | null
@@ -34,6 +45,8 @@ export interface ScoutingReport {
   plan: { neutralize: ScoutingPlanItem[]; exploit: ScoutingPlanItem[] }
   players: { id: string; name: string; games: number; minutes: number; pts: number; pts_per_game: number; share: number; clutch: { pts: number; fga: number } }[]
   lineups: { text: string }[]
+  /** Points by origin against the league; empty when the games cannot be trusted for it. */
+  origin: ScoutingOriginRow[]
   alerts: { id: string; label: string; text: string }[]
   comparison: { key: string; label: string; group: string; own_text: string; rival_text: string; advantage: 'own' | 'rival' | 'even' | 'neutral' }[]
 }

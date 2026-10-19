@@ -17,6 +17,8 @@ from src.live_core.advice import AdviceEngine
 from src.live_core.engine import LiveEngine
 from src.live_core.four_factors import GAME_SECONDS, factors, possessions
 
+from src.pbp.game_derived import DERIVED_VERSION, derive_game_fields
+
 from .eval_feed import finished_game_polls
 from .eval_source import game_code, parse_starttime, same_start_groups
 from .package_builder import SeasonAccumulator
@@ -27,6 +29,35 @@ EDGE_S = 180            # the "start" and the "close" of a quarter: its first an
 TIMEOUT_WINDOW_S = 120  # what happens after a timeout
 TOP_PLAYERS, TOP_LINEUPS, TOP_ALERTS = 10, 8, 12
 FACTOR_KEYS = ("efg", "tov", "orb", "ftr")
+ORIGIN_KEYS = ("pts_off_tov", "pts_second_chance", "pts_paint")    # points of the team and conceded; the bench is only the team's
+
+
+def _reliable_teams(game: Dict[str, Any]) -> Optional[Tuple[Dict[str, Any], Dict[str, Any]]]:
+    """The ``DERIVED`` figures of both teams of a game, or None when it cannot be read or is not reliable for the possession figures (#390)."""
+    derived = game.get("DERIVED")
+    if not derived or derived.get("v") != DERIVED_VERSION:      # not stored (or an older version): compute it from the full document
+        derived = derive_game_fields(game)
+    teams = (derived or {}).get("TEAM") or []
+    return (teams[0], teams[1]) if len(teams) == 2 and all(t.get("reliable") for t in teams) else None
+
+
+class _League:
+    """Per team-game averages of the origin figures over every reliable game of the competition."""
+
+    def __init__(self) -> None:
+        self.sums: Counter = Counter()
+        self.team_games = 0
+
+    def add(self, teams: Tuple[Dict[str, Any], Dict[str, Any]]) -> None:
+        for t in teams:
+            self.team_games += 1
+            self.sums.update({k: t.get(k) or 0 for k in (*ORIGIN_KEYS, "pts_bench", "pts")})
+
+    def result(self) -> Dict[str, float]:
+        n = self.team_games or 1
+        out = {k: self.sums[k] / n for k in (*ORIGIN_KEYS, "pts_bench")}
+        out["bench_pct"] = self.sums["pts_bench"] / self.sums["pts"] * 100 if self.sums["pts"] else 0.0
+        return out
 
 
 def _about_the_team(rule_id: str) -> bool:
@@ -60,9 +91,11 @@ class _Agg:
         self.quarters: Dict[int, List[float]] = {}                     # period -> [for, against]
         self.edges = {"start": {p: [0, 0] for p in range(1, 5)}, "close": {p: [0, 0] for p in range(1, 5)}}
         self.timeouts = Counter()
+        self.origin = {"games": 0, "own": Counter(), "conceded": Counter()}
         self.alerts: Dict[str, Dict[str, Any]] = {}
 
-    def add(self, game: Dict[str, Any], opp: str, snap: Dict[str, Any], alerts: List[Dict[str, Any]]) -> None:
+    def add(self, game: Dict[str, Any], opp: str, snap: Dict[str, Any], alerts: List[Dict[str, Any]],
+            derived: Optional[Tuple[Dict[str, Any], Dict[str, Any]]] = None) -> None:
         mine, theirs = snap["teams"][self.team], snap["teams"][opp]
         self.name = mine.get("name") or self.team
         score_for, score_against = snap["score"][self.team], snap["score"][opp]
@@ -77,6 +110,7 @@ class _Agg:
         for key, tid in (("own", self.team), ("conceded", opp)):
             _sum_cells(self.zones[key], snap["zones"].get(tid, {}))
         self._quarters_and_timeouts(snap["log"], opp)
+        self._origin(derived)
         self._alerts(alerts)
 
     def _factors_and_pace(self, own: Dict[str, int], rival: Dict[str, int], elapsed: float) -> None:
@@ -124,6 +158,14 @@ class _Agg:
                 self.timeouts["after_for"] += _points(log, self.team, e[0], e[0] + TIMEOUT_WINDOW_S)
                 self.timeouts["after_against"] += _points(log, opp, e[0], e[0] + TIMEOUT_WINDOW_S)
 
+    def _origin(self, derived: Optional[Tuple[Dict[str, Any], Dict[str, Any]]]) -> None:
+        if not derived:
+            return
+        mine, theirs = (derived[0], derived[1]) if derived[0]["id"] == self.team else (derived[1], derived[0])
+        self.origin["games"] += 1
+        self.origin["own"].update({k: mine.get(k) or 0 for k in (*ORIGIN_KEYS, "pts_bench", "pts")})
+        self.origin["conceded"].update({k: theirs.get(k) or 0 for k in ORIGIN_KEYS})
+
     def _alerts(self, alerts: List[Dict[str, Any]]) -> None:
         game = len(self.games)
         for a in (a for a in alerts if _about_the_team(a["id"])):
@@ -134,7 +176,7 @@ class _Agg:
             row["minutes"] += a["elapsed"] / 60
             row["severity"][a["severity"]] += 1
 
-    def result(self, league_zones: Dict[str, Dict[str, int]]) -> Dict[str, Any]:
+    def result(self, league_zones: Dict[str, Dict[str, int]], league_origin: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
         n = len(self.games)
         total = sum(p["pts"] for p in self.players.values()) or 1
         players = sorted(({**p, "minutes": round(p["minutes"] / 60, 1), "pts_per_game": p["pts"] / n, "share": p["pts"] / total}
@@ -157,8 +199,17 @@ class _Agg:
             "timeouts": {"per_game": t["n"] / n, "first_half": t["first_half"] / n, "second_half": t["second_half"] / n,
                          "after_n": t["n"], "after_for": t["after_for"] / t["n"] if t["n"] else 0.0,
                          "after_against": t["after_against"] / t["n"] if t["n"] else 0.0},
+            "origin": self._origin_result(league_origin),
             "alerts": alerts,
         }
+
+    def _origin_result(self, league: Optional[Dict[str, float]]) -> Optional[Dict[str, Any]]:
+        g, own, conceded = self.origin["games"], self.origin["own"], self.origin["conceded"]
+        if not g or not league:
+            return None
+        own_row = {k: own[k] / g for k in (*ORIGIN_KEYS, "pts_bench")}
+        own_row["bench_pct"] = own["pts_bench"] / own["pts"] * 100 if own["pts"] else 0.0
+        return {"games": g, "own": own_row, "conceded": {k: conceded[k] / g for k in ORIGIN_KEYS}, "league": league}
 
 
 def _sum_cells(target: Dict[str, Dict[str, int]], cells: Dict[str, Dict[str, int]]) -> None:
@@ -189,14 +240,17 @@ def scout_team(games: Iterable[Dict[str, Any]], team_id: str, collection: str = 
     after each group of games that start together. Raises ``ValueError`` when the team has no game.
     """
     team_id = str(team_id)
-    acc, agg, done = SeasonAccumulator(), _Agg(team_id), 0
+    acc, agg, league, done = SeasonAccumulator(), _Agg(team_id), _League(), 0
     for group in same_start_groups(games):
         for game in group:       # all of them before any is learned: games that start together do not see each other
             ids = [str(t["id"]) for t in (game.get("HEADER") or {}).get("TEAM", [])]
+            derived = _reliable_teams(game) if len(ids) == 2 else None
+            if derived:
+                league.add(derived)
             if len(ids) == 2 and team_id in ids:
                 replayed = _replay(game, acc, team_id, ids[1] if ids[0] == team_id else ids[0], collection, poll_s)
                 if replayed:
-                    agg.add(game, ids[1] if ids[0] == team_id else ids[0], *replayed)
+                    agg.add(game, ids[1] if ids[0] == team_id else ids[0], *replayed, derived=derived)
         for game in group:
             acc.add_game(game)
         done += len(group)
@@ -204,4 +258,4 @@ def scout_team(games: Iterable[Dict[str, Any]], team_id: str, collection: str = 
             progress(done)
     if not agg.games:
         raise ValueError(f"El equipo {team_id} no tiene partidos con jugada a jugada en la colección")
-    return agg.result(acc.zone_league)
+    return agg.result(acc.zone_league, league.result() if league.team_games else None)

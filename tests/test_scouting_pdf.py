@@ -70,3 +70,10 @@ def test_very_long_texts_and_odd_characters_do_not_break_it():
 
 def test_the_comparison_is_left_out_without_one():
     assert b"Comparativa" not in pdf(build_scouting_report(collected()))
+
+
+def test_the_origin_of_the_points_is_a_section_only_when_there_is_data():
+    from tests.test_scouting_report import ORIGIN
+
+    assert b"Origen de los puntos" in pdf(build_scouting_report(collected(origin=ORIGIN)))
+    assert b"Origen de los puntos" not in pdf(build_scouting_report(collected()))
