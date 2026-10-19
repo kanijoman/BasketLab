@@ -20,15 +20,18 @@ interface Options {
   onOutput: (output: EngineOutput) => void
   /** Called before connecting: gives the engine a fresh session and clears what the screen shows. */
   restart: () => Promise<void>
+  /** Called when the match ends, with the last merged FEB document (JSON text) so it can be kept for a later review (issue #407). */
+  onFinished?: (lastDocument: string, code: string) => void
 }
 
 const RUNNING = new Set<FeedState['kind']>(['connecting', 'waiting', 'live', 'gap'])
 
-export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevice, onNote, timing, onOutput, restart }: Options) {
+export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevice, onNote, timing, onOutput, restart, onFinished }: Options) {
   const [state, setState] = useState<FeedState>({ kind: 'idle' })
   /** Whether the screen is being kept on (null: no connection running). */
   const [awake, setAwake] = useState<boolean | null>(null)
   const feed = useRef<LiveFeed | null>(null)
+  const lastDocument = useRef<string | null>(null)
 
   /** The feed goes silent when stopped, so "disconnected" is reported here. */
   const disconnect = useCallback(() => {
@@ -40,13 +43,18 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
     feed.current?.stop()
     setState({ kind: 'connecting' })
     await restart()
+    lastDocument.current = null
     const next = new LiveFeed({
-      ...timing, client: new FebClient(http), code, onState: setState,
-      onDocument: async json => onOutput(await engine.update(json)),
+      ...timing, client: new FebClient(http), code,
+      onState: state => {
+        setState(state)
+        if (state.kind === 'finished' && lastDocument.current !== null) onFinished?.(lastDocument.current, code)
+      },
+      onDocument: async json => { lastDocument.current = json; onOutput(await engine.update(json)) },
     })
     feed.current = next
     void next.start()
-  }, [engine, http, timing, onOutput, restart])
+  }, [engine, http, timing, onOutput, restart, onFinished])
 
   useEffect(() => () => feed.current?.stop(), [])
 

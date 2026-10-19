@@ -7,6 +7,7 @@ import type { EngineApi } from '../engine/client'
 import type { EngineOutput } from '../engine/types'
 import { FakeFeb, type Pack } from '../feed/fakeFeb'
 import type { PackageStore, StoredPackage } from '../package/storage'
+import { memoryFinishedStore, type FinishedMatch } from '../feed/finishedStore'
 
 const META = {
   package_id: 'p', schema_version: 1, created_at: '', collection: 'c', season: '2025',
@@ -142,5 +143,55 @@ describe('live mode with a package', () => {
     render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={{ ...instant, tailPolls: 0 }} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     expect(await screen.findByText(/boom/)).toBeTruthy()
+  })
+})
+
+// #407: a finished live match is kept on the device and can be reviewed afterwards
+describe('finished matches (issue #407)', () => {
+  const connectAndFinish = async (finishedStore = memoryFinishedStore(), engine = fakeEngine()) => {
+    const feb = new FakeFeb(pack)
+    feb.at = 10
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    await waitFor(() => expect(screen.getByText(/^partido finalizado$/i)).toBeTruthy())
+    return { finishedStore, engine }
+  }
+
+  it('saves the match when the feed ends, with the package and the last document, and offers to review it', async () => {
+    const { finishedStore } = await connectAndFinish()
+    await waitFor(async () => expect((await finishedStore.list()).map(m => m.code)).toEqual(['2524475']))
+    const saved = (await finishedStore.load('2524475')) as FinishedMatch
+    expect(saved.plaintext).toBe(PKG)
+    expect(saved.title).toBe('EQUIPO PROPIO – EQUIPO RIVAL')
+    expect(Object.keys(JSON.parse(saved.game))).toEqual(expect.arrayContaining(['HEADER', 'PLAYBYPLAY', 'SHOTCHART']))
+    expect(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i })).toBeTruthy()
+  })
+
+  it('reviewing it replays the saved document with the saved package, and the package match can be recovered', async () => {
+    const engine = fakeEngine()
+    const { finishedStore } = await connectAndFinish(memoryFinishedStore(), engine)
+    const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    fireEvent.click(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i }))
+    await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith(saved.game))
+    expect(engine.start).toHaveBeenLastCalledWith(saved.plaintext)
+    expect(await screen.findByText(/estás revisando un partido/i)).toBeTruthy()
+  })
+
+  it('the matches saved in earlier sessions are listed from the start', async () => {
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+      finishedStore={memoryFinishedStore([old])} />)
+    expect(await screen.findByRole('button', { name: /revisar leon – unibasket/i })).toBeTruthy()
+  })
+
+  it('a match that did not reach its end is not saved', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 0
+    const finishedStore = memoryFinishedStore()
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    await screen.findByText(/en directo/i)
+    fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
+    expect(await finishedStore.list()).toEqual([])
   })
 })
