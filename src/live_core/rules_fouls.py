@@ -8,7 +8,9 @@ critical. Messages are shown to the coaching staff, hence Spanish.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Dict, Optional
+
+from .clock import game_seconds_left
 
 FOUL_OUT = 5
 WARNING_CAP = 3
@@ -22,6 +24,11 @@ class FoulAlert:
     pf: int
     severity: str  # "warning" | "critical"
     message: str
+
+
+def game_end_quiet(snap: Dict[str, Any], quiet_s: int) -> bool:
+    """True in the last ``quiet_s`` seconds of the game (overtime counts only its own period): a foul alert has no use any more (#403)."""
+    return game_seconds_left(snap["period"], snap["remaining"]) <= quiet_s
 
 
 def warn_threshold(period: int) -> int:

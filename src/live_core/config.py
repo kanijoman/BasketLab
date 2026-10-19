@@ -83,6 +83,7 @@ class RuleConfig:
     # and the z of free-throw rate from which an own player is the one who draws contact. Turnovers: from this many of one player
     # he is named. Fatigue: index from which it is critical. Lever: the step (pts/100) it must worsen to be said again.
     foul_min_left_s: int = 360
+    foul_quiet_last_s: int = 40   # #403: no foul-trouble alert (own, rival, rival pair) in the last seconds of the GAME: there is no time left to use it
     bonus_long_left_s: int = 300
     bonus_short_left_s: int = 120
     rival_important_avg_min_s: int = 1200
@@ -109,12 +110,13 @@ class RuleConfig:
     timeout_budget_s: int = 240
     timeout_pressure_margin: int = 10
     rival_pair_pf: int = 3
-    # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period. Pace: we lose by
-    # at least this many points while the rival's pace is imposed, and the habitual paces differ by at least this many possessions.
+    # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period.
     advantage_margin: int = 10
     advantage_remaining_s: int = 300
-    pace_losing_margin: int = 5
-    pace_gap: float = 3.0
+    # Pace advice (#401, provisional): only in the last ``pace_max_left_s`` of the game (6:00) and when the pace lever of the win
+    # probability (estimated possessions left, estimated net rating and the score) is worth at least ``pace_min_gain`` of probability.
+    pace_max_left_s: int = 360
+    pace_min_gain: float = 0.01
     # Summary of a quarter (the keys, in priority order): turnovers and rival offensive rebounds worse by this much, a rival scorer
     # with this many points, own free throws / threes / field goals poor with at least this many attempts, rival threes hot, team fouls.
     summary_tov_diff: int = 3
@@ -127,6 +129,12 @@ class RuleConfig:
     summary_fg_min_att: int = 10
     summary_fg_max_efg: float = 0.35
     summary_fouls: int = 5
+    # Positive keys (#402, provisional): a comeback (the worst deficit of the game so far was at least this many points and we won back at
+    # least as many since) and a clearly won period (net points of the summarised period; said only if the list has room).
+    summary_comeback_deficit: int = 8
+    summary_comeback_recovery: int = 8
+    summary_period_net: int = 8
+    summary_collapse_drop: int = 10   # the complement of the comeback: the net score fell this much from its best point within the period
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60
     # Volume of threes (issue #291): the share of the team's shots that are threes is this far above its habitual one, with at least

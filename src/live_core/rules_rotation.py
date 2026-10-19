@@ -93,6 +93,13 @@ def _decided_offset(snap: Dict[str, Any], ctx: RuleContext) -> float:
     return cfg.decided_fatigue_offset if game_phase(snap, ctx.own_team_id, ctx.rival_team_id, cfg)["phase"] == "decided" else 0.0
 
 
+def _stoppage_open(snap: Dict[str, Any]) -> bool:
+    """A timeout (either team) at the snapshot's own game second: FEB writes its substitutions AFTER the timeout line, so the
+    lineup is not reliable until the game goes on (issue #400)."""
+    now = snap["elapsed"]
+    return any(len(e) > 2 and e[2] == "timeout" and e[0] == now for e in snap.get("log", []))
+
+
 def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Fatigue of the own players on court, escalated info -> warning -> critical (issue #241, R5).
 
@@ -100,6 +107,8 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     run or a player on a hot streak the level goes down one step (never below information) and the message says why.
     """
     out = []
+    if _stoppage_open(snap):
+        return out   # not said yet, not lost: the key is only stored when the alert is emitted
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id or not p["on_court"]:
             continue

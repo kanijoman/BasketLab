@@ -149,7 +149,7 @@
       "summary:3"
      ],
      "digests": {
-      "alerts": "a014edffc1171024da1792703222d69e1f437b93ea7c3c9f75bce438670ad22b",
+      "alerts": "376825f2b14d22a2a0bc78de9d4ec2298e89714d45eacab508d960799a580410",
       "analysis": "c9a38ba5452118b12b440c4ada75c4a14cf61ab462b22cf680ddccaebb9b090a",
       "snapshot": "1af5eaf0614bbd1bce454602a326b72ef9921dada64c3c3aec60207b4a2c4f9d"
      },
@@ -220,18 +220,13 @@
     },
     {
      "alerts": [
-      "foul:2817526:4",
-      "rfoul:2073736:4",
       "rival_hot:2088360:4",
-      "rival_pair:2073736:2088360",
-      "rfoul:1489375:3",
-      "rfoul:2088360:3",
       "bonus:982047:4",
       "rbonus:981204:4",
       "advantage:4"
      ],
      "digests": {
-      "alerts": "925057787a2c56a71f60ad409385179706b59fb3ef6ccf7d9c8c54db5f26ae47",
+      "alerts": "bd863bcfa741b06f27f510715616a95700603e4ddca5f83048d9fa041b0c0649",
       "analysis": "b6cefb0770c7d82a4a4600b8976871e1ea0aaf8e16f3ee689e55eff0957e9d55",
       "snapshot": "d986f48aab6cc980335d67e0b4064c916d5379fe1126dad05c72c56bd438c36d"
      },
@@ -2716,23 +2711,6 @@
       ],
       "rearm_s": null,
       "severity": "warning"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 1,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:1",
-      "message": "Fin del 1.er cuarto: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [],
@@ -2761,23 +2739,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 2,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:2",
-      "message": "Descanso: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [
@@ -2823,23 +2784,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 3,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:3",
-      "message": "Fin del 3.er cuarto: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [
@@ -2873,8 +2817,8 @@
       "message": "Sequía de 20:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
       "proposal": [
        {
-        "left": 2,
-        "message": "Tiempo muerto · quedan 2",
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
         "type": "timeout"
        },
        {
@@ -2913,23 +2857,6 @@
       ],
       "rearm_s": null,
       "severity": "warning"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 1,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:1",
-      "message": "Fin del 1.er cuarto: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [],
@@ -2958,23 +2885,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 2,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:2",
-      "message": "Descanso: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [],
@@ -3003,23 +2913,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 3,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:3",
-      "message": "Fin del 3.er cuarto: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [],
@@ -3036,8 +2929,8 @@
       "message": "Sequía de 20:00 sin anotar. Valorar tiempo muerto o cambio de sistema.",
       "proposal": [
        {
-        "left": 2,
-        "message": "Tiempo muerto · quedan 2",
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
         "type": "timeout"
        },
        {
@@ -3101,23 +2994,6 @@
       "proposal": [],
       "rearm_s": null,
       "severity": "warning"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 2,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:2",
-      "message": "Descanso: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [],
@@ -3149,23 +3025,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 3,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:3",
-      "message": "Fin del 3.er cuarto: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [
@@ -3278,23 +3137,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "resumen",
-      "confirm": 1,
-      "evidence": {
-       "adjustments": [],
-       "keys": [],
-       "own_points": 0,
-       "period": 2,
-       "rival_points": 0
-      },
-      "id": "period_summary",
-      "key": "summary:2",
-      "message": "Descanso: 0-0 (+0). Sin claves destacadas.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [
@@ -11398,7 +11240,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -11643,7 +11485,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -11888,7 +11730,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -12133,7 +11975,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -12378,7 +12220,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -12623,7 +12465,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -12868,7 +12710,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -13113,7 +12955,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -13358,7 +13200,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -13602,7 +13444,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -13846,7 +13688,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -14090,7 +13932,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -14334,7 +14176,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -14578,7 +14420,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -14823,7 +14665,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -15068,7 +14910,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -15313,7 +15155,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -15558,7 +15400,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -15803,7 +15645,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -16048,7 +15890,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -16293,7 +16135,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -16538,7 +16380,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -16783,7 +16625,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -17027,7 +16869,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -17271,7 +17113,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -17515,7 +17357,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -17759,7 +17601,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -18003,7 +17845,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -18248,7 +18090,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -18493,7 +18335,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -18738,7 +18580,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -18983,7 +18825,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -19228,7 +19070,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -19473,7 +19315,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -19718,7 +19560,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -19963,7 +19805,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -20208,7 +20050,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -20452,7 +20294,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -20696,7 +20538,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -20940,7 +20782,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -21184,7 +21026,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -21428,7 +21270,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -21603,7 +21445,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21623,7 +21465,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21643,7 +21485,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21663,7 +21505,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21683,7 +21525,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21703,7 +21545,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21723,7 +21565,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21743,7 +21585,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21763,7 +21605,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21783,7 +21625,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      }
@@ -21818,7 +21660,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21838,7 +21680,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21858,7 +21700,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21878,7 +21720,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21898,7 +21740,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21918,7 +21760,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21938,7 +21780,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21958,7 +21800,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21978,7 +21820,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -21998,7 +21840,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      }
@@ -22034,7 +21876,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -22054,7 +21896,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -22074,7 +21916,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      },
@@ -22094,7 +21936,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {}
      }
@@ -22297,7 +22139,7 @@
         "team_id": "T2"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {},
       "zones": {
@@ -22335,7 +22177,7 @@
         "team_id": "T2"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {},
       "zones": {
@@ -22379,7 +22221,7 @@
         "team_id": "T2"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {},
       "teams": {},
       "zones": {
@@ -22660,7 +22502,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {
        "T1": 40,
        "T2": 40
@@ -22823,7 +22665,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {
        "T1": 40,
        "T2": 40
@@ -22986,7 +22828,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {
        "T1": 40,
        "T2": 40
@@ -23149,7 +22991,7 @@
         "team_id": "T1"
        }
       },
-      "remaining": 0,
+      "remaining": 300,
       "score": {
        "T1": 40,
        "T2": 40
@@ -35960,7 +35802,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -36206,7 +36048,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -36452,7 +36294,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -36697,7 +36539,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -37024,7 +36866,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -37351,7 +37193,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -37678,7 +37520,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -38004,7 +37846,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -38331,7 +38173,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -38658,7 +38500,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -38985,7 +38827,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -39311,7 +39153,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -39638,7 +39480,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -39965,7 +39807,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -40292,7 +40134,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -40618,7 +40460,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -40945,7 +40787,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -41272,7 +41114,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -41599,7 +41441,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -41925,7 +41767,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -42255,7 +42097,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -42585,7 +42427,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },
@@ -42915,7 +42757,7 @@
        "team_id": "T1"
       }
      },
-     "remaining": 0,
+     "remaining": 300,
      "score": {},
      "teams": {}
     },

@@ -141,8 +141,8 @@ def test_c3_the_end_of_a_quarter_gets_a_summary_with_the_score_the_keys_and_adju
     assert alert.severity == "info" and alert.category == "resumen" and alert.key == "summary:1"
     msg = alert.message
     assert "Fin del 1.er cuarto" in msg and "4-10" in msg and "-6" in msg
-    assert "Pérdidas: 6 vs 1" in msg and "Rebotes ofensivos del rival: 4 vs 1" in msg
-    assert "Asegurar el balón" in msg and "Cerrar el rebote" in msg
+    assert "Parcial en contra: -10" in msg and "Pérdidas: 6 vs 1" in msg and "Rebotes ofensivos del rival: 4 vs 1" in msg
+    assert "Parar el parcial" in msg and "Asegurar el balón" in msg      # two adjustments at most: the third one is left out
     assert len(alert.evidence["keys"]) <= 3 and 1 <= len(alert.evidence["adjustments"]) <= 2
 
 
@@ -154,7 +154,7 @@ def test_c3_at_most_three_keys_in_priority_order_and_two_adjustments():
     log += [[[t, RIVAL, "pts", v, "r9"]] for t, v in ((120, 3), (220, 3), (320, 2))]
     [alert] = by_id(engine().evaluate(end_of(1, log, players=players)), "period_summary")
     keys = alert.evidence["keys"]
-    assert len(keys) == 3 and keys[:2] == ["turnovers", "rival_orb"] and "own_ft" not in keys
+    assert keys == ["collapse", "turnovers", "rival_orb"] and "own_ft" not in keys
     assert len(alert.evidence["adjustments"]) == 2
 
 
@@ -220,51 +220,152 @@ def test_c4_it_is_said_once():
     assert not by_id(e.evaluate(finish(remaining=270, margin=14)), "advantage_management")
 
 
-# --- G1: the rival imposes its pace and we are losing ---------------------------------------------------------------------
+def _pts_run(team, start, n, step=20, value=2):
+    return flat(*[pts(team, start + step * i, value) for i in range(n)])
+
+
+def test_c3_a_comeback_is_a_key_of_the_summary_regression():
+    """#402: after a +14 comeback the end of Q3 said 'Sin claves destacadas'. Down 10 at 12:00, ahead by 6 at the end of Q3 (+16 swing)."""
+    log = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 12, 40)]        # RIVAL +12 early (to 700), OWN +24 from 1010 to 1450
+    [alert] = by_id(engine().evaluate(end_of(3, log)), "period_summary")
+    assert "Sin claves" not in alert.message and "Remontada" in alert.message
+    assert alert.evidence["keys"][0] == "comeback" and "Mantener" in alert.message
+
+
+def test_c3_a_comeback_needs_a_real_deficit_and_a_real_recovery():
+    shallow = [_pts_run(RIVAL, 100, 2, 100), _pts_run(OWN, 1010, 4, 40)]      # -4, then +8: the deficit was small
+    assert "comeback" not in by_id(engine().evaluate(end_of(3, shallow)), "period_summary")[0].evidence["keys"]
+    stuck = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 2, 40)]        # -12 and only +4 back
+    assert "comeback" not in by_id(engine().evaluate(end_of(3, stuck)), "period_summary")[0].evidence["keys"]
+
+
+def test_c3_a_very_hard_run_conceded_in_the_quarter_is_a_key():
+    """#402, the complement of the comeback: the first half with +4 for us and then 0-14 against (net -14 from the peak)."""
+    log = [_pts_run(OWN, 650, 2, 20), _pts_run(RIVAL, 700, 7, 40), _pts_run(OWN, 1000, 1)]
+    [alert] = by_id(engine().evaluate(end_of(2, log)), "period_summary")
+    assert "collapse" in alert.evidence["keys"] and "Parcial en contra: -14" in alert.message
+    assert "Parar el parcial" in alert.message
+
+
+def test_c3_a_run_conceded_in_an_earlier_period_is_not_said_again_and_a_small_one_is_not_a_key():
+    early = [_pts_run(RIVAL, 100, 7, 40)]                                      # -14 in the 1st quarter
+    assert "collapse" not in by_id(engine().evaluate(end_of(3, early)), "period_summary")[0].evidence["keys"]
+    small = [_pts_run(RIVAL, 1250, 3, 40)]                                      # -6 in the 3rd
+    assert "collapse" not in by_id(engine().evaluate(end_of(3, small)), "period_summary")[0].evidence["keys"]
+
+
+def test_c3_winning_the_quarter_clearly_is_said_when_there_is_room():
+    log = [_pts_run(OWN, 1210, 6, 40), _pts_run(RIVAL, 1250, 1, 40)]           # +10 in Q3, never behind
+    [alert] = by_id(engine().evaluate(end_of(3, log)), "period_summary")
+    assert alert.evidence["keys"] == ["period_net"] and "Parcial del cuarto: +10" in alert.message
+
 
 POSSESSIONS = {"fg2m": 12, "fg2a": 20, "fg3m": 3, "fg3a": 10, "ftm": 8, "fta": 11, "orb": 5, "drb": 15, "tov": 7, "tov_team": 0,
                "stl": 4, "ast": 9, "blk": 1, "pts": 0}          # 30 - 5 + 7 + 4.84 = 36.8 possessions in 20 minutes = 73.7 per 40
 
 
-def pace_engine(own, rival):
-    return engine(team_baselines={"pace_own_per_40": own, "pace_rival_per_40": rival})
-
-
-def pace_snap(margin=-8, period=2, elapsed=1200):
-    s = snap(elapsed=elapsed, period=period)
+def pace_snap(margin=-8, period=3, elapsed=1200, log=None):
+    s = snap(elapsed=elapsed, period=period, log=log)
     s["teams"][OWN]["stats"], s["teams"][RIVAL]["stats"] = dict(POSSESSIONS), dict(POSSESSIONS)
     s["score"] = {OWN: 40, RIVAL: 40 - margin}
     s["remaining"] = 300
     return s
 
 
-def test_g1_if_the_rival_slows_the_game_down_and_we_lose_the_advice_is_to_raise_the_pace():
-    [alert] = by_id(pace_engine(80.0, 72.0).evaluate(pace_snap()), "pace_control")
-    assert alert.severity == "info" and alert.category == "gestion" and "subir el ritmo" in alert.message
-    assert alert.evidence["direction"] == "up" and alert.proposal[0]["type"] == "tactic"
+# --- G1: pace advice from the score, the estimated possessions left and the estimated rating (#401) ---------------------------------
+
+class _Model:                       # stands for the Four Factors model: the rule only passes its result on
+    def evaluate(self, snap):
+        return {"reliable": True}
 
 
-def test_g1_if_the_rival_speeds_the_game_up_and_we_lose_the_advice_is_to_lower_the_pace():
-    [alert] = by_id(pace_engine(66.0, 78.0).evaluate(pace_snap()), "pace_control")
-    assert "bajar el ritmo" in alert.message and alert.evidence["direction"] == "down"
+class _WinProb:
+    def __init__(self, levers, p=0.55, projected=1.0, poss=8.0):
+        self._levers, self._eval = levers, {"p": p, "projected_margin": projected, "poss_remaining": poss}
+
+    def levers(self, snap, four_factors):
+        return self._levers
+
+    def evaluate(self, snap, four_factors):
+        return self._eval
 
 
-@pytest.mark.parametrize("own, rival, kw", [
-    (80.0, 72.0, dict(margin=-3)),           # losing by little
-    (80.0, 72.0, dict(margin=8)),            # winning
-    (72.0, 80.0, {}),                        # the game is closer to our pace than to theirs
-    (73.0, 72.0, {}),                        # both paces are alike: nothing to impose
-    (80.0, 72.0, dict(elapsed=200)),         # too early to trust the pace
-])
-def test_g1_it_needs_the_rival_to_impose_its_pace_while_we_lose(own, rival, kw):
-    assert not by_id(pace_engine(own, rival).evaluate(pace_snap(**kw)), "pace_control")
+def _pace_ctx(levers, **kw):
+    from src.live_core.advice_types import RuleContext
+    return RuleContext(own_team_id=OWN, rival_team_id=RIVAL, config=RuleConfig(), baselines={}, model=_Model(),
+                       win_prob=_WinProb(levers, **kw))
 
 
-def test_g1_without_the_habitual_paces_it_says_nothing_and_it_is_said_once_per_period_and_direction():
-    assert not by_id(engine().evaluate(pace_snap()), "pace_control")
-    e = pace_engine(80.0, 72.0)
-    assert by_id(e.evaluate(pace_snap()), "pace_control")
-    assert not by_id(e.evaluate(pace_snap(elapsed=1260)), "pace_control")
+def _late(margin=3, left=300):
+    s = snap(elapsed=2400 - left, period=4)
+    s["remaining"], s["score"] = left, {OWN: 60 + margin, RIVAL: 60}
+    return s
+
+
+def _pace_lever(direction, gain=0.06):
+    return {"id": "pace", "direction": direction, "gain": gain, "gain_pts": 1.0}
+
+
+def test_g1_ahead_and_late_with_a_pace_lever_it_says_to_lower_the_pace_to_avoid_the_flip():
+    from src.live_core.rules_closing import pace_rule
+    [alert] = pace_rule(_late(margin=3), _pace_ctx([_pace_lever("down")]))
+    assert alert.id == "pace_control" and alert.severity == "info" and alert.category == "gestion"
+    assert "bajar el ritmo" in alert.message and "vuelco" in alert.message
+    assert alert.evidence["direction"] == "down" and alert.proposal[0]["type"] == "tactic" and alert.key == "pace:down:4"
+
+
+def test_g1_behind_and_late_it_says_to_raise_the_pace():
+    from src.live_core.rules_closing import pace_rule
+    [alert] = pace_rule(_late(margin=-4), _pace_ctx([_pace_lever("up")], projected=-3.0))
+    assert "subir el ritmo" in alert.message and alert.evidence["direction"] == "up"
+
+
+def test_g1_never_earlier_than_six_minutes_to_the_end_regression():
+    """#401: 'bajar el ritmo' came 15 minutes before the end, and after a comeback made with a faster pace."""
+    from src.live_core.rules_closing import pace_rule
+    ctx = _pace_ctx([_pace_lever("down")])
+    assert pace_rule(_late(left=360), ctx)
+    assert not pace_rule(_late(left=361), ctx)
+    s = _late(left=900)
+    s["period"] = 3
+    assert not pace_rule(s, ctx)
+
+
+@pytest.mark.parametrize("levers", [[], [{"id": "pace", "direction": "down", "gain": 0.005, "gain_pts": 0.2}],
+                                    [{"id": "tov", "gain": 0.2, "gain_pts": 2.0}]])
+def test_g1_it_needs_a_pace_lever_worth_it(levers):
+    from src.live_core.rules_closing import pace_rule
+    assert not pace_rule(_late(), _pace_ctx(levers))
+
+
+def test_g1_without_the_win_model_or_the_score_it_says_nothing():
+    from src.live_core.rules_closing import pace_rule
+    from src.live_core.advice_types import RuleContext
+    assert not pace_rule(_late(), RuleContext(own_team_id=OWN, rival_team_id=RIVAL, config=RuleConfig(), baselines={}))
+    ctx = _pace_ctx([_pace_lever("down")])
+    s = _late()
+    s["score"] = {}
+    assert not pace_rule(s, ctx)
+
+
+def pace_late(margin=3, remaining=300, tov=10):
+    """A close finish with a sample big enough for the win model: the pace lever is listed."""
+    from tests.test_live_core_advice import _stats
+    s = snap(elapsed=2400 - remaining, period=4)
+    s["remaining"] = remaining
+    s["teams"][OWN]["stats"], s["teams"][RIVAL]["stats"] = _stats(tov=tov), _stats()
+    s["score"] = {OWN: 70 + margin, RIVAL: 70}
+    return s
+
+
+def test_g1_it_runs_inside_the_engine_once_per_period_and_direction_and_not_when_the_game_is_decided():
+    e = engine()
+    [alert] = by_id(e.evaluate(pace_late()), "pace_control")
+    assert alert.evidence["direction"] == "down" and "vuelco" in alert.message
+    assert not by_id(e.evaluate(pace_late(remaining=280)), "pace_control")                      # said once
+    assert not by_id(engine().evaluate(pace_late(margin=15)), "pace_control")                   # decided: the lever is noise
+    assert not by_id(engine().evaluate(pace_late(remaining=420)), "pace_control")               # 7:00 left: too early
+    assert by_id(engine().evaluate(pace_late(margin=-3)), "pace_control")[0].evidence["direction"] == "up"
 
 
 def test_the_alerts_are_json_serialisable():
