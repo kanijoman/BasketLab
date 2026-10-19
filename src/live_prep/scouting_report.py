@@ -13,6 +13,8 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 from src.live_core.zones import ZONES, zone_family
 
 MAX_KEYS = 8
+ORIGIN_LABELS = (("pts_off_tov", "Puntos tras pérdida rival", True), ("pts_second_chance", "Puntos de 2.ª oportunidad", True),
+                 ("pts_paint", "Puntos en la pintura", True), ("pts_bench", "Puntos del banquillo", False), ("bench_pct", "% de puntos del banquillo", False))
 PLAN_ENGINE_ITEMS = 3      # per side: the plan is the main findings, the full list is already above
 
 
@@ -88,6 +90,23 @@ def _ordinal(n: int) -> str:
 
 def _pct(m: float, a: float) -> Optional[float]:
     return m / a * 100 if a else None
+
+
+def _delta_pct(value: Optional[float], league: Optional[float]) -> Optional[float]:
+    return (value - league) / abs(league) * 100 if value is not None and league else None
+
+
+def _origin_rows(origin: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Points by origin of the team (per game), what it concedes and the league, with the gap to the league in % (#358)."""
+    if not origin:
+        return []
+    own, conceded, league = origin.get("own", {}), origin.get("conceded", {}), origin.get("league", {})
+    rows = []
+    for key, label, has_conceded in ORIGIN_LABELS:
+        mine, theirs, lg = own.get(key), conceded.get(key) if has_conceded else None, league.get(key)
+        rows.append({"key": key, "label": label, "own": mine, "conceded": theirs, "league": lg,
+                     "own_delta_pct": _delta_pct(mine, lg), "conceded_delta_pct": _delta_pct(theirs, lg)})
+    return rows
 
 
 def _record(games: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
@@ -238,6 +257,7 @@ def build_scouting_report(data: Dict[str, Any], team_report: Optional[Dict[str, 
         "profile": [f"Ritmo medio: {fmt(data['pace'])} posesiones por 40 minutos."] + list((team_report or {}).get("profile", [])) if data.get("pace") else list((team_report or {}).get("profile", [])),
         "keys": keys, "players": data["players"][:6], "lineups": _lineup_rows(data, cfg), "zones": zones,
         "quarters": data.get("quarters", {}), "edges": data.get("edges", {}), "timeouts": data.get("timeouts", {}),
+        "origin": _origin_rows(data.get("origin")),
         "alerts": _alert_rows(data, cfg), "plan": _plan(keys, team_report),
         "team_report": {k: (team_report or {}).get(k, []) for k in ("strengths", "weaknesses", "differentials", "tactics")},
         "comparison": list(comparison or []),

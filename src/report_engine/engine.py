@@ -34,6 +34,11 @@ def _profile(stats: Dict[str, Any], quartiles: Dict[str, Any]) -> List[str]:
             lines.append("Perfil ofensivo: su fuerza está en el ataque y concede más en defensa.")
         elif de <= 2:
             lines.append("Perfil defensivo: su fuerza está en la defensa y le cuesta anotar.")
+    bench = _level(stats, quartiles, "bench_pct")
+    if bench == 4:
+        lines.append("Rotación larga: el banquillo anota una parte alta de los puntos.")
+    elif bench == 1:
+        lines.append("Depende de las titulares: el banquillo anota poco.")
     if _level(stats, quartiles, "offensive_rebound_rate") == 4:
         lines.append("Insiste en el rebote ofensivo para generar segundas oportunidades.")
     return lines

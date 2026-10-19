@@ -99,6 +99,22 @@ def _patterns(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
                  f"En los 2 minutos siguientes anotan {fmt(timeouts['after_for'])} y reciben {fmt(timeouts['after_against'])} de media.", 9)
 
 
+def _origin(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
+    rows = report.get("origin") or []
+    if not rows:
+        return
+    pdf.h2("Origen de los puntos")
+    pdf.para("Por partido; definición por posesión (la de la FEB es más estricta). «Concede» = lo que anotan sus rivales.", 8, color=MUTED)
+
+    def cell(value: Optional[float], row: Dict[str, Any]) -> str:
+        return "-" if value is None else fmt(value, 1) + (" %" if row["key"] == "bench_pct" else "")
+
+    table = [[r["label"], cell(r["own"], r), cell(r["league"], r), _pct(r["own_delta_pct"], True), cell(r["conceded"], r), _pct(r["conceded_delta_pct"], True)]
+             for r in rows]
+    colors = [[None, None, None, _delta_color(r["own_delta_pct"], True), None, _delta_color(r["conceded_delta_pct"], False)] for r in rows]
+    pdf.table(["", "Propio", "Liga", "Dif.", "Concede", "Dif."], table, [60, 24, 24, 22, 28, 22], colors=colors)
+
+
 def _alerts_and_matchup(pdf: ScoutingPDF, report: Dict[str, Any], own_name: str) -> None:
     if report["alerts"]:
         pdf.h2("Alertas del motor sobre este equipo")
@@ -130,6 +146,7 @@ def render_scouting_pdf(report: Dict[str, Any], subtitle: str = "", own_name: st
     _people(pdf, report)
     _zones(pdf, report)
     _patterns(pdf, report)
+    _origin(pdf, report)
     _alerts_and_matchup(pdf, report, own_name)
     _games(pdf, report)
     return bytes(pdf.output())

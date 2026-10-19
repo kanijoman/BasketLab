@@ -9,15 +9,21 @@ as a background task; games are read one at a time (memory). The rule report is 
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src.live_prep.scouting_collect import scout_team
 from src.live_prep.scouting_compare import compare_teams
 from src.live_prep.scouting_report import build_scouting_report
-from src.services.team_report_service import TeamNotFoundError, TeamReportService
+from src.services.team_report_service import PBP_KEYS, TeamNotFoundError, TeamReportService
 from src.utils.collection_utils import is_fbcyl
 
 Progress = Callable[[int, int], None]
+
+
+def _pbp_from_db(db: Any, collection: str) -> List[Dict[str, Any]]:
+    from src.services.pbp_extended_stats_service import PBPExtendedStatsService
+
+    return PBPExtendedStatsService(db).get_points_by_origin(collection)
 
 
 def _games_from_mongo(db: Any, collection: str) -> Iterable[Dict[str, Any]]:
@@ -27,8 +33,10 @@ def _games_from_mongo(db: Any, collection: str) -> Iterable[Dict[str, Any]]:
 
 
 class ScoutingRivalService:
-    def __init__(self, db: Any, stats: Any = None, report_service: Any = None, games: Callable[[Any, str], Iterable[Dict[str, Any]]] = _games_from_mongo) -> None:
+    def __init__(self, db: Any, stats: Any = None, report_service: Any = None, games: Callable[[Any, str], Iterable[Dict[str, Any]]] = _games_from_mongo,
+                 pbp: Optional[Callable[[str], List[Dict[str, Any]]]] = None) -> None:
         self._db = db
+        self._pbp = pbp or (lambda collection: _pbp_from_db(db, collection))
         if stats is None:
             from src.services.team_stats_service import TeamStatsService
 
@@ -47,7 +55,14 @@ class ScoutingRivalService:
     def _rows(self, collection: str, *team_ids: str) -> Dict[str, Dict[str, Any]]:
         rows = (self._stats.load_season_data(collection) or {}).get("team_stats") or []
         wanted = {str(t) for t in team_ids}
-        return {str(r.get("team_id") or r.get("_id")): r for r in rows if str(r.get("team_id") or r.get("_id")) in wanted}
+        out = {str(r.get("team_id") or r.get("_id")): dict(r) for r in rows if str(r.get("team_id") or r.get("_id")) in wanted}
+        try:        # the play-by-play figures of the season complete the rows (an enrichment: the matchup works without them)
+            for row in self._pbp(collection) or []:
+                if str(row.get("team_id")) in out:
+                    out[str(row["team_id"])].update({k: row[k] for k in PBP_KEYS if row.get(k) is not None})
+        except Exception:  # noqa: BLE001
+            pass
+        return out
 
     def build(self, collection: str, team_id: str, own_team_id: Optional[str] = None, progress: Optional[Progress] = None) -> Dict[str, Any]:
         """The scouting report (see ``scouting_report.build_scouting_report``) plus ``collection`` and ``own_team``."""

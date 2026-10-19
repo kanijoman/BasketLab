@@ -132,3 +132,62 @@ def test_alerts_about_the_opponents_of_the_team_are_not_part_of_its_scouting(one
     ids = {a["id"] for a in one["alerts"]}
     assert not {i for i in ids if i.startswith("rival_") and i != "rival_run"}
     assert "period_summary" not in ids
+
+
+# ---------------------------------------------------------------- points by origin (#358)
+
+def test_the_origin_of_the_points_of_the_team_and_of_its_rivals_with_the_league_average(one, feb_game_doc):
+    from src.pbp.game_derived import derive_game_fields
+
+    a, b = derive_game_fields(feb_game_doc)["TEAM"]
+    a, b = (a, b) if a["id"] == A else (b, a)
+    origin = one["origin"]
+
+    assert origin["games"] == 1
+    assert origin["own"]["pts_off_tov"] == a["pts_off_tov"] and origin["own"]["pts_second_chance"] == a["pts_second_chance"]
+    assert origin["conceded"]["pts_off_tov"] == b["pts_off_tov"] and origin["conceded"]["pts_paint"] == (b["pts_paint"] or 0)
+    assert origin["league"]["pts_off_tov"] == pytest.approx((a["pts_off_tov"] + b["pts_off_tov"]) / 2)
+    assert origin["own"]["bench_pct"] == pytest.approx(a["pts_bench"] / a["pts"] * 100)
+
+
+def test_two_games_give_per_game_averages(two_games):
+    result = scout_team(two_games, A)
+
+    assert result["origin"]["games"] == 2
+    assert result["origin"]["own"]["pts_off_tov"] == pytest.approx(scout_team(two_games[:1], A)["origin"]["own"]["pts_off_tov"])
+
+
+def test_games_that_are_not_reliable_do_not_count_for_the_origin(feb_game_doc, monkeypatch):
+    import src.live_prep.scouting_collect as module
+
+    real = module.derive_game_fields
+    monkeypatch.setattr(module, "derive_game_fields", lambda game: {"TEAM": [{**t, "reliable": False} for t in real(game)["TEAM"]]})
+    result = scout_team([dated(feb_game_doc, "10-10-2026 - 17:00")], A)
+
+    assert result["origin"] is None and result["sample_games"] == 1          # the rest of the scouting does not depend on it
+
+
+def test_the_origin_is_plain_python_types(one):
+    import json
+
+    json.dumps(one["origin"])
+
+
+def test_the_stored_derived_fields_of_the_game_are_used_when_they_are_current(feb_game_doc):
+    """The scouting reads games with a projection (no box score totals): their stored ``DERIVED`` is what carries the figures."""
+    from src.pbp.game_derived import DERIVED_VERSION
+
+    def team(tid, tov):
+        return {"id": tid, "reliable": True, "pts": 60, "pts_off_tov": tov, "pts_second_chance": 5, "pts_paint": 30, "pts_bench": 20}
+
+    game = dated(feb_game_doc, "10-10-2026 - 17:00")
+    game["DERIVED"] = {"v": DERIVED_VERSION, "TEAM": [team(A, 77), team(B, 33)]}
+    origin = scout_team([game], A)["origin"]
+
+    assert (origin["own"]["pts_off_tov"], origin["conceded"]["pts_off_tov"], origin["league"]["pts_off_tov"]) == (77, 33, 55)
+
+
+def test_the_replay_projection_carries_the_derived_fields():
+    from src.live_prep.db_source import GAME_PROJECTION
+
+    assert GAME_PROJECTION.get("DERIVED") == 1
