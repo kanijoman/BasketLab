@@ -58,28 +58,37 @@ def test_r4_the_time_left_counts_the_periods_still_to_play():
     assert by_id(engine().evaluate(foul_snap(3, 3, 100)), "foul_trouble")     # 1:40 of the 3rd + the whole 4th
 
 
-def test_r4_four_fouls_is_critical_whatever_the_time_left_of_the_game():
+def test_r4_four_fouls_is_critical_whatever_the_time_left_of_the_game_until_the_last_seconds():
     for period, remaining in ((1, 400), (4, 41)):
         assert [a.severity for a in by_id(engine().evaluate(foul_snap(4, period, remaining)), "foul_trouble")] == ["critical"]
 
 
-@pytest.mark.parametrize("pf, period", [(3, 1), (3, 2), (3, 3), (4, 1), (4, 3), (4, 4)])
-def test_r4_no_third_or_fourth_foul_alert_in_the_last_40_seconds_of_a_period_regression(pf, period):
-    """#403: a third foul with 30 s to the end of the quarter was announced: nothing to do but wait for the break."""
-    assert not by_id(engine().evaluate(foul_snap(pf, period, 40)), "foul_trouble")
-    assert not by_id(engine().evaluate(foul_snap(pf, period, 0)), "foul_trouble")
-    assert by_id(engine().evaluate(foul_snap(pf, period, 41)), "foul_trouble")
+@pytest.mark.parametrize("pf", [3, 4])
+def test_r4_no_foul_alert_in_the_last_40_seconds_of_the_game_regression(pf):
+    """#403: a third foul with seconds to go was announced; with this little game left there is nothing to do with it."""
+    assert not by_id(engine().evaluate(foul_snap(pf, 4, 40)), "foul_trouble")
+    assert not by_id(engine().evaluate(foul_snap(pf, 4, 0)), "foul_trouble")
+    assert not by_id(engine().evaluate(foul_snap(pf, 5, 30)), "foul_trouble")             # overtime counts its own period
+    assert by_id(engine().evaluate(foul_snap(4, 4, 41)), "foul_trouble") if pf == 4 else True
 
 
-def test_r4_what_was_held_back_in_the_last_40_seconds_comes_with_the_first_event_after_the_break():
-    e = engine()
-    assert not by_id(e.evaluate(foul_snap(4, 2, 20)), "foul_trouble")
-    assert by_id(e.evaluate(foul_snap(4, 3, 590)), "foul_trouble")
+def test_r4_the_end_of_a_quarter_is_not_the_end_of_the_game():
+    for period in (1, 2, 3):
+        assert by_id(engine().evaluate(foul_snap(4, period, 30)), "foul_trouble")
 
 
-def test_r4_the_quiet_window_comes_from_the_config():
-    e = engine(config=RuleConfig(foul_quiet_last_s=10))
-    assert by_id(e.evaluate(foul_snap(4, 2, 30)), "foul_trouble")
+def test_r4_the_rival_foul_alerts_are_silent_in_the_last_40_seconds_of_the_game_too_regression():
+    """#403: 'Rival X con 3 faltas: atacarle' with seconds left is just as useless."""
+    def rival_snap(remaining, period=4):
+        s = foul_snap(3, period, remaining, pid="r1")
+        s["players"] = {"r1": {**_player("Rita", RIVAL, pf=3)}, "r2": {**_player("Rosa", RIVAL, pf=4)}}
+        return s
+    for remaining in (30, 0):
+        out = engine().evaluate(rival_snap(remaining))
+        assert not by_id(out, "rival_foul_trouble") and not by_id(out, "rival_foul_pair")
+    out = engine().evaluate(rival_snap(120))
+    assert by_id(out, "rival_foul_trouble") and by_id(out, "rival_foul_pair")
+    assert by_id(engine().evaluate(rival_snap(30, period=2)), "rival_foul_trouble")
 
 
 def test_r4_the_threshold_of_time_comes_from_the_config():

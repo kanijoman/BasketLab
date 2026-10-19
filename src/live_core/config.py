@@ -83,7 +83,7 @@ class RuleConfig:
     # and the z of free-throw rate from which an own player is the one who draws contact. Turnovers: from this many of one player
     # he is named. Fatigue: index from which it is critical. Lever: the step (pts/100) it must worsen to be said again.
     foul_min_left_s: int = 360
-    foul_quiet_last_s: int = 40   # #403: no 3rd/4th-foul alert in the last seconds of a period (nothing to do; it comes after the break)
+    foul_quiet_last_s: int = 40   # #403: no foul-trouble alert (own, rival, rival pair) in the last seconds of the GAME: there is no time left to use it
     bonus_long_left_s: int = 300
     bonus_short_left_s: int = 120
     rival_important_avg_min_s: int = 1200

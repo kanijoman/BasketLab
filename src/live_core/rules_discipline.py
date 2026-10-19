@@ -16,7 +16,7 @@ from typing import Any, Dict, List
 from .advice_types import Advice, RuleContext
 from .game_context import game_phase
 from .proposals import tactic_proposal
-from .rules_fouls import CRITICAL_PF
+from .rules_fouls import CRITICAL_PF, game_end_quiet
 
 
 def _name(p: Dict[str, Any]) -> str:
@@ -63,8 +63,8 @@ def key_fouls_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
 
 
 def rival_pair_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
-    if not ctx.rival_team_id:
-        return []
+    if not ctx.rival_team_id or game_end_quiet(snap, ctx.config.foul_quiet_last_s):
+        return []        # #403: no foul alert with this little game left
     pair = sorted((pid, p) for pid, p in snap["players"].items()
                   if p["team_id"] == ctx.rival_team_id and p["on_court"] and p["pf"] >= ctx.config.rival_pair_pf)
     if len(pair) < 2:

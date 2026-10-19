@@ -220,17 +220,13 @@
     },
     {
      "alerts": [
-      "rfoul:2073736:4",
       "rival_hot:2088360:4",
-      "rival_pair:2073736:2088360",
-      "rfoul:1489375:3",
-      "rfoul:2088360:3",
       "bonus:982047:4",
       "rbonus:981204:4",
       "advantage:4"
      ],
      "digests": {
-      "alerts": "e3b9af28f3e17a4a0525de09d59b4651bbbf8080df0057373b110943ce09db3a",
+      "alerts": "bd863bcfa741b06f27f510715616a95700603e4ddca5f83048d9fa041b0c0649",
       "analysis": "b6cefb0770c7d82a4a4600b8976871e1ea0aaf8e16f3ee689e55eff0957e9d55",
       "snapshot": "d986f48aab6cc980335d67e0b4064c916d5379fe1126dad05c72c56bd438c36d"
      },

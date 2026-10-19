@@ -7,15 +7,15 @@ from typing import Any, Dict, List, Optional
 from .advice_types import Advice, RuleContext
 from .clock import game_seconds_left
 from .proposals import tactic_proposal
-from .rules_fouls import FOUL_OUT, evaluate_player_fouls, warn_threshold
+from .rules_fouls import FOUL_OUT, evaluate_player_fouls, game_end_quiet, warn_threshold
 
 
 def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Own players close to fouling out."""
     period, out = snap["period"], []
     left = game_seconds_left(period, snap["remaining"])
-    if snap["remaining"] <= ctx.config.foul_quiet_last_s:
-        return out   # #403: not said, not lost: the key is only stored when emitted, so it comes with the first event after the break
+    if game_end_quiet(snap, ctx.config.foul_quiet_last_s):
+        return out   # #403: nothing is gained by saying it with this little game left
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id:
             continue
@@ -52,6 +52,8 @@ def rival_foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     """Rival players in foul trouble: an opportunity to attack them. An important rival is a warning; the ball goes to
     the own player who draws the most contact (issue #241, R8)."""
     period, out = snap["period"], []
+    if game_end_quiet(snap, ctx.config.foul_quiet_last_s):
+        return out   # #403
     contact = _contact_player(snap, ctx)
     for pid, p in snap["players"].items():
         pf = p["pf"]
