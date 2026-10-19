@@ -164,6 +164,8 @@ export interface EngineOutput {
     four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext
     formation?: FormationStatus; win_prob?: WinProb; win_levers?: WinLever[]
   }
+  /** Whether the teams of the package are the teams of the match (issue #417); when not, there are no alerts nor analysis. */
+  package_match?: { ok: boolean; expected: string[]; found: string[] }
 }
 
 /** An alert with the game clock label under which the app showed it ("Q2 05:30"); the unit of the alert log of a match (issue #409). */

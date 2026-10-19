@@ -8,6 +8,7 @@ for the substitutions; the alert is not lost, it comes with the next event if th
 from pathlib import Path
 
 from src.live_core.events import parse_line
+from src.live_core.package import PreparationPackage
 from src.live_core.session import LiveSession
 from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, engine, snap
 
@@ -56,10 +57,12 @@ def test_no_fatigue_alert_on_the_recorded_match_names_a_player_who_is_about_to_l
 def _replay_leon_unibasket():
     """Leon-Unibasket (2524475, the match of the feedback): FEB logged the timeout of Q2 at 19:12:40 and its substitutions at 19:14:01.
 
-    There is no package of that match: the engine reads it with the one of Zamora-Leon, where Leon is also the own team.
+    There is no package of that match: the one of Zamora-Leon is used with the rival changed (Leon is the own team in both).
     Returns the fatigue alerts with the snapshot they came with, and the numbers of the timeout lines.
     """
-    session = LiveSession((RECORDINGS / "2524470.package.json").read_text(encoding="utf-8"))
+    package = PreparationPackage.loads((RECORDINGS / "2524470.package.json").read_text(encoding="utf-8"))
+    package.rival = {"id": "1008895", "name": "BOSONIT UNIBASKET"}     # Leon's rival of that day (#417: the package must be the match's)
+    session = LiveSession(package.dumps())
     session.load_recording((RECORDINGS / "2524475.rec.json.gz").read_bytes())
     final = session._feed.document_at(session._feed.duration)
     timeouts = {e.num for e in map(parse_line, final["PLAYBYPLAY"]["LINES"]) if e and e.kind == "timeout"}

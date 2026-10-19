@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from .advice import AdviceEngine
 from .clock import period_and_remaining, period_length, period_start
-from .engine import LiveEngine
+from .engine import LiveEngine, _teams
 from .events import parse_line
 from .package import PreparationPackage
 from .postmatch import build_report
@@ -47,13 +47,24 @@ class LiveSession:
             "engine_version": engine_version(),   # for the About screen and the diagnostics (#226)
         }
 
+    def package_match(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+        """Whether the teams of the package are the teams of the match (issue #417). Ids the package does not carry cannot be compared."""
+        expected = [str(t.get("id")) for t in (self.package.team, self.package.rival)]
+        found = [tid for tid, _ in _teams(doc)]
+        comparable = [e for e in expected if e != "None"]
+        return {"ok": all(e in found for e in comparable), "expected": expected, "found": found}
+
     def update(self, doc: Dict[str, Any]) -> Dict[str, Any]:
-        """Process the latest FEB document; returns the snapshot, the NEW alerts and the analysis."""
+        """Process the latest FEB document; returns the snapshot, the NEW alerts and the analysis.
+
+        Under a package prepared for another match (#417) the advice is withheld: ``package_match`` says so and the rest is empty."""
         snapshot = self._engine.update(doc)
+        match = self.package_match(doc)
         return to_jsonable({
             "snapshot": snapshot,
-            "alerts": self._advice.evaluate(snapshot),
-            "analysis": self._advice.analyze(snapshot),
+            "alerts": self._advice.evaluate(snapshot) if match["ok"] else [],
+            "analysis": self._advice.analyze(snapshot) if match["ok"] else {},
+            "package_match": match,
         })
 
     def report(self, game_doc: Dict[str, Any], alerts: Optional[Any] = None) -> Dict[str, Any]:

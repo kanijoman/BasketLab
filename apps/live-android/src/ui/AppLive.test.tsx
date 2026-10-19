@@ -229,3 +229,35 @@ describe('finished matches (issue #407)', () => {
     expect(await finishedStore.list()).toEqual([])
   })
 })
+
+// #417: the package must be the one of the match
+describe('package of another match (issue #417)', () => {
+  const mismatched = (): EngineOutput => ({
+    snapshot: { period: 1, remaining: 593, elapsed: 7, score: { '1': 2, '9': 0 }, teams: { '1': { name: 'EQUIPO PROPIO', fouls_game: 0 }, '9': { name: 'OTRO RIVAL', fouls_game: 0 } } } as never,
+    alerts: [], analysis: {},
+    package_match: { ok: false, expected: ['1', '2'], found: ['1', '9'] },
+  })
+
+  it('warns that the package is not the one of this match, with the teams of both, and shows no alerts', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 10
+    const engine = fakeEngine({ update: vi.fn(async () => mismatched()) })
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    const warning = await screen.findByRole('alert', { name: /paquete de otro partido/i })
+    expect(warning.textContent).toMatch(/no corresponde a este partido/i)
+    expect(warning.textContent).toMatch(/EQUIPO PROPIO – OTRO RIVAL/)          // what FEB serves
+    expect(warning.textContent).toMatch(/EQUIPO PROPIO – EQUIPO RIVAL/)        // what the package was prepared for
+    expect(screen.queryByText(/J\. PÉREZ/)).toBeNull()
+  })
+
+  it('says nothing when the package is the one of the match', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 10
+    const engine = fakeEngine({ update: vi.fn(async () => ({ ...out([ALERT]), package_match: { ok: true, expected: ['1', '2'], found: ['1', '2'] } })) })
+    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    expect(await screen.findByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy()
+    expect(screen.queryByRole('alert', { name: /paquete de otro partido/i })).toBeNull()
+  })
+})

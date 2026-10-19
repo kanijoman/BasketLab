@@ -119,6 +119,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.75rem; }
 .tab.active { color: var(--accent); font-weight: 700; }
 .notice { margin: 12px 0; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
+.notice.warn { border-style: solid; border-color: var(--sev-warning); color: var(--text); } /* a package of another match (#417) */
 .link-button { margin-top: 6px; }
 
 .panel { margin-top: 24px; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }

@@ -33,6 +33,7 @@ import { useSessionLog } from './useSessionLog'
 import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
 import FinishedMatches from './FinishedMatches'
+import PackageMismatch from './PackageMismatch'
 import { reportBlocks } from '../postmatch/blocks'
 import { fileNameFor, sharePdf } from '../postmatch/share'
 import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
@@ -415,6 +416,10 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}
           <button className="secondary link-button" onClick={() => setTab('paquetes')}>Ir a Paquetes</button>
         </p>
+      )}
+      {out?.package_match?.ok === false && (
+        <PackageMismatch match={out.package_match.found.map(id => snap?.teams[id]?.name?.trim() ?? id)} own={own} rival={rival}
+          onPackages={() => setTab('paquetes')} />
       )}
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
