@@ -108,13 +108,13 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('59') // Zamora, local, on the left
   await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('38') // Leon, visitor
   await expect(page.locator('.alert').first()).toBeVisible()
-  // one chronological flow, the latest on top, 20 visible and the older ones collapsed (#313); the header counts per level (#229)
+  // one chronological flow, the latest on top, in one foldable group per quarter: the current one open, the earlier ones folded (#313, #406); the header counts per level (#229)
   await expect(page.locator('.alert-counts')).toContainText(/\d+ críticas?/) // exact counts depend on the rules and the playback speed
   await expect(page.locator('.alert-counts')).toContainText(/\d+ avisos/) // exact counts depend on the playback speed
   await expect(page.locator('.alert-counts')).toContainText(/\d+ informativas/)
-  await expect(page.locator('.alert-list > .alerts > li')).toHaveCount(20)
-  await expect(page.locator('.alerts-older > summary')).toContainText(/Ver las \d+ anteriores/)
-  await expect(page.locator('.alerts-older')).not.toHaveAttribute('open', '')
+  await expect(page.locator('.alert-period > summary').first()).toContainText(/Cuarto 4 · \d+ alertas?/)
+  await expect(page.locator('.alert-period').first()).toHaveAttribute('open', '')
+  await expect(page.locator('.alert-period').last()).not.toHaveAttribute('open', '')
   await page.screenshot({ path: 'test-results/alerts-hierarchy.png', fullPage: true })
   await expect(page.locator('.pace-card')).toContainText('posesiones por equipo')
   await expect(page.locator('.wp-card')).toContainText(/\d+ %/) // the win probability, experimental (#257)
