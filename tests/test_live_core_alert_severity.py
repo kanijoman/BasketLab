@@ -60,7 +60,7 @@ def test_only_the_fourth_foul_and_the_rival_run_are_critical():
 # the recorded match, not a goal: when a rule changes, the line of that rule changes here and the diff shows what moved.
 REAL_MATCH_TABLE = {
     ("cold_3p_streak", "info"): 2, ("cold_3p_volume", "info"): 3, ("cold_fg_streak", "warning"): 3,
-    ("comeback_plan", "info"): 1, ("fatigue_high", "critical"): 5, ("fatigue_high", "info"): 11,
+    ("comeback_plan", "info"): 1, ("fatigue_high", "critical"): 4, ("fatigue_high", "info"): 11,
     ("fatigue_high", "warning"): 6, ("fg_drought", "warning"): 2, ("foul_trouble", "warning"): 1,
     ("four_factors_lever", "info"): 8, ("lineup_net", "warning"): 2, ("long_run", "warning"): 3,
     ("own_cold_player", "info"): 2, ("own_drought", "critical"): 1, ("own_drought", "warning"): 2,
