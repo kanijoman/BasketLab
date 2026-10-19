@@ -79,6 +79,12 @@ describe('columns', () => {
     expect(opp).toContain('opp_pts_off_tov_per_game')
   })
 
+  it('has the fast-break estimate, own and conceded, and the conceded one is lower-is-better (#398)', () => {
+    expect(ids(originColumns('own') as never)).toEqual(expect.arrayContaining(['pts_fastbreak_per_game', 'oer_fastbreak']))
+    expect(ids(originColumns('opp') as never)).toEqual(expect.arrayContaining(['opp_pts_fastbreak_per_game', 'opp_oer_fastbreak']))
+    expect(ORIGIN_REVERSE.opp).toEqual(expect.arrayContaining(['opp_pts_fastbreak_per_game', 'opp_oer_fastbreak']))
+  })
+
   it('every reverse (lower is better) column exists in its table', () => {
     expect(ids(periodColumns() as never)).toEqual(expect.arrayContaining(PERIOD_REVERSE))
     expect(ids(situationColumns() as never)).toEqual(expect.arrayContaining(SITUATION_REVERSE))

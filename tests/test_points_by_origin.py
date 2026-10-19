@@ -120,3 +120,55 @@ def test_the_derived_version_marks_the_points_by_origin():
 @pytest.mark.parametrize("field", ["pts_off_tov", "pts_off_steal", "pts_second_chance", "pts_bench", "poss_off_tov"])
 def test_every_metric_is_a_non_negative_number(field):
     assert all(t[field] >= 0 for t in _teams(_scenario()).values())
+
+
+# ---------------------------------------------------------------- fast break, our own estimate (#398)
+
+def _transition_scenario():
+    """B steals and scores 4 s later (fast break); later B rebounds and scores 10 s later (too slow), and again rebounds and scores 4 s later (fast break);
+    B also scores quickly after a made basket of A (not a transition) and a free throw trip after a steal (free throws do not count)."""
+    feed = _Feed()
+    feed.tov("A", "09:00", "p1").steal("B", "09:00", "s")
+    feed.made("B", "08:56", 2, "s")                                   # steal -> basket in 4 s: fast break (2)
+    feed.miss("A", "08:30", 2, "p1").reb("B", "08:30", "p")           # defensive rebound
+    feed.made("B", "08:20", 2, "p")                                   # 10 s later: not a fast break
+    feed.miss("A", "07:50", 3, "p1").reb("B", "07:50", "s")
+    feed.made("B", "07:46", 3, "s")                                   # 4 s after the rebound: fast break (3)
+    feed.made("A", "07:30", 2, "p1")
+    feed.made("B", "07:25", 2, "s")                                   # 5 s after a made basket: not a transition origin
+    return feed
+
+
+def test_fast_break_points_are_the_field_goals_scored_within_six_seconds_after_a_steal_or_a_defensive_rebound():
+    teams = _teams(_transition_scenario())
+
+    assert teams["B"]["pts_fastbreak"] == 5 and teams["A"]["pts_fastbreak"] == 0
+
+
+def test_transition_possessions_are_the_ones_that_start_with_a_steal_or_a_defensive_rebound():
+    teams = _teams(_transition_scenario())
+
+    assert teams["B"]["poss_transition"] == 3 and teams["A"]["poss_transition"] == 0
+
+
+def test_the_window_is_six_seconds_and_a_basket_after_it_is_not_a_fast_break():
+    from src.pbp.points_by_origin import FASTBREAK_MAX_S
+
+    assert FASTBREAK_MAX_S == 6
+    feed = _Feed()
+    feed.tov("A", "09:00", "p1").steal("B", "09:00", "s")
+    feed.made("B", "08:53", 2, "s")                                   # 7 s: out
+
+    assert _teams(feed)["B"]["pts_fastbreak"] == 0
+
+
+def test_free_throws_after_a_steal_are_not_fast_break_points():
+    feed = _Feed()
+    feed.tov("A", "09:00", "p1").steal("B", "09:00", "s")
+    feed.foul("A", "08:58", "Personal", "p1").ft("B", "08:57", True, "s").ft("B", "08:57", True, "s")
+
+    assert _teams(feed)["B"]["pts_fastbreak"] == 0
+
+
+def test_the_derived_version_marks_the_fast_break_figures():
+    assert DERIVED_VERSION >= 6

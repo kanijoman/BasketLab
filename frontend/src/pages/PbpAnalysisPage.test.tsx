@@ -22,9 +22,9 @@ const ok = (data: unknown[]) => ({ data, isLoading: false, isError: false, error
 const ORIGIN = {
   team_id: '1', team_name: NAME, games: 3, games_unreliable: 1, games_paint: 3,
   pts_off_tov_per_game: 14, oer_off_tov: 105, pts_off_steal_per_game: 8, oer_off_steal: 110, pts_second_chance_per_game: 9, oer_second_chance: 95,
-  pts_bench_per_game: 25, bench_pct: 33, pts_paint_per_game: 34,
+  pts_bench_per_game: 25, bench_pct: 33, pts_paint_per_game: 34, pts_fastbreak_per_game: 6.5, oer_fastbreak: 41,
   opp_pts_off_tov_per_game: 12, opp_oer_off_tov: 99, opp_pts_off_steal_per_game: 7, opp_oer_off_steal: 100, opp_pts_second_chance_per_game: 10,
-  opp_oer_second_chance: 101, opp_pts_bench_per_game: 22, opp_bench_pct: 30, opp_pts_paint_per_game: 31,
+  opp_oer_second_chance: 101, opp_pts_bench_per_game: 22, opp_bench_pct: 30, opp_pts_paint_per_game: 31, opp_pts_fastbreak_per_game: 5.5, opp_oer_fastbreak: 37,
 }
 const figures = (pts: number) => ({
   games: 3, minutes: 30, pts, opp_pts: 50, pts_per_game: pts / 3, opp_pts_per_game: 50 / 3, poss: 30, opp_poss: 30, ortg: 100, drtg: 90,
@@ -66,6 +66,8 @@ describe('PbpAnalysisPage', () => {
     expect((await screen.findByText(NAME)).getAttribute('title')).toBe(NAME)
     expect(screen.getByText('Excl.')).toBeTruthy()
     expect(screen.getByText(/definición por posesión/i)).toBeTruthy()
+    expect(screen.getByText(/contraataque.*estimación propia/i)).toBeTruthy()      // not the FEB's: #398
+    expect(screen.getByText('Contraataque (est.)')).toBeTruthy()
     expect(screen.getByText('Tras pérdida')).toBeTruthy()
   })
 

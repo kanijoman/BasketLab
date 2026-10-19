@@ -4,7 +4,8 @@ What the PDF confirms (32 team-games): the bench points (``inn`` starters, techn
 the ``SHOTCHART`` in the rim and key zones; never above the PDF, 21 of 32 exact, one point short on average, 8 at most).
 Points after turnovers and second chance are defined per possession here, which is more generous than the FEB's own definition
 (not reproducible from the play-by-play): never below the PDF, on average 3-4 points above, 14 at most. The bounds are
-measured, not goals: tighten them only with a better definition. The fast-break points are not derived (PDF only).
+measured, not goals: tighten them only with a better definition. The fast-break points are an estimate of our own (#398: the official
+definition is not reproducible): 10 of 32 exact, 2.6 points of mean error, 1.3 below on average, -11 to +5.
 """
 import gzip
 import json
@@ -71,3 +72,12 @@ def test_mean_paint_error_is_about_a_point():
     pairs = [pair for gid in IDS for pair in _pairs(gid)]
 
     assert sum(abs(o["pts_paint"] - p["paint_pts"]) for o, p in pairs) / len(pairs) <= 1.5
+
+
+def test_the_fast_break_estimate_stays_close_to_the_pdf_on_average():
+    pairs = [pair for gid in IDS for pair in _pairs(gid)]
+    diffs = [o["pts_fastbreak"] - p["fast_break_pts"] for o, p in pairs]
+
+    assert sum(abs(d) for d in diffs) / len(diffs) <= 3.0            # measured 2.56
+    assert -2.5 <= sum(diffs) / len(diffs) <= 1.0                    # measured -1.31: a little under, never wildly off
+    assert all(-12 <= d <= 6 for d in diffs)

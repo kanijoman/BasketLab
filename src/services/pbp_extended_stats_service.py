@@ -16,12 +16,12 @@ from src.database.aggregation.pipeline_points_origin import build_points_origin_
 from src.live_core.four_factors import FT_POSSESSION_COST
 
 # First DERIVED version that carries each group of figures (the backfill brings the older games up to date)
-ORIGIN_MIN_VERSION = 5     # every group needs the reliability flag of v5 (#390)
+ORIGIN_MIN_VERSION = 6     # every group needs the reliability flag of v5 (#390); the fast break (our own estimate, #398) is v6
 PERIOD_MIN_VERSION = 5
 _cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
 _period_cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
-_ORIGINS = {"off_tov": "poss_off_tov", "off_steal": "poss_off_steal", "second_chance": "poss_second_chance"}
-_POINTS = ("pts_off_tov", "pts_off_steal", "pts_second_chance", "pts_bench", "pts_paint")
+_ORIGINS = {"off_tov": "poss_off_tov", "off_steal": "poss_off_steal", "second_chance": "poss_second_chance", "fastbreak": "poss_transition"}
+_POINTS = ("pts_off_tov", "pts_off_steal", "pts_second_chance", "pts_bench", "pts_paint", "pts_fastbreak")
 
 
 def clear_cache() -> None:

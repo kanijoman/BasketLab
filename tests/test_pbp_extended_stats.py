@@ -10,12 +10,12 @@ from src.services.pbp_extended_stats_service import PBPExtendedStatsService, cle
 def _team(tid, **kw):  # noqa: D103
     base = {"id": tid, "pts": 0, "possessions": 70.0, "reliable": True, "quality_level": "ok", "pts_off_tov": 0, "poss_off_tov": 0, "pts_off_steal": 0,
             "poss_off_steal": 0, "pts_second_chance": 0, "poss_second_chance": 0, "pts_bench": 0, "pts_paint": 0,
-            "pts_by_origin": {}}
+            "pts_fastbreak": 0, "poss_transition": 0, "pts_by_origin": {}}
     base.update(kw)
     return base
 
 
-def _game(match_id, a, b, version=5):
+def _game(match_id, a, b, version=6):
     return {"_id": match_id, "HEADER": {"TEAM": [{"id": "A", "name": "Local"}, {"id": "B", "name": "Visitante"}]},
             "DERIVED": {"v": version, "TEAM": [_team("A", **{"pts": 80, **a}), _team("B", **{"pts": 70, **b})]}}
 
@@ -58,6 +58,18 @@ def test_origin_efficiency_is_points_per_100_possessions_of_that_origin():
     assert out["oer_off_tov"] is not None and out["oer_off_steal"] is not None
 
 
+def test_the_fast_break_estimate_is_summed_with_its_efficiency_over_the_transition_possessions():
+    out = _rows(_game(1, dict(pts_fastbreak=6, poss_transition=10), dict(pts_fastbreak=2, poss_transition=8)),
+                _game(2, dict(pts_fastbreak=4, poss_transition=10), dict(pts_fastbreak=4, poss_transition=12)))["Local"]
+
+    assert (out["pts_fastbreak"], out["pts_fastbreak_per_game"], out["opp_pts_fastbreak"]) == (10, 5.0, 6)
+    assert out["oer_fastbreak"] == pytest.approx(50.0) and out["opp_oer_fastbreak"] == pytest.approx(30.0)
+
+
+def test_games_stored_before_the_fast_break_estimate_are_ignored_until_the_backfill_brings_them_up_to_date():
+    assert _service(_game(1, dict(pts_off_tov=10), dict(), version=5)).get_points_by_origin("G") == []
+
+
 def test_bench_share_is_the_bench_points_over_the_team_points():
     out = _rows(_game(1, dict(pts_bench=20, pts=80), dict(pts_bench=21, pts=70)))
 
@@ -82,7 +94,7 @@ def test_games_used_with_alternation_breaks_are_counted_as_doubtful_but_not_the_
 
 
 def test_games_without_the_current_version_are_ignored():
-    rows = _service(_game(1, dict(pts_off_tov=10), dict(), version=4)).get_points_by_origin("G")
+    rows = _service(_game(1, dict(pts_off_tov=10), dict(), version=5)).get_points_by_origin("G")
 
     assert rows == []
 
