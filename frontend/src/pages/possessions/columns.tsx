@@ -8,7 +8,7 @@ import CVBadge from '@/components/ui/CVBadge'
 import Tooltip, { tippedHeader } from '@/components/ui/Tooltip'
 import type { QuartileMap } from '@/components/ui/DataTable'
 import { fmt } from '@/lib/utils'
-import { FEB_LOGO } from './ScatterCard'
+import TeamCell from '@/components/ui/TeamCell'
 
 export type PossessionView = 'summary' | 'own' | 'rival'
 
@@ -24,23 +24,6 @@ export const TEAM_COLUMN_SIZE = 240
 export const NUMERIC_COLUMN_SIZE = 64
 
 // -- Cells --------------------------------------------------------------------
-
-function TeamCell({ name, teamId }: { name: string; teamId?: string }) {
-  return (
-    <span className="flex items-center gap-2 min-w-0">
-      {teamId && (
-        <img
-          src={FEB_LOGO(teamId)}
-          alt=""
-          className="w-5 h-5 shrink-0 object-contain rounded-sm"
-          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-        />
-      )}
-      {/* wraps up to two lines and always keeps the full name in the tooltip: it is never cut silently */}
-      <span title={name} className="font-medium text-ink-primary leading-tight line-clamp-2 break-words">{name}</span>
-    </span>
-  )
-}
 
 const teamCol: Col = {
   id: 'team_name',
