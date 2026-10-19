@@ -33,8 +33,11 @@ import { useSessionLog } from './useSessionLog'
 import { useWinProbHistory } from './useWinProbHistory'
 import FormationStatus from './FormationStatus'
 import FinishedMatches from './FinishedMatches'
+import PackageMismatch from './PackageMismatch'
+import RecordingsPanel from './RecordingsPanel'
+import { IndexedDbRecordingStore, encodeRecording, safeRecordingStore, type RecordingStore, type SavedRecording } from '../feed/recordingStore'
 import { reportBlocks } from '../postmatch/blocks'
-import { fileNameFor, sharePdf } from '../postmatch/share'
+import { fileNameFor, shareFile as shareFileDefault, sharePdf } from '../postmatch/share'
 import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
@@ -61,6 +64,10 @@ interface Props {
   /** Screen on and back-to-foreground events of the tablet (injected in tests; the default uses the Capacitor plugins). */
   device?: Device
   store?: PackageStore
+  /** Recordings of the live matches kept for sharing (injected in tests). */
+  recordingStore?: RecordingStore
+  /** Gives a file to the staff: the share sheet of the tablet, a download in a browser (injected in tests). */
+  shareFile?: (bytes: Uint8Array, fileName: string, title: string, mime: string) => Promise<void>
   /** Draws and shares the post-match PDF (injected in tests; the defaults use jsPDF and the share sheet of the tablet). */
   pdf?: PdfDeps
   /** Finished live matches kept for a later review (injected in tests). */
@@ -89,11 +96,13 @@ const defaultPdf: PdfDeps = {
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, pdf = defaultPdf, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, recordingStore: injectedRecordings, shareFile = shareFileDefault, pdf = defaultPdf, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [finishedStore] = useState<FinishedStore>(() => injectedFinished ?? safeFinishedStore(new IndexedDbFinishedStore()))
   const [finishedMatches, setFinishedMatches] = useState<FinishedMatch[]>([])
+  const [recordingStore] = useState<RecordingStore>(() => injectedRecordings ?? safeRecordingStore(new IndexedDbRecordingStore()))
+  const [recordings, setRecordings] = useState<SavedRecording[]>([])
   const [reporting, setReporting] = useState<string | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
   /** Every alert of the match being followed, with its clock label: the annex of the post-match report (issue #409). */
@@ -179,6 +188,15 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     }
   }, [engine, reset, finishedStore])
 
+  /** Shares the file of a recording: the one the repository keeps in ``tests/recordings`` (issue #416). */
+  const shareRecording = useCallback(async (code: string) => {
+    const saved = await recordingStore.load(code)
+    if (!saved) return
+    const gz = saved.encoding === 'gzip'
+    await shareFile(saved.bytes, `grabacion-${code}.rec.json${gz ? '.gz' : ''}`, `Grabación del partido ${saved.title}`, gz ? 'application/gzip' : 'application/json')
+    session.record(`Grabación del partido ${code} compartida`)
+  }, [recordingStore, shareFile, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
+
   /** The post-match analysis of a kept match as a PDF the staff can share (issue #409). */
   const reportFinished = useCallback(async (code: string) => {
     setReporting(code)
@@ -259,6 +277,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
 
   useEffect(() => () => { if (!injected) engine.dispose() }, [engine, injected])
   useEffect(() => { void finishedStore.list().then(setFinishedMatches) }, [finishedStore])
+  useEffect(() => { void recordingStore.list().then(setRecordings) }, [recordingStore])
 
   const finished = info !== null && elapsed >= info.duration
 
@@ -295,7 +314,19 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setFinishedMatches(await finishedStore.list())
     session.record(`Partido ${code} finalizado y guardado para revisarlo`)
   }, [store, finishedStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
-  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive, onFinished: keepFinished })
+  /** The engine kept a recording of the feed (issue #416): it is saved, gzipped, whether the match ended or the staff disconnected. */
+  const keepRecording = useCallback(async ({ code, recording, complete }: { code: string; recording: unknown; complete: boolean }) => {
+    const current = metaRef.current
+    const { encoding, bytes } = await encodeRecording(JSON.stringify(recording))
+    await recordingStore.save({
+      code, title: current ? `${current.team.name} – ${current.rival.name}` : code, savedAt: new Date().toISOString(), complete,
+      frames: (recording as { frames?: unknown[] }).frames?.length ?? 0, encoding, bytes,
+    })
+    setRecordings(await recordingStore.list())
+    session.record(`Grabación del partido ${code} guardada (${complete ? 'completa' : 'incompleta'})`)
+  }, [recordingStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
+  const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive,
+    onFinished: keepFinished, onRecording: keepRecording })
   const update = useAppUpdate(appUpdate)
 
   const step = useCallback(async (to: number) => {
@@ -410,11 +441,16 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       {pkg && <ReviewSwitch reviewing={reviewing} disabled={live.running} onLive={backToPackage} onReview={reviewRecorded} />}
       <FinishedMatches matches={finishedMatches} disabled={live.running} onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code) }}
         onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
+      <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
       {!pkg && (
         <p className="notice">
           Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}
           <button className="secondary link-button" onClick={() => setTab('paquetes')}>Ir a Paquetes</button>
         </p>
+      )}
+      {out?.package_match?.ok === false && (
+        <PackageMismatch match={out.package_match.found.map(id => snap?.teams[id]?.name?.trim() ?? id)} own={own} rival={rival}
+          onPackages={() => setTab('paquetes')} />
       )}
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />

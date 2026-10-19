@@ -25,6 +25,8 @@ export interface LiveFeedOptions {
   /** Receives the merged document (JSON text); an exception is reported as a gap and does not stop the feed. */
   onDocument: (docJson: string) => void | Promise<void>
   onState: (state: FeedState) => void
+  /** An endpoint failed in the middle of the match (issue #416): the recording keeps the gap. Network errors count as the box score. */
+  onFailure?: (endpoint: Endpoint) => void
   intervalMs?: number
   waitingIntervalMs?: number
   /** Extra rounds after the final status. */
@@ -50,7 +52,7 @@ export class LiveFeed {
 
   constructor(options: LiveFeedOptions) {
     this.o = {
-      intervalMs: 10_000, waitingIntervalMs: 60_000, tailPolls: 3,
+      intervalMs: 10_000, waitingIntervalMs: 60_000, tailPolls: 3, onFailure: () => undefined,
       sleep: ms => new Promise(resolve => setTimeout(resolve, ms)), now: () => Date.now(), ...options,
     }
   }
@@ -78,11 +80,13 @@ export class LiveFeed {
     try {
       const box = await client.fetch(code, 'boxscore')
       if (box.status !== 200) {
+        if (seenLive) this.o.onFailure('boxscore')
         return { status: null, notStarted: box.status === 404 && !seenLive, failure: `FEB no responde (BoxScore ${box.status})` }
       }
       const [shots, facts] = await Promise.all((['shotchart', 'keyfacts'] as Endpoint[]).map(e => client.fetch(code, e)))
       if (shots.status !== 200 || facts.status !== 200) {
         const bad = shots.status !== 200 ? ['ShotChart', shots.status] : ['KeyFacts', facts.status]
+        this.o.onFailure(shots.status !== 200 ? 'shotchart' : 'keyfacts')
         return { status: null, notStarted: false, failure: `FEB no responde (${bad[0]} ${bad[1]})` }
       }
       const header = (box.json as { HEADER?: { status?: unknown } }).HEADER
@@ -95,6 +99,7 @@ export class LiveFeed {
       await onDocument(JSON.stringify(doc))
       return { status: String(header?.status ?? ''), notStarted: false }
     } catch (error) {
+      if (seenLive) this.o.onFailure('boxscore')
       return { status: null, notStarted: false, failure: error instanceof Error ? error.message : String(error) }
     }
   }

@@ -1,4 +1,4 @@
-/** Gives the PDF to the staff (issue #409): on the tablet through the share sheet (WhatsApp, mail, Drive...), in a browser as a download. */
+/** Gives a file to the staff (the PDF of #409, the recording of #416): on the tablet through the share sheet (WhatsApp, mail, Drive...), in a browser as a download. */
 import { Capacitor } from '@capacitor/core'
 
 export interface ShareDeps {
@@ -6,7 +6,7 @@ export interface ShareDeps {
   /** Writes the file to the app cache and returns its uri. */
   writeFile(name: string, base64: string): Promise<string>
   share(title: string, uri: string): Promise<void>
-  download(name: string, bytes: Uint8Array): void
+  download(name: string, bytes: Uint8Array, mime: string): void
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -25,8 +25,8 @@ const defaults: ShareDeps = {
     const { Share } = await import('@capacitor/share')
     await Share.share({ title, url: uri, dialogTitle: title })
   },
-  download(name, bytes) {
-    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }))
+  download(name, bytes, mime) {
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime }))
     const link = Object.assign(document.createElement('a'), { href: url, download: name })
     document.body.appendChild(link)
     link.click()
@@ -35,10 +35,13 @@ const defaults: ShareDeps = {
   },
 }
 
-export async function sharePdf(bytes: Uint8Array, fileName: string, title: string, deps: ShareDeps = defaults): Promise<void> {
+export async function shareFile(bytes: Uint8Array, fileName: string, title: string, mime: string, deps: ShareDeps = defaults): Promise<void> {
   if (deps.native) await deps.share(title, await deps.writeFile(fileName, toBase64(bytes)))
-  else deps.download(fileName, bytes)
+  else deps.download(fileName, bytes, mime)
 }
+
+export const sharePdf = (bytes: Uint8Array, fileName: string, title: string, deps: ShareDeps = defaults): Promise<void> =>
+  shareFile(bytes, fileName, title, 'application/pdf', deps)
 
 /** ``informe-<own>-<rival>-<code>.pdf`` in lowercase ASCII. */
 export function fileNameFor(own: string, rival: string, code: string): string {

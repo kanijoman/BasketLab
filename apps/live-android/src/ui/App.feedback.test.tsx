@@ -21,7 +21,7 @@ const engine = (): EngineApi => ({
   start: vi.fn().mockResolvedValue(META),
   loadReplay: vi.fn().mockResolvedValue({ duration: 100, status: 'FINISHED' }),
   replay: vi.fn(async (e: number) => out(e)),
-  update: vi.fn(), loadRecording: vi.fn(), playRecording: vi.fn(), report: vi.fn(), setMode: vi.fn(), dispose: vi.fn(),
+  update: vi.fn(), loadRecording: vi.fn(), playRecording: vi.fn(), report: vi.fn(), beginRecording: vi.fn(), recordGap: vi.fn(), recording: vi.fn(), setMode: vi.fn(), dispose: vi.fn(),
 })
 const loadDemo = () => Promise.resolve({ package: 'PKG', game: 'GAME' })
 const KEY = 'basketlab-live-feedback:demo:sample'

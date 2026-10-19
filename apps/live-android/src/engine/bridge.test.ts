@@ -65,6 +65,21 @@ describe('LiveBridge on Pyodide', () => {
     expect(rival.match.score.own).toBe(report.match.score.rival)
   }, 60_000)
 
+  it('records the feed it is given a time for and returns it in the recording format, inside Pyodide (issue #416)', () => {
+    bridge.start(realPackage)
+    bridge.beginRecording('2524470', '2026-10-10T14:55:03+00:00')
+    expect(bridge.recording()).toBeNull()
+    const doc = JSON.parse(demoGame)
+    bridge.update(JSON.stringify(doc), 0)
+    bridge.recordGap('boxscore', 5)
+    bridge.update(JSON.stringify(doc), 12)
+    const packed = bridge.recording() as { v: number; match: string; frames: { t: number }[]; gaps: Record<string, number[][]> }
+    expect(packed.v).toBe(1)
+    expect(packed.match).toBe('2524470')
+    expect(packed.frames.map(f => f.t)).toEqual([0, 12])
+    expect(packed.gaps).toEqual({ boxscore: [[5, 12]] })
+  }, 60_000)
+
   it('rejects a corrupted package with a readable error', () => {
     const broken = JSON.parse(demoPackage)
     broken.package.team.name = 'otro'

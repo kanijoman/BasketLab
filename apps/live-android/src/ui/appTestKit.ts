@@ -34,6 +34,9 @@ export function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
         : s < 6 ? { feed: 'gap' as const, output: null }
           : { feed: 'ok' as const, output: out(s, s >= 8 ? [ALERT] : []) }),
     report: vi.fn(),
+    beginRecording: vi.fn().mockResolvedValue(undefined),
+    recordGap: vi.fn().mockResolvedValue(undefined),
+    recording: vi.fn().mockResolvedValue(null),
     setMode: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
     ...over,

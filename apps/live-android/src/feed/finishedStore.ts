@@ -1,4 +1,5 @@
 import type { LoggedAlert } from '../engine/types'
+import { IndexedDbKeyedStore, memoryKeyedStore, safeKeyedStore, type KeyedStore } from './keyedStore'
 
 /** Finished live matches kept on the device (issue #407), so the staff can review them later without the app being connected.
  *  What is kept is the package the match was followed with and the last merged FEB document (it has the whole play-by-play):
@@ -19,77 +20,16 @@ export interface FinishedMatch {
   game: string
 }
 
-export interface FinishedStore {
-  /** Newest first. */
-  list(): Promise<FinishedMatch[]>
-  load(code: string): Promise<FinishedMatch | null>
-  /** Saves (replacing the same code) and drops the oldest beyond ``MAX_FINISHED``. */
-  save(match: FinishedMatch): Promise<void>
-}
+export type FinishedStore = KeyedStore<FinishedMatch>
 
+/** About 1 MB each (the last document of a match), hence the limit. */
 export const MAX_FINISHED = 5
 
-const STORE = 'matches'
-
-const newestFirst = (all: FinishedMatch[]) => [...all].sort((a, b) => b.savedAt.localeCompare(a.savedAt))
-
-function request<T>(req: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
+export class IndexedDbFinishedStore extends IndexedDbKeyedStore<FinishedMatch> {
+  constructor(name = 'basketlab-live-finished') { super(name, 'matches', MAX_FINISHED) }
 }
 
-export class IndexedDbFinishedStore implements FinishedStore {
-  private db: Promise<IDBDatabase> | null = null
-
-  constructor(private readonly name = 'basketlab-live-finished') {}
-
-  private open(): Promise<IDBDatabase> {
-    this.db ??= new Promise((resolve, reject) => {
-      const req = indexedDB.open(this.name, 1)
-      req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'code' })
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => reject(req.error)
-    })
-    return this.db
-  }
-
-  private async store(mode: IDBTransactionMode): Promise<IDBObjectStore> {
-    return (await this.open()).transaction(STORE, mode).objectStore(STORE)
-  }
-
-  async list(): Promise<FinishedMatch[]> {
-    return newestFirst((await request((await this.store('readonly')).getAll())) as FinishedMatch[])
-  }
-
-  async load(code: string): Promise<FinishedMatch | null> {
-    return ((await request((await this.store('readonly')).get(code))) as FinishedMatch | undefined) ?? null
-  }
-
-  async save(match: FinishedMatch): Promise<void> {
-    await request((await this.store('readwrite')).put(match))
-    for (const old of (await this.list()).slice(MAX_FINISHED)) await request((await this.store('readwrite')).delete(old.code))
-  }
-}
-
-export function memoryFinishedStore(initial: FinishedMatch[] = []): FinishedStore {
-  const all = new Map(initial.map(m => [m.code, m]))
-  return {
-    list: async () => newestFirst([...all.values()]),
-    load: async code => all.get(code) ?? null,
-    save: async match => {
-      all.set(match.code, match)
-      for (const old of newestFirst([...all.values()]).slice(MAX_FINISHED)) all.delete(old.code)
-    },
-  }
-}
+export const memoryFinishedStore = (initial: FinishedMatch[] = []): FinishedStore => memoryKeyedStore(MAX_FINISHED, initial)
 
 /** A store that never fails when IndexedDB is unavailable (private mode, tests): it lists nothing and forgets what it is given. */
-export function safeFinishedStore(inner: FinishedStore): FinishedStore {
-  return {
-    list: () => inner.list().catch(() => []),
-    load: code => inner.load(code).catch(() => null),
-    save: match => inner.save(match).catch(() => undefined),
-  }
-}
+export const safeFinishedStore = (inner: FinishedStore): FinishedStore => safeKeyedStore(inner)

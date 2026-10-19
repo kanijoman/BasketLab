@@ -21,7 +21,8 @@ type PyFn = (...args: unknown[]) => string
 
 export class LiveBridge {
   private readonly fn: Record<
-    'start_json' | 'set_mode_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json' | 'report_json',
+    'start_json' | 'set_mode_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json' | 'report_json'
+    | 'begin_recording_json' | 'record_gap_json' | 'recording_json',
     PyFn
   >
 
@@ -42,6 +43,9 @@ export class LiveBridge {
       load_recording_json: get('load_recording_json'),
       play_recording_json: get('play_recording_json'),
       report_json: get('report_json'),
+      begin_recording_json: get('begin_recording_json'),
+      record_gap_json: get('record_gap_json'),
+      recording_json: get('recording_json'),
     }
   }
 
@@ -69,8 +73,24 @@ export class LiveBridge {
     return JSON.parse(this.fn.replay_json(elapsed))
   }
 
-  update(docJson: string): EngineOutput {
-    return JSON.parse(this.fn.update_json(docJson))
+  /** ``at``: seconds since the first poll of the feed; with it the document goes into the recording that ``beginRecording`` started (issue #416). */
+  update(docJson: string, at?: number): EngineOutput {
+    return JSON.parse(at === undefined ? this.fn.update_json(docJson) : this.fn.update_json(docJson, at))
+  }
+
+  /** The documents ``update`` is given a time for are kept as a recording of this feed (same format as the CI recorder's). */
+  beginRecording(match: string, startedIso: string): void {
+    this.fn.begin_recording_json(match, startedIso)
+  }
+
+  /** ``endpoint`` (boxscore, shotchart, keyfacts) failed ``at`` seconds after the first poll. */
+  recordGap(endpoint: string, at: number): void {
+    this.fn.record_gap_json(endpoint, at)
+  }
+
+  /** The recording so far (the ``recorded_feed`` format) or null when no document has been recorded. */
+  recording(): unknown {
+    return JSON.parse(this.fn.recording_json())
   }
 
   loadRecording(recordingJson: string): RecordingInfo {

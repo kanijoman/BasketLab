@@ -25,7 +25,10 @@ function run(bridge: LiveBridge, msg: WorkerRequest): unknown {
     case 'setMode': return bridge.setMode(msg.payload)
     case 'loadReplay': return bridge.loadReplay(msg.payload)
     case 'replay': return bridge.replay(msg.payload)
-    case 'update': return bridge.update(msg.payload)
+    case 'update': return bridge.update(msg.payload.doc, msg.payload.at)
+    case 'beginRecording': bridge.beginRecording(msg.payload.match, msg.payload.startedIso); return {}
+    case 'recordGap': bridge.recordGap(msg.payload.endpoint, msg.payload.at); return {}
+    case 'recording': return bridge.recording()
     case 'loadRecording': return bridge.loadRecording(msg.payload)
     case 'playRecording': return bridge.playRecording(msg.payload)
     case 'report': return bridge.report(msg.payload.game, msg.payload.alerts, msg.payload.ownTeamId)

@@ -13,13 +13,14 @@ from typing import Any, Dict, Optional
 
 from .advice import AdviceEngine
 from .clock import period_and_remaining, period_length, period_start
-from .engine import LiveEngine
+from .engine import LiveEngine, _teams
 from .events import parse_line
 from .package import PreparationPackage
 from .postmatch import build_report
 from .replay import truncate_doc
 from .version import engine_version
 from .recorded_feed import RecordedFeed
+from .recording_builder import RecordingBuilder
 from .vectors import to_jsonable, unwrap_extended_json
 
 
@@ -30,6 +31,7 @@ class LiveSession:
         self._advice = AdviceEngine.from_package(self.package, mode)
         self._replay_doc: Optional[Dict[str, Any]] = None
         self._feed: Optional[RecordedFeed] = None
+        self._recording: Optional[RecordingBuilder] = None
         self.replay_info: Dict[str, Any] = {}
 
     def set_mode(self, mode: Optional[str]) -> None:
@@ -47,13 +49,39 @@ class LiveSession:
             "engine_version": engine_version(),   # for the About screen and the diagnostics (#226)
         }
 
-    def update(self, doc: Dict[str, Any]) -> Dict[str, Any]:
-        """Process the latest FEB document; returns the snapshot, the NEW alerts and the analysis."""
+    def package_match(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+        """Whether the teams of the package are the teams of the match (issue #417). Ids the package does not carry cannot be compared."""
+        expected = [str(t.get("id")) for t in (self.package.team, self.package.rival)]
+        found = [tid for tid, _ in _teams(doc)]
+        comparable = [e for e in expected if e != "None"]
+        return {"ok": all(e in found for e in comparable), "expected": expected, "found": found}
+
+    def begin_recording(self, match: str, started: str) -> None:
+        """Keep a recording of the feed that follows (issue #416): ``update`` records the documents it is given a time for."""
+        self._recording = RecordingBuilder(match, started)
+
+    def record_gap(self, endpoint: str, at: float) -> None:
+        if self._recording is not None:
+            self._recording.gap(endpoint, at)
+
+    def recording(self) -> Optional[str]:
+        """The recording so far as JSON text (``recorded_feed`` format), or None when there is none."""
+        packed = self._recording.pack() if self._recording is not None else None
+        return None if packed is None else json.dumps(packed, ensure_ascii=False, separators=(",", ":"))
+
+    def update(self, doc: Dict[str, Any], at: Optional[float] = None) -> Dict[str, Any]:
+        """Process the latest FEB document (``at`` = seconds since the first poll of the feed); returns the snapshot, the NEW alerts and the analysis.
+
+        Under a package prepared for another match (#417) the advice is withheld: ``package_match`` says so and the rest is empty."""
         snapshot = self._engine.update(doc)
+        if self._recording is not None and at is not None:
+            self._recording.add(at, doc)
+        match = self.package_match(doc)
         return to_jsonable({
             "snapshot": snapshot,
-            "alerts": self._advice.evaluate(snapshot),
-            "analysis": self._advice.analyze(snapshot),
+            "alerts": self._advice.evaluate(snapshot) if match["ok"] else [],
+            "analysis": self._advice.analyze(snapshot) if match["ok"] else {},
+            "package_match": match,
         })
 
     def report(self, game_doc: Dict[str, Any], alerts: Optional[Any] = None) -> Dict[str, Any]:
@@ -135,8 +163,24 @@ def replay_json(elapsed: int) -> str:
     return _dump(_session().replay(elapsed))
 
 
-def update_json(doc_json: str) -> str:
-    return _dump(_session().update(unwrap_extended_json(json.loads(doc_json))))
+def update_json(doc_json: str, at: Optional[float] = None) -> str:
+    return _dump(_session().update(unwrap_extended_json(json.loads(doc_json)), at))
+
+
+def begin_recording_json(match: str, started: str) -> str:
+    _session().begin_recording(match, started)
+    return "{}"
+
+
+def record_gap_json(endpoint: str, at: float) -> str:
+    _session().record_gap(endpoint, at)
+    return "{}"
+
+
+def recording_json() -> str:
+    """The recording of the live feed so far (``recorded_feed`` format) or ``null``."""
+    text = _session().recording()
+    return "null" if text is None else text
 
 
 def load_recording_json(recording_json: str) -> str:
