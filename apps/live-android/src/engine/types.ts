@@ -81,7 +81,16 @@ export interface Snapshot {
   /** Local team (the first of FEB's header): the engine says it because the JSON boundary sorts keys. */
   home_id?: string | null
   teams: Record<string, { name: string; fouls_game: number }>
+  /** Exact possessions of the closed possessions and points by origin (live_possessions.py); null without two teams. No alert uses it yet. */
+  possessions?: PossessionsSnapshot | null
   [key: string]: unknown
+}
+
+export interface PossessionsSnapshot {
+  counted: Record<string, number>
+  /** Per team: origin of the possession -> counted possessions and points scored in them (``technical`` = technical free throws). */
+  origins: Record<string, Record<string, { n: number; pts: number }>>
+  quality: { level: 'ok' | 'doubtful' | 'unreliable'; breaks_raw: number; breaks: number; inferred: number; difference: number }
 }
 
 /** Game pace (possessions per 40 min), from src/live_core/pace.py. Habits are null in packages that predate them. */
