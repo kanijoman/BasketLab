@@ -65,4 +65,14 @@ describe('PaceCard', () => {
     render(<PaceCard pace={null} own={OWN} rival={RIVAL} />)
     expect(screen.getByText(/calculando/i)).toBeTruthy()
   })
+
+  // #405: only the value is shown; the rest is collapsible
+  it('shows only the value and keeps the rest collapsed', () => {
+    const { container } = render(<PaceCard pace={PACE} own={OWN} rival={RIVAL} />)
+    const details = container.querySelector('details') as HTMLDetailsElement
+    expect(details.open).toBe(false)
+    expect(details.contains(screen.getByText('72,0'))).toBe(false)
+    expect(details.contains(screen.getByText(/Proyección final/))).toBe(true)
+    expect(details.contains(row(/MIPELLETYMAS/))).toBe(true)
+  })
 })

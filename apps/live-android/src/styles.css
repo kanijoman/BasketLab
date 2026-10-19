@@ -266,3 +266,7 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 .alert-mode label { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 2px 10px; min-height: 44px; padding: 6px 0; }
 .alert-mode label > input { margin-top: 4px; }
 .alert-mode .detail { display: block; }
+
+/* cards that show only their value and fold the rest (#405) */
+.card-details { margin-top: 8px; }
+.card-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--muted); font-size: 0.85rem; }

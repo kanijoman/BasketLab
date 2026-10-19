@@ -332,10 +332,18 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
-      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
-
+      {/* the order of the screen (#405): scoreboard, pace, win probability, alerts; the rest goes after them */}
       <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
       {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
+
+      <section>
+        <h2>Alertas</h2>
+        {entries.length === 0
+          ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
+          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
+      </section>
+
+      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
 
       {liveMode ? (
         <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
@@ -356,13 +364,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           {finished && <p className="status">Partido finalizado</p>}
         </>
       )}
-
-      <section>
-        <h2>Alertas</h2>
-        {entries.length === 0
-          ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
-          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
-      </section>
 
       {shownFeedback.length > 0 && (
         <FeedbackPanel records={shownFeedback} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />

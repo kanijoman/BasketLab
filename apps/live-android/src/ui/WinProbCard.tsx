@@ -45,28 +45,31 @@ export default function WinProbCard({ winProb, levers, own, history }: Props) {
           <span className="wp-value">{percent(winProb.p)}</span>
           <span className="detail"> {own.name}</span>
         </div>
-        <div className="detail">Margen proyectado: {signed(winProb.projected_margin)}</div>
       </div>
-      {!winProb.reliable && <p className="detail">Basada en el valor previo y el marcador: el partido aún dice poco.</p>}
-      <Chart history={history} />
-      {top.length > 0 && (
-        <>
-          <h3 className="wp-levers-title">Lo que más la mueve</h3>
-          <ol className="wp-levers">
-            {top.map(lever => {
-              const proposal = lever.proposal?.find(p => p.message)
-              return (
-                <li key={lever.id} className="wp-lever">
-                  <span className="wp-lever-name">{leverLabel(lever)}</span>
-                  <span className="wp-gain">+{Math.max(1, Math.round(lever.gain * 100))} %</span>
-                  {proposal && <span className="detail">{proposal.message}</span>}
-                </li>
-              )
-            })}
-          </ol>
-        </>
-      )}
-      <p className="detail wp-note">Experimental: entre el 30 % y el 70 % puede desviarse unos ±7 puntos.</p>
+      <details className="card-details">
+        <summary>Ver detalle</summary>
+        <p className="detail">Margen proyectado: {signed(winProb.projected_margin)}</p>
+        {!winProb.reliable && <p className="detail">Basada en el valor previo y el marcador: el partido aún dice poco.</p>}
+        <Chart history={history} />
+        {top.length > 0 && (
+          <>
+            <h3 className="wp-levers-title">Lo que más la mueve</h3>
+            <ol className="wp-levers">
+              {top.map(lever => {
+                const proposal = lever.proposal?.find(p => p.message)
+                return (
+                  <li key={lever.id} className="wp-lever">
+                    <span className="wp-lever-name">{leverLabel(lever)}</span>
+                    <span className="wp-gain">+{Math.max(1, Math.round(lever.gain * 100))} %</span>
+                    {proposal && <span className="detail">{proposal.message}</span>}
+                  </li>
+                )
+              })}
+            </ol>
+          </>
+        )}
+        <p className="detail wp-note">Experimental: entre el 30 % y el 70 % puede desviarse unos ±7 puntos.</p>
+      </details>
     </section>
   )
 }
