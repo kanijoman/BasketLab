@@ -46,7 +46,7 @@ function num(key: string, short: string, description: string, decimals = 1, suff
 }
 
 const games = num('games', 'PJ', 'Partidos con datos fiables', 0)
-const excluded = num('games_unreliable', 'Excl.', 'Partidos excluidos por tener un play-by-play poco fiable', 0)
+const excluded = num('games_unreliable', 'Excl.', 'Partidos excluidos por poco fiables: más del 10 % de sus puntos en posesiones de origen desconocido, o un recuento de posesiones que difiere más del 10 % de la estimación', 0)
 
 // -- Points by origin ---------------------------------------------------------
 

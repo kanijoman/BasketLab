@@ -156,3 +156,46 @@ def test_game_minutes_count_the_overtimes():
     overtime = team_game_possessions(_game(lines, a_box={"p2a": 6}, b_box={"p2a": 5}))
 
     assert regulation["A"]["game_minutes"] == 40 and overtime["A"]["game_minutes"] == 45
+
+
+# ---------------------------------------------------------------- reliability by impact (#390)
+
+def _pattern(teams):
+    """Made 2-point baskets in the order given by a string of team ids (clock decreasing one second per basket)."""
+    return [_line(i + 1, t, "shoot", "P: TIRO DE 2 ANOTADO (Puntos: 2)", f"{(599 - i) // 60:02d}:{(599 - i) % 60:02d}") for i, t in enumerate(teams)]
+
+
+def test_a_game_with_many_alternation_breaks_but_few_points_of_unknown_origin_is_reliable_regression():
+    """Bug (#390): 8 or more breaks made a game `unreliable` and left it out, although the breaks only affect the origin of 8 baskets."""
+    teams = ["A"]
+    for position in range(1, 100):                          # alternating, with eight places where a team scores twice in a row
+        again = position in range(10, 90, 10)
+        teams.append(teams[-1] if again else ("B" if teams[-1] == "A" else "A"))
+    out = team_game_possessions(_game(_pattern(teams), a_box={"p2a": 50}, b_box={"p2a": 50}))
+
+    assert out["A"]["quality_level"] == "unreliable"        # the breaks are still reported
+    assert out["A"]["unknown_pts_pct"] < 10
+    assert (out["A"]["reliable"], out["A"]["possessions_source"]) == (True, "pbp")
+
+
+def test_more_than_ten_percent_of_the_points_of_unknown_origin_makes_the_game_unreliable():
+    lines = [_line(i + 1, "A", "shoot", "P: TIRO DE 2 ANOTADO (Puntos: 2)", _clock(i)) for i in range(12)]
+    lines += [_line(13, "B", "shoot", "P: TIRO DE 2 ANOTADO (Puntos: 2)", _clock(12))]
+    out = team_game_possessions(_game(lines, a_box={"p2a": 12}, b_box={"p2a": 13}))
+
+    assert out["A"]["unknown_pts_pct"] > 10
+    assert (out["A"]["reliable"], out["A"]["possessions_reason"], out["A"]["possessions_source"]) == (False, "quality", "estimate")
+
+
+def test_the_possession_count_must_be_within_ten_percent_of_the_estimate_regression():
+    """Bug (#390): the limit was 15 %. 17 possessions per team against an estimate of 19 is 10.5 % off."""
+    out = team_game_possessions(_game(_alternating(34), a_box={"p2a": 19}, b_box={"p2a": 19}))
+
+    assert out["A"]["possessions_pbp"] == 17 and out["A"]["possessions_estimate"] == pytest.approx(19)
+    assert (out["A"]["reliable"], out["A"]["possessions_reason"]) == (False, "reconciliation")
+
+
+def test_a_count_within_ten_percent_of_the_estimate_is_kept():
+    out = team_game_possessions(_game(_alternating(34), a_box={"p2a": 18}, b_box={"p2a": 18}))      # 5.6 % off
+
+    assert (out["A"]["reliable"], out["A"]["possessions_source"], out["A"]["possessions"]) == (True, "pbp", 17)

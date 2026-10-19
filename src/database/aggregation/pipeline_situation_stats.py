@@ -1,8 +1,10 @@
 """Season sums per team of the situation figures stored in ``DERIVED`` (#354) and of its timeouts (#355).
 
-Games whose play-by-play is ``unreliable`` contribute nothing (they are counted for the situations).
+Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) contribute nothing (they are counted for the situations).
 """
 from typing import Dict, List
+
+from .possession_expr import RELIABLE_GAME
 
 EDGE_KEYS = ("pts", "opp_pts", "poss", "opp_poss", "tov", "opp_tov")
 _PERIOD_TOTALS = ("pts", "poss", "tov", "opp_pts", "opp_poss", "opp_tov")
@@ -13,7 +15,7 @@ def _start(min_version: int) -> List[Dict]:
         {"$match": {"DERIVED.v": {"$gte": min_version}}},
         {"$project": {"all": "$DERIVED.TEAM", "names": "$HEADER.TEAM.name"}},
         {"$unwind": {"path": "$all", "includeArrayIndex": "i"}},
-        {"$addFields": {"name": {"$arrayElemAt": ["$names", "$i"]}, "used": {"$ne": ["$all.quality_level", "unreliable"]}}},
+        {"$addFields": {"name": {"$arrayElemAt": ["$names", "$i"]}, "used": RELIABLE_GAME}},
     ]
 
 

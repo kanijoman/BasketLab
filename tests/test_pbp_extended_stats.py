@@ -8,14 +8,14 @@ from src.services.pbp_extended_stats_service import PBPExtendedStatsService, cle
 
 
 def _team(tid, **kw):  # noqa: D103
-    base = {"id": tid, "pts": 0, "possessions": 70.0, "quality_level": "ok", "pts_off_tov": 0, "poss_off_tov": 0, "pts_off_steal": 0,
+    base = {"id": tid, "pts": 0, "possessions": 70.0, "reliable": True, "pts_off_tov": 0, "poss_off_tov": 0, "pts_off_steal": 0,
             "poss_off_steal": 0, "pts_second_chance": 0, "poss_second_chance": 0, "pts_bench": 0, "pts_paint": 0,
             "pts_by_origin": {}}
     base.update(kw)
     return base
 
 
-def _game(match_id, a, b, version=2):
+def _game(match_id, a, b, version=5):
     return {"_id": match_id, "HEADER": {"TEAM": [{"id": "A", "name": "Local"}, {"id": "B", "name": "Visitante"}]},
             "DERIVED": {"v": version, "TEAM": [_team("A", **{"pts": 80, **a}), _team("B", **{"pts": 70, **b})]}}
 
@@ -67,13 +67,13 @@ def test_bench_share_is_the_bench_points_over_the_team_points():
 
 def test_unreliable_games_are_left_out_and_counted():
     out = _rows(_game(1, dict(pts_off_tov=10, poss_off_tov=8), dict()),
-                _game(2, dict(pts_off_tov=50, poss_off_tov=9, quality_level="unreliable"), dict()))["Local"]
+                _game(2, dict(pts_off_tov=50, poss_off_tov=9, reliable=False), dict()))["Local"]
 
     assert (out["games"], out["games_unreliable"], out["pts_off_tov"]) == (1, 1, 10)
 
 
 def test_games_without_the_current_version_are_ignored():
-    rows = _service(_game(1, dict(pts_off_tov=10), dict(), version=1)).get_points_by_origin("G")
+    rows = _service(_game(1, dict(pts_off_tov=10), dict(), version=4)).get_points_by_origin("G")
 
     assert rows == []
 

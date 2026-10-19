@@ -2,7 +2,7 @@
 
 Per team: points per game after turnovers (steals included), after steals, second chance, bench (+ its share of the
 points) and in the paint; the efficiency of each origin (points per 100 possessions that started that way) and the same
-figures for the rivals (``opp_``: what the team concedes). Games whose play-by-play is ``unreliable`` are left out
+figures for the rivals (``opp_``: what the team concedes). Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out
 (``games_unreliable``). FEB only; fast-break points are not derived (the FEB definition is not reproducible from the pbp).
 """
 from __future__ import annotations
@@ -16,8 +16,8 @@ from src.database.aggregation.pipeline_points_origin import build_points_origin_
 from src.live_core.four_factors import FT_POSSESSION_COST
 
 # First DERIVED version that carries each group of figures (the backfill brings the older games up to date)
-ORIGIN_MIN_VERSION = 2
-PERIOD_MIN_VERSION = 3
+ORIGIN_MIN_VERSION = 5     # every group needs the reliability flag of v5 (#390)
+PERIOD_MIN_VERSION = 5
 _cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
 _period_cache: TTLCache = TTLCache(maxsize=32, ttl=3600)
 _ORIGINS = {"off_tov": "poss_off_tov", "off_steal": "poss_off_steal", "second_chance": "poss_second_chance"}

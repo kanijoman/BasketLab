@@ -4,9 +4,13 @@ Rebounds: the pbp counts players and teams (the official box score does not cred
 rebounding team is the one that missed. It is valid when it is not fewer than the box score (``ro`` / ``rd``), checked
 for offensive and defensive separately; otherwise the box score value is used and flagged (``*_source``).
 
-Possessions: the exact count of the tracker, unless its feed is ``unreliable`` or it disagrees with the estimate
-(FGA - ORB + TOV + 0.44 FTA, with the validated rebounds and turnovers) by more than 15 %; then both teams use the
-estimate (``possessions_reason``). FEB only: other documents give ``None`` and the caller keeps its own numbers.
+Possessions: the exact count of the tracker, unless the game is not ``reliable`` by its impact (#390): more than
+``UNKNOWN_ORIGIN_MAX_PCT`` of the points scored in possessions of unknown origin (the feed lacks the event that ended the rival's
+possession), or a count that differs from the estimate (FGA - ORB + TOV + 0.44 FTA, with the validated rebounds and turnovers) by
+more than ``RECONCILIATION_MAX_PCT``; then both teams use the estimate (``possessions_reason``) and the figures that depend on the
+possessions leave the game out. The alternation breaks (``quality_level``) are only informative: they come from annotation errors of
+the feed that cannot be rebuilt without video, and most of them hardly change the figures. FEB only: other documents give ``None``
+and the caller keeps its own numbers.
 """
 from __future__ import annotations
 
@@ -17,7 +21,8 @@ from src.live_core.possessions import track
 
 from .game_events import game_events
 
-RECONCILIATION_MAX_PCT = 15.0
+RECONCILIATION_MAX_PCT = 10.0
+UNKNOWN_ORIGIN_MAX_PCT = 10.0
 _SHOTS = ("fg2", "fg3")
 
 
@@ -99,7 +104,7 @@ def analyse_game(game_doc: Dict[str, Any]) -> Optional[GameAnalysis]:
             "possessions_estimate": estimate_possessions(fga, orb, tov, fta),
             "quality_level": quality.level, "breaks_raw": quality.breaks_raw, "game_minutes": minutes,
         }
-    _choose_possessions(out, quality.level)
+    _choose_possessions(out, _unknown_points_pct(possessions))
     return GameAnalysis(out, possessions, quality)
 
 
@@ -109,14 +114,21 @@ def team_game_possessions(game_doc: Dict[str, Any]) -> Optional[Dict[str, Dict[s
     return None if analysis is None else analysis.teams
 
 
-def _choose_possessions(teams: Dict[str, Dict[str, Any]], level: str) -> None:
+def _unknown_points_pct(possessions: List[Any]) -> float:
+    """Share of the points scored in possessions whose origin the feed does not allow to know."""
+    total = sum(p.points for p in possessions)
+    return sum(p.points for p in possessions if p.origin == "unknown") / total * 100 if total else 0.0
+
+
+def _choose_possessions(teams: Dict[str, Dict[str, Any]], unknown_pct: float) -> None:
     """Both teams use the same source: the alternation of one team's possessions depends on the other's."""
-    reason = "quality" if level == "unreliable" else None
+    reason = "quality" if unknown_pct > UNKNOWN_ORIGIN_MAX_PCT else None
     if reason is None:
         worst = max(abs(t["possessions_pbp"] - t["possessions_estimate"]) / max(t["possessions_estimate"], 1.0) * 100
                     for t in teams.values())
         reason = "reconciliation" if worst > RECONCILIATION_MAX_PCT else None
     for t in teams.values():
+        t["unknown_pts_pct"], t["reliable"] = unknown_pct, reason is None
         if reason:
             t.update(possessions=t["possessions_estimate"], possessions_source="estimate", possessions_reason=reason)
         else:
