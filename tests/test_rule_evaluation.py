@@ -95,8 +95,12 @@ def test_alerts_are_rows_with_their_labels_and_outcome(two_configs):
 
 
 def test_the_sample_game_gets_foul_alerts_for_its_own_team_in_the_base_configuration(two_configs):
-    base = [r for r in two_configs.rows if r["config"] == "base" and r["game"] == "G1" and r["team"] == A]
-    assert any(r["id"] == "foul_trouble" and r["severity"] == "critical" for r in base)
+    base = [r for r in two_configs.rows if r["config"] == "base" and r["game"] == "G1"]
+    assert any(r["id"] == "foul_trouble" and r["team"] == A for r in base)
+    assert any(r["id"] == "foul_trouble" and r["team"] == B and r["severity"] == "critical" for r in base)
+    # #403: the 4th foul of T. Janssen with 23 s left used to be a critical alert for A; no foul alert in the last 40 s of the game
+    assert not [r for r in base if r["id"] in ("foul_trouble", "rival_foul_trouble", "rival_foul_pair") and r["remaining"] <= 40
+                and r["period"] == 4]
 
 
 def test_a_configuration_with_rules_off_is_compared_on_the_very_same_games(two_configs):
