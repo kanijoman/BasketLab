@@ -380,24 +380,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
         clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
 
-      {/* the order of the screen (#405): scoreboard, pace, win probability, alerts; the rest goes after them */}
-      <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
-      {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
-
-      <section>
-        <h2>Alertas</h2>
-        {entries.length === 0
-          ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
-          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict}
-              clock={snap ? { period: snap.period, remaining: snap.remaining } : undefined} />}
-      </section>
-
-      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
-
-      {liveMode ? (
-        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
-          onStart={code => void live.connect(code)} onStop={live.disconnect} />
-      ) : (
+      {/* the playback controls stay under the scoreboard to play comfortably (#405) */}
+      {!liveMode && (
         <>
           <DemoControls
             source={source} sources={sources}
@@ -412,6 +396,25 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
 
           {finished && <p className="status">Partido finalizado</p>}
         </>
+      )}
+
+      {/* the order of the screen (#405): scoreboard, (playback controls), pace, win probability, alerts; the rest goes after them */}
+      <PaceCard pace={out?.analysis?.pace} own={own} rival={rival} />
+      {winProbOn && <WinProbCard winProb={out?.analysis?.win_prob} levers={out?.analysis?.win_levers} own={own} history={winProbHistory} />}
+
+      <section>
+        <h2>Alertas</h2>
+        {entries.length === 0
+          ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
+          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict}
+              clock={snap ? { period: snap.period, remaining: snap.remaining } : undefined} />}
+      </section>
+
+      <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
+
+      {liveMode && (
+        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
+          onStart={code => void live.connect(code)} onStop={live.disconnect} />
       )}
 
       {shownFeedback.length > 0 && (

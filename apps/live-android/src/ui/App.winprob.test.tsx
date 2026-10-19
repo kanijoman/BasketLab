@@ -57,7 +57,7 @@ describe('App win probability (issue #257, experimental)', () => {
     expect(screen.queryByRole('region', { name: 'Probabilidad de victoria' })).toBeNull()
   })
 
-  it('orders the match tab as scoreboard, pace, win probability and alerts (#405)', async () => {
+  it('orders the match tab as scoreboard, playback controls, pace, win probability and alerts (#405)', async () => {
     await play()
     await waitFor(() => expect(screen.getByText('71 %')).toBeTruthy())
     const pos = (el: Element) => el.compareDocumentPosition.bind(el)
@@ -67,6 +67,7 @@ describe('App win probability (issue #257, experimental)', () => {
     const alerts = screen.getByRole('heading', { name: 'Alertas' })
     const follows = (a: Element, b: Element) => Boolean(pos(a)(b) & Node.DOCUMENT_POSITION_FOLLOWING)
     expect(follows(scoreboard, pace) && follows(pace, win) && follows(win, alerts)).toBe(true)
-    expect(follows(alerts, screen.getByRole('button', { name: /pausa|reproducir/i }))).toBe(true)   // the rest goes after the alerts
+    const playButton = screen.getByRole('button', { name: /pausa|reproducir/i })
+    expect(follows(scoreboard, playButton) && follows(playButton, pace)).toBe(true)      // the playback controls stay under the scoreboard
   })
 })
