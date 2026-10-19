@@ -7,7 +7,7 @@ from typing import Dict, List
 
 from src.pbp.period_stats import COUNTERS
 
-from .possession_expr import RELIABLE_GAME
+from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME
 
 BUCKET_OT = "OT"
 
@@ -22,6 +22,7 @@ def build_period_pipeline(min_version: int) -> List[Dict]:
         "minutes": {"$sum": used("$all.periods.minutes")},
         "games": {"$addToSet": {"$cond": ["$used", "$_id", None]}},
         "unreliable": {"$addToSet": {"$cond": ["$used", None, "$_id"]}},
+        "doubtful": {"$addToSet": {"$cond": [DOUBTFUL_USED, "$_id", None]}},
     }
     for field in COUNTERS:
         group[field] = {"$sum": used(f"$all.periods.{field}")}

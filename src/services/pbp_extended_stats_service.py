@@ -3,7 +3,7 @@
 Per team: points per game after turnovers (steals included), after steals, second chance, bench (+ its share of the
 points) and in the paint; the efficiency of each origin (points per 100 possessions that started that way) and the same
 figures for the rivals (``opp_``: what the team concedes). Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out
-(``games_unreliable``). FEB only; fast-break points are not derived (the FEB definition is not reproducible from the pbp).
+(``games_unreliable``); ``games_doubtful`` counts the games used whose feed has alternation breaks (stored, not shown, #392). FEB only; fast-break points are not derived (the FEB definition is not reproducible from the pbp).
 """
 from __future__ import annotations
 
@@ -36,7 +36,8 @@ def _ratio(numerator: float, denominator: float, scale: float = 1.0) -> Optional
 def _team_row(raw: Dict[str, Any]) -> Dict[str, Any]:
     games = raw["games"]
     row: Dict[str, Any] = {"team_id": raw["_id"], "team_name": raw.get("team_name"), "games": games,
-                           "games_unreliable": raw["games_unreliable"], "games_paint": raw["games_paint"]}
+                           "games_unreliable": raw["games_unreliable"], "games_doubtful": raw["games_doubtful"],
+                           "games_paint": raw["games_paint"]}
     for prefix in ("", "opp_"):
         for field in _POINTS:
             key = prefix + field
@@ -95,10 +96,11 @@ class PBPExtendedStatsService:
         teams: Dict[str, Dict[str, Any]] = {}
         for raw in collection.aggregate(build_period_pipeline(PERIOD_MIN_VERSION)):
             team = teams.setdefault(raw["_id"]["team"], {"team_id": raw["_id"]["team"], "team_name": raw.get("team_name"),
-                                                         "games": 0, "games_unreliable": 0, "periods": {}})
+                                                         "games": 0, "games_unreliable": 0, "games_doubtful": 0, "periods": {}})
             games = len([g for g in raw["games"] if g is not None])
             if raw["_id"]["bucket"] == "1":
                 team["games"], team["games_unreliable"] = games, len([g for g in raw["unreliable"] if g is not None])
+                team["games_doubtful"] = len([g for g in raw["doubtful"] if g is not None])
             if games:
                 team["periods"][raw["_id"]["bucket"]] = _period_row(raw, games)
         for team in teams.values():
