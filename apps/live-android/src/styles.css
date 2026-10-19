@@ -270,3 +270,7 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 /* cards that show only their value and fold the rest (#405) */
 .card-details { margin-top: 8px; }
 .card-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+
+/* alerts grouped by quarter, each group foldable (#406) */
+.alert-period { margin: 8px 0; }
+.alert-period > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }

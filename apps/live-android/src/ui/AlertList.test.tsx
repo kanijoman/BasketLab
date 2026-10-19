@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import AlertList, { CATEGORY_LABEL, type AlertEntry } from './AlertList'
 import type { Alert } from '../engine/types'
 
-const entry = (key: string, severity: Alert['severity'], category = 'faltas', message = key): AlertEntry => ({
-  at: 'Q1 08:00',
+const entry = (key: string, severity: Alert['severity'], category = 'faltas', message = key, at = 'Q1 08:00'): AlertEntry => ({
+  at,
   alert: { key, id: key, severity, category, message, evidence: {}, proposal: [], rearm_s: null },
 })
 
@@ -29,7 +29,7 @@ describe('AlertList (issue #229)', () => {
     render(<AlertList entries={MIX} />)
     const shown = screen.getAllByRole('listitem').filter(li => li.classList.contains('alert'))
     expect(shown.map(li => li.querySelector('.alert-message')?.textContent)).toEqual(['w1', 'i1', 'c1', 'w2', 'i2'])
-    expect(document.querySelector('details')).toBeNull()
+    expect(document.querySelectorAll('details.alert-period')).toHaveLength(1)                 // all of them in the same quarter
     expect(screen.queryByRole('region', { name: 'Informativas' })).toBeNull()
   })
 
@@ -39,30 +39,10 @@ describe('AlertList (issue #229)', () => {
     expect(classes).toEqual(['alert-warning', 'alert-info', 'alert-critical', 'alert-warning', 'alert-info'])
   })
 
-  it('shows the 20 latest and collapses the rest behind «Ver las N anteriores»', () => {
-    const many = Array.from({ length: 25 }, (_, i) => entry(`a${i}`, 'warning'))      // a0 is the latest
-    render(<AlertList entries={many} />)
-    const details = screen.getByText('Ver las 5 anteriores', { selector: 'summary' }).closest('details') as HTMLDetailsElement
-    expect(details.open).toBe(false)
-    const visible = document.querySelectorAll('.alert-list > .alerts > li')
-    expect(visible).toHaveLength(20)
-    expect(visible[0].querySelector('.alert-message')?.textContent).toBe('a0')
-    expect(visible[19].querySelector('.alert-message')?.textContent).toBe('a19')
-    expect(within(details).getAllByRole('listitem').filter(li => li.classList.contains('alert')).map(li => li.querySelector('.alert-message')?.textContent))
-      .toEqual(['a20', 'a21', 'a22', 'a23', 'a24'])
-  })
-
-  it('with 20 alerts or fewer there is nothing collapsed, and the older one uses the singular', () => {
-    render(<AlertList entries={Array.from({ length: 20 }, (_, i) => entry(`a${i}`, 'info'))} />)
-    expect(document.querySelector('details')).toBeNull()
-    render(<AlertList entries={Array.from({ length: 21 }, (_, i) => entry(`b${i}`, 'info'))} />)
-    expect(screen.getByText('Ver la 1 anterior', { selector: 'summary' })).toBeTruthy()
-  })
-
   it('a new alert goes on top of the flow', () => {
     const { rerender } = render(<AlertList entries={[entry('old', 'warning')]} />)
     rerender(<AlertList entries={[entry('new', 'critical'), entry('old', 'warning')]} />)
-    const first = document.querySelector('.alert-list > .alerts > li .alert-message')
+    const first = document.querySelector('.alert-list .alerts > li .alert-message')
     expect(first?.textContent).toBe('new')
   })
 
@@ -114,15 +94,6 @@ describe('severity filter on the counters (issue #322)', () => {
     expect(screen.getByRole('button', { name: '2 avisos' })).toBeTruthy()
   })
 
-  it('the filter goes first, then the 20 latest and the rest collapsed', () => {
-    const entries = Array.from({ length: 30 }, (_, i) => entry(`a${i}`, i % 3 === 0 ? 'info' : 'warning'))      // 10 info, 20 warnings
-    render(<AlertList entries={entries} />)
-    expect(screen.getByText('Ver las 10 anteriores', { selector: 'summary' })).toBeTruthy()
-    fireEvent.click(counter('10 informativas'))
-    expect(document.querySelector('details')).toBeNull()                                   // 20 warnings fit in the 20 visible
-    expect(document.querySelectorAll('.alert-list > .alerts > li')).toHaveLength(20)
-  })
-
   it('with every severity hidden it says so and how to get them back', () => {
     render(<AlertList entries={[entry('c1', 'critical')]} />)
     fireEvent.click(counter('1 crítica'))
@@ -138,5 +109,59 @@ describe('severity filter on the counters (issue #322)', () => {
     render(<AlertList entries={MIX} />)
     expect(counter('2 informativas').getAttribute('aria-pressed')).toBe('false')
     expect(flow()).toEqual(['w1', 'c1', 'w2'])
+  })
+})
+
+
+// #406: the alerts are grouped by quarter, each group can be folded, and the previous quarter folds by itself 2 minutes into the next
+describe('alerts grouped by quarter (issue #406)', () => {
+  const FLOW = [
+    entry('q3b', 'warning', 'faltas', 'q3b', 'Q3 08:00'), entry('q3a', 'info', 'rival', 'q3a', 'Q3 09:30'),
+    entry('q2a', 'warning', 'gestion', 'q2a', 'Q2 01:00'), entry('q1a', 'critical', 'faltas', 'q1a', 'Q1 02:00'),
+  ]
+  const group = (title: RegExp) => screen.getByText(title, { selector: 'summary' }).closest('details') as HTMLDetailsElement
+  const clock = (period: number, remaining: number) => ({ period, remaining })
+
+  it('has one group per quarter, the latest first, with its title and its number of alerts', () => {
+    render(<AlertList entries={FLOW} clock={clock(3, 480)} />)
+    const titles = [...document.querySelectorAll('details.alert-period > summary')].map(s => s.textContent)
+    expect(titles).toEqual(['Cuarto 3 · 2 alertas', 'Cuarto 2 · 1 alerta', 'Cuarto 1 · 1 alerta'])
+  })
+
+  it('the current quarter is open; the previous one stays open during the first 2 minutes of the next, then folds', () => {
+    const { rerender } = render(<AlertList entries={FLOW} clock={clock(3, 600 - 119)} />)
+    expect(group(/Cuarto 3/).open).toBe(true)
+    expect(group(/Cuarto 2/).open).toBe(true)
+    expect(group(/Cuarto 1/).open).toBe(false)
+    rerender(<AlertList entries={FLOW} clock={clock(3, 600 - 120)} />)
+    expect(group(/Cuarto 3/).open).toBe(true)
+    expect(group(/Cuarto 2/).open).toBe(false)
+  })
+
+  it('the staff can fold the current quarter and open an old one, and the choice survives the clock moving on', () => {
+    const { rerender } = render(<AlertList entries={FLOW} clock={clock(3, 400)} />)
+    fireEvent.click(screen.getByText(/Cuarto 3/, { selector: 'summary' }))
+    fireEvent.click(screen.getByText(/Cuarto 1/, { selector: 'summary' }))
+    expect(group(/Cuarto 3/).open).toBe(false)
+    expect(group(/Cuarto 1/).open).toBe(true)
+    rerender(<AlertList entries={FLOW} clock={clock(3, 300)} />)
+    expect(group(/Cuarto 3/).open).toBe(false)
+    expect(group(/Cuarto 1/).open).toBe(true)
+    fireEvent.click(screen.getByText(/Cuarto 3/, { selector: 'summary' }))
+    expect(group(/Cuarto 3/).open).toBe(true)
+  })
+
+  it('overtime periods are named as such, and the filter works inside the groups', () => {
+    render(<AlertList entries={[entry('p1', 'warning', 'faltas', 'p1', 'PR1 03:10'), entry('q4', 'info', 'rival', 'q4', 'Q4 00:30')]} clock={clock(5, 200)} />)
+    expect(screen.getByText('Prórroga 1 · 1 alerta', { selector: 'summary' })).toBeTruthy()
+    expect(screen.getByText('Cuarto 4 · 1 alerta', { selector: 'summary' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '1 informativa' }))
+    expect(screen.queryByText(/Cuarto 4/, { selector: 'summary' })).toBeNull()      // a group with every alert hidden disappears
+  })
+
+  it('without a clock the newest alert says which quarter is the current one', () => {
+    render(<AlertList entries={FLOW} />)
+    expect(group(/Cuarto 3/).open).toBe(true)
+    expect(group(/Cuarto 1/).open).toBe(false)
   })
 })

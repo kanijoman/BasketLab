@@ -340,7 +340,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
         <h2>Alertas</h2>
         {entries.length === 0
           ? <p className="detail">{liveMode ? 'Sin alertas todavía.' : 'Sin alertas todavía. Pulsa Reproducir para simular el partido.'}</p>
-          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict} />}
+          : <AlertList entries={entries} verdicts={feedback.verdicts} onVerdict={feedback.setVerdict}
+              clock={snap ? { period: snap.period, remaining: snap.remaining } : undefined} />}
       </section>
 
       <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />

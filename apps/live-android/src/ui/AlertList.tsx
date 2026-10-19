@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import AlertCard, { CATEGORY_LABEL } from './AlertCard'
 import type { Alert } from '../engine/types'
 import type { Verdict } from '../feedback/store'
@@ -8,8 +8,17 @@ export interface AlertEntry { alert: Alert; at: string }
 
 export { CATEGORY_LABEL }
 
-/** The alerts shown in the flow; the older ones wait behind a summary (issue #313: a long page to scroll was the complaint). */
-export const VISIBLE_ALERTS = 20
+/** The previous quarter folds by itself this many game-seconds into the next one (issue #406). */
+export const AUTO_FOLD_S = 120
+
+/** The period an alert was said in, from its clock label ("Q2 05:30", "PR1 03:00"); 1 when it cannot be read. */
+export function periodOfLabel(at: string): number {
+  const m = /^(Q|PR)(\d+)/.exec(at)
+  return m ? (m[1] === 'PR' ? 4 : 0) + Number(m[2]) : 1
+}
+
+const periodSeconds = (period: number) => (period > 4 ? 300 : 600)
+const periodTitle = (period: number) => (period > 4 ? `Prórroga ${period - 4}` : `Cuarto ${period}`)
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
@@ -40,14 +49,18 @@ interface ListProps {
   /** Answer of the staff per alert key, and the way to give one (issue #235). */
   verdicts?: Record<string, Verdict | null>
   onVerdict?: (key: string, verdict: Verdict | null) => void
+  /** The game clock now: it decides which quarter is the current one and when the previous folds. Without it the newest alert says. */
+  clock?: { period: number; remaining: number }
 }
 
 /**
  * One chronological flow, the latest alert on top (issue #313; before it the list was grouped by severity, #229). Severity and
  * category are marks of each card (colour, icon, label); the counters of the header count them and are also the filter (#322): pressing
- * one hides or shows that severity. The filter goes first, then the 20 latest are visible and the rest collapsed.
+ * one hides or shows that severity. The filter goes first. The flow is split in one foldable group per quarter (#406): the current one is
+ * open, the previous one folds by itself ``AUTO_FOLD_S`` into the next, and what the staff opens or folds by hand is kept.
  */
-export default function AlertList({ entries, verdicts = {}, onVerdict }: ListProps) {
+export default function AlertList({ entries, verdicts = {}, onVerdict, clock }: ListProps) {
+  const [manual, setManual] = useState<Record<number, boolean>>({})
   const { critical, warning, info } = countBySeverity(entries)
   const fresh = useFreshKeys(entries)
   const { hidden, toggle } = useAlertFilter()
@@ -61,7 +74,16 @@ export default function AlertList({ entries, verdicts = {}, onVerdict }: ListPro
     <AlertCard key={e.alert.key} alert={e.alert} at={e.at} verdict={verdicts[e.alert.key] ?? null} fresh={fresh.has(e.alert.key)}
       onVerdict={onVerdict && (v => onVerdict(e.alert.key, v))} />
   )
-  const older = shown.slice(VISIBLE_ALERTS)
+  const current = clock?.period ?? (entries.length > 0 ? periodOfLabel(entries[0].at) : 1)
+  const into = clock ? periodSeconds(clock.period) - clock.remaining : 0
+  const isOpen = (period: number) => manual[period] ?? (period >= current || (period === current - 1 && into < AUTO_FOLD_S))
+  const groups: { period: number; items: AlertEntry[] }[] = []
+  for (const e of shown) {
+    const period = periodOfLabel(e.at)
+    const last = groups[groups.length - 1]
+    if (last && last.period === period) last.items.push(e)
+    else groups.push({ period, items: [e] })
+  }
   return (
     <div className="alert-list">
       <p className="alert-counts" aria-label="Resumen de alertas">
@@ -72,13 +94,14 @@ export default function AlertList({ entries, verdicts = {}, onVerdict }: ListPro
       {shown.length === 0 && entries.length > 0 && (
         <p className="detail">Has ocultado todas las alertas: pulsa un contador para volver a verlas.</p>
       )}
-      <ul className="alerts">{shown.slice(0, VISIBLE_ALERTS).map(card)}</ul>
-      {older.length > 0 && (
-        <details className="alerts-older">
-          <summary>{older.length === 1 ? 'Ver la 1 anterior' : `Ver las ${older.length} anteriores`}</summary>
-          <ul className="alerts">{older.map(card)}</ul>
+      {groups.map(({ period, items }) => (
+        <details key={period} className="alert-period" open={isOpen(period)}>
+          <summary onClick={e => { e.preventDefault(); setManual(m => ({ ...m, [period]: !isOpen(period) })) }}>
+            {periodTitle(period)} · {plural(items.length, 'alerta', 'alertas')}
+          </summary>
+          <ul className="alerts">{items.map(card)}</ul>
         </details>
-      )}
+      ))}
     </div>
   )
 }
