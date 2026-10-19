@@ -16,13 +16,13 @@ def _period(p, **kw):
     return base
 
 
-def _team(tid, periods, quality="ok"):
-    return {"id": tid, "quality_level": quality, "periods": periods}
+def _team(tid, periods, reliable=True):
+    return {"id": tid, "reliable": reliable, "periods": periods}
 
 
-def _game(match_id, a_periods, b_periods, quality="ok", version=3):
+def _game(match_id, a_periods, b_periods, reliable=True, version=5):
     return {"_id": match_id, "HEADER": {"TEAM": [{"id": "A", "name": "Local"}, {"id": "B", "name": "Visitante"}]},
-            "DERIVED": {"v": version, "TEAM": [_team("A", a_periods, quality), _team("B", b_periods, quality)]}}
+            "DERIVED": {"v": version, "TEAM": [_team("A", a_periods, reliable), _team("B", b_periods, reliable)]}}
 
 
 def _service(*games):
@@ -72,13 +72,13 @@ def test_ratios_are_none_without_the_denominator():
 
 
 def test_unreliable_games_are_left_out_and_counted():
-    row = _team_rows(_game(1, [_period(1, pts=20)], []), _game(2, [_period(1, pts=50)], [], quality="unreliable"))["Local"]
+    row = _team_rows(_game(1, [_period(1, pts=20)], []), _game(2, [_period(1, pts=50)], [], reliable=False))["Local"]
 
     assert (row["games"], row["games_unreliable"], row["periods"]["1"]["pts"]) == (1, 1, 20)
 
 
 def test_games_below_the_current_version_are_ignored_and_periods_missing_in_all_games_are_absent():
-    assert _service(_game(1, [_period(1, pts=20)], [], version=2)).get_by_period("G") == []
+    assert _service(_game(1, [_period(1, pts=20)], [], version=4)).get_by_period("G") == []
     row = _team_rows(_game(1, [_period(1, pts=20)], []))["Local"]
 
     assert sorted(row["periods"]) == ["1"]

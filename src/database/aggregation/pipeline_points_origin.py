@@ -1,12 +1,14 @@
 """Season sums of the points by origin stored in ``DERIVED`` (#352): per team, own figures and the rival's (``opp_``)."""
 from typing import Dict, List
 
+from .possession_expr import RELIABLE_GAME
+
 SUMMED = ("pts_off_tov", "poss_off_tov", "pts_off_steal", "poss_off_steal", "pts_second_chance", "poss_second_chance",
           "pts_bench", "pts_paint", "pts")
 
 
 def build_points_origin_pipeline(min_version: int) -> List[Dict]:
-    """One row per team: games used and excluded (``unreliable`` feeds: their possession origins cannot be trusted)."""
+    """One row per team: games used and excluded (not reliable, #390: their possession origins cannot be trusted)."""
     def used(expr):
         return {"$cond": ["$used", expr, 0]}
 
@@ -28,7 +30,7 @@ def build_points_origin_pipeline(min_version: int) -> List[Dict]:
             "me": "$all",
             "rival": {"$arrayElemAt": ["$teams", {"$subtract": [1, "$i"]}]},
             "name": {"$arrayElemAt": ["$names", "$i"]},
-            "used": {"$ne": ["$all.quality_level", "unreliable"]},
+            "used": RELIABLE_GAME,
         }},
         {"$group": group},
     ]

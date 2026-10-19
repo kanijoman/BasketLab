@@ -18,6 +18,13 @@ def test_derived_fields_follow_the_order_of_the_box_score_teams():
     assert (first["possessions"], first["possessions_source"], first["quality_level"]) == (5, "pbp", "ok")
 
 
+def test_derived_fields_carry_the_reliability_of_the_game_by_its_impact():
+    out = derive_game_fields(_game(_alternating(10), a_box={"p2a": 5, "p2m": 5, "pts": 10}, b_box={"p2a": 5, "p2m": 5, "pts": 10}))
+
+    assert DERIVED_VERSION >= 5
+    assert all(t["reliable"] is True and t["unknown_pts_pct"] == 0 for t in out["TEAM"])
+
+
 def test_derived_rebounds_and_turnovers_are_the_validated_ones_with_team_rebounds():
     out = derive_game_fields(_rebound_game(a_orb_player=2, a_orb_team=1, b_drb=3, box_ro=2, box_rd=3))
 

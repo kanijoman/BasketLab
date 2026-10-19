@@ -4,7 +4,7 @@ Situations: points per possession after a timeout the team called (``ato_own``) 
 possession of the periods it started, and the first and last two minutes of the periods (net rating, points, turnover rate and the
 difference with the rest of the period). Timeouts: the net rating of the ``TM_WINDOW_POSSESSIONS`` possessions of each team before
 and after each timeout, for those the team called (``own``) and those the rival called (``rival``), with the share that improved
-the caller; timeouts of the last minute of a period are not analysed. Games with an ``unreliable`` feed are left out. FEB only.
+the caller; timeouts of the last minute of a period are not analysed. Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out. FEB only.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from cachetools import TTLCache
 
 from src.database.aggregation.pipeline_situation_stats import EDGE_KEYS, build_situations_pipeline, build_timeouts_pipeline
 
-MIN_VERSION = 4
+MIN_VERSION = 5     # the reliability flag of DERIVED v5 (#390)
 _situations: TTLCache = TTLCache(maxsize=32, ttl=3600)
 _timeouts: TTLCache = TTLCache(maxsize=32, ttl=3600)
 

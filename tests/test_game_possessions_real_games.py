@@ -57,14 +57,23 @@ def test_totals_with_team_rebounds_and_turnovers_equal_the_official_pdf(game):
 
 
 @pytest.mark.parametrize("game", GAMES, ids=_IDS)
-def test_possessions_follow_the_quality_of_the_feed(game):
+def test_possessions_follow_the_reliability_of_the_game(game):
     teams = team_game_possessions(_doc(game))
     first = teams[game["teams"][0]]
 
-    assert first["possessions_source"] == ("estimate" if first["quality_level"] == "unreliable" else first["possessions_source"])
+    assert first["possessions_source"] == ("pbp" if first["reliable"] else "estimate")
     for team in teams.values():
         assert team["possessions_source"] == first["possessions_source"]            # both teams use the same source
         assert team["possessions"] == (team["possessions_pbp"] if team["possessions_source"] == "pbp" else team["possessions_estimate"])
+        assert team["reliable"] == (team["unknown_pts_pct"] <= 10 and team["possessions_reason"] is None)
+
+
+def test_the_leon_zamora_game_is_reliable_although_its_feed_has_many_alternation_breaks():
+    """2524470: 10 breaks (annotation errors that need video to be solved) but only 4 % of its points have an unknown origin."""
+    team = next(iter(team_game_possessions(_doc(next(g for g in GAMES if g["game"] == "2524470"))).values()))
+
+    assert team["quality_level"] == "unreliable" and team["reliable"] is True
+    assert team["unknown_pts_pct"] < 5 and team["possessions_source"] == "pbp"
 
 
 def test_the_pbp_stays_close_to_the_estimate_when_it_is_used():

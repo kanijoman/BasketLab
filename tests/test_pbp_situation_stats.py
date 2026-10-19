@@ -30,14 +30,14 @@ def _tm(caller, pre_net, post_net, p=1, t=300):
     return {"p": p, "t": t, "caller": caller, "pre": side(pre_net), "post": side(post_net)}
 
 
-def _team(tid, quality="ok", **kw):
-    base = {"id": tid, "quality_level": quality, "ato_own": {"n": 0, "pts": 0}, "ato_rival": {"n": 0, "pts": 0},
+def _team(tid, reliable=True, **kw):
+    base = {"id": tid, "reliable": reliable, "ato_own": {"n": 0, "pts": 0}, "ato_rival": {"n": 0, "pts": 0},
             "first_poss": {"n": 0, "pts": 0}, "edges": _edges(), "periods": [_period(1)], "timeouts": []}
     base.update(kw)
     return base
 
 
-def _game(match_id, a, b, version=4):
+def _game(match_id, a, b, version=5):
     return {"_id": match_id, "HEADER": {"TEAM": [{"id": "A", "name": "Local"}, {"id": "B", "name": "Visitante"}]},
             "DERIVED": {"v": version, "TEAM": [_team("A", **a), _team("B", **b)]}}
 
@@ -84,7 +84,7 @@ def test_edges_give_the_net_rating_and_the_difference_with_the_rest_of_the_perio
 
 def test_unreliable_games_are_left_out_of_the_situations_and_counted():
     row = _rows("get_situations", _game(1, dict(ato_own={"n": 1, "pts": 2}), {}),
-                _game(2, dict(ato_own={"n": 5, "pts": 9}, quality="unreliable"), {}))["Local"]
+                _game(2, dict(ato_own={"n": 5, "pts": 9}, reliable=False), {}))["Local"]
 
     assert (row["games"], row["games_unreliable"], row["ato_own"]["n"]) == (1, 1, 1)
 
@@ -116,7 +116,7 @@ def test_a_team_without_analysable_timeouts_has_empty_groups():
 
 
 def test_games_below_the_current_version_are_ignored():
-    assert _service(_game(1, dict(ato_own={"n": 1, "pts": 2}), {}, version=3)).get_situations("G") == []
+    assert _service(_game(1, dict(ato_own={"n": 1, "pts": 2}), {}, version=4)).get_situations("G") == []
 
 
 def test_results_are_cached_per_collection():

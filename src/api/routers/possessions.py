@@ -64,7 +64,7 @@ def get_possession_stats(
 def get_points_by_origin(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
     """Per team (FEB): points per game after turnovers, steals and offensive rebounds (second chance), bench and paint, their
     efficiency per origin (points per 100 possessions that started that way), the bench share and the same figures conceded
-    (``opp_``). Games with an ``unreliable`` play-by-play are left out (``games_unreliable``). Empty for collections whose
+    (``opp_``). Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out (``games_unreliable``). Empty for collections whose
     games lack ``DERIVED`` (FBCYL, or FEB games not backfilled: ``python run_backfill_derived.py``)."""
     return PBPExtendedStatsService(db).get_points_by_origin(collection)
 
@@ -82,7 +82,7 @@ def get_by_period(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
 def get_situations(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
     """Per team (FEB): points per possession after a timeout it called (``ato_own``) or the rival called (``ato_rival``), of the first
     possession of the periods it started (``first_poss``) and the first / last two minutes of the periods against the rest of them
-    (``edges``: net rating, points, turnover rate, ``vs_rest``). ``unreliable`` games are left out (``games_unreliable``). Empty for
+    (``edges``: net rating, points, turnover rate, ``vs_rest``). games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out (``games_unreliable``). Empty for
     collections whose games lack ``DERIVED`` v4 (FBCYL, or not backfilled)."""
     return PBPSituationStatsService(db).get_situations(collection)
 

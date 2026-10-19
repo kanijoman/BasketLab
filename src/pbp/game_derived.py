@@ -15,8 +15,8 @@ from .situation_stats import situation_figures
 from .timeout_effects import timeout_effects
 from .points_by_origin import paint_points, starters, team_points_by_origin
 
-DERIVED_VERSION = 4
-_FIELDS = ("pts", "possessions", "possessions_source", "quality_level",
+DERIVED_VERSION = 5
+_FIELDS = ("pts", "possessions", "possessions_source", "quality_level", "reliable", "unknown_pts_pct",
            "orb", "orb_source", "drb", "drb_source", "tov", "tov_source")
 
 
