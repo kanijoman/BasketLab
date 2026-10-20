@@ -119,11 +119,19 @@ describe('PbpAnalysisPage', () => {
     expect(screen.getByText(/Base de datos no disponible/)).toBeTruthy()
   })
 
-  it('is FEB only: a FBCYL collection says so and asks for nothing', () => {
+  it('a FBCYL collection loads its figures too, with the warning about its feed (issue #432)', () => {
     ctx.value = { collection: { name: 'FBCYL_X', label: 'FBCYL X', isFbcyl: true } }
     renderPage()
 
-    expect(screen.getByText(/solo está disponible para FEB/i)).toBeTruthy()
-    expect(hooks.usePointsByOrigin).toHaveBeenCalledWith(undefined)
+    expect(hooks.usePointsByOrigin).toHaveBeenCalledWith('FBCYL_X')
+    expect(screen.getByText(NAME)).toBeTruthy()
+    expect(screen.getByText(/anotan los clubes/i)).toBeTruthy()
+    expect(screen.queryByText(/solo está disponible para FEB/i)).toBeNull()
+  })
+
+  it('a FEB collection has no FBCYL warning', () => {
+    renderPage()
+
+    expect(screen.queryByText(/anotan los clubes/i)).toBeNull()
   })
 })

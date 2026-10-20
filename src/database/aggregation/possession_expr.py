@@ -34,6 +34,16 @@ def possessions_per_40(index: int, fga: Dict, fta: Dict, orb: Dict, tov: Dict) -
     return {"$multiply": [raw, {"$divide": [40, game_minutes()]}]}
 
 
+# Who a ``DERIVED.TEAM`` entry is and how it is called (#432). FEB: the team id and the header name. FBCYL: the ``id`` is the ``teamIdIntern`` of
+# the moves, which changes in every game, so a season is grouped by the stable ``ext_id`` (``teamIdExtern``) and the name is in ``stats.teams``.
+TEAM_NAMES = {"$ifNull": ["$HEADER.TEAM.name", "$stats.teams.name"]}
+
+
+def team_key(entry: str) -> Dict:
+    """The stable id of the ``DERIVED.TEAM`` entry that the expression ``entry`` (e.g. ``"$all"``) points to."""
+    return {"$ifNull": [f"{entry}.ext_id", f"{entry}.id"]}
+
+
 # A game whose possession figures can be trusted (``DERIVED.TEAM[].reliable``, #390): a game is left out of the figures that depend on the
 # possessions when more than 10 % of its points have an unknown origin or its possession count is 10 % off the estimate.
 RELIABLE_GAME = {"$eq": ["$all.reliable", True]}

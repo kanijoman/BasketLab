@@ -7,7 +7,7 @@ from typing import Dict, List
 
 from src.pbp.period_stats import COUNTERS
 
-from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME
+from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME, TEAM_NAMES, team_key
 
 BUCKET_OT = "OT"
 
@@ -17,7 +17,7 @@ def build_period_pipeline(min_version: int) -> List[Dict]:
         return {"$cond": ["$used", expr, 0]}
 
     group: Dict[str, Dict] = {
-        "_id": {"team": "$all.id", "bucket": "$bucket"},
+        "_id": {"team": team_key("$all"), "bucket": "$bucket"},
         "team_name": {"$first": "$name"},
         "minutes": {"$sum": used("$all.periods.minutes")},
         "games": {"$addToSet": {"$cond": ["$used", "$_id", None]}},
@@ -29,7 +29,7 @@ def build_period_pipeline(min_version: int) -> List[Dict]:
         group[f"opp_{field}"] = {"$sum": used(f"$all.periods.opp_{field}")}
     return [
         {"$match": {"DERIVED.v": {"$gte": min_version}}},
-        {"$project": {"all": "$DERIVED.TEAM", "names": "$HEADER.TEAM.name"}},
+        {"$project": {"all": "$DERIVED.TEAM", "names": TEAM_NAMES}},
         {"$unwind": {"path": "$all", "includeArrayIndex": "i"}},
         {"$addFields": {"name": {"$arrayElemAt": ["$names", "$i"]}, "used": RELIABLE_GAME}},
         {"$unwind": "$all.periods"},

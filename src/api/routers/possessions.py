@@ -62,16 +62,16 @@ def get_possession_stats(
 
 @router.get("/{collection}/points-by-origin", summary="Season points by origin, bench and paint per team")
 def get_points_by_origin(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
-    """Per team (FEB): points per game after turnovers, steals and offensive rebounds (second chance), bench and paint, their
+    """Per team (FEB and FBCYL, #432): points per game after turnovers, steals and offensive rebounds (second chance), bench and paint, their
     efficiency per origin (points per 100 possessions that started that way), the bench share and the same figures conceded
     (``opp_``). Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out (``games_unreliable``; ``games_doubtful`` = games used whose feed has alternation breaks, not shown in the web). Empty for collections whose
-    games lack ``DERIVED`` (FBCYL, or FEB games not backfilled: ``python run_backfill_derived.py``)."""
+    games lack ``DERIVED`` (not backfilled: ``python run_backfill_derived.py``). FBCYL: grouped by the stable ``teamIdExtern``, no paint points (no shot chart)."""
     return PBPExtendedStatsService(db).get_points_by_origin(collection)
 
 
 @router.get("/{collection}/by-period", summary="Season figures per team and period (Q1-Q4, OT)")
 def get_by_period(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
-    """Per team (FEB): points for and against, possessions, ORtg/DRtg, net rating, pace (per 40 min), eFG%, TOV%, ORB%/DRB%, FTr and
+    """Per team (FEB and FBCYL): points for and against, possessions, ORtg/DRtg, net rating, pace (per 40 min), eFG%, TOV%, ORB%/DRB%, FTr and
     fouls in each of Q1-Q4 and OT (all the overtimes together), with the rival's (``opp_``: what the team concedes). Games with an
     ``unreliable`` play-by-play are left out (``games_unreliable``; ``games_doubtful`` = games used whose feed has alternation breaks, not shown in the web). Empty for collections whose games lack ``DERIVED`` (FBCYL, or
     games not backfilled: ``python run_backfill_derived.py``)."""
@@ -80,16 +80,16 @@ def get_by_period(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
 
 @router.get("/{collection}/situations", summary="Season after-timeout possessions, first possessions and first / last two minutes")
 def get_situations(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
-    """Per team (FEB): points per possession after a timeout it called (``ato_own``) or the rival called (``ato_rival``), of the first
+    """Per team (FEB and FBCYL): points per possession after a timeout it called (``ato_own``) or the rival called (``ato_rival``), of the first
     possession of the periods it started (``first_poss``) and the first / last two minutes of the periods against the rest of them
     (``edges``: net rating, points, turnover rate, ``vs_rest``). games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out (``games_unreliable``; ``games_doubtful`` = games used whose feed has alternation breaks, not shown in the web). Empty for
-    collections whose games lack ``DERIVED`` v4 (FBCYL, or not backfilled)."""
+    collections whose games lack ``DERIVED`` v4 (not backfilled)."""
     return PBPSituationStatsService(db).get_situations(collection)
 
 
 @router.get("/{collection}/timeouts", summary="Season effect of the timeouts on the net rating")
 def get_timeout_effects(collection: str, db=Depends(get_db)) -> List[Dict[str, Any]]:
-    """Per team (FEB): the net rating of the 5 possessions of each team before and after each timeout it called (``own``) and each one
+    """Per team (FEB and FBCYL): the net rating of the 5 possessions of each team before and after each timeout it called (``own``) and each one
     the rival called (``rival``), the change and the share of timeouts after which the caller improved. Timeouts of the last minute of a
     period and those without a complete window are not analysed. Empty for collections without ``DERIVED`` v4."""
     return PBPSituationStatsService(db).get_timeout_effects(collection)
