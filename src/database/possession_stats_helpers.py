@@ -88,11 +88,13 @@ def boxscore_possession_stats(games: list, team_id: str, is_fbcyl: bool) -> Dict
                 for team in stats:
                     team_id_check = team.get("teamIdIntern") or team.get("teamIdExtern")
                     if str(team_id_check) == str(team_id):
-                        fga = team.get("FGA", 0)
-                        orb = team.get("REB_O", 0) or team.get("ORB", 0)
-                        tov = team.get("TO", 0)
-                        fta = team.get("FTA", 0)
-                        pts = team.get("PTS", 0)
+                        # the team has ``data{...}`` (the old FGA / REB_O / TO / FTA / PTS keys do not exist: always 0, #373)
+                        data = team.get("data") or {}
+                        fga = (data.get("shotsOfTwoAttempted") or 0) + (data.get("shotsOfThreeAttempted") or 0)
+                        orb = data.get("offensiveRebound") or 0
+                        tov = data.get("lost") or 0
+                        fta = data.get("shotsOfOneAttempted") or 0
+                        pts = data.get("score") or 0
 
                         poss = estimate_possessions(fga, orb, tov, fta)
                         if poss > 0:

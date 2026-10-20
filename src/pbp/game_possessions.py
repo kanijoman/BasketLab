@@ -9,8 +9,12 @@ Possessions: the exact count of the tracker, unless the game is not ``reliable``
 possession), or a count that differs from the estimate (FGA - ORB + TOV + 0.44 FTA, with the validated rebounds and turnovers) by
 more than ``RECONCILIATION_MAX_PCT``; then both teams use the estimate (``possessions_reason``) and the figures that depend on the
 possessions leave the game out. The alternation breaks (``quality_level``) are only informative: they come from annotation errors of
-the feed that cannot be rebuilt without video, and most of them hardly change the figures. FEB only: other documents give ``None``
-and the caller keeps its own numbers.
+the feed that cannot be rebuilt without video, and most of them hardly change the figures. Documents that are not a FEB or FBCYL game
+give ``None`` and the caller keeps its own numbers.
+
+FBCYL (issue #373): the same figures from the moves (``events_fbcyl``) and the team box (``stats.teams[].data``). That box INCLUDES the team
+rebounds and turnovers and the moves have almost none of them, so the pbp is below the box nearly always (23 of 34 team-games for the
+offensive rebounds) and the box value wins: the rule "pbp unless it is fewer than the box" is the same, it just chooses the box more often.
 """
 from __future__ import annotations
 
@@ -74,23 +78,51 @@ class GameAnalysis(NamedTuple):
     quality: Any
 
 
-def analyse_game(game_doc: Dict[str, Any]) -> Optional[GameAnalysis]:
-    """Run the tracker on a FEB game; ``None`` if it has no play-by-play or box score to read."""
+def _fbcyl_total(team: Dict[str, Any]) -> Dict[str, Any]:
+    """The box totals of an FBCYL team with the names of the FEB ones (``ro``, ``rd``, ``to``, ``p1a``...)."""
+    data = team.get("data") or {}
+    return {"ro": data.get("offensiveRebound"), "rd": data.get("defensiveRebound"), "to": data.get("lost"), "pts": data.get("score"),
+            "p2a": data.get("shotsOfTwoAttempted"), "p3a": data.get("shotsOfThreeAttempted"), "p1a": data.get("shotsOfOneAttempted")}
+
+
+def game_teams(game_doc: Dict[str, Any]) -> Optional[Tuple[bool, List[str], List[Dict[str, Any]]]]:
+    """``(is_fbcyl, ids, totals)`` of a game with two teams and play-by-play; ``None`` otherwise. The ids are those of the events (FEB team id,
+    FBCYL ``teamIdIntern``) and the totals are the box ones with the FEB names."""
     teams = (game_doc.get("BOXSCORE") or {}).get("TEAM") or []
-    if len(teams) != 2 or not (game_doc.get("PLAYBYPLAY") or {}).get("LINES"):
+    if len(teams) == 2 and (game_doc.get("PLAYBYPLAY") or {}).get("LINES"):
+        return False, [str(t.get("id")) for t in teams], [t.get("TOTAL") or {} for t in teams]
+    fbcyl = (game_doc.get("stats") or {}).get("teams") or []
+    if len(fbcyl) == 2 and game_doc.get("moves"):
+        return True, [str(t.get("teamIdIntern")) for t in fbcyl], [_fbcyl_total(t) for t in fbcyl]
+    return None
+
+
+def game_minutes(game_doc: Dict[str, Any], is_fbcyl: bool, last_period: int) -> int:
+    """Minutes of the game: its regulation (the sum of the FBCYL periods; 40 for FEB) and 5 per overtime."""
+    regulation = 40
+    if is_fbcyl:
+        durations = [d for d in ((game_doc.get("stats") or {}).get("periodDurationList") or [])[:4] if isinstance(d, (int, float)) and d > 0]
+        regulation = int(sum(durations)) if len(durations) == 4 else 40
+    return regulation + 5 * max(0, last_period - 4)
+
+
+def analyse_game(game_doc: Dict[str, Any]) -> Optional[GameAnalysis]:
+    """Run the tracker on a FEB or FBCYL game; ``None`` if it has no play-by-play or box score to read."""
+    view = game_teams(game_doc)
+    if view is None:
         return None
-    ids = [str(t.get("id")) for t in teams]
-    events = sorted(game_events(game_doc, False), key=lambda e: (e.elapsed, e.num))
+    is_fbcyl, ids, totals = view
+    events = sorted(game_events(game_doc, is_fbcyl), key=lambda e: (e.elapsed, e.num))
     if not events:
         return None
     pbp = _pbp_counts(events, ids)
     possessions, quality = track(events, ids)
     last_period = max(e.period for e in events)
-    minutes = 40 + 5 * max(0, last_period - 4)
+    minutes = game_minutes(game_doc, is_fbcyl, last_period)
 
     out: Dict[str, Dict[str, Any]] = {}
-    for team, tid in zip(teams, ids):
-        box, counts = team.get("TOTAL") or {}, pbp[tid]
+    for box, tid in zip(totals, ids):
+        counts = pbp[tid]
         orb, orb_source = _validated(counts["orb_player"] + counts["orb_team"], _int(box.get("ro")))
         drb, drb_source = _validated(counts["drb_player"] + counts["drb_team"], _int(box.get("rd")))
         tov, tov_source = _validated(counts["tov"], _int(box.get("to")))
