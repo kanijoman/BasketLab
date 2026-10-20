@@ -16,7 +16,7 @@ from .repository_lineup import LineupRepositoryMixin
 
 
 def _attach_derived_fields(game: Dict) -> None:
-    """Store the exact possessions and validated rebounds of the game (``DERIVED``, #372); never fails the insert."""
+    """Store the exact possessions and validated rebounds of the game (``DERIVED``, #372, FBCYL #373); never fails the insert."""
     try:
         from src.pbp.game_derived import derive_game_fields
 
@@ -113,6 +113,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             collection = self.connection.get_collection(collection_name)
             # Use UUID as the document _id
             match_data["_id"] = match_uuid
+            _attach_derived_fields(match_data)      # exact possessions and validated rebounds (#373)
             collection.insert_one(match_data)
             return True
         except PyMongoError as e:

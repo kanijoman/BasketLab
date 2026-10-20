@@ -29,6 +29,21 @@ def starters(box_team: Dict[str, Any]) -> Set[str]:
     return {str(p.get("id")) for p in box_team.get("PLAYER") or [] if str(p.get("inn")) == "1"}
 
 
+def fbcyl_starters(events: Iterable[Any]) -> Dict[str, Set[str]]:
+    """Per team, the players that started an FBCYL game: the feed has no starters flag. The real feed writes the starting five as ``Entra al
+    campo`` at 0:00 of the 1st period, so a player starts when her first move is an entrance at that second or is not an entrance at all (an
+    action or an exit comes first). ``events`` in game order."""
+    first: Dict[str, Any] = {}
+    for ev in events:
+        if ev.player_id is not None and ev.player_id not in first:
+            first[ev.player_id] = ev
+    started: Dict[str, Set[str]] = {}
+    for player, ev in first.items():
+        if ev.kind != "sub_in" or (ev.period == 1 and ev.elapsed == 0):
+            started.setdefault(ev.team_id, set()).add(player)
+    return started
+
+
 def paint_points(shots: Iterable[Dict[str, Any]], team_index: int) -> int:
     """Points of the made two-point shots of a team that fell in the rim or key zones."""
     total = 0
