@@ -69,6 +69,7 @@ ALERTS: Dict[str, Any] = {
     "advantage_management": ("Gestión de las ventajas", "exploit", None),
     "period_edge_deficit": ("Finales de cuarto en negativo", "exploit", None),
     "timeout_budget": ("Gestión de los tiempos muertos", "exploit", None),
+    "first_half_timeouts": ("Tiempos muertos sin usar al descanso", "exploit", None),
     "rest_starters": ("Descanso de las titulares en partido decidido", "exploit", None),
     "pace_control": ("Control del ritmo", "neutralize", None),
     "points_off_turnovers": ("Puntos del rival tras sus pérdidas", "exploit", None),
