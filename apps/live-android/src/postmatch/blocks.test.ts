@@ -9,8 +9,9 @@ const REPORT: PostMatchReport = {
     own: { id: '1', name: 'MIPELLETYMAS B.F. LEON' }, rival: { id: '2', name: 'RECOLETAS ZAMORA' }, home_id: '2',
     score: { own: 38, rival: 59 }, result: 'loss',
     periods: [
-      { period: 1, label: 'Cuarto 1', own: 10, rival: 12, net: -2, keys: ['Pérdidas: 6 vs 3'], adjustments: ['Asegurar el balón en la salida de pista'] },
-      { period: 2, label: 'Cuarto 2', own: 6, rival: 14, net: -8, keys: [], adjustments: [] },
+      { period: 1, label: 'Cuarto 1', own: 10, rival: 12, net: -2, keys: ['Pérdidas: 6 vs 3'], adjustments: ['Asegurar el balón en la salida de pista'],
+        pace: { per40: 72, before40: null, own_habit40: 70, rival_habit40: 66 }, pace_text: 'Ritmo: 72 posesiones por 40 min (habitual: 70 el nuestro y 66 el rival).' },
+      { period: 2, label: 'Cuarto 2', own: 6, rival: 14, net: -8, keys: [], adjustments: [], pace: null, pace_text: '' },
     ],
   },
   evolution: {
@@ -62,6 +63,7 @@ describe('reportBlocks (issue #409)', () => {
     expect(table.rows).toEqual([['Cuarto 1', '10', '12', '-2'], ['Cuarto 2', '6', '14', '-8']])
     const text = JSON.stringify(blocks)
     expect(text).toContain('Pérdidas: 6 vs 3')
+    expect(text).toContain('Ritmo: 72 posesiones por 40 min')                  // the pace of the quarter travels with its notes
     expect(text).toContain('Asegurar el balón en la salida de pista')
   })
 

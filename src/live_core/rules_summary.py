@@ -17,6 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .advice_types import Advice, RuleContext
 from .clock import period_length, period_start
 from .proposals import tactic_proposal
+from .summary_pace import pace_facts, pace_key, pace_line
 from .windows import player_points, window_stats
 
 _TITLES = {1: "Fin del 1.er cuarto", 2: "Descanso", 3: "Fin del 3.er cuarto"}
@@ -86,11 +87,16 @@ def _fouls(f: Facts) -> Optional[Tuple[str, str]]:
 
 
 def _comeback(f: Facts) -> Optional[Tuple[str, str]]:
+    """From the deepest point INSIDE the summarised window (where it started counts) to where it ended (issue #419)."""
     worst, now = f["worst_net"], f["net"]
     if -worst >= f["cfg"].summary_comeback_deficit and now - worst >= f["cfg"].summary_comeback_recovery:
-        return (f"Remontada: de {worst:+d} a {now:+d}",
-                "Mantener el ritmo y la intensidad que han permitido remontar")
+        return f"Remontada {f['scope']}: de {worst:+d} a {now:+d}", "Mantener lo que ha funcionado"
     return None
+
+
+def _pace(f: Facts) -> Optional[Tuple[str, str]]:
+    cfg = f["cfg"]
+    return pace_key(f["pace"], f["own"]["pts"] - f["rival"]["pts"], cfg.summary_pace_delta, cfg.summary_pace_min_net)
 
 
 def _collapse(f: Facts) -> Optional[Tuple[str, str]]:
@@ -107,17 +113,19 @@ def _period_net(f: Facts) -> Optional[Tuple[str, str]]:
 
 
 _CANDIDATES: List[Tuple[str, _Candidate]] = [
-    ("comeback", _comeback), ("collapse", _collapse), ("turnovers", _turnovers), ("rival_orb", _rival_orb), ("rival_scorer", _rival_scorer), ("own_ft", _own_ft),
+    ("comeback", _comeback), ("collapse", _collapse), ("pace", _pace), ("turnovers", _turnovers), ("rival_orb", _rival_orb), ("rival_scorer", _rival_scorer), ("own_ft", _own_ft),
     ("own_threes", _own_threes), ("rival_threes", _rival_threes), ("own_fg", _own_fg), ("fouls", _fouls),
     ("period_net", _period_net),
 ]
 
 
-def _net_swing(log: List[Any], own: str, rival: str, end: int) -> Tuple[int, int]:
-    """(worst, final) net points (own - rival) of the game up to ``end``: the deepest deficit and where it stands."""
-    net = worst = 0
+def _net_range(log: List[Any], own: str, rival: str, start: int, end: int) -> Tuple[int, int]:
+    """(worst, final) net points (own - rival) inside ``[start, end]``: the deepest the net went, the start counting, and where it ended.
+    What happened before ``start`` only gives the net the window starts from (issue #419: a quarter is measured on its own)."""
+    net = sum((e[3] if e[1] == own else -e[3] if e[1] == rival else 0) for e in log if e[2] == "pts" and e[0] < start)
+    worst = net
     for e in log:
-        if e[0] <= end and e[2] == "pts":
+        if start <= e[0] <= end and e[2] == "pts":
             net += e[3] if e[1] == own else -e[3] if e[1] == rival else 0
             worst = min(worst, net)
     return worst, net
@@ -135,15 +143,18 @@ def _net_drop(log: List[Any], own: str, rival: str, start: int, end: int) -> int
 
 
 def _facts(snap: Dict[str, Any], ctx: RuleContext, start: int, end: int, periods: List[int]) -> Facts:
+    """What the summary of the window ``[start, end]`` knows. Everything is measured inside the window, except the pace, which is also
+    compared with the game before it."""
     log, rival = snap.get("log", []), ctx.rival_team_id or ""
     scorers = [(player_points(log, pid, start, end), p["name"].strip()) for pid, p in snap["players"].items()
                if p["team_id"] == rival]
     pts, name = max(scorers, default=(0, ""))
     own_fouls = ((snap["teams"].get(ctx.own_team_id) or {}).get("fouls_by_period") or {})
-    worst, net = _net_swing(log, ctx.own_team_id, rival, end)
+    worst, net = _net_range(log, ctx.own_team_id, rival, start, end)
     return {"cfg": ctx.config, "own": window_stats(log, ctx.own_team_id, start, end), "rival": window_stats(log, rival, start, end),
             "scorer": (name, pts), "fouls": sum(own_fouls.get(str(p), 0) for p in periods), "worst_net": worst, "net": net,
-            "drop": _net_drop(log, ctx.own_team_id, rival, start, end)}
+            "drop": _net_drop(log, ctx.own_team_id, rival, start, end), "scope": "en la 1.ª parte" if len(periods) > 1 else "en el cuarto",
+            "pace": pace_facts(log, ctx.own_team_id, rival, start, end, ctx.team_baselines)}
 
 
 def _period_to_sum_up(snap: Dict[str, Any], grace_s: int) -> Optional[int]:
@@ -177,10 +188,12 @@ def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     message = f"{_TITLES[period]}: {own}-{rival} ({own - rival:+d}). "
     message += ("Claves: " + "; ".join(text for _, (text, _) in found) + ". Ajustes: " + "; ".join(adjustments) + "."
                 if found else "Sin claves destacadas.")
+    if facts["pace"]:
+        message += " " + pace_line(facts["pace"])
     return [Advice(
         key=f"summary:{period}", id="period_summary", severity="info", category="resumen", message=message,
         evidence={"period": period, "own_points": own, "rival_points": rival, "keys": [key for key, _ in found],
-                  "adjustments": adjustments},
+                  "adjustments": adjustments, "pace": facts["pace"]},
         proposal=[tactic_proposal(a) for a in adjustments])]
 
 

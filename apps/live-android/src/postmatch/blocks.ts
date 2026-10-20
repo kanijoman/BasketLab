@@ -58,7 +58,8 @@ function alertRows(alerts: ReportAlert[]): string[][] {
 
 export function reportBlocks(report: PostMatchReport): Block[] {
   const { match, evolution, players, four_factors: ff, team } = report
-  const periodNotes = match.periods.filter(p => p.keys.length).map(p => `${p.label}: ${join(p.keys)}. Ajustes: ${join(p.adjustments)}.`)
+  const periodNotes = match.periods.filter(p => p.keys.length || p.pace_text)
+    .map(p => [p.keys.length ? `${p.label}: ${join(p.keys)}. Ajustes: ${join(p.adjustments)}.` : `${p.label}: sin claves destacadas.`, p.pace_text].filter(Boolean).join(' '))
   const blocks: Block[] = [
     { kind: 'title', text: `${match.own.name.trim()} – ${match.rival.name.trim()}`,
       sub: `${RESULT[match.result]} ${match.score.own}-${match.score.rival} · Informe post-partido` },

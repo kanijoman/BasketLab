@@ -20,6 +20,7 @@ from .engine import _events, _roster, _teams
 from .four_factors import factors, possessions
 from .postmatch_text import explain_run, strengths_and_weaknesses
 from .rules_summary import period_keys
+from .summary_pace import pace_facts, pace_line
 from .state import LiveGame
 from .windows import window_stats
 
@@ -150,8 +151,9 @@ def _periods(snap: Dict[str, Any], own: str, rival: str, cfg: RuleConfig) -> Lis
         start, end = period_start(period), period_start(period) + period_length(period)
         mine, theirs = (window_stats(snap["log"], t, start, end)["pts"] for t in (own, rival))
         keys, adjustments = period_keys(snap, ctx, period)
+        pace = pace_facts(snap["log"], own, rival, start, end)
         out.append({"period": period, "label": _label(period), "own": mine, "rival": theirs, "net": mine - theirs,
-                    "keys": keys, "adjustments": adjustments})
+                    "keys": keys, "adjustments": adjustments, "pace": pace, "pace_text": pace_line(pace)})
     return out
 
 

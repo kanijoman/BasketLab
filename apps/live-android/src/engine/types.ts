@@ -188,7 +188,13 @@ export interface ReportRun {
   explanation: string
 }
 
-export interface ReportPeriod { period: number; label: string; own: number; rival: number; net: number; keys: string[]; adjustments: string[] }
+export interface ReportPace { per40: number; before40: number | null; own_habit40: number | null; rival_habit40: number | null }
+export interface ReportPeriod {
+  period: number; label: string; own: number; rival: number; net: number; keys: string[]; adjustments: string[]
+  /** Possessions per 40 min of the period, of the game before it and the usual paces (issue #419); null with too little play. */
+  pace: ReportPace | null
+  pace_text: string
+}
 export interface ReportLineup { players: string[]; seconds: number; pts_for: number; pts_against: number; net: number }
 export interface ReportPlayer { name: string; pm: number; pts: number; minutes: number }
 export interface ReportFactors { efg: number; tov: number; orb: number; ftr: number }
