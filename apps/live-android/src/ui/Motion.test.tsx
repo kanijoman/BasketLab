@@ -51,7 +51,7 @@ describe('motion (issue #312)', () => {
     render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     const before = screen.getByRole('tabpanel')
-    fireEvent.click(screen.getByRole('tab', { name: 'Paquetes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
     const after = screen.getByRole('tabpanel')
     expect(after.classList.contains('tab-fade')).toBe(true)
     expect(after).not.toBe(before)                                                // keyed by tab: a new element, so the animation plays

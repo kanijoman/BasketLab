@@ -192,7 +192,7 @@ describe('RemotePackages', () => {
   it('says when no packages are published', async () => {
     const f = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ v: 1, packages: [] }) })
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={f} />)
-    expect(await screen.findByText(/no hay paquetes publicados/i)).toBeTruthy()
+    expect(await screen.findByText(/no hay partidos publicados/i)).toBeTruthy()
   })
 })
 

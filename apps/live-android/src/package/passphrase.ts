@@ -1,10 +1,11 @@
 /** The package password, typed once and remembered on the device (app-private storage; it only protects public FEB statistics). */
 const KEY = 'basketlab-live-passphrase'
 
-import { PackageDecryptError } from './crypto'
+import { PackageDecryptError, ScopedAccessError } from './crypto'
 
 /** The message of a failure; for a wrong password it says how many characters were typed, so a missing letter or a stray space shows. */
 export function failureText(error: unknown, typed: string): string {
+  if (error instanceof ScopedAccessError) return error.message
   if (error instanceof PackageDecryptError) return `${error.message} Escribiste ${typed.length} caracteres.`
   return error instanceof Error ? error.message : String(error)
 }

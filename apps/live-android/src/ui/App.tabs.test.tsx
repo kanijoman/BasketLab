@@ -25,10 +25,10 @@ describe('tabs of the app (issue #224)', () => {
     expect(screen.queryByRole('heading', { name: 'Acerca de' })).toBeNull()
   })
 
-  it('has the published matches and the import of a package in the Paquetes tab', async () => {
+  it('has the published matches and the import of a package in the Partidos tab', async () => {
     render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
-    openTab('Paquetes')
+    openTab('Partidos')
     expect(screen.getByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Paquete de preparación' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Alertas' })).toBeNull()
@@ -45,12 +45,12 @@ describe('tabs of the app (issue #224)', () => {
   it('remembers the tab for the next time the app opens', async () => {
     const first = render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
-    openTab('Paquetes')
+    openTab('Partidos')
     expect(localStorage.getItem(TAB_KEY)).toBe('paquetes')
     first.unmount()
     render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
     expect(await screen.findByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: 'Paquetes' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tab', { name: 'Partidos' }).getAttribute('aria-selected')).toBe('true')
   })
 
   it('keeps the match going and its alerts while another tab is open', async () => {
@@ -59,20 +59,20 @@ describe('tabs of the app (issue #224)', () => {
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
     await waitFor(() => expect(screen.getAllByText(/4 faltas personales/)).toHaveLength(1))
-    openTab('Paquetes')
+    openTab('Partidos')
     await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
     openTab('Partido')
     expect(screen.getAllByText(/4 faltas personales/)).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Pausa' })).toBeTruthy()
   })
 
-  it('tells the user how to load a package when there is none and links to the Paquetes tab', async () => {
+  it('tells the user how to load a package when there is none and links to the Partidos tab', async () => {
     render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     expect(screen.getByText(/partido de demostración/i)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /ir a paquetes/i }))
+    fireEvent.click(screen.getByRole('button', { name: /ir a partidos/i }))
     expect(screen.getByRole('heading', { name: 'Paquete de preparación' })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: 'Paquetes' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tab', { name: 'Partidos' }).getAttribute('aria-selected')).toBe('true')
   })
 
   it('has no demo notice once a package is loaded', async () => {

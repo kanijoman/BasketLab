@@ -22,6 +22,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- invitation links (issue #410): basketlab-live://invite#<token> opens the app and keeps the right -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="basketlab-live" android:host="invite" />
+            </intent-filter>
+
         </activity>
 
         <provider

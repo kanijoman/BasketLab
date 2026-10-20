@@ -4,9 +4,15 @@
  * sends `access-control-allow-origin: *`, so a plain fetch works from the WebView.
  */
 export const PACKAGES_BASE_URL = 'https://raw.githubusercontent.com/kanijoman/BasketLab/live-packages'
-const INDEX_VERSION = 1
+import type { Wrap } from './crypto'
+
+/** Version 1: encrypted with a password. Version 2 (issue #410): sealed by scope, the keys wrapped per scope are in `wraps` and the index publishes
+ *  `open_key` while the beta is open. */
+const INDEX_VERSIONS = [1, 2]
 
 export interface PackageIndexEntry {
+  /** Present when sealed by scope (index v2); without it the file is opened with the password. */
+  wraps?: Wrap[]
   team_id: string
   rival_id: string
   rival: string
@@ -37,6 +43,7 @@ export interface RoundMatch {
 
 /** The bundle of the next round of a competition: ONE encrypted, compressed file with the package of every match. */
 export interface RoundIndexEntry {
+  wraps?: Wrap[]
   collection: string
   round: number | null
   file: string
@@ -50,6 +57,8 @@ export interface RoundIndexEntry {
 export interface PackageIndex {
   v: number
   generated_at?: string
+  /** The key (base64) of the open scope, while the beta is open: the app opens the packages with it, no password. */
+  open_key?: string | null
   packages: PackageIndexEntry[]
   /** Rounds of every competition; absent in an index that predates them. */
   rounds: RoundIndexEntry[]
@@ -75,7 +84,7 @@ async function get(url: string, fetcher: Fetcher): Promise<Awaited<ReturnType<Fe
 
 export async function fetchIndex(fetcher: Fetcher = (u, i) => fetch(u, i)): Promise<PackageIndex> {
   const index = (await (await get(`${PACKAGES_BASE_URL}/index.json`, fetcher)).json()) as PackageIndex
-  if (index.v !== INDEX_VERSION) throw new Error(`Versión del índice de paquetes no soportada (${index.v}). Actualiza la app.`)
+  if (!INDEX_VERSIONS.includes(index.v)) throw new Error(`Versión del índice de paquetes no soportada (${index.v}). Actualiza la app.`)
   return { ...index, packages: index.packages ?? [], rounds: index.rounds ?? [] }
 }
 

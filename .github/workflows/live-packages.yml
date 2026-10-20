@@ -5,7 +5,8 @@ name: Live packages
 # (CORS open, no credentials). The branch is rewritten with a single commit on every run (no history growth).
 # Runs after each Atlas refresh (fresh data), and by hand. Needs the repository secrets PACKAGE_PASSWORD
 # (>= 8 characters; the same password is typed once in the app) and ATLAS_READ_URI (read-only Atlas user;
-# ATLAS_WRITE_URI is used as fallback). See docs/OPERATIONS.md.
+# ATLAS_WRITE_URI is used as fallback). `config/package_publish.json` → `access` chooses password (legacy) or scopes (issue #410,
+# PACKAGE_MASTER_KEY optional). See docs/OPERATIONS.md.
 
 on:
   workflow_run:
@@ -21,6 +22,8 @@ on:
       - "src/live_prep/db_source.py"
       - "src/live_prep/round_packages.py"
       - "src/live_prep/package_crypto.py"
+      - "src/live_prep/package_scopes.py"
+      - "src/live_prep/package_sealing.py"
       - "src/services/match_schedule_service.py"
       - "config/package_publish.json"
       - ".github/workflows/live-packages.yml"
@@ -55,6 +58,8 @@ jobs:
         env:
           MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
           PACKAGE_PASSWORD: ${{ secrets.PACKAGE_PASSWORD }}
+          # optional: the master key of the scopes (issue #410); without it the password is the master
+          PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY }}
         run: python run_package_publish.py --out packages-out
       - name: Publish to the live-packages branch
         if: ${{ !cancelled() && github.event_name != 'pull_request' && hashFiles('packages-out/index.json') != '' }}

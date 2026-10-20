@@ -8,6 +8,8 @@ With ``"rounds": true`` (the default) it also writes, for EVERY competition kept
 bundle with the packages of all the matches of its next round (``rounds/<collection>__r<round>.bpkgz``, see ``round_packages``) and lists
 them under ``rounds`` in the index (issues #286, #172); an app that predates it only reads ``packages``.
 Exit code 2 when the password (``PACKAGE_PASSWORD``, >= 8 characters) or the connection is missing.
+The config's ``access`` chooses how it is encrypted (issue #410, ``package_sealing``): ``legacy`` (password, what the apps in the field read)
+or ``scoped`` (open to the beta with a key in the index, paid scopes for later; index v2).
 """
 
 from __future__ import annotations
@@ -22,9 +24,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from .package_sealing import Sealer, as_sealer, make_sealer
+
 DEFAULT_CONFIG = "config/package_publish.json"
 MIN_PASSPHRASE = 8
 INDEX_VERSION = 1
+ACCESS_MODES = ("legacy", "scoped")
+DEFAULT_ACCESS = {"mode": "legacy", "open": True, "monthly": False, "scopes": []}
 CALENDAR_WINDOW = 30  # matches asked to the calendar per collection before picking the nearest rivals
 
 
@@ -32,12 +38,18 @@ def load_config(path: Any = DEFAULT_CONFIG) -> Dict[str, Any]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not data.get("team_id"):
         raise ValueError("config lacks: team_id")
-    return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3)), "rounds": bool(data.get("rounds", True))}
+    access = {**DEFAULT_ACCESS, **(data.get("access") or {})}
+    if access["mode"] not in ACCESS_MODES:
+        raise ValueError(f"access.mode must be one of {ACCESS_MODES}")
+    access = {"mode": access["mode"], "open": bool(access["open"]), "monthly": bool(access["monthly"]), "scopes": [str(s) for s in access["scopes"]]}
+    return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3)), "rounds": bool(data.get("rounds", True)), "access": access}
 
 
 def build_index(packages: List[Dict[str, Any]], now: Optional[str] = None, rounds: Optional[List[Dict[str, Any]]] = None,
-                club_team_id: Optional[str] = None) -> Dict[str, Any]:
-    index: Dict[str, Any] = {"v": INDEX_VERSION, "generated_at": now or datetime.now(timezone.utc).isoformat(), "packages": packages}
+                club_team_id: Optional[str] = None, sealer: Optional[Sealer] = None) -> Dict[str, Any]:
+    version = sealer.index_version if sealer else INDEX_VERSION
+    index: Dict[str, Any] = {"v": version, "generated_at": now or datetime.now(timezone.utc).isoformat(), **(sealer.index_extra() if sealer else {}),
+                             "packages": packages}
     if rounds is not None:
         index.update({"rounds": rounds, "club_team_id": club_team_id})
     return index
@@ -79,15 +91,15 @@ def _remove_stale(team_dir: Path) -> None:
         old.unlink()
 
 
-def publish_all(db: Any, out: Any, passphrase: str, collections: List[str], team_id: str,
+def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team_id: str,
                 service: Any = None, build: Optional[Callable[..., Any]] = None, upcoming: int = 3,
                 errors: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Write the packages and the index; a rival whose package fails is reported in ``errors`` and skipped."""
     from src.live_prep.db_source import build_package_from_db
-    from src.live_prep.package_crypto import encrypt_package
     from src.live_prep.roster_fetcher import fetch_rosters
     from src.services.match_schedule_service import MatchScheduleService
 
+    sealer = as_sealer(passphrase)
     service = service or MatchScheduleService(db)
     build = build or functools.partial(build_package_from_db, roster_source=fetch_rosters)
     out = Path(out)
@@ -99,7 +111,8 @@ def publish_all(db: Any, out: Any, passphrase: str, collections: List[str], team
         rival = match["opponent"]
         try:
             package = build(db, collection, team_id, rival["id"], competition_meta={"match": _match_meta(match)})
-            content = json.dumps(encrypt_package(package.dumps(), passphrase), separators=(",", ":"))
+            envelope, extra = sealer.seal(package.dumps(), [f"club:{team_id}", f"competicion:{collection}"])
+            content = json.dumps(envelope, separators=(",", ":"))
         except Exception as exc:  # noqa: BLE001 - one rival must not block the others
             if errors is not None:
                 errors.append(f"{rival['id']} ({rival['name']}): {type(exc).__name__}: {exc}")
@@ -108,14 +121,14 @@ def publish_all(db: Any, out: Any, passphrase: str, collections: List[str], team
         entries.append({
             "team_id": team_id, "rival_id": rival["id"], "rival": rival["name"], "collection": collection,
             "match": _match_meta(match), "file": f"{team_id}/{rival['id']}.bpkg",
-            "sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(), "bytes": len(content.encode("utf-8")),
+            "sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(), "bytes": len(content.encode("utf-8")), **extra,
         })
     _write_vercel_guard(out)
-    (out / "index.json").write_text(json.dumps(build_index(entries), ensure_ascii=False, indent=1), encoding="utf-8")
+    (out / "index.json").write_text(json.dumps(build_index(entries, sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
     return entries
 
 
-def publish_round_bundles(db: Any, out: Any, passphrase: str, collections: List[str], team_id: str, service: Any = None,
+def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[str], team_id: str, service: Any = None,
                           build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """One bundle per competition with every match of its next round; a competition that fails is reported in ``errors`` and skipped."""
     from src.live_prep.roster_fetcher import fetch_rosters
@@ -154,14 +167,15 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--out", default="live-packages")
     args = parser.parse_args(argv)
-    passphrase = os.environ.get("PACKAGE_PASSWORD", "")
-    if len(passphrase) < MIN_PASSPHRASE:
-        print(f"PACKAGE_PASSWORD must have at least {MIN_PASSPHRASE} characters (GitHub secret)", file=sys.stderr)
+    config = load_config(args.config)
+    try:
+        sealer = make_sealer(config["access"], os.environ)
+    except ValueError as exc:
+        print(f"{exc} (GitHub secret)", file=sys.stderr)
         return 2
     if not os.environ.get("MONGODB_CONNECTION_STRING"):
         print("MONGODB_CONNECTION_STRING is not set (GitHub secret ATLAS_READ_URI / ATLAS_WRITE_URI)", file=sys.stderr)
         return 2
-    config = load_config(args.config)
     from src.database import MongoDBHandler
 
     db = MongoDBHandler()
@@ -169,13 +183,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
     errors: List[str] = []
-    entries = publish_all(db, args.out, passphrase, _collections(), config["team_id"],
+    entries = publish_all(db, args.out, sealer, _collections(), config["team_id"],
                           upcoming=config["upcoming"], errors=errors)
     rounds: List[Dict[str, Any]] = []
     if config["rounds"]:
-        rounds = publish_round_bundles(db, args.out, passphrase, _collections(), config["team_id"], errors=errors)
+        rounds = publish_round_bundles(db, args.out, sealer, _collections(), config["team_id"], errors=errors)
         (Path(args.out) / "index.json").write_text(
-            json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"]), ensure_ascii=False, indent=1), encoding="utf-8")
+            json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"], sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
     lines = [f"# Paquetes live ({len(entries)})", ""]
     lines += [f"- {e['match']['start']} · {e['rival']} · {e['bytes'] // 1024} KB" for e in entries]
     lines += ["", f"## Jornadas completas ({len(rounds)})", ""]

@@ -3,7 +3,8 @@ import { orderRounds, sidesOf, type RoundIndexEntry, type RoundMatch } from '../
 
 interface Props {
   rounds: RoundIndexEntry[]
-  pass: string
+  /** Can this device open the round (a password for the old ones, a right for the ones sealed by scope)? */
+  canOpen: (round: RoundIndexEntry) => boolean
   /** `file#code#team` of the download in progress. */
   busy: string | null
   /** ``ownId``: the team whose point of view is followed (issue #286). */
@@ -23,7 +24,7 @@ function when(start?: string | null): string {
   return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-export default function RoundPackages({ rounds, pass, busy, onDownload, isLoaded }: Props) {
+export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded }: Props) {
   if (rounds.length === 0) return null
   return (
     <>
@@ -47,7 +48,7 @@ export default function RoundPackages({ rounds, pass, busy, onDownload, isLoaded
                       const ready = isLoaded(match.code, id)
                       return (
                         <button key={id} aria-label={ready ? `${label} como ${nameOf(id)}: ya disponible` : `Descargar ${label} como ${nameOf(id)}`}
-                          disabled={ready || !pass || busy !== null} onClick={() => onDownload(round, match, id)}>
+                          disabled={ready || !canOpen(round) || busy !== null} onClick={() => onDownload(round, match, id)}>
                           {ready ? 'Ya disponible' : busy === `${round.file}#${match.code}#${id}` ? 'Descargando…' : `Seguir como ${nameOf(id)}`}
                         </button>
                       )

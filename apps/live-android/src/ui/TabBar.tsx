@@ -1,4 +1,4 @@
-/** Bottom navigation of the app (issue #224): Partido · Paquetes · Acerca de. The match keeps the window; the lists live in the others. */
+/** Bottom navigation of the app (issue #224): Partido · Partidos · Acerca de. The match keeps the window; the lists live in the others. */
 import { Info, Package, Radio, type LucideIcon } from 'lucide-react'
 import { TABS, type TabId } from './useTab'
 
