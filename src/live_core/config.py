@@ -134,6 +134,9 @@ class RuleConfig:
     summary_comeback_deficit: int = 8
     summary_comeback_recovery: int = 8
     summary_period_net: int = 8
+    # The pace of the quarter (#419): a change of this many possessions per 40 min against the game before, going with a result of at least this many points.
+    summary_pace_delta: float = 4.0
+    summary_pace_min_net: int = 3
     summary_collapse_drop: int = 10   # the complement of the comeback: the net score fell this much from its best point within the period
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60

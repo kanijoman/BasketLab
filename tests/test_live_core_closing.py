@@ -224,18 +224,18 @@ def _pts_run(team, start, n, step=20, value=2):
     return flat(*[pts(team, start + step * i, value) for i in range(n)])
 
 
-def test_c3_a_comeback_is_a_key_of_the_summary_regression():
-    """#402: after a +14 comeback the end of Q3 said 'Sin claves destacadas'. Down 10 at 12:00, ahead by 6 at the end of Q3 (+16 swing)."""
-    log = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 12, 40)]        # RIVAL +12 early (to 700), OWN +24 from 1010 to 1450
+def test_c3_a_comeback_inside_the_quarter_is_a_key_of_the_summary_regression():
+    """#402: after a +14 comeback the end of Q3 said 'Sin claves destacadas'. Down 12 when Q3 opens, ahead by 12 at its end."""
+    log = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1210, 12, 40)]        # RIVAL +12 in Q1 (to 600), OWN +24 inside Q3
     [alert] = by_id(engine().evaluate(end_of(3, log)), "period_summary")
-    assert "Sin claves" not in alert.message and "Remontada" in alert.message
-    assert alert.evidence["keys"][0] == "comeback" and "Mantener" in alert.message
+    assert "Sin claves" not in alert.message and "Remontada en el cuarto: de -12 a +12" in alert.message
+    assert alert.evidence["keys"][0] == "comeback"
 
 
-def test_c3_a_comeback_needs_a_real_deficit_and_a_real_recovery():
-    shallow = [_pts_run(RIVAL, 100, 2, 100), _pts_run(OWN, 1010, 4, 40)]      # -4, then +8: the deficit was small
+def test_c3_a_comeback_needs_a_real_deficit_and_a_real_recovery_inside_the_period():
+    shallow = [_pts_run(RIVAL, 100, 2, 100), _pts_run(OWN, 1210, 4, 40)]      # -4, then +8: the deficit was small
     assert "comeback" not in by_id(engine().evaluate(end_of(3, shallow)), "period_summary")[0].evidence["keys"]
-    stuck = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1010, 2, 40)]        # -12 and only +4 back
+    stuck = [_pts_run(RIVAL, 100, 6, 100), _pts_run(OWN, 1210, 2, 40)]        # -12 and only +4 back
     assert "comeback" not in by_id(engine().evaluate(end_of(3, stuck)), "period_summary")[0].evidence["keys"]
 
 

@@ -172,3 +172,21 @@ def test_the_report_needs_no_session_when_the_own_team_is_given(doc):
     session._SESSION = None
     data = json.loads(session.report_json(json.dumps(doc), None, "1008898"))
     assert data["match"]["own"]["id"] == "1008898" and data["match"]["result"] == "win"
+
+
+# --- the notes of each period stick to the period (issue #419) -----------------------------------------------------------------------
+
+def test_the_period_notes_of_leon_unibasket_do_not_borrow_the_deficit_of_another_quarter_regression():
+    """The -9 was of the 2nd quarter: neither the 3rd nor the 4th had ever been -9 inside."""
+    feed = RecordedFeed.loads((RECORDINGS / "2524475.rec.json.gz").read_bytes())
+    periods = {p["period"]: p for p in build_report(feed.document_at(feed.duration), "1008631")["match"]["periods"]}
+    for period in (3, 4):
+        assert not any("Remontada" in key and "-9" in key for key in periods[period]["keys"]), periods[period]["keys"]
+    assert "Parcial del cuarto: +14" in periods[3]["keys"]
+
+
+def test_each_period_of_the_report_carries_its_pace(report):
+    paces = [p["pace_text"] for p in report["match"]["periods"]]
+    assert all(text.startswith("Ritmo: ") and "posesiones por 40 min" in text for text in paces)
+    assert "antes" not in paces[0] and "antes" in paces[1]          # the first quarter has nothing before it
+    assert all(p["pace"]["per40"] > 0 for p in report["match"]["periods"])
