@@ -9,6 +9,7 @@
  *  - the final status (3) arrives ~15 minutes after the last play: keep polling a few more rounds, then stop.
  */
 import type { Endpoint, FebClient } from './febClient'
+import type { LagInfo } from './feedLag'
 
 export type FeedState =
   | { kind: 'idle' }
@@ -23,7 +24,7 @@ export interface LiveFeedOptions {
   client: FebClient
   code: string
   /** Receives the merged document (JSON text); an exception is reported as a gap and does not stop the feed. */
-  onDocument: (docJson: string) => void | Promise<void>
+  onDocument: (docJson: string, info: LagInfo) => void | Promise<void>
   onState: (state: FeedState) => void
   /** An endpoint failed in the middle of the match (issue #416): the recording keeps the gap. Network errors count as the box score. */
   onFailure?: (endpoint: Endpoint) => void
@@ -42,6 +43,16 @@ interface Round {
   status: string | null
   failure?: string
   notStarted: boolean
+}
+
+/** What the delay meter needs of a document (issue #411): when it arrived, the oldest cache age FEB announced and when each line was logged. */
+function lagInfo(receivedAt: number, ages: (number | undefined)[], playByPlay: unknown): LagInfo {
+  const known = ages.filter((a): a is number => a !== undefined)
+  const lines = ((playByPlay as { LINES?: { num?: unknown; LogTimeUtc?: unknown }[] } | undefined)?.LINES ?? [])
+  return {
+    receivedAt, ageS: known.length ? Math.max(...known) : null,
+    lines: lines.map(l => ({ num: String(l.num), logUtc: typeof l.LogTimeUtc === 'string' ? l.LogTimeUtc : null })),
+  }
 }
 
 export class LiveFeed {
@@ -96,7 +107,7 @@ export class LiveFeed {
         SHOTCHART: (shots.json as { SHOTCHART?: unknown }).SHOTCHART ?? {},
       }
       if (this.stopped) return { status: null, notStarted: false } // stopped while FEB was answering
-      await onDocument(JSON.stringify(doc))
+      await onDocument(JSON.stringify(doc), lagInfo(this.o.now(), [box.age, shots.age, facts.age], doc.PLAYBYPLAY))
       return { status: String(header?.status ?? ''), notStarted: false }
     } catch (error) {
       if (seenLive) this.o.onFailure('boxscore')

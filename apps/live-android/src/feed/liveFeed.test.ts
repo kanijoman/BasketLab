@@ -187,4 +187,30 @@ describe('LiveFeed', () => {
     await t.feed.start()
     expect(t.failures).toEqual(['boxscore', 'boxscore'])
   })
+
+  // #411: what the delay meter needs of each document
+  it('hands the engine the document with when it arrived, how old FEB says it is and the time each line was logged', async () => {
+    const infos: unknown[] = []
+    const client = {
+      fetch: vi.fn(async (_code: string, endpoint: keyof Script) => (endpoint === 'boxscore' ? { ...box('3'), age: 11 }
+        : endpoint === 'keyfacts' ? { status: 200, json: { PLAYBYPLAY: { LINES: [{ num: 4, LogTimeUtc: '2026-10-17 19:12:40' }, { num: '5' }] } }, age: 22 } : { ...sc, age: 3 })),
+    } as unknown as FebClient
+    const feed = new LiveFeed({
+      client, code: '777', tailPolls: 0, onState: () => undefined, sleep: async () => undefined, now: () => 1_000_000,
+      onDocument: (_json, info) => { infos.push(info) },
+    })
+    await feed.start()
+    expect(infos[0]).toEqual({ receivedAt: 1_000_000, ageS: 22, lines: [{ num: '4', logUtc: '2026-10-17 19:12:40' }, { num: '5', logUtc: null }] })
+  })
+
+  it('has no age when FEB does not send it', async () => {
+    const infos: { ageS: number | null }[] = []
+    const t = setup({ boxscore: [box('3')] }, { tailPolls: 0 })
+    const feed = new LiveFeed({
+      client: t.client, code: '777', tailPolls: 0, onState: () => undefined, sleep: async () => undefined,
+      onDocument: (_json, info) => { infos.push(info as { ageS: number | null }) },
+    })
+    await feed.start()
+    expect(infos[0].ageS).toBeNull()
+  })
 })

@@ -1,5 +1,6 @@
 /** Live mode of the app: connect to FEB for the match of the loaded package and see what the connection is doing. */
 import { useEffect, useState } from 'react'
+import { lagText, type LagSummary } from '../feed/feedLag'
 import type { FeedState } from '../feed/liveFeed'
 import HelpHint from './HelpHint'
 
@@ -10,6 +11,8 @@ interface Props {
   running: boolean
   /** Whether the screen is being kept on while connected (null: not connected). */
   awake?: boolean | null
+  /** How late the data of FEB is on this connection (issue #411). */
+  lag?: LagSummary | null
   onStart: (code: string) => void
   onStop: () => void
 }
@@ -48,7 +51,7 @@ function Status({ state, now }: { state: FeedState; now: number }) {
   }
 }
 
-export default function LiveConnect({ matchCode, state, running, awake = null, onStart, onStop }: Props) {
+export default function LiveConnect({ matchCode, state, running, awake = null, lag = null, onStart, onStop }: Props) {
   const [typed, setTyped] = useState('')
   const now = useNow(state.kind === 'live' || state.kind === 'gap')
   const code = (matchCode ?? typed).trim()
@@ -73,6 +76,7 @@ export default function LiveConnect({ matchCode, state, running, awake = null, o
         </HelpHint>
       )}
       <Status state={state} now={now} />
+      {running && lag && lagText(lag) && <p className="detail">{lagText(lag)}</p>}
       {running && awake === true && <p className="detail">Pantalla encendida mientras dure la conexión.</p>}
       {running && awake === false && (
         <p className="status warn">No se pudo mantener la pantalla encendida: desactiva el bloqueo automático de la tablet durante el partido.</p>

@@ -4,6 +4,7 @@ import type { EngineApi } from '../engine/client'
 import type { EngineOutput } from '../engine/types'
 import { capacitorDevice, type Device } from './device'
 import { FebClient, defaultHttp, type HttpGet } from './febClient'
+import { FeedLagMeter, lagNote, type LagSummary } from './feedLag'
 import { LiveFeed, type FeedState, type LiveFeedOptions } from './liveFeed'
 
 export type FeedTiming = Pick<LiveFeedOptions, 'intervalMs' | 'waitingIntervalMs' | 'tailPolls' | 'sleep' | 'now'>
@@ -33,6 +34,9 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
   /** Whether the screen is being kept on (null: no connection running). */
   const [awake, setAwake] = useState<boolean | null>(null)
   const feed = useRef<LiveFeed | null>(null)
+  /** How late the data of FEB is, measured on this connection (issue #411). */
+  const meter = useRef<FeedLagMeter | null>(null)
+  const [lag, setLag] = useState<LagSummary | null>(null)
   const lastDocument = useRef<string | null>(null)
   /** The match being recorded, until its recording is handed over (so a disconnection after the end does not save it twice). */
   const recording = useRef<string | null>(null)
@@ -46,17 +50,27 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
     if (kept) onRecording?.({ code, recording: kept, complete })
   }, [engine, onRecording])
 
+  /** The delay of the connection goes to the session log when it ends: it is what decides how often FEB is asked (issue #411). */
+  const noteLag = useCallback(() => {
+    const summary = meter.current?.summary()
+    meter.current = null
+    if (summary && summary.polls > 1) onNote?.(lagNote(summary))
+  }, [onNote])
+
   const disconnect = useCallback(() => {
     feed.current?.stop()
     setState({ kind: 'stopped' })
+    noteLag()
     void keepRecording(false)
-  }, [keepRecording])
+  }, [keepRecording, noteLag])
 
   const connect = useCallback(async (code: string) => {
     feed.current?.stop()
     setState({ kind: 'connecting' })
     await restart()
     lastDocument.current = null
+    meter.current = new FeedLagMeter()
+    setLag(null)
     const clock = timing?.now ?? Date.now
     const started = clock()
     const at = () => (clock() - started) / 1000          // seconds since the first poll: the time of the recording
@@ -67,15 +81,21 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
       onState: state => {
         setState(state)
         if (state.kind !== 'finished') return
+        noteLag()
         if (lastDocument.current !== null) onFinished?.(lastDocument.current, code)
         void keepRecording(true)
       },
       onFailure: endpoint => void engine.recordGap(endpoint, at()),
-      onDocument: async json => { lastDocument.current = json; onOutput(await engine.update(json, at())) },
+      onDocument: async (json, info) => {
+        lastDocument.current = json
+        meter.current?.observe(info)
+        if (meter.current) setLag(meter.current.summary())
+        onOutput(await engine.update(json, at()))
+      },
     })
     feed.current = next
     void next.start()
-  }, [engine, http, timing, onOutput, restart, onFinished, keepRecording])
+  }, [engine, http, timing, onOutput, restart, onFinished, keepRecording, noteLag])
 
   useEffect(() => () => feed.current?.stop(), [])
 
@@ -93,5 +113,5 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
     return () => { cancelled = true; stopListening(); setAwake(null); void device.allowSleep() }
   }, [running, device, onNote])
 
-  return { state, running, awake, connect, disconnect }
+  return { state, running, awake, lag, connect, disconnect }
 }
