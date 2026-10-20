@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 from src.live_core.package import PreparationPackage
 
 from .package_builder import SeasonAccumulator
-from .package_crypto import encrypt_package
+from .package_sealing import as_sealer
 
 ROUND_BUNDLE_VERSION = 1
 ROUNDS_DIR = "rounds"
@@ -116,18 +116,19 @@ def bundle_plaintext(collection: str, round_index: Any, built: List[Dict[str, An
     }, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
 
-def publish_rounds(out: Any, passphrase: str, collection: str, round_index: Any, built: List[Dict[str, Any]],
+def publish_rounds(out: Any, passphrase: Any, collection: str, round_index: Any, built: List[Dict[str, Any]],
                    club_team_id: Optional[str] = None) -> Dict[str, Any]:
     """Write the bundle of a round and return its entry for the index (a summary of the matches, no packages)."""
     out = Path(out)
     file = round_file_name(collection, round_index)
-    content = json.dumps(encrypt_package(bundle_plaintext(collection, round_index, built), passphrase, compress=True),
-                         separators=(",", ":"))
+    scopes = ([f"club:{club_team_id}"] if club_team_id else []) + [f"competicion:{collection}"]
+    envelope, extra = as_sealer(passphrase).seal(bundle_plaintext(collection, round_index, built), scopes, compress=True)
+    content = json.dumps(envelope, separators=(",", ":"))
     (out / ROUNDS_DIR).mkdir(parents=True, exist_ok=True)
     (out / file).write_text(content, encoding="utf-8")
     raw = content.encode("utf-8")
     return {
         "collection": collection, "round": round_index, "file": file, "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw),
         "club": any(b["is_club"] for b in built),
-        "matches": _summary(built),
+        "matches": _summary(built), **extra,
     }

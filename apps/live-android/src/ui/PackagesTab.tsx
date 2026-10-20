@@ -1,4 +1,4 @@
-/** The Paquetes tab (issue #224): the packages published for the next matches, the import of a file and the package that is loaded. */
+/** The Partidos tab (issue #224): the packages published for the next matches, the import of a file and the package that is loaded. */
 import type { EngineApi } from '../engine/client'
 import type { Fetcher } from '../package/remote'
 import type { PackageStore } from '../package/storage'
@@ -13,11 +13,14 @@ interface Props {
   onLoaded: (summary: PackageSummary) => void
   onRemoved: () => void
   fetcher?: Fetcher
+  /** What an invitation link said when it opened the app (issue #410). */
+  notice?: string | null
 }
 
-export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved, fetcher }: Props) {
+export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved, fetcher, notice }: Props) {
   return (
     <>
+      {notice && <p role="status" className="status">{notice}</p>}
       <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={fetcher} loaded={loaded} />
       <PackagePanel engine={engine} store={store} loaded={loaded} onLoaded={onLoaded} onRemoved={onRemoved} />
     </>

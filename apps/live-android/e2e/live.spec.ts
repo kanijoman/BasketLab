@@ -68,8 +68,8 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
-  // the import is in the Paquetes tab (issue #224)
-  await page.getByRole('tab', { name: 'Paquetes' }).click()
+  // the import is in the Partidos tab (issue #224)
+  await page.getByRole('tab', { name: 'Partidos' }).click()
 
   // the import is a folded option with its steps (issue #338): unfold it
   await page.getByText(/Importar un fichero \.bpkg/).click()

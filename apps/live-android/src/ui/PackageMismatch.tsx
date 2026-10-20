@@ -17,7 +17,7 @@ export default function PackageMismatch({ match, own, rival, onPackages }: Props
         <strong>Este paquete no corresponde a este partido.</strong> FEB sirve {match.join(' – ')} y el paquete está preparado para{' '}
         {own.name.trim()} – {rival.name.trim()}. Mientras no cargues el paquete correcto no se muestran alertas ni análisis.
       </p>
-      <button className="secondary link-button" onClick={onPackages}>Ir a Paquetes</button>
+      <button className="secondary link-button" onClick={onPackages}>Ir a Partidos</button>
     </section>
   )
 }

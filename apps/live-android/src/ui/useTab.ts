@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react'
 export type TabId = 'partido' | 'paquetes' | 'acerca'
 export const TABS: { id: TabId; label: string }[] = [
   { id: 'partido', label: 'Partido' },
-  { id: 'paquetes', label: 'Paquetes' },
+  { id: 'paquetes', label: 'Partidos' },
   { id: 'acerca', label: 'Acerca de' },
 ]
 export const TAB_KEY = 'basketlab-live-tab'

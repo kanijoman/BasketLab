@@ -51,7 +51,7 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
     expect(screen.getByText(/tu paquete sigue guardado/i)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /conectar con feb/i })).toBeNull()
     expect(store.saved?.plaintext).toBe(PKG_TEXT)
-    fireEvent.click(screen.getByRole('tab', { name: 'Paquetes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
     expect(screen.getByRole('button', { name: /quitar paquete/i })).toBeTruthy()          // still loaded
   })
 
@@ -76,7 +76,7 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
     const { store } = await open()
     review()
     await screen.findByLabelText(/partido de la demostración/i)
-    fireEvent.click(screen.getByRole('tab', { name: 'Paquetes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
     fireEvent.click(screen.getByRole('button', { name: /quitar paquete/i }))
     await waitFor(() => expect(store.saved).toBeNull())
     fireEvent.click(screen.getByRole('tab', { name: 'Partido' }))

@@ -1,1 +1,10 @@
-{ "team_id": "1008631", "upcoming": 3 }
+{
+ "team_id": "1008631",
+ "upcoming": 3,
+ "access": {
+  "mode": "legacy",
+  "open": true,
+  "monthly": false,
+  "scopes": []
+ }
+}

@@ -40,7 +40,7 @@ describe('brand of the app (issue #311)', () => {
     release()
     await screen.findByText('EQUIPO PROPIO')
     expect(document.querySelector('.splash')).toBeNull()
-    for (const tab of ['Partido', 'Paquetes', 'Acerca de']) {
+    for (const tab of ['Partido', 'Partidos', 'Acerca de']) {
       fireEvent.click(screen.getByRole('tab', { name: tab }))
       expect(document.querySelector('.brand-header')?.textContent).toMatch(/BasketLab\s*Live/)
     }

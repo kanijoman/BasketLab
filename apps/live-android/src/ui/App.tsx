@@ -42,6 +42,7 @@ import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type Fin
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab from './PackagesTab'
+import { listenInviteLinks } from '../package/inviteLink'
 import ReviewSwitch from './ReviewSwitch'
 import TabBar from './TabBar'
 import { useTab } from './useTab'
@@ -130,6 +131,12 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
   const [tab, setTab] = useTab()
+  // an invitation link opened the app (issue #410): its right is kept, the list of matches is shown and says what happened
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null)
+  useEffect(() => listenInviteLinks(result => {
+    setInviteNotice(result.ok ? `Invitación aceptada: ${result.scope}.` : result.message)
+    setTab('paquetes')
+  }), [setTab])
   const [winProbOn, setWinProbOn] = useExperimental('win_prob')
   const winProbHistory = useWinProbHistory(out)
   const session = useSessionLog()
@@ -383,7 +390,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     void store.load().then(r => r && beginPackage(r.plaintext))
   }
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
-  const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} />
+  const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice} />
 
   if (phase.kind === 'loading') return <Splash />
   if (phase.kind === 'error') {
@@ -444,8 +451,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
       {!pkg && (
         <p className="notice">
-          Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Paquetes.{' '}
-          <button className="secondary link-button" onClick={() => setTab('paquetes')}>Ir a Paquetes</button>
+          Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Partidos.{' '}
+          <button className="secondary link-button" onClick={() => setTab('paquetes')}>Ir a Partidos</button>
         </p>
       )}
       {out?.package_match?.ok === false && (

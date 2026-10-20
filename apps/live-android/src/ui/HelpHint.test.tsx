@@ -23,7 +23,7 @@ describe('HelpHint (issue #225)', () => {
 const store: PackageStore = { load: async () => null, save: async () => undefined, clear: async () => undefined }
 const engine = {} as EngineApi
 
-describe('help texts of the Paquetes tab and the live connection (issue #225)', () => {
+describe('help texts of the Partidos tab and the live connection (issue #225)', () => {
   it('the package panel explains what the preparation package is and when to import a file', () => {
     render(<PackagePanel engine={engine} store={store} onLoaded={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /ayuda sobre el paquete de preparación/i }))
