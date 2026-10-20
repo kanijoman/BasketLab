@@ -49,6 +49,7 @@ class PlayByPlayAnalyzer:
         
         # Cache for parse_substitutions (expensive operation)
         self._substitutions_cache = None
+        self._fbcyl_positions: Dict[str, List[Tuple[int, bool]]] = {}
 
     def _get_team_mapping(self) -> Dict[str, str]:
         """Get mapping of team IDs to team1/team2."""
@@ -114,6 +115,82 @@ class PlayByPlayAnalyzer:
         except (ValueError, TypeError):
             return 0
 
+    _FBCYL_IN = "entra al campo"
+    _FBCYL_OUT = "sale del campo"
+
+    def _fbcyl_player_key(self, actor_id) -> str:
+        """Licence id (persistent) of a game-scoped actor id, as the lineup keys use it."""
+        return self._fbcyl_actor_to_license.get(actor_id) or str(actor_id)
+
+    def _fbcyl_timeline_from_moves(self) -> Dict[str, List[Tuple[int, bool]]]:
+        """``{player: [(second, on_court)]}`` from the ``Entra al campo`` / ``Sale del campo`` moves, in game order.
+
+        The box's ``inOutsList`` only knows the whole minute of each substitution (``minuteAbsolut``, the ceiling of the elapsed time) and the
+        moves have the second. A player whose first substitution is an exit started the game. ``_fbcyl_positions`` keeps the index of each
+        move in the list, which tells who was on court for the moves of the same second (``get_player_move_spans``).
+        """
+        timeline: Dict[str, List[Tuple[int, bool]]] = defaultdict(list)
+        positions: Dict[str, List[Tuple[int, bool]]] = defaultdict(list)
+        for index, move in enumerate(self.lines):
+            text = str(move.get('move', '')).lower()
+            on = text.startswith(self._FBCYL_IN)
+            if not on and not text.startswith(self._FBCYL_OUT):
+                continue
+            actor_id = move.get('actorId')
+            if actor_id is None or move.get('period') is None or move.get('min') is None or move.get('sec') is None:
+                continue
+            key = self._fbcyl_player_key(actor_id)
+            timeline[key].append((self._fbcyl_time_to_seconds(move['period'], move['min'], move['sec']), on))
+            positions[key].append((index, on))
+        for key, events in timeline.items():
+            if not events[0][1]:                       # first substitution is an exit: started the game
+                events.insert(0, (0, True))
+                positions[key].insert(0, (-1, True))
+        self._fbcyl_positions = dict(positions)
+        return dict(timeline)
+
+    def _fbcyl_timeline_from_box(self) -> Dict[str, List[Tuple[int, bool]]]:
+        """The same from the players' ``inOutsList`` (whole minutes): the game has no substitution moves."""
+        player_timeline: Dict[str, List[Tuple[int, bool]]] = defaultdict(list)
+        self._fbcyl_positions = {}
+        teams = self.game_data.get('stats', {}).get('teams', [])
+        for team in teams:
+            for player in team.get('players', []):
+                actor_id = player.get('actorId')
+                if not actor_id:
+                    continue
+                player_id = self._fbcyl_player_key(actor_id)
+                for event in player.get('inOutsList', []):
+                    timestamp = event.get('minuteAbsolut', 0) * 60
+                    if event.get('type') == 'IN_TYPE':
+                        player_timeline[player_id].append((timestamp, True))
+                    elif event.get('type') == 'OUT_TYPE':
+                        player_timeline[player_id].append((timestamp, False))
+                if player_timeline[player_id] and not player_timeline[player_id][0][1]:
+                    player_timeline[player_id].insert(0, (0, True))
+        return player_timeline
+
+    def get_player_move_spans(self, player_id) -> Optional[List[Tuple[int, int]]]:
+        """FBCYL: ``(after, before)`` positions in the list of moves between which the player was on court (exclusive; a starter's
+        first span begins at -1, one still on court at the end closes at ``len(moves)``). It decides the moves of the same clock second as
+        a substitution, which the seconds cannot, and gives the box's +/- exactly (issue #378). None when the timeline did not come from
+        the moves (a game without substitution moves) or this is not FBCYL."""
+        if not self.is_fbcyl:
+            return None
+        self.parse_substitutions()
+        if not getattr(self, '_fbcyl_positions', None):
+            return None
+        spans, start = [], None
+        for index, on in self._fbcyl_positions.get(str(player_id), []):
+            if on and start is None:
+                start = index
+            elif not on and start is not None:
+                spans.append((start, index))
+                start = None
+        if start is not None:
+            spans.append((start, len(self.lines)))
+        return spans
+
     def parse_substitutions(self) -> Dict[str, List[Tuple[int, bool]]]:
         """
         Parse all substitutions to create timeline of when each player is on court.
@@ -128,39 +205,10 @@ class PlayByPlayAnalyzer:
         player_timeline = defaultdict(list)
 
         if self.is_fbcyl:
-            # FBCYL: Use inOutsList from players
-            stats = self.game_data.get('stats', {})
-            teams = stats.get('teams', [])
-
-            for team in teams:
-                players = team.get('players', [])
-                for player in players:
-                    actor_id = player.get('actorId')
-                    if not actor_id:
-                        continue
-
-                    # Use licenseId (persistent) instead of actorId (game-scoped)
-                    # so that lineup keys remain stable across games.
-                    player_id = self._fbcyl_actor_to_license.get(actor_id) or str(actor_id)
-
-                    in_outs_list = player.get('inOutsList', [])
-                    
-                    # First pass: collect all events
-                    for event in in_outs_list:
-                        event_type = event.get('type')
-                        minute_absolut = event.get('minuteAbsolut', 0)
-                        # Convert minutes to seconds
-                        timestamp = minute_absolut * 60
-
-                        if event_type == 'IN_TYPE':
-                            player_timeline[player_id].append((timestamp, True))
-                        elif event_type == 'OUT_TYPE':
-                            player_timeline[player_id].append((timestamp, False))
-                    
-                    # Second pass: detect starters (first event is OUT without prior IN)
-                    if player_timeline[player_id] and player_timeline[player_id][0][1] == False:
-                        # Player's first event is OUT, so they started the game
-                        player_timeline[player_id].insert(0, (0, True))
+            # FBCYL: the substitutions of the moves (seconds, and an order for the ties of a second); the box's inOutsList (whole minutes)
+            # only when the game has no substitution moves (issue #378)
+            from_moves = self._fbcyl_timeline_from_moves()
+            player_timeline = defaultdict(list, from_moves or self._fbcyl_timeline_from_box())
         else:
             # FEB: Parse PLAYBYPLAY.LINES for substitutions
             # Lines are in reverse chronological order, so process them forward

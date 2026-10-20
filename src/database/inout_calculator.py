@@ -361,6 +361,12 @@ class InOutStatsCalculator:
                     return True
             return False
 
+        # FBCYL: the position of the move among the player's substitutions decides, not the clock second (issue #378)
+        spans = self.analyzer.get_player_move_spans(player_id)
+
+        def _on_court_at_move(index: int) -> bool:
+            return any(after < index < before for after, before in spans)
+
         # Iterate chronological
         # For FEB: PLAYBYPLAY.LINES stored reverse-chronological, iterate reversed
         # For FBCYL: moves are already chronological
@@ -385,7 +391,7 @@ class InOutStatsCalculator:
                 move_text = line.get('move', '')
 
                 # Determine which bucket this action affects
-                on_court = _is_on_court(timestamp)
+                on_court = _on_court_at_move(idx) if spans is not None else _is_on_court(timestamp)
                 target = stats_in if on_court else stats_out
 
                 # Process FBCYL move
