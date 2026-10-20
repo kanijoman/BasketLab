@@ -67,12 +67,11 @@
     },
     {
      "alerts": [
-      "cold_fg:2",
       "star_out:1949844:1",
       "summary:1"
      ],
      "digests": {
-      "alerts": "04fc3732edad89e2bebb92399b5181b44ad9700dd9fea634ed2ca242b848c55d",
+      "alerts": "902cfc017cd6ff794009940e9467f2d3b556a0bf3bf83665c170b42d3ec8d029",
       "analysis": "e92de32237830c56b3d9885d5c92e26cdf4d04d8baa50646a246fabc166b67c9",
       "snapshot": "cd9912e463cb1e7afcbeb3d19b3bed214ed430892831f47a56d859b3ba95063e"
      },
@@ -201,11 +200,10 @@
     {
      "alerts": [
       "rest:2817526",
-      "rest:2212271",
-      "fatigue:2265823:2238:info"
+      "rest:2212271"
      ],
      "digests": {
-      "alerts": "75f6b8a9f4d81e9df404e9e8796e8838664587b53de6c9c8eea68409665e2d5c",
+      "alerts": "ba8374941a4f4a29df0f48481c911cb648251080bcc5a9ad844dbeb0e503ba27",
       "analysis": "8c48f937f031ee2e0e8d2c319e7a9cae53ceae77fff8bbdc8c6daf3ec18f6e33",
       "snapshot": "3985d86d2c634edb4ae41d83e8ce8c08dc0336a7527de36716a04844e62bde03"
      },
@@ -3065,27 +3063,6 @@
       "proposal": [],
       "rearm_s": null,
       "severity": "warning"
-     },
-     {
-      "category": "rival",
-      "confirm": 1,
-      "evidence": {
-       "attempts": 6,
-       "expected_pps": 1.02,
-       "expected_share": 0.02,
-       "family": "esquina",
-       "kind": "eficiencia",
-       "makes": 4,
-       "pps": 2.0,
-       "share": 1.0,
-       "total": 6
-      },
-      "id": "rival_zone",
-      "key": "zone:esquina:eficiencia",
-      "message": "Rival castiga desde las esquinas: 4/6 (2.00 pts/tiro, esperado 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
-      "proposal": [],
-      "rearm_s": null,
-      "severity": "info"
      }
     ],
     [
@@ -3106,6 +3083,27 @@
       "id": "rival_zone",
       "key": "zone:ala:volumen",
       "message": "Rival: 12 de sus 23 tiros (52%) salen desde las alas (habitual 29%). Salir al tirador en el ala y cerrar la línea de pase.",
+      "proposal": [],
+      "rearm_s": null,
+      "severity": "info"
+     },
+     {
+      "category": "rival",
+      "confirm": 1,
+      "evidence": {
+       "attempts": 7,
+       "expected_pps": 1.02,
+       "expected_share": 0.02,
+       "family": "esquina",
+       "kind": "eficiencia",
+       "makes": 5,
+       "pps": 2.143,
+       "share": 0.304,
+       "total": 23
+      },
+      "id": "rival_zone",
+      "key": "zone:esquina:eficiencia",
+      "message": "Rival castiga desde las esquinas: 5/7 (2.14 pts/tiro, esperado 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
       "proposal": [],
       "rearm_s": null,
       "severity": "info"
@@ -3140,71 +3138,6 @@
      }
     ],
     [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "main_player_id": null,
-       "turnovers": 4,
-       "window_s": 300
-      },
-      "id": "turnover_streak",
-      "key": "tov_streak:2:600",
-      "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
-      "proposal": [
-       {
-        "left": 2,
-        "message": "Tiempo muerto · quedan 2",
-        "type": "timeout"
-       },
-       {
-        "balance_delta": {
-         "creación": -0.4,
-         "espaciado": 0.0,
-         "juego interior": 0.0,
-         "rebote": 0.0
-        },
-        "balance_ok": true,
-        "in_id": "g2",
-        "in_name": "Guard Dos",
-        "lever": "tov",
-        "lever_gain": 3.0,
-        "lineup_net40": null,
-        "lineup_seconds": 0,
-        "message": "Entra Guard Dos por Guard Uno y mejora las pérdidas (+3.0 σ). Rol similar (distancia 0.4)",
-        "out_id": "g1",
-        "out_name": "Guard Uno",
-        "pf_in": 0,
-        "role_distance": 0.4,
-        "score": 2.8,
-        "type": "sub"
-       },
-       {
-        "balance_delta": {
-         "creación": 0.0,
-         "espaciado": 0.0,
-         "juego interior": 0.0,
-         "rebote": -0.4
-        },
-        "balance_ok": true,
-        "in_id": "b2",
-        "in_name": "Pivot Dos",
-        "lever": "tov",
-        "lever_gain": 1.0,
-        "lineup_net40": null,
-        "lineup_seconds": 0,
-        "message": "Entra Pivot Dos por Pivot Uno y mejora las pérdidas (+1.0 σ). Rol similar (distancia 0.4)",
-        "out_id": "b1",
-        "out_name": "Pivot Uno",
-        "pf_in": 0,
-        "role_distance": 0.4,
-        "score": 0.8,
-        "type": "sub"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "warning"
-     },
      {
       "category": "four_factors",
       "confirm": 1,
@@ -4228,29 +4161,6 @@
       "category": "gestion",
       "confirm": 1,
       "evidence": {
-       "base_severity": "warning",
-       "main_player_id": null,
-       "phase": "close_late",
-       "turnovers": 4,
-       "window_s": 300
-      },
-      "id": "turnover_streak",
-      "key": "tov_streak:4:1800~close_late",
-      "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
-     },
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
        "causes": "4 pérdidas",
        "gap_s": 2200
       },
@@ -4395,27 +4305,6 @@
       ],
       "rearm_s": null,
       "severity": "critical"
-     },
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "main_player_id": null,
-       "turnovers": 4,
-       "window_s": 300
-      },
-      "id": "turnover_streak",
-      "key": "tov_streak:4:1800",
-      "message": "4 pérdidas propias en los últimos 5 min. Asegurar el balón.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "warning"
      },
      {
       "category": "gestion",

@@ -40,10 +40,10 @@ def test_defaults_cover_every_zone():
 
 
 def test_hot_corner_raises_an_efficiency_alert():
-    [a] = zone_alerts(eng().evaluate(zsnap({"left_corner_three": cell(6, 4, 3)})))
+    [a] = zone_alerts(eng().evaluate(zsnap({"left_corner_three": cell(7, 5, 3)})))
     assert a.severity == "info" and a.category == "rival" and a.evidence["kind"] == "eficiencia"
-    assert a.evidence["family"] == "esquina" and (a.evidence["attempts"], a.evidence["makes"]) == (6, 4)
-    assert "esquina" in a.message.lower() and "4/6" in a.message
+    assert a.evidence["family"] == "esquina" and (a.evidence["attempts"], a.evidence["makes"]) == (7, 5)
+    assert "esquina" in a.message.lower() and "5/7" in a.message
 
 
 def test_left_and_right_wings_are_combined_into_one_family():
@@ -70,7 +70,7 @@ def test_a_large_unusual_share_of_shots_from_one_family_is_an_info_alert():
 
 
 def test_the_rivals_own_season_changes_what_is_expected():
-    live = {"left_corner_three": cell(6, 3, 3)}          # 1.5 pts/shot
+    live = {"left_corner_three": cell(8, 5, 3)}          # 1.88 pts/shot
     assert zone_alerts(eng().evaluate(zsnap(live)))      # vs the league's 0.95: unusual
     ref = {"rival": {"left_corner_three": {"a": 100, "m": 53, "pts": 160, "share": 0.2, "pps": 1.6}},
            "league": {}}
@@ -83,20 +83,20 @@ def test_only_the_rival_is_scouted():
 
 def test_each_zone_alert_is_emitted_once():
     e = eng()
-    s = zsnap({"left_corner_three": cell(6, 4, 3)})
+    s = zsnap({"left_corner_three": cell(7, 5, 3)})
     assert zone_alerts(e.evaluate(s)) and zone_alerts(e.evaluate(s)) == []
-    s2 = zsnap({"left_corner_three": cell(7, 5, 3)})
+    s2 = zsnap({"left_corner_three": cell(7, 6, 3)})
     assert zone_alerts(e.evaluate(s2)) == []
 
 
 def test_snapshots_without_zones_or_rival_are_fine():
     assert zone_alerts(eng().evaluate(snap())) == []
-    assert zone_alerts(AdviceEngine(own_team_id=OWN).evaluate(zsnap({"left_corner_three": cell(6, 4, 3)}))) == []
+    assert zone_alerts(AdviceEngine(own_team_id=OWN).evaluate(zsnap({"left_corner_three": cell(7, 5, 3)}))) == []
 
 
 def test_thresholds_come_from_the_config():
     strict = eng(zone_pps_excess=5.0)
-    assert zone_alerts(strict.evaluate(zsnap({"left_corner_three": cell(6, 4, 3)}))) == []
+    assert zone_alerts(strict.evaluate(zsnap({"left_corner_three": cell(7, 5, 3)}))) == []
 
 
 def test_zone_families_are_stable():

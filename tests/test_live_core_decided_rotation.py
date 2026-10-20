@@ -18,7 +18,7 @@ def level(s, margin):
     return s
 
 
-def players(stint=720):
+def players(stint=780):    # fatigue index ~86: above the alert of 80 (#426)
     return {"own": _player("Ana", OWN, minutes=1500, stint=stint, on_court=True),
             "rival": _player("Rival", RIVAL, pf=4)}
 
@@ -64,7 +64,7 @@ def test_what_was_silenced_comes_back_if_the_game_reopens():
 
 
 def test_fatigue_alerts_earlier_in_a_decided_game():
-    stint = next(s for s in range(60, 1500, 30) if 45 <= fatigue_index(s, 1500, 2300, None)[0] < 58)
+    stint = next(s for s in range(60, 1500, 30) if 65 <= fatigue_index(s, 1500, 2300, None)[0] < 78)
     assert "fatigue_high" not in ids(engine().evaluate(level(snap(elapsed=2300, players=players(stint)), margin=3)))
     assert "fatigue_high" in ids(engine().evaluate(level(snap(elapsed=2300, players=players(stint)), margin=30)))
 
@@ -77,7 +77,7 @@ def test_fatigue_is_not_lowered_a_level_in_a_decided_game():
 
 
 def test_the_relief_goes_first_to_who_has_played_least():
-    overrides = {"g1": {"stint": 1200, "minutes": 1900}, "g2": {"minutes": 600}, "b2": {"minutes": 500}, "b3": {"minutes": 0}}
+    overrides = {"g1": {"stint": 1800, "minutes": 2100}, "g2": {"minutes": 600}, "b2": {"minutes": 500}, "b3": {"minutes": 0}}
     eng = AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, baselines=TABLE)
 
     def first_in(margin):

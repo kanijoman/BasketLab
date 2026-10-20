@@ -15,22 +15,22 @@ DEFAULT_MODE = "medium"
 # The same settings in aggressive and conservative, on each side of the stock value (tests/test_live_core_modes.py checks it).
 MODES: Dict[str, Dict[str, Any]] = {
     "aggressive": {
-        "fatigue_alert_index": 55.0, "fatigue_warning_index": 75.0,
+        "fatigue_alert_index": 65.0, "fatigue_warning_index": 75.0,
         "run_points": 7, "long_run_net": 9, "own_run_net": 7,
         "drought_own_s": 210, "drought_rival_s": 180, "drought_fg_s": 150,
         "ff_lever_min_pts100": 2.0, "lever_step_pts100": 4.0,
         "wp_flip_drop": 0.15, "lineup_net": 5, "pm_player_net": 7,
-        "turnover_streak": 3, "zone_concede_excess": 0.12, "edge_net": 5,
+        "turnover_streak": 4, "zone_concede_excess": 0.12, "edge_net": 5,
         "hot_player_pts": 6, "rival_orb_n": 2, "rival_tov_n": 3, "cold_fg_n": 7, "cold_3p_n": 6,
     },
     "medium": {},
     "conservative": {
-        "fatigue_alert_index": 65.0, "fatigue_warning_index": 85.0,
+        "fatigue_alert_index": 85.0, "fatigue_warning_index": 90.0,
         "run_points": 10, "long_run_net": 12, "own_run_net": 10,
         "drought_own_s": 300, "drought_rival_s": 270, "drought_fg_s": 240,
         "ff_lever_min_pts100": 4.5, "lever_step_pts100": 6.5,
         "wp_flip_drop": 0.30, "lineup_net": 8, "pm_player_net": 10,
-        "turnover_streak": 5, "zone_concede_excess": 0.20, "edge_net": 8,
+        "turnover_streak": 6, "zone_concede_excess": 0.20, "edge_net": 8,
         "hot_player_pts": 8, "rival_orb_n": 4, "rival_tov_n": 5, "cold_fg_n": 9, "cold_3p_n": 8,
     },
 }

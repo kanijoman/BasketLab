@@ -34,7 +34,7 @@ from .rules_players import own_orb_rule, own_player_rule, rival_player_rule as r
 from .rules_rest import rest_rule
 from .rules_zones import own_zone_rule, paint_rule, rival_defence_rule, rival_player_zone_rule
 from .rules_summary import edges_rule, summary_rule
-from .rules_timeouts import timeout_budget_rule
+from .rules_timeouts import first_half_timeouts_rule, timeout_budget_rule
 from .rules_winflip import win_flip_rule
 from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
 from .rules_rival import rival_player_rule, rival_zone_rule
@@ -54,7 +54,7 @@ RULES: List[Tuple[str, Rule]] = [
     ("cold_shooting", cold_shooting_rule), ("rival_hot_shooting", rival_hot_rule), ("free_throw_cold", free_throw_rule),
     ("scoring_drought", drought_rule), ("long_run", long_run_rule), ("game_flow_windows", window_rule),
     ("rival_player_form", rival_form_rule), ("own_player_form", own_player_rule), ("rival_star_bench", rival_star_rule),
-    ("disqualification", disqualification_rule), ("timeout_budget", timeout_budget_rule),
+    ("disqualification", disqualification_rule), ("timeout_budget", timeout_budget_rule), ("first_half_timeouts", first_half_timeouts_rule),
     ("key_fouls_close", key_fouls_rule), ("rival_foul_pair", rival_pair_rule),
     ("closing_briefing", closing_rule), ("period_summary", summary_rule), ("advantage_management", advantage_rule),
     ("pace_control", pace_rule), ("lineup_net", lineup_rule), ("player_plus_minus", player_rule),

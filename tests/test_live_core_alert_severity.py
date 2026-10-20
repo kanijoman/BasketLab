@@ -18,15 +18,22 @@ from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, engin
 RECORDINGS = Path(__file__).parent / "recordings"
 
 
-def _fatigue(stint):
+def _fatigue(stint, **config):
     players = {"p1": _player("Ana", OWN, stint=stint, minutes=1100)}
-    return [a for a in engine(baselines=BASE).evaluate(snap(elapsed=1200, players=players)) if a.id == "fatigue_high"]
+    eng = engine(baselines=BASE, config=RuleConfig(**config) if config else None)
+    return [a for a in eng.evaluate(snap(elapsed=1200, players=players)) if a.id == "fatigue_high"]
 
 
 def test_moderate_fatigue_is_context_not_a_warning():
-    [a] = _fatigue(600)
+    """Between the alert index and the warning index fatigue is context (the band is closed by default since #426: 80 and 80)."""
+    [a] = _fatigue(600, fatigue_alert_index=60.0)
     assert 60 <= a.evidence["index"] < RuleConfig().fatigue_warning_index
     assert a.severity == "info"
+
+
+def test_moderate_fatigue_says_nothing_by_default_regression():
+    """#426: 2,9 fatigue alerts per 10 minutes (3 of 4 of them context) became 1,1 without losing follow-up."""
+    assert _fatigue(600) == []
 
 
 def test_very_high_fatigue_is_a_warning():
@@ -56,22 +63,23 @@ def test_only_the_fourth_foul_and_the_rival_run_are_critical():
     assert [a.severity for a in run if a.id == "rival_run"] == ["critical"]
 
 
-# Alerts of Zamora-Leon by rule and severity (issue #241 turned the fixed total into this table). It is the engine's output on
+# Alerts of Zamora-Leon by rule and severity (issue #241 turned the fixed total into this table; #426 calibrated the thresholds: fatigue
+# context, cold FG and hot FG streaks and a turnover streak left, and the first-half timeouts of #427 came). It is the engine's output on
 # the recorded match, not a goal: when a rule changes, the line of that rule changes here and the diff shows what moved.
 REAL_MATCH_TABLE = {
-    ("cold_3p_streak", "info"): 2, ("cold_3p_volume", "info"): 3, ("cold_fg_streak", "warning"): 3,
-    ("comeback_plan", "info"): 1, ("fatigue_high", "critical"): 4, ("fatigue_high", "info"): 10,
-    ("fatigue_high", "warning"): 4, ("fg_drought", "warning"): 2, ("foul_trouble", "warning"): 1,
+    ("cold_3p_streak", "info"): 2, ("cold_3p_volume", "info"): 3, ("comeback_plan", "info"): 1,
+    ("fatigue_high", "critical"): 4, ("fatigue_high", "warning"): 4, ("fg_drought", "warning"): 2,
+    ("first_half_timeouts", "info"): 1, ("foul_trouble", "warning"): 1,
     ("four_factors_lever", "info"): 8, ("lineup_net", "warning"): 2, ("long_run", "warning"): 3,
     ("own_cold_player", "info"): 2, ("own_drought", "critical"): 1, ("own_drought", "warning"): 2,
-    ("own_zone_cold", "info"): 3, ("paint_battle", "warning"): 2, ("period_edge_deficit", "info"): 2,
+    ("own_zone_cold", "info"): 2, ("paint_battle", "warning"): 2, ("period_edge_deficit", "info"): 2,
     ("period_summary", "info"): 3, ("player_plus_minus", "info"): 7, ("rest_starters", "info"): 4,
     ("rival_concedes_zone", "info"): 1, ("rival_drought", "info"): 1, ("rival_foul_pair", "warning"): 1,
     ("rival_foul_trouble", "info"): 2, ("rival_foul_trouble", "warning"): 2, ("rival_hot_player", "warning"): 2,
-    ("rival_hot_run", "warning"): 1, ("rival_hot_streak", "warning"): 1, ("rival_near_bonus", "info"): 2,
+    ("rival_hot_run", "warning"): 1, ("rival_near_bonus", "info"): 2,
     ("rival_orb_window", "warning"): 3, ("rival_run", "info"): 2, ("rival_run", "warning"): 1, ("rival_star_out", "info"): 1,
     ("rival_zone", "info"): 1, ("static_offense", "info"): 1, ("team_fouls_bonus", "info"): 1,
-    ("turnover_streak", "warning"): 3, ("win_flip", "warning"): 2,
+    ("turnover_streak", "warning"): 1, ("win_flip", "warning"): 2,
 }
 
 

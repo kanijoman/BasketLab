@@ -1,6 +1,8 @@
 # Reglas del motor live: evidencia, catálogo y estado
 Documento vivo. **Decisión (2026-10-13, sustituye a la del 11/10 de esperar a 5 partidos de León)**: el motor evoluciona de forma continua, así que las reglas de este documento se integran **activas** con la épica #260 (Motor de alertas v2) y se miden después con el evaluador de reglas (#238) y el feedback del staff (#235); cada regla tiene un interruptor `rules_off` en el paquete (#236) por si resulta ruidosa. Sin objetivo de volumen: toda propuesta de acción detectada se emite y la verbosidad se evalúa con datos. Origen: [evaluación Zamora–León](evaluaciones/2026-10-10_zamora-leon_motor-de-reglas.md) (1 partido, resultado muy desfavorable), el comportamiento de los entrenadores en los 16 partidos de LF Challenge y el catálogo del 13/10 (abajo). Motor actual: [LIVE.md](LIVE.md); umbrales: `RuleConfig` en `src/live_core/config.py`, todos **provisionales** a confirmar con el staff. Seguimiento en GitHub: épica #260 y #207.
 
+**Calibración del 20/10 (#426, #427)**: evaluación con 753 partidos de LF Challenge y barrido de 21 configuraciones ([informe](evaluaciones/2026-10-20_calibracion-de-umbrales.md)). Umbrales nuevos: fatiga 80, pérdidas 5, rachas de tiro 7/5 y 0 aciertos, zonas 0,7/7/14; regla nueva `first_half_timeouts` (integrada). Ninguna regla de acción llega aún al 40 % de seguimiento: nada pasa a *validada* hasta tener el feedback del staff (#235).
+
 ## Candidatas
 Estado: **candidata** (sin integrar) · **integrada** (activa en el motor, pendiente de medir) · **validada** (cumple los criterios de abajo, pendiente de confirmar con el staff) · **descartada**. Los umbrales son puntos de partida.
 

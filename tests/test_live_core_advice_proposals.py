@@ -53,7 +53,7 @@ def test_four_factors_lever_proposes_who_to_bring_in_for_that_lever():
 
 def test_turnover_streak_proposes_ball_security():
     s = snap(elapsed=1200)
-    s["log"] = [[1000 + 30 * i, OWN, "tov", 1] for i in range(4)]
+    s["log"] = [[1000 + 30 * i, OWN, "tov", 1] for i in range(5)]
     [alert] = by_id(engine().evaluate(s), "turnover_streak")
     subs = [p for p in alert.proposal if p["type"] == "sub"]
     assert subs and subs[0]["in_id"] == "g2"

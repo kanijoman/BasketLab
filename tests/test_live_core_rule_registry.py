@@ -29,7 +29,7 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "cold_shooting", "rival_hot_shooting", "free_throw_cold",
                 "scoring_drought", "long_run", "game_flow_windows",
                 "rival_player_form", "own_player_form", "rival_star_bench",
-                "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
+                "disqualification", "timeout_budget", "first_half_timeouts", "key_fouls_close", "rival_foul_pair",
                 "closing_briefing", "period_summary", "advantage_management", "pace_control",
                 "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
                 "after_timeout_scoring", "own_orb_player", "static_offense",
@@ -63,7 +63,7 @@ def _run():
 
 
 def _turnovers():
-    return snap(elapsed=1100, log=[[1000 + 10 * i, OWN, "tov", 1] for i in range(4)])
+    return snap(elapsed=1100, log=[[1000 + 10 * i, OWN, "tov", 1] for i in range(5)])
 
 
 def _fatigue():
@@ -96,7 +96,8 @@ SCENARIOS = {
     "rival_zone": (_zone, {"rival_zone"}, {}),
     "rest_starters": (rest_decided, {"rest_starters"}, {"baselines": REST_TABLE}),
     "cold_shooting": (lambda: snap(elapsed=400, log=shots(OWN, [0] * 8)), {"cold_fg_streak"}, {}),
-    "rival_hot_shooting": (lambda: snap(elapsed=400, log=shots(RIVAL, [1] * 8)), {"rival_hot_streak"}, {}),
+    "rival_hot_shooting": (lambda: snap(elapsed=400, log=shots(RIVAL, [1] * 8) + shots(RIVAL, [1] * 6, points=3, start=300)),
+                           {"rival_hot_streak", "rival_3p_streak"}, {}),
     "free_throw_cold": (lambda: snap(elapsed=400, log=free_throws(OWN, [0] * 8)), {"ft_cold"}, {}),
     "scoring_drought": (lambda: snap(elapsed=400, log=[[100, OWN, "pts", 2, "p1"]]), {"own_drought", "fg_drought", "rival_drought"}, {}),
     "long_run": (lambda: snap(elapsed=330, log=[[t, RIVAL, "pts", 2, "p1"] for t in (100, 140, 180, 220, 260, 300)]), {"long_run"}, {}),
@@ -109,6 +110,7 @@ SCENARIOS = {
                          {"rival_star_out"}, {"rival_baselines": {"r1": {"name": "Rita", "avg_min": 1500, "impact40": pl_impact(24.0)}}}),
     "disqualification": (lambda: snap(elapsed=400, players={"p1": sa_player("Ana", OWN, unsportsmanlike=1)}), {"disqualification_risk"}, {}),
     "timeout_budget": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200), {"timeout_budget"}, {}),
+    "first_half_timeouts": (lambda: sa_evaluate_snap(period=2, elapsed=1100, remaining=100), {"first_half_timeouts"}, {}),
     "key_fouls_close": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200, score={OWN: 60, RIVAL: 58},
                                                  players={"g1": sa_player("Guard Uno", OWN, pf=4)}), {"key_fouls_close"}, {"baselines": REST_TABLE}),
     "rival_foul_pair": (lambda: snap(elapsed=400, players={"r1": sa_player("Rita", RIVAL, pf=3), "r2": sa_player("Rosa", RIVAL, pf=4)}),
@@ -119,7 +121,7 @@ SCENARIOS = {
     "pace_control": (lambda: cl_pace_late(), {"pace_control"}, {}),
     "lineup_net": (lambda: pm_stage(), {"lineup_net"}, {}),
     "player_plus_minus": (lambda: pm_stage(net=0, seconds=60, stint_pm={"g1": -9}, stint=300), {"player_plus_minus"}, {}),
-    "own_zones": (lambda: zr_snap(own={"restricted_area": zr_cell(6, 6, 12)}), {"own_zone_hot"}, {}),
+    "own_zones": (lambda: zr_snap(own={"restricted_area": zr_cell(7, 7, 14)}), {"own_zone_hot"}, {}),
     "rival_defence_zones": (lambda: zr_snap(own={"restricted_area": zr_cell(3, 3, 6)}), {"rival_concedes_zone"},
                             {"zone_ref": {"league": {"restricted_area": zr_cell(100, 65, 130)}, "rival_conceded": {"restricted_area": zr_cell(60, 48, 96)}}}),
     "rival_zone_player": (lambda: zr_snap(players={"r1": zr_player("Rita", RIVAL)},
