@@ -340,3 +340,46 @@ describe('recording of the live feed (issue #416)', () => {
     expect(shareFile).toHaveBeenCalledWith(bytes, 'grabacion-9.rec.json.gz', expect.stringContaining('LEON – UNIBASKET'), 'application/gzip')
   })
 })
+
+// #411: how late FEB's data is, measured on the connection
+describe('delay of the feed (issue #411)', () => {
+  const T0 = Date.UTC(2026, 9, 17, 19, 0, 0)
+  const logAt = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ')
+
+  /** A FEB that gets one new line per poll, each logged 40 s before the poll that sees it, with a cache age of 11 s, and then goes quiet. */
+  function laggingFeb() {
+    let poll = -1
+    const lines = () => Array.from({ length: Math.min(poll, 9) + 1 }, (_, n) => ({ num: String(n + 1), LogTimeUtc: logAt(T0 + n * 10_000 - 40_000) }))
+    const json = (url: string) => {
+      if (url.includes('/BoxScore/')) { poll += 1; return { HEADER: { status: '2', TEAM: [{ id: '1', pts: '0' }, { id: '2', pts: '0' }] }, BOXSCORE: { TEAM: [] } } }
+      if (url.includes('/KeyFacts/')) return { PLAYBYPLAY: { LINES: lines() } }
+      return { SHOTCHART: { SHOTS: [] } }
+    }
+    const http = async (url: string) => (url.includes('/partido/')
+      ? { status: 200, text: '<input type="hidden" value="eyJhbGciFAKE.one.token">' }
+      : { status: 200, text: JSON.stringify(json(url)), headers: { Age: '11' } })
+    return { http, polls: () => poll }
+  }
+
+  const connected = async () => {
+    const feb = laggingFeb()
+    // the device clock: 10 s more per poll; the line of each poll was logged 40 s before it
+    const now = () => T0 + Math.max(0, feb.polls()) * 10_000
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.http} feedTiming={{ ...instant, now }} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    return feb
+  }
+
+  it('shows how late the data is once it has enough lines to say', async () => {
+    await connected()
+    expect(await screen.findByText(/Datos de FEB con unos 40 s de retraso/, {}, { timeout: 4000 })).toBeTruthy()
+  })
+
+  it('writes the delay, the cache age and the share of useful polls in the session log when the connection ends', async () => {
+    await connected()
+    await screen.findByText(/Datos de FEB con unos 40 s de retraso/, {}, { timeout: 4000 })
+    fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
+    expect(await screen.findByText(/Retraso de los datos de FEB: mediana 40 s, p90 40 s, máx. 40 s \(\d+ líneas\); caché de FEB: 11 s de mediana; \d+ % de los sondeos traen novedades/)).toBeTruthy()
+  })
+})

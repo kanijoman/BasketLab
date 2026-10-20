@@ -11,6 +11,8 @@ import { Capacitor, CapacitorHttp } from '@capacitor/core'
 export interface HttpResponse {
   status: number
   text: string
+  /** Headers of the answer (any case): only ``age`` is read, to measure how stale the cache of FEB is (issue #411). */
+  headers?: Record<string, string>
 }
 
 export type HttpGet = (url: string, headers?: Record<string, string>) => Promise<HttpResponse>
@@ -32,10 +34,14 @@ export const defaultHttp: HttpGet = async (url, headers = {}) => {
   const all = { ...BROWSER_HEADERS, ...headers }
   if (Capacitor.isNativePlatform()) {
     const response = await CapacitorHttp.get({ url, headers: all, responseType: 'text' })
-    return { status: response.status, text: typeof response.data === 'string' ? response.data : JSON.stringify(response.data) }
+    return {
+      status: response.status, text: typeof response.data === 'string' ? response.data : JSON.stringify(response.data),
+      headers: response.headers,
+    }
   }
   const response = await fetch(url, { headers: all })
-  return { status: response.status, text: await response.text() }
+  // (a browser only lets a cross-origin page read the headers FEB exposes: ``age`` is then missing and the meter says so)
+  return { status: response.status, text: await response.text(), headers: response.headers ? Object.fromEntries(response.headers.entries()) : undefined }
 }
 
 const HIDDEN_INPUT = /<input\b[^>]*\btype=["']?hidden["']?[^>]*>/gi
@@ -56,6 +62,15 @@ export interface FebResult {
   json: unknown | null
   /** The token had expired and was renewed for this request. */
   renewed?: boolean
+  /** Seconds the answer had been in the cache of FEB (header ``age``), when it said. */
+  age?: number
+}
+
+/** The ``age`` header, whatever the case of its name; undefined when it is missing or not a number. */
+function ageOf(headers?: Record<string, string>): number | undefined {
+  const entry = Object.entries(headers ?? {}).find(([name]) => name.toLowerCase() === 'age')
+  const age = entry ? Number(entry[1]) : NaN
+  return Number.isFinite(age) ? age : undefined
 }
 
 export class FebClient {
@@ -80,7 +95,8 @@ export class FebClient {
       renewed = true
       response = await this.http(url, { Authorization: `Bearer ${this.token}` })
     }
-    const extra = renewed ? { renewed } : {}
+    const age = ageOf(response.headers)
+    const extra = { ...(renewed ? { renewed } : {}), ...(age !== undefined ? { age } : {}) }
     if (response.status !== 200) return { status: response.status, json: null, ...extra }
     try {
       return { status: 200, json: JSON.parse(response.text), ...extra }

@@ -83,4 +83,18 @@ describe('FebClient', () => {
     const { feb } = client({ '/partido/': [page(`<input type="hidden" value="${JWT}">`)], BoxScore: [{ status: 200, text: '<html>mantenimiento</html>' }] })
     await expect(feb.fetch('777', 'boxscore')).rejects.toThrow(/JSON/i)
   })
+
+  // #411: the age of the cache of FEB answers is a fact of the delay of the feed
+  it('reads the age of the answer from the headers of FEB, whatever the case of the name', async () => {
+    const http: HttpGet = vi.fn(async (url: string) => (url.includes('/partido/')
+      ? page(`<input type="hidden" value="${JWT}">`)
+      : { status: 200, text: '{}', headers: { Age: '11', 'Cache-Control': 'public,max-age=15' } }))
+    const feb = new FebClient(http)
+    expect((await feb.fetch('777', 'boxscore')).age).toBe(11)
+  })
+
+  it('has no age when the headers do not have it (older clients, a browser that hides it)', async () => {
+    const { feb } = client({ '/partido/': [page(`<input type="hidden" value="${JWT}">`)], BoxScore: [{ status: 200, text: '{}' }] })
+    expect((await feb.fetch('777', 'boxscore')).age).toBeUndefined()
+  })
 })

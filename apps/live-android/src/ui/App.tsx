@@ -488,7 +488,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <FormationStatus formation={out?.analysis?.formation} own={own} rival={rival} />
 
       {liveMode && (
-        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake}
+        <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake} lag={live.lag}
           onStart={code => void live.connect(code)} onStop={live.disconnect} />
       )}
 
