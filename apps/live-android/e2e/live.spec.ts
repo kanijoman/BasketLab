@@ -109,7 +109,8 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
   await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('38') // Leon, visitor
   await expect(page.locator('.alert').first()).toBeVisible()
   // one chronological flow, the latest on top, in one foldable group per quarter: the current one open, the earlier ones folded (#313, #406); the header counts per level (#229)
-  await expect(page.locator('.alert-counts')).toContainText(/\d+ críticas?/) // exact counts depend on the rules and the playback speed
+  // at 300x each step is five minutes of play: the engine says what is true at that poll, and the alerts about who is on court wait while
+  // the last event is a stoppage (#413), so the two critical fatigue alerts of this match are not seen at this speed (they are at a poll every 10 s)
   await expect(page.locator('.alert-counts')).toContainText(/\d+ avisos/) // exact counts depend on the playback speed
   await expect(page.locator('.alert-counts')).toContainText(/\d+ informativas/)
   await expect(page.locator('.alert-period > summary').first()).toContainText(/Cuarto 4 · \d+ alertas?/)
