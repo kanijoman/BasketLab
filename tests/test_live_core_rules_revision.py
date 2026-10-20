@@ -243,14 +243,14 @@ def tov_alerts(by_player, **kw):
     return by_id(eng.evaluate(tov_snap(by_player, **kw)), "turnover_streak")
 
 
-def test_r3_four_turnovers_propose_a_timeout_and_do_not_depend_on_rearm():
-    [alert] = tov_alerts(["a", "b", "a", "b"])
+def test_r3_five_turnovers_propose_a_timeout_and_do_not_depend_on_rearm():
+    [alert] = tov_alerts(["a", "b", "a", "b", "b"])
     assert alert.proposal[0]["type"] == "timeout" and alert.proposal[0]["left"] == 2
     assert alert.rearm_s is None and alert.severity == "warning"
 
 
 def test_r3_it_names_who_concentrates_the_turnovers_and_proposes_taking_him_off_the_ball():
-    [alert] = tov_alerts(["a", "a", "a", "b"])
+    [alert] = tov_alerts(["a", "a", "a", "b", "b"])
     assert "3 de Ana" in alert.message
     tactic = next(p for p in alert.proposal if p["type"] == "tactic")
     assert tactic["player_id"] == "a" and "Ana" in tactic["message"] and "manejo" in tactic["message"]
@@ -258,27 +258,27 @@ def test_r3_it_names_who_concentrates_the_turnovers_and_proposes_taking_him_off_
 
 
 def test_r3_spread_turnovers_name_nobody():
-    [alert] = tov_alerts(["a", "a", "b", "b"])
+    [alert] = tov_alerts(["a", "a", "b", "b", "c"])
     assert "de Ana" not in alert.message and not [p for p in alert.proposal if p["type"] == "tactic"]
 
 
 def test_r3_it_is_silent_just_after_our_timeout_and_comes_back_if_it_goes_on():
     e = engine()
-    assert not tov_alerts(["a", "b", "a", "b"], timeouts={OWN: [390]}, eng=e)
-    assert tov_alerts(["a", "b", "a", "b"], elapsed=460, timeouts={OWN: [390]}, eng=e)
+    assert not tov_alerts(["a", "b", "a", "b", "b"], timeouts={OWN: [390]}, eng=e)
+    assert tov_alerts(["a", "b", "a", "b", "b"], elapsed=460, timeouts={OWN: [390]}, eng=e)
 
 
 def test_r3_the_same_streak_is_said_once():
     e = engine()
-    assert tov_alerts(["a", "b", "a", "b"], eng=e)
-    assert not tov_alerts(["a", "b", "a", "b"], elapsed=420, eng=e)
+    assert tov_alerts(["a", "b", "a", "b", "b"], eng=e)
+    assert not tov_alerts(["a", "b", "a", "b", "b"], elapsed=420, eng=e)
 
 
 def test_r3_the_recommender_substitutions_come_after_the_timeout_proposal():
     from live_helpers import snap as roster_snap
 
     s = roster_snap(period=2, elapsed=1200)
-    s["log"] = [[1000 + 30 * i, OWN, "tov", 1, pid] for i, pid in enumerate(["g1", "g1", "w1", "b1"])]
+    s["log"] = [[1000 + 30 * i, OWN, "tov", 1, pid] for i, pid in enumerate(["g1", "g1", "w1", "b1", "w1"])]
     [alert] = by_id(engine(baselines=TABLE).evaluate(s), "turnover_streak")
     kinds = [p["type"] for p in alert.proposal]
     assert kinds[0] == "timeout" and "sub" in kinds

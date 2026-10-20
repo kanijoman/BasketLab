@@ -48,13 +48,13 @@ def test_the_rules_are_registered_and_can_be_switched_off():
 # --- Z1: own hot zone ---------------------------------------------------------------------------------------------
 
 def test_z1_a_zone_where_we_score_far_above_what_is_expected_says_to_insist():
-    [alert] = by_id(engine().evaluate(zone_snap(own={"restricted_area": cell(6, 6, 12)})), "own_zone_hot")
-    assert alert.severity == "info" and alert.category == "four_factors" and "el aro" in alert.message and "6/6" in alert.message
+    [alert] = by_id(engine().evaluate(zone_snap(own={"restricted_area": cell(7, 7, 14)})), "own_zone_hot")
+    assert alert.severity == "info" and alert.category == "four_factors" and "el aro" in alert.message and "7/7" in alert.message
     assert alert.proposal[0]["type"] == "tactic" and "Insistir" in alert.proposal[0]["message"]
-    assert alert.evidence["family"] == "aro" and alert.evidence["pps"] > alert.evidence["expected_pps"] + 0.5
+    assert alert.evidence["family"] == "aro" and alert.evidence["pps"] >= alert.evidence["expected_pps"] + 0.7
 
 
-@pytest.mark.parametrize("zone", [cell(4, 4, 8), cell(6, 2, 4), cell(6, 4, 8)])
+@pytest.mark.parametrize("zone", [cell(4, 4, 8), cell(8, 2, 4), cell(8, 5, 10)])
 def test_z1_it_needs_attempts_makes_and_an_excess(zone):
     assert not by_id(engine().evaluate(zone_snap(own={"restricted_area": zone})), "own_zone_hot")
 
@@ -62,10 +62,10 @@ def test_z1_it_needs_attempts_makes_and_an_excess(zone):
 def test_z1_the_expected_value_is_the_own_season_shrunk_to_the_league():
     league = {"left_wing_three": cell(200, 70, 210)}                           # 1.05 points per shot for the league
     usual = {"league": league, "own": {"left_wing_three": cell(100, 45, 135)}}   # 1.35 for us: we are expected to score more than the league
-    [alert] = by_id(engine(usual).evaluate(zone_snap(own={"left_wing_three": cell(6, 5, 15)})), "own_zone_hot")
+    [alert] = by_id(engine(usual).evaluate(zone_snap(own={"left_wing_three": cell(7, 6, 18)})), "own_zone_hot")
     assert 1.05 < alert.evidence["expected_pps"] < 1.35
     high = {"league": league, "own": {"left_wing_three": cell(100, 60, 180)}}  # 1.8: the same night is only a little above what we usually do
-    assert not by_id(engine(high).evaluate(zone_snap(own={"left_wing_three": cell(6, 4, 12)})), "own_zone_hot")
+    assert not by_id(engine(high).evaluate(zone_snap(own={"left_wing_three": cell(7, 5, 15)})), "own_zone_hot")
 
 
 # --- Z2: own cold zone or poor selection --------------------------------------------------------------------------------
@@ -76,7 +76,8 @@ def test_z2_a_zone_where_we_score_far_below_what_is_expected_says_to_change_the_
     assert alert.proposal[0]["type"] == "tactic" and "selección" in alert.proposal[0]["message"].lower()
 
 
-def test_z2_it_needs_five_attempts_and_a_deficit():
+def test_z2_it_needs_seven_attempts_and_a_deficit():
+    assert not by_id(engine().evaluate(zone_snap(own={"left_wing_three": cell(6, 0, 0)})), "own_zone_cold")
     assert not by_id(engine().evaluate(zone_snap(own={"left_wing_three": cell(4, 0, 0)})), "own_zone_cold")
     assert not by_id(engine().evaluate(zone_snap(own={"left_wing_three": cell(7, 3, 9)})), "own_zone_cold")
 
@@ -155,19 +156,20 @@ def paint(own, rival, period=2):
     return by_id(engine().evaluate(s), "paint_battle")
 
 
-def test_z5_ten_points_less_in_the_paint_says_to_close_the_zone():
-    [alert] = paint(own=(6, 4), rival=(14, 8))
-    assert alert.severity == "warning" and "-12" in alert.message and "10-22" in alert.message
+def test_z5_fourteen_points_less_in_the_paint_says_to_close_the_zone():
+    [alert] = paint(own=(6, 4), rival=(16, 8))
+    assert alert.severity == "warning" and "-14" in alert.message and "10-24" in alert.message
     assert "cerrar" not in alert.message.lower() and alert.proposal[0]["type"] == "tactic" and "Cerrar la zona" in alert.proposal[0]["message"]
 
 
-def test_z5_ten_points_more_in_the_paint_says_to_keep_attacking_inside():
-    [alert] = paint(own=(20, 10), rival=(10, 8))
-    assert alert.severity == "info" and "+12" in alert.message and "dentro" in alert.proposal[0]["message"]
+def test_z5_fourteen_points_more_in_the_paint_says_to_keep_attacking_inside():
+    [alert] = paint(own=(22, 10), rival=(10, 8))
+    assert alert.severity == "info" and "+14" in alert.message and "dentro" in alert.proposal[0]["message"]
 
 
-def test_z5_a_difference_below_ten_or_a_repeat_in_the_same_period_says_nothing():
+def test_z5_a_difference_below_fourteen_or_a_repeat_in_the_same_period_says_nothing():
     assert not paint(own=(8, 4), rival=(9, 8))
+    assert not paint(own=(6, 4), rival=(14, 8))        # -12: it was said before #426 (ten)
     e = engine()
     s = zone_snap(own={"restricted_area": cell(6, 3, 6)}, rival={"restricted_area": cell(9, 7, 22)})
     assert by_id(e.evaluate(s), "paint_battle") and not by_id(e.evaluate(s), "paint_battle")

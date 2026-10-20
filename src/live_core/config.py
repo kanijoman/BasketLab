@@ -13,7 +13,7 @@ RULE_IDS: Tuple[str, ...] = (
     "fatigue_high", "four_factors_lever", "rival_hot_player", "rival_zone", "rest_starters",
     "cold_shooting", "rival_hot_shooting", "free_throw_cold", "scoring_drought", "long_run", "game_flow_windows",
     "rival_player_form", "own_player_form", "rival_star_bench",
-    "disqualification", "timeout_budget", "key_fouls_close", "rival_foul_pair",
+    "disqualification", "timeout_budget", "first_half_timeouts", "key_fouls_close", "rival_foul_pair",
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
     "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
     "after_timeout_scoring", "own_orb_player", "static_offense",
@@ -53,13 +53,13 @@ class RuleConfig:
     # Shooting streaks (last N attempts, oldest first): own cold field goals / threes (made at most), rival hot field goals /
     # threes (made at least), own free throws at or below this share with at least this many attempts (issue #243).
     cold_fg_n: int = 8
-    cold_fg_max_made: int = 1
+    cold_fg_max_made: int = 0
     cold_3p_n: int = 7
-    cold_3p_max_made: int = 1
+    cold_3p_max_made: int = 0
     hot_fg_n: int = 8
-    hot_fg_min_made: int = 6
+    hot_fg_min_made: int = 7
     hot_3p_n: int = 6
-    hot_3p_min_made: int = 4
+    hot_3p_min_made: int = 5
     ft_cold_min_attempts: int = 8
     ft_cold_max_pct: float = 0.5
     # Game flow (issue #242): own drought (warning; critical from the second value), rival drought (a window to run), no field
@@ -109,6 +109,8 @@ class RuleConfig:
     # without timeouts is pressed with at most this margin, and two rivals with this many fouls on court are attacked.
     timeout_budget_s: int = 240
     timeout_pressure_margin: int = 10
+    # First half (issue #427): from this many seconds left of the 2nd period the timeouts that are still there are warned as lost at the break.
+    half_close_s: int = 120
     rival_pair_pf: int = 3
     # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period.
     advantage_margin: int = 10
@@ -163,7 +165,7 @@ class RuleConfig:
     zone_player_min_attempts: int = 4
     zone_player_min_makes: int = 3
     zone_player_pps: float = 1.5
-    paint_diff: int = 10
+    paint_diff: int = 14
     # P5 (issue #249): a rival basket within this many seconds of its timeout "follows" it; it is said when that happened after at
     # least ``timeout_score_n`` of at least ``timeout_score_min`` timeouts.
     timeout_score_window_s: int = 30
@@ -192,10 +194,10 @@ class RuleConfig:
     run_net_info: int = 6   # net points of a run that is already information (issue #241)
     run_window_s: int = 150
     # Own turnovers inside the window.
-    turnover_streak: int = 4
+    turnover_streak: int = 5
     turnover_window_s: int = 300
     # Fatigue index (0-100): weighted mix of stint length, minutes pace and projected minutes.
-    fatigue_alert_index: float = 60.0
+    fatigue_alert_index: float = 80.0
     fatigue_warning_index: float = 80.0   # from here fatigue is a warning; between alert and warning it is context
     fatigue_rearm_s: int = 240            # no longer used by the rule since #241 (kept: a package may carry it)
     fatigue_default_avg_stint_s: int = 420
@@ -239,9 +241,9 @@ class RuleConfig:
     rival_min_fta: int = 5
     # Rival shot zones (by family): attempts/makes and points-per-shot excess for the efficiency
     # alert; attempts, share and share excess for the volume alert; prior weight in attempts.
-    zone_min_attempts: int = 5
+    zone_min_attempts: int = 7
     zone_min_makes: int = 3
-    zone_pps_excess: float = 0.5
+    zone_pps_excess: float = 0.7
     zone_min_share_attempts: int = 8
     zone_share: float = 0.35
     zone_share_excess: float = 0.15

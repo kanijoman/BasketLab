@@ -114,15 +114,15 @@ def test_run_requires_it_to_be_unanswered_and_recent():
     assert "rival_run" not in ids(engine().evaluate(snap(elapsed=1110, log=too_slow)))
 
 
-def test_four_own_turnovers_in_five_minutes_warns():
-    four = [[1000 + 30 * i, OWN, "tov", 1] for i in range(4)]
-    three = four[:3]
-    assert "turnover_streak" in ids(engine().evaluate(snap(elapsed=1200, log=four)))
-    assert "turnover_streak" not in ids(engine().evaluate(snap(elapsed=1200, log=three)))
+def test_five_own_turnovers_in_five_minutes_warns():
+    five = [[1000 + 30 * i, OWN, "tov", 1] for i in range(5)]       # 5 since #426 (the calibration of three seasons)
+    four = five[:4]
+    assert "turnover_streak" in ids(engine().evaluate(snap(elapsed=1200, log=five)))
+    assert "turnover_streak" not in ids(engine().evaluate(snap(elapsed=1200, log=four)))
 
 
 def test_old_turnovers_do_not_count():
-    old = [[100 + 30 * i, OWN, "tov", 1] for i in range(4)]
+    old = [[100 + 30 * i, OWN, "tov", 1] for i in range(5)]
     assert "turnover_streak" not in ids(engine().evaluate(snap(elapsed=1200, log=old)))
 
 

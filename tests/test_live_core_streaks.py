@@ -38,22 +38,22 @@ def run(log, **kw):
 def test_the_rules_are_registered_and_can_be_switched_off():
     for rule_id in ("cold_shooting", "rival_hot_shooting", "free_throw_cold"):
         assert rule_id in RULE_IDS and rule_id in [rid for rid, _ in RULES]
-    log = shots(OWN, [1, 0, 0, 0, 0, 0, 0, 0]) + shots(OWN, [0] * 7, points=3, start=300)
+    log = shots(OWN, [0] * 8) + shots(OWN, [0] * 7, points=3, start=300)
     off = AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, config=RuleConfig(rules_off=("cold_shooting",)))
     assert not by_id(off.evaluate(snap(elapsed=400, log=log)), "cold_fg_streak")
 
 
 # --- T1: own cold field goals -------------------------------------------------------
 
-def test_t1_one_of_eight_in_a_row_is_a_cold_streak_that_asks_for_inside_play_and_free_throws():
-    [alert] = by_id(run(shots(OWN, [1, 0, 0, 0, 0, 0, 0, 0])), "cold_fg_streak")
+def test_t1_none_of_eight_in_a_row_is_a_cold_streak_that_asks_for_inside_play_and_free_throws():
+    [alert] = by_id(run(shots(OWN, [0] * 8)), "cold_fg_streak")
     assert alert.severity == "warning" and alert.category == "four_factors"
-    assert "1/8" in alert.message
+    assert "0/8" in alert.message
     assert alert.proposal[0]["type"] == "tactic" and "interior" in alert.proposal[0]["message"]
 
 
-@pytest.mark.parametrize("results", [[1, 1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 1]])
-def test_t1_two_made_or_fewer_than_eight_attempts_is_not_a_streak(results):
+@pytest.mark.parametrize("results", [[1, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1]])
+def test_t1_one_made_or_fewer_than_eight_attempts_is_not_a_streak(results):
     assert not by_id(run(shots(OWN, results)), "cold_fg_streak")
 
 
@@ -86,14 +86,14 @@ def test_t1_comes_back_after_a_whole_new_window_of_attempts_when_the_team_is_sti
 
 # --- T2: own cold threes ------------------------------------------------------------
 
-def test_t2_one_of_seven_threes_in_a_row_says_to_attack_the_rim():
-    [alert] = by_id(run(shots(OWN, [1, 0, 0, 0, 0, 0, 0], points=3)), "cold_3p_streak")
-    assert alert.severity == "info" and "1/7" in alert.message
+def test_t2_none_of_seven_threes_in_a_row_says_to_attack_the_rim():
+    [alert] = by_id(run(shots(OWN, [0] * 7, points=3)), "cold_3p_streak")
+    assert alert.severity == "info" and "0/7" in alert.message
     assert alert.proposal[0]["type"] == "tactic" and "aro" in alert.proposal[0]["message"]
 
 
-@pytest.mark.parametrize("results", [[1, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]])
-def test_t2_two_made_or_fewer_than_seven_threes_is_not_a_streak(results):
+@pytest.mark.parametrize("results", [[1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]])
+def test_t2_one_made_or_fewer_than_seven_threes_is_not_a_streak(results):
     assert not by_id(run(shots(OWN, results, points=3)), "cold_3p_streak")
 
 
@@ -105,27 +105,27 @@ def test_t2_twos_do_not_count_as_threes():
 
 # --- T3: hot rival ------------------------------------------------------------------
 
-def test_t3_six_of_eight_by_the_rival_asks_to_change_the_defence_or_the_pressure():
-    [alert] = by_id(run(shots(RIVAL, [1, 1, 0, 1, 1, 1, 0, 1])), "rival_hot_streak")
-    assert alert.severity == "warning" and alert.category == "rival" and "6/8" in alert.message
+def test_t3_seven_of_eight_by_the_rival_asks_to_change_the_defence_or_the_pressure():
+    [alert] = by_id(run(shots(RIVAL, [1, 1, 0, 1, 1, 1, 1, 1])), "rival_hot_streak")
+    assert alert.severity == "warning" and alert.category == "rival" and "7/8" in alert.message
     assert alert.proposal[0]["type"] == "tactic" and "defensa" in alert.proposal[0]["message"].lower()
 
 
-@pytest.mark.parametrize("results", [[1, 1, 0, 1, 1, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1]])
-def test_t3_five_of_eight_or_fewer_than_eight_attempts_is_not_a_streak(results):
+@pytest.mark.parametrize("results", [[1, 1, 0, 1, 1, 1, 0, 1], [1, 1, 1, 1, 1, 1, 1]])
+def test_t3_six_of_eight_or_fewer_than_eight_attempts_is_not_a_streak(results):
     assert not by_id(run(shots(RIVAL, results)), "rival_hot_streak")
 
 
 # --- T4: hot rival threes -----------------------------------------------------------
 
-def test_t4_four_of_the_last_six_rival_threes_says_to_close_the_three_point_line():
-    [alert] = by_id(run(shots(RIVAL, [0, 1, 1, 0, 1, 1], points=3)), "rival_3p_streak")
-    assert alert.severity == "info" and alert.category == "rival" and "4/6" in alert.message
+def test_t4_five_of_the_last_six_rival_threes_says_to_close_the_three_point_line():
+    [alert] = by_id(run(shots(RIVAL, [0, 1, 1, 1, 1, 1], points=3)), "rival_3p_streak")
+    assert alert.severity == "info" and alert.category == "rival" and "5/6" in alert.message
     assert "3" in alert.proposal[0]["message"]
 
 
-@pytest.mark.parametrize("results", [[1, 1, 0, 0, 1, 0], [1, 1, 1, 1, 1]])
-def test_t4_three_of_six_or_fewer_than_six_threes_is_not_a_streak(results):
+@pytest.mark.parametrize("results", [[0, 1, 1, 0, 1, 1], [1, 1, 1, 1, 1]])
+def test_t4_four_of_six_or_fewer_than_six_threes_is_not_a_streak(results):
     assert not by_id(run(shots(RIVAL, results, points=3)), "rival_3p_streak")
 
 
