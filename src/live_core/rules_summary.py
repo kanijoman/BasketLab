@@ -186,8 +186,7 @@ def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     adjustments = list(dict.fromkeys(adjustment for _, (_, adjustment) in found))[:MAX_ADJUSTMENTS]
     own, rival = facts["own"]["pts"], facts["rival"]["pts"]
     message = f"{_TITLES[period]}: {own}-{rival} ({own - rival:+d}). "
-    message += ("Claves: " + "; ".join(text for _, (text, _) in found) + ". Ajustes: " + "; ".join(adjustments) + "."
-                if found else "Sin claves destacadas.")
+    message += "Claves: " + "; ".join(text for _, (text, _) in found) + "." if found else "Sin claves destacadas."
     if facts["pace"]:
         message += " " + pace_line(facts["pace"])
     return [Advice(
@@ -225,7 +224,7 @@ def edges_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         out.append(Advice(
             key=f"edges:{kind}:{period}", id="period_edge_deficit", severity="info", category="resumen",
-            message=f"{label}: {', '.join(f'{n:+d}' for n in nets)} ({sum(nets):+d} acumulado). {advice}.",
+            message=f"{label}: {', '.join(f'{n:+d}' for n in nets)} ({sum(nets):+d} acumulado).",
             evidence={"kind": kind, "nets": nets, "total": sum(nets), "window_s": cfg.edge_window_s},
             proposal=[tactic_proposal(advice)]))
     return out

@@ -45,7 +45,7 @@ def test_the_rules_are_registered_and_can_be_switched_off():
 def test_j8_a_player_with_three_offensive_rebounds_well_above_her_usual_is_to_stay_on_court():
     [alert] = by_id(engine(baselines=USUAL).evaluate(orb_snap(4)), "own_orb_player")
     assert alert.severity == "info" and alert.category == "four_factors" and "Ana" in alert.message and "4 rebotes ofensivos" in alert.message
-    assert "mantener" in alert.message.lower() and alert.proposal[0]["player_id"] == "p1"
+    assert "mantener" in alert.proposal[0]["message"].lower() and alert.proposal[0]["player_id"] == "p1"
 
 
 @pytest.mark.parametrize("orb, minutes, on_court", [(2, 900, True), (3, 2200, True), (4, 900, False)])

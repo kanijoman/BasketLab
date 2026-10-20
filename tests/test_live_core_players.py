@@ -191,7 +191,7 @@ def test_v1_when_the_key_rival_sits_it_is_the_moment_to_press_and_nothing_is_sai
     assert not by_id(evaluate(on, elapsed=300, eng=e), "rival_star_out")
     off = {"r1": player("Rita", RIVAL, on_court=False), "r2": player("Rosa", RIVAL)}
     [alert] = by_id(evaluate(off, elapsed=330, eng=e), "rival_star_out")
-    assert alert.severity == "info" and alert.category == "rival" and "Rita" in alert.message and "apretar" in alert.message
+    assert alert.severity == "info" and alert.category == "rival" and "Rita" in alert.message and "apretar" in alert.proposal[0]["message"].lower()
     assert not by_id(evaluate(off, elapsed=360, eng=e), "rival_star_out")
 
 

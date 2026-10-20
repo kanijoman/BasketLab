@@ -48,7 +48,7 @@ def _own_drought(snap: Dict[str, Any], ctx: RuleContext, gap: int) -> Advice:
         key=f"drought:{episode(snap, ctx.own_team_id)}", id="own_drought",
         severity="critical" if gap >= cfg.drought_critical_s else "warning", category="gestion",
         message=(f"Sequía de {_clock(gap)} sin anotar" + (f" ({causes})" if causes else "")
-                 + ". Valorar tiempo muerto o cambio de sistema."),
+                 + "."),
         evidence={"gap_s": gap, "causes": causes}, proposal=proposal)
 
 
@@ -62,13 +62,13 @@ def drought_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if fg_gap >= cfg.drought_fg_s and own_gap < fg_gap and not _quiet(snap, ctx):   # free throws kept the score moving
         out.append(Advice(
             key=f"fg_drought:{episode(snap, own)}", id="fg_drought", severity="warning", category="gestion",
-            message=f"Sin canasta de campo en {_clock(fg_gap)} (solo tiros libres). Atacar el aro.",
+            message=f"Sin canasta de campo en {_clock(fg_gap)} (solo tiros libres).",
             evidence={"gap_s": fg_gap}, proposal=[tactic_proposal("Atacar el aro y cambiar de sistema")]))
     rival_gap = scoring_gap(log, rival, now) if rival else 0
     if rival and rival_gap >= cfg.drought_rival_s and own_gap < rival_gap:
         out.append(Advice(
             key=f"rival_drought:{episode(snap, rival)}", id="rival_drought", severity="info", category="rival",
-            message=f"El rival lleva {_clock(rival_gap)} sin anotar: ventana para correr.",
+            message=f"El rival lleva {_clock(rival_gap)} sin anotar.",
             evidence={"gap_s": rival_gap, "team_id": rival}, proposal=[tactic_proposal("Correr: transición y ritmo alto")]))
     return out
 
@@ -83,8 +83,7 @@ def long_run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if long_net <= -cfg.long_run_net and not _quiet(snap, ctx):
         out.append(Advice(
             key=f"long_run:{episode(snap, own)}", id="long_run", severity="warning", category="gestion",
-            message=(f"Parcial largo en contra: {long_net} neto en los últimos {cfg.long_run_window_s // 60} min. "
-                     "Valorar tiempo muerto."),
+            message=f"Parcial largo en contra: {long_net} neto en los últimos {cfg.long_run_window_s // 60} min.",
             evidence={"net": long_net, "window_s": cfg.long_run_window_s},
             proposal=[timeout_proposal(timeouts_left(snap, own))]))
     net = (window_stats(log, own, now - cfg.run_window_s, now)["pts"]
@@ -136,7 +135,7 @@ def after_timeout_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     return [Advice(
         key=f"after_timeout:{timeouts}", id="rival_scores_after_timeout", severity="info", category="rival",
-        message=f"El rival anota al salir de sus tiempos muertos ({followed} de {timeouts}): preparar la defensa del saque.",
+        message=f"El rival anota al salir de sus tiempos muertos ({followed} de {timeouts}).",
         evidence={"timeouts": timeouts, "scored": followed, "window_s": cfg.timeout_score_window_s, "team_id": rival},
         proposal=[tactic_proposal("Defensa especial del saque tras el tiempo muerto del rival")])]
 
@@ -148,6 +147,6 @@ def static_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     return [Advice(
         key=f"static:{1 if snap['period'] <= 2 else 2}", id="static_offense", severity="info", category="four_factors",
-        message=f"Juego estático: {ast} asistencias en {fgm} canastas ({round(100 * ast / fgm)} %). Mover el balón.",
+        message=f"Juego estático: {ast} asistencias en {fgm} canastas ({round(100 * ast / fgm)} %).",
         evidence={"ast": ast, "fgm": fgm, "share": round(ast / fgm, 3)},
         proposal=[tactic_proposal("Mover el balón: un pase más antes de tirar")])]

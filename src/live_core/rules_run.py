@@ -52,10 +52,10 @@ def run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return [Advice(
         key=f"rival_run:{episode(snap, ctx.own_team_id)}:{level}", id="rival_run", severity=level, category="gestion",
         message=(f"Parcial de {own['pts']}-{rival['pts']} en contra en los últimos {_clock(cfg.run_window_s)}"
-                 + (f" ({causes})" if causes else "") + ". Valorar tiempo muerto."),
+                 + (f" ({causes})" if causes else "") + "."),
         evidence={"rival_points": rival["pts"], "own_points": own["pts"], "window_s": cfg.run_window_s,
                   "net": rival["pts"] - own["pts"], "causes": causes},
-        proposal=[timeout_proposal(left)] if left > 0 else [],
+        proposal=[timeout_proposal(left)] if left > 0 else [tactic_proposal("Sin tiempos muertos: cambio táctico o de defensa")],
     )]
 
 

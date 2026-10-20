@@ -59,9 +59,7 @@ def rival_foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         pf = p["pf"]
         if p["team_id"] == ctx.rival_team_id and warn_threshold(period) <= pf < FOUL_OUT:
             important = ((ctx.rival_baselines.get(pid) or {}).get("avg_min") or 0) >= ctx.config.rival_important_avg_min_s
-            message = f"Rival {p['name']} con {pf} faltas personales: atacarle y forzar contacto."
-            if contact:
-                message += f" Balón a {contact['name']}, que provoca contacto."
+            message = f"Rival {p['name']} con {pf} faltas personales."
             out.append(Advice(
                 key=f"rfoul:{pid}:{pf}", id="rival_foul_trouble", severity="warning" if important else "info", category="faltas",
                 message=message,

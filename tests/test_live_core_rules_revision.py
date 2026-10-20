@@ -151,7 +151,7 @@ def contact_table():
 def test_r8_it_names_who_to_give_the_ball_to_the_one_who_draws_contact():
     e = engine(baselines=contact_table(), rival_baselines=RIVAL_TABLE)
     [alert] = by_id(e.evaluate(rival_foul_snap("r1")), "rival_foul_trouble")
-    assert "Pivot Uno" in alert.message and "contacto" in alert.message
+    assert "Pivot Uno" not in alert.message          # who to give the ball to is the proposal (#421)
     tactic = alert.proposal[0]
     assert tactic["type"] == "tactic" and tactic["player_id"] == "b1" and "Pivot Uno" in tactic["message"]
 
@@ -212,7 +212,7 @@ def test_r1_it_proposes_a_timeout_only_if_there_are_some_left():
     [alert] = run_alerts(8, 2)
     assert alert.proposal[0]["type"] == "timeout" and alert.proposal[0]["left"] == 2
     [none_left] = run_alerts(8, 2, timeouts={OWN: [100, 200]})
-    assert none_left.proposal == []
+    assert [p["type"] for p in none_left.proposal] == ["tactic"] and "Sin tiempos muertos" in none_left.proposal[0]["message"]
 
 
 def test_r1_it_is_silent_in_the_minute_after_our_timeout():

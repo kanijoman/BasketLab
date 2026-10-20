@@ -142,7 +142,8 @@ def test_c3_the_end_of_a_quarter_gets_a_summary_with_the_score_the_keys_and_adju
     msg = alert.message
     assert "Fin del 1.er cuarto" in msg and "4-10" in msg and "-6" in msg
     assert "Parcial en contra: -10" in msg and "Pérdidas: 6 vs 1" in msg and "Rebotes ofensivos del rival: 4 vs 1" in msg
-    assert "Parar el parcial" in msg and "Asegurar el balón" in msg      # two adjustments at most: the third one is left out
+    assert "Ajustes" not in msg and "Parar el parcial" not in msg        # the adjustments are the proposals (#421)
+    assert [p["message"] for p in alert.proposal][0].startswith("Parar el parcial") and len(alert.proposal) == 2   # two at most
     assert len(alert.evidence["keys"]) <= 3 and 1 <= len(alert.evidence["adjustments"]) <= 2
 
 
@@ -244,7 +245,7 @@ def test_c3_a_very_hard_run_conceded_in_the_quarter_is_a_key():
     log = [_pts_run(OWN, 650, 2, 20), _pts_run(RIVAL, 700, 7, 40), _pts_run(OWN, 1000, 1)]
     [alert] = by_id(engine().evaluate(end_of(2, log)), "period_summary")
     assert "collapse" in alert.evidence["keys"] and "Parcial en contra: -14" in alert.message
-    assert "Parar el parcial" in alert.message
+    assert alert.proposal[0]["message"].startswith("Parar el parcial") and "Parar el parcial" not in alert.message
 
 
 def test_c3_a_run_conceded_in_an_earlier_period_is_not_said_again_and_a_small_one_is_not_a_key():
@@ -411,7 +412,7 @@ def test_k2_whoever_has_no_clutch_data_is_left_out_and_without_data_there_is_no_
 
 def test_k2_it_says_who_to_look_for_in_our_team_the_effective_first():
     alert = briefing(own={"g1": clutch(10.0, effective=False), "w2": clutch(8.0, effective=True), "b1": clutch(15.0)})
-    assert "a quién buscar: Ala Dos (eficaz), Propia b1" in alert.message
+    assert "las propias que más asumen en el cierre: Ala Dos (eficaz), Propia b1" in alert.message
     assert [o["player_id"] for o in alert.evidence["own_clutch"]] == ["w2", "b1"]
     assert any(p["type"] == "tactic" and p["message"].startswith("Buscar a Ala Dos") for p in alert.proposal)
 

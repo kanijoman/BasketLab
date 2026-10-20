@@ -33,10 +33,10 @@ def disqualification_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice
         kind = "antideportiva" if unsports else "técnica"
         evidence = {"player_id": pid, "team_id": p["team_id"], "unsportsmanlike": unsports, "technical": technical}
         if own:
-            message = f"{_name(p)}: tiene una falta {kind}: otra más y queda descalificada. Defender sin riesgo."
+            message = f"{_name(p)}: tiene una falta {kind}: otra más y queda descalificada."
             proposal = [tactic_proposal(f"Evitar la falta de {_name(p)}: defender sin riesgo", pid, _name(p))]
         else:
-            message = f"Rival {_name(p)} tiene una falta {kind}: otra más y queda descalificada. Atacarle."
+            message = f"Rival {_name(p)} tiene una falta {kind}: otra más y queda descalificada."
             proposal = [tactic_proposal(f"Atacar a {_name(p)}: una sanción más y se va", pid, _name(p))]
         out.append(Advice(
             key=f"sanction:{pid}:{unsports}{technical}", id="disqualification_risk", severity="warning" if own else "info",
@@ -56,7 +56,7 @@ def key_fouls_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         out.append(Advice(
             key=f"key_fouls:{pid}", id="key_fouls_close", severity="warning", category="faltas",
-            message=f"{_name(p)} (clave) con 4 faltas en el cierre igualado: defensa sin riesgo, evitar la falta.",
+            message=f"{_name(p)} (clave) con 4 faltas en el cierre igualado.",
             evidence={"player_id": pid, "team_id": p["team_id"], "pf": p["pf"]},
             proposal=[tactic_proposal(f"Defender sin riesgo con {_name(p)}: sin faltas innecesarias", pid, _name(p))]))
     return out
@@ -72,6 +72,6 @@ def rival_pair_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     names = ", ".join(_name(p) for _, p in pair)
     return [Advice(
         key="rival_pair:" + ":".join(pid for pid, _ in pair), id="rival_foul_pair", severity="warning", category="faltas",
-        message=f"Dos rivales con {ctx.config.rival_pair_pf} o más faltas en pista ({names}): atacarles.",
+        message=f"Dos rivales con {ctx.config.rival_pair_pf} o más faltas en pista ({names}).",
         evidence={"player_ids": [pid for pid, _ in pair], "team_id": ctx.rival_team_id},
         proposal=[tactic_proposal(f"Atacar a {names}, que acumulan faltas")])]

@@ -52,7 +52,7 @@ function alertRows(alerts: ReportAlert[]): string[][] {
   return alerts.map(a => [
     a.period === null || a.clock === null ? '—' : `${a.period > 4 ? `PR${a.period - 4}` : `Q${a.period}`} ${a.clock}`,
     a.score ? `${a.score[0]}-${a.score[1]}` : '—', SEVERITY[a.severity] ?? a.severity, a.category,
-    a.proposal.length ? `${a.message} (${a.proposal.join('; ')})` : a.message,
+    a.proposal.length ? `${a.message} Qué hacer: ${a.proposal.join('; ')}.` : a.message,
   ])
 }
 

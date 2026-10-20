@@ -158,12 +158,12 @@ def paint(own, rival, period=2):
 def test_z5_ten_points_less_in_the_paint_says_to_close_the_zone():
     [alert] = paint(own=(6, 4), rival=(14, 8))
     assert alert.severity == "warning" and "-12" in alert.message and "10-22" in alert.message
-    assert "cerrar" in alert.message.lower() and alert.proposal[0]["type"] == "tactic"
+    assert "cerrar" not in alert.message.lower() and alert.proposal[0]["type"] == "tactic" and "Cerrar la zona" in alert.proposal[0]["message"]
 
 
 def test_z5_ten_points_more_in_the_paint_says_to_keep_attacking_inside():
     [alert] = paint(own=(20, 10), rival=(10, 8))
-    assert alert.severity == "info" and "+12" in alert.message and "dentro" in alert.message
+    assert alert.severity == "info" and "+12" in alert.message and "dentro" in alert.proposal[0]["message"]
 
 
 def test_z5_a_difference_below_ten_or_a_repeat_in_the_same_period_says_nothing():
