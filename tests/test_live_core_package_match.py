@@ -18,6 +18,10 @@ def final_doc(name):
     return feed.document_at(feed.duration)
 
 
+def doc_at(name, t):
+    return RecordedFeed.loads((RECORDINGS / name).read_bytes()).document_at(t)
+
+
 def test_the_package_of_another_match_is_detected_and_raises_no_alerts_regression():
     session = LiveSession(ZAMORA_PACKAGE)                                    # Leon - Zamora
     out = session.update(final_doc("2524475.rec.json.gz"))                  # Leon - Unibasket
@@ -30,7 +34,7 @@ def test_the_package_of_another_match_is_detected_and_raises_no_alerts_regressio
 
 def test_the_package_of_the_match_is_accepted_and_works_as_before():
     session = LiveSession(ZAMORA_PACKAGE)
-    out = session.update(final_doc("2524470.rec.json.gz"))
+    out = session.update(doc_at("2524470.rec.json.gz", 2500))          # mid-match: the final one ends on a stoppage, where lineup alerts wait (#413)
     check = out["package_match"]
     assert check["ok"] is True and check["expected"] == ["1008631", "1008898"] and sorted(check["found"]) == check["expected"]
     assert out["alerts"] and out["analysis"]

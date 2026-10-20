@@ -16,6 +16,7 @@ from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .recent_timeout import adapt_for_recent_timeout
+from .lineup_settle import LINEUP_RULES, lineup_unsettled
 from .win_prob import WinProbabilityModel
 from .game_context import adjust_for_phase, game_phase, kept_when_decided
 from .pace import PaceModel
@@ -167,9 +168,10 @@ class AdviceEngine:
         context = (game_phase(snapshot, self._ctx.own_team_id, self._ctx.rival_team_id, cfg)
                    if cfg.enabled("game_context") else None)
         streaks: Dict[str, int] = {}
+        settled = not lineup_unsettled(snapshot)
         for rule_id, rule in RULES:
-            if not cfg.enabled(rule_id):
-                continue
+            if not cfg.enabled(rule_id) or (rule_id in LINEUP_RULES and not settled):
+                continue       # who is on court may be stale until the lines of the stoppage arrive (#413)
             for raw in rule(snapshot, self._ctx):
                 advice = adjust_for_phase(raw, context) if context else raw
                 if context and context["phase"] == "decided" and cfg.decided_only_rotation and not kept_when_decided(advice):

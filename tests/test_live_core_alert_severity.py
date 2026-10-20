@@ -60,12 +60,12 @@ def test_only_the_fourth_foul_and_the_rival_run_are_critical():
 # the recorded match, not a goal: when a rule changes, the line of that rule changes here and the diff shows what moved.
 REAL_MATCH_TABLE = {
     ("cold_3p_streak", "info"): 2, ("cold_3p_volume", "info"): 3, ("cold_fg_streak", "warning"): 3,
-    ("comeback_plan", "info"): 1, ("fatigue_high", "critical"): 4, ("fatigue_high", "info"): 11,
-    ("fatigue_high", "warning"): 6, ("fg_drought", "warning"): 2, ("foul_trouble", "warning"): 1,
+    ("comeback_plan", "info"): 1, ("fatigue_high", "critical"): 4, ("fatigue_high", "info"): 10,
+    ("fatigue_high", "warning"): 4, ("fg_drought", "warning"): 2, ("foul_trouble", "warning"): 1,
     ("four_factors_lever", "info"): 8, ("lineup_net", "warning"): 2, ("long_run", "warning"): 3,
     ("own_cold_player", "info"): 2, ("own_drought", "critical"): 1, ("own_drought", "warning"): 2,
     ("own_zone_cold", "info"): 3, ("paint_battle", "warning"): 2, ("period_edge_deficit", "info"): 2,
-    ("period_summary", "info"): 3, ("player_plus_minus", "info"): 8, ("rest_starters", "info"): 4,
+    ("period_summary", "info"): 3, ("player_plus_minus", "info"): 7, ("rest_starters", "info"): 4,
     ("rival_concedes_zone", "info"): 1, ("rival_drought", "info"): 1, ("rival_foul_pair", "warning"): 1,
     ("rival_foul_trouble", "info"): 2, ("rival_foul_trouble", "warning"): 2, ("rival_hot_player", "warning"): 2,
     ("rival_hot_run", "warning"): 1, ("rival_hot_streak", "warning"): 1, ("rival_near_bonus", "info"): 2,

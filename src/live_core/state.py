@@ -78,6 +78,7 @@ class LiveGame:
         self.remaining = 600
         self.elapsed = 0
         self.last_num = 0
+        self.last_event: Optional[Dict[str, Any]] = None   # {kind, elapsed} of the last line applied (lineup_settle.py, issue #413)
         self._last_miss_team: Optional[str] = None
         self._in_clutch = False   # is the event being applied inside the clutch window (margin before it)?
         self.lineups = LineupTracker(list(self.teams))
@@ -126,6 +127,7 @@ class LiveGame:
         self._tick(ev.elapsed)
         self._in_clutch = clutch_mod.in_window(ev.period, ev.elapsed, self._margin())   # the margin BEFORE the event
         self.period, self.remaining, self.elapsed, self.last_num = ev.period, ev.remaining, ev.elapsed, ev.num
+        self.last_event = {"kind": ev.kind, "elapsed": ev.elapsed}
         player = self._player_for(ev)
         team = self.teams.get(ev.team_id) if ev.team_id else None
 
@@ -306,7 +308,7 @@ class LiveGame:
         }
         return {
             "period": self.period, "remaining": self.remaining, "elapsed": self.elapsed,
-            "last_num": self.last_num, "score": dict(self.score), "teams": teams, "players": players,
+            "last_num": self.last_num, "last_event": dict(self.last_event) if self.last_event else None, "score": dict(self.score), "teams": teams, "players": players,
             "log": [list(e) for e in self.log],
             "possessions": self.possessions.snapshot(),
             # the first team of FEB's header is the local one; the session JSON sorts keys, so say it explicitly
