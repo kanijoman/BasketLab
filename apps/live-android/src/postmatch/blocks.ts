@@ -16,14 +16,18 @@ const FACTOR_ROWS: [keyof PostMatchReport['four_factors']['own'], string][] = [
   ['efg', 'Acierto de tiro (eFG %)'], ['tov', 'Pérdidas (TOV %)'], ['orb', 'Rebote ofensivo (ORB %)'], ['ftr', 'Tiros libres (FTr)'],
 ]
 
-// the PDF fonts print Latin-1: what is outside is replaced by something that reads the same
+// the PDF fonts print Latin-1 (and a few typographic marks of WinAnsi): what is outside is replaced by something that reads the same, or by a question mark
 const REPLACEMENTS: [RegExp, string][] = [
   [/≥/g, '>='], [/≤/g, '<='], [/→/g, '->'], [/[“”]/g, '"'], [/[‘’]/g, "'"], [/…/g, '...'], [/[−]/g, '-'],
+  [/\s*σ/g, ' desv.'],           // the standard deviations of the substitution texts ("-0.3 σ")
 ]
+const PRINTABLE = /[\u0020-\u007E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\u20AC\u2122]/
 
-/** ``text`` with what the PDF font cannot print replaced; the accents of Spanish are kept. */
+/** text with what the PDF font cannot print replaced; the accents of Spanish are kept. A character the font lacks would make jsPDF
+ *  draw the whole text letter by letter (issue #423), so nothing outside the printable set gets through. */
 export function safeText(text: string): string {
-  return REPLACEMENTS.reduce((acc, [pattern, to]) => acc.replace(pattern, to), text)
+  const replaced = REPLACEMENTS.reduce((acc, [pattern, to]) => acc.replace(pattern, to), text)
+  return Array.from(replaced).map(ch => (PRINTABLE.test(ch) ? ch : '?')).join('')
 }
 
 const pct = (value: number) => `${(value * 100).toFixed(0)} %`
@@ -52,7 +56,7 @@ function alertRows(alerts: ReportAlert[]): string[][] {
   return alerts.map(a => [
     a.period === null || a.clock === null ? '—' : `${a.period > 4 ? `PR${a.period - 4}` : `Q${a.period}`} ${a.clock}`,
     a.score ? `${a.score[0]}-${a.score[1]}` : '—', SEVERITY[a.severity] ?? a.severity, a.category,
-    a.proposal.length ? `${a.message} (${a.proposal.join('; ')})` : a.message,
+    a.proposal.length ? `${a.message} Qué hacer: ${a.proposal.join('; ')}.` : a.message,
   ])
 }
 

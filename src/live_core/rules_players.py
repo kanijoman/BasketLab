@@ -56,8 +56,7 @@ def own_orb_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             out.append(Advice(
                 key=f"own_orb:{pid}:{found['orb'] // ctx.config.orb_player_min}", id="own_orb_player", severity="info",
                 category="four_factors",
-                message=(f"{_name(p)} lleva {found['orb']} rebotes ofensivos en {p['minutes'] // 60} min (esperados {found['expected']}): "
-                         "mantenerle en pista."),
+                message=f"{_name(p)} lleva {found['orb']} rebotes ofensivos en {p['minutes'] // 60} min (esperados {found['expected']}).",
                 evidence={"player_id": pid, "team_id": p["team_id"], **found},
                 proposal=[tactic_proposal(f"Mantener a {_name(p)} en pista: rebote ofensivo", pid, _name(p))]))
     return out
@@ -77,7 +76,7 @@ def rival_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             out.append(Advice(
                 key=f"rival_hot:{pid}:{period}", id="rival_hot_run", severity="warning", category="rival",
                 message=(f"Rival {_name(p)} en racha: {form['pts']} puntos en los últimos {cfg.hot_player_window_s // 60} min "
-                         f"({form['made_in_row']} canastas seguidas). 2x1 o cambiar el emparejamiento."),
+                         f"({form['made_in_row']} canastas seguidas)."),
                 evidence={"player_id": pid, "team_id": rival, **form},
                 proposal=[tactic_proposal(f"2x1 o cambiar el emparejamiento sobre {_name(p)}", pid, _name(p))]))
         if team_pts and p["pts"] >= cfg.dependence_min_pts and p["pts"] / team_pts > cfg.dependence_share:
@@ -115,7 +114,7 @@ def own_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if is_hot(form, cfg):
             out.append(Advice(
                 key=f"own_hot:{pid}:{period}", id="own_hot_player", severity="info", category="four_factors",
-                message=f"{_name(p)} en racha: {form['pts']} puntos en los últimos {cfg.hot_player_window_s // 60} min. Buscarle.",
+                message=f"{_name(p)} en racha: {form['pts']} puntos en los últimos {cfg.hot_player_window_s // 60} min.",
                 evidence={"player_id": pid, "team_id": p["team_id"], **form},
                 proposal=[tactic_proposal(f"Buscar a {_name(p)}", pid, _name(p))]))
         cold = _cold_volume(p, ctx.baselines.get(pid), cfg)
@@ -123,7 +122,7 @@ def own_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             out.append(Advice(
                 key=f"own_cold:{pid}:{period}", id="own_cold_player", severity="info", category="four_factors",
                 message=(f"{_name(p)}: {cold['made']}/{cold['attempts']} en tiros de campo con más volumen del habitual "
-                         f"(esperados {cold['expected']:.0f}). Cambiar su rol o buscar otro tirador."),
+                         f"(esperados {cold['expected']:.0f})."),
                 evidence={"player_id": pid, "team_id": p["team_id"], **cold},
                 proposal=[tactic_proposal(f"Buscar otro tirador en lugar de {_name(p)}", pid, _name(p))]))
     return out
@@ -152,7 +151,7 @@ def rival_star_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if before["on"] and not p["on_court"]:
             out.append(Advice(
                 key=f"star_out:{pid}:{exits}", id="rival_star_out", severity="info", category="rival",
-                message=f"{_name(p)}, su jugadora clave, sale a banquillo: momento de apretar.",
+                message=f"{_name(p)}, su jugadora clave, sale a banquillo.",
                 evidence={"player_id": pid, "team_id": p["team_id"], "pf": p["pf"]},
                 proposal=[tactic_proposal(f"Apretar mientras {_name(p)} descansa", pid, _name(p))]))
         elif not before["on"] and p["on_court"] and p["pf"] >= ctx.config.key_return_pf:

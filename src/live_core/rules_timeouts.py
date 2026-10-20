@@ -33,7 +33,7 @@ def timeout_budget_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if timeouts_left(snap, rival) == 0 and abs(margin) <= cfg.timeout_pressure_margin:
             out.append(Advice(
                 key=f"rival_no_timeouts:{LAST_PERIOD}", id="rival_no_timeouts", severity="info", category="rival",
-                message="El rival se ha quedado sin tiempos muertos en un final igualado: presionar hasta el final.",
+                message="El rival se ha quedado sin tiempos muertos en un final igualado.",
                 evidence={"margin": margin, "remaining_s": remaining, "team_id": rival},
                 proposal=[tactic_proposal("Presionar: el rival no puede parar el partido")]))
     return out

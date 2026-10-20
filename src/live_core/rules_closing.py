@@ -109,7 +109,7 @@ def closing_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         parts.append("las que más asumen en el cierre: " + ", ".join(_clutch_label(r) for r in rival_clutch))
         proposal.append(tactic_proposal("Vigilar a " + " y ".join(r["name"] for r in rival_clutch) + " en el cierre"))
     if own_clutch:
-        parts.append("a quién buscar: " + ", ".join(_clutch_label(o) for o in own_clutch))
+        parts.append("las propias que más asumen en el cierre: " + ", ".join(_clutch_label(o) for o in own_clutch))
         proposal.append(tactic_proposal("Buscar a " + " y ".join(o["name"] for o in own_clutch) + " en el cierre"))
     return [Advice(
         key=f"closing:{snap['period']}", id="closing_briefing", severity="warning", category="gestion",
@@ -130,7 +130,7 @@ def advantage_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     return [Advice(
         key=f"advantage:{LAST_PERIOD}", id="advantage_management", severity="info", category="gestion",
-        message=f"Gestión de ventaja (+{margin} a {_clock(snap['remaining'])}): gastar reloj, no conceder triples y evitar faltas.",
+        message=f"Gestión de ventaja (+{margin} a {_clock(snap['remaining'])}).",
         evidence={"margin": margin, "remaining_s": snap["remaining"]},
         proposal=[tactic_proposal("Gastar reloj en cada ataque"), tactic_proposal("No conceder triples: defender el perímetro"),
                   tactic_proposal("Evitar faltas innecesarias")])]
@@ -183,12 +183,11 @@ def comeback_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if need > cfg.comeback_max_need:
         return []            # an impossible comeback is not advice
     hard = need >= cfg.comeback_hard
-    advice = ("Hace falta ganar posesiones extra: presión, rebote ofensivo y faltas tácticas." if hard
-              else "Es posible a ritmo normal: ganar cada posesión y no perder balones.")
+    reading = "Hace falta mucho más que el ritmo normal." if hard else "Es posible a ritmo normal."
     return [Advice(
         key=f"comeback:{left // 240}", id="comeback_plan", severity="info", category="gestion",
         message=(f"Remontada: perdemos por {deficit} con unas {possessions_left:.0f} posesiones por equipo: hace falta ganar "
-                 f"{need:+.2f} netos por posesión (hoy {now:+.2f}). {advice}"),
+                 f"{need:+.2f} netos por posesión (hoy {now:+.2f}). {reading}"),
         evidence={"deficit": deficit, "possessions_left": round(possessions_left, 1), "need": round(need, 3), "now": round(now, 3)},
         proposal=[tactic_proposal("Buscar posesiones extra: presión, rebote ofensivo y faltas tácticas" if hard
                                   else "Mantener el ritmo y no perder balones")])]

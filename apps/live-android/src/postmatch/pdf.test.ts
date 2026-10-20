@@ -44,6 +44,13 @@ describe('renderPdf (issue #409)', () => {
     expect(text(bytes)).toMatch(/Página 2 de \d/)
   })
 
+  it('keeps a text with a character the font lacks readable instead of spacing every letter out (issue #423)', async () => {
+    const message = 'Entra M. MANSILLA por S. CASTRO (cede algo en el acierto de tiro: -0.3 σ). Rol similar (distancia 2.1)'
+    const bytes = await renderPdf([{ kind: 'text', text: message }, { kind: 'table', head: ['Alerta'], rows: [[message]] }], { compress: false })
+    expect(text(bytes)).toContain('acierto de tiro: -0.3 desv.')
+    expect(text(bytes)).not.toContain('σ')
+  })
+
   it('renders the report of a whole match', async () => {
     const empty = { match: { own: { id: '1', name: 'A' }, rival: { id: '2', name: 'B' }, home_id: null, score: { own: 1, rival: 0 }, result: 'win', periods: [] },
       evolution: { lead_changes: 0, ties: 0, max_lead: { margin: 0, elapsed: 0 }, max_deficit: { margin: 0, elapsed: 0 }, timeline: [[0, 0], [60, 0]], narrative: [] },

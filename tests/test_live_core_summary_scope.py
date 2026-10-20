@@ -80,18 +80,19 @@ def test_and_against_the_usual_pace_of_both_teams_when_the_package_has_it():
 def test_a_much_faster_quarter_that_we_won_says_to_keep_the_pace_with_the_numbers():
     alert = summary(3, flat(both(1, 15), both(2, 15), both(3, 20), scored(OWN, 1250, 3)))
     assert "pace" in alert.evidence["keys"]
-    assert "Mantener el ritmo alto" in alert.message and "Ritmo: 80 posesiones por 40 min frente a 60 antes" in alert.message
+    assert "Mantener el ritmo alto" in alert.evidence["adjustments"][0] and alert.proposal[0]["message"].startswith("Mantener el ritmo alto")
+    assert "Ritmo: 80 posesiones por 40 min frente a 60 antes" in alert.message
 
 
 def test_a_slower_quarter_that_we_lost_asks_for_a_faster_one():
     alert = summary(3, flat(both(1, 20), both(2, 20), both(3, 14), scored(RIVAL, 1250, 3)))
-    assert "pace" in alert.evidence["keys"] and "Subir el ritmo" in alert.message
+    assert "pace" in alert.evidence["keys"] and alert.proposal[0]["message"].startswith("Subir el ritmo")
 
 
 def test_a_change_of_pace_that_does_not_match_the_result_is_data_not_a_key():
     alert = summary(3, flat(both(1, 15), both(2, 15), both(3, 20), scored(RIVAL, 1250, 3)))      # faster, and lost
     assert "pace" not in alert.evidence["keys"] and "Ritmo: 80 posesiones por 40 min" in alert.message
-    assert "Mantener el ritmo" not in alert.message
+    assert not any("ritmo" in p["message"].lower() for p in alert.proposal)
 
 
 def test_the_comeback_no_longer_claims_anything_about_the_pace():

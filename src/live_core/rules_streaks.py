@@ -39,14 +39,14 @@ def cold_shooting_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if fg and sum(fg) <= cfg.cold_fg_max_made:
         out.append(Advice(
             key=f"cold_fg:{_bucket(snap, own, cfg.cold_fg_n, ('fg2', 'fg3'))}", id="cold_fg_streak", severity="warning", category="four_factors",
-            message=f"Racha fría: {sum(fg)}/{len(fg)} en los últimos tiros de campo. Buscar juego interior y provocar faltas.",
+            message=f"Racha fría: {sum(fg)}/{len(fg)} en los últimos tiros de campo.",
             evidence={"made": sum(fg), "attempts": len(fg)},
             proposal=[tactic_proposal("Juego interior y buscar la falta")]))
     threes = _streak(snap, own, cfg.cold_3p_n, _THREES)
     if threes and sum(threes) <= cfg.cold_3p_max_made:
         out.append(Advice(
             key=f"cold_3p:{_bucket(snap, own, cfg.cold_3p_n, _THREES)}", id="cold_3p_streak", severity="info", category="four_factors",
-            message=f"Triples fríos: {sum(threes)}/{len(threes)} seguidos. Atacar el aro.",
+            message=f"Triples fríos: {sum(threes)}/{len(threes)} seguidos.",
             evidence={"made": sum(threes), "attempts": len(threes)},
             proposal=[tactic_proposal("Atacar el aro, menos triples")]))
     return out + _three_volume(snap, ctx)
@@ -67,7 +67,7 @@ def _three_volume(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return [Advice(
         key=f"cold_3p_volume:{threes // cfg.three_volume_block}", id="cold_3p_volume", severity="info", category="four_factors",
         message=(f"Volumen de triples muy alto ({threes} de {attempts} tiros, el {round(100 * share)} % frente al "
-                 f"{round(100 * habit)} % habitual) con {made}/{threes}. Atacar el aro."),
+                 f"{round(100 * habit)} % habitual) con {made}/{threes}."),
         evidence={"fg3a": threes, "fga": attempts, "share": round(share, 3), "habit": habit, "fg3m": made},
         proposal=[tactic_proposal("Atacar el aro, menos triples")])]
 
@@ -81,14 +81,14 @@ def rival_hot_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if fg and sum(fg) >= cfg.hot_fg_min_made:
         out.append(Advice(
             key=f"rival_hot_fg:{_bucket(snap, rival, cfg.hot_fg_n, ('fg2', 'fg3'))}", id="rival_hot_streak", severity="warning", category="rival",
-            message=f"El rival está en racha: {sum(fg)}/{len(fg)} en sus últimos tiros de campo. Cambiar la defensa o la presión.",
+            message=f"El rival está en racha: {sum(fg)}/{len(fg)} en sus últimos tiros de campo.",
             evidence={"made": sum(fg), "attempts": len(fg), "team_id": rival},
             proposal=[tactic_proposal("Cambiar de defensa o subir la presión")]))
     threes = _streak(snap, rival, cfg.hot_3p_n, _THREES)
     if threes and sum(threes) >= cfg.hot_3p_min_made:
         out.append(Advice(
             key=f"rival_hot_3p:{_bucket(snap, rival, cfg.hot_3p_n, _THREES)}", id="rival_3p_streak", severity="info", category="rival",
-            message=f"El rival está en racha de triples: {sum(threes)}/{len(threes)}. Cerrar la línea de 3.",
+            message=f"El rival está en racha de triples: {sum(threes)}/{len(threes)}.",
             evidence={"made": sum(threes), "attempts": len(threes), "team_id": rival},
             proposal=[tactic_proposal("Cerrar la línea de 3 puntos")]))
     return out
@@ -105,7 +105,6 @@ def free_throw_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return [Advice(
         key=f"ft_cold:{'close_late' if close else 'normal'}", id="ft_cold", severity="warning" if close else "info",
         category="four_factors",
-        message=(f"Tiros libres {made}/{attempts} ({round(100 * made / attempts)} %). En el cierre, "
-                 "el balón a los buenos tiradores de tiros libres."),
+        message=f"Tiros libres {made}/{attempts} ({round(100 * made / attempts)} %)." + (" Estamos en el cierre." if close else ""),
         evidence={"made": made, "attempts": attempts},
         proposal=[tactic_proposal("Balón a los buenos tiradores de tiros libres en el cierre")])]

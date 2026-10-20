@@ -23,16 +23,15 @@ def kinds(alert):
 
 def test_without_a_recent_timeout_it_proposes_the_timeout_as_before():
     a = run_alert(run_snapshot())
-    assert "timeout" in kinds(a) and "tiempo muerto" in a.message.lower()
+    assert "timeout" in kinds(a) and "ya hubo un tiempo muerto" not in a.message.lower()
 
 
 def test_a_timeout_just_called_is_not_proposed_again_a_tactical_change_is():
     a = run_alert(run_snapshot(own_timeouts=[1020]))        # 90 s ago: past the quiet minute of the run rule, still recent
     assert "timeout" not in kinds(a)
     tactic = [p for p in a.proposal if p["type"] == "tactic"]
-    assert tactic and "tiempo muerto" in tactic[0]["message"].lower() and "rotación" in tactic[0]["message"].lower()
-    assert "ya hubo un tiempo muerto" in a.message.lower()
-    assert "valorar tiempo muerto" not in a.message.lower()
+    assert tactic and "rotación" in tactic[0]["message"].lower()
+    assert a.message.endswith("Ya hubo un tiempo muerto propio hace poco.")          # the situation says it, the proposal is the change
 
 
 def test_an_old_timeout_does_not_count_and_neither_does_one_of_the_rival():

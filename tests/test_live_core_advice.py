@@ -103,7 +103,7 @@ def test_unanswered_rival_run_is_critical_and_suggests_a_timeout():
     log = [_pts(1000, RIVAL, 3), _pts(1040, RIVAL, 2), _pts(1100, RIVAL, 3)]
     out = engine().evaluate(snap(elapsed=1110, log=log))
     [a] = [a for a in out if a.id == "rival_run"]
-    assert a.severity == "critical" and "tiempo muerto" in a.message.lower()
+    assert a.severity == "critical" and [p["type"] for p in a.proposal] == ["timeout"]       # the timeout is the proposal, not a sentence (#421)
     assert a.evidence["rival_points"] == 8 and a.evidence["own_points"] == 0
 
 

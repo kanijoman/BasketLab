@@ -44,12 +44,12 @@ def own_zone_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if attempts >= cfg.zone_min_attempts and makes >= cfg.zone_min_makes and pps - expected_pps >= cfg.zone_pps_excess:
             out.append(Advice(
                 key=f"zone_own:{family}:hot", id="own_zone_hot", severity="info", category="four_factors",
-                message=f"Desde {label} anotamos {makes}/{attempts} ({pps:.2f} pts/tiro, esperado {expected_pps:.2f}). Insistir por ahí.",
+                message=f"Desde {label} anotamos {makes}/{attempts} ({pps:.2f} pts/tiro, esperado {expected_pps:.2f}).",
                 evidence=base, proposal=[tactic_proposal(f"Insistir por {label}")]))
         elif attempts >= cfg.zone_min_attempts and expected_pps - pps >= cfg.zone_pps_excess:
             out.append(Advice(
                 key=f"zone_own:{family}:cold", id="own_zone_cold", severity="info", category="four_factors",
-                message=f"Desde {label} solo {makes}/{attempts} ({pps:.2f} pts/tiro, esperado {expected_pps:.2f}). Cambiar la selección de tiro.",
+                message=f"Desde {label} solo {makes}/{attempts} ({pps:.2f} pts/tiro, esperado {expected_pps:.2f}).",
                 evidence=base, proposal=[tactic_proposal(f"Cambiar la selección de tiro: menos tiros desde {label}")]))
         share = attempts / total
         if (family == SELECTION_FAMILY and attempts >= cfg.zone_min_share_attempts and share >= cfg.zone_share
@@ -83,7 +83,7 @@ def rival_defence_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         out.append(Advice(
             key=f"zone_concede:{family}", id="rival_concedes_zone", severity="info", category="rival",
             message=(f"El rival concede desde {label} ({shrunk:.2f} pts/tiro en la temporada frente a {league_pps:.2f} de la liga) y "
-                     f"aquí ya llevamos {mine['m']}/{mine['a']}. Atacar por ahí."),
+                     f"aquí ya llevamos {mine['m']}/{mine['a']}."),
             evidence={"family": family, "conceded_pps": round(shrunk, 3), "league_pps": round(league_pps, 3),
                       "attempts": mine["a"], "makes": mine["m"]},
             proposal=[tactic_proposal(f"Atacar desde {label}: el rival lo concede")]))
@@ -104,7 +104,7 @@ def rival_player_zone_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advic
             name, label = player["name"].strip(), _ZONE_TEXT[family][0]
             out.append(Advice(
                 key=f"zone_player:{pid}:{family}", id="rival_player_zone", severity="warning", category="rival",
-                message=f"Rival {name}: {cell['m']}/{cell['a']} desde {label}. Negarle esa zona.",
+                message=f"Rival {name}: {cell['m']}/{cell['a']} desde {label}.",
                 evidence={"player_id": pid, "team_id": ctx.rival_team_id, "family": family, "attempts": cell["a"], "makes": cell["m"]},
                 proposal=[tactic_proposal(f"Negarle {label} a {name}: ayudas y no dejarle recibir ahí", pid, name)]))
     return out
@@ -123,7 +123,6 @@ def paint_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return [Advice(
         key=f"paint:{'behind' if behind else 'ahead'}:{snap['period']}", id="paint_battle", severity="warning" if behind else "info",
         category="four_factors",
-        message=(f"Pintura: {own}-{theirs} ({diff:+d}). " + ("Cerrar la zona: ayudas, rebote y no dejarles recibir dentro." if behind
-                                                              else "Seguimos ganando dentro: atacar dentro.")),
+        message=f"Pintura: {own}-{theirs} ({diff:+d}).",
         evidence={"own": own, "rival": theirs, "diff": diff},
         proposal=[tactic_proposal("Cerrar la zona: ayudas y rebote" if behind else "Seguir atacando dentro")])]
