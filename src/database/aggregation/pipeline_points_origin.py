@@ -1,7 +1,7 @@
 """Season sums of the points by origin stored in ``DERIVED`` (#352): per team, own figures and the rival's (``opp_``)."""
 from typing import Dict, List
 
-from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME
+from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME, TEAM_NAMES, team_key
 
 SUMMED = ("pts_off_tov", "poss_off_tov", "pts_off_steal", "poss_off_steal", "pts_second_chance", "poss_second_chance",
           "pts_bench", "pts_paint", "pts_fastbreak", "poss_transition", "pts")
@@ -13,7 +13,7 @@ def build_points_origin_pipeline(min_version: int) -> List[Dict]:
         return {"$cond": ["$used", expr, 0]}
 
     group: Dict[str, Dict] = {
-        "_id": "$me.id",
+        "_id": team_key("$me"),
         "team_name": {"$first": "$name"},
         "games": {"$sum": used(1)},
         "games_unreliable": {"$sum": {"$cond": ["$used", 0, 1]}},
@@ -25,7 +25,7 @@ def build_points_origin_pipeline(min_version: int) -> List[Dict]:
         group[f"opp_{field}"] = {"$sum": used(f"$rival.{field}")}
     return [
         {"$match": {"DERIVED.v": {"$gte": min_version}}},
-        {"$project": {"all": "$DERIVED.TEAM", "teams": "$DERIVED.TEAM", "names": "$HEADER.TEAM.name"}},
+        {"$project": {"all": "$DERIVED.TEAM", "teams": "$DERIVED.TEAM", "names": TEAM_NAMES}},
         {"$unwind": {"path": "$all", "includeArrayIndex": "i"}},
         {"$addFields": {
             "me": "$all",

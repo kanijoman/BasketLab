@@ -3,7 +3,7 @@
 Per team: points per game after turnovers (steals included), after steals, second chance, bench (+ its share of the
 points) and in the paint; the efficiency of each origin (points per 100 possessions that started that way) and the same
 figures for the rivals (``opp_``: what the team concedes). Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out
-(``games_unreliable``); ``games_doubtful`` counts the games used whose feed has alternation breaks (stored, not shown, #392). FEB only; fast-break points are not derived (the FEB definition is not reproducible from the pbp).
+(``games_unreliable``); ``games_doubtful`` counts the games used whose feed has alternation breaks (stored, not shown, #392). FEB and FBCYL (#432); fast-break points are not derived (the FEB definition is not reproducible from the pbp).
 """
 from __future__ import annotations
 

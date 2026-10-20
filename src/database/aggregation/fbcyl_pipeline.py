@@ -20,6 +20,8 @@ Summary:
 from typing import List, Dict, Optional
 from datetime import datetime, time
 
+from .fbcyl_possession_expr import team_possessions
+
 
 class FBCYLPipelineBuilder:
     """Builds MongoDB aggregation pipeline for FBCYL team statistics."""
@@ -264,29 +266,9 @@ class FBCYLPipelineBuilder:
                 "opponent_rebounds_def": {"$sum": "$opponent_score.data.defensiveRebound"},
                 "opp_turnovers": {"$sum": "$opponent_score.data.lost"},
 
-                # Calculate possessions per game during grouping
-                "total_possessions": {
-                    "$sum": {
-                        "$add": [
-                            "$teams.data.shotsOfTwoAttempted",
-                            "$teams.data.shotsOfThreeAttempted",
-                            {"$multiply": [0.44, "$teams.data.shotsOfOneAttempted"]},
-                            "$teams.data.lost",
-                            {"$multiply": [-1, "$teams.data.offensiveRebound"]}
-                        ]
-                    }
-                },
-                "opponent_possessions": {
-                    "$sum": {
-                        "$add": [
-                            "$opponent_score.data.shotsOfTwoAttempted",
-                            "$opponent_score.data.shotsOfThreeAttempted",
-                            {"$multiply": [0.44, "$opponent_score.data.shotsOfOneAttempted"]},
-                            "$opponent_score.data.lost",
-                            {"$multiply": [-1, "$opponent_score.data.offensiveRebound"]}
-                        ]
-                    }
-                }
+                # Possessions: the exact count stored in DERIVED, else the box estimate (#432)
+                "total_possessions": {"$sum": team_possessions("$teamIndex", "$teams")},
+                "opponent_possessions": {"$sum": team_possessions({"$subtract": [1, "$teamIndex"]}, "$opponent_score")},
             }
         })
 

@@ -57,7 +57,7 @@ class PossessionRepositoryMixin:
                 return _empty_possession_result()
 
             pbp_stats = self._accumulate_possession_stats(games, team_id, is_fbcyl)
-            exact = None if is_fbcyl else exact_season_stats(games, team_id)    # FEB only for now (#351)
+            exact = exact_season_stats(games, team_id)    # FEB (#351) and FBCYL (#432)
             if exact:
                 pbp_stats["exact"] = exact
 

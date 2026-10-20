@@ -23,6 +23,8 @@ def possession_projection(is_fbcyl: bool) -> Dict:
             "moves.actorId": 1,
             "stats.teams.teamIdIntern": 1,
             "stats.teams.teamIdExtern": 1,
+            "stats.teams.data": 1,                  # the team box (#432: validates rebounds and turnovers; ``exact_season_stats``)
+            "stats.periodDurationList": 1,
             "_id": 0,
         }
     return {
@@ -208,6 +210,15 @@ def empty_possession_result() -> Dict:
     }
 
 
+def _team_key(game: Dict[str, Any], team_id: str) -> str:
+    """The id the tracker used for ``team_id`` in this game: FEB, the team id; FBCYL, the ``teamIdIntern`` of the team whose stable
+    ``teamIdExtern`` is ``team_id`` (the intern id changes in every game, #432)."""
+    for team in (game.get("stats") or {}).get("teams") or []:
+        if str(team.get("teamIdExtern")) == str(team_id) or str(team.get("teamIdIntern")) == str(team_id):
+            return str(team.get("teamIdIntern"))
+    return str(team_id)
+
+
 def exact_season_stats(games: List[Dict[str, Any]], team_id: str) -> Optional[Dict[str, Any]]:
     """Season figures of a FEB team from its games' play-by-play, validated against the box score (#351).
 
@@ -222,10 +233,11 @@ def exact_season_stats(games: List[Dict[str, Any]], team_id: str) -> Optional[Di
     rebound_fallbacks = 0
     for game in games:
         per_team = team_game_possessions(game)
-        if not per_team or str(team_id) not in per_team:
+        key = _team_key(game, team_id)
+        if not per_team or key not in per_team:
             continue
-        mine = per_team[str(team_id)]
-        rival = next(t for tid, t in per_team.items() if tid != str(team_id))
+        mine = per_team[key]
+        rival = next(t for tid, t in per_team.items() if tid != key)
         games_n += 1
         poss, opp_poss, pts, opp_pts = poss + mine["possessions"], opp_poss + rival["possessions"], pts + mine["pts"], opp_pts + rival["pts"]
         orb, drb, opp_orb, opp_drb = orb + mine["orb"], drb + mine["drb"], opp_orb + rival["orb"], opp_drb + rival["drb"]

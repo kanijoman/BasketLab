@@ -4,7 +4,7 @@ Games that are not reliable (#390: more than 10 % of their points of unknown ori
 """
 from typing import Dict, List
 
-from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME
+from .possession_expr import DOUBTFUL_USED, RELIABLE_GAME, TEAM_NAMES, team_key
 
 EDGE_KEYS = ("pts", "opp_pts", "poss", "opp_poss", "tov", "opp_tov")
 _PERIOD_TOTALS = ("pts", "poss", "tov", "opp_pts", "opp_poss", "opp_tov")
@@ -13,7 +13,7 @@ _PERIOD_TOTALS = ("pts", "poss", "tov", "opp_pts", "opp_poss", "opp_tov")
 def _start(min_version: int) -> List[Dict]:
     return [
         {"$match": {"DERIVED.v": {"$gte": min_version}}},
-        {"$project": {"all": "$DERIVED.TEAM", "names": "$HEADER.TEAM.name"}},
+        {"$project": {"all": "$DERIVED.TEAM", "names": TEAM_NAMES}},
         {"$unwind": {"path": "$all", "includeArrayIndex": "i"}},
         {"$addFields": {"name": {"$arrayElemAt": ["$names", "$i"]}, "used": RELIABLE_GAME}},
     ]
@@ -26,7 +26,7 @@ def build_situations_pipeline(min_version: int) -> List[Dict]:
 
     totals = {f"tot_{k}": {"$sum": f"$all.periods.{k}"} for k in _PERIOD_TOTALS}
     group: Dict[str, Dict] = {
-        "_id": "$all.id", "team_name": {"$first": "$name"},
+        "_id": team_key("$all"), "team_name": {"$first": "$name"},
         "games": {"$sum": used(1)}, "games_unreliable": {"$sum": {"$cond": ["$used", 0, 1]}},
         "games_doubtful": {"$sum": {"$cond": [DOUBTFUL_USED, 1, 0]}},
     }
@@ -50,7 +50,7 @@ def build_timeouts_pipeline(min_version: int) -> List[Dict]:
 
     has_entry = {"$ne": [{"$ifNull": ["$all.timeouts.caller", None]}, None]}
     group: Dict[str, Dict] = {
-        "_id": {"team": "$all.id", "caller": "$all.timeouts.caller"}, "team_name": {"$first": "$name"},
+        "_id": {"team": team_key("$all"), "caller": "$all.timeouts.caller"}, "team_name": {"$first": "$name"},
         "n": {"$sum": {"$cond": [has_entry, 1, 0]}},
         "doubtful": {"$addToSet": {"$cond": [DOUBTFUL_USED, "$_id", None]}},
         "net_before": {"$avg": "$pre_net"}, "net_after": {"$avg": "$post_net"},

@@ -1,5 +1,5 @@
 /**
- * PbpAnalysisPage — «Análisis pbp» (#359): what the play-by-play adds to the team stats, FEB only.
+ * PbpAnalysisPage — «Análisis pbp» (#359): what the play-by-play adds to the team stats, FEB and FBCYL (#432: the FBCYL feed is annotated by the clubs, so it carries a warning).
  * Four tables with the usual quartile colours: points by origin (own and conceded), figures by quarter, situations (after
  * timeouts, first possessions, first / last two minutes) and the effect of the timeouts.
  */
@@ -74,7 +74,7 @@ function Table<T extends object>({ data, columns, keys, reverse, filename }: {
 
 export default function PbpAnalysisPage() {
   const { collection } = useCollection()
-  const name = collection && !collection.isFbcyl ? collection.name : undefined
+  const name = collection?.name
   const [tab, setTab] = useState<Tab>('origin')
   const [originView, setOriginView] = useState<OriginView>('own')
   const [period, setPeriod] = useState('1')
@@ -95,16 +95,14 @@ export default function PbpAnalysisPage() {
   const originKeys = originView === 'opp' ? ORIGIN_KEYS.filter(k => k.startsWith('opp_')) : ORIGIN_KEYS.filter(k => !k.startsWith('opp_'))
 
   let body: React.ReactNode
-  if (collection?.isFbcyl) {
-    body = <Notice>El análisis del play-by-play solo está disponible para FEB por ahora.</Notice>
-  } else if (current.isLoading) {
+  if (current.isLoading) {
     body = <div className="card p-16 flex justify-center"><div className="w-8 h-8 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" /></div>
   } else if (current.isError) {
     body = <Notice>No se han podido cargar los datos: {(current.error as Error | null)?.message ?? 'error desconocido'}</Notice>
   } else if (!current.data || current.data.length === 0) {
     body = (
       <Notice>
-        Sin datos del play-by-play para esta colección. Solo los partidos de FEB con el campo DERIVED de la versión actual tienen
+        Sin datos del play-by-play para esta colección. Solo los partidos de FEB y FBCYL con el campo DERIVED de la versión actual tienen
         estas cifras: se rellena solo tras cada actualización de Atlas, o con <code>python run_backfill_derived.py</code> en local.
       </Notice>
     )
@@ -141,6 +139,12 @@ export default function PbpAnalysisPage() {
           <Pills items={TABS.map(([key, label]) => ({ key, label }))} value={tab} onChange={setTab} label="Sección" />
         </div>
         <p className="text-ink-secondary text-sm max-w-4xl">{TABS.find(([key]) => key === tab)![2]}</p>
+        {collection?.isFbcyl && (
+          <p className="text-ink-secondary text-sm max-w-4xl">
+            <strong>FBCYL (experimental):</strong> el play-by-play lo anotan los clubes y tiene más errores que el de FEB (sin rebotes de equipo, a veces sin pérdidas ni
+            robos); los partidos poco fiables se dejan fuera (columna «Excl.»). Sin pintura: el feed no trae el mapa de tiros.
+          </p>
+        )}
         {body}
       </div>
     </PageTransition>
