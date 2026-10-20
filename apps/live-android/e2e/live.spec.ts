@@ -88,7 +88,7 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
   await page.reload()
   await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 90_000 })   // the tab is remembered too
   await page.getByRole('button', { name: 'Quitar paquete' }).click()
-  await page.getByRole('tab', { name: 'Partido' }).click()
+  await page.getByRole('tab', { name: 'Partido', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 30_000 })
 })
 
