@@ -104,4 +104,11 @@ describe('reportBlocks (issue #409)', () => {
     expect(safeText('≥ 8 → 5 · “x” – ñ á')).toBe('>= 8 -> 5 · "x" – ñ á')
     expect(safeText('Prórroga 1')).toBe('Prórroga 1')
   })
+
+  it('prints the sigma of the substitution texts as words and any other character the font lacks as a question mark (issue #423)', () => {
+    expect(safeText('cede algo en el acierto de tiro: -0.3 σ). Rol similar')).toBe('cede algo en el acierto de tiro: -0.3 desv.). Rol similar')
+    expect(safeText('mejora el rebote defensivo (+0.8 σ)')).toBe('mejora el rebote defensivo (+0.8 desv.)')
+    expect(safeText('Ω y ✓ y 😀')).toBe('? y ? y ?')
+    expect(safeText('ÑñÁéÍóÚü ¿¡ ºª € — •')).toBe('ÑñÁéÍóÚü ¿¡ ºª € — •')
+  })
 })
