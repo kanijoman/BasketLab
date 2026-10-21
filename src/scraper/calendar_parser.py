@@ -36,6 +36,7 @@ class CalendarMatch:
     away_name: str
     score: Optional[str] = None    # "71-64" for results
     start: Optional[str] = None    # "YYYY-MM-DDTHH:MM", Europe/Madrid local time, for scheduled
+    phase: Optional[str] = None    # knockout phase ("1/16 Final") of a match read from ``Series.aspx``; not serialised
 
     def involves(self, team_id: str) -> bool:
         return str(team_id) in (self.home_id, self.away_id)
@@ -89,4 +90,41 @@ def parse_calendar(html: Union[str, bytes]) -> List[CalendarMatch]:
                 match = _parse_row(row, round_index)
                 if match:
                     matches.append(match)
+    return matches
+
+
+def _series_match(row, round_index: int, phase: str) -> Optional[CalendarMatch]:
+    """A row of a series table: ``td`` teams (two links) | ``td`` score link (``76 - 86`` or ``* - *``) | ``td`` date."""
+    cells = row.find_all("td")
+    if len(cells) < 3:
+        return None
+    teams = [(_TEAM_ID.search(a["href"]).group(1), a.get_text(" ", strip=True)) for a in cells[0].find_all("a", href=_TEAM_ID)]
+    link = cells[1].find("a", href=_MATCH_CODE)
+    if len(teams) != 2 or link is None:
+        return None
+    code, text = _MATCH_CODE.search(link["href"]).group(1), link.get_text(" ", strip=True)
+    if _SCORE.match(text):
+        return CalendarMatch(code, "result", round_index, *teams[0], *teams[1], score=text.replace(" ", ""), phase=phase)
+    date = _DATE.search(cells[2].get_text("\n", strip=True))
+    start = f"{date.group(3)}-{date.group(2)}-{date.group(1)}T{int(date.group(4)):02d}:{date.group(5)}" if date else None
+    return CalendarMatch(code, "scheduled", round_index, *teams[0], *teams[1], start=start, phase=phase)
+
+
+def parse_series(html: Union[str, bytes]) -> List[CalendarMatch]:
+    """Matches of a ``Series.aspx`` page (knockout phases, which are not in the calendar), in page order.
+
+    Each tie is an ``h1.titulo-modulo`` (``"1/16 Final. HOME - AWAY"``) followed by a table with one row per
+    match of the tie; ``round_index`` is the match number inside its tie and ``phase`` the text before the first dot.
+    """
+    if not html:
+        return []
+    soup = BeautifulSoup(html, "html.parser", **({"from_encoding": "utf-8"} if isinstance(html, bytes) else {}))
+    matches: List[CalendarMatch] = []
+    for title in soup.find_all("h1", class_="titulo-modulo"):
+        table = title.find_next_sibling("table")
+        if table is None:
+            continue
+        phase = title.get_text(" ", strip=True).split(". ", 1)[0].strip()
+        rows = (_series_match(row, n, phase) for n, row in enumerate(table.find_all("tr"), 1))
+        matches.extend(m for m in rows if m)
     return matches

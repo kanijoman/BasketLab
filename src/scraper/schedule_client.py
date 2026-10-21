@@ -9,11 +9,11 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from cachetools import TTLCache
 
-from .calendar_parser import CalendarMatch, parse_calendar
+from .calendar_parser import CalendarMatch, parse_calendar, parse_series
 
 CALENDAR_URL = "https://baloncestoenvivo.feb.es/calendario.aspx?g={g}&t={season}&nm={nm}"
 _CALENDAR_CACHE: TTLCache = TTLCache(maxsize=16, ttl=60)
@@ -66,9 +66,62 @@ def http_group_calendar(url: str, season_value: str, group_value: str) -> List[C
     found = scraper.group_page(season_value, group_value, scraper.web_client.get_session(), url, single_group_ok=True)
     if found is None:
         raise ConnectionError(f"No response from {url}")
-    matches = parse_calendar(str(found.soup))
+    matches = parse_calendar(str(found.soup)) or _series_calendar(scraper, found, season_value, group_value)
     _CALENDAR_CACHE[key] = matches
     return matches
+
+
+def _phase_of_group(scraper, soup, group_value: str) -> str:
+    return next((label for label, value in scraper.get_groups(soup) if value == group_value), "")
+
+
+def _series_calendar(scraper, found, season_value: str, group_value: str) -> List[CalendarMatch]:
+    """Knockout groups have no calendar table: their ties are on ``Series.aspx`` (issue #456).
+
+    One series page can hold several phases (Copa de España: one page, groups ``Play-offs 1/16 Final``, ``Play-offs 1/8 Final``...): the ties whose
+    phase is named in the group label are kept; when none is (a group named after its series, ``2ºA-1ºB Final``) every tie of the pages is.
+    """
+    hrefs = scraper.series_hrefs(found.calendar_url, group_value, season_value)
+    matches = [m for _, soup in scraper.series_pages(hrefs) for m in parse_series(str(soup))]
+    label = _phase_of_group(scraper, found.soup, group_value).lower()
+    named = {m.phase.lower() for m in matches if m.phase and m.phase.lower() in label}
+    specific = {p for p in named if not any(p != q and p in q for q in named)}   # "Final" is inside "1/16 Final"
+    return [m for m in matches if m.phase and m.phase.lower() in specific] or matches
+
+
+def calendar_ref(url: str, season_value: str, group_value: str) -> str:
+    """``url#t=<season>&g=<group>``: a calendar URL plus the group to read (``g=all``: every group of the season)."""
+    return f"{url}#t={season_value}&g={group_value}"
+
+
+def split_calendar_ref(ref: str) -> Tuple[str, Optional[str], Optional[str]]:
+    """``(url, season_value, group_value)`` of a reference; a plain URL has no group (``None``)."""
+    url, _, fragment = ref.partition("#")
+    if not fragment:
+        return url, None, None
+    params = dict(part.partition("=")[::2] for part in fragment.split("&"))
+    if not (params.get("t") and params.get("g")):
+        raise ValueError(f"calendar reference {ref!r} needs '#t=<season>&g=<group>'")
+    return url, params["t"], params["g"]
+
+
+def fetch_calendar_ref(ref: str) -> List[CalendarMatch]:
+    """Calendar of a reference (see ``calendar_ref``): the page as it is, one group, or all the groups of the season."""
+    url, season, group = split_calendar_ref(ref)
+    if group is None:
+        return http_calendar(url)
+    if group != "all":
+        return http_group_calendar(url, season, group)
+    from . import FEBWebScraper
+
+    seen, out = set(), []
+    for _, value in FEBWebScraper().get_groups_for_season(url, season):
+        try:
+            found = http_group_calendar(url, season, value)
+        except Exception:  # noqa: BLE001 - one unreachable group must not hide the others
+            continue
+        out.extend(m for m in found if m.code not in seen and not seen.add(m.code))
+    return out
 
 
 def feb_status(code: str) -> str:

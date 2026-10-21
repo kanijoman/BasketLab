@@ -64,6 +64,14 @@ class FEBWebScraper:
         """The competition page showing the season and group (the navigation ``get_matches`` uses; the calendar of a group reads it too)."""
         return self.web_scraper.group_page(season_value, group_value, session, url, year, single_group_ok)
 
+    def series_hrefs(self, calendar_url: str, group_value: str, season_value: str = "") -> List[str]:
+        """Series.aspx URLs of a playoff group (knockout phases are not in the calendar page)."""
+        return self.web_scraper.series_hrefs(calendar_url, group_value, season_value)
+
+    def series_pages(self, series_hrefs: List[str]):
+        """``(href, soup)`` of each Series.aspx URL."""
+        return self.web_scraper.series_pages(series_hrefs)
+
     def get_hidden_fields(self, soup: BeautifulSoup) -> Dict[str, str]:
         """Extract hidden fields from the page."""
         return self.web_scraper.get_hidden_fields(soup)
