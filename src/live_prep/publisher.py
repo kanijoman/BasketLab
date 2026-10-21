@@ -157,8 +157,10 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
     return entries
 
 
-def _collections(db: Any) -> List[str]:
-    """Collections of the competitions kept fresh by the Atlas refresh (single source of truth)."""
+def _collections(db: Any = None) -> List[str]:
+    """Collections of the competitions kept fresh by the Atlas refresh (single source of truth).
+
+    Without ``db`` (the PR config check) only the fixed groups are listed."""
     from src.services.atlas_refresh import ingested_collections
     from src.services.atlas_refresh import load_config as load_refresh
 

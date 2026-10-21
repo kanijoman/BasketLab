@@ -88,18 +88,20 @@ def expand_entries(entries: List[RefreshEntry], scraper: Optional[Any] = None) -
     return out
 
 
-def ingested_collections(db: Any, entries: List[RefreshEntry]) -> List[str]:
+def ingested_collections(db: Optional[Any], entries: List[RefreshEntry]) -> List[str]:
     """Collection names of ``entries``; the phases of a ``groups: all`` competition are the ones the refresh already stored.
 
     Reads ``COLLECTION_META`` instead of FEB so that consumers (live packages) work offline.
     """
     from src.database import get_collection_name
 
-    meta = db.repository.connection.get_collection("COLLECTION_META")
+    meta = db.repository.connection.get_collection("COLLECTION_META") if db is not None else None
     names: List[str] = []
     for entry in entries:
         if entry.groups != ALL_GROUPS:
             names.append(get_collection_name(entry.competition_label, entry.season_label, entry.group_label))
+            continue
+        if meta is None:
             continue
         wanted = [f.lower() for f in entry.group_filter]
         for doc in meta.find({"competition_url": entry.competition_url, "season_value": entry.season_value}):

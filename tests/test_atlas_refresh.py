@@ -221,6 +221,13 @@ class TestCompetitionWithPhases:
         assert names == ["COPA_ESPAÑA_2026_2027_90041", "COPA_ESPAÑA_2026_2027_90033", "COPA_ESPAÑA_2026_2027_90034",
                          "LF_CHALLENGE_LF_CHALLENGE_2026_A"]
 
+    def test_the_publisher_config_check_runs_without_a_database_regression(self):
+        """The ``live-packages`` workflow validates the config on PRs with ``_collections()`` and no database: phases are skipped, fixed groups listed."""
+        from src.live_prep.publisher import _collections
+
+        names = _collections()
+        assert "SEGUNDA_FEB_2026_2027_Liga_Regular_A" in names and not any("COPA" in n for n in names)
+
     def test_the_copa_is_in_the_repository_config_as_one_competition(self):
         copa = [e for e in load_config("config/atlas_refresh.json") if "nm=copaespaa" in e.competition_url]
         assert len(copa) == 1 and copa[0].groups == "all" and (copa[0].season_value, copa[0].year) == ("2026", "2026")
