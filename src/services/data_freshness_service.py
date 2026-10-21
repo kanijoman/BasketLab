@@ -43,7 +43,7 @@ class DataFreshnessService:
             return self._result(collection, games_in_db=len(stored), last_game=last,
                                 warning="No se conoce el calendario de la competición")
         try:
-            calendar = self._schedule._fetch(url)
+            calendar = self._schedule.calendar(collection, url)
         except Exception as exc:  # noqa: BLE001 - FEB unreachable: inconclusive, not stale
             return self._result(collection, games_in_db=len(stored), last_game=last, calendar_url=url,
                                 warning=f"No se pudo leer el calendario de FEB: {exc}")

@@ -215,3 +215,53 @@ class TestNextRound:
         assert out["round"] is None and out["matches"] == [] and "calendario" in out["warning"].lower()
         assert _service(_db(codes=())).next_round("LF_CHALLENGE_2026")["matches"] == []
         assert _service().next_round("FBCYL_1A_2026")["matches"] == []
+
+
+class TestGroupCalendar:
+    """A competition page shows ONE group (2ª FEB: the A one, whatever the group of the collection) (issue #449).
+
+    Found checking 2ª FEB and 3ª FEB: ``competition_url`` is the same for groups A and B, so the calendar of the collection of group B was the
+    one of group A and ``next_round`` would have published the wrong round. The calendar of a collection with a stored group is read selecting
+    that group (``season_value`` / ``group_value`` of ``COLLECTION_META``); collections without it keep reading the page as it is.
+    """
+
+    URL = "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb"
+    META = {"_id": "LF_CHALLENGE_2026", "competition_url": URL, "season_value": "2026", "group_value": "90000"}
+
+    @staticmethod
+    def service(db, default=(), groups=None, calls=None):
+        def group(url, season, group_value):
+            if calls is not None:
+                calls.append((url, season, group_value))
+            if isinstance(groups, Exception):
+                raise groups
+            return groups[group_value]
+
+        return MatchScheduleService(db, fetch_calendar=lambda url: list(default), fetch_group_calendar=group,
+                                    match_status=lambda code: "scheduled", now=lambda: NOW, competitions=lambda: COMPETITIONS)
+
+    def test_a_collection_with_a_group_reads_the_calendar_of_that_group_not_the_default_one(self):
+        calls = []
+        svc = self.service(_db(meta=self.META), default=[], groups={"90000": ALL}, calls=calls)
+        found = svc.upcoming("LF_CHALLENGE_2026", TEAM)
+        assert found["matches"] and found["warning"] is None
+        assert calls == [(self.URL, "2026", "90000")]
+        assert found["calendar_url"] == self.URL                        # the link for people stays the one of the competition
+
+    def test_next_round_of_the_group_is_the_round_of_that_group(self):
+        other = [m for m in ALL if m.kind != "scheduled"]
+        svc = self.service(_db(meta=self.META), default=ALL, groups={"90000": other})
+        assert svc.next_round("LF_CHALLENGE_2026")["matches"] == []     # the default calendar (ALL) would have given matches
+
+    def test_a_collection_without_a_stored_group_reads_the_page_as_before(self):
+        meta = {"_id": "LF_CHALLENGE_2026", "competition_url": self.URL}
+        calls = []
+        svc = self.service(_db(meta=meta), default=ALL, groups={}, calls=calls)
+        assert svc.upcoming("LF_CHALLENGE_2026", TEAM)["matches"] and calls == []
+        assert self.service(_db(), default=ALL, groups={}, calls=calls).next_round("LF_CHALLENGE_2026")["matches"] and calls == []
+
+    def test_a_group_that_cannot_be_read_is_a_warning_and_never_the_calendar_of_another_group(self):
+        svc = self.service(_db(meta=self.META), default=ALL, groups=ConnectionError("feb down"))
+        found = svc.upcoming("LF_CHALLENGE_2026", TEAM)
+        assert found["matches"] == [] and "No se pudo leer el calendario" in found["warning"]
+        assert svc.next_round("LF_CHALLENGE_2026")["matches"] == []

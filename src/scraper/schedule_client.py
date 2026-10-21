@@ -50,6 +50,37 @@ def http_calendar(url: str) -> List[CalendarMatch]:
     return matches
 
 
+def http_group_calendar(url: str, season_value: str, group_value: str) -> List[CalendarMatch]:
+    """Calendar of ONE group of the competition page ``url`` (cached for a minute per group, issue #449).
+
+    The page of a competition (``calendario.aspx?g=2&t=2026&nm=segundafeb``) shows a single group, the same URL for every group of it, so the group
+    is selected the way the scraper does for the results: the ASP.NET postback of the group dropdown, then the usual parser.
+    """
+    key = (url, season_value, group_value)
+    if key in _CALENDAR_CACHE:
+        return _CALENDAR_CACHE[key]
+    from bs4 import BeautifulSoup
+
+    from . import FEBWebScraper
+    from .constants import GROUP_DROPDOWN_ID
+
+    scraper = FEBWebScraper()
+    page = scraper.web_client.get(url)
+    if page is None:
+        raise ConnectionError(f"No response from {url}")
+    soup = BeautifulSoup(page.content, "html.parser")
+    dropdown = soup.find("select", {"id": GROUP_DROPDOWN_ID})
+    shown = dropdown.find("option", selected=True) if dropdown else None
+    if dropdown is None or (shown is not None and shown.get("value") == group_value):
+        # the page already shows this group (or has no groups): the postback of the group that is already selected answers WITHOUT the calendar
+        matches = parse_calendar(page.content)
+    else:
+        hidden = scraper.get_hidden_fields(soup)
+        matches = parse_calendar(str(scraper.select_group(scraper.web_client.get_session(), url, season_value, group_value, hidden)))
+    _CALENDAR_CACHE[key] = matches
+    return matches
+
+
 def feb_status(code: str) -> str:
     """``scheduled`` | ``live`` | ``finished`` | ``unknown`` from FEB's live API."""
     import requests
