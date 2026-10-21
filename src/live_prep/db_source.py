@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Sequence
 from src.live_core.package import PreparationPackage
 from src.utils.collection_utils import is_fbcyl
 
+from .game_sources import games_of_sources, source_collections
 from .package_builder import build_package
 
 # What the builder replays: header, roster ids, play-by-play and the shot chart. The
@@ -59,7 +60,8 @@ def build_package_from_db(
         raise NotImplementedError("Live packages are FEB-only for now (FBCYL has a different feed).")
     mongo_collection = handler.repository.connection.get_collection(collection)
     total = mongo_collection.count_documents(_WITH_PBP)
-    games = _counted(mongo_collection.find(_WITH_PBP, GAME_PROJECTION), total, progress)
+    sources = source_collections(handler, collection, [team_id, rival_id])    # the own collection + the other games of both teams (#456)
+    games = _counted(games_of_sources(handler, sources, [team_id, rival_id], _WITH_PBP, GAME_PROJECTION), total, progress)
     return build_package(games, collection, season or season_of(mongo_collection, collection),
                          team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id))
 

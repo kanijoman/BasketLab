@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from src.live_core.engine import LiveEngine
+from .game_sources import LEAGUE_KEY
 from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, possessions
 from src.live_core.package import PreparationPackage
 from src.live_core.profiles import (
@@ -173,15 +174,12 @@ class SeasonAccumulator:
         ids = [tid for tid, _ in header]
         if len(ids) != 2:
             return
-        self.total_games += 1
+        league = game.get(LEAGUE_KEY, True)    # a game of another competition feeds the teams' tables, not the league baselines (#456)
         self.names.update(dict(header))
         snap = LiveEngine().update(game)
         stats = {tid: snap["teams"][tid]["stats"] for tid in ids}
-        self.league_diffs.append(differentials(stats[ids[0]], stats[ids[1]]))
-        for pid, p in snap["players"].items():
-            self.league_players.setdefault(pid, _PlayerAcc(p["name"], str(p["team_id"]))).add(p)
-        for tid in ids:
-            self._add_zones(self.zone_league, snap["zones"].get(tid, {}))
+        if league:
+            self._add_league(ids, snap, stats)
         if snap["elapsed"] and any(self.tracked(tid) for tid in ids):
             n = (possessions(stats[ids[0]]) + possessions(stats[ids[1]])) / 2
             self.pace_log.append(((ids[0], ids[1]), n / snap["elapsed"] * GAME_SECONDS))
@@ -193,6 +191,14 @@ class SeasonAccumulator:
         for tid in ids:
             if self.tracked(tid):
                 self._add_team(tid, ids[1] if ids[0] == tid else ids[0], snap, stats)
+
+    def _add_league(self, ids: List[str], snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
+        self.total_games += 1
+        self.league_diffs.append(differentials(stats[ids[0]], stats[ids[1]]))
+        for pid, p in snap["players"].items():
+            self.league_players.setdefault(pid, _PlayerAcc(p["name"], str(p["team_id"]))).add(p)
+        for tid in ids:
+            self._add_zones(self.zone_league, snap["zones"].get(tid, {}))
 
     def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self._played[tid] = self.played(tid) + 1
