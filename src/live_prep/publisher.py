@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from .competition_info import competition_infos, normalize_catalog, public
 from .package_sealing import Sealer, as_sealer, make_sealer
 
 DEFAULT_CONFIG = "config/package_publish.json"
@@ -42,7 +43,8 @@ def load_config(path: Any = DEFAULT_CONFIG) -> Dict[str, Any]:
     if access["mode"] not in ACCESS_MODES:
         raise ValueError(f"access.mode must be one of {ACCESS_MODES}")
     access = {"mode": access["mode"], "open": bool(access["open"]), "monthly": bool(access["monthly"]), "scopes": [str(s) for s in access["scopes"]]}
-    return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3)), "rounds": bool(data.get("rounds", True)), "access": access}
+    return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3)), "rounds": bool(data.get("rounds", True)), "access": access,
+            "competitions": normalize_catalog(data.get("competitions"))}
 
 
 def build_index(packages: List[Dict[str, Any]], now: Optional[str] = None, rounds: Optional[List[Dict[str, Any]]] = None,
@@ -91,10 +93,26 @@ def _remove_stale(team_dir: Path) -> None:
         old.unlink()
 
 
+def _clubs_of(collection: str, team_id: str, competitions: Optional[Dict[str, Dict[str, Any]]]) -> List[str]:
+    return list((competitions or {}).get(collection, {}).get("clubs") or [team_id])
+
+
+def _nearest_rivals_by_club(service: Any, collections: List[str], team_id: str, upcoming: int,
+                            competitions: Optional[Dict[str, Dict[str, Any]]]) -> List[tuple]:
+    """``(club, collection, match)``: the next ``upcoming`` rivals of EACH club, looking only in the competitions it is listed for (#438)."""
+    clubs = list(dict.fromkeys(c for col in collections for c in _clubs_of(col, team_id, competitions)))
+    return [(club, collection, match) for club in clubs
+            for collection, match in _next_rivals(service, [c for c in collections if club in _clubs_of(c, team_id, competitions)], club, upcoming)]
+
+
 def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team_id: str,
                 service: Any = None, build: Optional[Callable[..., Any]] = None, upcoming: int = 3,
-                errors: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-    """Write the packages and the index; a rival whose package fails is reported in ``errors`` and skipped."""
+                errors: Optional[List[str]] = None, competitions: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """Write the packages and the index; a rival whose package fails is reported in ``errors`` and skipped.
+
+    ``competitions`` (``competition_infos``): per collection, the clubs whose rivals are prepared (``team_id`` when absent) and the
+    structured data of the competition written in each entry (#438).
+    """
     from src.live_prep.db_source import build_package_from_db
     from src.live_prep.roster_fetcher import fetch_rosters
     from src.services.match_schedule_service import MatchScheduleService
@@ -103,25 +121,27 @@ def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team
     service = service or MatchScheduleService(db)
     build = build or functools.partial(build_package_from_db, roster_source=fetch_rosters)
     out = Path(out)
-    team_dir = out / team_id
-    team_dir.mkdir(parents=True, exist_ok=True)
-    _remove_stale(team_dir)
+    chosen = _nearest_rivals_by_club(service, collections, team_id, upcoming, competitions)
+    for club in dict.fromkeys([team_id] + [c for col in collections for c in _clubs_of(col, team_id, competitions)]):   # also the clubs with nothing now: no stale package stays
+        (out / club).mkdir(parents=True, exist_ok=True)
+        _remove_stale(out / club)
     entries: List[Dict[str, Any]] = []
-    for collection, match in _next_rivals(service, collections, team_id, upcoming):
+    for club, collection, match in chosen:
         rival = match["opponent"]
         try:
-            package = build(db, collection, team_id, rival["id"], competition_meta={"match": _match_meta(match)})
-            envelope, extra = sealer.seal(package.dumps(), [f"club:{team_id}", f"competicion:{collection}"])
+            package = build(db, collection, club, rival["id"], competition_meta={"match": _match_meta(match)})
+            envelope, extra = sealer.seal(package.dumps(), [f"club:{club}", f"competicion:{collection}"])
             content = json.dumps(envelope, separators=(",", ":"))
         except Exception as exc:  # noqa: BLE001 - one rival must not block the others
             if errors is not None:
                 errors.append(f"{rival['id']} ({rival['name']}): {type(exc).__name__}: {exc}")
             continue
-        (team_dir / f"{rival['id']}.bpkg").write_text(content, encoding="utf-8")
+        (out / club / f"{rival['id']}.bpkg").write_text(content, encoding="utf-8")
         entries.append({
-            "team_id": team_id, "rival_id": rival["id"], "rival": rival["name"], "collection": collection,
-            "match": _match_meta(match), "file": f"{team_id}/{rival['id']}.bpkg",
+            "team_id": club, "rival_id": rival["id"], "rival": rival["name"], "collection": collection,
+            "match": _match_meta(match), "file": f"{club}/{rival['id']}.bpkg",
             "sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(), "bytes": len(content.encode("utf-8")), **extra,
+            **({"competition": public(competitions[collection])} if competitions and collection in competitions else {}),
         })
     _write_vercel_guard(out)
     (out / "index.json").write_text(json.dumps(build_index(entries, sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
@@ -129,7 +149,8 @@ def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team
 
 
 def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[str], team_id: str, service: Any = None,
-                          build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+                          build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None,
+                          competitions: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """One bundle per round that is next in each competition (several when matches were postponed or advanced, #450); a competition that fails is reported in ``errors`` and skipped."""
     from src.live_prep.roster_fetcher import fetch_rosters
     from src.live_prep.round_packages import ROUNDS_DIR, build_round_packages_from_db, publish_rounds
@@ -150,7 +171,8 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
             built = build(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id)
             for r in rounds:
                 codes = {m["code"] for m in r["matches"]}
-                entries.append(publish_rounds(out, passphrase, collection, r["round"], [b for b in built if b["match"]["code"] in codes], team_id))
+                entries.append(publish_rounds(out, passphrase, collection, r["round"], [b for b in built if b["match"]["code"] in codes], team_id,
+                                              competition=public(competitions[collection]) if competitions and collection in competitions else None))
         except Exception as exc:  # noqa: BLE001 - one competition must not block the others
             if errors is not None:
                 errors.append(f"{collection}: {type(exc).__name__}: {exc}")
@@ -188,11 +210,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
     errors: List[str] = []
-    entries = publish_all(db, args.out, sealer, _collections(db), config["team_id"],
-                          upcoming=config["upcoming"], errors=errors)
+    collections = _collections(db)
+    competitions = competition_infos(db, collections, config["competitions"], [config["team_id"]])
+    entries = publish_all(db, args.out, sealer, collections, config["team_id"],
+                          upcoming=config["upcoming"], errors=errors, competitions=competitions)
     rounds: List[Dict[str, Any]] = []
     if config["rounds"]:
-        rounds = publish_round_bundles(db, args.out, sealer, _collections(db), config["team_id"], errors=errors)
+        rounds = publish_round_bundles(db, args.out, sealer, collections, config["team_id"], errors=errors, competitions=competitions)
         (Path(args.out) / "index.json").write_text(
             json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"], sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
     lines = [f"# Paquetes live ({len(entries)})", ""]
