@@ -97,7 +97,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | leer `min`/`sec` de FBCYL como tiempo transcurrido | es tiempo **restante** (#370) |
 
 ## Decisiones tomadas (no re-debatir)
-MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · matplotlib (precisión FIBA) · pymongo síncrono · FastAPI + React/Vite · motor live en biblioteca estándar ejecutado en la tablet con Pyodide (ver LIVE) · sin LLMs · **app live: release cada viernes por la mañana (puede haber partidos viernes tarde/noche) con todo lo integrado, automática (`live-android-release.yml`); el staff actualiza con el botón de la app** (ver OPERATIONS) · **acceso a los paquetes live por alcances (#410): abierto en la beta, clave después sin recifrar; `access.mode` queda en `legacy` hasta la release de la app que lee el índice v2 y entonces pasa a `scoped` (OPERATIONS)** · **caminos no felices: pantalla encendida y reconexión ya implementados (#219, #220), pendientes de probar en tablet real; el resto se prevé técnicamente sin priorizarlo hasta el uso real**.
+MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · matplotlib (precisión FIBA) · pymongo síncrono · FastAPI + React/Vite · motor live en biblioteca estándar ejecutado en la tablet con Pyodide (ver LIVE) · sin LLMs · **app live: release cada viernes por la mañana (puede haber partidos viernes tarde/noche) con todo lo integrado, automática (`live-android-release.yml`); el staff actualiza con el botón de la app** (ver OPERATIONS) · **acceso a los paquetes live por alcances (#410): abierto en la beta, clave después sin recifrar; `access.mode` queda en `legacy` hasta la release de la app que lee el índice v2 y entonces pasa a `scoped` (OPERATIONS)** · **competiciones de la app live (#435): todas las senior de FEB en Atlas con `groups: all`, 3ª FEB solo A-B en la nube (512 MB) y completa en `config/local_refresh.json`; las demos de los equipos de interés salen de `demo_builder`** · **caminos no felices: pantalla encendida y reconexión ya implementados (#219, #220), pendientes de probar en tablet real; el resto se prevé técnicamente sin priorizarlo hasta el uso real**.
 
 ## Lógica de negocio
 - **Cuartiles (Mongo 7+)**: `{"$percentile": {"input": "$m", "p": [0.25], "method": "approximate"}}`.
@@ -114,6 +114,7 @@ pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite compl
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
+PYTHONPATH=".;src" python -m src.live_prep.demo_builder --collection <col> --team <id>   # demo desde un partido terminado
 cd apps/live-android && npm ci && npm run test:run   # app live: tests con Pyodide real (e2e: npm run e2e)
 # creds: MONGODB_CONNECTION_STRING o src/database/db_credentials.txt · ejemplo en .env.example
 ```
