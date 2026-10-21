@@ -8,8 +8,8 @@ import copy
 import json
 from unittest.mock import MagicMock
 
-import mongomock
 import pytest
+from db_helpers import new_mock_db
 
 from src.live_prep.db_source import build_package_from_db
 from src.live_prep.game_sources import source_collections
@@ -36,7 +36,7 @@ class Handler:
     """What the sources use of a MongoDBHandler, over mongomock."""
 
     def __init__(self, collections):
-        self.db = mongomock.MongoClient()["bl"]
+        self.db = new_mock_db()
         for name, docs in collections.items():
             if docs:
                 self.db[name].insert_many([copy.deepcopy(d) for d in docs])
