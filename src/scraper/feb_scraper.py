@@ -3,7 +3,7 @@
 import re
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, NamedTuple, Tuple, Optional
 
 from utils import normalize_year, get_form_field_name, get_event_target
 from .constants import (
@@ -11,6 +11,15 @@ from .constants import (
     HIDDEN_FIELDS, EXTENDED_TIMEOUT
 )
 from .web_client import WebClient
+
+
+class GroupPage(NamedTuple):
+    """The page of a competition left showing one season and group (``FEBWebScraper.group_page``)."""
+
+    soup: BeautifulSoup
+    url: str            # the page the soup comes from (the one the postbacks go to)
+    calendar_url: str   # the calendar URL of the season (the year-substituted one when it was visited): key of the Series.aspx cache
+    shown: bool         # the page already showed that season and group, no postback was needed to get there
 
 
 class FEBWebScraper:
@@ -544,9 +553,34 @@ class FEBWebScraper:
         Returns:
             List of match codes
         """
+        page = self.group_page(season_value, group_value, session, url, year)
+        if page is None:
+            return []
+        codes = self._extract_match_codes(page.soup)
+        if page.shown and codes:  # the page already showed the selection and has the matches: done
+            return codes
+        # Note: for playoff phases /resultados/ shows only the current jornada;
+        # Series.aspx carries the full series history.  Always merge both sources.
+        merged = self._merge_with_series_codes(codes, group_value, page.calendar_url, page.soup)
+        if merged:
+            return merged
+
+        # Final fallback: slow-path cache rebuild for groups where Series.aspx
+        # is the only source (e.g. a phase with no match rows on /resultados/).
+        return self._get_matches_via_series(page.calendar_url, group_value, season_value)
+
+    def group_page(self, season_value: str, group_value: str, session: requests.Session, url: Optional[str] = None,
+                   year: Optional[str] = None, single_group_ok: bool = False) -> Optional[GroupPage]:
+        """Leave the competition page showing ``season_value`` and ``group_value`` (shared by ``get_matches`` and the calendar of a group).
+
+        A page that already shows both is returned as it is. Otherwise the season is selected through the URL of that year or a postback, a group
+        that is not in the calendar dropdown (playoffs) is looked up in the results page, and the group is selected with a postback.
+        ``single_group_ok``: a page without group selector counts as the group (a calendar of a single-group competition). None if the page
+        cannot be read; a failing postback raises.
+        """
         # Use provided URL or fall back to hardcoded BASE_URL
         if url is None:
-            norm_year = normalize_year(year)
+            norm_year = normalize_year(year or season_value)
             url = BASE_URL.format(year=norm_year)
 
         # Remember original calendar URL for fasesDataList fallback
@@ -555,7 +589,7 @@ class FEBWebScraper:
         # Get initial page
         response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
         if not response:
-            return []
+            return None
 
         soup = BeautifulSoup(response.content, "html.parser")
 
@@ -576,11 +610,10 @@ class FEBWebScraper:
             if selected_option:
                 current_group = selected_option.get("value")
 
-        # If the page already has the correct selection, use it directly
-        if current_season == season_value and current_group == group_value:
-            matches = self._extract_match_codes(soup)
-            if matches:  # If we found matches, we're done
-                return matches
+        # If the page already has the correct selection, use it directly. (Selecting the group that is ALREADY selected makes the server answer a
+        # page WITHOUT the calendar: never post it.) A competition with no group selector is its own group, for a calendar.
+        if (current_season == season_value and current_group == group_value) or (single_group_ok and group_dropdown is None):
+            return GroupPage(soup, url, original_calendar_url, True)
 
         # Otherwise, need to select season and group via POST
         hidden_fields = self.get_hidden_fields(soup)
@@ -606,12 +639,10 @@ class FEBWebScraper:
                     g_dd = soup.find("select", {"id": GROUP_DROPDOWN_ID})
                     g_sel = g_dd and g_dd.find("option", selected=True)
                     current_group = g_sel.get("value") if g_sel else current_group
-                    # Early exit only when BOTH season and group already match —
+                    # Done only when BOTH season and group already match —
                     # otherwise the page shows the default group (usually A).
                     if current_season == season_value and current_group == group_value:
-                        early_matches = self._extract_match_codes(soup)
-                        if early_matches:
-                            return early_matches
+                        return GroupPage(soup, url, original_calendar_url, True)
             if current_season != season_value:
                 soup, hidden_fields = self.select_season(session, url, season_value, hidden_fields)
 
@@ -641,20 +672,7 @@ class FEBWebScraper:
                             )
                         url = results_url
             soup = self.select_group(session, url, season_value, group_value, hidden_fields)
-
-        # Extract match codes from the POST result page.
-        # Note: for playoff phases /resultados/ shows only the current jornada;
-        # Series.aspx carries the full series history.  Always merge both sources.
-        codes = self._extract_match_codes(soup)
-        merged = self._merge_with_series_codes(
-            codes, group_value, original_calendar_url, soup
-        )
-        if merged:
-            return merged
-
-        # Final fallback: slow-path cache rebuild for groups where Series.aspx
-        # is the only source (e.g. a phase with no match rows on /resultados/).
-        return self._get_matches_via_series(original_calendar_url, group_value, season_value)
+        return GroupPage(soup, url, original_calendar_url, False)
 
     @staticmethod
     def _derive_seasonal_url(url: str, season_value: str) -> str:

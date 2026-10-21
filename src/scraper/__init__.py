@@ -59,6 +59,11 @@ class FEBWebScraper:
         """Perform a POST to select the group."""
         return self.web_scraper.select_group(session, url, season_value, group_value, hidden_fields)
 
+    def group_page(self, season_value: str, group_value: str, session: requests.Session, url: Optional[str] = None,
+                   year: Optional[str] = None, single_group_ok: bool = False):
+        """The competition page showing the season and group (the navigation ``get_matches`` uses; the calendar of a group reads it too)."""
+        return self.web_scraper.group_page(season_value, group_value, session, url, year, single_group_ok)
+
     def get_hidden_fields(self, soup: BeautifulSoup) -> Dict[str, str]:
         """Extract hidden fields from the page."""
         return self.web_scraper.get_hidden_fields(soup)
