@@ -80,9 +80,11 @@ def _run(job_id: str, req: PackageRequest, db) -> None:
         from src.live_prep.db_source import build_package_from_db
         from src.live_prep.package_crypto import encrypt_package
 
+        from src.utils.collection_utils import is_fbcyl
+
         package = build_package_from_db(db, req.collection, req.team_id, req.rival_id, req.season,
                                         competition_meta=_match_meta(db, req), progress=progress,
-                                        roster_source=ROSTER_SOURCE)
+                                        roster_source=None if is_fbcyl(req.collection) else ROSTER_SOURCE)   # FBCYL has no FEB roster
         envelope = encrypt_package(package.dumps(), req.passphrase)
         job["envelope"] = json.dumps(envelope, separators=(",", ":"))
         job["status"] = "done"
@@ -103,12 +105,8 @@ def team_matches(
 
 @router.post("/package", status_code=202, summary="Start building an encrypted live preparation package")
 def start_package(req: PackageRequest, background_tasks: BackgroundTasks, db=Depends(get_db)) -> Dict[str, str]:
-    from src.utils.collection_utils import is_fbcyl
-
     if req.team_id == req.rival_id:
         raise HTTPException(422, "El equipo propio y el rival deben ser distintos")
-    if is_fbcyl(req.collection):
-        raise HTTPException(422, "Los paquetes live solo están disponibles para colecciones FEB por ahora")
     names = _team_names(db, req.collection)
     for tid in (req.team_id, req.rival_id):
         if tid not in names:

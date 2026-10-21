@@ -5,24 +5,12 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Sequence
 
 from src.live_core.package import PreparationPackage
-from src.utils.collection_utils import is_fbcyl
-
-from .game_sources import games_of_sources, source_collections
+from .game_sources import FEB, FEB_PROJECTION, feed_of, games_of_sources, source_collections
 from .package_builder import build_package
 
-# What the builder replays: header, roster ids, play-by-play and the shot chart. The
-# repository's own PBP cursor omits SHOTCHART, hence this dedicated projection.
-GAME_PROJECTION: Dict[str, int] = {
-    "HEADER": 1,
-    "BOXSCORE.TEAM.id": 1,
-    "BOXSCORE.TEAM.PLAYER.id": 1,
-    "BOXSCORE.TEAM.PLAYER.name": 1,
-    "PLAYBYPLAY.LINES": 1,
-    "SHOTCHART.SHOTS": 1,
-    "DERIVED": 1,      # exact possessions and points by origin, stored per game (scouting reads them: no box score totals here)
-}
-
-_WITH_PBP = {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}
+# What the builder replays (see game_sources): FEB documents, and FBCYL games adapted to them.
+GAME_PROJECTION: Dict[str, int] = FEB_PROJECTION
+_WITH_PBP = FEB.with_pbp
 
 
 def _counted(games: Iterable[Dict[str, Any]], total: int,
@@ -51,18 +39,16 @@ def build_package_from_db(
     roster_source: Optional[Callable[[Sequence[str]], Optional[Dict[str, Dict[str, Any]]]]] = None,
     rule_config: Optional[Dict[str, Any]] = None,
 ) -> PreparationPackage:
-    """``handler`` is a MongoDBHandler. FEB only for now (FBCYL has a different feed).
+    """``handler`` is a MongoDBHandler. FEB and FBCYL (its games are adapted to the FEB document, ``fbcyl_adapter``; no shot chart, no roster of "formación").
 
     ``progress(done, total)`` is called after each replayed game (the replay is CPU heavy). ``roster_source(team ids)``
     (``roster_fetcher.fetch_rosters`` in production; no request is made without it) gives the roster of both teams
     for ``tables.roster``; if it fails or answers nothing the package is built without roster (issue #271).
     """
-    if is_fbcyl(collection):
-        raise NotImplementedError("Live packages are FEB-only for now (FBCYL has a different feed).")
     mongo_collection = handler.repository.connection.get_collection(collection)
-    total = mongo_collection.count_documents(_WITH_PBP)
+    total = mongo_collection.count_documents(feed_of(collection).with_pbp)
     sources = source_collections(handler, collection, [team_id, rival_id])    # the own collection + the other games of both teams (#456)
-    games = _counted(games_of_sources(handler, sources, [team_id, rival_id], _WITH_PBP, GAME_PROJECTION), total, progress)
+    games = _counted(games_of_sources(handler, sources, [team_id, rival_id]), total, progress)
     return build_package(games, collection, season or season_of(mongo_collection, collection),
                          team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id), rule_config=rule_config)
 

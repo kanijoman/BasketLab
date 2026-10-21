@@ -93,13 +93,6 @@ def test_mongo_games_are_generated_lazily():
     assert len(coll.finds) == 1
 
 
-def test_fbcyl_collections_are_not_supported_yet():
-    with pytest.raises(NotImplementedError):
-        list(games_from_mongo(handler_for(FakeCollection([])), "FBCYL_TEST"))
-
-
-# --- recordings as games -----------------------------------------------------------------
-
 class FakeFeed:
     """The two things the source needs from a recording: its match code and the document served at the end."""
 

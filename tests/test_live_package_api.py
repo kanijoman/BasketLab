@@ -97,10 +97,6 @@ class TestValidation:
     def test_invalid_input_is_rejected(self, client, change, status):
         assert client.post(f"{V1}/package", json={**BODY, **change}).status_code == status
 
-    def test_fbcyl_collections_are_not_supported_yet(self, client):
-        r = client.post(f"{V1}/package", json={**BODY, "collection": "FBCYL_1A_2026"})
-        assert r.status_code == 422 and "FEB" in r.json()["detail"]
-
     def test_unknown_team_is_a_404(self, client):
         r = client.post(f"{V1}/package", json={**BODY, "team_id": "999"})
         assert r.status_code == 404
