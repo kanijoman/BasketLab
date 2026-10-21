@@ -152,3 +152,41 @@ class TestWrite:
 
     def test_the_module_has_a_command_line(self):
         assert callable(demo_builder.main)
+
+
+class TestFbcylDemo:
+    """A demo of a FBCYL team (Universidad de León, issue #445): the games are adapted to the FEB document first."""
+
+    @pytest.fixture
+    def adapted(self):
+        from pathlib import Path
+
+        from src.live_prep.fbcyl_adapter import to_feb_document
+
+        raw = json.loads(gzip.open(Path(__file__).parent / "fixtures" / "fbcyl_game_ok.json.gz").read())
+        return to_feb_document(raw)
+
+    def test_the_recording_of_a_fbcyl_game_replays_to_its_final_score(self, adapted):
+        feed = RecordedFeed(build_recording(adapted))
+        engine, snap = LiveEngine(), None
+        for t in range(0, int(feed.duration) + 1, 10):
+            doc = feed.document_at(t)
+            if doc is not None:
+                snap = engine.update(doc)
+        assert snap["score"] == {"39675": 55, "40288": 75}
+        assert str(feed.document_at(feed.duration)["HEADER"]["status"]) == "3"
+
+    def test_the_package_says_the_play_by_play_is_experimental(self, adapted):
+        package = build_demo_package([adapted], adapted, "FBCYL_X_2026_", "2026", "39675", "40288", roster=None)
+        assert package.competition_meta["match"]["code"] == "264330"
+        assert package.competition_meta["data_quality"] == "experimental"
+
+    def test_a_feb_package_has_no_such_mark(self, feb_game_doc):
+        match = copy.deepcopy(feb_game_doc)
+        match["_id"] = 2000
+        assert "data_quality" not in build_demo_package([match], match, "COL", "2026/2027", OWN, RIVAL, roster=None).competition_meta
+
+    def test_the_roster_of_feb_is_not_asked_for_a_fbcyl_collection(self):
+        assert demo_builder.wants_roster("FBCYL_1_2026_", no_roster=False) is False
+        assert demo_builder.wants_roster("SEGUNDA_FEB_2026_2027_Liga_Regular_A", no_roster=False) is True
+        assert demo_builder.wants_roster("SEGUNDA_FEB_2026_2027_Liga_Regular_A", no_roster=True) is False

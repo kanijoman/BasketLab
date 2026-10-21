@@ -235,12 +235,3 @@ def test_db_source_asks_mongo_for_the_shotchart_too(feb_game_doc):
     assert projection.get("SHOTCHART.SHOTS") == 1 and projection.get("PLAYBYPLAY.LINES") == 1
     assert sum(c["a"] for c in pkg.tables["zones"]["league"].values()) == 121
 
-
-def test_db_source_rejects_fbcyl_collections():
-    import pytest
-    from unittest.mock import MagicMock
-
-    from src.live_prep.db_source import build_package_from_db
-
-    with pytest.raises(NotImplementedError):
-        build_package_from_db(MagicMock(), "FBCYL_X", OWN, RIVAL, "2025")

@@ -117,10 +117,6 @@ class TestPackages:
         old = build_package(iter(only[COPA]), COPA, "2026", OWN, RIVAL, created_at=new.created_at)
         assert new.baselines == old.baselines and new.tables == old.tables
 
-    def test_fbcyl_is_still_rejected(self):
-        with pytest.raises(NotImplementedError):
-            build_package_from_db(MagicMock(), FBCYL, OWN, RIVAL, "2026")
-
     def test_the_games_are_read_one_at_a_time_with_a_projection(self, world):
         handler = Handler(world)
         calls = []

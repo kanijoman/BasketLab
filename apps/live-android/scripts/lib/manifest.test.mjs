@@ -81,6 +81,10 @@ describe('competitionOfCollection (issue #441)', () => {
     expect(competitionOfCollection('TERCERA_FEB_2026_2027_Liga_Regular_A-B')).toBe('TERCERA FEB · Liga Regular A-B')
   })
 
+  it('a FBCYL collection (it ends with the year of the season) loses the year and keeps the group', () => {
+    expect(competitionOfCollection('FBCYL_1ª_FASE-GRUPO_A-1_2026_')).toBe('FBCYL 1ª FASE-GRUPO A-1')
+  })
+
   it('a name without season is shown as it is, and nothing is empty', () => {
     expect(competitionOfCollection('LIGA_NUEVA')).toBe('LIGA NUEVA')
     expect(competitionOfCollection(undefined)).toBe('')
@@ -122,6 +126,6 @@ describe('buildManifest with the demos of the teams of interest (issue #441)', (
   it('the real recordings of the repository keep Zamora - Leon as the default and include the demos of the teams of interest', () => {
     const codes = buildManifest(repoRecordings).map(m => m.code)
     expect(codes[0]).toBe('2524470')
-    expect(codes).toEqual(expect.arrayContaining(['2536133', '2536311', '2536851']))
+    expect(codes).toEqual(expect.arrayContaining(['2536133', '2536311', '2536851', '264803']))   // the last one is Universidad de León (FBCYL, #445)
   })
 })

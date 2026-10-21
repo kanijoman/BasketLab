@@ -60,15 +60,35 @@ def games_from_dir(path: Union[str, Path]) -> List[Dict[str, Any]]:
     return sorted(games, key=_order_key)
 
 
+def _fbcyl_games(mongo: Any) -> Iterator[Dict[str, Any]]:
+    """The games of a FBCYL collection with moves, adapted to the FEB document, in date order.
+
+    The kick-off is text (``Oct 3, 2026, 6:30:00 PM``) that the server cannot parse: only ids and that text are read first and sorted here."""
+    from .fbcyl_adapter import starttime
+    from .game_sources import FBCYL
+
+    def when(stats: Dict[str, Any]):
+        parsed = parse_starttime(starttime(stats))
+        return (parsed is None, parsed or datetime.min)
+
+    heads = [(when((row.get("stats") or {})), str((row.get("stats") or {}).get("idMatchExtern") or row["_id"]), row["_id"])
+             for row in mongo.find(FBCYL.with_pbp, {"stats.time": 1, "stats.idMatchExtern": 1})]
+    for _, _, key in sorted(heads, key=lambda h: (h[0], h[1])):
+        stored = mongo.find_one({"_id": key}, FBCYL.projection)
+        if stored is not None:
+            yield FBCYL.adapt(stored)
+
+
 def games_from_mongo(handler: Any, collection: str) -> Iterator[Dict[str, Any]]:
     """The games of a FEB collection with play-by-play, in date order, one document in memory at a time.
 
     A first aggregation sorts only ids and dates (``HEADER.starttime`` is text, so it is parsed on the server);
     each game is then fetched with the replay projection (header, roster, play-by-play and shot chart).
     """
-    if is_fbcyl(collection):
-        raise NotImplementedError("The rule evaluator is FEB-only for now (FBCYL has a different feed).")
     mongo = handler.repository.connection.get_collection(collection)
+    if is_fbcyl(collection):
+        yield from _fbcyl_games(mongo)
+        return
     pipeline = [
         {"$match": _WITH_PBP},
         {"$project": {"start": {"$dateFromString": {"dateString": "$HEADER.starttime", "format": "%d-%m-%Y - %H:%M",
