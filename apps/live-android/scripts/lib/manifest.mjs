@@ -1,5 +1,5 @@
 // The demo matches the app can replay (issue #223): every recording of tests/recordings/ that has its package,
-// newest first. The first one is the default match of the app; the bundled sample game is only a fallback.
+// newest first, except the default of demos.json (issue #441), which goes first: it is the match the app opens with; the bundled sample game is only a fallback.
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -16,6 +16,33 @@ export function titleCase(name) {
     .split(/\s+/)
     .map((w) => (w.includes(".") ? w : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
     .join(" ");
+}
+
+/** `SEGUNDA_FEB_2026_2027_Liga_Regular_A` -> `SEGUNDA FEB · Liga Regular A` (the season is left out); a name without season is just spaced. */
+export function competitionOfCollection(collection) {
+  if (!collection) return "";
+  const parts = String(collection).split(/_20\d\d_20\d\d_?/);
+  const clean = (text) => text.replace(/_+/g, " ").trim();
+  return parts.length > 1 && parts[1] ? `${clean(parts[0])} · ${clean(parts[1])}` : clean(parts[0]);
+}
+
+/** The package of a demo: its collection and the team whose point of view it has ("" when the file does not say). */
+function packageInfo(file) {
+  try {
+    const body = JSON.parse(fs.readFileSync(file, "utf8")).package ?? {};
+    return { competition: competitionOfCollection(body.collection), teamId: body.team?.id ? String(body.team.id) : "" };
+  } catch {
+    return { competition: "", teamId: "" };
+  }
+}
+
+/** `demos.json` of the folder: `{ "default": "<code>" }`, the match the app opens with; without it (or broken) the newest one is. */
+function defaultCode(recordingsDir) {
+  try {
+    return String(JSON.parse(fs.readFileSync(path.join(recordingsDir, "demos.json"), "utf8")).default ?? "");
+  } catch {
+    return "";
+  }
 }
 
 export function buildManifest(recordingsDir) {
@@ -35,7 +62,10 @@ export function buildManifest(recordingsDir) {
       date: parseStart(pack.base.HEADER.starttime),
       recording: `${code}.recording.json`,
       package: `${code}.package.json`,
+      ...packageInfo(path.join(recordingsDir, `${code}.package.json`)),
     });
   }
-  return matches.sort((a, b) => b.date.localeCompare(a.date) || b.code.localeCompare(a.code));
+  matches.sort((a, b) => b.date.localeCompare(a.date) || b.code.localeCompare(a.code));
+  const first = matches.findIndex((m) => m.code === defaultCode(recordingsDir));   // the app opens with the first one
+  return first > 0 ? [matches[first], ...matches.slice(0, first), ...matches.slice(first + 1)] : matches;
 }
