@@ -1,0 +1,68 @@
+{
+  "scrapes": [
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=4&t=2026&nm=lfendesa",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "LF ENDESA",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=1&t=2026&nm=primerafeb",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "PRIMERA FEB",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=67&t=2026&nm=lfchallenge",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "LF CHALLENGE",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "SEGUNDA FEB",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2026&nm=lf2",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "L.F.-2",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=74&t=2026&nm=ligau",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "LIGA U",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=73&t=2026&nm=copaespaa",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "COPA ESPAÑA",
+      "season_label": "2026/2027",
+      "groups": "all"
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=3&t=2026&nm=tercerafeb",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "TERCERA FEB",
+      "season_label": "2026/2027",
+      "groups": "all"
+    }
+  ]
+}
