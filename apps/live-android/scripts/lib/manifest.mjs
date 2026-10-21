@@ -21,7 +21,8 @@ export function titleCase(name) {
 /** `SEGUNDA_FEB_2026_2027_Liga_Regular_A` -> `SEGUNDA FEB · Liga Regular A` (the season is left out); a name without season is just spaced. */
 export function competitionOfCollection(collection) {
   if (!collection) return "";
-  const parts = String(collection).split(/_20\d\d_20\d\d_?/);
+  const fbcyl = /^FBCYL_.*_20\d\d_?$/.exec(String(collection));        // FBCYL names end with the year of the season
+  const parts = fbcyl ? [String(collection).replace(/_20\d\d_?$/, "")] : String(collection).split(/_20\d\d_20\d\d_?/);
   const clean = (text) => text.replace(/_+/g, " ").trim();
   return parts.length > 1 && parts[1] ? `${clean(parts[0])} · ${clean(parts[1])}` : clean(parts[0]);
 }

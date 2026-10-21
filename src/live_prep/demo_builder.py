@@ -55,13 +55,23 @@ def _match_meta(game: Dict[str, Any]) -> Dict[str, Any]:
             "round": (game["HEADER"].get("round") or None), "home": teams[0], "away": teams[1]}
 
 
+def wants_roster(collection: str, no_roster: bool) -> bool:
+    """FEB's roster (who is a "formación" player) only exists for FEB collections."""
+    from src.utils.collection_utils import is_fbcyl
+
+    return not no_roster and not is_fbcyl(collection)
+
+
 def build_demo_package(games: Iterable[Dict[str, Any]], match: Dict[str, Any], collection: str, season: str, team_id: str, rival_id: str,
                        roster: Optional[Dict[str, Dict[str, Any]]] = None, rule_config: Optional[Dict[str, Any]] = None,
                        created_at: Optional[str] = None):
     """The package of ``team_id`` against ``rival_id`` built with the games played BEFORE ``match`` (``match`` is not among them)."""
     start = parse_starttime(match)
     before = [g for g in games if game_code(g) != game_code(match) and (start is None or (parse_starttime(g) or start) < start)]
-    return build_package(before, collection, season, team_id, rival_id, competition_meta={"match": _match_meta(match)},
+    meta: Dict[str, Any] = {"match": _match_meta(match)}
+    if (match.get("HEADER") or {}).get("source") == "fbcyl":
+        meta["data_quality"] = "experimental"      # FBCYL's play-by-play is annotated by the clubs: errors the feed does not fix (DATA_FORMATS)
+    return build_package(before, collection, season, team_id, rival_id, competition_meta=meta,
                          created_at=created_at or (start or datetime.now()).strftime("%Y-%m-%dT%H:%M:%SZ"), roster=roster, rule_config=rule_config)
 
 
@@ -97,7 +107,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--team", required=True, help="team id whose point of view the demo has")
     parser.add_argument("--code", help="match code (default: the most interesting one, chosen with the rule evaluator)")
     parser.add_argument("--out", default="tests/recordings")
-    parser.add_argument("--no-roster", action="store_true", help="do not ask FEB for the roster (the formation rule is then off)")
+    parser.add_argument("--no-roster", action="store_true", help="do not ask FEB for the roster (the formation rule is then off; FBCYL never has one)")
     args = parser.parse_args(argv)
 
     from src.database import MongoDBHandler
@@ -118,7 +128,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
     rival = next(i for i in ids if i != args.team)
     roster = None
-    if not args.no_roster:
+    if wants_roster(args.collection, args.no_roster):
         from .roster_fetcher import fetch_rosters
 
         roster = fetch_rosters([args.team, rival])

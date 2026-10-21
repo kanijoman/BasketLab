@@ -64,3 +64,27 @@ def test_the_recording_replays_through_the_session_to_the_final_score(code):
 @pytest.mark.parametrize("code", DEMOS)
 def test_each_demo_is_small_enough_to_ship_in_the_app(code):
     assert (RECORDINGS / f"{code}.rec.json.gz").stat().st_size < 60_000 and (RECORDINGS / f"{code}.package.json").stat().st_size < 60_000
+
+
+FBCYL_DEMO = ("264803", "39609")      # Universidad de León (UNILEON B.F.LEÓN), 1ª División Femenina grupo A-1 (issue #445)
+
+
+def test_the_fbcyl_demo_is_the_package_of_unileon_marked_as_experimental():
+    p = package(FBCYL_DEMO[0])
+    assert p.team["id"] == FBCYL_DEMO[1] and "UNILEON" in p.team["name"].upper()
+    assert p.collection.startswith("FBCYL_") and p.competition_meta["data_quality"] == "experimental"
+    assert p.baselines["sample_games"]["own"] >= 1 and p.tables["players"] and p.tables["rival_players"]
+    assert "roster" not in p.tables           # FBCYL has no "formación" roster: the formation rule stays off
+
+
+def test_the_fbcyl_demo_replays_through_the_session_to_the_final_score():
+    code = FBCYL_DEMO[0]
+    session = LiveSession((RECORDINGS / f"{code}.package.json").read_text(encoding="utf-8"))
+    session.load_recording((RECORDINGS / f"{code}.rec.json.gz").read_bytes())
+    feed = RecordedFeed.load(RECORDINGS / f"{code}.rec.json.gz")
+    last = None
+    for t in range(0, int(feed.duration) + 30, 30):
+        last = session.play(t)["output"] or last
+    assert last["snapshot"]["elapsed"] >= 2400 and last["snapshot"]["score"] == {"40083": 45, "39609": 59}
+    assert str(feed.document_at(feed.duration)["HEADER"]["status"]) == "3"
+    assert (RECORDINGS / f"{code}.rec.json.gz").stat().st_size < 60_000
