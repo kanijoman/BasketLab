@@ -12,56 +12,132 @@ import argparse
 import json
 import os
 import sys
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 DEFAULT_CONFIG = "config/atlas_refresh.json"
 
 
+ALL_GROUPS = "all"
+
+
 @dataclass
 class RefreshEntry:
-    """One FEB competition group to keep fresh (same fields as the scrape API's ``FEBScrapeParams``)."""
+    """One FEB competition group to keep fresh (same fields as the scrape API's ``FEBScrapeParams``).
+
+    ``groups == "all"`` makes it a whole competition instead: no group fields, its groups (phases, play-offs
+    included) are discovered from FEB on each run (``expand_entries``), optionally narrowed by ``group_filter``.
+    """
 
     competition_url: str
     season_value: str
-    group_value: str
     competition_label: str
     season_label: str
-    group_label: str
+    group_value: str = ""
+    group_label: str = ""
     year: str = "2025"
+    groups: str = ""
+    group_filter: List[str] = field(default_factory=list)
 
 
 def load_config(path: Any = DEFAULT_CONFIG) -> List[RefreshEntry]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     names = {f.name for f in fields(RefreshEntry)}
-    required = [n for n in names if n != "year"]
     entries = []
     for i, raw in enumerate(data.get("scrapes", []), start=1):
-        missing = [k for k in required if not raw.get(k)]
-        if missing:
-            raise ValueError(f"scrapes entry #{i} lacks: {', '.join(sorted(missing))}")
-        entries.append(RefreshEntry(**{k: v for k, v in raw.items() if k in names}))
+        entries.append(_parse_entry(i, raw, names))
     return entries
+
+
+def _parse_entry(position: int, raw: Dict[str, Any], names: Any) -> RefreshEntry:
+    whole = raw.get("groups")
+    if whole not in (None, "", ALL_GROUPS):
+        raise ValueError(f"scrapes entry #{position}: groups must be \"{ALL_GROUPS}\", not {whole!r}")
+    group_fields = ("group_value", "group_label")
+    if whole == ALL_GROUPS and any(raw.get(k) for k in group_fields):
+        raise ValueError(f"scrapes entry #{position}: groups \"{ALL_GROUPS}\" excludes {' and '.join(group_fields)}")
+    required = ["competition_url", "season_value", "competition_label", "season_label"]
+    required += [] if whole == ALL_GROUPS else list(group_fields)
+    missing = [k for k in required if not raw.get(k)]
+    if missing:
+        raise ValueError(f"scrapes entry #{position} lacks: {', '.join(sorted(missing))}")
+    return RefreshEntry(**{k: v for k, v in raw.items() if k in names})
+
+
+def expand_entries(entries: List[RefreshEntry], scraper: Optional[Any] = None) -> List[RefreshEntry]:
+    """Concrete groups of ``entries``: a ``groups: all`` competition becomes one entry per group FEB lists for its season.
+
+    Raises when FEB lists none (a silent empty refresh would hide a broken page).
+    """
+    out: List[RefreshEntry] = []
+    for entry in entries:
+        if entry.groups != ALL_GROUPS:
+            out.append(entry)
+            continue
+        if scraper is None:
+            from src.scraper import FEBWebScraper
+
+            scraper = FEBWebScraper()
+        found = scraper.get_groups_for_season(entry.competition_url, entry.season_value)
+        wanted = [f.lower() for f in entry.group_filter]
+        found = [(label, value) for label, value in found if not wanted or any(w in label.lower() for w in wanted)]
+        if not found:
+            raise ValueError(f"FEB no lista grupos para {entry.competition_label} {entry.season_label}")
+        out.extend(replace(entry, groups="", group_filter=[], group_label=label, group_value=value) for label, value in found)
+    return out
+
+
+def ingested_collections(db: Optional[Any], entries: List[RefreshEntry]) -> List[str]:
+    """Collection names of ``entries``; the phases of a ``groups: all`` competition are the ones the refresh already stored.
+
+    Reads ``COLLECTION_META`` instead of FEB so that consumers (live packages) work offline.
+    """
+    from src.database import get_collection_name
+
+    meta = db.repository.connection.get_collection("COLLECTION_META") if db is not None else None
+    names: List[str] = []
+    for entry in entries:
+        if entry.groups != ALL_GROUPS:
+            names.append(get_collection_name(entry.competition_label, entry.season_label, entry.group_label))
+            continue
+        if meta is None:
+            continue
+        wanted = [f.lower() for f in entry.group_filter]
+        for doc in meta.find({"competition_url": entry.competition_url, "season_value": entry.season_value}):
+            if not wanted or any(w in str(doc.get("group_label", "")).lower() for w in wanted):
+                names.append(doc["_id"])
+    return names
+
+
+def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]]) -> Dict[str, Any]:
+    from src.services.feb_match_ingest import scrape_feb_collection
+
+    label = f"{entry.competition_label}/{entry.season_label}/{entry.group_label}"
+    item: Dict[str, Any] = {"collection": label, "fatal": None, "job": None, "freshness": None}
+    try:
+        job = scrape_feb_collection(db, entry, scraper)
+        item.update(collection=job["collection"], job=job)
+        item["freshness"] = check(job["collection"])
+    except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
+        item["fatal"] = f"{type(exc).__name__}: {exc}"
+    return item
 
 
 def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = None,
                 freshness: Optional[Callable[[str], Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     from src.services.data_freshness_service import DataFreshnessService
-    from src.services.feb_match_ingest import scrape_feb_collection
 
     check = freshness or DataFreshnessService(db).check
     report = []
     for entry in entries:
-        label = f"{entry.competition_label}/{entry.season_label}/{entry.group_label}"
-        item: Dict[str, Any] = {"collection": label, "fatal": None, "job": None, "freshness": None}
         try:
-            job = scrape_feb_collection(db, entry, scraper)
-            item.update(collection=job["collection"], job=job)
-            item["freshness"] = check(job["collection"])
-        except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
-            item["fatal"] = f"{type(exc).__name__}: {exc}"
-        report.append(item)
+            concrete = expand_entries([entry], scraper)
+        except Exception as exc:  # noqa: BLE001 - a failed discovery is that competition's error only
+            report.append({"collection": f"{entry.competition_label}/{entry.season_label}", "fatal": f"{type(exc).__name__}: {exc}",
+                           "job": None, "freshness": None})
+            continue
+        report.extend(_refresh_one(db, e, scraper, check) for e in concrete)
     return report
 
 
