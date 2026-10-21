@@ -7,10 +7,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
 import {
-  loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch,
+  demoLabel, loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch, orderDemos,
   type DemoData, type DemoMatch, type RealDemoData,
 } from '../engine/demo'
 import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
+import { loadFavorites } from '../package/favorites'
 import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
@@ -407,8 +408,9 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const rival = meta!.rival
   const snap = out?.snapshot
   const current = source.startsWith(FINISHED) ? finishedMatches.find(m => `${FINISHED}${m.code}` === source) : undefined
+  const favorites = loadFavorites()      // the demos of the teams of interest first (issue #441); read on each render: it is marked in another tab
   const sources: SourceOption[] = [...(current ? [{ value: source, label: current.title }] : []),
-    ...matches.map(m => ({ value: m.code, label: m.title })), { value: SAMPLE, label: 'Partido de ejemplo' }]
+    ...orderDemos(matches, favorites).map(m => ({ value: m.code, label: demoLabel(m) })), { value: SAMPLE, label: 'Partido de ejemplo' }]
   const pickSource = (value: DemoSource) => {
     if (value.startsWith(FINISHED)) { void beginFinished(value.slice(FINISHED.length)); return }
     const match = matches.find(m => m.code === value)

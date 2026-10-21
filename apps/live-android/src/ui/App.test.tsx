@@ -180,6 +180,32 @@ describe('App', () => {
         .toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'Partido de ejemplo'])
     })
 
+    describe('demos of the teams of interest (issue #441)', () => {
+      const demo = (code: string, over = {}) => ({
+        code, title: `Equipo ${code} – Rival ${code}`, date: '2026-10-18T18:30', home: { id: `h${code}`, name: `EQUIPO ${code}` }, away: { id: `a${code}`, name: `RIVAL ${code}` },
+        recording: `${code}.recording.json`, package: `${code}.package.json`, ...over,
+      })
+      const MANY = [MANIFEST[0], demo('2536133', { competition: 'SEGUNDA FEB · Liga Regular A', teamId: '1008857' }), demo('2536851', { competition: 'TERCERA FEB · Liga Regular A-B', teamId: '1010490' })]
+      const options = async () => within(await screen.findByLabelText(/partido de la demostración/i)).getAllByRole('option').map(o => o.textContent)
+
+      afterEach(() => localStorage.clear())
+
+      it('the selector names the competition of the demos that have it, and the default one is still the one the app opens with', async () => {
+        const engine = fakeEngine()
+        render(<App engine={engine} {...props} loadManifest={() => Promise.resolve(MANY)} />)
+        await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('REALPKG'))
+        expect(((await screen.findByLabelText(/partido de la demostración/i)) as HTMLSelectElement).value).toBe('2524470')
+        expect(await options()).toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'SEGUNDA FEB · Liga Regular A — Equipo 2536133 – Rival 2536133',
+          'TERCERA FEB · Liga Regular A-B — Equipo 2536851 – Rival 2536851', 'Partido de ejemplo'])
+      })
+
+      it('the demos of a team marked as de interés come first in the selector', async () => {
+        localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1010490', name: 'CAJA RURAL RDL' }]))
+        render(<App engine={fakeEngine()} {...props} loadManifest={() => Promise.resolve(MANY)} />)
+        expect((await options())[0]).toMatch(/TERCERA FEB/)
+      })
+    })
+
     it('opens at the first event of a recorded match, not at the minutes before it (issue #346)', async () => {
       const engine = fakeEngine({ loadRecording: vi.fn().mockResolvedValue({ duration: 7155, status: 'GRABACION', match: '2524470', frames: 353, start_at: 270 }) })
       render(<App engine={engine} {...props} />)

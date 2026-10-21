@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { loadManifest, loadMatch, type DemoMatch } from './demo'
+import { loadManifest, loadMatch, orderDemos, demoLabel, type DemoMatch } from './demo'
 
 const MATCH: DemoMatch = {
   code: '2524470', title: 'Recoletas Zamora – Mipelletymas B.F. Leon', date: '2026-10-10T17:00',
@@ -46,5 +46,31 @@ describe('loadMatch', () => {
   it('fails with a readable error when a file is missing', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply('nope', false)))
     await expect(loadMatch(MATCH)).rejects.toThrow(/2524470/)
+  })
+})
+
+describe('demos of the teams of interest (issue #441)', () => {
+  const demo = (code: string, over: Partial<DemoMatch> = {}): DemoMatch => ({ ...MATCH, code, title: `T${code}`, home: { id: `h${code}`, name: `H${code}` }, away: { id: `a${code}`, name: `A${code}` }, ...over })
+
+  it('the demos of a team of interest come first, the default one stays where it is when nobody is marked', () => {
+    const list = [demo('1'), demo('2', { teamId: '9' }), demo('3')]
+    expect(orderDemos(list, [{ teamId: '9', name: 'X' }]).map(m => m.code)).toEqual(['2', '1', '3'])
+    expect(orderDemos(list, []).map(m => m.code)).toEqual(['1', '2', '3'])
+  })
+
+  it('a team is recognised in either side of the match, by id or by name', () => {
+    const list = [demo('1'), demo('2'), demo('3', { away: { id: 'zzz', name: 'Cultural y Deportiva Leónesa' } })]
+    expect(orderDemos(list, [{ teamId: 'old-id', name: 'CULTURAL Y DEPORTIVA LEONESA' }]).map(m => m.code)).toEqual(['3', '1', '2'])
+  })
+
+  it('does not change what it is given', () => {
+    const list = [demo('1'), demo('2', { teamId: '9' })]
+    orderDemos(list, [{ teamId: '9', name: 'X' }])
+    expect(list.map(m => m.code)).toEqual(['1', '2'])
+  })
+
+  it('the label names the competition when the manifest has it', () => {
+    expect(demoLabel(demo('1', { competition: 'SEGUNDA FEB · Liga Regular A' }))).toBe('SEGUNDA FEB · Liga Regular A — T1')
+    expect(demoLabel(demo('1'))).toBe('T1')
   })
 })
