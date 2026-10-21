@@ -333,9 +333,9 @@ def _calendar_row_provider(url: Optional[str], fetch_calendar) -> Optional[Calla
 
 
 def main(argv: Optional[List[str]] = None, fetch_calendar=None, match_status=None, get=None, token=None) -> int:
-    from src.scraper.schedule_client import feb_status, http_calendar
+    from src.scraper.schedule_client import feb_status, fetch_calendar_ref
 
-    fetch_calendar = fetch_calendar or http_calendar
+    fetch_calendar = fetch_calendar or fetch_calendar_ref
     match_status = match_status or feb_status
     parser = argparse.ArgumentParser(description="FEB live-feed recorder")
     sub = parser.add_subparsers(dest="cmd", required=True)

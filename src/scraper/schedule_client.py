@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from cachetools import TTLCache
 
@@ -87,6 +87,41 @@ def _series_calendar(scraper, found, season_value: str, group_value: str) -> Lis
     named = {m.phase.lower() for m in matches if m.phase and m.phase.lower() in label}
     specific = {p for p in named if not any(p != q and p in q for q in named)}   # "Final" is inside "1/16 Final"
     return [m for m in matches if m.phase and m.phase.lower() in specific] or matches
+
+
+def calendar_ref(url: str, season_value: str, group_value: str) -> str:
+    """``url#t=<season>&g=<group>``: a calendar URL plus the group to read (``g=all``: every group of the season)."""
+    return f"{url}#t={season_value}&g={group_value}"
+
+
+def split_calendar_ref(ref: str) -> Tuple[str, Optional[str], Optional[str]]:
+    """``(url, season_value, group_value)`` of a reference; a plain URL has no group (``None``)."""
+    url, _, fragment = ref.partition("#")
+    if not fragment:
+        return url, None, None
+    params = dict(part.partition("=")[::2] for part in fragment.split("&"))
+    if not (params.get("t") and params.get("g")):
+        raise ValueError(f"calendar reference {ref!r} needs '#t=<season>&g=<group>'")
+    return url, params["t"], params["g"]
+
+
+def fetch_calendar_ref(ref: str) -> List[CalendarMatch]:
+    """Calendar of a reference (see ``calendar_ref``): the page as it is, one group, or all the groups of the season."""
+    url, season, group = split_calendar_ref(ref)
+    if group is None:
+        return http_calendar(url)
+    if group != "all":
+        return http_group_calendar(url, season, group)
+    from . import FEBWebScraper
+
+    seen, out = set(), []
+    for _, value in FEBWebScraper().get_groups_for_season(url, season):
+        try:
+            found = http_group_calendar(url, season, value)
+        except Exception:  # noqa: BLE001 - one unreachable group must not hide the others
+            continue
+        out.extend(m for m in found if m.code not in seen and not seen.add(m.code))
+    return out
 
 
 def feb_status(code: str) -> str:
