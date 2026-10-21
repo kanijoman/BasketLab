@@ -128,3 +128,17 @@ def parse_series(html: Union[str, bytes]) -> List[CalendarMatch]:
         rows = (_series_match(row, n, phase) for n, row in enumerate(table.find_all("tr"), 1))
         matches.extend(m for m in rows if m)
     return matches
+
+
+def phase_matches(matches: List[CalendarMatch], group_label: str, strict: bool = False) -> List[CalendarMatch]:
+    """The matches of the phase a group label names (``Play-offs 1/16 Final`` -> the ``1/16 Final`` ties).
+
+    One series page can hold every phase of a competition (Copa de España). The most specific phase named in the label counts (``Final`` is
+    inside ``1/16 Final``); when the label names none (``2ºA-1ºB Final``, named after its series) every match is kept, unless ``strict``
+    (the series is shared by several groups: a round not drawn yet has no matches, it does not take those of the others).
+    """
+    label = group_label.lower()
+    named = {m.phase.lower() for m in matches if m.phase and m.phase.lower() in label}
+    specific = {p for p in named if not any(p != q and p in q for q in named)}
+    chosen = [m for m in matches if m.phase and m.phase.lower() in specific]
+    return chosen if chosen or strict else matches

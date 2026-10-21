@@ -125,3 +125,12 @@ def test_next_rounds_and_upcoming_work_on_the_series_matches_of_the_copa_regress
     assert rounds == {1: ["2543132", "2543134", "2543136"]} and out["warning"] is None
     upcoming = _service(calendar=matches, now=datetime(2026, 10, 21, 9, 0)).upcoming("LF_CHALLENGE_2026", "1008978")
     assert [m["code"] for m in upcoming["matches"]] == ["2543134"]
+
+
+def test_a_round_not_drawn_yet_has_an_empty_calendar_not_the_one_of_the_previous_round_regression(monkeypatch):
+    """The Copa shares one series page between its rounds: the group of the 1/8 must not show the 1/16 ties while it has none (#459)."""
+    options = "".join(f'<option value="{v}"{" selected" if v == "90042" else ""}>{t}</option>' for t, v in (("Play-offs 1/16 Final", "90041"), ("Play-offs 1/8 Final", "90042")))
+    page = (f'<select id="{SEASON_DROPDOWN_ID}"><option value="2026" selected>2026</option></select><select id="{GROUP_DROPDOWN_ID}">{options}</select>'
+            f'<table id="x_fasesDataList"><tr><td><a href="{SERIES_URL}">Play-offs</a></td></tr></table>').encode()
+    copa(monkeypatch, results=page)
+    assert schedule_client.http_group_calendar(URL, "2026", "90042") == []

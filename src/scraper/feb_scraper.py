@@ -38,6 +38,7 @@ class FEBWebScraper:
         # represented by a separate Series.aspx?f=XXXXX page.  All matching URLs
         # are stored so _get_matches_via_series can visit every bracket.
         self._series_url_by_group: Dict[str, List[str]] = {}
+        self._group_label_by_id: Dict[str, str] = {}
 
     def get_page_content(self, year: str) -> Tuple[BeautifulSoup, requests.Session]:
         """
@@ -197,15 +198,28 @@ class FEBWebScraper:
                 norm_fases = fases_label.upper().strip()
                 if not norm_fases:
                     continue
-                for g_label, g_id in groups:
-                    norm_group = g_label.upper().strip()
-                    if norm_fases in norm_group or norm_group in norm_fases:
-                        urls = self._series_url_by_group.setdefault(g_id, [])
-                        if fases_href not in urls:
-                            urls.append(fases_href)
-                        break
+                fed = self._groups_of_link(norm_fases, groups)
+                for g_label, g_id in fed:
+                    self.__dict__.setdefault("_group_label_by_id", {})[g_id] = g_label
+                    if len(fed) > 1:
+                        self.__dict__.setdefault("_shared_series_groups", set()).add(g_id)
+                    urls = self._series_url_by_group.setdefault(g_id, [])
+                    if fases_href not in urls:
+                        urls.append(fases_href)
         except Exception:
             pass
+
+    @staticmethod
+    def _groups_of_link(norm_fases: str, groups: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+        """Groups a series link feeds: the one with exactly its label, else every group whose label contains it (or is contained).
+
+        A link ``Final`` must not also feed ``1/2 Final`` (exact label wins); a link ``Play-offs`` feeds every round of the Copa
+        (``Play-offs 1/16 Final``, ``Play-offs 1/8 Final``), whose matches are told apart by phase (``phase_matches``).
+        """
+        exact = [(l, g) for l, g in groups if l.upper().strip() == norm_fases]
+        if exact:
+            return exact[:1]
+        return [(l, g) for l, g in groups if norm_fases in l.upper().strip() or l.upper().strip() in norm_fases]
 
     def _find_fases_links(self, soup: BeautifulSoup) -> List[Tuple[str, str]]:
         """Return ``(label, href)`` pairs for every Series.aspx link in fasesDataList.
@@ -354,7 +368,7 @@ class FEBWebScraper:
             List of match code strings, or empty list if not found.
         """
         series_hrefs = self.series_hrefs(calendar_url, group_value, season_value)
-        return self._fetch_codes_from_series_urls(series_hrefs) if series_hrefs else []
+        return self._series_codes_of_group(series_hrefs, group_value) if series_hrefs else []
 
     def series_hrefs(self, calendar_url: str, group_value: str, season_value: str = "") -> List[str]:
         """Series.aspx URLs of a playoff group (the calendar of the group and ``get_matches`` read the same pages).
@@ -390,7 +404,23 @@ class FEBWebScraper:
             if resp:
                 yield href, BeautifulSoup(resp.content, "html.parser")
 
-    def _fetch_codes_from_series_urls(self, series_hrefs: List[str]) -> List[str]:
+    def shares_series(self, group_value: str) -> bool:
+        """True when the series pages of the group also feed other groups (one page for all the rounds of the Copa)."""
+        return group_value in getattr(self, "_shared_series_groups", ())
+
+    def _series_codes_of_group(self, series_hrefs: List[str], group_value: str) -> List[str]:
+        label = getattr(self, "_group_label_by_id", {}).get(group_value, "")
+        return self._fetch_codes_from_series_urls(series_hrefs, label, self.shares_series(group_value))
+
+    def _series_codes(self, soup: BeautifulSoup, group_label: str, shared: bool = False) -> List[str]:
+        """Match codes of a series page; when it is shared by several groups only those of the phase the group names (played ones)."""
+        from .calendar_parser import parse_series, phase_matches
+
+        if not (group_label and shared):
+            return self._extract_match_codes(soup)
+        return [t.code for t in phase_matches(parse_series(str(soup)), group_label, strict=True) if t.kind == "result"]
+
+    def _fetch_codes_from_series_urls(self, series_hrefs: List[str], group_label: str = "", shared: bool = False) -> List[str]:
         """Fetch and merge match codes from multiple Series.aspx URLs.
 
         Visits every URL in *series_hrefs*, extracts match codes from each page,
@@ -405,7 +435,7 @@ class FEBWebScraper:
         codes: List[str] = []
         seen: set = set()
         for _, soup in self.series_pages(series_hrefs):
-            for code in self._extract_match_codes(soup):
+            for code in self._series_codes(soup, group_label, shared):
                 if code not in seen:
                     codes.append(code)
                     seen.add(code)
@@ -431,7 +461,7 @@ class FEBWebScraper:
         series_hrefs = self._series_url_by_group.get(group_value, [])
         if not series_hrefs:
             return codes
-        series_codes = self._fetch_codes_from_series_urls(series_hrefs)
+        series_codes = self._series_codes_of_group(series_hrefs, group_value)
         seen = set(codes)
         for c in series_codes:
             if c not in seen:
