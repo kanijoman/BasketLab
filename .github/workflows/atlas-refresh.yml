@@ -10,6 +10,11 @@ on:
   schedule:
     - cron: "30 5,13,21 * * *"
   workflow_dispatch:
+    inputs:
+      only:
+        description: "Refresh only these competitions (comma separated, e.g. 'tercera feb, lf2'): the first load of a competition is heavy"
+        required: false
+        default: ""
   pull_request:
     paths:
       - "run_atlas_refresh.py"
@@ -18,6 +23,7 @@ on:
       - "src/services/atlas_refresh.py"
       - "src/services/feb_match_ingest.py"
       - "config/atlas_refresh.json"
+      - "config/local_refresh.json"
       - ".github/workflows/atlas-refresh.yml"
 
 permissions:
@@ -47,7 +53,8 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_WRITE_URI }}
-        run: python run_atlas_refresh.py --require-env
+          ONLY: ${{ github.event.inputs.only }}
+        run: python run_atlas_refresh.py --require-env ${ONLY:+--only "$ONLY"}
       # Games stored before a new DERIVED_VERSION (exact possessions, points by origin; #372, #352, #382) get the field here:
       # idempotent and cheap (only the games without the current version). Runs even if the refresh reported missing matches.
       - name: Fill DERIVED in the stored games

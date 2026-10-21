@@ -88,6 +88,23 @@ def expand_entries(entries: List[RefreshEntry], scraper: Optional[Any] = None) -
     return out
 
 
+def only_competitions(entries: List[RefreshEntry], names: List[str]) -> List[RefreshEntry]:
+    """Entries of the competitions named (case, spaces and punctuation ignored: ``tercera feb`` = ``TERCERA FEB``, ``lf2`` = ``L.F.-2``).
+
+    The first load of a competition is heavy (0,5 s per match), so it can be run on its own; no names = every entry.
+    """
+    if not names:
+        return entries
+    from src.scraper.schedule_client import normalize_name
+
+    wanted = {normalize_name(n): n for n in names}
+    known = {normalize_name(e.competition_label) for e in entries}
+    unknown = [n for key, n in wanted.items() if key not in known]
+    if unknown:
+        raise ValueError(f"unknown competition: {', '.join(unknown)}")
+    return [e for e in entries if normalize_name(e.competition_label) in wanted]
+
+
 def ingested_collections(db: Optional[Any], entries: List[RefreshEntry]) -> List[str]:
     """Collection names of ``entries``; the phases of a ``groups: all`` competition are the ones the refresh already stored.
 
@@ -170,12 +187,18 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Refresh the database from FEB")
     parser.add_argument("--config", default=DEFAULT_CONFIG)
+    parser.add_argument("--only", action="append", default=[], metavar="COMPETITION",
+                        help="refresh only this competition (repeatable; comma separated also works), e.g. 'tercera feb'")
     parser.add_argument("--require-env", action="store_true", help="fail unless MONGODB_CONNECTION_STRING is set (CI)")
     args = parser.parse_args(argv)
     if args.require_env and not os.environ.get("MONGODB_CONNECTION_STRING"):
         print("MONGODB_CONNECTION_STRING is not set (GitHub secret ATLAS_WRITE_URI)", file=sys.stderr)
         return 2
-    entries = load_config(args.config)
+    try:
+        entries = only_competitions(load_config(args.config), [n.strip() for a in args.only for n in a.split(",") if n.strip()])
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     from src.database import MongoDBHandler
 
     db = MongoDBHandler()

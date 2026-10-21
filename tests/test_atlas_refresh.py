@@ -226,7 +226,7 @@ class TestCompetitionWithPhases:
         from src.live_prep.publisher import _collections
 
         names = _collections()
-        assert "SEGUNDA_FEB_2026_2027_Liga_Regular_A" in names and not any("COPA" in n for n in names)
+        assert names == ["TERCERA_FEB_2026_2027_Liga_Regular_A-B"]   # the phases of the other competitions need the database
 
     def test_the_copa_is_in_the_repository_config_as_one_competition(self):
         copa = [e for e in load_config("config/atlas_refresh.json") if "nm=copaespaa" in e.competition_url]
@@ -241,9 +241,6 @@ class TestCompetitionsOfTheApp:
     """
 
     EXPECTED = {
-        "LF_CHALLENGE_2026_2027_Liga_Regular_Único": ("g=67", "lfchallenge", "89981"),
-        "SEGUNDA_FEB_2026_2027_Liga_Regular_A": ("g=2", "segundafeb", "89999"),
-        "SEGUNDA_FEB_2026_2027_Liga_Regular_B": ("g=2", "segundafeb", "90000"),
         "TERCERA_FEB_2026_2027_Liga_Regular_A-B": ("g=3", "tercerafeb", "90060"),
     }
 
@@ -266,3 +263,70 @@ class TestCompetitionsOfTheApp:
 
         names = [get_collection_name(e.competition_label, e.season_label, e.group_label) for e in load_config("config/atlas_refresh.json") if e.groups != "all"]
         assert len(names) == len(set(names))
+
+
+class TestSeniorCompetitions:
+    """Every senior competition of the season is kept fresh (#456): the cloud (free plan, 512 MB) and the local database (no limit).
+
+    ≈ 3.370 matches a season ≈ 0,13 MB each on disk: 3ª FEB alone has 10 subgroups and 1.768 matches, so Atlas keeps only 3ª FEB A-B
+    (the group of interest) and the other competitions complete; ``config/local_refresh.json`` has all of them.
+    """
+
+    SENIOR = {"LF ENDESA": "nm=lfendesa", "PRIMERA FEB": "nm=primerafeb", "LF CHALLENGE": "nm=lfchallenge", "SEGUNDA FEB": "nm=segundafeb",
+              "L.F.-2": "nm=lf2", "LIGA U": "nm=ligau", "COPA ESPAÑA": "nm=copaespaa"}
+
+    @staticmethod
+    def by_competition(path):
+        out = {}
+        for e in load_config(path):
+            out.setdefault(e.competition_label, []).append(e)
+        return out
+
+    def test_atlas_has_every_senior_competition_with_all_its_groups_except_3a_feb(self):
+        cfg = self.by_competition("config/atlas_refresh.json")
+        for name, nm in self.SENIOR.items():
+            assert [e.groups for e in cfg[name]] == ["all"] and nm in cfg[name][0].competition_url, name
+            assert (cfg[name][0].season_value, cfg[name][0].year) == ("2026", "2026")
+
+    def test_atlas_keeps_only_the_group_of_interest_of_3a_feb(self):
+        tercera = self.by_competition("config/atlas_refresh.json")["TERCERA FEB"]
+        assert [(e.group_label, e.groups) for e in tercera] == [('Liga Regular "A-B"', "")]
+
+    def test_the_local_database_has_every_group_of_3a_feb_too(self):
+        local = self.by_competition("config/local_refresh.json")
+        assert set(self.SENIOR) | {"TERCERA FEB"} <= set(local)
+        assert [e.groups for e in local["TERCERA FEB"]] == ["all"]
+
+    def test_no_competition_is_listed_twice_in_a_config(self):
+        for path in ("config/atlas_refresh.json", "config/local_refresh.json"):
+            seen = [(e.competition_url, e.group_value or "all") for e in load_config(path)]
+            assert len(seen) == len(set(seen)), path
+
+    def test_the_existing_collections_of_the_app_are_not_renamed(self):
+        """2ª FEB A/B, LF Challenge and 3ª FEB A-B keep their collection names (games, COLLECTION_META and live packages refer to them)."""
+        from src.database.utils import get_collection_name
+
+        names = [get_collection_name(e.competition_label, e.season_label, e.group_label) for e in load_config("config/atlas_refresh.json") if e.groups != "all"]
+        assert "TERCERA_FEB_2026_2027_Liga_Regular_A-B" in names
+
+    def test_only_keeps_the_competitions_asked_for_ignoring_case_and_punctuation(self):
+        from src.services.atlas_refresh import only_competitions
+
+        entries = load_config("config/local_refresh.json")
+        assert {e.competition_label for e in only_competitions(entries, ["tercera feb", "LF2"])} == {"TERCERA FEB", "L.F.-2"}
+        assert only_competitions(entries, []) == entries
+
+    def test_an_unknown_competition_in_only_is_an_error(self):
+        from src.services.atlas_refresh import only_competitions
+
+        with pytest.raises(ValueError, match="XYZ"):
+            only_competitions(load_config("config/local_refresh.json"), ["XYZ"])
+
+    def test_the_cli_accepts_only_and_the_workflow_passes_it_from_an_input(self):
+        import yaml
+        from pathlib import Path
+
+        wf = yaml.safe_load(Path(".github/workflows/atlas-refresh.yml").read_text(encoding="utf-8"))
+        assert "only" in wf[True]["workflow_dispatch"]["inputs"]
+        run = [s for s in wf["jobs"]["refresh"]["steps"] if "run_atlas_refresh.py" in s.get("run", "")][0]
+        assert "ONLY" in run["env"] and "$ONLY" in run["run"] and "${{" not in run["run"]
