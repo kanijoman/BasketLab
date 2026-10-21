@@ -157,12 +157,12 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
     return entries
 
 
-def _collections() -> List[str]:
+def _collections(db: Any) -> List[str]:
     """Collections of the competitions kept fresh by the Atlas refresh (single source of truth)."""
-    from src.database import get_collection_name
+    from src.services.atlas_refresh import ingested_collections
     from src.services.atlas_refresh import load_config as load_refresh
 
-    return [get_collection_name(e.competition_label, e.season_label, e.group_label) for e in load_refresh()]
+    return ingested_collections(db, load_refresh())
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -186,11 +186,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
     errors: List[str] = []
-    entries = publish_all(db, args.out, sealer, _collections(), config["team_id"],
+    entries = publish_all(db, args.out, sealer, _collections(db), config["team_id"],
                           upcoming=config["upcoming"], errors=errors)
     rounds: List[Dict[str, Any]] = []
     if config["rounds"]:
-        rounds = publish_round_bundles(db, args.out, sealer, _collections(), config["team_id"], errors=errors)
+        rounds = publish_round_bundles(db, args.out, sealer, _collections(db), config["team_id"], errors=errors)
         (Path(args.out) / "index.json").write_text(
             json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"], sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
     lines = [f"# Paquetes live ({len(entries)})", ""]

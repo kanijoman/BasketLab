@@ -35,6 +35,14 @@
       "competition_label": "TERCERA FEB",
       "season_label": "2026/2027",
       "group_label": "Liga Regular \"A-B\""
+    },
+    {
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=73&t=2026&nm=copaespaa",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_label": "COPA ESPAÑA",
+      "season_label": "2026/2027",
+      "groups": "all"
     }
   ]
 }
