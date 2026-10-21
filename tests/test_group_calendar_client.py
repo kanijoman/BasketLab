@@ -1,73 +1,109 @@
-"""Calendar of one group of a competition (issue #449): the page shows one group; another one is selected with the ASP.NET postback."""
+"""Calendar of one group of a competition (issue #449): ``http_group_calendar`` on top of the scraper's own navigation (``group_page``).
+
+The page-level behaviour (what is requested and posted) is pinned in ``test_scraper_group_page.py``; here the client is checked as a whole over
+canned pages: the real ``FEBWebScraper`` with a mocked web client, and the parser of the calendar.
+"""
 from pathlib import Path
+from unittest.mock import MagicMock
 
-from bs4 import BeautifulSoup
+import pytest
 
-from src.scraper import schedule_client
+from src.scraper import FEBWebScraper as Facade, schedule_client
 from src.scraper.calendar_parser import parse_calendar
-from src.scraper.constants import GROUP_DROPDOWN_ID
+from src.scraper.constants import GROUP_DROPDOWN_ID, SEASON_DROPDOWN_ID
+from src.scraper.feb_scraper import FEBWebScraper
 
 CALENDAR = (Path(__file__).parent / "fixtures" / "feb_calendar_snippet.html").read_bytes()
+CODES = [m.code for m in parse_calendar(CALENDAR)]
 URL = "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb"
 
 
-def page(selected="89999", dropdown=True):
-    """The page of the competition: the calendar of the group that is selected (A) and the dropdown of its groups."""
+def page(selected="89999", dropdown=True, season="2026"):
+    """The page of the competition: the calendar of the group that is selected (A) and the dropdowns of its season and groups."""
     options = "".join(f'<option value="{v}"{" selected" if v == selected else ""}>{t}</option>' for t, v in (("A", "89999"), ("B", "90000")))
-    select = f'<select id="{GROUP_DROPDOWN_ID}">{options}</select>' if dropdown else ""
-    return select.encode() + CALENDAR
+    groups = f'<select id="{GROUP_DROPDOWN_ID}">{options}</select>' if dropdown else ""
+    seasons = f'<select id="{SEASON_DROPDOWN_ID}"><option value="{season}" selected>{season}</option></select>'
+    return (seasons + groups).encode() + CALENDAR
 
 
-class FakeScraper:
-    instances = []
+class Site:
+    """A mocked FEB site: GET returns ``html``; POST (the group postback) answers the calendar of the group that was posted."""
 
-    def __init__(self, html=None):
-        self.calls, self.gets = [], 0
-        FakeScraper.instances.append(self)
-        outer = self
-        self.web_client = type("W", (), {"get": lambda _s, url, **kw: outer._get(), "get_session": staticmethod(lambda: "session")})()
+    def __init__(self, html, post=CALENDAR):
+        self.web_client = MagicMock()
+        self.web_client.get.side_effect = lambda url, timeout=None: None if html is None else MagicMock(content=html)
+        self.web_client.post.side_effect = lambda url, data=None, timeout=None: None if post is None else MagicMock(content=post)
+        self.web_client.get_session.return_value = "session"
+        # the real facade that schedule_client builds (src.scraper.FEBWebScraper), over the mocked client
+        self.scraper = Facade()
+        self.scraper.web_client = self.web_client
+        self.scraper.web_scraper = FEBWebScraper(self.web_client)
 
-    html = page()
-
-    def _get(self):
-        self.gets += 1
-        return type("R", (), {"content": type(self).html})()
-
-    def get_hidden_fields(self, soup):
-        return {"__VIEWSTATE": "x"}
-
-    def select_group(self, session, url, season, group, hidden):
-        self.calls.append((session, url, season, group, hidden))
-        return BeautifulSoup(CALENDAR, "html.parser")
+    def install(self, monkeypatch):
+        monkeypatch.setattr("src.scraper.FEBWebScraper", lambda: self.scraper)
+        return self
 
 
-def run(monkeypatch, group, html=None):
+@pytest.fixture(autouse=True)
+def clean_cache():
     schedule_client._CALENDAR_CACHE.clear()
-    FakeScraper.instances.clear()
-    FakeScraper.html = html or page()
-    monkeypatch.setattr("src.scraper.FEBWebScraper", FakeScraper)
-    return schedule_client.http_group_calendar(URL, "2026", group)
 
 
 def test_another_group_is_selected_with_the_postback_and_the_answer_is_parsed(monkeypatch):
-    matches = run(monkeypatch, "90000")
-    assert matches and [m.code for m in matches] == [m.code for m in parse_calendar(CALENDAR)]
-    assert FakeScraper.instances[0].calls == [("session", URL, "2026", "90000", {"__VIEWSTATE": "x"})]
+    site = Site(page(selected="89999")).install(monkeypatch)
+    assert [m.code for m in schedule_client.http_group_calendar(URL, "2026", "90000")] == CODES
+    assert site.web_client.post.call_count == 1
+    assert "90000" in site.web_client.post.call_args.kwargs["data"].values()
 
 
 def test_the_group_that_the_page_already_shows_is_read_without_a_postback_regression(monkeypatch):
-    """Bug found trying it on the real site: selecting the group that is already selected answers a page WITHOUT the calendar (0 matches) for
-    the default groups (2ª FEB A, LF Challenge); the page as it is already has their calendar."""
-    matches = run(monkeypatch, "89999")
-    assert matches and FakeScraper.instances[0].calls == []
+    """Bug found trying it on the real site: selecting the group that is already selected answers a page WITHOUT the calendar (0 matches) for the
+    default groups (2ª FEB A, LF Challenge); the page as it is already has their calendar."""
+    site = Site(page(selected="89999"), post=b"<html></html>").install(monkeypatch)
+    assert [m.code for m in schedule_client.http_group_calendar(URL, "2026", "89999")] == CODES
+    assert site.web_client.post.call_count == 0
 
 
 def test_a_competition_page_without_group_dropdown_is_read_as_it_is(monkeypatch):
-    assert run(monkeypatch, "89981", html=page(dropdown=False)) and FakeScraper.instances[0].calls == []
+    site = Site(page(dropdown=False), post=b"<html></html>").install(monkeypatch)
+    assert [m.code for m in schedule_client.http_group_calendar(URL, "2026", "89981")] == CODES
+    assert site.web_client.post.call_count == 0
+
+
+def test_another_season_goes_through_the_same_navigation_as_the_scraper(monkeypatch):
+    """The season of the page is not the one asked for: the URL of that year is requested (the navigation of ``get_matches``)."""
+    old = "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2025&nm=segundafeb"
+    site = Site(None)
+    site.web_client.get.side_effect = lambda url, timeout=None: MagicMock(content=page(season="2025")) if url == old else MagicMock(content=page(season="2026"))
+    site.install(monkeypatch)
+    assert [m.code for m in schedule_client.http_group_calendar(URL, "2025", "89999")] == CODES
+    assert old in [c.args[0] for c in site.web_client.get.call_args_list]
+
+
+def test_a_page_that_cannot_be_read_raises_so_the_caller_can_say_it(monkeypatch):
+    Site(None).install(monkeypatch)
+    with pytest.raises(ConnectionError):
+        schedule_client.http_group_calendar(URL, "2026", "90000")
+
+
+def test_a_postback_that_fails_raises_and_is_not_cached(monkeypatch):
+    Site(page(), post=None).install(monkeypatch)
+    with pytest.raises(Exception, match="Failed to select group"):
+        schedule_client.http_group_calendar(URL, "2026", "90000")
+    assert not schedule_client._CALENDAR_CACHE
 
 
 def test_each_group_has_its_own_cache_entry_for_a_minute(monkeypatch):
-    run(monkeypatch, "90000")
+    site = Site(page()).install(monkeypatch)
+    schedule_client.http_group_calendar(URL, "2026", "90000")
     schedule_client.http_group_calendar(URL, "2026", "90000")          # cached: no second request
+    assert site.web_client.get.call_count == 1 and site.web_client.post.call_count == 1
     schedule_client.http_group_calendar(URL, "2026", "89999")          # another group of the same page: its own entry
-    assert len(FakeScraper.instances) == 2
+    assert site.web_client.get.call_count == 2
+
+
+def test_the_cache_does_not_mix_the_plain_page_with_a_group(monkeypatch):
+    """The plain calendar of the URL and the calendar of a group are different entries of the same cache."""
+    Site(page()).install(monkeypatch)
+    schedule_client.http_group_calendar(URL, "2026", "89999")
+    assert (URL, "2026", "89999") in schedule_client._CALENDAR_CACHE and URL not in schedule_client._CALENDAR_CACHE
