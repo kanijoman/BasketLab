@@ -68,6 +68,10 @@ class FEBWebScraper:
         """Series.aspx URLs of a playoff group (knockout phases are not in the calendar page)."""
         return self.web_scraper.series_hrefs(calendar_url, group_value, season_value)
 
+    def shares_series(self, group_value: str) -> bool:
+        """True when the group's series pages also feed other groups (see ``FEBWebScraper.shares_series``)."""
+        return self.web_scraper.shares_series(group_value)
+
     def series_pages(self, series_hrefs: List[str]):
         """``(href, soup)`` of each Series.aspx URL."""
         return self.web_scraper.series_pages(series_hrefs)

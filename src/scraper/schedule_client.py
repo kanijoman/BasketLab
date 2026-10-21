@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 from cachetools import TTLCache
 
-from .calendar_parser import CalendarMatch, parse_calendar, parse_series
+from .calendar_parser import CalendarMatch, parse_calendar, parse_series, phase_matches
 
 CALENDAR_URL = "https://baloncestoenvivo.feb.es/calendario.aspx?g={g}&t={season}&nm={nm}"
 _CALENDAR_CACHE: TTLCache = TTLCache(maxsize=16, ttl=60)
@@ -78,15 +78,12 @@ def _phase_of_group(scraper, soup, group_value: str) -> str:
 def _series_calendar(scraper, found, season_value: str, group_value: str) -> List[CalendarMatch]:
     """Knockout groups have no calendar table: their ties are on ``Series.aspx`` (issue #456).
 
-    One series page can hold several phases (Copa de España: one page, groups ``Play-offs 1/16 Final``, ``Play-offs 1/8 Final``...): the ties whose
-    phase is named in the group label are kept; when none is (a group named after its series, ``2ºA-1ºB Final``) every tie of the pages is.
+    One series page can hold several phases (Copa de España): see ``phase_matches``.
     """
     hrefs = scraper.series_hrefs(found.calendar_url, group_value, season_value)
     matches = [m for _, soup in scraper.series_pages(hrefs) for m in parse_series(str(soup))]
-    label = _phase_of_group(scraper, found.soup, group_value).lower()
-    named = {m.phase.lower() for m in matches if m.phase and m.phase.lower() in label}
-    specific = {p for p in named if not any(p != q and p in q for q in named)}   # "Final" is inside "1/16 Final"
-    return [m for m in matches if m.phase and m.phase.lower() in specific] or matches
+    label = _phase_of_group(scraper, found.soup, group_value)
+    return phase_matches(matches, label, strict=scraper.shares_series(group_value))
 
 
 def calendar_ref(url: str, season_value: str, group_value: str) -> str:
