@@ -257,8 +257,10 @@ class SeasonAccumulator:
 
     def to_package(self, collection: str, season: str, team_id: str, rival_id: str,
                    competition_meta: Optional[Dict[str, Any]], created_at: Optional[str],
-                   roster: Optional[Dict[str, Dict[str, Any]]] = None) -> PreparationPackage:
+                   roster: Optional[Dict[str, Dict[str, Any]]] = None, rule_config: Optional[Dict[str, Any]] = None) -> PreparationPackage:
         """The package of ``team_id`` against ``rival_id`` with the games added so far (nothing is modified).
+
+        ``rule_config``: the competition's overrides of the engine's thresholds (issue #439), copied into the package.
 
         ``roster`` (``roster_fetcher``: who is a "formación" player, for both teams) goes into ``tables.roster``;
         without it the package has no such key and is exactly what it was before.
@@ -297,6 +299,7 @@ class SeasonAccumulator:
             created_at=created_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             competition_meta=competition_meta or {},
             baselines=baselines,
+            rule_config=copy.deepcopy(rule_config) if rule_config else {},
         )
 
 
@@ -309,8 +312,9 @@ def build_package(
     competition_meta: Optional[Dict[str, Any]] = None,
     created_at: Optional[str] = None,
     roster: Optional[Dict[str, Dict[str, Any]]] = None,
+    rule_config: Optional[Dict[str, Any]] = None,
 ) -> PreparationPackage:
     acc = SeasonAccumulator(track=(str(team_id), str(rival_id)))
     for game in games:
         acc.add_game(game)
-    return acc.to_package(collection, season, team_id, rival_id, competition_meta, created_at, roster=roster)
+    return acc.to_package(collection, season, team_id, rival_id, competition_meta, created_at, roster=roster, rule_config=rule_config)
