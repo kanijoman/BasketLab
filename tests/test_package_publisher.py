@@ -214,7 +214,8 @@ class TestConfigAndCli:
         path = tmp_path / "c.json"
         path.write_text(json.dumps({"team_id": OWN, "upcoming": 3}), encoding="utf-8")
         assert load_config(path) == {"team_id": OWN, "upcoming": 3, "rounds": True,
-                                    "access": {"mode": "legacy", "open": True, "monthly": False, "scopes": []}}
+                                    "access": {"mode": "legacy", "open": True, "monthly": False, "scopes": []},
+                                    "competitions": []}
 
     def test_the_bundles_of_the_rounds_can_be_switched_off_in_the_config(self, tmp_path):
         path = tmp_path / "c.json"

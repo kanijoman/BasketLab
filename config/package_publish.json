@@ -6,5 +6,56 @@
   "open": true,
   "monthly": false,
   "scopes": []
- }
+ },
+ "competitions": [
+  {
+   "competition": "LF ENDESA",
+   "level": 1,
+   "gender": "F"
+  },
+  {
+   "competition": "LF CHALLENGE",
+   "level": 2,
+   "gender": "F"
+  },
+  {
+   "competition": "L.F.-2",
+   "level": 3,
+   "gender": "F"
+  },
+  {
+   "competition": "PRIMERA FEB",
+   "level": 2,
+   "gender": "M"
+  },
+  {
+   "competition": "SEGUNDA FEB",
+   "level": 3,
+   "gender": "M",
+   "clubs": [
+    "1008857",
+    "1008978"
+   ]
+  },
+  {
+   "competition": "TERCERA FEB",
+   "level": 4,
+   "gender": "M",
+   "clubs": [
+    "1010490"
+   ]
+  },
+  {
+   "competition": "LIGA U"
+  },
+  {
+   "competition": "COPA ESPAÑA",
+   "gender": "M",
+   "clubs": [
+    "1008857",
+    "1008978",
+    "1010490"
+   ]
+  }
+ ]
 }

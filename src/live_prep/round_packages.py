@@ -120,7 +120,7 @@ def bundle_plaintext(collection: str, round_index: Any, built: List[Dict[str, An
 
 
 def publish_rounds(out: Any, passphrase: Any, collection: str, round_index: Any, built: List[Dict[str, Any]],
-                   club_team_id: Optional[str] = None) -> Dict[str, Any]:
+                   club_team_id: Optional[str] = None, competition: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Write the bundle of a round and return its entry for the index (a summary of the matches, no packages)."""
     out = Path(out)
     file = round_file_name(collection, round_index)
@@ -134,4 +134,5 @@ def publish_rounds(out: Any, passphrase: Any, collection: str, round_index: Any,
         "collection": collection, "round": round_index, "file": file, "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw),
         "club": any(b["is_club"] for b in built),
         "matches": _summary(built), **extra,
+        **({"competition": competition} if competition else {}),
     }
