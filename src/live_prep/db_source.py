@@ -49,6 +49,7 @@ def build_package_from_db(
     competition_meta: Optional[Dict[str, Any]] = None,
     progress: Optional[Callable[[int, int], None]] = None,
     roster_source: Optional[Callable[[Sequence[str]], Optional[Dict[str, Dict[str, Any]]]]] = None,
+    rule_config: Optional[Dict[str, Any]] = None,
 ) -> PreparationPackage:
     """``handler`` is a MongoDBHandler. FEB only for now (FBCYL has a different feed).
 
@@ -63,7 +64,7 @@ def build_package_from_db(
     sources = source_collections(handler, collection, [team_id, rival_id])    # the own collection + the other games of both teams (#456)
     games = _counted(games_of_sources(handler, sources, [team_id, rival_id], _WITH_PBP, GAME_PROJECTION), total, progress)
     return build_package(games, collection, season or season_of(mongo_collection, collection),
-                         team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id))
+                         team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id), rule_config=rule_config)
 
 
 def _roster(source: Optional[Callable[..., Any]], team_id: str, rival_id: str) -> Optional[Dict[str, Dict[str, Any]]]:

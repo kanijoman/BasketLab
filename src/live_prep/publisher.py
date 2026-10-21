@@ -93,6 +93,12 @@ def _remove_stale(team_dir: Path) -> None:
         old.unlink()
 
 
+def _rules_kwargs(collection: str, competitions: Optional[Dict[str, Dict[str, Any]]]) -> Dict[str, Any]:
+    """``rule_config`` of the collection's competition for the builder (nothing when it has none: a builder that predates it still works, #439)."""
+    rules = (competitions or {}).get(collection, {}).get("rule_config")
+    return {"rule_config": rules} if rules else {}
+
+
 def _clubs_of(collection: str, team_id: str, competitions: Optional[Dict[str, Dict[str, Any]]]) -> List[str]:
     return list((competitions or {}).get(collection, {}).get("clubs") or [team_id])
 
@@ -129,7 +135,8 @@ def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team
     for club, collection, match in chosen:
         rival = match["opponent"]
         try:
-            package = build(db, collection, club, rival["id"], competition_meta={"match": _match_meta(match)})
+            package = build(db, collection, club, rival["id"], competition_meta={"match": _match_meta(match)},
+                            **_rules_kwargs(collection, competitions))
             envelope, extra = sealer.seal(package.dumps(), [f"club:{club}", f"competicion:{collection}"])
             content = json.dumps(envelope, separators=(",", ":"))
         except Exception as exc:  # noqa: BLE001 - one rival must not block the others
@@ -168,7 +175,8 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
             if not rounds:
                 continue
             # the games are read ONCE for every match of every round that is next; each round then gets its own bundle (issue #450)
-            built = build(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id)
+            built = build(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id,
+                          **_rules_kwargs(collection, competitions))
             for r in rounds:
                 codes = {m["code"] for m in r["matches"]}
                 entries.append(publish_rounds(out, passphrase, collection, r["round"], [b for b in built if b["match"]["code"] in codes], team_id,

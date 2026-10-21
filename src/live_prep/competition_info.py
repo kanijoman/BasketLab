@@ -1,7 +1,7 @@
 """Structured data of the competition of each published collection (issue #438, epic #435).
 
 The app listed and filtered matches parsing the name of the collection. The index now carries ``competition: {key, label, competition,
-group, season, level, gender}`` per entry: names come from the scrape metadata (``COLLECTION_META``), ``level``/``gender``/``clubs`` from the
+group, season, level, gender}`` per entry: names come from the scrape metadata (``COLLECTION_META``), ``level``/``gender``/``clubs``/``rule_config`` from the
 ``competitions`` catalog of ``config/package_publish.json`` (matched by competition name, case and punctuation ignored). ``clubs`` are the
 clubs whose packages are prepared in that competition (not published). "De interés" teams are NOT here: the user marks them in the app.
 """
@@ -19,6 +19,23 @@ def _norm(name: str) -> str:
     return normalize_name(name)
 
 
+def _checked_rule_config(position: int, value: Any) -> Dict[str, Any]:
+    """A ``rule_config`` written in the catalog: ``RuleConfig`` fields with known ``rules_off`` (the engine would silently ignore a typo)."""
+    from dataclasses import fields
+
+    from src.live_core.config import RuleConfig, unknown_rule_ids
+
+    if not isinstance(value, dict):
+        raise ValueError(f"competitions entry #{position}: rule_config must be an object")
+    unknown = sorted(set(value) - {f.name for f in fields(RuleConfig)})
+    if unknown:
+        raise ValueError(f"competitions entry #{position}: rule_config has unknown fields: {', '.join(unknown)}")
+    off = value.get("rules_off", [])
+    if not isinstance(off, list) or unknown_rule_ids(off):
+        raise ValueError(f"competitions entry #{position}: rule_config.rules_off must be a list of known rule ids")
+    return dict(value)
+
+
 def normalize_catalog(entries: Optional[Iterable[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     """Validated ``competitions`` entries of the config (``ValueError`` naming the position of a bad one)."""
     out: List[Dict[str, Any]] = []
@@ -33,7 +50,8 @@ def normalize_catalog(entries: Optional[Iterable[Dict[str, Any]]]) -> List[Dict[
             raise ValueError(f"competitions entry #{i}: gender must be one of {GENDERS}")
         if not isinstance(clubs, list):
             raise ValueError(f"competitions entry #{i}: clubs must be a list of team ids")
-        out.append({"competition": name, "level": level, "gender": gender, "clubs": [str(c) for c in clubs]})
+        rule_config = _checked_rule_config(i, raw["rule_config"]) if "rule_config" in raw else {}
+        out.append({"competition": name, "level": level, "gender": gender, "clubs": [str(c) for c in clubs], "rule_config": rule_config})
     return out
 
 
@@ -56,11 +74,11 @@ def competition_infos(db: Any, collections: Iterable[str], catalog: List[Dict[st
         out[collection] = {
             "key": collection, "label": f"{competition} · {group}" if group else competition, "competition": competition, "group": group,
             "season": meta.get("season_label") or "", "level": entry.get("level"), "gender": entry.get("gender"),
-            "clubs": list(entry.get("clubs") or default_clubs),
+            "clubs": list(entry.get("clubs") or default_clubs), "rule_config": dict(entry.get("rule_config") or {}),
         }
     return out
 
 
 def public(info: Dict[str, Any]) -> Dict[str, Any]:
-    """What goes in the index: everything but the clubs whose packages are prepared."""
-    return {k: v for k, v in info.items() if k != "clubs"}
+    """What goes in the index: everything but the clubs whose packages are prepared and the rules (those travel inside each package)."""
+    return {k: v for k, v in info.items() if k not in ("clubs", "rule_config")}
