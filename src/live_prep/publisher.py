@@ -130,7 +130,7 @@ def publish_all(db: Any, out: Any, passphrase: Any, collections: List[str], team
 
 def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[str], team_id: str, service: Any = None,
                           build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-    """One bundle per competition with every match of its next round; a competition that fails is reported in ``errors`` and skipped."""
+    """One bundle per round that is next in each competition (several when matches were postponed or advanced, #450); a competition that fails is reported in ``errors`` and skipped."""
     from src.live_prep.roster_fetcher import fetch_rosters
     from src.live_prep.round_packages import ROUNDS_DIR, build_round_packages_from_db, publish_rounds
     from src.services.match_schedule_service import MatchScheduleService
@@ -143,11 +143,14 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
     entries: List[Dict[str, Any]] = []
     for collection in collections:
         try:
-            upcoming = service.next_round(collection)
-            if not upcoming["matches"]:
+            rounds = service.next_rounds(collection)["rounds"]
+            if not rounds:
                 continue
-            built = build(db, collection, upcoming["matches"], club_team_id=team_id)
-            entries.append(publish_rounds(out, passphrase, collection, upcoming["round"], built, team_id))
+            # the games are read ONCE for every match of every round that is next; each round then gets its own bundle (issue #450)
+            built = build(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id)
+            for r in rounds:
+                codes = {m["code"] for m in r["matches"]}
+                entries.append(publish_rounds(out, passphrase, collection, r["round"], [b for b in built if b["match"]["code"] in codes], team_id))
         except Exception as exc:  # noqa: BLE001 - one competition must not block the others
             if errors is not None:
                 errors.append(f"{collection}: {type(exc).__name__}: {exc}")

@@ -26,6 +26,27 @@ from src.utils.collection_utils import is_fbcyl
 
 STALE_AFTER = timedelta(hours=3)   # a dated match older than this has surely been played
 MAX_STATUS_CHECKS = 3
+ROUND_GAP_DAYS = 3                 # pending matches of a round further apart than this are not the same block (postponed to weeks later)
+ROUND_START_WINDOW = timedelta(days=5)   # rounds that start within this of the next kick-off are next; the weekly cycle is 7 days
+
+
+def _round_blocks(pending: List[CalendarMatch]) -> List[tuple]:
+    """``[(round, start of the block, matches)]``: the pending matches of each round split where two consecutive ones are more than
+    ``ROUND_GAP_DAYS`` apart."""
+    by_round: Dict[int, List[CalendarMatch]] = {}
+    for m in pending:
+        by_round.setdefault(m.round_index, []).append(m)
+    blocks = []
+    for rnd, matches in by_round.items():
+        ordered = sorted(matches, key=lambda m: m.start)
+        block = [ordered[0]]
+        for m in ordered[1:]:
+            if datetime.fromisoformat(m.start) - datetime.fromisoformat(block[-1].start) > timedelta(days=ROUND_GAP_DAYS):
+                blocks.append((rnd, datetime.fromisoformat(block[0].start), block))
+                block = []
+            block.append(m)
+        blocks.append((rnd, datetime.fromisoformat(block[0].start), block))
+    return blocks
 
 
 class MatchScheduleService:
@@ -102,10 +123,18 @@ class MatchScheduleService:
         entries.sort(key=lambda e: (e["status"] != "live", e["start"] or ""))
         return self._result(entries[:limit], url, None)
 
-    def next_round(self, collection: str) -> Dict[str, Any]:
-        """``{"round", "matches", "calendar_url", "warning"}``: every match still to play of the earliest round that has any (issues #286,
-        #172). A match is ``{code, start, round, home: {id, name}, away: {id, name}}``; one that kicked off long ago counts as played."""
-        empty = {"round": None, "matches": [], "calendar_url": None}
+    def next_rounds(self, collection: str) -> Dict[str, Any]:
+        """``{"rounds": [{"round", "matches"}, ...], "calendar_url", "warning"}``: the matches still to play that come next, grouped by round
+        (issues #286, #172, #450). A match is ``{code, start, round, home: {id, name}, away: {id, name}}``; one that kicked off long ago counts
+        as played and one without a date is not listed.
+
+        The round is not the unit, time is: postponed and ADVANCED matches are real next matches (teams that play two rounds in a weekend to save a
+        trip). The pending matches of each round are split where two of them are more than ``ROUND_GAP_DAYS`` apart (a postponement to weeks later is
+        a block of its own) and every block that STARTS within ``ROUND_START_DAYS`` of the next kick-off is listed, whole: the advanced round, the
+        midweek round, the tournament that plays three rounds in a weekend; the round of the next weekend (6-7 days later) is not, not even partly.
+        Rounds are listed by the kick-off of their first match.
+        """
+        empty = {"rounds": [], "calendar_url": None}
         if is_fbcyl(collection):
             return {**empty, "warning": "Los partidos en directo solo están disponibles para competiciones FEB"}
         url = self.calendar_url(collection)
@@ -119,11 +148,27 @@ class MatchScheduleService:
         pending = [m for m in calendar if m.kind == "scheduled" and m.start and datetime.fromisoformat(m.start) >= limit]
         if not pending:
             return {**empty, "calendar_url": url, "warning": "No quedan partidos por jugar en el calendario"}
-        first = min(m.round_index for m in pending)
-        matches = [{"code": m.code, "start": m.start, "round": m.round_index,
-                    "home": {"id": m.home_id, "name": m.home_name}, "away": {"id": m.away_id, "name": m.away_name}}
-                   for m in pending if m.round_index == first]
-        return {"round": first, "matches": matches, "calendar_url": url, "warning": None}
+        first = min(datetime.fromisoformat(m.start) for m in pending)
+        chosen: Dict[int, List[CalendarMatch]] = {}
+        for rnd, block_start, block in _round_blocks(pending):
+            if block_start <= first + ROUND_START_WINDOW:
+                chosen.setdefault(rnd, []).extend(block)
+        rounds = sorted(chosen.items(), key=lambda item: min(m.start for m in item[1]))
+        listed = [{"round": rnd, "matches": [self._next_match(m) for m in pending if m in set(ms)]} for rnd, ms in rounds]
+        return {"rounds": listed, "calendar_url": url, "warning": None}
+
+    @staticmethod
+    def _next_match(m: CalendarMatch) -> Dict[str, Any]:
+        return {"code": m.code, "start": m.start, "round": m.round_index,
+                "home": {"id": m.home_id, "name": m.home_name}, "away": {"id": m.away_id, "name": m.away_name}}
+
+    def next_round(self, collection: str) -> Dict[str, Any]:
+        """``{"round", "matches", "calendar_url", "warning"}``: the biggest of the ``next_rounds`` (the earliest on a tie), for callers that want one."""
+        found = self.next_rounds(collection)
+        if not found["rounds"]:
+            return {"round": None, "matches": [], "calendar_url": found["calendar_url"], "warning": found["warning"]}
+        best = max(found["rounds"], key=lambda r: len(r["matches"]))
+        return {"round": best["round"], "matches": best["matches"], "calendar_url": found["calendar_url"], "warning": None}
 
     def _resolve_started(self, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """A calendar row that already kicked off still says "scheduled": FEB's page shows no score while the match is

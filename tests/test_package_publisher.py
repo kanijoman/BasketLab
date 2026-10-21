@@ -94,16 +94,17 @@ class TestPublishAll:
 
 
 def _round_service(rounds):
-    """``rounds``: collection -> the answer of next_round (a dict) or an exception to raise."""
+    """``rounds``: collection -> a round (the dict of ``_round``), a LIST of them (several rounds next, #450) or an exception to raise."""
     service = MagicMock()
 
-    def next_round(collection):
+    def next_rounds(collection):
         answer = rounds[collection]
         if isinstance(answer, Exception):
             raise answer
-        return answer
+        listed = answer if isinstance(answer, list) else ([answer] if answer["matches"] else [])
+        return {"rounds": [{"round": r["round"], "matches": r["matches"]} for r in listed], "calendar_url": "u", "warning": None}
 
-    service.next_round.side_effect = next_round
+    service.next_rounds.side_effect = next_rounds
     return service
 
 
@@ -124,7 +125,29 @@ def _round_builder(calls):
 
 
 class TestPublishRoundBundles:
-    """One bundle per competition with the whole next round (issues #286, #172)."""
+    """One bundle per round of each competition that is next (issues #286, #172, #450)."""
+
+    def test_a_competition_with_two_rounds_next_gets_a_bundle_of_each_from_a_single_pass_over_its_games(self, tmp_path):
+        """Advanced matches (round 12 in the weekend of round 4) are their own bundle; the games are read once for all of them."""
+        service = _round_service({"A": [_round(4, (OWN, R1), (R2, "3003")), _round(12, ("4001", OWN))]})
+        calls = []
+        entries = publish_round_bundles(object(), tmp_path, PASSWORD, ["A"], OWN, service=service, build=_round_builder(calls))
+        assert len(calls) == 1 and calls[0][1] == ["1", "2", "1"]                    # one build with every match of both rounds
+        assert [(e["round"], len(e["matches"]), e["club"]) for e in entries] == [(4, 2, True), (12, 1, True)]
+        assert [e["file"] for e in entries] == ["rounds/A__r4.bpkgz", "rounds/A__r12.bpkgz"] and all((tmp_path / e["file"]).exists() for e in entries)
+
+    def test_the_packages_of_each_bundle_are_only_those_of_its_round(self, tmp_path):
+        from src.live_prep.package_crypto import decrypt_package
+
+        service = _round_service({"A": [_round(4, (OWN, R1)), _round(12, ("4001", "4002"))]})
+        # distinct codes per round, so a package cannot be in the wrong bundle
+        service.next_rounds.side_effect = lambda c: {"rounds": [
+            {"round": 4, "matches": [{**_round(4, (OWN, R1))["matches"][0], "code": "44"}]},
+            {"round": 12, "matches": [{**_round(12, ("4001", "4002"))["matches"][0], "code": "1212"}]}], "calendar_url": "u", "warning": None}
+        entries = publish_round_bundles(object(), tmp_path, PASSWORD, ["A"], OWN, service=service, build=_round_builder([]))
+        for entry, code in zip(entries, ("44", "1212")):
+            bundle = json.loads(decrypt_package(json.loads((tmp_path / entry["file"]).read_text(encoding="utf-8")), PASSWORD))
+            assert {m["match"]["code"] for m in bundle["matches"]} == {code}
 
     def test_one_bundle_per_competition_with_every_match_of_its_next_round(self, tmp_path):
         service = _round_service({"A": _round(4, (OWN, R1), (R2, "3003")), "B": _round(9, ("5001", "5002"))})

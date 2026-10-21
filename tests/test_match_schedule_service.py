@@ -265,3 +265,113 @@ class TestGroupCalendar:
         found = svc.upcoming("LF_CHALLENGE_2026", TEAM)
         assert found["matches"] == [] and "No se pudo leer el calendario" in found["warning"]
         assert svc.next_round("LF_CHALLENGE_2026")["matches"] == []
+
+
+def _cm(code, rnd, start, kind="scheduled", home=None, away=None):
+    from src.scraper.calendar_parser import CalendarMatch
+
+    return CalendarMatch(code=str(code), kind=kind, round_index=rnd, home_id=str(home or f"h{code}"), home_name=f"H{code}",
+                         away_id=str(away or f"a{code}"), away_name=f"A{code}", start=start, score="70-60" if kind == "result" else None)
+
+
+def _rounds(calendar, now="2026-10-21T10:00"):
+    out = _service(calendar=calendar, now=datetime.fromisoformat(now)).next_rounds("LF_CHALLENGE_2026")
+    return {r["round"]: [m["code"] for m in r["matches"]] for r in out["rounds"]}, out
+
+
+class TestNextRounds:
+    """The next matches grouped by round: postponed AND advanced matches count (issue #450).
+
+    Found with the real calendars of 2ª FEB B (a round-1 match postponed to December won ``next_round`` over round 4, which would have published
+    1 match) and LF Challenge (round 4 carried a match of 21/12). A round is the pending matches of ONE round that are no more than
+    ``ROUND_GAP_DAYS`` (3) apart from each other (a match weeks later is a postponement of its own); the rounds published are those whose
+    first match starts within ``ROUND_START_DAYS`` (5) of the next kick-off: advanced and midweek rounds come along, the round of the next
+    weekend (6-7 days later) does not, not even partly.
+    """
+
+    WEEKEND = [_cm(i, 4, f"2026-10-24T{17 + i % 3}:00") for i in range(1, 6)] + [_cm(6, 4, "2026-10-25T12:00"), _cm(7, 4, "2026-10-25T18:00")]
+
+    def test_a_normal_weekend_is_one_round(self):
+        rounds, out = _rounds(self.WEEKEND)
+        assert rounds == {4: ["1", "2", "3", "4", "5", "6", "7"]} and out["warning"] is None and out["calendar_url"]
+
+    def test_a_match_postponed_to_weeks_later_is_not_the_round_regression(self):
+        """2ª FEB B on 21/10/2026: a round-1 match postponed to 09/12 and round 4 on 24-25/10."""
+        rounds, _ = _rounds(self.WEEKEND + [_cm(90, 1, "2026-12-09T20:00")])
+        assert rounds == {4: ["1", "2", "3", "4", "5", "6", "7"]}
+
+    def test_a_match_of_the_round_postponed_to_weeks_later_is_left_out_of_it_regression(self):
+        """LF Challenge on 21/10/2026: round 4 with a match on 21/12."""
+        rounds, _ = _rounds(self.WEEKEND + [_cm(91, 4, "2026-12-21T20:45")])
+        assert rounds == {4: ["1", "2", "3", "4", "5", "6", "7"]}
+
+    def test_the_next_weekend_round_is_not_published_not_even_partly_regression(self):
+        """A window of 7 days from the first match reached the first two matches of the following round (2ª FEB A: 'round 5: 2 matches')."""
+        next_weekend = [_cm(20, 5, "2026-10-31T18:00"), _cm(21, 5, "2026-10-31T19:00"), _cm(22, 5, "2026-11-01T12:00")]
+        rounds, _ = _rounds(self.WEEKEND + next_weekend)
+        assert list(rounds) == [4]
+
+    def test_matches_advanced_to_the_same_weekend_are_their_own_round(self):
+        """Teams that play two rounds in a weekend to save a long trip: round 12 with 2 matches next to round 4; the rest of round 12 is later."""
+        advanced = [_cm(40, 12, "2026-10-24T20:00"), _cm(41, 12, "2026-10-25T12:00"), _cm(42, 12, "2026-12-12T18:00"), _cm(43, 12, "2026-12-12T19:00")]
+        rounds, _ = _rounds(self.WEEKEND + advanced)
+        assert rounds == {4: ["1", "2", "3", "4", "5", "6", "7"], 12: ["40", "41"]}
+
+    def test_a_postponed_match_a_few_days_before_the_weekend_comes_along_as_its_own_round(self):
+        rounds, _ = _rounds([_cm(90, 1, "2026-10-21T20:00")] + self.WEEKEND)
+        assert list(rounds) == [1, 4] and rounds[1] == ["90"]
+
+    def test_a_midweek_round_and_the_weekend_round_after_it_are_published_together(self):
+        midweek = [_cm(i, 3, "2026-10-20T20:00") for i in range(60, 64)] + [_cm(64, 3, "2026-10-21T20:30")]
+        rounds, _ = _rounds(midweek + self.WEEKEND, now="2026-10-20T10:00")
+        assert list(rounds) == [3, 4]
+
+    def test_the_midweek_round_after_a_weekend_comes_with_it_but_the_following_weekend_does_not(self):
+        midweek = [_cm(i, 5, "2026-10-28T20:00") for i in range(60, 64)]
+        later = [_cm(i, 6, "2026-10-31T18:00") for i in range(70, 74)]
+        rounds, _ = _rounds(self.WEEKEND + midweek + later)
+        assert list(rounds) == [4, 5]
+
+    def test_a_tournament_of_a_few_days_with_several_rounds_is_published_whole(self):
+        """Copa de España, group stage: 4 teams, 3 rounds of 2 matches in the same weekend."""
+        cup = [_cm(1, 1, "2026-10-24T10:00"), _cm(2, 1, "2026-10-24T12:00"), _cm(3, 2, "2026-10-24T17:00"), _cm(4, 2, "2026-10-24T19:00"),
+               _cm(5, 3, "2026-10-25T10:00"), _cm(6, 3, "2026-10-25T12:00")]
+        rounds, _ = _rounds(cup)
+        assert rounds == {1: ["1", "2"], 2: ["3", "4"], 3: ["5", "6"]}
+
+    def test_a_round_from_thursday_to_monday_is_not_cut(self):
+        spread = [_cm(1, 4, "2026-10-22T21:00"), _cm(2, 4, "2026-10-24T18:00"), _cm(3, 4, "2026-10-25T12:00"), _cm(4, 4, "2026-10-26T21:00")]
+        rounds, _ = _rounds(spread)
+        assert rounds == {4: ["1", "2", "3", "4"]}
+
+    def test_the_rounds_are_listed_by_the_kick_off_of_their_first_match(self):
+        out = _rounds(self.WEEKEND + [_cm(40, 12, "2026-10-23T20:00")])[1]
+        assert [r["round"] for r in out["rounds"]] == [12, 4]
+
+    def test_played_matches_and_matches_without_a_date_are_not_listed(self):
+        calendar = self.WEEKEND + [_cm(50, 4, None), _cm(51, 4, None, kind="result"), _cm(52, 4, "2026-10-01T18:00", kind="result")]
+        rounds, _ = _rounds(calendar)
+        assert rounds == {4: ["1", "2", "3", "4", "5", "6", "7"]}
+
+    def test_a_match_that_kicked_off_long_ago_counts_as_played(self):
+        rounds, _ = _rounds(self.WEEKEND + [_cm(53, 3, "2026-10-21T01:00")])
+        assert list(rounds) == [4]
+
+    def test_nothing_to_play_is_a_warning_and_a_failing_calendar_too(self):
+        rounds, out = _rounds([_cm(1, 4, "2026-10-01T18:00", kind="result")])
+        assert rounds == {} and "No quedan partidos" in out["warning"] and out["rounds"] == []
+        svc = MatchScheduleService(_db(), fetch_calendar=lambda u: (_ for _ in ()).throw(ConnectionError("down")), now=lambda: NOW,
+                                   competitions=lambda: COMPETITIONS)
+        assert svc.next_rounds("LF_CHALLENGE_2026")["rounds"] == [] and "calendario" in svc.next_rounds("LF_CHALLENGE_2026")["warning"].lower()
+        assert _service().next_rounds("FBCYL_1A_2026")["rounds"] == []
+
+    def test_each_match_has_what_the_package_and_the_index_need(self):
+        _, out = _rounds(self.WEEKEND)
+        match = out["rounds"][0]["matches"][0]
+        assert set(match) == {"code", "start", "round", "home", "away"} and match["round"] == 4
+
+    def test_next_round_is_the_biggest_of_them_and_the_earliest_on_a_tie(self):
+        svc = _service(calendar=[_cm(90, 1, "2026-10-21T20:00")] + self.WEEKEND, now=datetime.fromisoformat("2026-10-21T10:00"))
+        assert svc.next_round("LF_CHALLENGE_2026")["round"] == 4
+        tie = _service(calendar=[_cm(1, 1, "2026-10-21T20:00"), _cm(2, 4, "2026-10-24T20:00")], now=datetime.fromisoformat("2026-10-21T10:00"))
+        assert tie.next_round("LF_CHALLENGE_2026")["round"] == 1
