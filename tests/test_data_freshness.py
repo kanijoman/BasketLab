@@ -35,6 +35,20 @@ def _svc(db, calendar=CAL):
     return DataFreshnessService(db, schedule)
 
 
+class TestGroupOfTheCollection:
+    def test_the_check_compares_the_collection_with_the_calendar_of_its_group_regression(self):
+        """Bug (#449): the check read the page of the competition, which shows ONE group; the collection of another group of the same competition
+        (2ª FEB B) was compared with the matches of the first one and the Atlas refresh went red for matches that are not of its group."""
+        db = _db(RESULT_CODES, meta=False)
+        db.repository.connection.get_collection("COLLECTION_META").insert_one(
+            {"_id": "LF_CHALLENGE_2026", "competition_url": COMPETITIONS[0]["results_url"], "season_value": "2026", "group_value": "90000"})
+        other_group = [m for m in CAL if m.kind == "result"][:1]
+        schedule = MatchScheduleService(db, fetch_calendar=lambda u: CAL, competitions=lambda: COMPETITIONS,
+                                        fetch_group_calendar=lambda url, season, group: other_group if group == "90000" else CAL)
+        r = DataFreshnessService(db, schedule).check("LF_CHALLENGE_2026")
+        assert r["calendar_results"] == 1 and r["up_to_date"] is True
+
+
 class TestCheck:
     def test_up_to_date_when_every_played_match_is_stored(self):
         r = _svc(_db(RESULT_CODES)).check("LF_CHALLENGE_2026")

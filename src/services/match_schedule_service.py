@@ -18,6 +18,7 @@ from src.scraper.schedule_client import (  # noqa: F401  (re-exported for caller
     feb_competitions,
     feb_status,
     http_calendar,
+    http_group_calendar,
     madrid_now as _madrid_now,
     normalize_name,
 )
@@ -31,9 +32,11 @@ class MatchScheduleService:
     def __init__(self, db: Any, fetch_calendar: Callable[[str], List[CalendarMatch]] = http_calendar,
                  match_status: Callable[[str], str] = feb_status,
                  now: Callable[[], datetime] = _madrid_now,
-                 competitions: Callable[[], List[Dict[str, str]]] = feb_competitions) -> None:
+                 competitions: Callable[[], List[Dict[str, str]]] = feb_competitions,
+                 fetch_group_calendar: Callable[[str, str, str], List[CalendarMatch]] = http_group_calendar) -> None:
         self._db, self._fetch, self._status, self._now = db, fetch_calendar, match_status, now
         self._competitions = competitions
+        self._fetch_group = fetch_group_calendar
 
     # -- collection metadata -------------------------------------------------------------
 
@@ -64,6 +67,14 @@ class MatchScheduleService:
             return None
         return CALENDAR_URL.format(g=query["g"][0], season=game["_season"], nm=query["nm"][0])
 
+    def calendar(self, collection: str, url: str) -> List[CalendarMatch]:
+        """The calendar of the collection: of its GROUP when the scrape stored one (the page of a competition shows a single group, #449),
+        else the page as it is. A group that cannot be read raises (the caller says so): never the calendar of another group."""
+        meta = self._collection("COLLECTION_META").find_one({"_id": collection}) or {}
+        if meta.get("group_value") and meta.get("season_value"):
+            return self._fetch_group(url, str(meta["season_value"]), str(meta["group_value"]))
+        return self._fetch(url)
+
     def _known_codes(self, collection: str) -> set:
         return {str(c) for c in self._collection(collection).distinct("_id")}
 
@@ -77,7 +88,7 @@ class MatchScheduleService:
         if not url:
             return self._result([], None, "No se conoce el calendario de la competición (sin partidos ni metadatos)")
         try:
-            calendar = self._fetch(url)
+            calendar = self.calendar(collection, url)
         except Exception as exc:  # noqa: BLE001 - FEB down / layout change: report, do not fail the page
             return self._result([], url, f"No se pudo leer el calendario de FEB: {exc}")
         mine = [m for m in calendar if m.involves(team_id)]
@@ -101,7 +112,7 @@ class MatchScheduleService:
         if not url:
             return {**empty, "warning": "No se conoce el calendario de la competición (sin partidos ni metadatos)"}
         try:
-            calendar = self._fetch(url)
+            calendar = self.calendar(collection, url)
         except Exception as exc:  # noqa: BLE001 - FEB down / layout change: report, do not fail
             return {**empty, "calendar_url": url, "warning": f"No se pudo leer el calendario de FEB: {exc}"}
         limit = self._now() - STALE_AFTER
