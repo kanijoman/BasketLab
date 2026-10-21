@@ -5,12 +5,25 @@
  */
 export const PACKAGES_BASE_URL = 'https://raw.githubusercontent.com/kanijoman/BasketLab/live-packages'
 import type { Wrap } from './crypto'
+import { isFavorite, type Favorite } from './favorites'
 
 /** Version 1: encrypted with a password. Version 2 (issue #410): sealed by scope, the keys wrapped per scope are in `wraps` and the index publishes
  *  `open_key` while the beta is open. */
 const INDEX_VERSIONS = [1, 2]
 
+/** Structured data of the competition of an entry (publisher, issue #438); absent in an index from before it existed. */
+export interface CompetitionInfo {
+  key: string
+  label: string
+  competition: string
+  group: string
+  season: string
+  level: number | null
+  gender: 'M' | 'F' | null
+}
+
 export interface PackageIndexEntry {
+  competition?: CompetitionInfo
   /** Present when sealed by scope (index v2); without it the file is opened with the password. */
   wraps?: Wrap[]
   team_id: string
@@ -44,6 +57,7 @@ export interface RoundMatch {
 /** The bundle of the next round of a competition: ONE encrypted, compressed file with the package of every match. */
 export interface RoundIndexEntry {
   wraps?: Wrap[]
+  competition?: CompetitionInfo
   collection: string
   round: number | null
   file: string
@@ -111,11 +125,19 @@ export async function fetchRoundText(entry: RoundIndexEntry, fetcher: Fetcher = 
   return text
 }
 
-/** The competition of the club first; in each round the matches of the club first, then by kick-off. */
-export function orderRounds(rounds: RoundIndexEntry[]): RoundIndexEntry[] {
-  const byTime = (a: RoundMatch, b: RoundMatch) => Number(b.is_club) - Number(a.is_club) || (a.start ?? '').localeCompare(b.start ?? '')
+/** `LF_CHALLENGE_2026_2027_Liga_Regular_Único` -> `LF CHALLENGE 2026 2027 Liga Regular Único` (what an index without competition data shows). */
+export function competitionLabel(collection: string): string {
+  return collection.replace(/_+/g, ' ').trim()
+}
+
+/** The rounds with a team of interest first, then the competition of the club; in each round the matches of the teams of interest first, then
+ *  those of the club, then by kick-off. Without favourites it is the order it always was. */
+export function orderRounds(rounds: RoundIndexEntry[], favorites: Favorite[] = []): RoundIndexEntry[] {
+  const interesting = (m: RoundMatch) => Number(isFavorite(favorites, m.home.id, m.home.name) || isFavorite(favorites, m.away.id, m.away.name))
+  const byTime = (a: RoundMatch, b: RoundMatch) => interesting(b) - interesting(a) || Number(b.is_club) - Number(a.is_club) || (a.start ?? '').localeCompare(b.start ?? '')
+  const rank = (r: RoundIndexEntry) => (r.matches.some(m => interesting(m)) ? 1 : 0)
   return [...rounds]
-    .sort((a, b) => Number(b.club) - Number(a.club) || a.collection.localeCompare(b.collection))
+    .sort((a, b) => rank(b) - rank(a) || Number(b.club) - Number(a.club) || a.collection.localeCompare(b.collection))
     .map(round => ({ ...round, matches: [...round.matches].sort(byTime) }))
 }
 
