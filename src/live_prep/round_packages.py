@@ -87,11 +87,14 @@ def build_round_packages_from_db(handler: Any, collection: str, matches: List[Di
     from src.utils.collection_utils import is_fbcyl
 
     from .db_source import GAME_PROJECTION, _WITH_PBP, _counted, season_of
+    from .game_sources import games_of_sources, source_collections
 
     if is_fbcyl(collection):
         raise NotImplementedError("Live packages are FEB-only for now (FBCYL has a different feed).")
     mongo = handler.repository.connection.get_collection(collection)
-    games = _counted(mongo.find(_WITH_PBP, GAME_PROJECTION), 0, None)
+    team_ids = _team_ids(matches)
+    sources = source_collections(handler, collection, team_ids)    # the own collection + the other games of the teams of the round (#456)
+    games = _counted(games_of_sources(handler, sources, team_ids, _WITH_PBP, GAME_PROJECTION), 0, None)
     return build_round_packages(games, collection, season or season_of(mongo, collection), matches, club_team_id,
                                 roster_source=roster_source)
 
