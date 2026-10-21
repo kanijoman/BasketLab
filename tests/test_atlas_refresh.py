@@ -122,3 +122,38 @@ def test_the_cli_can_import_the_database_layer_in_a_clean_interpreter_regression
     code = "import run_atlas_refresh; from src.services.atlas_refresh import main; from src.database import MongoDBHandler"
     result = subprocess.run([sys.executable, "-c", code], cwd=root, env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-400:]
+
+
+class TestCompetitionsOfTheApp:
+    """The groups kept fresh in Atlas for the live app (issue #437, epic #435): LF Challenge, 2ª FEB A and B, 3ª FEB A-B (2026/27).
+
+    The refresh does not discover competitions: it scrapes exactly what ``config/atlas_refresh.json`` lists, so each group is an entry with the
+    values the scraper finds on the FEB site (competition page, season value, group value) and the labels that make the collection name.
+    """
+
+    EXPECTED = {
+        "LF_CHALLENGE_2026_2027_Liga_Regular_Único": ("g=67", "lfchallenge", "89981"),
+        "SEGUNDA_FEB_2026_2027_Liga_Regular_A": ("g=2", "segundafeb", "89999"),
+        "SEGUNDA_FEB_2026_2027_Liga_Regular_B": ("g=2", "segundafeb", "90000"),
+        "TERCERA_FEB_2026_2027_Liga_Regular_A-B": ("g=3", "tercerafeb", "90060"),
+    }
+
+    @staticmethod
+    def entries():
+        from src.database.utils import get_collection_name
+
+        return {get_collection_name(e.competition_label, e.season_label, e.group_label): e for e in load_config("config/atlas_refresh.json")}
+
+    def test_every_group_of_the_app_is_in_the_config_with_its_values(self):
+        entries = self.entries()
+        assert set(self.EXPECTED) <= set(entries)
+        for name, (g, nm, group_value) in self.EXPECTED.items():
+            entry = entries[name]
+            assert g in entry.competition_url and f"nm={nm}" in entry.competition_url and "t=2026" in entry.competition_url
+            assert (entry.season_value, entry.group_value, entry.year) == ("2026", group_value, "2026")
+
+    def test_two_entries_never_end_in_the_same_collection(self):
+        from src.database.utils import get_collection_name
+
+        names = [get_collection_name(e.competition_label, e.season_label, e.group_label) for e in load_config("config/atlas_refresh.json")]
+        assert len(names) == len(set(names))
