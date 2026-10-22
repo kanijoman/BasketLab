@@ -148,10 +148,17 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 /* the selector outweighs ".remote-packages li button { flex: none }" so the buttons can shrink; a long team name wraps (#404) */
 .remote-packages li.round-match .round-sides button { flex: 1 1 9rem; min-width: 0; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; }
 
-/* Filters of the matches list and the star of the teams "de interés" (#440) */
-.round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 8px; margin: 8px 0 12px; align-items: end; }
-.round-filters label { display: grid; gap: 4px; min-width: 0; }
-.round-filters .round-filter-check { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+/* Filters of the matches list and the teams "de interés" (#440, #473): the same controls as the rest of the app, a team per line with its star */
+.round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin: 8px 0 12px; align-items: end; }
+.round-filters label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
+.round-filters select { width: 100%; min-width: 0; font-size: 1rem; }
+.round-filters input:not([type='checkbox']) { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
+.round-filters .round-filter-check { display: flex; align-items: center; gap: 10px; min-height: 44px; color: var(--text); font-size: 1rem; }
+.round-filters input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+.round-info { display: grid; gap: 2px; min-width: 0; flex: 1 1 12rem; }
+.round-team { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.round-team .team-name { min-width: 0; overflow-wrap: anywhere; }
+.round-when { padding-left: 44px; font-size: 0.85rem; }
 .remote-packages li.round-match button.star { flex: none; min-width: 44px; min-height: 44px; padding: 0; background: transparent; border: 0; font-size: 1.25rem; line-height: 1; }
 
 /* Game pace card */

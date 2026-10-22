@@ -104,11 +104,14 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
               const nameOf = (id: string) => (id === match.home.id ? match.home.name : id === match.away.id ? match.away.name : id)
               return (
                 <li key={match.code} className="round-match">
-                  <span>
-                    <Star team={match.home} favorites={favorites} onToggle={toggle} />
-                    {match.is_club ? <strong>{match.home.name} – {match.away.name}</strong> : <>{match.home.name} – {match.away.name}</>}
-                    <Star team={match.away} favorites={favorites} onToggle={toggle} />
-                    <span className="detail"> · {when(match.start)}</span>
+                  <span className="round-info">
+                    {[match.home, match.away].map(team => (
+                      <span key={team.id} className="round-team">
+                        <Star team={team} favorites={favorites} onToggle={toggle} />
+                        {match.is_club ? <strong className="team-name">{team.name}</strong> : <span className="team-name">{team.name}</span>}
+                      </span>
+                    ))}
+                    <span className="detail round-when">{when(match.start)}</span>
                   </span>
                   <span className="round-sides">
                     {sidesOf(match).map(id => {
