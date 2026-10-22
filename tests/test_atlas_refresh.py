@@ -82,6 +82,28 @@ class TestRefreshAll:
                              scraper=scraper, freshness=self._freshness([]))
         assert "feb down" in report[0]["fatal"] and report[1]["fatal"] is None
 
+    def test_every_refreshed_collection_gets_the_team_index(self):
+        """Issue #502: the packages read the games of a team across the collections of the season; without ``HEADER.TEAM.id`` indexed they scan every document (~1 MB each)."""
+        db = _db()
+        refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=self._freshness([]))
+        keys = [info["key"] for info in db.repository.connection.get_collection.return_value.index_information().values()]
+        assert [("HEADER.TEAM.id", 1)] in keys
+
+    def test_the_index_is_created_even_when_there_is_nothing_new_so_old_collections_get_it_too(self):
+        db = _db()
+        db.stored["LF_CHALLENGE_LF_CHALLENGE_2026_A"] = {1}
+        refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=self._freshness([]))
+        keys = [info["key"] for info in db.repository.connection.get_collection.return_value.index_information().values()]
+        assert [("HEADER.TEAM.id", 1)] in keys
+
+    def test_a_failing_index_never_turns_a_refresh_into_an_error(self):
+        db = _db()
+        collection = MagicMock()
+        collection.create_index.side_effect = RuntimeError("quota")
+        db.repository.connection.get_collection.return_value = collection
+        report = refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=self._freshness([]))
+        assert report[0]["fatal"] is None
+
     def test_markdown_flags_the_missing_matches(self):
         report = refresh_all(_db(), [RefreshEntry(**ENTRY)], scraper=_scraper([]), freshness=self._freshness(["9"]))
         text = to_markdown(report)

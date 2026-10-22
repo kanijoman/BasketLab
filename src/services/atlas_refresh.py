@@ -127,6 +127,13 @@ def ingested_collections(db: Optional[Any], entries: List[RefreshEntry]) -> List
     return names
 
 
+def _ensure_team_index(db: Any, collection: str) -> None:
+    """``HEADER.TEAM.id`` of the games (issue #502): the packages read the games of a team in every collection of the season. Idempotent: it also covers the collections that already existed."""
+    from src.database.indexes import IndexManager
+
+    IndexManager(db.repository.connection).ensure_team_index(collection)
+
+
 def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]]) -> Dict[str, Any]:
     from src.services.feb_match_ingest import scrape_feb_collection
 
@@ -135,6 +142,7 @@ def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Ca
     try:
         job = scrape_feb_collection(db, entry, scraper)
         item.update(collection=job["collection"], job=job)
+        _ensure_team_index(db, job["collection"])
         item["freshness"] = check(job["collection"])
     except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
         item["fatal"] = f"{type(exc).__name__}: {exc}"
