@@ -60,6 +60,7 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
     review()
     await screen.findByLabelText(/partido de la demostración/i)
     fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+    fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
     expect(screen.getByRole('button', { name: /ver partido de ejemplo/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /ver recoletas zamora/i })).toBeTruthy()
   })

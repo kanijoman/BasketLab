@@ -155,6 +155,8 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .remote-packages li.next-match .round-sides button { flex: 1 1 9rem; min-width: 0; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; }
 
 /* Filters of the matches list and the teams "de interés" (#440, #473): the same controls as the rest of the app, a team per line with its star */
+.kind-select { display: grid; gap: 4px; margin: 8px 0 12px; color: var(--muted); font-size: 0.85rem; }
+.kind-select select { width: 100%; font-size: 1.05rem; padding: 8px; }
 .round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin: 8px 0 12px; align-items: end; }
 .round-filters label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
 .round-filters select { width: 100%; min-width: 0; font-size: 1rem; }

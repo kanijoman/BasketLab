@@ -69,4 +69,41 @@ describe('MatchLibrary: the demos of the Partidos tab (issues #476, #477, feedba
     show({ demos: [], hasSample: false })
     expect(document.querySelector('.match-library')).toBeNull()
   })
+
+  describe('filters by competition and team', () => {
+    const pick = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
+
+    it('narrows the list to a competition and its teams, and the sample game is not part of a filtered list', () => {
+      show()
+      pick('Competición', 'SEGUNDA FEB · Liga Regular A')
+      expect(rows()).toHaveLength(1)
+      expect(rows()[0]).toContain('SEGUNDA FEB')
+      const teams = within(screen.getByLabelText('Equipo')).getAllByRole('option').map(o => o.textContent)
+      expect(teams).toEqual(['Todos', 'EQUIPO 2536133', 'RIVAL 2536133'])
+    })
+
+    it('filters by team, whichever side it plays on, and «Todas» brings everything back', () => {
+      show()
+      pick('Equipo', 'RIVAL 2536851')
+      expect(rows()).toHaveLength(1)
+      expect(rows()[0]).toContain('TERCERA FEB')
+      pick('Equipo', '')
+      expect(rows()).toHaveLength(4)
+    })
+
+    it('changing the competition drops a team that does not play in it', () => {
+      show()
+      pick('Equipo', 'RIVAL 2536851')
+      pick('Competición', 'SEGUNDA FEB · Liga Regular A')
+      expect((screen.getByLabelText('Equipo') as HTMLSelectElement).value).toBe('')
+      expect(rows()).toHaveLength(1)
+    })
+
+    it('says so when nothing matches, and has no competition filter when the manifest has none', () => {
+      show({ demos: [demo('1')], hasSample: false })
+      expect(screen.queryByLabelText('Competición')).toBeNull()
+      pick('Equipo', 'EQUIPO 1')
+      expect(rows()).toHaveLength(1)
+    })
+  })
 })

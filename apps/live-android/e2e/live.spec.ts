@@ -43,6 +43,7 @@ test('the sample game is still there as the last match of the Partidos tab', asy
   await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
   await page.getByRole('tab', { name: 'Partidos' }).click()
+  await page.getByLabel('Tipo de partido').selectOption('demo')
   await page.getByRole('button', { name: 'Ver Partido de ejemplo' }).click()
   await expect(page.getByText('ACEITES ABRIL ADBA SANFER').first()).toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('MANRESA CBF A').first()).toBeVisible()

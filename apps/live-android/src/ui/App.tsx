@@ -44,7 +44,7 @@ import { fileNameFor, shareFile as shareFileDefault, sharePdf } from '../postmat
 import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
-import PackagesTab from './PackagesTab'
+import PackagesTab, { type MatchKind } from './PackagesTab'
 import { listenInviteLinks } from '../package/inviteLink'
 import ReviewSwitch from './ReviewSwitch'
 import TabBar from './TabBar'
@@ -110,6 +110,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [recordingStore] = useState<RecordingStore>(() => injectedRecordings ?? safeRecordingStore(new IndexedDbRecordingStore()))
   const [recordings, setRecordings] = useState<SavedRecording[]>([])
   const [reporting, setReporting] = useState<string | null>(null)
+  const [kind, setKind] = useState<MatchKind>('live')
   const [reportError, setReportError] = useState<string | null>(null)
   const [demoReportError, setDemoReportError] = useState<string | null>(null)
   /** Every alert of the match being followed, with its clock label: the annex of the post-match report (issue #409). */
@@ -403,7 +404,10 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     void store.load().then(r => r && beginPackage(r.plaintext))
   }
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); setTab('partido'); void store.load().then(r => r && beginPackage(r.plaintext)) }
-  const panelOf = (library?: ReactNode) => <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice} library={library} />
+  const panelOf = (lists?: { demos: ReactNode; finished: ReactNode }) => (
+    <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice}
+      kind={lists ? kind : 'live'} onKind={lists ? setKind : undefined} demos={lists?.demos} finished={lists?.finished} />
+  )
 
   if (phase.kind === 'loading') return <Splash />
   if (phase.kind === 'error') {
@@ -449,16 +453,20 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }
   /** Opens a match of the list and goes to see it (the matches are chosen in the Partidos tab, issue #476). */
   const openMatch = (value: DemoSource) => { record(`Partido abierto desde la lista (${value})`); pickSource(value); setTab('partido') }
-  const library = (
-    <>
+  const library = {
+    demos: (
       <MatchLibrary demos={matches} favorites={favorites} hasSample={demo !== null} source={source} disabled={live.running}
         onView={openMatch} reporting={reporting} onReport={value => void reportDemo(value)} error={demoReportError} />
-      <FinishedMatches matches={finishedMatches} disabled={live.running}
-        onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code); setTab('partido') }}
-        onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
-      <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
-    </>
-  )
+    ),
+    finished: finishedMatches.length + recordings.length === 0 ? undefined : (
+      <>
+        <FinishedMatches matches={finishedMatches} disabled={live.running}
+          onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code); setTab('partido') }}
+          onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
+        <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
+      </>
+    ),
+  }
   /** The next moment with something new: nothing happens in between, so it needs no question and the alerts of the tramo are none (#345). */
   const nextEvent = events.find(t => t > elapsedRef.current + 0.5)
   const goToNextEvent = async () => {

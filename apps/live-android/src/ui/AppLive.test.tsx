@@ -152,7 +152,10 @@ describe('live mode with a package', () => {
 })
 
 /** The matches kept on the device are in the Partidos tab (issue #476). */
-const inPartidos = async () => { fireEvent.click(await screen.findByRole('tab', { name: 'Partidos' })) }
+const inPartidos = async () => {
+  fireEvent.click(await screen.findByRole('tab', { name: 'Partidos' }))
+  fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'finished' } })
+}
 
 // #407: a finished live match is kept on the device and can be reviewed afterwards
 describe('finished matches (issue #407)', () => {
