@@ -10,6 +10,8 @@ export interface FinishedMatch {
   /** "Local – Visitante". */
   title: string
   savedAt: string
+  /** The competition of its package (readable, as the filters show it); absent in a match saved before issue #497. */
+  competition?: string
   /** Id of the own team: the post-match report is built from its point of view (issue #409). */
   ownId: string
   /** Every alert the engine raised during the match, with the clock label it was shown at: the annex of the report (#409). */

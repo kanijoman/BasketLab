@@ -12,7 +12,7 @@ import {
 } from '../engine/demo'
 import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
 import { loadFavorites } from '../package/favorites'
-import type { Fetcher } from '../package/remote'
+import { competitionLabel, type Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import { clockLabel } from './AlertCard'
@@ -329,6 +329,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     if (!saved || !current) return
     const match: FinishedMatch = {
       code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), ownId: current.team.id,
+      competition: competitionLabel(summarizePackage(saved.plaintext).collection) || undefined,
       alerts: [...alertLog.current], plaintext: saved.plaintext, game,
     }
     await finishedStore.save(match)
