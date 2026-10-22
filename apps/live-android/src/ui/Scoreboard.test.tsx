@@ -63,4 +63,25 @@ describe('Scoreboard', () => {
       expect(css).toMatch(/\.last-event \{[^}]*overflow-wrap: anywhere/)
     })
   })
+
+  describe('who has the ball (possession indicator)', () => {
+    const ball = (team_id: string | null) => ({ team_id, since: 95, why: 'made_basket' })
+
+    it('marks the team that has the ball, only that one, with an accessible label', () => {
+      render(<Scoreboard own={OWN} rival={RIVAL} homeId="1008898" score={{}} clock="Q1 10:00" ball={ball('1008631')} />)
+      const [left, right] = sides()
+      expect(left.classList.contains('has-ball')).toBe(false)
+      expect(right.classList.contains('has-ball')).toBe(true)
+      expect(within(right).getByLabelText('Tiene el balón: MIPELLETYMAS B.F. LEON')).toBeTruthy()
+      expect(screen.getAllByLabelText(/Tiene el balón/)).toHaveLength(1)
+    })
+
+    it('marks nobody when the ball is loose, unknown or the id is not one of the teams', () => {
+      for (const b of [ball(null), null, undefined, ball('999')]) {
+        const { unmount } = render(<Scoreboard own={OWN} rival={RIVAL} homeId="1008898" score={{}} clock="Q1 10:00" ball={b} />)
+        expect(document.querySelectorAll('.has-ball')).toHaveLength(0)
+        unmount()
+      }
+    })
+  })
 })

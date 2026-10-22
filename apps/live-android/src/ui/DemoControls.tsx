@@ -71,6 +71,9 @@ export default function DemoControls(p: Props) {
   const total = p.duration ?? 0
   const [drag, setDrag] = useState<number | null>(null)
   const [question, setQuestion] = useState<Question | null>(null)
+  /** Bumped to remount the range input: on some devices the native thumb stays where it was dragged although the value did not change (#472). */
+  const [syncKey, setSyncKey] = useState(0)
+  const resync = () => { setDrag(null); setSyncKey(k => k + 1) }
 
   /** The timeline commits when it is released, not while it moves: a touch to stop the scrolling must not jump the match. */
   const commitSeek = () => {
@@ -84,6 +87,7 @@ export default function DemoControls(p: Props) {
   const answer = (yes: boolean) => {
     const q = question
     setQuestion(null)
+    resync()
     if (!yes || !q) return
     if (q.kind === 'restart') p.onRestart()
     else p.onSeek(q.to)
@@ -117,9 +121,9 @@ export default function DemoControls(p: Props) {
       </div>
 
       <div className="timeline">
-        <input type="range" aria-label="Línea de tiempo" min={0} max={total} step={1} value={drag ?? Math.min(p.elapsed, total)}
-          disabled={p.duration === null} onChange={e => setDrag(Number(e.target.value))}
-          onPointerUp={commitSeek} onKeyUp={commitSeek} onBlur={commitSeek} />
+        <input key={syncKey} type="range" aria-label="Línea de tiempo" min={0} max={total} step={1} value={drag ?? Math.min(p.elapsed, total)}
+          disabled={p.duration === null} onChange={e => { if (!question) setDrag(Number(e.target.value)) }}
+          onPointerUp={commitSeek} onPointerCancel={resync} onKeyUp={commitSeek} onBlur={commitSeek} />
         <span className="timeline-time">{mmss(p.elapsed)} / {p.duration === null ? '—' : mmss(p.duration)}</span>
       </div>
 

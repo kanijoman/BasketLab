@@ -34,7 +34,7 @@ describe('brand of the app (issue #311)', () => {
     const engine = fakeEngine({ start: vi.fn(() => new Promise(resolve => { release = () => resolve({
       package_id: 'p', schema_version: 1, created_at: '', collection: 'c', season: '2025',
       team: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' } }) })) as never })
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     expect(await screen.findByText('Cargando motor…')).toBeTruthy()
     expect(document.querySelector('.splash')).toBeTruthy()
     release()
@@ -47,7 +47,7 @@ describe('brand of the app (issue #311)', () => {
   })
 
   it('Acerca de shows the logo, the name and the version together', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
     const about = screen.getByRole('region', { name: 'Acerca de' })

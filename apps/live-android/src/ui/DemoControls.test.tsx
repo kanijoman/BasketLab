@@ -129,6 +129,17 @@ describe('no accidental resets (issue #309)', () => {
     expect(p.onSeek).toHaveBeenCalledWith(630)
   })
 
+  it('after cancelling a jump the bar goes back to the playback position even if the device sent a late change (#472 regression)', () => {
+    setup({ elapsed: 600 })
+    drag(100); release()
+    drag(105)                                    // a late input event after the release (seen on the tablet): it must not leave the thumb behind
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(slider().value).toBe('600')
+    slider().value = '3000'                      // the browser moved the thumb without telling React
+    fireEvent.pointerCancel(slider())
+    expect(slider().value).toBe('600')
+  })
+
   it('a small jump forward is direct; a jump back or a long one forward asks first', () => {
     const p = setup({ elapsed: 600 })
     drag(700); release()

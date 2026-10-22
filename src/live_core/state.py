@@ -80,6 +80,7 @@ class LiveGame:
         self.last_num = 0
         self.last_event: Optional[Dict[str, Any]] = None   # {kind, elapsed, text, period, remaining, team_id} of the last line applied (lineup_settle.py, #413; the app shows the text, #490)
         self._last_miss_team: Optional[str] = None
+        self.ball: Optional[Dict[str, Any]] = None        # who has the ball now: {team_id, since, why}; an indicator for the scoreboard (#497)
         self._in_clutch = False   # is the event being applied inside the clutch window (margin before it)?
         self.lineups = LineupTracker(list(self.teams))
         self.possessions = PossessionCounters(list(self.teams))   # exact possessions and points by origin (#357)
@@ -128,6 +129,7 @@ class LiveGame:
         self._in_clutch = clutch_mod.in_window(ev.period, ev.elapsed, self._margin())   # the margin BEFORE the event
         self.period, self.remaining, self.elapsed, self.last_num = ev.period, ev.remaining, ev.elapsed, ev.num
         self.last_event = {"kind": ev.kind, "elapsed": ev.elapsed, "text": ev.text, "period": ev.period, "remaining": ev.remaining, "team_id": ev.team_id}
+        self._move_ball(ev)
         player = self._player_for(ev)
         team = self.teams.get(ev.team_id) if ev.team_id else None
 
@@ -136,6 +138,35 @@ class LiveGame:
             handler(ev, player, team)
         self.lineups.refresh(self.players, ev.elapsed)
         self.possessions.feed(ev)
+
+    def _other(self, team_id: Optional[str]) -> Optional[str]:
+        others = [t for t in self.teams if t != team_id]
+        return others[0] if len(self.teams) == 2 and team_id in self.teams and len(others) == 1 else None
+
+    def _move_ball(self, ev: Event) -> None:
+        """Who has the ball after ``ev`` (an indicator read from the last events, not the exact possessions of ``possessions.py``): the rival after a made
+        basket or a turnover, nobody after a miss until the rebound, the rebounder or the stealer, the shooter during free throws; nothing at a period boundary."""
+        team, kind = ev.team_id, ev.kind
+        if len(self.teams) != 2:
+            return
+        owner = why = None
+        if kind in ("period_start", "period_end"):
+            self.ball = None
+            return
+        if kind in ("fg2", "fg3") and ev.made:
+            owner, why = self._other(team), "made_basket"
+        elif kind in ("fg2", "fg3"):
+            owner, why = None, "miss"
+        elif kind == "ft":
+            owner, why = team, "free_throw"
+        elif kind == "turnover":
+            owner, why = self._other(team), "turnover"
+        elif kind in ("rebound", "steal"):
+            owner, why = team, kind
+        else:
+            return          # fouls, substitutions, timeouts, assists...: the ball does not change hands
+        if kind != "ft" or team is not None:
+            self.ball = {"team_id": owner, "since": ev.elapsed, "why": why}
 
     def _player_for(self, ev: Event) -> Optional[_Player]:
         if not ev.player_id or ev.kind not in _PLAYER_KINDS:
@@ -311,6 +342,7 @@ class LiveGame:
             "last_num": self.last_num, "last_event": dict(self.last_event) if self.last_event else None, "score": dict(self.score), "teams": teams, "players": players,
             "log": [list(e) for e in self.log],
             "possessions": self.possessions.snapshot(),
+            "ball": dict(self.ball) if self.ball else None,
             # the first team of FEB's header is the local one; the session JSON sorts keys, so say it explicitly
             "home_id": next(iter(self.teams), None),
             **self.lineups.snapshot(),

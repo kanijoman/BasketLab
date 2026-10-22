@@ -44,7 +44,7 @@ async function connect(supported = true) {
   feb.at = 0
   const engine = fakeEngine()
   const dev = fakeDevice(supported)
-  render(<App engine={engine} loadDemo={loadDemo} store={store} febHttp={feb.get} feedTiming={longSleep} device={dev.device} />)
+  render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={store} febHttp={feb.get} feedTiming={longSleep} device={dev.device} />)
   fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
   await waitFor(() => expect(engine.update).toHaveBeenCalledTimes(1))
   return { engine, dev, feb }

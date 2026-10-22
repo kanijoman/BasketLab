@@ -85,6 +85,8 @@ export interface Snapshot {
   last_event?: { kind: string; elapsed: number; text?: string; period?: number; remaining?: number; team_id?: string | null } | null
   /** Exact possessions of the closed possessions and points by origin (live_possessions.py); null without two teams. No alert uses it yet. */
   possessions?: PossessionsSnapshot | null
+  /** Who has the ball after the last line (null before the first one or between periods); team_id null = loose ball after a miss. */
+  ball?: { team_id: string | null; since: number; why: string } | null
   [key: string]: unknown
 }
 

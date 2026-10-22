@@ -17,21 +17,21 @@ const PACE = {
 
 describe('App', () => {
   it('shows a loading state, then both teams once the engine is ready', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     expect(screen.getByText(/cargando motor/i)).toBeTruthy()
     expect(await screen.findByText('EQUIPO PROPIO')).toBeTruthy()
     expect(screen.getByText('EQUIPO RIVAL')).toBeTruthy()
   })
 
   it('reports an engine start failure to the user', async () => {
-    render(<App engine={fakeEngine({ start: vi.fn().mockRejectedValue(new Error('checksum')) })} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine({ start: vi.fn().mockRejectedValue(new Error('checksum')) })} loadDemo={loadDemo} />)
     expect(await screen.findByText(/no se pudo iniciar el motor/i)).toBeTruthy()
     expect(screen.getByText(/checksum/)).toBeTruthy()
   })
 
   it('plays the demo: the clock advances and alerts with their proposal appear', async () => {
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
@@ -42,7 +42,7 @@ describe('App', () => {
   })
 
   it('does not show the same alert twice', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
@@ -53,7 +53,7 @@ describe('App', () => {
 
   it('lets the user change the replay speed', async () => {
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('radio', { name: '30×' }))
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
@@ -63,7 +63,7 @@ describe('App', () => {
 
   it('seeks forward on the timeline without restarting the engine (issue #231)', async () => {
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.change(screen.getByRole('slider', { name: 'Línea de tiempo' }), { target: { value: '60' } })
     fireEvent.pointerUp(screen.getByRole('slider', { name: 'Línea de tiempo' }))     // the timeline seeks when it is released (issue #309)
@@ -74,7 +74,7 @@ describe('App', () => {
 
   it('seeks back by rebuilding the engine from the start and jumping to that second (issue #231)', async () => {
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.change(screen.getByRole('slider', { name: 'Línea de tiempo' }), { target: { value: '60' } })
     fireEvent.pointerUp(screen.getByRole('slider', { name: 'Línea de tiempo' }))
@@ -89,7 +89,7 @@ describe('App', () => {
 
   it('pauses when the user seeks (issue #231)', async () => {
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     expect(screen.getByRole('button', { name: 'Pausa' })).toBeTruthy()
@@ -100,7 +100,7 @@ describe('App', () => {
 
   it('stops at the end of the game', async () => {
     const engine = fakeEngine({ loadReplay: vi.fn().mockResolvedValue({ duration: 3, status: '' }) })
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
@@ -115,7 +115,7 @@ describe('App', () => {
 
     it('uses the stored package instead of the demo and shows its summary', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
+      render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
       await screen.findByText('EQUIPO PROPIO')
       fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))                   // the summary is in the Partidos tab (#224)
       expect(await screen.findByText(/partidos: 5 propios/)).toBeTruthy()
@@ -128,7 +128,7 @@ describe('App', () => {
 
     it('goes back to the demo when the package is removed', async () => {
       const store = memoryStore(saved)
-      render(<App engine={fakeEngine()} loadDemo={loadDemo} store={store} />)
+      render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={store} />)
       await screen.findByText('EQUIPO PROPIO')
       fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
       fireEvent.click(await screen.findByRole('button', { name: /quitar paquete/i }))
@@ -139,7 +139,7 @@ describe('App', () => {
 
     it('reports a stored package the engine rejects and offers to remove it', async () => {
       const engine = fakeEngine({ start: vi.fn().mockRejectedValue(new Error('Package schema version 9 is not supported')) })
-      render(<App engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
+      render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore(saved)} />)
       expect(await screen.findByText(/schema version 9/)).toBeTruthy()
       expect(screen.getByRole('button', { name: /quitar paquete/i })).toBeTruthy()
     })
@@ -147,7 +147,7 @@ describe('App', () => {
 
   it('shows the pace card under the scoreboard once the engine reports the pace', async () => {
     const engine = fakeEngine({ replay: vi.fn(async (e: number) => ({ ...out(e), analysis: e >= 5 ? { pace: PACE } : {} })) })
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     expect(screen.getByText(/calculando/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
@@ -173,7 +173,7 @@ describe('App', () => {
 
     it('opens on the latest recorded match, not on the sample game', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} {...props} />)
+      render(<App initialTab="partido" engine={engine} {...props} />)
       await waitFor(() => expect(engine.loadRecording).toHaveBeenCalledWith('REC'))
       expect(engine.start).toHaveBeenLastCalledWith('REALPKG')
       expect(engine.loadReplay).not.toHaveBeenCalled()
@@ -201,7 +201,7 @@ describe('App', () => {
 
       it('the selector names the competition of the demos that have it, and the default one is still the one the app opens with', async () => {
         const engine = fakeEngine()
-        render(<App engine={engine} {...props} loadManifest={() => Promise.resolve(MANY)} />)
+        render(<App initialTab="partido" engine={engine} {...props} loadManifest={() => Promise.resolve(MANY)} />)
         await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('REALPKG'))
         expect((await screen.findByLabelText(/partido de la demostración/i)).textContent).toContain('Recoletas Zamora')
         expect(await options()).toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'SEGUNDA FEB · Liga Regular A — Equipo 2536133 – Rival 2536133',
@@ -210,14 +210,14 @@ describe('App', () => {
 
       it('the demos of a team marked as de interés come first in the selector', async () => {
         localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1010490', name: 'CAJA RURAL RDL' }]))
-        render(<App engine={fakeEngine()} {...props} loadManifest={() => Promise.resolve(MANY)} />)
+        render(<App initialTab="partido" engine={fakeEngine()} {...props} loadManifest={() => Promise.resolve(MANY)} />)
         expect((await options())[0]).toMatch(/TERCERA FEB/)
       })
     })
 
     it('opens at the first event of a recorded match, not at the minutes before it (issue #346)', async () => {
       const engine = fakeEngine({ loadRecording: vi.fn().mockResolvedValue({ duration: 7155, status: 'GRABACION', match: '2524470', frames: 353, start_at: 270 }) })
-      render(<App engine={engine} {...props} />)
+      render(<App initialTab="partido" engine={engine} {...props} />)
       await screen.findByLabelText(/partido de la demostración/i)
       expect(screen.getByText('4:30 / 119:15')).toBeTruthy()
     })
@@ -230,7 +230,7 @@ describe('App', () => {
 
       it('jumps to the next moment with something new, without a question and without speeding up', async () => {
         const engine = withEvents(EVENTS)
-        render(<App engine={engine} {...props} />)
+        render(<App initialTab="partido" engine={engine} {...props} />)
         await screen.findByLabelText(/partido de la demostración/i)
         expect(screen.getByText('4:30 / 119:15')).toBeTruthy()
         next()
@@ -242,7 +242,7 @@ describe('App', () => {
       })
 
       it('is disabled after the last event', async () => {
-        render(<App engine={withEvents([270, 285])} {...props} />)
+        render(<App initialTab="partido" engine={withEvents([270, 285])} {...props} />)
         await screen.findByLabelText(/partido de la demostración/i)
         next()
         await screen.findByText('4:45 / 119:15')
@@ -250,21 +250,21 @@ describe('App', () => {
       })
 
       it('is not there for the sample game nor for a recording that does not list its events', async () => {
-        render(<App engine={withEvents(undefined)} {...props} />)
+        render(<App initialTab="partido" engine={withEvents(undefined)} {...props} />)
         await screen.findByLabelText(/partido de la demostración/i)
         expect(screen.queryByRole('button', { name: /siguiente evento/i })).toBeNull()
       })
     })
 
     it('a recording that says nothing starts at 0:00, as before', async () => {
-      render(<App engine={fakeEngine()} {...props} />)
+      render(<App initialTab="partido" engine={fakeEngine()} {...props} />)
       await screen.findByLabelText(/partido de la demostración/i)
       expect(screen.getByText('0:00 / 1:40')).toBeTruthy()
     })
 
     it('plays it second by second: waits for the match, shows the real 404 and then the alerts', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} {...props} />)
+      render(<App initialTab="partido" engine={engine} {...props} />)
       fireEvent.click(await screen.findByRole('button', { name: /reproducir/i }))
       await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
       expect(await screen.findByText(/esperando el inicio/i)).toBeTruthy()
@@ -278,7 +278,7 @@ describe('App', () => {
 
     it('puts the local team on the left of the scoreboard (home id from the engine metadata)', async () => {
       const engine = fakeEngine({ start: vi.fn().mockResolvedValue({ ...META, home_id: '2' }) })
-      render(<App engine={engine} {...props} />)
+      render(<App initialTab="partido" engine={engine} {...props} />)
       await screen.findByLabelText(/partido de la demostración/i)
       const sides = Array.from(document.querySelectorAll('.scoreboard .team .name')).map(n => n.textContent)
       expect(sides).toEqual(['EQUIPO RIVAL', 'EQUIPO PROPIO'])
@@ -286,20 +286,20 @@ describe('App', () => {
 
     it('without any recording it falls back to the sample game', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} loadMatch={loadMatch} />)
+      render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} loadMatch={loadMatch} />)
       await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith('GAME'))
       expect(engine.loadRecording).not.toHaveBeenCalled()
     })
 
     it('a manifest that cannot be read also falls back to the sample game', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} loadDemo={loadDemo} loadManifest={() => Promise.reject(new Error('404'))} loadMatch={loadMatch} />)
+      render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} loadManifest={() => Promise.reject(new Error('404'))} loadMatch={loadMatch} />)
       await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith('GAME'))
     })
 
     it('switches to the sample game and back to the recorded match', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} {...props} />)
+      render(<App initialTab="partido" engine={engine} {...props} />)
       await waitFor(() => expect(engine.loadRecording).toHaveBeenCalledTimes(1))
       pick(/ver partido de ejemplo/i)
       await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('PKG'))
@@ -317,7 +317,7 @@ describe('App', () => {
       it('is built from the recording of the demo with the gender of its package and shared', async () => {
         const engine = fakeEngine({ report: vi.fn().mockResolvedValue(REPORT) })
         const p = pdf()
-        render(<App engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={p as never} />)
+        render(<App initialTab="partido" engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={p as never} />)
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
         fireEvent.click(screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }))
@@ -329,7 +329,7 @@ describe('App', () => {
       it('the sample game has its report too', async () => {
         const engine = fakeEngine({ report: vi.fn().mockResolvedValue(REPORT) })
         const p = pdf()
-        render(<App engine={engine} {...props} loadDemo={() => Promise.resolve({ package: pkgText, game: 'GAME' })} pdf={p as never} />)
+        render(<App initialTab="partido" engine={engine} {...props} loadDemo={() => Promise.resolve({ package: pkgText, game: 'GAME' })} pdf={p as never} />)
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
         fireEvent.click(screen.getByRole('button', { name: /informe pdf de partido de ejemplo/i }))
@@ -339,7 +339,7 @@ describe('App', () => {
 
       it('a failure is said where the button is, and the buttons come back', async () => {
         const engine = fakeEngine({ report: vi.fn().mockRejectedValue(new Error('motor')) })
-        render(<App engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={pdf() as never} />)
+        render(<App initialTab="partido" engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={pdf() as never} />)
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
         fireEvent.click(screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }))
@@ -349,14 +349,14 @@ describe('App', () => {
     })
 
     it('the demo notice of the Partido tab is gone: the matches are in the Partidos tab (issue #476)', async () => {
-      render(<App engine={fakeEngine()} {...props} />)
+      render(<App initialTab="partido" engine={fakeEngine()} {...props} />)
       await screen.findByLabelText(/partido de la demostración/i)
       expect(screen.queryByText(/estás viendo un partido de demostración/i)).toBeNull()
     })
 
     it('says so and shows the sample game when the recording cannot be loaded', async () => {
       const engine = fakeEngine()
-      render(<App engine={engine} loadDemo={loadDemo} loadManifest={loadManifest} loadMatch={() => Promise.reject(new Error('sin red'))} />)
+      render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} loadManifest={loadManifest} loadMatch={() => Promise.reject(new Error('sin red'))} />)
       expect(await screen.findByText(/no se pudo cargar el partido/i)).toBeTruthy()
       expect(engine.loadReplay).toHaveBeenCalledWith('GAME')
     })

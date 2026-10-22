@@ -1,7 +1,13 @@
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { FakeFeb } from '../src/feed/fakeFeb'
+
+/** The app opens on the list of matches (Partidos); most of these flows start on the match tab. */
+async function openApp(page: Page) {
+  await page.goto('/')
+  await page.getByRole('tab', { name: 'Partido', exact: true }).click({ timeout: 90_000 })
+}
 
 // the published-packages list must not depend on the real network (an offline error would add a second alert)
 test.beforeEach(async ({ page }) => {
@@ -12,7 +18,7 @@ test('the demo opens on the latest recorded match, local team on the left, and a
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
 
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByText('RECOLETAS ZAMORA').first()).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible()
   // Zamora hosted Leon: the local team goes on the left, and no team is labelled as ours
@@ -34,7 +40,7 @@ test('the demo opens on the latest recorded match, local team on the left, and a
 })
 
 test('the sample game is still there as the last match of the Partidos tab', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
   await page.getByRole('tab', { name: 'Partidos' }).click()
   await page.getByRole('button', { name: 'Ver Partido de ejemplo' }).click()
@@ -43,7 +49,7 @@ test('the sample game is still there as the last match of the Partidos tab', asy
 })
 
 test('layout fits a phone: no horizontal scroll and touch-sized controls', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
@@ -56,7 +62,7 @@ test('layout fits a phone: no horizontal scroll and touch-sized controls', async
 })
 
 test('the engine update stays fluid (well under a second per update on this machine)', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Reproducir' }).click({ timeout: 90_000 })
   const perf = page.locator('.perf')
   await expect(perf).toBeVisible({ timeout: 30_000 })
@@ -66,7 +72,7 @@ test('the engine update stays fluid (well under a second per update on this mach
 
 test('importing an encrypted package in a real browser: WebCrypto + engine validation + persistence', async ({ page }) => {
   const bpkg = fileURLToPath(new URL('../../../tests/live_vectors/demo.bpkg', import.meta.url))
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
   // the import is in the Partidos tab (issue #224)
@@ -83,11 +89,13 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
 
   await page.getByLabel('Contraseña del paquete').fill('clave-de-prueba-1')
   await page.getByRole('button', { name: 'Importar' }).click()
+  await expect(page.getByRole('tab', { name: 'Partido', exact: true })).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 })
+  await page.getByRole('tab', { name: 'Partidos' }).click()                 // loading a package takes the user to the match tab
   await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 30_000 })   // the summary of the loaded package
 
   // survives a reload (IndexedDB) and can be removed
   await page.reload()
-  await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 90_000 })   // the tab is remembered too
+  await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 90_000 })   // the app opens on Partidos
   await page.getByRole('button', { name: 'Quitar paquete' }).click()
   await page.getByRole('tab', { name: 'Partido', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 30_000 })
@@ -96,7 +104,7 @@ test('importing an encrypted package in a real browser: WebCrypto + engine valid
 test('the real recorded match (Zamora - Leon) plays through the real engine in a real browser (issue #174)', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible({ timeout: 60_000 })
@@ -125,7 +133,7 @@ test('the real recorded match (Zamora - Leon) plays through the real engine in a
 })
 
 test('the win probability card in the middle of the real match, for the layout review (issue #257)', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible({ timeout: 60_000 })
   await page.getByRole('radio', { name: '300×' }).click()
@@ -167,7 +175,7 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
     await route.fulfill({ status: response.status, headers: { ...cors, 'content-type': 'application/json' }, body: response.text })
   })
 
-  await page.goto('/')
+  await openApp(page)
   await page.getByRole('button', { name: 'Conectar con FEB' }).click({ timeout: 90_000 })
   await expect(page.getByText(/En directo · último dato/)).toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('MIPELLETYMAS B.F. LEON').first()).toBeVisible()
@@ -182,7 +190,7 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
 })
 
 test('light and dark: the switch in the header changes the whole screen and is remembered (issue #322)', async ({ page }) => {
-  await page.goto('/')
+  await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
   const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
   const toggle = () => page.getByRole('button', { name: /^cambiar a modo/i })
@@ -195,6 +203,7 @@ test('light and dark: the switch in the header changes the whole screen and is r
   expect(['light', 'dark']).toContain(chosen)
   await page.screenshot({ path: `test-results/theme-${chosen}.png` })
   await page.reload()
+  await page.getByRole('tab', { name: 'Partido', exact: true }).click({ timeout: 90_000 })
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
   expect(await background()).toBe(other)                                  // remembered across a reload
   await toggle().click()

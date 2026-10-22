@@ -27,7 +27,7 @@ const loadDemo = () => Promise.resolve({ package: 'PKG', game: 'GAME' })
 const KEY = 'basketlab-live-feedback:demo:sample'
 
 async function playUntilTheAlert() {
-  render(<App engine={engine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} />)
+  render(<App initialTab="partido" engine={engine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} />)
   await screen.findByText('EQUIPO PROPIO')
   fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
   await act(async () => { await vi.advanceTimersByTimeAsync(6000) })

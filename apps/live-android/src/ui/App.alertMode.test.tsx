@@ -10,7 +10,7 @@ beforeEach(() => {
 })
 
 async function openAbout(engine = fakeEngine()) {
-  render(<App engine={engine} loadDemo={loadDemo} />)
+  render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
   await screen.findByText('EQUIPO PROPIO')
   fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
   return engine
@@ -46,7 +46,7 @@ describe('alert mode in Acerca de (issue #130)', () => {
   it('the engine gets the remembered mode before the first package starts', async () => {
     localStorage.setItem(ALERT_MODE_KEY, 'aggressive')
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     const mode = (engine.setMode as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]
     const start = (engine.start as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0]

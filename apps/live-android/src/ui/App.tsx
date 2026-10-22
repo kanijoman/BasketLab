@@ -48,13 +48,15 @@ import PackagesTab from './PackagesTab'
 import { listenInviteLinks } from '../package/inviteLink'
 import ReviewSwitch from './ReviewSwitch'
 import TabBar from './TabBar'
-import { useTab } from './useTab'
+import { useTab, type TabId } from './useTab'
 import FeedbackPanel from './FeedbackPanel'
 import { useFeedback } from '../feedback/useFeedback'
 
 export type { AppUpdateDeps }
 
 interface Props {
+  /** Tab the app opens on (tests; the app opens on Partidos). */
+  initialTab?: TabId
   engine?: EngineApi
   loadDemo?: () => Promise<DemoData>
   /** Recorded matches the demo can replay, newest first (injected in tests). */
@@ -100,7 +102,7 @@ const defaultPdf: PdfDeps = {
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
 
-export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, recordingStore: injectedRecordings, shareFile = shareFileDefault, pdf = defaultPdf, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs }: Props) {
+export default function App({ engine: injected, loadDemo = loadDemoData, loadManifest = fetchManifest, loadMatch = fetchMatch, store: injectedStore, finishedStore: injectedFinished, recordingStore: injectedRecordings, shareFile = shareFileDefault, pdf = defaultPdf, remoteFetcher, febHttp, feedTiming, device, appUpdate, alertCooldownMs, initialTab }: Props) {
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [finishedStore] = useState<FinishedStore>(() => injectedFinished ?? safeFinishedStore(new IndexedDbFinishedStore()))
@@ -134,7 +136,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [feed, setFeed] = useState<RecordingFrame['feed']>('ok')
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
-  const [tab, setTab] = useTab()
+  const [tab, setTab] = useTab(initialTab)
   // a reminder of a match of a team of interest was tapped (issue #482): the app opens on the list of matches
   useEffect(() => {
     let stop: () => void = () => undefined
@@ -400,7 +402,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     record('Vuelta al partido del paquete')
     void store.load().then(r => r && beginPackage(r.plaintext))
   }
-  const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
+  const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); setTab('partido'); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panelOf = (library?: ReactNode) => <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice} library={library} />
 
   if (phase.kind === 'loading') return <Splash />
@@ -494,7 +496,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           onPackages={() => setTab('paquetes')} />
       )}
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
-        clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} lastEvent={snap?.last_event} />
+        clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} lastEvent={snap?.last_event} ball={snap?.ball} />
 
       {/* the playback controls stay under the scoreboard to play comfortably (#405) */}
       {!liveMode && (
