@@ -48,6 +48,20 @@ class IndexManager:
             print(f"[IndexManager] Error ensuring indexes for {collection_name}: {e}")
             return False
 
+    def ensure_team_index(self, collection_name: str) -> bool:
+        """Only the index of the games of a team (``HEADER.TEAM.id``) of a FEB collection: small, and what the packages across collections need (issue #502).
+
+        ``ensure_indexes`` also indexes the play-by-play array, which on the free Atlas tier (512 MB) is not worth its size; the refresh creates this one.
+        Same name and key as in ``_ensure_feb_indexes``, so calling both is harmless."""
+        if not self.connection.is_connected() or _is_fbcyl(collection_name):
+            return False
+        try:
+            self.connection.get_collection(collection_name).create_index([("HEADER.TEAM.id", pymongo.ASCENDING)], name="team_id_1", background=True)
+            return True
+        except Exception as e:  # noqa: BLE001 - an index is an optimisation: it never stops what called it
+            print(f"[IndexManager] Error creating the team index of {collection_name}: {e}")
+            return False
+
     def _ensure_fbcyl_indexes(self, collection) -> bool:
         """
         Create indexes for FBCYL collections.

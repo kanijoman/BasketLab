@@ -127,3 +127,28 @@ class TestDropIndex:
         conn.is_connected.return_value = False
         mgr = IndexManager(conn)
         assert mgr.drop_index("FEB_LF2_2025_A", "player_id_1") is False
+
+
+class TestEnsureTeamIndex:
+    """Issue #502: only the index of the games of a team, what the packages across collections need (the full set indexes the play-by-play array too)."""
+
+    def test_creates_only_the_team_index_of_a_feb_collection(self):
+        conn, coll = _make_connection(collection_name="FEB_LF2_2025_A")
+        assert IndexManager(conn).ensure_team_index("FEB_LF2_2025_A") is True
+        assert {idx["name"] for idx in coll.list_indexes()} == {"_id_", "team_id_1"}
+
+    def test_it_is_the_same_index_the_full_set_creates(self):
+        conn, coll = _make_connection(collection_name="FEB_LF2_2025_A")
+        mgr = IndexManager(conn)
+        mgr.ensure_team_index("FEB_LF2_2025_A")
+        assert mgr.ensure_indexes("FEB_LF2_2025_A") is True
+        assert [idx["name"] for idx in coll.list_indexes()].count("team_id_1") == 1
+
+    def test_fbcyl_not_connected_or_failing_say_false_and_never_raise(self):
+        conn, _ = _make_connection(collection_name="FBCYL_SE_2025")
+        assert IndexManager(conn).ensure_team_index("FBCYL_SE_2025") is False
+        conn, _ = _make_connection(connected=False)
+        assert IndexManager(conn).ensure_team_index("FEB_LF2_2025_A") is False
+        conn, _ = _make_connection()
+        conn.get_collection.side_effect = RuntimeError("down")
+        assert IndexManager(conn).ensure_team_index("FEB_LF2_2025_A") is False
