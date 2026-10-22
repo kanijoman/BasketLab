@@ -17,10 +17,18 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .advice_types import Advice, RuleContext
 from .clock import period_length, period_start
 from .proposals import tactic_proposal
+from .summary_cause import cause_key, fouls_key
 from .summary_pace import pace_facts, pace_key, pace_line
 from .windows import player_points, window_stats
 
 _TITLES = {1: "Fin del 1.er cuarto", 2: "Descanso", 3: "Fin del 3.er cuarto"}
+_ORDINALS = {1: "1.er", 2: "2.º", 3: "3.er"}
+
+
+def _points(label: str, pair) -> str:
+    """``marcador 21-13 (+8)``: a score of the game or of a period, with its difference (issue #486)."""
+    return f"{label} {pair[0]}-{pair[1]} ({pair[0] - pair[1]:+d})"
+
 MAX_KEYS, MAX_ADJUSTMENTS = 3, 2
 
 Facts = Dict[str, Any]
@@ -81,9 +89,15 @@ def _own_fg(f: Facts) -> Optional[Tuple[str, str]]:
 
 
 def _fouls(f: Facts) -> Optional[Tuple[str, str]]:
-    if f["fouls"] >= f["cfg"].summary_fouls:
-        return f"Faltas de equipo: {f['fouls']}", "Defender sin falta"
-    return None
+    return fouls_key(f)
+
+
+def _cause(f: Facts) -> Optional[Tuple[str, str]]:
+    return cause_key(f)
+
+
+def _no_cause(f: Facts) -> Optional[Tuple[str, str]]:
+    return cause_key(f, clear=False)
 
 
 def _comeback(f: Facts) -> Optional[Tuple[str, str]]:
@@ -113,9 +127,9 @@ def _period_net(f: Facts) -> Optional[Tuple[str, str]]:
 
 
 _CANDIDATES: List[Tuple[str, _Candidate]] = [
-    ("comeback", _comeback), ("collapse", _collapse), ("pace", _pace), ("turnovers", _turnovers), ("rival_orb", _rival_orb), ("rival_scorer", _rival_scorer), ("own_ft", _own_ft),
+    ("comeback", _comeback), ("collapse", _collapse), ("cause", _cause), ("pace", _pace), ("turnovers", _turnovers), ("rival_orb", _rival_orb), ("rival_scorer", _rival_scorer), ("own_ft", _own_ft),
     ("own_threes", _own_threes), ("rival_threes", _rival_threes), ("own_fg", _own_fg), ("fouls", _fouls),
-    ("period_net", _period_net),
+    ("no_cause", _no_cause), ("period_net", _period_net),
 ]
 
 
@@ -150,9 +164,13 @@ def _facts(snap: Dict[str, Any], ctx: RuleContext, start: int, end: int, periods
                if p["team_id"] == rival]
     pts, name = max(scorers, default=(0, ""))
     own_fouls = ((snap["teams"].get(ctx.own_team_id) or {}).get("fouls_by_period") or {})
+    rival_fouls = ((snap["teams"].get(rival) or {}).get("fouls_by_period") or {})
     worst, net = _net_range(log, ctx.own_team_id, rival, start, end)
     return {"cfg": ctx.config, "own": window_stats(log, ctx.own_team_id, start, end), "rival": window_stats(log, rival, start, end),
             "scorer": (name, pts), "fouls": sum(own_fouls.get(str(p), 0) for p in periods), "worst_net": worst, "net": net,
+            "rival_fouls": sum(rival_fouls.get(str(p), 0) for p in periods), "window_s": end - start, "baselines": ctx.team_baselines,
+            "trouble": [{"name": p["name"].strip(), "pf": p["pf"]} for p in snap["players"].values()
+                        if p["team_id"] == ctx.own_team_id and p["pf"] >= ctx.config.summary_foul_trouble_pf],
             "drop": _net_drop(log, ctx.own_team_id, rival, start, end), "scope": "en la 1.ª parte" if len(periods) > 1 else "en el cuarto",
             "pace": pace_facts(log, ctx.own_team_id, rival, start, end, ctx.team_baselines)}
 
@@ -185,14 +203,20 @@ def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     found = [(key, hit) for key, test in _CANDIDATES if (hit := test(facts)) is not None][:MAX_KEYS]
     adjustments = list(dict.fromkeys(adjustment for _, (_, adjustment) in found))[:MAX_ADJUSTMENTS]
     own, rival = facts["own"]["pts"], facts["rival"]["pts"]
-    message = f"{_TITLES[period]}: {own}-{rival} ({own - rival:+d}). "
+    log, rival_id = snap.get("log", []), ctx.rival_team_id or ""
+    score = (window_stats(log, ctx.own_team_id, 0, end)["pts"], window_stats(log, rival_id, 0, end)["pts"])     # the game, up to the end of the period
+    quarter = (window_stats(log, ctx.own_team_id, period_start(period), end)["pts"], window_stats(log, rival_id, period_start(period), end)["pts"])
+    message = f"{_TITLES[period]}: {_points('marcador', score)}; " + (f"1.ª parte {own}-{rival} ({own - rival:+d}); 2.º cuarto {quarter[0]}-{quarter[1]} ({quarter[0] - quarter[1]:+d})."
+                                                                      if period == 2 else f"{_points(f'{_ORDINALS[period]} cuarto', quarter)}.") + " "
     message += "Claves: " + "; ".join(text for _, (text, _) in found) + "." if found else "Sin claves destacadas."
     if facts["pace"]:
         message += " " + pace_line(facts["pace"])
     return [Advice(
         key=f"summary:{period}", id="period_summary", severity="info", category="resumen", message=message,
         evidence={"period": period, "own_points": own, "rival_points": rival, "keys": [key for key, _ in found],
-                  "adjustments": adjustments, "pace": facts["pace"]},
+                  "adjustments": adjustments, "pace": facts["pace"], "score": {"own": score[0], "rival": score[1]},
+                  "period_points": {"own": quarter[0], "rival": quarter[1]}, **({"half_points": {"own": own, "rival": rival}} if period == 2 else {}),
+                  "foul_trouble": facts["trouble"]},
         proposal=[tactic_proposal(a) for a in adjustments])]
 
 

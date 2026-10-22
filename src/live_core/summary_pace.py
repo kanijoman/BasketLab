@@ -55,12 +55,15 @@ def pace_line(pace: Optional[Dict[str, Optional[float]]]) -> str:
 
 
 def pace_key(pace: Optional[Dict[str, Optional[float]]], net: int, delta: float, min_net: int) -> Optional[Tuple[str, str]]:
-    """A key only when the change of pace goes with the result of the quarter: faster and won, slower and lost."""
+    """A key when the pace changed and the result of the quarter says who it favoured (#488): faster and won, or slower and won, keeps that regime;
+    faster and lost, or slower and lost, leaves it (competitive advantage, not the score alone)."""
     if not pace or pace["before40"] is None:
         return None
     change = pace["per40"] - pace["before40"]
-    if change >= delta and net >= min_net:
-        return f"Ritmo más alto que antes ({change:+.0f})", "Mantener el ritmo alto que nos ha favorecido"
-    if change <= -delta and net <= -min_net:
-        return f"Ritmo más bajo que antes ({change:+.0f})", "Subir el ritmo: el cuarto ha sido más lento que los anteriores"
-    return None
+    if abs(change) < delta or abs(net) < min_net:
+        return None
+    word, result = ("alto", "ganó") if change > 0 and net > 0 else ("alto", "perdió") if change > 0 else ("bajo", "ganó") if net > 0 else ("bajo", "perdió")
+    key = f"Ritmo más {word} que antes ({change:+.0f}) y el cuarto se {result} ({net:+d})"
+    if change > 0:
+        return key, ("Mantener el ritmo alto que nos ha favorecido" if net > 0 else "Bajar el ritmo: el cuarto más rápido nos ha perjudicado, atacar más tiempo cada posesión")
+    return key, ("Mantener el ritmo bajo que nos ha favorecido" if net > 0 else "Subir el ritmo: el cuarto ha sido más lento que los anteriores")

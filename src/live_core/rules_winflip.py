@@ -29,12 +29,23 @@ def _remember(ctx: RuleContext, now: int, p: float) -> List[List[float]]:
     return history
 
 
+def pace_reason_text(lever: Dict[str, Any]) -> str:
+    """Why the pace is advised when the recent pace decided it (#488): «el ritmo subió (+9) y nos perjudicó (-8 en los últimos minutos)»."""
+    reason = lever.get("reason")
+    if not reason:
+        return ""
+    moved = "subió" if reason["faster"] else "bajó"
+    effect = "nos favoreció" if reason["kind"] == "benefit" else "nos perjudicó"
+    return f"el ritmo {moved} ({reason['change']:+.0f}) y {effect} ({reason['net']:+d} en los últimos minutos)"
+
+
 def _lever_text(lever: Optional[Dict[str, Any]]) -> str:
     if lever is None:
         return ""
     gain = f"+{lever['gain'] * 100:.0f} %"
     if lever["id"] == "pace":
-        return f" Palanca principal: {_PACE_TEXT.get(lever.get('direction'), 'cambiar el ritmo')} ({gain})."
+        why = pace_reason_text(lever)
+        return f" Palanca principal: {_PACE_TEXT.get(lever.get('direction'), 'cambiar el ritmo')} ({gain}{'; ' + why if why else ''})."
     title, _metric, action = _LABELS[lever["id"]]
     return f" Palanca principal: {title.lower()} ({gain} si vuelve a su nivel habitual). {action}"
 

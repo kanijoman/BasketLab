@@ -46,13 +46,33 @@ const REPORT: PostMatchReport = {
 const kinds = (blocks: Block[]) => blocks.map(b => b.kind)
 const headings = (blocks: Block[]) => blocks.filter(b => b.kind === 'heading').map(b => (b as { text: string }).text)
 
+describe('the players section follows the gender of the competition (issue #475)', () => {
+  const players = (report: PostMatchReport) => {
+    const blocks = reportBlocks(report)
+    const heading = headings(blocks).find(h => /Jugador/.test(h))
+    const table = blocks.find(b => b.kind === 'table' && (b as { head: string[] }).head[0].startsWith('Jugador')) as Extract<Block, { kind: 'table' }>
+    return { heading, column: table.head[0] }
+  }
+
+  it('is feminine in a women competition', () => {
+    expect(players({ ...REPORT, gender: 'F' })).toEqual({ heading: 'Jugadoras (+/-)', column: 'Jugadora' })
+  })
+
+  it('is the neutral masculine for a men competition, or when the report does not say', () => {
+    expect(players({ ...REPORT, gender: 'M' })).toEqual({ heading: 'Jugadores (+/-)', column: 'Jugador' })
+    expect(players({ ...REPORT, gender: '' })).toEqual({ heading: 'Jugadores (+/-)', column: 'Jugador' })
+    const { gender: _gender, ...older } = REPORT
+    expect(players(older as PostMatchReport)).toEqual({ heading: 'Jugadores (+/-)', column: 'Jugador' })
+  })
+})
+
 describe('reportBlocks (issue #409)', () => {
   it('starts with the match and the result, then the sections in a reading order', () => {
     const blocks = reportBlocks(REPORT)
     expect(blocks[0]).toMatchObject({ kind: 'title', text: 'MIPELLETYMAS B.F. LEON – RECOLETAS ZAMORA' })
     expect((blocks[0] as { sub: string }).sub).toContain('Derrota 38-59')
     expect(headings(blocks)).toEqual([
-      'Resumen por cuartos', 'Evolución del partido', 'Parciales y por qué se produjeron', 'Quintetos', 'Jugadoras (+/-)',
+      'Resumen por cuartos', 'Evolución del partido', 'Parciales y por qué se produjeron', 'Quintetos', 'Jugadores (+/-)',
       'Four Factors', 'Lo que ha ido bien', 'Lo que podemos mejorar', 'Anexo: alertas del partido',
     ])
   })

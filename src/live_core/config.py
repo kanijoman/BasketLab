@@ -33,6 +33,8 @@ def unknown_rule_ids(rule_ids: Iterable[str]) -> Tuple[str, ...]:
 class RuleConfig:
     # Rules and features switched off (ids in RULE_IDS and FEATURE_IDS). Nothing is off by default.
     rules_off: Tuple[str, ...] = ()
+    # Gender of the competition ("F"/"M"): the words of the alerts agree with it; in doubt, the neutral masculine (issue #475, lexicon.py).
+    gender: str = ""
     # Game context: a game is "decided" with this margin and less time left of the 4th period, and "close_late" within
     # this margin and this much time left of the 4th period (or in overtime). Alerts change one level (game_context).
     # Illegal lineup: players of "formación" that must be on court at all times (0 = the competition has no such rule), and
@@ -118,6 +120,8 @@ class RuleConfig:
     # Pace advice (#401, provisional): only in the last ``pace_max_left_s`` of the game (6:00) and when the pace lever of the win
     # probability (estimated possessions left, estimated net rating and the score) is worth at least ``pace_min_gain`` of probability.
     pace_max_left_s: int = 360
+    # The free-throw reminder of a close finish (#489): said again every this many game-seconds (and at once when who is on court changes).
+    closing_ft_every_s: int = 60
     pace_min_gain: float = 0.01
     # Summary of a quarter (the keys, in priority order): turnovers and rival offensive rebounds worse by this much, a rival scorer
     # with this many points, own free throws / threes / field goals poor with at least this many attempts, rival threes hot, team fouls.
@@ -131,6 +135,7 @@ class RuleConfig:
     summary_fg_min_att: int = 10
     summary_fg_max_efg: float = 0.35
     summary_fouls: int = 5
+    summary_foul_trouble_pf: int = 2          # the players with at least this many fouls are named next to the team fouls (#487)
     # Positive keys (#402, provisional): a comeback (the worst deficit of the game so far was at least this many points and we won back at
     # least as many since) and a clearly won period (net points of the summarised period; said only if the list has room).
     summary_comeback_deficit: int = 8
@@ -142,6 +147,11 @@ class RuleConfig:
     summary_collapse_drop: int = 10   # the complement of the comeback: the net score fell this much from its best point within the period
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60
+    # The cause of a lead or a deficit (#485, provisional): the period was won or lost by at least ``summary_cause_net`` points, both teams took at least
+    # ``summary_cause_min_fga`` shots, and a Four Factors factor went ``summary_cause_z`` standard deviations (of the length of the period) beyond what is usual.
+    summary_cause_net: int = 5
+    summary_cause_min_fga: int = 8
+    summary_cause_z: float = 1.0
     # Volume of threes (issue #291): the share of the team's shots that are threes is this far above its habitual one, with at least
     # this many field-goal attempts and a three-point percentage of at most this; it is said once per block of this many threes.
     three_volume_margin: float = 0.10
@@ -269,6 +279,12 @@ class RuleConfig:
     wp_home_adv: float = 4.0
     # Levers (#256): how much faster or slower the pace is tried, and the smallest probability gain worth listing.
     wp_pace_change: float = 0.10
+    # Who the recent pace favoured decides the pace advice (#488): the last ``wp_pace_recent_s`` seconds against the game before them; a change of at least
+    # ``wp_pace_recent_delta`` possessions per 40 min with a net result of at least ``wp_pace_recent_min_net`` points keeps the regime that favoured us
+    # (and leaves the one that did not); without that evidence the lever is the score one (behind: raise, ahead: lower).
+    wp_pace_recent_s: int = 300
+    wp_pace_recent_delta: float = 4.0
+    wp_pace_recent_min_net: int = 3
     wp_lever_min_gain: float = 0.01
     # Flip alert (#258): the probability of winning falls this much (0-1) within this many game-seconds. Provisional: to confirm with the
     # staff, and the probability itself is experimental in the app (#257).

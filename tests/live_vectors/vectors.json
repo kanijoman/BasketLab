@@ -71,8 +71,8 @@
       "summary:1"
      ],
      "digests": {
-      "alerts": "902cfc017cd6ff794009940e9467f2d3b556a0bf3bf83665c170b42d3ec8d029",
-      "analysis": "e92de32237830c56b3d9885d5c92e26cdf4d04d8baa50646a246fabc166b67c9",
+      "alerts": "ac068fc2d5349136f640f719d4689e708bce6c5ce7a1547daaf7878e097e6f2a",
+      "analysis": "6bfd10db16e8f27109ddc74f8f33bfa28a716f617b2b283dd6a600e603dccb6e",
       "snapshot": "cd9912e463cb1e7afcbeb3d19b3bed214ed430892831f47a56d859b3ba95063e"
      },
      "elapsed": 600,
@@ -111,7 +111,7 @@
       "summary:2"
      ],
      "digests": {
-      "alerts": "25c4bdc3eb1ccfd45391afdbe789ce4babd8f55f0fe955175a7e7026bfb1f58f",
+      "alerts": "443d35133dfafbba6ea4d32b23c20106d65de24cbb41d4be7185388ca65caed2",
       "analysis": "14e8cd9a9f2c8eb49812bcfa71da0a5a7e676a44a20c26d8f5fa3fa654f9d0b9",
       "snapshot": "104249380914c43c70ff388bf06c4c80c67c0c93fbbae717164b4bd032e9648a"
      },
@@ -150,7 +150,7 @@
       "summary:3"
      ],
      "digests": {
-      "alerts": "69cca10aed2707e936e56ca622fd98b80fc24cce8b885efdc6efa57db35b9d3a",
+      "alerts": "b7da514cfe6ee17b1e36e0d2484d6c6a115445d7e292342671e1a40cd1ecf7f5",
       "analysis": "c9a38ba5452118b12b440c4ada75c4a14cf61ab462b22cf680ddccaebb9b090a",
       "snapshot": "262be33648036747be1b9a0b4ee12b5e7745cf6b8939b984c118bbeb765a5ec3"
      },
@@ -186,7 +186,7 @@
       "zone_player:1949844:ala"
      ],
      "digests": {
-      "alerts": "e462c7eb3e9845b5c16c64e2dd56cf825a996b913e1d1e671f2d85eaa0dec694",
+      "alerts": "fc2e3727f8fee5aaa113b3719387d9d342bfaef56a3889def3257e6bf8cb46ec",
       "analysis": "3536eb8d2e8189b79e3de68e095c8db8056d6396321b588df076fdfb77f5856c",
       "snapshot": "8c2a58b6a40c3beb2b6f2b83260e67403a0d04c18c08bf9f991592549f8cf663"
      },
@@ -3090,7 +3090,7 @@
       },
       "id": "rival_zone",
       "key": "zone:ala:volumen",
-      "message": "Rival: 12 de sus 23 tiros (52%) salen desde las alas (habitual 29%). Salir al tirador en el ala y cerrar la línea de pase.",
+      "message": "Rival: 12 de sus 23 tiros (52%) salen desde las alas (triples a 45°) (habitual 29%). Salir al tirador en el ala y cerrar la línea de pase.",
       "proposal": [],
       "rearm_s": null,
       "severity": "info"
@@ -3111,7 +3111,7 @@
       },
       "id": "rival_zone",
       "key": "zone:esquina:eficiencia",
-      "message": "Rival castiga desde las esquinas: 5/7 (2.14 pts/tiro, esperado 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
+      "message": "Rival castiga desde las esquinas (triples): 5/7 (2.14 pts/tiro, esperado 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
       "proposal": [],
       "rearm_s": null,
       "severity": "info"

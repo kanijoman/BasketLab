@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
 from .config import RuleConfig
+from .lexicon import other, pronoun
 
 LINEUP_SIZE = 5
 REARM_S = 180   # an unfixed illegal lineup is said again after this many game-seconds
@@ -73,5 +74,5 @@ def departure_note(snap: Dict[str, Any], own_team_id: str, roster: Dict[str, Dic
     yes = formation_counts(snap, own_team_id, roster)["yes"]
     if yes > minimum:
         return None
-    return (f"Ojo: {player['name'].strip()} es de formación y sin ella en pista solo quedarían {yes - 1} de formación "
-            f"(mínimo {minimum}): el cambio debe ser por otra de formación.")
+    return (f"Ojo: {player['name'].strip()} es de formación y sin {pronoun(config)} en pista solo quedarían {yes - 1} de formación "
+            f"(mínimo {minimum}): el cambio debe ser por {other(config)} de formación.")

@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
+from .lexicon import jugador, object_pronoun
 from .proposals import tactic_proposal
 from .windows import player_form
 
@@ -151,13 +152,13 @@ def rival_star_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if before["on"] and not p["on_court"]:
             out.append(Advice(
                 key=f"star_out:{pid}:{exits}", id="rival_star_out", severity="info", category="rival",
-                message=f"{_name(p)}, su jugadora clave, sale a banquillo.",
+                message=f"{_name(p)}, su {jugador(ctx.config)} clave, sale a banquillo.",
                 evidence={"player_id": pid, "team_id": p["team_id"], "pf": p["pf"]},
                 proposal=[tactic_proposal(f"Apretar mientras {_name(p)} descansa", pid, _name(p))]))
         elif not before["on"] and p["on_court"] and p["pf"] >= ctx.config.key_return_pf:
             out.append(Advice(
                 key=f"star_back:{pid}:{exits}", id="rival_star_back", severity="warning", category="rival",
-                message=f"{_name(p)}, su jugadora clave, vuelve a pista con {p['pf']} faltas: atacarla desde el primer ataque.",
+                message=f"{_name(p)}, su {jugador(ctx.config)} clave, vuelve a pista con {p['pf']} faltas: atac{'ar' + object_pronoun(ctx.config)} desde el primer ataque.",
                 evidence={"player_id": pid, "team_id": p["team_id"], "pf": p["pf"]},
                 proposal=[tactic_proposal(f"Atacar a {_name(p)}, que vuelve con {p['pf']} faltas", pid, _name(p))]))
     return out
