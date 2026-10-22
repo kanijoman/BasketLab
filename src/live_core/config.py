@@ -131,6 +131,7 @@ class RuleConfig:
     summary_fg_min_att: int = 10
     summary_fg_max_efg: float = 0.35
     summary_fouls: int = 5
+    summary_foul_trouble_pf: int = 2          # the players with at least this many fouls are named next to the team fouls (#487)
     # Positive keys (#402, provisional): a comeback (the worst deficit of the game so far was at least this many points and we won back at
     # least as many since) and a clearly won period (net points of the summarised period; said only if the list has room).
     summary_comeback_deficit: int = 8
@@ -142,6 +143,11 @@ class RuleConfig:
     summary_collapse_drop: int = 10   # the complement of the comeback: the net score fell this much from its best point within the period
     # The summary is also delivered up to this many seconds into the next period if the feed skipped the end of the previous one.
     summary_grace_s: int = 60
+    # The cause of a lead or a deficit (#485, provisional): the period was won or lost by at least ``summary_cause_net`` points, both teams took at least
+    # ``summary_cause_min_fga`` shots, and a Four Factors factor went ``summary_cause_z`` standard deviations (of the length of the period) beyond what is usual.
+    summary_cause_net: int = 5
+    summary_cause_min_fga: int = 8
+    summary_cause_z: float = 1.0
     # Volume of threes (issue #291): the share of the team's shots that are threes is this far above its habitual one, with at least
     # this many field-goal attempts and a three-point percentage of at most this; it is said once per block of this many threes.
     three_volume_margin: float = 0.10

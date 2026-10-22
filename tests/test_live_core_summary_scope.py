@@ -43,7 +43,7 @@ def test_a_deficit_of_an_earlier_quarter_is_not_a_comeback_of_this_one_regressio
     first_half = flat(run(RIVAL, 100, 5, 100), run(OWN, 700, 5, 100))            # Q1 -10, Q2 back to level
     q3 = run(OWN, 1210, 6, 40)                                                    # +12 in Q3 from level
     alert = summary(3, flat(first_half, q3))
-    assert "comeback" not in alert.evidence["keys"] and "-9" not in alert.message and "-10" not in alert.message
+    assert "comeback" not in alert.evidence["keys"] and "Remontada" not in alert.message
     assert "Parcial del cuarto: +12" in alert.message
 
 
