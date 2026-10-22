@@ -11,6 +11,8 @@ interface Props {
   homeId?: string | null
   score?: Record<string, number>
   clock: string
+  /** The last line received from the feed (``snapshot.last_event``), shown under the score (issue #490). */
+  lastEvent?: { text?: string; period?: number; remaining?: number } | null
 }
 
 /** The points of a team; they flash when they change (issue #312), not at the first paint. Keyed by the value so the animation replays. */
@@ -21,7 +23,7 @@ function Points({ value }: { value: number }) {
   return <span key={value} className={changed ? 'pts bump' : 'pts'}>{value}</span>
 }
 
-export default function Scoreboard({ own, rival, homeId, score, clock }: Props) {
+export default function Scoreboard({ own, rival, homeId, score, clock, lastEvent }: Props) {
   const { home, away } = orderTeams(own, rival, homeId)
   const side = (team: TeamRef) => (
     <div className="team">
@@ -35,6 +37,11 @@ export default function Scoreboard({ own, rival, homeId, score, clock }: Props) 
       {side(home)}
       <div className="clock">{clock}</div>
       {side(away)}
+      {lastEvent?.text && (
+        <p className="last-event" aria-live="off" aria-label="Última jugada del feed">
+          <span className="last-clock">{clock}</span>{lastEvent.text}
+        </p>
+      )}
     </header>
   )
 }

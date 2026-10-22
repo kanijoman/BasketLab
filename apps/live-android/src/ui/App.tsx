@@ -462,7 +462,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
           onPackages={() => setTab('paquetes')} />
       )}
       <Scoreboard own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} score={snap?.score}
-        clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} />
+        clock={snap ? clockLabel(snap.period, snap.remaining) : 'Q1 10:00'} lastEvent={snap?.last_event} />
 
       {/* the playback controls stay under the scoreboard to play comfortably (#405) */}
       {!liveMode && (

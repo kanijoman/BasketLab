@@ -78,7 +78,7 @@ class LiveGame:
         self.remaining = 600
         self.elapsed = 0
         self.last_num = 0
-        self.last_event: Optional[Dict[str, Any]] = None   # {kind, elapsed} of the last line applied (lineup_settle.py, issue #413)
+        self.last_event: Optional[Dict[str, Any]] = None   # {kind, elapsed, text, period, remaining, team_id} of the last line applied (lineup_settle.py, #413; the app shows the text, #490)
         self._last_miss_team: Optional[str] = None
         self._in_clutch = False   # is the event being applied inside the clutch window (margin before it)?
         self.lineups = LineupTracker(list(self.teams))
@@ -127,7 +127,7 @@ class LiveGame:
         self._tick(ev.elapsed)
         self._in_clutch = clutch_mod.in_window(ev.period, ev.elapsed, self._margin())   # the margin BEFORE the event
         self.period, self.remaining, self.elapsed, self.last_num = ev.period, ev.remaining, ev.elapsed, ev.num
-        self.last_event = {"kind": ev.kind, "elapsed": ev.elapsed}
+        self.last_event = {"kind": ev.kind, "elapsed": ev.elapsed, "text": ev.text, "period": ev.period, "remaining": ev.remaining, "team_id": ev.team_id}
         player = self._player_for(ev)
         team = self.teams.get(ev.team_id) if ev.team_id else None
 

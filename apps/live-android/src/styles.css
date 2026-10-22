@@ -35,6 +35,8 @@ body {
 .team { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
 .team .name { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
 .team .pts { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.last-event { grid-column: 1 / -1; margin: 4px 0 0; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; text-align: center; overflow-wrap: anywhere; min-width: 0; }
+.last-event .last-clock { font-variant-numeric: tabular-nums; font-weight: 600; margin-right: 6px; }
 .clock { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .team-logo { border-radius: 50%; object-fit: contain; background: rgb(var(--text-rgb) / 0.06); }
 .team-logo-initials { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
@@ -283,7 +285,11 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 
 /* cards that show only their value and fold the rest (#405) */
 .card-details { margin-top: 8px; }
-.card-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+.card-details > summary { min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); list-style: none; }
+.card-details > summary::-webkit-details-marker { display: none; }
+.card-details-arrow { transition: transform 0.2s ease; }
+.card-details.is-open .card-details-arrow { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .card-details-arrow { transition: none; } }
 
 /* alerts grouped by quarter, each group foldable (#406) */
 .alert-period { margin: 8px 0; }

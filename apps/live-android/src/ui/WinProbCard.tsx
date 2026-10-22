@@ -1,5 +1,6 @@
 /** Win probability of the own team, its evolution and the levers that move it (issue #257).
  *  Experimental: it does not meet the agreed calibration yet (docs/evaluaciones/2026-10-14_probabilidad-de-victoria.md). */
+import CardDetails from './CardDetails'
 import type { TeamRef, WinLever, WinProb } from '../engine/types'
 import type { WinProbPoint } from './useWinProbHistory'
 
@@ -46,8 +47,7 @@ export default function WinProbCard({ winProb, levers, own, history }: Props) {
           <span className="detail"> {own.name}</span>
         </div>
       </div>
-      <details className="card-details">
-        <summary>Ver detalle</summary>
+      <CardDetails>
         <p className="detail">Margen proyectado: {signed(winProb.projected_margin)}</p>
         {!winProb.reliable && <p className="detail">Basada en el valor previo y el marcador: el partido aún dice poco.</p>}
         <Chart history={history} />
@@ -69,7 +69,7 @@ export default function WinProbCard({ winProb, levers, own, history }: Props) {
           </>
         )}
         <p className="detail wp-note">Experimental: entre el 30 % y el 70 % puede desviarse unos ±7 puntos.</p>
-      </details>
+      </CardDetails>
     </section>
   )
 }
