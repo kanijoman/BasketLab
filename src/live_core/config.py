@@ -33,6 +33,8 @@ def unknown_rule_ids(rule_ids: Iterable[str]) -> Tuple[str, ...]:
 class RuleConfig:
     # Rules and features switched off (ids in RULE_IDS and FEATURE_IDS). Nothing is off by default.
     rules_off: Tuple[str, ...] = ()
+    # Gender of the competition ("F"/"M"): the words of the alerts agree with it; in doubt, the neutral masculine (issue #475, lexicon.py).
+    gender: str = ""
     # Game context: a game is "decided" with this margin and less time left of the 4th period, and "close_late" within
     # this margin and this much time left of the 4th period (or in overtime). Alerts change one level (game_context).
     # Illegal lineup: players of "formación" that must be on court at all times (0 = the competition has no such rule), and

@@ -214,6 +214,8 @@ export interface ReportAlert {
 /** The post-match report of src/live_core/postmatch.py. */
 export interface PostMatchReport {
   version: number
+  /** Gender of the competition (`F` / `M`); empty or absent: the neutral masculine (issue #475). */
+  gender?: string
   match: {
     own: TeamRef
     rival: TeamRef

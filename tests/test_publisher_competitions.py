@@ -36,7 +36,7 @@ class TestInfo:
     def test_the_data_comes_from_the_scrape_metadata_and_the_catalog(self):
         info = competition_infos(_db(META), [SEGUNDA], normalize_catalog(CATALOG), ["1008631"])[SEGUNDA]
         assert info == {"key": SEGUNDA, "label": 'SEGUNDA FEB · Liga Regular "A"', "competition": "SEGUNDA FEB", "group": 'Liga Regular "A"',
-                        "season": "2026/2027", "level": 3, "gender": "M", "clubs": ["1008857", "1008978"], "rule_config": {}}
+                        "season": "2026/2027", "level": 3, "gender": "M", "clubs": ["1008857", "1008978"], "rule_config": {"gender": "M"}}
 
     def test_a_competition_not_in_the_catalog_keeps_the_default_club_and_no_level(self):
         meta = {**META, "_id": "X", "competition_label": "LF CHALLENGE"}

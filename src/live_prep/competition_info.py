@@ -99,7 +99,7 @@ def competition_infos(db: Any, collections: Iterable[str], catalog: List[Dict[st
         out[collection] = {
             "key": collection, "label": f"{competition} · {group}" if group else competition, "competition": competition, "group": group,
             "season": meta.get("season_label") or "", "level": entry.get("level"), "gender": entry.get("gender"),
-            "clubs": list(entry.get("clubs") or default_clubs), "rule_config": _rules_of(entry, group),
+            "clubs": list(entry.get("clubs") or default_clubs), "rule_config": {**({"gender": entry["gender"]} if entry.get("gender") else {}), **_rules_of(entry, group)},
         }
     return out
 

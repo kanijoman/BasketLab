@@ -107,6 +107,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--team", required=True, help="team id whose point of view the demo has")
     parser.add_argument("--code", help="match code (default: the most interesting one, chosen with the rule evaluator)")
     parser.add_argument("--out", default="tests/recordings")
+    parser.add_argument("--gender", choices=("M", "F"), help="gender of the competition: the words of the alerts agree with it (default: the neutral masculine)")
     parser.add_argument("--no-roster", action="store_true", help="do not ask FEB for the roster (the formation rule is then off; FBCYL never has one)")
     args = parser.parse_args(argv)
 
@@ -133,7 +134,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         roster = fetch_rosters([args.team, rival])
     season = str(match.get("_season") or args.collection)
-    package = build_demo_package(games, match, args.collection, season, args.team, rival, roster=roster)
+    package = build_demo_package(games, match, args.collection, season, args.team, rival, roster=roster,
+                                 rule_config={"gender": args.gender} if args.gender else None)
     files = write_demo(args.out, str(code), build_recording(match), package)
     print(f"{code}: {' + '.join(f.name for f in files)} (games before: {package.baselines['sample_games']['league']}, roster: {len(roster or {})} players)")
     return 0

@@ -255,7 +255,7 @@ def build_report(doc: Dict[str, Any], own_team_id: str, alerts: Optional[Sequenc
     team = {"own": _team_block(own_stats, rival_stats), "rival": _team_block(rival_stats, own_stats)}
     timeline = _timeline(scores, own_team_id, rival)
     report: Dict[str, Any] = {
-        "version": REPORT_VERSION,
+        "version": REPORT_VERSION, "gender": cfg.gender,
         "match": {"own": {"id": own_team_id, "name": snap["teams"][own_team_id]["name"]},
                   "rival": {"id": rival, "name": snap["teams"][rival]["name"]}, "home_id": snap["home_id"],
                   "score": {"own": mine, "rival": theirs}, "result": "win" if mine > theirs else "loss" if mine < theirs else "tie",
