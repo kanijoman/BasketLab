@@ -84,6 +84,11 @@ def collect(games_by_collection: Iterable[Any], level_of: Callable[[str], Option
     return result
 
 
+def in_season(collection: str, season: str) -> bool:
+    """The collection is of the season that starts in ``season`` (its name carries ``2026_2027``)."""
+    return f"_{season}_{int(season) + 1}" in collection
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Estimate the net rating gap between divisions from the games between them.")
     parser.add_argument("--season", default="2026", help="year the season starts (collections of other seasons are not read)")
@@ -98,7 +103,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     service = CollectionService(handler)
     names = [n for n in sorted(handler.repository.connection.get_database().list_collection_names())
              if not service._SKIP_PREFIXES.match(n) and n not in service._SKIP_NAMES and not n.upper().startswith("FBCYL")
-             and service._season_year(service._parse_components(n, "FEB")["season"]) == args.season]
+             and in_season(n, args.season)]
     result = collect(((name, games_from_mongo(handler, name)) for name in names), catalog_level_of(handler))
     print(f"{len(names)} colecciones, {result['teams']} equipos con división; partidos entre divisiones: {result['n']}")
     if result["gap"] is None:
