@@ -36,6 +36,8 @@ export interface ScoutingReport {
   team: { id: string; name: string }
   own_team: { id: string; name: string } | null
   collection: string
+  /** `F` / `M` of the competition (the words agree with it, #495); absent or empty = masculine. */
+  gender?: string
   sample_games: number
   low_sample: boolean
   notices: string[]

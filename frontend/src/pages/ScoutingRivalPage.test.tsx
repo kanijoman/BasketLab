@@ -114,6 +114,17 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)   // the bench has no conceded figure
   })
 
+  it.each([['M', 'Jugadores clave', 'Jugador'], ['F', 'Jugadoras clave', 'Jugadora'], [undefined, 'Jugadores clave', 'Jugador']])(
+    'names the key players in the gender of the competition (%s, #495)', async (gender, title, column) => {
+      scouting.getScoutingReport.mockResolvedValue({ ...REPORT, gender })
+      renderPage()
+      await choose('2', '')
+      fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+      await act(async () => { await vi.advanceTimersByTimeAsync(1500) })
+      expect(await screen.findByText(title)).toBeTruthy()
+      expect(screen.getByRole('columnheader', { name: column })).toBeTruthy()
+    })
+
   it('has no origin section when the report has no origin figures', async () => {
     renderPage()
     await choose('2', '')

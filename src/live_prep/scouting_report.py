@@ -10,6 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
+from types import SimpleNamespace
+
+from src.live_core.lexicon import feminine, jugadores, object_pronoun
 from src.live_core.zones import ZONES, zone_family
 
 MAX_KEYS = 8
@@ -46,20 +49,20 @@ ALERTS: Dict[str, Any] = {
     "cold_3p_streak": ("Rachas de triples fallados", "exploit", None),
     "cold_3p_volume": ("Exceso de triples", "exploit", None),
     "ft_cold": ("Tiros libres fallados", "exploit", None),
-    "own_cold_player": ("Jugadoras que no acierta con volumen", "exploit", None),
-    "own_hot_player": ("Jugadoras en racha", "neutralize", None),
+    "own_cold_player": ("{Jugadores} que no aciertan con volumen", "exploit", None),
+    "own_hot_player": ("{Jugadores} en racha", "neutralize", None),
     "own_orb_player": ("Rebote ofensivo individual", "neutralize", None),
     "own_zone_hot": ("Zonas calientes de tiro", "neutralize", None),
     "own_zone_cold": ("Zonas frías de tiro", "exploit", None),
     "own_zone_selection": ("Mala selección de tiro", "exploit", None),
     "paint_battle": ("Pintura perdida", "exploit", "Pierde con frecuencia la batalla de la pintura: atacar el aro y cargar el rebote"),
     "static_offense": ("Ataque estático", "exploit", None),
-    "fatigue_high": ("Fatiga de sus jugadoras", "exploit", None),
-    "foul_trouble": ("Jugadoras con problemas de faltas", "exploit", None),
+    "fatigue_high": ("Fatiga de sus {jugadores}", "exploit", None),
+    "foul_trouble": ("{Jugadores} con problemas de faltas", "exploit", None),
     "team_fouls_bonus": ("Entra pronto en bonus", "exploit", "Acumula faltas de equipo pronto en el periodo: atacar el aro para llegar al bonus"),
     "key_fouls_close": ("Faltas de sus clave en el cierre", "exploit", None),
     "disqualification_risk": ("Riesgo de descalificación", "exploit", None),
-    "player_plus_minus": ("Jugadoras con +/- negativo en pista", "exploit", None),
+    "player_plus_minus": ("{Jugadores} con +/- negativo en pista", "exploit", None),
     "lineup_net": ("Quintetos que rinden mal", "exploit", None),
     "rival_run": ("Parciales en contra", "exploit", "Sus rivales les hacen parciales largos: insistir cuando lleguen"),
     "long_run": ("Parciales largos en contra", "exploit", None),
@@ -71,13 +74,25 @@ ALERTS: Dict[str, Any] = {
     "period_edge_deficit": ("Finales de cuarto en negativo", "exploit", None),
     "timeout_budget": ("Gestión de los tiempos muertos", "exploit", None),
     "first_half_timeouts": ("Tiempos muertos sin usar al descanso", "exploit", None),
-    "rest_starters": ("Descanso de las titulares en partido decidido", "exploit", None),
+    "rest_starters": ("Descanso de {los_titulares} en partido decidido", "exploit", None),
     "pace_control": ("Control del ritmo", "neutralize", None),
     "points_off_turnovers": ("Puntos del rival tras sus pérdidas", "exploit", None),
-    "formation_lineup": ("Alineación indebida (jugadoras de formación)", "exploit", None),
+    "formation_lineup": ("Alineación indebida ({jugadores} de formación)", "exploit", None),
     "four_factors_lever": ("Palanca de los Four Factors", "exploit", None),
     "win_flip": ("Caídas bruscas de su probabilidad de victoria", "exploit", None),
 }
+
+
+def _words(config: Any) -> Dict[str, str]:
+    """The gendered words of the labels (``config.gender`` as in ``live_core.lexicon``)."""
+    players = jugadores(config)
+    return {"jugadores": players, "Jugadores": players.capitalize(), "los_titulares": "las titulares" if feminine(config) else "los titulares"}
+
+
+def alert_label(alert_id: str, config: Any = None) -> str:
+    """The words of an alert id of the engine, in the gender of the competition."""
+    label = ALERTS.get(alert_id, (f"Alerta «{alert_id.replace('_', ' ')}»", "exploit", None))[0]
+    return label.format(**_words(config))
 
 
 def fmt(value: float, digits: int = 1, sign: bool = False) -> str:
@@ -134,12 +149,12 @@ def _zone_rows(zones: Dict[str, Dict[str, Dict[str, int]]], cfg: ScoutingConfig)
     return sorted((r for r in rows if r["own_fga"] or r["conceded_fga"]), key=lambda r: (-r["own_fga"], r["zone"]))
 
 
-def _scorer_key(data: Dict[str, Any], cfg: ScoutingConfig) -> List[Dict[str, str]]:
+def _scorer_key(data: Dict[str, Any], cfg: ScoutingConfig, gender: Any = None) -> List[Dict[str, str]]:
     top = data["players"][0] if data["players"] else None
     if not top or top["share"] < cfg.scorer_share:
         return []
     return [{"area": "jugadoras", "action": "neutralize",
-             "text": f"Depende de {top['name']}: {top['share'] * 100:.0f} % de sus puntos ({fmt(top['pts_per_game'])} por partido). Limitarla es la prioridad."}]
+             "text": f"Depende de {top['name']}: {top['share'] * 100:.0f} % de sus puntos ({fmt(top['pts_per_game'])} por partido). Limitar{object_pronoun(gender)} es la prioridad."}]
 
 
 def _clutch_key(data: Dict[str, Any], cfg: ScoutingConfig) -> List[Dict[str, str]]:
@@ -194,10 +209,10 @@ def _zone_keys(rows: List[Dict[str, Any]], cfg: ScoutingConfig) -> List[Dict[str
     return out
 
 
-def _alert_rows(data: Dict[str, Any], cfg: ScoutingConfig) -> List[Dict[str, Any]]:
+def _alert_rows(data: Dict[str, Any], cfg: ScoutingConfig, gender: Any = None) -> List[Dict[str, Any]]:
     rows = []
     for a in data.get("alerts", []):
-        label = ALERTS.get(a["id"], (f"Alerta «{a['id'].replace('_', ' ')}»", "exploit", None))[0]
+        label = alert_label(a["id"], gender)
         rows.append({"id": a["id"], "label": label, "per_game": a["per_game"], "avg_minute": a["avg_minute"], "games": a["games"],
                      "count": a["count"], "text": f"{label}: {fmt(a['per_game'])} por partido (en {a['games']} partidos, hacia el minuto {a['avg_minute']:.0f})."})
     return rows
@@ -240,13 +255,17 @@ def _plan(keys: List[Dict[str, str]], team_report: Optional[Dict[str, Any]]) -> 
 
 
 def build_scouting_report(data: Dict[str, Any], team_report: Optional[Dict[str, Any]] = None,
-                          comparison: Optional[Sequence[Dict[str, Any]]] = None, config: Optional[ScoutingConfig] = None) -> Dict[str, Any]:
-    """The report of the team in ``data`` (``scout_team`` output), with the rule-based team report and a comparison when there are."""
+                          comparison: Optional[Sequence[Dict[str, Any]]] = None, config: Optional[ScoutingConfig] = None,
+                          gender: str = "") -> Dict[str, Any]:
+    """The report of the team in ``data`` (``scout_team`` output), with the rule-based team report and a comparison when there are.
+
+    ``gender`` (``F``/``M``) is the one of the competition: the words agree with it (issue #495); empty = the neutral masculine."""
     cfg = config or ScoutingConfig()
+    words = SimpleNamespace(gender=gender)
     n = data["sample_games"]
     zones = _zone_rows(data.get("zones", {}), cfg)
     findings: List[Callable[[], List[Dict[str, str]]]] = [
-        lambda: _scorer_key(data, cfg), lambda: _clutch_key(data, cfg), lambda: _quarter_keys(data, cfg), lambda: _timeout_key(data, cfg),
+        lambda: _scorer_key(data, cfg, words), lambda: _clutch_key(data, cfg), lambda: _quarter_keys(data, cfg), lambda: _timeout_key(data, cfg),
         lambda: _zone_keys(zones, cfg), lambda: _alert_keys(data, cfg)]
     low = n < cfg.low_sample_games
     keys = [k for f in findings for k in f()][:MAX_KEYS]
@@ -260,7 +279,7 @@ def build_scouting_report(data: Dict[str, Any], team_report: Optional[Dict[str, 
         "keys": keys, "players": data["players"][:6], "lineups": _lineup_rows(data, cfg), "zones": zones,
         "quarters": data.get("quarters", {}), "edges": data.get("edges", {}), "timeouts": data.get("timeouts", {}),
         "origin": _origin_rows(data.get("origin")),
-        "alerts": _alert_rows(data, cfg), "plan": _plan(keys, team_report),
+        "alerts": _alert_rows(data, cfg, words), "gender": gender, "plan": _plan(keys, team_report),
         "team_report": {k: (team_report or {}).get(k, []) for k in ("strengths", "weaknesses", "differentials", "tactics")},
         "comparison": list(comparison or []),
     }

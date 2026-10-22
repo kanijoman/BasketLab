@@ -32,9 +32,16 @@ def _games_from_mongo(db: Any, collection: str) -> Iterable[Dict[str, Any]]:
     return games_from_mongo(db, collection)
 
 
+def _catalog_gender(db: Any, collection: str) -> str:
+    from src.live_prep.competition_info import competition_infos
+    from src.live_prep.publisher import load_config
+
+    return competition_infos(db, [collection], load_config()["competitions"], [])[collection].get("gender") or ""
+
+
 class ScoutingRivalService:
     def __init__(self, db: Any, stats: Any = None, report_service: Any = None, games: Callable[[Any, str], Iterable[Dict[str, Any]]] = _games_from_mongo,
-                 pbp: Optional[Callable[[str], List[Dict[str, Any]]]] = None) -> None:
+                 pbp: Optional[Callable[[str], List[Dict[str, Any]]]] = None, gender_of: Optional[Callable[[str], str]] = None) -> None:
         self._db = db
         self._pbp = pbp or (lambda collection: _pbp_from_db(db, collection))
         if stats is None:
@@ -44,6 +51,7 @@ class ScoutingRivalService:
         self._stats = stats
         self._report_service = report_service or TeamReportService(db, stats=stats)
         self._games = games
+        self._gender_of = gender_of or (lambda collection: _catalog_gender(db, collection))
 
     def _names(self, collection: str) -> Dict[str, str]:
         return {str(t["id"]): t.get("name") or str(t["id"]) for t in (self._stats.get_teams_with_ids(collection) or [])}
@@ -83,11 +91,18 @@ class ScoutingRivalService:
         if own_team_id:
             rows = self._rows(collection, team_id, own_team_id)
             comparison = compare_teams(rows.get(own_team_id), rows.get(team_id))
-        report = build_scouting_report(data, team_report=team_report, comparison=comparison)
+        report = build_scouting_report(data, team_report=team_report, comparison=comparison, gender=self._gender(collection))
         report["notices"] += notices
         report["collection"] = collection
         report["own_team"] = {"id": own_team_id, "name": names[own_team_id]} if own_team_id else None
         return report
+
+    def _gender(self, collection: str) -> str:
+        """``F``/``M`` of the competition in the catalog of the publisher; empty when it does not say (the report is then in the neutral)."""
+        try:
+            return self._gender_of(collection) or ""
+        except Exception:  # noqa: BLE001 - an enrichment: the words fall back to the neutral
+            return ""
 
     def _team_report(self, collection: str, team_id: str):
         try:

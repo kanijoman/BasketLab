@@ -13,7 +13,7 @@ from src.live_prep.scouting_report import fmt
 
 from .scouting_pdf_parts import GREEN, MUTED, RED, ScoutingPDF, zones_chart
 
-AREA_TAG = {"ataque": "[Ataque]", "defensa": "[Defensa]", "jugadoras": "[Jugadoras]", "ritmo": "[Ritmo]", "cierres": "[Cierres]", "gestión": "[Gestión]"}
+AREA_TAG = {"ataque": "[Ataque]", "defensa": "[Defensa]", "jugadoras": "[Jugadores]", "ritmo": "[Ritmo]", "cierres": "[Cierres]", "gestión": "[Gestión]"}
 COMPARISON_ROWS = 14
 
 
@@ -35,11 +35,16 @@ def _summary(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
             pdf.bullet(line)
 
 
+def _area_tag(area: str, report: Dict[str, Any]) -> str:
+    tag = AREA_TAG.get(area, f"[{area}]")
+    return tag.replace("Jugadores", "Jugadoras") if report.get("gender") == "F" else tag
+
+
 def _keys_and_plan(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
     if report["keys"]:
         pdf.h2("Claves tácticas")
         for key in report["keys"]:
-            pdf.bullet(key["text"], AREA_TAG.get(key["area"], f"[{key['area']}]"))
+            pdf.bullet(key["text"], _area_tag(key["area"], report))
     plan = report["plan"]
     if plan["neutralize"] or plan["exploit"]:
         pdf.h2("Plan de partido")
@@ -52,10 +57,11 @@ def _keys_and_plan(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
 
 def _people(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
     if report["players"]:
-        pdf.h2("Jugadoras clave")
+        female = report.get("gender") == "F"
+        pdf.h2("Jugadoras clave" if female else "Jugadores clave")
         rows = [[p["name"], p["games"], fmt(p["minutes"] / p["games"]), fmt(p["pts_per_game"]), f"{p['share'] * 100:.0f} %",
                  p["clutch"]["pts"], p["clutch"]["fga"]] for p in report["players"]]
-        pdf.table(["Jugadora", "PJ", "Min/p", "Pts/p", "% puntos", "Pts cierre", "TC cierre"], rows, [62, 14, 20, 20, 24, 24, 22])
+        pdf.table(["Jugadora" if female else "Jugador", "PJ", "Min/p", "Pts/p", "% puntos", "Pts cierre", "TC cierre"], rows, [62, 14, 20, 20, 24, 24, 22])
     if report["lineups"]:
         pdf.h2("Quintetos más usados")
         for line in report["lineups"][:5]:
