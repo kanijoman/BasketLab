@@ -84,15 +84,15 @@ def build_round_packages(
 
 def build_round_packages_from_db(handler: Any, collection: str, matches: List[Dict[str, Any]], club_team_id: Optional[str] = None,
                                  roster_source: Optional[RosterSource] = None, season: Optional[str] = None,
-                                 rule_config: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+                                 rule_config: Optional[Dict[str, Any]] = None, level_of: Optional[Callable[[str], Optional[int]]] = None) -> List[Dict[str, Any]]:
     """``handler`` is a MongoDBHandler; the games are read one at a time (a game document is ~1 MB in memory)."""
-    from .db_source import _counted, season_of
+    from .db_source import _counted, catalog_level_of, season_of
     from .game_sources import games_of_sources, source_collections
 
     mongo = handler.repository.connection.get_collection(collection)
     team_ids = _team_ids(matches)
     sources = source_collections(handler, collection, team_ids)    # the own collection + the other games of the teams of the round (#456)
-    games = _counted(games_of_sources(handler, sources, team_ids), 0, None)
+    games = _counted(games_of_sources(handler, sources, team_ids, level_of or catalog_level_of(handler)), 0, None)
     return build_round_packages(games, collection, season or season_of(mongo, collection), matches, club_team_id,
                                 roster_source=roster_source, rule_config=rule_config)
 

@@ -13,7 +13,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from src.live_core.engine import LiveEngine
-from .game_sources import LEAGUE_KEY
+from .category_strength import adjust, team_level
+from .game_sources import LEAGUE_KEY, LEVEL_KEY
 from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, possessions
 from src.live_core.package import PreparationPackage
 from src.live_core.profiles import (
@@ -161,6 +162,7 @@ class SeasonAccumulator:
         self.zone_team: Dict[str, Dict[str, Dict[str, int]]] = {}
         self.zone_conceded: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> zones of the shots its defence let the opponents take (#247)
         self.total_games = 0
+        self.levels: Dict[str, Dict[int, int]] = {}   # team -> games per known division (issue #464)
         self.net_log: Dict[str, List[float]] = {}   # team -> net rating per 100 possessions of each game (#254)
 
     def tracked(self, team_id: str) -> bool:
@@ -174,6 +176,7 @@ class SeasonAccumulator:
         ids = [tid for tid, _ in header]
         if len(ids) != 2:
             return
+        level = game.get(LEVEL_KEY)
         league = game.get(LEAGUE_KEY, True)    # a game of another competition feeds the teams' tables, not the league baselines (#456)
         self.names.update(dict(header))
         snap = LiveEngine().update(game)
@@ -189,6 +192,8 @@ class SeasonAccumulator:
                     if self.tracked(tid):
                         self.net_log.setdefault(tid, []).append(sign * margin)
         for tid in ids:
+            if self.tracked(tid) and level is not None:
+                self.levels.setdefault(tid, {}).update({level: self.levels.get(tid, {}).get(level, 0) + 1})
             if self.tracked(tid):
                 self._add_team(tid, ids[1] if ids[0] == tid else ids[0], snap, stats)
 
@@ -236,6 +241,10 @@ class SeasonAccumulator:
             "sample_games": {"own": self.played(team_id), "rival": self.played(rival_id), "league": self.total_games},
         }
         out["net_rtg_prior"] = net_prior(self.net_log.get(team_id, []), self.net_log.get(rival_id, []))
+        out["four_factors_prior"], out["net_rtg_prior"], cross = adjust(
+            out["four_factors_prior"], out["net_rtg_prior"], team_level(self.levels.get(team_id, {})), team_level(self.levels.get(rival_id, {})))
+        if cross:
+            out["cross_division"] = cross       # the teams were measured against rivals of different divisions (issue #464)
         spread = league_spread(self.league_diffs)
         if spread:
             out["four_factors_sd"] = spread

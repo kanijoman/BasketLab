@@ -127,4 +127,16 @@ describe('PackagePanel', () => {
     expect(screen.getByText(/código 2524465/i)).toBeTruthy()
     expect(screen.getByText(/10\/10\/2026/)).toBeTruthy()
   })
+
+  const base = { team: 'A', teamId: '1', rival: 'B', rivalId: '2', season: '2026', collection: 'c', createdAt: '2026-10-08T12:00:00Z', ownPlayers: 1, rivalPlayers: 1, games: { own: 1, rival: 1, league: 1 }, match: null }
+
+  it('says it when the two teams are of different divisions: the prior is only approximate (#464)', () => {
+    render(<PackagePanel engine={engineStub()} store={memoryStore()} loaded={{ ...base, crossDivision: { own_level: 3, rival_level: 2, adjusted: 'shrink' } }} onLoaded={vi.fn()} />)
+    expect(screen.getByText(/equipos de divisiones distintas/i)).toBeTruthy()
+  })
+
+  it('says nothing of it when they are of the same division', () => {
+    render(<PackagePanel engine={engineStub()} store={memoryStore()} loaded={base} onLoaded={vi.fn()} />)
+    expect(screen.queryByText(/divisiones distintas/i)).toBeNull()
+  })
 })

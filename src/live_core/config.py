@@ -114,6 +114,7 @@ class RuleConfig:
     # First half (issue #427): from this many seconds left of the 2nd period the timeouts that are still there are warned as lost at the break.
     half_close_s: int = 120
     rival_pair_pf: int = 3
+    rival_pair_gap_s: int = 300           # a new pair of rivals is not said within this many game seconds of the previous one (22/10/2026: 61 % repeated)
     # The finish and the pace (issue #246). Advantage: points up with less than these seconds left of the 4th period.
     advantage_margin: int = 10
     advantage_remaining_s: int = 300
@@ -194,6 +195,7 @@ class RuleConfig:
     edge_net: int = 6
     edge_min_periods: int = 2
     comeback_margin: int = 8
+    comeback_every_s: int = 360           # the plan is said once per block of this many seconds of the last period (was 240: 49 % repeated, 22/10/2026)
     comeback_left_s: int = 600
     comeback_hard: float = 0.5
     comeback_max_need: float = 1.5   # above this many net points per possession the comeback is not a plan: nothing is said
@@ -229,6 +231,7 @@ class RuleConfig:
     ff_min_possessions: float = 15.0
     ff_beta: float = 9.0
     ff_lever_min_pts100: float = 3.0
+    ff_lever_gap_s: int = 300             # two lever alerts at least this far apart (game seconds); a change waits and is said then if it still holds (22/10/2026: 1.1/10 min, 55 % repeated)
     ff_lever_rearm_s: int = 600           # no longer used by the rule since #241 (kept: a package may carry it)
     # Recommender: widest role gap accepted, weight of that gap in the ranking, how much the
     # quintet's rebounding/creation/spacing/interior may drop (sum of z), results per advice.

@@ -15,6 +15,8 @@ export interface PackageSummary {
   match: PackageMatch | null
   /** The package's rule config (its gender goes to the text of the PDF report, #475). */
   ruleConfig?: Record<string, unknown>
+  /** The two teams were measured against rivals of different divisions (issue #464): the prior of the matchup was corrected or reduced. */
+  crossDivision?: { own_level: number; rival_level: number; adjusted: string }
 }
 
 export interface PackageMatch {
@@ -33,7 +35,7 @@ interface RawPackage {
     collection?: string
     created_at?: string
     tables?: { players?: Record<string, unknown>; rival_players?: Record<string, unknown> }
-    baselines?: { sample_games?: { own?: number; rival?: number; league?: number } }
+    baselines?: { sample_games?: { own?: number; rival?: number; league?: number }; cross_division?: PackageSummary['crossDivision'] }
     competition_meta?: { match?: PackageMatch }
     rule_config?: Record<string, unknown>
   }
@@ -56,5 +58,6 @@ export function summarizePackage(text: string): PackageSummary {
     games: { own: games.own ?? 0, rival: games.rival ?? 0, league: games.league ?? 0 },
     match: body.competition_meta?.match ?? null,
     ruleConfig: body.rule_config ?? {},
+    crossDivision: body.baselines?.cross_division,
   }
 }

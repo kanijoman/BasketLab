@@ -212,7 +212,7 @@ def comeback_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     hard = need >= cfg.comeback_hard
     reading = "Hace falta mucho más que el ritmo normal." if hard else "Es posible a ritmo normal."
     return [Advice(
-        key=f"comeback:{left // 240}", id="comeback_plan", severity="info", category="gestion",
+        key=f"comeback:{left // max(1, cfg.comeback_every_s)}", id="comeback_plan", severity="info", category="gestion",
         message=(f"Remontada: perdemos por {deficit} con unas {possessions_left:.0f} posesiones por equipo: hace falta ganar "
                  f"{need:+.2f} netos por posesión (hoy {now:+.2f}). {reading}"),
         evidence={"deficit": deficit, "possessions_left": round(possessions_left, 1), "need": round(need, 3), "now": round(now, 3)},

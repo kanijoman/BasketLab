@@ -58,9 +58,11 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     memory = ctx.memory.setdefault("lever", {"name": None, "changes": 0, "step": -1})
     if memory["name"] == lever and step <= memory["step"]:
         return []        # the same lever, not worse than what was already said
+    if "at" in memory and snap["elapsed"] - memory["at"] < ctx.config.ff_lever_gap_s:
+        return []        # said too recently: the change waits (nothing is remembered, so it is said later if it still holds)
     if memory["name"] != lever:
         memory["changes"] += 1
-    memory["name"], memory["step"] = lever, max(step, memory["step"] if memory["name"] == lever else -1)
+    memory["name"], memory["step"], memory["at"] = lever, max(step, memory["step"] if memory["name"] == lever else -1), snap["elapsed"]
     return [Advice(
         key=f"lever:{lever}:{memory['changes']}:{step}", id="four_factors_lever", severity="info", category="four_factors",
         message=(f"{title}: {metric} {_own_vs_rival(lever, result)} ({pts100:+.1f} pts/100 posesiones; "
