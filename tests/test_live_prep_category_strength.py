@@ -64,7 +64,7 @@ class TestAccumulator:
 
     def test_the_package_says_the_teams_are_of_different_divisions(self, feb_game_doc):
         p = self.package(feb_game_doc, 3, 2)
-        assert p.baselines["cross_division"] == {"own_level": 3, "rival_level": 2, "adjusted": "shrink"}
+        assert p.baselines["cross_division"] == {"own_level": 3, "rival_level": 2, "adjusted": "gap"}
 
     def test_teams_of_the_same_division_get_no_marker_and_the_same_package_as_before_regression(self, feb_game_doc):
         p = self.package(feb_game_doc, 3, 3)
@@ -76,10 +76,17 @@ class TestAccumulator:
         acc.add_game(remap(feb_game_doc, {A: "777"}))
         assert "cross_division" not in acc.to_package("C", "2026", A, B, None, STAMP).baselines
 
-    def test_the_prior_is_smaller_between_divisions(self, feb_game_doc):
+    def test_the_net_prior_moves_by_the_calibrated_gap_per_division_and_the_factors_are_shrunk(self, feb_game_doc):
         same = self.package(feb_game_doc, 3, 3).baselines
-        cross = self.package(feb_game_doc, 3, 2).baselines
-        assert abs(cross["net_rtg_prior"]) <= abs(same["net_rtg_prior"])
+        below = self.package(feb_game_doc, 3, 2).baselines       # we are a division below the rival
+        above = self.package(feb_game_doc, 2, 3).baselines
+        assert below["net_rtg_prior"] == pytest.approx(same["net_rtg_prior"] - cs.LEVEL_GAP_NET_RTG, abs=0.01)
+        assert above["net_rtg_prior"] == pytest.approx(same["net_rtg_prior"] + cs.LEVEL_GAP_NET_RTG, abs=0.01)
+        assert all(abs(below["four_factors_prior"][k]) <= abs(same["four_factors_prior"][k]) for k in same["four_factors_prior"])
+
+    def test_the_calibrated_gap_is_the_one_measured_with_the_copa(self):
+        """22/10/2026 (#503): 58 games between divisions of 2024-2026, +23.0 ± 2.3 per division; 20 on purpose."""
+        assert cs.LEVEL_GAP_NET_RTG == 20.0
 
 
 class TestFromTheDatabase:
@@ -114,4 +121,4 @@ class TestFromTheDatabase:
         handler, copa, own, rival = self.world(feb_game_doc)
         match = {"code": "9", "start": "2026-10-21T20:00", "round": 1, "home": {"id": own, "name": "H"}, "away": {"id": rival, "name": "A"}}
         built = build_round_packages_from_db(handler, copa, [match], season="2026", level_of=self.LEVELS.get)
-        assert built[0]["package"].baselines["cross_division"]["adjusted"] == "shrink"
+        assert built[0]["package"].baselines["cross_division"]["adjusted"] == "gap"

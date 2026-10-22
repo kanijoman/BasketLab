@@ -3,16 +3,17 @@
 A team's net rating and Four Factors are measured against the teams of ITS division (Cultural Leonesa in 2ª FEB, Alimerka Oviedo in 1ª FEB), so the
 gap between two such ratings says nothing about the tie. The package says it (``baselines.cross_division``) and corrects the prior:
 
-* ``LEVEL_GAP_NET_RTG``: points of net rating per 100 possessions that separate two consecutive divisions. ``None`` = not calibrated yet (it needs real
-  games between divisions: the Copa); ``python -m src.live_prep.level_gap`` estimates it. Calibrated, the net rating prior moves by it.
-* Until then (and for the Four Factors, which have no units to move) the prior is shrunk by ``CROSS_DIVISION_SHRINK``. Provisional.
+* ``LEVEL_GAP_NET_RTG``: points of net rating per 100 possessions that separate two consecutive divisions, estimated from the games between divisions
+  (the Copa) with ``python -m src.live_prep.level_gap --season 2026 --season 2025 --season 2024``: 58 games, +23.0 ± 2.3; 20 is used. The net rating
+  prior moves by it. ``None`` = not calibrated: the prior is shrunk by ``CROSS_DIVISION_SHRINK`` instead.
+* The Four Factors prior has no units to move: it is always shrunk by ``CROSS_DIVISION_SHRINK`` between divisions. Provisional.
 """
 
 from __future__ import annotations
 
 from typing import Any, Dict, Mapping, Optional, Tuple
 
-LEVEL_GAP_NET_RTG: Optional[float] = None
+LEVEL_GAP_NET_RTG: Optional[float] = 20.0     # calibrated 22/10/2026 (#503): 23.0 ± 2.3 from 58 Copa games of 2024-2026; 20 on purpose (the current season measures less)
 CROSS_DIVISION_SHRINK = 0.5
 
 

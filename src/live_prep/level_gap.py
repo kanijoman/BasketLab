@@ -60,9 +60,8 @@ def _game_record(doc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return {"a": ids[0], "b": ids[1], "margin100": (snap["score"][ids[0]] - snap["score"][ids[1]]) / n * 100}
 
 
-def collect(games_by_collection: Iterable[Any], level_of: Callable[[str], Optional[int]]) -> Dict[str, Any]:
-    """``(collection, games)`` pairs → the estimate. Collections with a division define where each team plays; games between teams of different divisions,
-    wherever they were played (a cup), are the sample."""
+def _season_parts(games_by_collection: Iterable[Any], level_of: Callable[[str], Optional[int]], tag: str) -> Dict[str, Any]:
+    """The games inside a division and the games between divisions of ONE season, with every team id prefixed by ``tag`` (ids change each season)."""
     records: List[Dict[str, Any]] = []
     team_levels: Dict[str, Counter] = {}
     for collection, games in games_by_collection:
@@ -71,6 +70,7 @@ def collect(games_by_collection: Iterable[Any], level_of: Callable[[str], Option
             record = _game_record(doc)
             if record is None:
                 continue
+            record = {**record, "a": f"{tag}:{record['a']}", "b": f"{tag}:{record['b']}"}
             records.append(record)
             if level is not None:
                 for team in (record["a"], record["b"]):
@@ -79,8 +79,33 @@ def collect(games_by_collection: Iterable[Any], level_of: Callable[[str], Option
     league = [r for r in records if r["a"] in levels and levels[r["a"]] == levels.get(r["b"])]
     cross = [{**r, "level_a": levels[r["a"]], "level_b": levels[r["b"]]} for r in records
              if r["a"] in levels and r["b"] in levels and levels[r["a"]] != levels[r["b"]]]
+    return {"league": league, "cross": cross, "teams": len(levels)}
+
+
+def collect_seasons(games_by_season: Dict[str, Iterable[Any]], level_of: Callable[[str], Optional[int]]) -> Dict[str, Any]:
+    """``{season: (collection, games) pairs}`` → one estimate pooling the games between divisions of every season.
+
+    Collections with a division define where each team plays; games between teams of different divisions, wherever they were played (a cup), are the
+    sample. A team is its id **in its season**: the same id in two seasons are two teams."""
+    league: List[Dict[str, Any]] = []
+    cross: List[Dict[str, Any]] = []
+    teams, per_season = 0, {}
+    for season, pairs in games_by_season.items():
+        part = _season_parts(pairs, level_of, season)
+        league += part["league"]
+        cross += part["cross"]
+        teams += part["teams"]
+        per_season[season] = len(part["cross"])
     result = estimate_gap(cross, team_ratings(league))
-    result["teams"] = len(levels)
+    result["teams"] = teams
+    result["seasons"] = per_season
+    return result
+
+
+def collect(games_by_collection: Iterable[Any], level_of: Callable[[str], Optional[int]]) -> Dict[str, Any]:
+    """The estimate of one season (see ``collect_seasons``)."""
+    result = collect_seasons({"": games_by_collection}, level_of)
+    result.pop("seasons")
     return result
 
 
@@ -91,7 +116,7 @@ def in_season(collection: str, season: str) -> bool:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Estimate the net rating gap between divisions from the games between them.")
-    parser.add_argument("--season", default="2026", help="year the season starts (collections of other seasons are not read)")
+    parser.add_argument("--season", action="append", default=[], help="year a season starts (repeatable: 2026 2025 2024); default 2026. The games between divisions of all of them are pooled")
     args = parser.parse_args(argv)
     from src.database import MongoDBHandler
     from src.services.collection_service import CollectionService
@@ -101,11 +126,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     handler = MongoDBHandler()
     service = CollectionService(handler)
-    names = [n for n in sorted(handler.repository.connection.get_database().list_collection_names())
-             if not service._SKIP_PREFIXES.match(n) and n not in service._SKIP_NAMES and not n.upper().startswith("FBCYL")
-             and in_season(n, args.season)]
-    result = collect(((name, games_from_mongo(handler, name)) for name in names), catalog_level_of(handler))
-    print(f"{len(names)} colecciones, {result['teams']} equipos con división; partidos entre divisiones: {result['n']}")
+    seasons = args.season or ["2026"]
+    everything = sorted(handler.repository.connection.get_database().list_collection_names())
+    names = {season: [n for n in everything if not service._SKIP_PREFIXES.match(n) and n not in service._SKIP_NAMES and not n.upper().startswith("FBCYL")
+                      and in_season(n, season)] for season in seasons}
+    worlds = {season: ((name, games_from_mongo(handler, name)) for name in found) for season, found in names.items()}
+    result = collect_seasons(worlds, catalog_level_of(handler))
+    print(f"{sum(len(v) for v in names.values())} colecciones de {len(seasons)} temporada(s), {result['teams']} equipos con división; "
+          f"partidos entre divisiones: {result['n']} {result['seasons']}")
     if result["gap"] is None:
         print("Sin partidos entre divisiones: LEVEL_GAP_NET_RTG sigue sin calibrar.")
     else:
