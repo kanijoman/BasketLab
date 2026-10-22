@@ -1,7 +1,7 @@
 """Structured data of the competition of each published collection (issue #438, epic #435).
 
 The app listed and filtered matches parsing the name of the collection. The index now carries ``competition: {key, label, competition,
-group, season, level, gender}`` per entry: names come from the scrape metadata (``COLLECTION_META``), ``level``/``gender``/``clubs``/``rule_config`` from the
+group, season, level, gender}`` per entry: names come from the scrape metadata (``COLLECTION_META``), ``level``/``gender``/``clubs``/``rule_config`` (and ``group_rules``: rules of the groups that name it, e.g. the knockout phases of a cup) from the
 ``competitions`` catalog of ``config/package_publish.json`` (matched by competition name, case and punctuation ignored). ``clubs`` are the
 clubs whose packages are prepared in that competition (not published). "De interés" teams are NOT here: the user marks them in the app.
 """
@@ -36,6 +36,30 @@ def _checked_rule_config(position: int, value: Any) -> Dict[str, Any]:
     return dict(value)
 
 
+def _checked_group_rules(position: int, value: Any) -> List[Dict[str, Any]]:
+    """``group_rules``: ``[{"group": <text of the group label>, "rule_config": {...}}]``; a group that matches adds its rules to the competition's (#481)."""
+    if not isinstance(value, list):
+        raise ValueError(f"competitions entry #{position}: group_rules must be a list")
+    out = []
+    for n, rule in enumerate(value, start=1):
+        if not isinstance(rule, dict) or not isinstance(rule.get("group"), str) or not rule["group"].strip() or "rule_config" not in rule:
+            raise ValueError(f"competitions entry #{position}: group_rules #{n} needs a group (text of the group label) and a rule_config")
+        try:
+            out.append({"group": rule["group"], "rule_config": _checked_rule_config(position, rule["rule_config"])})
+        except ValueError as exc:
+            raise ValueError(f"competitions entry #{position}: group_rules #{n}: {exc}") from exc
+    return out
+
+
+def _rules_of(entry: Dict[str, Any], group: str) -> Dict[str, Any]:
+    """The competition's ``rule_config`` plus, in order, the ones of every ``group_rules`` whose text is in the group label (case and accents ignored)."""
+    rules = dict(entry.get("rule_config") or {})
+    for rule in entry.get("group_rules") or []:
+        if _norm(rule["group"]) in _norm(group):
+            rules.update(rule["rule_config"])
+    return rules
+
+
 def normalize_catalog(entries: Optional[Iterable[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     """Validated ``competitions`` entries of the config (``ValueError`` naming the position of a bad one)."""
     out: List[Dict[str, Any]] = []
@@ -51,7 +75,8 @@ def normalize_catalog(entries: Optional[Iterable[Dict[str, Any]]]) -> List[Dict[
         if not isinstance(clubs, list):
             raise ValueError(f"competitions entry #{i}: clubs must be a list of team ids")
         rule_config = _checked_rule_config(i, raw["rule_config"]) if "rule_config" in raw else {}
-        out.append({"competition": name, "level": level, "gender": gender, "clubs": [str(c) for c in clubs], "rule_config": rule_config})
+        out.append({"competition": name, "level": level, "gender": gender, "clubs": [str(c) for c in clubs], "rule_config": rule_config,
+                    "group_rules": _checked_group_rules(i, raw.get("group_rules", []))})
     return out
 
 
@@ -74,7 +99,7 @@ def competition_infos(db: Any, collections: Iterable[str], catalog: List[Dict[st
         out[collection] = {
             "key": collection, "label": f"{competition} · {group}" if group else competition, "competition": competition, "group": group,
             "season": meta.get("season_label") or "", "level": entry.get("level"), "gender": entry.get("gender"),
-            "clubs": list(entry.get("clubs") or default_clubs), "rule_config": dict(entry.get("rule_config") or {}),
+            "clubs": list(entry.get("clubs") or default_clubs), "rule_config": _rules_of(entry, group),
         }
     return out
 

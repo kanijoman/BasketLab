@@ -22,7 +22,7 @@ from src.live_core.state import LiveGame
 from tests.test_live_core_rule_registry import SCENARIOS, _engine
 
 RECORDINGS = Path(__file__).parent / "recordings"
-LINEUP_RULES = ("fatigue_high", "player_plus_minus", "lineup_net", "rest_starters")
+LINEUP_RULES = ("fatigue_high", "player_plus_minus", "lineup_net", "rest_starters", "formation_lineup")   # #481: the formation rule too
 STOPPAGES = ("timeout", "foul", "ft", "sub_in", "sub_out", "period_end")
 
 
@@ -111,10 +111,21 @@ def test_a_player_who_left_in_the_late_lines_is_never_alerted():
     assert not fired(after)
 
 
-def test_an_illegal_lineup_is_still_said_during_the_stoppage():
-    """formation_lineup is not held: play must not go on with an illegal lineup."""
+def test_an_illegal_lineup_is_not_said_in_the_middle_of_a_block_of_substitutions_regression():
+    """#481 (Copa 21/10/2026): a block of substitutions is several lines written one after the other. The formación player who comes in for
+    a formación player arrives after the non-formación one who comes in for another: in between, the five on court look illegal for a
+    moment. The lineup is evaluated at the next play, when the whole block is written."""
     build, wanted, kw = SCENARIOS["formation_lineup"]
-    assert wanted <= emitted("formation_lineup", with_last_event(build(), "timeout"))
+    engine = _engine(**kw)
+    fired = lambda snapshot: {a.id for a in engine.evaluate(snapshot)} & wanted  # noqa: E731
+    mid_block = with_last_event(build(), "sub_in")
+    assert not any(fired(s) for k in range(3) for s in moved(mid_block, k))             # the block is still being written: nothing is said
+    assert not any(fired(s) for k in range(3) for s in moved(with_last_event(build(), "timeout"), k))
+
+
+def test_an_illegal_lineup_that_is_still_there_at_the_next_play_is_said():
+    build, wanted, kw = SCENARIOS["formation_lineup"]
+    assert wanted <= emitted("formation_lineup", with_last_event(build(), "rebound"))
 
 
 # --- the game says what its last event was ---------------------------------------------------------------------------------------
