@@ -17,6 +17,14 @@ def _clamp(value: float) -> float:
     return max(0.0, min(1.0, value))
 
 
+def baseline_trusted(baseline: Optional[Dict[str, Any]], cfg: RuleConfig) -> bool:
+    """Is the baseline of the player backed by enough games and stints? A baseline that does not say its sample (older packages) is trusted."""
+    baseline = baseline or {}
+    if baseline.get("games") is not None and baseline["games"] < cfg.fatigue_min_games:
+        return False
+    return not (baseline.get("stints") is not None and baseline["stints"] < cfg.fatigue_min_stints)
+
+
 def fatigue_index(
     stint: int,
     minutes: int,
@@ -26,11 +34,12 @@ def fatigue_index(
 ) -> Tuple[float, Dict[str, float]]:
     """Heuristic fatigue index 0-100 and its components (each 0-1).
 
-    Not a calibrated probability. Components that cannot be computed (no season baseline,
-    too little game played) are left out and the weights re-normalised.
+    Not a calibrated probability. Components that cannot be computed (no season baseline, too little game played, a baseline of too few games
+    or stints, #479) are left out and the weights re-normalised.
     """
     cfg = config or RuleConfig()
-    baseline = baseline or {}
+    trusted = baseline_trusted(baseline, cfg)
+    baseline = (baseline or {}) if trusted else {}
     parts: Dict[str, float] = {}
     weights: Dict[str, float] = {}
 
@@ -62,8 +71,11 @@ def _clock(seconds: int) -> str:
 _LEVELS = ("critical", "warning", "info")     # most to least urgent
 
 
-def _level(index: float, cfg: RuleConfig) -> Optional[str]:
-    if index >= cfg.fatigue_critical_index:
+def _level(index: float, cfg: RuleConfig, stint: int = 10 ** 6) -> Optional[str]:
+    """The level of an index, capped by how long the player has been on court: nothing below the first floor, never critical below the second (#479)."""
+    if stint < cfg.fatigue_floor_warning_s:
+        return None
+    if index >= cfg.fatigue_critical_index and stint >= cfg.fatigue_floor_critical_s:
         return "critical"
     if index >= cfg.fatigue_warning_index:
         return "warning"
@@ -114,13 +126,17 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         index, parts = fatigue_index(p["stint"], p["minutes"], snap["elapsed"],
                                      ctx.baselines.get(pid), ctx.config)
-        level = _level(index + _decided_offset(snap, ctx), ctx.config)
+        level = _level(index + _decided_offset(snap, ctx), ctx.config, p["stint"])
         if level is None:
             continue
         reason = _reason_to_keep(snap, ctx, pid)
         severity = _LEVELS[min(len(_LEVELS) - 1, _LEVELS.index(level) + 1)] if reason else level
+        baseline = ctx.baselines.get(pid)
+        trusted = baseline_trusted(baseline, ctx.config)
+        usual = (baseline or {}).get("avg_stint") if trusted else None
+        usual = usual or ctx.config.fatigue_default_avg_stint_s
         message = (f"{p['name']}: riesgo de fatiga {'muy alto' if level == 'critical' else 'alto'} (índice {index:.0f}/100), "
-                   f"{_clock(p['stint'])} seguidos en pista y {p['minutes'] // 60} min jugados. "
+                   f"{_clock(p['stint'])} seguidos en pista (su tramo habitual: {_clock(int(usual))}) y {p['minutes'] // 60} min jugados. "
                    + ("Cambio recomendado." if level == "critical" else "Valorar descanso."))
         if reason:
             message += f" Se baja un nivel: {reason}."
@@ -129,6 +145,7 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             id="fatigue_high", severity=severity, category="rotacion", message=message,
             evidence={"player_id": pid, "team_id": p["team_id"], "index": index, "components": parts,
                       "stint_s": p["stint"], "minutes_s": p["minutes"], "level": level, "kept_because": reason,
-                      "has_baseline": pid in ctx.baselines},
+                      "has_baseline": pid in ctx.baselines, "avg_stint_s": int(usual),
+                      "sample": {"games": (baseline or {}).get("games"), "stints": (baseline or {}).get("stints"), "trusted": trusted}},
         ))
     return out
