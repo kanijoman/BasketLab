@@ -16,8 +16,9 @@ const ROUNDS = [
   round('TERCERA_FEB_AB', [match('4', ['1010490', 'RDL'], ['6', 'MIERES'])], info('TERCERA FEB', 'Liga Regular "A-B"')),
 ]
 
-const show = (rounds = ROUNDS) =>
-  render(<RoundPackages rounds={rounds} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} />)
+const NOW = new Date('2026-10-17T10:00:00')
+const show = (rounds = ROUNDS, over: Partial<React.ComponentProps<typeof RoundPackages>> = {}) =>
+  render(<RoundPackages rounds={rounds} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...over} />)
 const headings = (c: HTMLElement) => Array.from(c.querySelectorAll('.round-packages h3')).map(h => h.textContent ?? '')
 
 beforeEach(() => localStorage.clear())
@@ -178,5 +179,44 @@ describe('RoundPackages: each team on its own line with its star (issue #473)', 
     const { container } = show()
     const info = container.querySelector('li.round-match .round-info')!
     expect(info.lastElementChild?.classList.contains('round-when')).toBe(true)
+  })
+})
+
+describe('RoundPackages: the next match of each team of interest (issue #478)', () => {
+  const FAVS = [{ teamId: '1008857', name: 'LEONESA' }, { teamId: '1008978', name: 'LLIRIA' }]
+
+  it('says nothing when no team is marked', () => {
+    show()
+    expect(screen.queryByRole('region', { name: /próximos de tus equipos de interés/i })).toBeNull()
+  })
+
+  it('lists the next match of each team of interest, with its competition, before the filters', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify(FAVS))
+    show()
+    const next = screen.getByRole('region', { name: /próximos de tus equipos de interés/i })
+    const rows = Array.from(next.querySelectorAll('li')).map(li => li.textContent ?? '')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toContain('LEONESA')
+    expect(rows[0]).toContain('ZAMORA')
+    expect(rows[0]).toContain('SEGUNDA FEB · Liga Regular "A"')
+    expect(rows[1]).toContain('LLIRIA')
+    expect(rows[1]).toContain('PRAT')
+    expect(next.compareDocumentPosition(screen.getByRole('group', { name: 'Filtrar partidos' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('follows the match as the team of interest', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify(FAVS))
+    const onDownload = vi.fn()
+    show(ROUNDS, { onDownload })
+    fireEvent.click(screen.getByRole('button', { name: /seguir a llíria|seguir a lliria/i }))
+    expect(onDownload).toHaveBeenCalledWith(ROUNDS[1], ROUNDS[1].matches[0], '1008978')
+  })
+
+  it('a team without a match to come is not listed, and a match that cannot be opened has a disabled button', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify([...FAVS, { teamId: '999', name: 'OTRO' }]))
+    show(ROUNDS, { canOpen: () => false })
+    const next = screen.getByRole('region', { name: /próximos de tus equipos de interés/i })
+    expect(next.querySelectorAll('li')).toHaveLength(2)
+    expect(Array.from(next.querySelectorAll('button')).every(b => (b as HTMLButtonElement).disabled)).toBe(true)
   })
 })

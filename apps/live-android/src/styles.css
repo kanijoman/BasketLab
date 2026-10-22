@@ -145,9 +145,11 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .round-packages h3 { margin: 12px 0 4px; font-size: 1rem; }
 /* A match offers to be followed as either of its teams (#286): the row stacks on a phone, the buttons share the width */
 .remote-packages li.round-match { flex-wrap: wrap; min-width: 0; }
+.remote-packages li.next-match { flex-wrap: wrap; min-width: 0; }
 .round-sides { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 14rem; min-width: 0; justify-content: flex-end; }
 /* the selector outweighs ".remote-packages li button { flex: none }" so the buttons can shrink; a long team name wraps (#404) */
 .remote-packages li.round-match .round-sides button { flex: 1 1 9rem; min-width: 0; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; }
+.remote-packages li.next-match .round-sides button { flex: 1 1 9rem; min-width: 0; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; }
 
 /* Filters of the matches list and the teams "de interés" (#440, #473): the same controls as the rest of the app, a team per line with its star */
 .round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin: 8px 0 12px; align-items: end; }
@@ -293,3 +295,5 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 /* alerts grouped by quarter, each group foldable (#406) */
 .alert-period { margin: 8px 0; }
 .alert-period > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+
+.next-of-interest h3 { margin: 0 0 6px; font-size: 1rem; }

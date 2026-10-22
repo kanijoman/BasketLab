@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { isFavorite, loadFavorites, toggleFavorite, type Favorite } from '../package/favorites'
 import { NO_FILTERS, competitionOf, filterRounds, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
 import { competitionLabel, orderRounds, sidesOf, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import { nextMatchesOfFavorites } from '../package/upcoming'
 
 export { competitionLabel }
 
@@ -16,6 +17,8 @@ interface Props {
   onDownload: (round: RoundIndexEntry, match: RoundMatch, ownId: string) => void
   /** Is this match, followed as this team, the package that is loaded now? (issue #342) */
   isLoaded: (code: string, ownId: string) => boolean
+  /** The moment the next matches are counted from (tests). */
+  now?: Date
 }
 
 function when(start?: string | null): string {
@@ -34,7 +37,7 @@ function Star({ team, favorites, onToggle }: { team: { id: string; name: string 
   )
 }
 
-export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded }: Props) {
+export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, now }: Props) {
   const [favorites, setFavorites] = useState<Favorite[]>(() => loadFavorites())
   const [chosen, setChosen] = useState<RoundFilters>(() => loadFilters())
   // a remembered league, competition, group or team that is not published any more must not hide everything: each one is checked against what is on offer
@@ -62,11 +65,34 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
     setFavorites(loadFavorites())
   }
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS)
+  const next = nextMatchesOfFavorites(rounds, favorites, now)
 
   return (
     <>
       <h2>Jornadas completas</h2>
       <p className="detail">Cualquier partido de la jornada, para seguirlo en directo. Primero tus equipos de interés (☆) y el partido de tu club.</p>
+      {next.length > 0 && (
+        <section className="panel next-of-interest" aria-label="Próximos de tus equipos de interés">
+          <h3>Próximos de tus equipos de interés</h3>
+          <ul className="remote-packages">
+            {next.map(n => (
+              <li key={`${n.favorite.teamId}-${n.match.code}`} className="next-match">
+                <span className="round-info">
+                  <strong className="team-name">★ {n.favorite.name}</strong>
+                  <span className="team-name">{n.match.home.name} – {n.match.away.name}</span>
+                  <span className="detail round-when">{when(n.match.start)} · {competitionOf(n.round).label}</span>
+                </span>
+                <span className="round-sides">
+                  <button type="button" aria-label={`Seguir a ${n.favorite.name} en ${n.match.home.name} contra ${n.match.away.name}`}
+                    disabled={isLoaded(n.match.code, n.ownId) || !canOpen(n.round) || busy !== null} onClick={() => onDownload(n.round, n.match, n.ownId)}>
+                    {isLoaded(n.match.code, n.ownId) ? 'Ya disponible' : `Seguir como ${n.favorite.name}`}
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="round-filters" role="group" aria-label="Filtrar partidos">
         {leagues.length > 0 && (
           <label>
