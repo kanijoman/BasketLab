@@ -178,3 +178,19 @@ def test_z5_a_difference_below_fourteen_or_a_repeat_in_the_same_period_says_noth
 def test_the_alerts_are_json_serialisable():
     [alert] = hot(4, 3, 9)
     assert json.loads(json.dumps(alert.proposal)) == alert.proposal
+
+
+def test_every_zone_label_says_how_many_points_the_shot_is_worth_regression():
+    """Feedback of 0.3.2 (#483): «alas» did not say whether it is a two or a three. Each label carries its definition."""
+    from src.live_core.rules_rival import _ZONE_TEXT
+
+    labels = {family: text[0] for family, text in _ZONE_TEXT.items()}
+    assert "triples a 45°" in labels["ala"] and "triples" in labels["esquina"] and "triple" in labels["centro del arco"]
+    assert "2 puntos" in labels["media distancia"]
+    assert all(("(" in label) or family in ("aro", "zona") for family, label in labels.items())
+
+
+def test_the_alerts_of_zones_say_the_definition_of_the_wing():
+    from src.live_core.zones import ZONE_DEFINITIONS
+
+    assert ZONE_DEFINITIONS["ala"] == "triples a 45°" and set(ZONE_DEFINITIONS) >= {"ala", "esquina", "centro del arco", "media distancia"}

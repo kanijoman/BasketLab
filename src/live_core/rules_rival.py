@@ -62,10 +62,10 @@ def rival_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
 _ZONE_TEXT = {
     "aro": ("el aro", "Proteger el aro: cerrar la penetración y el rebote."),
     "zona": ("la zona", "Proteger la pintura: ayudas y cerrar el juego interior."),
-    "media distancia": ("la media distancia", "Cerrar el tiro de media distancia: no dejarle tirar tras el bote."),
-    "esquina": ("las esquinas", "Cerrar las esquinas: ayuda del lado débil y salir al tirador."),
-    "ala": ("las alas", "Salir al tirador en el ala y cerrar la línea de pase."),
-    "centro del arco": ("el centro del arco", "Defender el tiro sobre el bloqueo y cambiar rápido."),
+    "media distancia": ("la media distancia (tiros de 2 puntos fuera de la zona)", "Cerrar el tiro de media distancia: no dejarle tirar tras el bote."),
+    "esquina": ("las esquinas (triples)", "Cerrar las esquinas: ayuda del lado débil y salir al tirador."),
+    "ala": ("las alas (triples a 45°)", "Salir al tirador en el ala y cerrar la línea de pase."),
+    "centro del arco": ("el centro del arco (triple frontal)", "Defender el tiro sobre el bloqueo y cambiar rápido."),
 }
 _MIN_REFERENCE_SHOTS = 20     # season shots in a family before trusting its own rate
 _MIN_REFERENCE_TOTAL = 40     # season shots of the rival before trusting its shot distribution

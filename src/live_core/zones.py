@@ -49,6 +49,10 @@ _FAMILY = {
 }
 
 
+# What each family of shots is worth, to say it next to its name in the alerts (issue #483: «ala» did not say whether it was a two or a three)
+ZONE_DEFINITIONS = {"media distancia": "tiros de 2 puntos fuera de la zona", "esquina": "triples", "ala": "triples a 45°", "centro del arco": "triple frontal"}
+
+
 def zone_family(zone: str) -> str:
     return _FAMILY[zone]
 
