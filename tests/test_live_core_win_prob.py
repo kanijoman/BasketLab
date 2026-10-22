@@ -201,3 +201,50 @@ def test_a_decided_game_has_no_pace_lever():
 def test_lever_gain_by_id_for_the_alerts():
     gains = model().lever_gains(lever_snap(-4), lever_ff({"efg": -0.05}))
     assert set(gains) >= {"efg"} and gains["efg"] > 0
+
+
+# -- the pace lever does not contradict the pace the game already has (issue #488, feedback of 0.3.2) -------------------------------------
+
+def paced_snap(margin, recent_fga, before_fga, elapsed=1200):
+    """A snapshot whose last 5 minutes have ``recent_fga`` shots per team and the 15 minutes before ``before_fga``."""
+    s = lever_snap(margin, elapsed)
+    log = []
+    for team in (OWN, RIVAL):
+        log += [[900 + 300 * i // max(recent_fga, 1), team, "fg2", 0, "p1"] for i in range(recent_fga)]
+        log += [[900 * i // max(before_fga, 1), team, "fg2", 0, "p1"] for i in range(before_fga)]
+    s["log"] = log
+    return s
+
+
+def paced_levers(margin, recent_fga, before_fga):
+    m = model({"four_factors_prior": {}})
+    return by_id(m.levers(paced_snap(margin, recent_fga, before_fga), lever_ff()))
+
+
+def test_a_deficit_that_came_with_a_pace_already_going_up_does_not_ask_to_raise_it_regression():
+    """Copa 21/10/2026, end of Q3: «subir el ritmo» during a hard run against that had arrived when the pace rose: the advice contradicts the cause."""
+    assert "pace" not in paced_levers(-8, recent_fga=14, before_fga=20)
+
+
+def test_a_deficit_with_a_pace_that_has_not_risen_still_asks_to_raise_it():
+    assert paced_levers(-8, recent_fga=8, before_fga=22)["pace"]["direction"] == "up"
+
+
+def test_a_lead_that_came_with_a_pace_already_going_down_does_not_ask_to_lower_it():
+    assert "pace" not in paced_levers(8, recent_fga=9, before_fga=40)
+
+
+def test_a_lead_with_a_pace_that_rose_still_asks_to_lower_it():
+    assert paced_levers(8, recent_fga=14, before_fga=20)["pace"]["direction"] == "down"
+
+
+def test_without_a_pace_to_compare_the_lever_is_what_it_was():
+    assert by_id(levers(margin=-6))["pace"]["direction"] == "up"
+    s = lever_snap(-6)
+    s["log"] = [[1190, OWN, "fg2", 0, "p1"]]                                  # too little play to measure a pace
+    assert by_id(model().levers(s, lever_ff()))["pace"]["direction"] == "up"
+
+
+def test_the_margin_of_what_counts_as_a_change_of_pace_is_in_the_configuration():
+    m = model({"four_factors_prior": {}}, wp_pace_recent_delta=500.0)
+    assert by_id(m.levers(paced_snap(-8, 14, 20), lever_ff()))["pace"]["direction"] == "up"

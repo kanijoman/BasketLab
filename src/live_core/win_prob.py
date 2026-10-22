@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 
 from .config import RuleConfig
 from .four_factors import WEIGHTS, points_per_unit
+from .summary_pace import window_pace
 
 GAME_SECONDS = 2400
 DEFAULT_PACE_PER_40 = 70.0   # possessions per 40 min when the package has no pace
@@ -92,7 +93,7 @@ class WinProbabilityModel:
                 pts = per_unit[factor] * shortfall * left / 100
                 rows.append({"id": factor, "gain": self._p(margin, mean + pts, sd) - base, "gain_pts": pts})
         c = self._cfg.wp_pace_change
-        if mean != 0:
+        if mean != 0 and not self._pace_already_moved(snap, up=mean < 0):
             up = mean < 0
             factor = 1 + c if up else 1 - c
             pace_mean = margin + mu * left * factor / 100
@@ -100,6 +101,17 @@ class WinProbabilityModel:
                          "gain_pts": pace_mean - mean})
         rows = [r for r in rows if r["gain"] >= self._cfg.wp_lever_min_gain]
         return [{**r, "gain": round(r["gain"], 4), "gain_pts": round(r["gain_pts"], 2)} for r in sorted(rows, key=lambda r: -r["gain"])]
+
+    def _pace_already_moved(self, snap: Dict[str, Any], up: bool) -> bool:
+        """Has the pace of the last minutes already gone the way the lever would ask (up when behind, down when ahead)? Then the lever is not offered (#488)."""
+        now, window = int(snap.get("elapsed") or 0), self._cfg.wp_pace_recent_s
+        log = snap.get("log") or []
+        recent = window_pace(log, self._own, self._rival, now - window, now)
+        before = window_pace(log, self._own, self._rival, 0, now - window) if now > window else None
+        if recent is None or before is None:
+            return False
+        change = recent - before
+        return change >= self._cfg.wp_pace_recent_delta if up else change <= -self._cfg.wp_pace_recent_delta
 
     def lever_gains(self, snap: Dict[str, Any], four_factors: Optional[Dict[str, Any]]) -> Dict[str, float]:
         """Lever id -> probability gain, for the alerts' evidence."""
