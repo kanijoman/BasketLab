@@ -21,7 +21,7 @@ beforeEach(() => {
 async function open(over: { store?: ReturnType<typeof memoryStore>; engine?: ReturnType<typeof fakeEngine> } = {}) {
   const store = over.store ?? memoryStore(saved())
   const engine = over.engine ?? fakeEngine()
-  render(<App engine={engine} loadDemo={loadDemo} loadManifest={loadManifest} loadMatch={loadMatch} store={store} />)
+  render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} loadManifest={loadManifest} loadMatch={loadMatch} store={store} />)
   await screen.findByText('EQUIPO PROPIO')
   return { store, engine }
 }
@@ -58,8 +58,11 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
   it('the sample game can be reviewed too', async () => {
     await open()
     review()
-    const select = (await screen.findByLabelText(/partido de la demostración/i)) as HTMLSelectElement
-    expect(Array.from(select.options).map(o => o.value)).toEqual(['2524470', 'sample'])
+    await screen.findByLabelText(/partido de la demostración/i)
+    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+    fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+    expect(screen.getByRole('button', { name: /ver partido de ejemplo/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /ver recoletas zamora/i })).toBeTruthy()
   })
 
   it('«Partido del paquete» loads the package again, with the live connection', async () => {
@@ -94,7 +97,7 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
     const feb = new FakeFeb(pack)
     feb.at = 0
     const engine = fakeEngine({ update: vi.fn(async () => ({ snapshot: { period: 1, remaining: 593, elapsed: 7, score: { '1': 2, '2': 0 } } as never, alerts: [], analysis: {} })) })
-    render(<App engine={engine} loadDemo={loadDemo} loadManifest={loadManifest} loadMatch={loadMatch} store={memoryStore({
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} loadManifest={loadManifest} loadMatch={loadMatch} store={memoryStore({
       plaintext: JSON.stringify({ checksum: 'x', package: { ...JSON.parse(PKG_TEXT).package, competition_meta: { match: { code: '2524475' } } } }),
       savedAt: '2026-10-09T10:00:00Z' })} febHttp={feb.get}
       feedTiming={{ intervalMs: 5, waitingIntervalMs: 5, tailPolls: 0, sleep: () => new Promise<void>(r => setTimeout(r, 20)) }} />)

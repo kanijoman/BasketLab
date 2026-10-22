@@ -4,11 +4,10 @@ import DemoControls, { SAMPLE, SPEEDS } from './DemoControls'
 
 const HOME = { id: '1', name: 'RECOLETAS ZAMORA' }
 const AWAY = { id: '2', name: 'MIPELLETYMAS B.F. LEON' }
-const SOURCES = [{ value: '2524470', label: 'Zamora – León' }, { value: SAMPLE, label: 'Partido de ejemplo' }]
 
 function setup(over: Partial<Parameters<typeof DemoControls>[0]> = {}) {
   const props = {
-    source: '2524470', sources: SOURCES, onSource: vi.fn(), playing: false, onPlay: vi.fn(), finished: false, speed: 1, onSpeed: vi.fn(),
+    source: '2524470', title: 'Recoletas Zamora – Mipelletymas B.F. Leon', playing: false, onPlay: vi.fn(), finished: false, speed: 1, onSpeed: vi.fn(),
     onRestart: vi.fn(), onSeek: vi.fn(), ms: null, feed: 'ok' as const, elapsed: 65, duration: 7150, home: HOME, away: AWAY, ...over,
   }
   render(<DemoControls {...props} />)
@@ -16,7 +15,7 @@ function setup(over: Partial<Parameters<typeof DemoControls>[0]> = {}) {
 }
 
 describe('transport bar (issue #231)', () => {
-  it('has the match selector in its own row, with the crests of both teams', () => {
+  it('has the match title in its own row, with the crests of both teams', () => {
     setup()
     const row = screen.getByLabelText('Partido de la demostración').closest('.transport-source') as HTMLElement
     expect(row).toBeTruthy()
@@ -24,10 +23,10 @@ describe('transport bar (issue #231)', () => {
     expect(within(row).getByAltText(AWAY.name)).toBeTruthy()
   })
 
-  it('changes the match from the selector', () => {
-    const p = setup()
-    fireEvent.change(screen.getByLabelText('Partido de la demostración'), { target: { value: SAMPLE } })
-    expect(p.onSource).toHaveBeenCalledWith(SAMPLE)
+  it('shows the name of the match and has no selector: the matches are chosen in the Partidos tab (issue #476)', () => {
+    setup()
+    expect(screen.getByLabelText('Partido de la demostración').textContent).toContain('Recoletas Zamora')
+    expect(document.querySelector('select')).toBeNull()
   })
 
   it('has play/pause and restart as icon buttons with an accessible name', () => {
@@ -128,6 +127,17 @@ describe('no accidental resets (issue #309)', () => {
     expect(p.onSeek).not.toHaveBeenCalled()
     release()
     expect(p.onSeek).toHaveBeenCalledWith(630)
+  })
+
+  it('after cancelling a jump the bar goes back to the playback position even if the device sent a late change (#472 regression)', () => {
+    setup({ elapsed: 600 })
+    drag(100); release()
+    drag(105)                                    // a late input event after the release (seen on the tablet): it must not leave the thumb behind
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(slider().value).toBe('600')
+    slider().value = '3000'                      // the browser moved the thumb without telling React
+    fireEvent.pointerCancel(slider())
+    expect(slider().value).toBe('600')
   })
 
   it('a small jump forward is direct; a jump back or a long one forward asks first', () => {

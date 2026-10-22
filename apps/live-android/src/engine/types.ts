@@ -81,8 +81,12 @@ export interface Snapshot {
   /** Local team (the first of FEB's header): the engine says it because the JSON boundary sorts keys. */
   home_id?: string | null
   teams: Record<string, { name: string; fouls_game: number }>
+  /** The last line applied: its text, clock and team (the app shows it under the score, #490); null before the first one. */
+  last_event?: { kind: string; elapsed: number; text?: string; period?: number; remaining?: number; team_id?: string | null } | null
   /** Exact possessions of the closed possessions and points by origin (live_possessions.py); null without two teams. No alert uses it yet. */
   possessions?: PossessionsSnapshot | null
+  /** Who has the ball after the last line (null before the first one or between periods); team_id null = loose ball after a miss. */
+  ball?: { team_id: string | null; since: number; why: string } | null
   [key: string]: unknown
 }
 

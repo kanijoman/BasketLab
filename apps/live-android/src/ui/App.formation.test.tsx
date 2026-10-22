@@ -29,7 +29,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 async function play(formation: object | undefined) {
-  render(<App engine={engine(formation)} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} />)
+  render(<App initialTab="partido" engine={engine(formation)} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} />)
   await screen.findByText('EQUIPO PROPIO')
   fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
   await act(async () => { await vi.advanceTimersByTimeAsync(3000) })

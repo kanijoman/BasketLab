@@ -103,7 +103,7 @@ export class LiveBridge {
   }
 
   /** The post-match report (issue #409) of a finished game, from the point of view of ``ownTeamId``; it needs no running session. */
-  report(gameJson: string, alerts: LoggedAlert[], ownTeamId: string): PostMatchReport {
-    return JSON.parse(this.fn.report_json(gameJson, JSON.stringify(alerts), ownTeamId))
+  report(gameJson: string, alerts: LoggedAlert[], ownTeamId: string, ruleConfig?: Record<string, unknown>): PostMatchReport {
+    return JSON.parse(this.fn.report_json(gameJson, JSON.stringify(alerts), ownTeamId, ruleConfig ? JSON.stringify(ruleConfig) : undefined))
   }
 }

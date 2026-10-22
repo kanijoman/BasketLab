@@ -138,7 +138,21 @@ def test_the_snapshot_carries_the_last_event_of_the_game():
     events = sorted((e for e in map(parse_line, lines) if e and not e.deleted), key=lambda e: e.num)
     for event in events[:30]:
         game.apply(event)
-    assert game.snapshot()["last_event"] == {"kind": events[29].kind, "elapsed": events[29].elapsed}
+    last = game.snapshot()["last_event"]
+    assert last["kind"] == events[29].kind and last["elapsed"] == events[29].elapsed
+
+
+def test_the_last_event_carries_the_text_of_the_line_for_the_app_issue_490():
+    """The app shows the last text received from the feed under the scoreboard (feedback of 0.3.2)."""
+    game = LiveGame([("1", "A"), ("2", "B")], {})
+    feed = RecordedFeed.loads((RECORDINGS / "2524470.rec.json.gz").read_bytes())
+    lines = feed.document_at(feed.duration)["PLAYBYPLAY"]["LINES"]
+    events = sorted((e for e in map(parse_line, lines) if e and not e.deleted), key=lambda e: e.num)
+    for event in events[:40]:
+        game.apply(event)
+    last = game.snapshot()["last_event"]
+    assert last["text"] == events[39].text and last["text"]
+    assert last["period"] == events[39].period and last["remaining"] == events[39].remaining and last["team_id"] == events[39].team_id
 
 
 # --- the real match ---------------------------------------------------------------------------------------------------------------

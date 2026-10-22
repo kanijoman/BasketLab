@@ -1,7 +1,7 @@
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import TabBar from './TabBar'
-import { TAB_KEY, useTab } from './useTab'
+import { useTab } from './useTab'
 
 describe('TabBar (issue #224)', () => {
   it('has the three tabs in order with the active one selected', () => {
@@ -21,31 +21,13 @@ describe('TabBar (issue #224)', () => {
   })
 })
 
-describe('useTab (issue #224)', () => {
-  beforeEach(() => localStorage.clear())
-  afterEach(() => vi.restoreAllMocks())
-
-  it('starts on the match tab', () => {
-    expect(renderHook(() => useTab()).result.current[0]).toBe('partido')
-  })
-
-  it('remembers the active tab', () => {
-    const first = renderHook(() => useTab())
-    act(() => first.result.current[1]('paquetes'))
-    expect(first.result.current[0]).toBe('paquetes')
-    expect(localStorage.getItem(TAB_KEY)).toBe('paquetes')
+describe('useTab', () => {
+  it('opens on the list of matches (Partidos), whatever was used last', () => {
     expect(renderHook(() => useTab()).result.current[0]).toBe('paquetes')
   })
 
-  it('ignores a stored value that is not a tab', () => {
-    localStorage.setItem(TAB_KEY, 'otra-cosa')
-    expect(renderHook(() => useTab()).result.current[0]).toBe('partido')
-  })
-
-  it('works when the storage is not available', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
-    const hook = renderHook(() => useTab())
+  it('can start on another tab (tests) and changes', () => {
+    const hook = renderHook(() => useTab('partido'))
     expect(hook.result.current[0]).toBe('partido')
     act(() => hook.result.current[1]('acerca'))
     expect(hook.result.current[0]).toBe('acerca')

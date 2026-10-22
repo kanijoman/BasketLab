@@ -12,7 +12,7 @@ export type WorkerRequest =
   | { id: number; type: 'beginRecording'; payload: { match: string; startedIso: string } }
   | { id: number; type: 'recordGap'; payload: { endpoint: string; at: number } }
   | { id: number; type: 'recording' }
-  | { id: number; type: 'report'; payload: { game: string; alerts: LoggedAlert[]; ownTeamId: string } }
+  | { id: number; type: 'report'; payload: { game: string; alerts: LoggedAlert[]; ownTeamId: string; ruleConfig?: Record<string, unknown> } }
 
 export type WorkerResponse =
   | { id: number; ok: true; result: unknown }

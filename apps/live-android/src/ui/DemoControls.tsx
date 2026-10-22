@@ -12,11 +12,6 @@ export type DemoSource = string
 export const SAMPLE = 'sample'
 export const SPEEDS = [1, 10, 30, 60, 300]
 
-export interface SourceOption {
-  value: DemoSource
-  label: string
-}
-
 /** A jump forward longer than this skips alerts, so it asks first; any jump back asks (it rebuilds the engine and clears the alerts). */
 export const SEEK_FORWARD_FREE_S = 120
 
@@ -24,8 +19,8 @@ export const mmss = (seconds: number) => `${Math.floor(seconds / 60)}:${String(M
 
 interface Props {
   source: DemoSource
-  sources: SourceOption[]
-  onSource: (source: DemoSource) => void
+  /** The name of the match that is playing (the matches are chosen in the Partidos tab, issue #476). */
+  title: string
   playing: boolean
   onPlay: () => void
   finished: boolean
@@ -76,6 +71,9 @@ export default function DemoControls(p: Props) {
   const total = p.duration ?? 0
   const [drag, setDrag] = useState<number | null>(null)
   const [question, setQuestion] = useState<Question | null>(null)
+  /** Bumped to remount the range input: on some devices the native thumb stays where it was dragged although the value did not change (#472). */
+  const [syncKey, setSyncKey] = useState(0)
+  const resync = () => { setDrag(null); setSyncKey(k => k + 1) }
 
   /** The timeline commits when it is released, not while it moves: a touch to stop the scrolling must not jump the match. */
   const commitSeek = () => {
@@ -89,20 +87,16 @@ export default function DemoControls(p: Props) {
   const answer = (yes: boolean) => {
     const q = question
     setQuestion(null)
+    resync()
     if (!yes || !q) return
     if (q.kind === 'restart') p.onRestart()
     else p.onSeek(q.to)
   }
   return (
     <section className="transport" aria-label="Reproducción">
-      <div className="transport-source">
+      <div className="transport-source" role="group" aria-label="Partido de la demostración">
         {p.home && <TeamLogo team={p.home} size={32} />}
-        <label className="demo-source">
-          Partido de la demostración
-          <select value={p.source} onChange={e => p.onSource(e.target.value as DemoSource)}>
-            {p.sources.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-        </label>
+        <strong className="transport-title">{p.title}</strong>
         {p.away && <TeamLogo team={p.away} size={32} />}
       </div>
 
@@ -127,9 +121,9 @@ export default function DemoControls(p: Props) {
       </div>
 
       <div className="timeline">
-        <input type="range" aria-label="Línea de tiempo" min={0} max={total} step={1} value={drag ?? Math.min(p.elapsed, total)}
-          disabled={p.duration === null} onChange={e => setDrag(Number(e.target.value))}
-          onPointerUp={commitSeek} onKeyUp={commitSeek} onBlur={commitSeek} />
+        <input key={syncKey} type="range" aria-label="Línea de tiempo" min={0} max={total} step={1} value={drag ?? Math.min(p.elapsed, total)}
+          disabled={p.duration === null} onChange={e => { if (!question) setDrag(Number(e.target.value)) }}
+          onPointerUp={commitSeek} onPointerCancel={resync} onKeyUp={commitSeek} onBlur={commitSeek} />
         <span className="timeline-time">{mmss(p.elapsed)} / {p.duration === null ? '—' : mmss(p.duration)}</span>
       </div>
 

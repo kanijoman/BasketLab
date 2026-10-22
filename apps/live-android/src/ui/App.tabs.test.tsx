@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { fakeEngine, loadDemo, memoryStore, PKG_TEXT } from './appTestKit'
-import { TAB_KEY } from './useTab'
 
 beforeEach(() => {
   localStorage.clear()
@@ -13,9 +12,14 @@ afterEach(() => vi.useRealTimers())
 
 const openTab = (name: string) => fireEvent.click(screen.getByRole('tab', { name }))
 
+const RECORDED = {
+  code: '1', title: 'Local – Visitante', date: '2026-10-10T17:00', home: { id: '2', name: 'LOCAL' }, away: { id: '1', name: 'VISITANTE' },
+  recording: '1.recording.json', package: '1.package.json',
+}
+
 describe('tabs of the app (issue #224)', () => {
   it('opens on the match: score, alerts and the controls, and none of the lists', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true')
     expect(screen.getByRole('heading', { name: 'Alertas' })).toBeTruthy()
@@ -26,7 +30,7 @@ describe('tabs of the app (issue #224)', () => {
   })
 
   it('has the published matches and the import of a package in the Partidos tab', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     openTab('Partidos')
     expect(screen.getByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
@@ -35,26 +39,62 @@ describe('tabs of the app (issue #224)', () => {
   })
 
   it('has the About panel in its own tab', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     openTab('Acerca de')
     expect(screen.getByRole('heading', { name: 'Acerca de' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Alertas' })).toBeNull()
   })
 
-  it('remembers the tab for the next time the app opens', async () => {
-    const first = render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
-    await screen.findByText('EQUIPO PROPIO')
-    openTab('Partidos')
-    expect(localStorage.getItem(TAB_KEY)).toBe('paquetes')
-    first.unmount()
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+  it('always opens on the list of matches, and a chosen match takes the user to the Partido tab', async () => {
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([RECORDED])} loadMatch={() => Promise.resolve({ package: 'PKG', recording: 'REC' })} />)
     expect(await screen.findByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Partidos' }).getAttribute('aria-selected')).toBe('true')
+    fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+    await waitFor(() => expect((screen.getByRole('button', { name: /ver partido de ejemplo/i }) as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: /ver partido de ejemplo/i }))
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true'))
+  })
+
+  describe('the kind of match is chosen with a selector in Partidos', () => {
+    const open = async () => {
+      render(<App engine={fakeEngine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([RECORDED])} loadMatch={() => Promise.resolve({ package: 'PKG', recording: 'REC' })} />)
+      return screen.findByLabelText('Tipo de partido') as Promise<HTMLSelectElement>
+    }
+
+    it('starts on the live matches and offers live, demos and finished matches', async () => {
+      const kind = await open()
+      expect(kind.value).toBe('live')
+      expect(Array.from(kind.options).map(o => o.textContent)).toEqual(['En directo', 'Demos', 'Finalizados'])
+      expect(screen.getByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
+      expect(screen.queryByRole('region', { name: 'Partidos de demostración' })).toBeNull()
+    })
+
+    it('«Demos» shows the list of demos with its filters, and not the live packages', async () => {
+      const kind = await open()
+      fireEvent.change(kind, { target: { value: 'demo' } })
+      expect(screen.getByRole('region', { name: 'Partidos de demostración' })).toBeTruthy()
+      expect(screen.getByLabelText('Equipo')).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: 'Próximos partidos' })).toBeNull()
+    })
+
+    it('«Finalizados» says there are none yet instead of showing an empty page', async () => {
+      const kind = await open()
+      fireEvent.change(kind, { target: { value: 'finished' } })
+      expect(screen.getByText(/todavía no hay partidos finalizados/i)).toBeTruthy()
+    })
+
+    it('the choice is kept when the user goes to another tab and comes back', async () => {
+      const kind = await open()
+      fireEvent.change(kind, { target: { value: 'demo' } })
+      openTab('Acerca de')
+      openTab('Partidos')
+      expect((screen.getByLabelText('Tipo de partido') as HTMLSelectElement).value).toBe('demo')
+    })
   })
 
   it('keeps the match going and its alerts while another tab is open', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
     await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
@@ -66,18 +106,16 @@ describe('tabs of the app (issue #224)', () => {
     expect(screen.getByRole('button', { name: 'Pausa' })).toBeTruthy()
   })
 
-  it('tells the user how to load a package when there is none and links to the Partidos tab', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+  it('has no demo notice any more: the matches are chosen in the Partidos tab (issue #476)', async () => {
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
-    expect(screen.getByText(/partido de demostración/i)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /ir a partidos/i }))
-    expect(screen.getByRole('heading', { name: 'Paquete de preparación' })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: 'Partidos' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.queryByText(/partido de demostración/i)).toBeNull()
+    expect(screen.queryByRole('button', { name: /ir a partidos/i })).toBeNull()
   })
 
   it('has no demo notice once a package is loaded', async () => {
     const store = memoryStore({ plaintext: PKG_TEXT, savedAt: '2026-10-08T12:00:00Z' } as never)
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={store} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={store} />)
     await screen.findByText('EQUIPO PROPIO')
     expect(screen.queryByText(/partido de demostración/i)).toBeNull()
   })

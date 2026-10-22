@@ -13,6 +13,8 @@ export interface PackageSummary {
   games: { own: number; rival: number; league: number }
   /** The FEB match the package was prepared for (details only when the calendar was available). */
   match: PackageMatch | null
+  /** The package's rule config (its gender goes to the text of the PDF report, #475). */
+  ruleConfig?: Record<string, unknown>
 }
 
 export interface PackageMatch {
@@ -33,6 +35,7 @@ interface RawPackage {
     tables?: { players?: Record<string, unknown>; rival_players?: Record<string, unknown> }
     baselines?: { sample_games?: { own?: number; rival?: number; league?: number } }
     competition_meta?: { match?: PackageMatch }
+    rule_config?: Record<string, unknown>
   }
 }
 
@@ -52,5 +55,6 @@ export function summarizePackage(text: string): PackageSummary {
     rivalPlayers: Object.keys(body.tables?.rival_players ?? {}).length,
     games: { own: games.own ?? 0, rival: games.rival ?? 0, league: games.league ?? 0 },
     match: body.competition_meta?.match ?? null,
+    ruleConfig: body.rule_config ?? {},
   }
 }

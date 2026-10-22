@@ -48,7 +48,7 @@ describe('motion (issue #312)', () => {
   })
 
   it('the panel of a tab fades in when the tab changes', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     const before = screen.getByRole('tabpanel')
     fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoundIndexEntry, RoundMatch } from '../package/remote'
 import RoundPackages from './RoundPackages'
@@ -16,8 +16,9 @@ const ROUNDS = [
   round('TERCERA_FEB_AB', [match('4', ['1010490', 'RDL'], ['6', 'MIERES'])], info('TERCERA FEB', 'Liga Regular "A-B"')),
 ]
 
-const show = (rounds = ROUNDS) =>
-  render(<RoundPackages rounds={rounds} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} />)
+const NOW = new Date('2026-10-17T10:00:00')
+const show = (rounds = ROUNDS, over: Partial<React.ComponentProps<typeof RoundPackages>> = {}) =>
+  render(<RoundPackages rounds={rounds} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...over} />)
 const headings = (c: HTMLElement) => Array.from(c.querySelectorAll('.round-packages h3')).map(h => h.textContent ?? '')
 
 beforeEach(() => localStorage.clear())
@@ -52,20 +53,56 @@ describe('RoundPackages: filters (issue #440)', () => {
     expect(screen.queryByLabelText('Grupo')).not.toBeNull()
   })
 
-  it('filters by the text of a team, ignoring case and accents', () => {
+  it('has no free text box any more: the team is chosen from a list (issue #474)', () => {
+    show()
+    expect(screen.queryByLabelText('Buscar equipo')).toBeNull()
+    expect(screen.queryByLabelText('Equipo')).toBeNull()          // not before a competition is chosen
+  })
+
+  it('once a competition is chosen the team selector lists its teams, and choosing one keeps its matches', () => {
     const { container } = show()
-    fireEvent.change(screen.getByLabelText('Buscar equipo'), { target: { value: 'llíria' } })
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    const team = screen.getByLabelText('Equipo') as HTMLSelectElement
+    expect(Array.from(team.options).map(o => o.textContent)).toEqual(['Todos', 'GETAFE', 'LEONESA', 'LLIRIA', 'PRAT', 'TOLEDO', 'ZAMORA'])
+    fireEvent.change(team, { target: { value: '1008978' } })
     expect(headings(container)).toEqual(['SEGUNDA FEB · Liga Regular "B" · jornada 4'])
     expect(container.querySelectorAll('li.round-match')).toHaveLength(1)
   })
 
-  it('says so when nothing matches, and the filters can be cleared', () => {
+  it('changing the group or the competition brings the team back to «Todos» if it is not there', () => {
     show()
-    fireEvent.change(screen.getByLabelText('Buscar equipo'), { target: { value: 'zzz' } })
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    fireEvent.change(screen.getByLabelText('Equipo'), { target: { value: '1008978' } })
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'TERCERA FEB' } })
+    expect((screen.getByLabelText('Equipo') as HTMLSelectElement).value).toBe('')
+  })
+
+  it('a remembered team that is not published any more does not hide everything', () => {
+    localStorage.setItem('basketlab-live-filters', JSON.stringify({ league: '', competition: 'SEGUNDA FEB', group: '', team: 'ya no está', onlyFavorites: false }))
+    const { container } = show()
+    expect(headings(container)).toHaveLength(2)
+  })
+
+  it('the league selector appears only when there are FEB and FBCYL matches, and filters by it', () => {
+    show()
+    expect(screen.queryByLabelText('Liga')).toBeNull()
+    cleanup()
+    const fbcyl = round('FBCYL_1_FASE-GRUPO_A-1_2026_', [match('77', ['39609', 'UNILEON'], ['40083', 'HIJOLUSA'])])
+    const { container } = show([...ROUNDS, fbcyl])
+    fireEvent.change(screen.getByLabelText('Liga'), { target: { value: 'FBCYL' } })
+    expect(headings(container)).toEqual(['FBCYL 1 FASE-GRUPO A-1 2026 · jornada 4'])
+    expect(Array.from((screen.getByLabelText('Competición') as HTMLSelectElement).options).map(o => o.textContent)).toEqual(['Todas', 'FBCYL 1 FASE-GRUPO A-1 2026'])
+  })
+
+  it('says so when nothing matches, and the filters can be cleared', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1010490', name: 'RDL' }]))       // a team of interest of another competition
+    show()
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /de interés/i }))
     expect(screen.getByText(/ningún partido coincide/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /quitar filtros/i }))
     expect(screen.queryByText(/ningún partido coincide/i)).toBeNull()
-    expect((screen.getByLabelText('Buscar equipo') as HTMLInputElement).value).toBe('')
+    expect((screen.getByRole('checkbox', { name: /de interés/i }) as HTMLInputElement).checked).toBe(false)
   })
 
   it('remembers the filters on the device', () => {
@@ -78,7 +115,7 @@ describe('RoundPackages: filters (issue #440)', () => {
   })
 
   it('a remembered competition that is not published any more does not hide everything', () => {
-    localStorage.setItem('basketlab-live-filters', JSON.stringify({ competition: 'COMPETICIÓN QUE YA NO ESTÁ', group: '', text: '', onlyFavorites: false }))
+    localStorage.setItem('basketlab-live-filters', JSON.stringify({ league: '', competition: 'COMPETICIÓN QUE YA NO ESTÁ', group: '', team: '', onlyFavorites: false }))
     const { container } = show()
     expect(headings(container)).toHaveLength(3)
   })
@@ -142,5 +179,120 @@ describe('RoundPackages: each team on its own line with its star (issue #473)', 
     const { container } = show()
     const info = container.querySelector('li.round-match .round-info')!
     expect(info.lastElementChild?.classList.contains('round-when')).toBe(true)
+  })
+})
+
+describe('RoundPackages: the next match of each team of interest (issue #478)', () => {
+  const FAVS = [{ teamId: '1008857', name: 'LEONESA' }, { teamId: '1008978', name: 'LLIRIA' }]
+
+  it('says nothing when no team is marked', () => {
+    show()
+    expect(screen.queryByRole('region', { name: /próximos de tus equipos de interés/i })).toBeNull()
+  })
+
+  it('lists the next match of each team of interest, with its competition, before the filters', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify(FAVS))
+    show()
+    const next = screen.getByRole('region', { name: /próximos de tus equipos de interés/i })
+    const rows = Array.from(next.querySelectorAll('li')).map(li => li.textContent ?? '')
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toContain('LEONESA')
+    expect(rows[0]).toContain('ZAMORA')
+    expect(rows[0]).toContain('SEGUNDA FEB · Liga Regular "A"')
+    expect(rows[1]).toContain('LLIRIA')
+    expect(rows[1]).toContain('PRAT')
+    expect(next.compareDocumentPosition(screen.getByRole('group', { name: 'Filtrar partidos' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('follows the match as the team of interest', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify(FAVS))
+    const onDownload = vi.fn()
+    show(ROUNDS, { onDownload })
+    fireEvent.click(screen.getByRole('button', { name: /seguir a llíria|seguir a lliria/i }))
+    expect(onDownload).toHaveBeenCalledWith(ROUNDS[1], ROUNDS[1].matches[0], '1008978')
+  })
+
+  it('a team without a match to come is not listed, and a match that cannot be opened has a disabled button', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify([...FAVS, { teamId: '999', name: 'OTRO' }]))
+    show(ROUNDS, { canOpen: () => false })
+    const next = screen.getByRole('region', { name: /próximos de tus equipos de interés/i })
+    expect(next.querySelectorAll('li')).toHaveLength(2)
+    expect(Array.from(next.querySelectorAll('button')).every(b => (b as HTMLButtonElement).disabled)).toBe(true)
+  })
+})
+
+describe('RoundPackages: the reminders of the matches of interest (issue #482)', () => {
+  const FAVS = [{ teamId: '1008857', name: 'LEONESA' }, { teamId: '1008978', name: 'LLIRIA' }]
+  const fake = (over: Record<string, unknown> = {}) => ({
+    checkPermissions: vi.fn().mockResolvedValue({ display: 'granted' }), requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+    schedule: vi.fn().mockResolvedValue(undefined), cancel: vi.fn().mockResolvedValue(undefined), getPending: vi.fn().mockResolvedValue({ notifications: [] }), ...over,
+  })
+  const withPlugin = (plugin: ReturnType<typeof fake> | null) => ({ reminders: { load: () => Promise.resolve(plugin) } }) as Partial<React.ComponentProps<typeof RoundPackages>>
+
+  beforeEach(() => localStorage.setItem('basketlab-live-favorites', JSON.stringify(FAVS)))
+
+  it('are off until the user turns them on, and the app does not ask for the permission before', async () => {
+    const plugin = fake()
+    show(ROUNDS, withPlugin(plugin))
+    expect((screen.getByRole('checkbox', { name: /avisarme/i }) as HTMLInputElement).checked).toBe(false)
+    await Promise.resolve()
+    expect(plugin.requestPermissions).not.toHaveBeenCalled()
+    expect(plugin.schedule).not.toHaveBeenCalled()
+  })
+
+  it('turning them on asks for the permission and schedules one reminder per match, 30 minutes before', async () => {
+    const plugin = fake({ checkPermissions: vi.fn().mockResolvedValue({ display: 'prompt' }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    expect(plugin.requestPermissions).toHaveBeenCalled()
+    const notifications = plugin.schedule.mock.calls[0][0].notifications
+    expect(notifications.map((n: { title: string }) => n.title)).toEqual(['LEONESA juega en 30 min', 'LLIRIA juega en 30 min'])
+    expect(await screen.findByText(/2 avisos programados/i)).toBeTruthy()
+  })
+
+  it('the choice is kept on the device and the reminders are scheduled again when the app opens', async () => {
+    const plugin = fake()
+    const { unmount } = render(<RoundPackages rounds={ROUNDS} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...withPlugin(plugin)} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    unmount()
+    const again = fake()
+    render(<RoundPackages rounds={ROUNDS} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...withPlugin(again)} />)
+    await waitFor(() => expect(again.schedule).toHaveBeenCalledTimes(1))
+    expect((screen.getByRole('checkbox', { name: /avisarme/i }) as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('the lead time can be 15, 30 or 60 minutes', async () => {
+    const plugin = fake()
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    fireEvent.change(screen.getByLabelText(/minutos antes/i), { target: { value: '60' } })
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(2))
+    expect(plugin.schedule.mock.calls[1][0].notifications[0].title).toBe('LEONESA juega en 60 min')
+  })
+
+  it('turning them off cancels what was scheduled', async () => {
+    const plugin = fake({ getPending: vi.fn().mockResolvedValue({ notifications: [{ id: 5, extra: { basketlab: true } }] }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.cancel).toHaveBeenCalledTimes(2))
+  })
+
+  it('says what to do when the system has the notifications denied', async () => {
+    const plugin = fake({ checkPermissions: vi.fn().mockResolvedValue({ display: 'denied' }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    expect(await screen.findByText(/notificaciones desactivadas/i)).toBeTruthy()
+    expect(plugin.schedule).not.toHaveBeenCalled()
+  })
+
+  it('says it is only in the installed app when the device cannot (a browser)', async () => {
+    show(ROUNDS, withPlugin(null))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    expect(await screen.findByText(/solo funcionan en la app instalada/i)).toBeTruthy()
   })
 })

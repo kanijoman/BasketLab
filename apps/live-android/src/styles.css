@@ -34,7 +34,12 @@ body {
 }
 .team { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
 .team .name { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
+.team { position: relative; border-radius: 10px; padding: 4px 2px; transition: background-color 0.2s; }
+.team.has-ball { background: rgb(var(--text-rgb) / 0.08); box-shadow: inset 0 -3px 0 var(--accent, #f97316); }
+.team .ball-mark { position: absolute; top: 4px; right: 6px; color: var(--accent, #f97316); }
 .team .pts { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.last-event { grid-column: 1 / -1; margin: 4px 0 0; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; text-align: center; overflow-wrap: anywhere; min-width: 0; }
+.last-event .last-clock { font-variant-numeric: tabular-nums; font-weight: 600; margin-right: 6px; }
 .clock { font-size: 1.1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .team-logo { border-radius: 50%; object-fit: contain; background: rgb(var(--text-rgb) / 0.06); }
 .team-logo-initials { display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
@@ -42,8 +47,7 @@ body {
 /* Transport bar of the demo (#231): match row, buttons + speed, timeline */
 .transport { display: grid; gap: 10px; margin: 16px 0; }
 .transport-source { display: flex; align-items: center; gap: 10px; }
-.transport-source .demo-source { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; color: var(--muted); font-size: 0.8rem; }
-.transport-source select { width: 100%; min-width: 0; font-size: 1rem; }
+.transport-title { flex: 1 1 auto; min-width: 0; text-align: center; font-size: 0.95rem; overflow-wrap: anywhere; }
 .transport-buttons { display: flex; align-items: center; gap: 8px; }
 .icon-button { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .segmented { display: flex; flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -144,11 +148,15 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .round-packages h3 { margin: 12px 0 4px; font-size: 1rem; }
 /* A match offers to be followed as either of its teams (#286): the row stacks on a phone, the buttons share the width */
 .remote-packages li.round-match { flex-wrap: wrap; min-width: 0; }
+.remote-packages li.next-match { flex-wrap: wrap; min-width: 0; }
 .round-sides { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 14rem; min-width: 0; justify-content: flex-end; }
 /* the selector outweighs ".remote-packages li button { flex: none }" so the buttons can shrink; a long team name wraps (#404) */
 .remote-packages li.round-match .round-sides button { flex: 1 1 9rem; min-width: 0; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; }
+.remote-packages li.next-match .round-sides button { flex: 1 1 9rem; min-width: 0; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; }
 
 /* Filters of the matches list and the teams "de interés" (#440, #473): the same controls as the rest of the app, a team per line with its star */
+.kind-select { display: grid; gap: 4px; margin: 8px 0 12px; color: var(--muted); font-size: 0.85rem; }
+.kind-select select { width: 100%; font-size: 1.05rem; padding: 8px; }
 .round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin: 8px 0 12px; align-items: end; }
 .round-filters label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
 .round-filters select { width: 100%; min-width: 0; font-size: 1rem; }
@@ -283,8 +291,14 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 
 /* cards that show only their value and fold the rest (#405) */
 .card-details { margin-top: 8px; }
-.card-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+.card-details > summary { min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); list-style: none; }
+.card-details > summary::-webkit-details-marker { display: none; }
+.card-details-arrow { transition: transform 0.2s ease; }
+.card-details.is-open .card-details-arrow { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .card-details-arrow { transition: none; } }
 
 /* alerts grouped by quarter, each group foldable (#406) */
 .alert-period { margin: 8px 0; }
 .alert-period > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+
+.next-of-interest h3 { margin: 0 0 6px; font-size: 1rem; }

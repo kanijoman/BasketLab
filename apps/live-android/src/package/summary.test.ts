@@ -18,8 +18,12 @@ describe('summarizePackage', () => {
     expect(summarizePackage(pkg())).toEqual({
       team: 'EQUIPO PROPIO', teamId: '1', rival: 'EQUIPO RIVAL', rivalId: '2', season: '2025-2026', collection: 'FEB_X',
       createdAt: '2026-10-08T12:00:00Z', ownPlayers: 3, rivalPlayers: 2,
-      games: { own: 20, rival: 18, league: 120 }, match: null,
+      games: { own: 20, rival: 18, league: 120 }, match: null, ruleConfig: {},
     })
+  })
+
+  it('carries the rule config of the package (its gender goes to the PDF report, #475)', () => {
+    expect(summarizePackage(pkg({ rule_config: { gender: 'F' } })).ruleConfig).toEqual({ gender: 'F' })
   })
 
   it('tolerates missing optional sections', () => {

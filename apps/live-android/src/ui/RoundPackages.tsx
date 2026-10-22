@@ -3,6 +3,9 @@ import { useMemo, useState } from 'react'
 import { isFavorite, loadFavorites, toggleFavorite, type Favorite } from '../package/favorites'
 import { NO_FILTERS, competitionOf, filterRounds, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
 import { competitionLabel, orderRounds, sidesOf, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import { nextMatchesOfFavorites } from '../package/upcoming'
+import { LEAD_OPTIONS } from '../notify/schedule'
+import { useReminders, type ReminderLoader } from './useReminders'
 
 export { competitionLabel }
 
@@ -16,6 +19,10 @@ interface Props {
   onDownload: (round: RoundIndexEntry, match: RoundMatch, ownId: string) => void
   /** Is this match, followed as this team, the package that is loaded now? (issue #342) */
   isLoaded: (code: string, ownId: string) => boolean
+  /** The moment the next matches are counted from (tests). */
+  now?: Date
+  /** The notifications plugin (issue #482); the real one when absent (tests give a fake). */
+  reminders?: ReminderLoader
 }
 
 function when(start?: string | null): string {
@@ -34,15 +41,24 @@ function Star({ team, favorites, onToggle }: { team: { id: string; name: string 
   )
 }
 
-export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded }: Props) {
+export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, now, reminders }: Props) {
   const [favorites, setFavorites] = useState<Favorite[]>(() => loadFavorites())
   const [chosen, setChosen] = useState<RoundFilters>(() => loadFilters())
-  const { competitions, groups: allGroups } = optionsOf(rounds, chosen.competition)
-  // a remembered competition or group that is not published any more must not hide everything
-  const competition = competitions.includes(chosen.competition) ? chosen.competition : ''
-  const groups = competition ? allGroups : []
-  const filters: RoundFilters = { ...chosen, competition, group: groups.includes(chosen.group) ? chosen.group : '' }
-  const shown = useMemo(() => filterRounds(orderRounds(rounds, favorites), filters, favorites), [rounds, favorites, filters.competition, filters.group, filters.text, filters.onlyFavorites]) // eslint-disable-line react-hooks/exhaustive-deps
+  // a remembered league, competition, group or team that is not published any more must not hide everything: each one is checked against what is on offer
+  const checked = (f: RoundFilters): RoundFilters => {
+    const leagues = optionsOf(rounds, { ...NO_FILTERS }).leagues
+    const league = leagues.includes(f.league) ? f.league : ''
+    const competition = optionsOf(rounds, { ...NO_FILTERS, league }).competitions.includes(f.competition) ? f.competition : ''
+    const group = optionsOf(rounds, { ...NO_FILTERS, league, competition }).groups.includes(f.group) ? f.group : ''
+    const team = optionsOf(rounds, { ...NO_FILTERS, league, competition, group }).teams.some(t => t.id === f.team) ? f.team : ''
+    return { ...f, league, competition, group, team }
+  }
+  const filters = checked(chosen)
+  const { leagues, competitions, groups, teams } = optionsOf(rounds, filters)
+  const shown = useMemo(() => filterRounds(orderRounds(rounds, favorites), filters, favorites), [rounds, favorites, filters.league, filters.competition, filters.group, filters.team, filters.onlyFavorites]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const next = nextMatchesOfFavorites(rounds, favorites, now)
+  const reminder = useReminders(next, now ?? new Date(), reminders)      // a hook: before the early return
 
   if (rounds.length === 0) return null
 
@@ -61,10 +77,62 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
     <>
       <h2>Jornadas completas</h2>
       <p className="detail">Cualquier partido de la jornada, para seguirlo en directo. Primero tus equipos de interés (☆) y el partido de tu club.</p>
+      {next.length > 0 && (
+        <section className="panel next-of-interest" aria-label="Próximos de tus equipos de interés">
+          <h3>Próximos de tus equipos de interés</h3>
+          <ul className="remote-packages">
+            {next.map(n => (
+              <li key={`${n.favorite.teamId}-${n.match.code}`} className="next-match">
+                <span className="round-info">
+                  <strong className="team-name">★ {n.favorite.name}</strong>
+                  <span className="team-name">{n.match.home.name} – {n.match.away.name}</span>
+                  <span className="detail round-when">{when(n.match.start)} · {competitionOf(n.round).label}</span>
+                </span>
+                <span className="round-sides">
+                  <button type="button" aria-label={`Seguir a ${n.favorite.name} en ${n.match.home.name} contra ${n.match.away.name}`}
+                    disabled={isLoaded(n.match.code, n.ownId) || !canOpen(n.round) || busy !== null} onClick={() => onDownload(n.round, n.match, n.ownId)}>
+                    {isLoaded(n.match.code, n.ownId) ? 'Ya disponible' : `Seguir como ${n.favorite.name}`}
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="reminders">
+            <label className="round-filter-check">
+              <input type="checkbox" checked={reminder.prefs.enabled} onChange={e => reminder.update({ enabled: e.target.checked })} />
+              Avisarme antes de estos partidos
+            </label>
+            {reminder.prefs.enabled && (
+              <label>
+                Minutos antes
+                <select value={reminder.prefs.leadMin} onChange={e => reminder.update({ leadMin: Number(e.target.value) })}>
+                  {LEAD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </label>
+            )}
+            {reminder.prefs.enabled && reminder.result?.ok && <p className="detail">{reminder.result.scheduled === 1 ? '1 aviso programado' : `${reminder.result.scheduled} avisos programados`}.</p>}
+            {reminder.result && !reminder.result.ok && (
+              <p className="detail" role="status">
+                {reminder.result.reason === 'denied' ? 'Tienes las notificaciones desactivadas para la app: actívalas en los ajustes del sistema.'
+                  : reminder.result.reason === 'unavailable' ? 'Los avisos solo funcionan en la app instalada, no en el navegador.' : 'Falta el permiso de notificaciones.'}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
       <div className="round-filters" role="group" aria-label="Filtrar partidos">
+        {leagues.length > 0 && (
+          <label>
+            Liga
+            <select value={filters.league} onChange={e => change({ league: e.target.value, competition: '', group: '', team: '' })}>
+              <option value="">Todas</option>
+              {leagues.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </label>
+        )}
         <label>
           Competición
-          <select value={filters.competition} onChange={e => change({ competition: e.target.value, group: '' })}>
+          <select value={filters.competition} onChange={e => change({ competition: e.target.value, group: '', team: '' })}>
             <option value="">Todas</option>
             {competitions.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -72,16 +140,21 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
         {groups.length > 0 && (
           <label>
             Grupo
-            <select value={filters.group} onChange={e => change({ group: e.target.value })}>
+            <select value={filters.group} onChange={e => change({ group: e.target.value, team: '' })}>
               <option value="">Todos</option>
               {groups.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </label>
         )}
-        <label>
-          Buscar equipo
-          <input value={filters.text} onChange={e => change({ text: e.target.value })} autoComplete="off" autoCapitalize="off" spellCheck={false} />
-        </label>
+        {filters.competition && teams.length > 0 && (
+          <label>
+            Equipo
+            <select value={filters.team} onChange={e => change({ team: e.target.value })}>
+              <option value="">Todos</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+        )}
         <label className="round-filter-check">
           <input type="checkbox" checked={filters.onlyFavorites} onChange={e => change({ onlyFavorites: e.target.checked })} />
           Solo de interés

@@ -71,7 +71,7 @@ describe('theme controls (issue #322)', () => {
   })
 
   it('Acerca de has the choice System, Claro or Oscuro, and it is the same state as the header button', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
     const group = screen.getByRole('radiogroup', { name: 'Apariencia' })

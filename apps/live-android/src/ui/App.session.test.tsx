@@ -14,7 +14,7 @@ afterEach(() => vi.useRealTimers())
 const texts = () => readSession().map(e => e.text)
 
 async function play(ms = 3000) {
-  render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+  render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
   await screen.findByText('EQUIPO PROPIO')
   fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
   await act(async () => { await vi.advanceTimersByTimeAsync(ms) })
@@ -22,7 +22,7 @@ async function play(ms = 3000) {
 
 describe('session log of the app (issue #309)', () => {
   it('logs the start of the app and beats while it is open', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     expect(texts()).toContain('Arranque de la app')
     const first = localStorage.getItem(BEAT_KEY)
@@ -32,13 +32,13 @@ describe('session log of the app (issue #309)', () => {
 
   it('notes a start soon after the app was alive as a restart nobody asked for', async () => {
     localStorage.setItem(BEAT_KEY, String(Date.now() - 4_000))
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     expect(texts().some(t => /reinicio no pedido/i.test(t))).toBe(true)
   })
 
   it('shows the log in Acerca de', async () => {
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
     const block = screen.getByRole('region', { name: 'Registro de la sesión' })
@@ -65,7 +65,7 @@ describe('session log of the app (issue #309)', () => {
   it('the diagnostics copied from Acerca de carry the log', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
     vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText }, userAgent: 'UA' })
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
     fireEvent.click(screen.getByRole('button', { name: /copiar diagnóstico/i }))

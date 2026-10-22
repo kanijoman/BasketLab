@@ -20,6 +20,8 @@ export interface CompetitionInfo {
   season: string
   level: number | null
   gender: 'M' | 'F' | null
+  /** `FEB` or `FBCYL`; absent in an index from before it existed (then it is read from the name of the collection). */
+  league?: string
 }
 
 export interface PackageIndexEntry {

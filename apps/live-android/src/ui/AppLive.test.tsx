@@ -84,7 +84,7 @@ describe('live mode with a package', () => {
     const feb = new FakeFeb(pack)
     feb.at = 10 // already over: the first round brings the final document
     const engine = fakeEngine({ update: vi.fn(async () => out([ALERT])) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     expect(await screen.findByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy()
     expect(engine.start).toHaveBeenLastCalledWith(PKG) // a fresh engine session for the match
@@ -99,7 +99,7 @@ describe('live mode with a package', () => {
     feb.at = 10
     const burst = ['uno', 'dos', 'tres'].map(k => ({ ...ALERT, key: `burst:${k}`, severity: 'warning' as const, message: `Aviso ${k}` }))
     const engine = fakeEngine({ update: vi.fn(async () => out(burst)) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} alertCooldownMs={150} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} alertCooldownMs={150} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
 
     expect(await screen.findByText('Aviso uno')).toBeTruthy()
@@ -113,7 +113,7 @@ describe('live mode with a package', () => {
     feb.at = 10
     const burst = [{ ...ALERT, key: 'burst:w', severity: 'warning' as const, message: 'Aviso previo' }, ALERT]
     const engine = fakeEngine({ update: vi.fn(async () => out(burst)) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} alertCooldownMs={2000} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} alertCooldownMs={2000} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
 
     expect(await screen.findByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy()   // at once, before the 2 s cooldown
@@ -124,7 +124,7 @@ describe('live mode with a package', () => {
     const feb = new FakeFeb(pack)
     feb.at = 10
     const engine = fakeEngine()
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     await waitFor(() => expect(engine.update).toHaveBeenCalled())
     expect(await screen.findByText('Q1 09:53')).toBeTruthy()
@@ -134,7 +134,7 @@ describe('live mode with a package', () => {
     const feb = new FakeFeb(pack)
     feb.at = -100 // not started: FEB answers 404
     const slow = { ...instant, sleep: () => new Promise<void>(resolve => setTimeout(resolve, 20)) }
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={slow} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={slow} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     expect(await screen.findByText(/esperando el inicio del partido/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
@@ -145,18 +145,24 @@ describe('live mode with a package', () => {
     const feb = new FakeFeb(pack)
     feb.at = 10
     const engine = fakeEngine({ update: vi.fn().mockRejectedValue(new Error('boom')) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={{ ...instant, tailPolls: 0 }} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={{ ...instant, tailPolls: 0 }} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     expect(await screen.findByText(/boom/)).toBeTruthy()
   })
 })
+
+/** The matches kept on the device are in the Partidos tab (issue #476). */
+const inPartidos = async () => {
+  fireEvent.click(await screen.findByRole('tab', { name: 'Partidos' }))
+  fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'finished' } })
+}
 
 // #407: a finished live match is kept on the device and can be reviewed afterwards
 describe('finished matches (issue #407)', () => {
   const connectAndFinish = async (finishedStore = memoryFinishedStore(), engine = fakeEngine()) => {
     const feb = new FakeFeb(pack)
     feb.at = 10
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     await waitFor(() => expect(screen.getByText(/^partido finalizado$/i)).toBeTruthy())
     return { finishedStore, engine }
@@ -169,6 +175,7 @@ describe('finished matches (issue #407)', () => {
     expect(saved.plaintext).toBe(PKG)
     expect(saved.title).toBe('EQUIPO PROPIO – EQUIPO RIVAL')
     expect(Object.keys(JSON.parse(saved.game))).toEqual(expect.arrayContaining(['HEADER', 'PLAYBYPLAY', 'SHOTCHART']))
+    await inPartidos()
     expect(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i })).toBeTruthy()
   })
 
@@ -176,6 +183,7 @@ describe('finished matches (issue #407)', () => {
     const engine = fakeEngine()
     const { finishedStore } = await connectAndFinish(memoryFinishedStore(), engine)
     const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    await inPartidos()
     fireEvent.click(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i }))
     await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith(saved.game))
     expect(engine.start).toHaveBeenLastCalledWith(saved.plaintext)
@@ -184,8 +192,9 @@ describe('finished matches (issue #407)', () => {
 
   it('the matches saved in earlier sessions are listed from the start', async () => {
     const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} />)
+    await inPartidos()
     expect(await screen.findByRole('button', { name: /revisar leon – unibasket/i })).toBeTruthy()
   })
 
@@ -204,11 +213,12 @@ describe('finished matches (issue #407)', () => {
     const report = { match: { own: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' } } }
     const engine = fakeEngine({ report: vi.fn().mockResolvedValue(report) })
     const pdf = { render: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])), share: vi.fn().mockResolvedValue(undefined) }
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} pdf={pdf} />)
+    await inPartidos()
     fireEvent.click(await screen.findByRole('button', { name: /informe pdf de leon – unibasket/i }))
     await waitFor(() => expect(pdf.share).toHaveBeenCalled())
-    expect(engine.report).toHaveBeenCalledWith(old.game, alerts, '1')
+    expect(engine.report).toHaveBeenCalledWith(old.game, alerts, '1', {})
     expect(pdf.render).toHaveBeenCalledWith(report)
     expect(pdf.share).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'informe-equipo-propio-equipo-rival-9.pdf', expect.stringContaining('EQUIPO PROPIO'))
   })
@@ -216,8 +226,9 @@ describe('finished matches (issue #407)', () => {
   it('says so when the report cannot be built', async () => {
     const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{}' }
     const engine = fakeEngine({ report: vi.fn().mockRejectedValue(new Error('boom')) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} pdf={{ render: vi.fn(), share: vi.fn() }} />)
+    await inPartidos()
     fireEvent.click(await screen.findByRole('button', { name: /informe pdf de leon – unibasket/i }))
     expect(await screen.findByText(/no se pudo generar el informe/i)).toBeTruthy()
   })
@@ -226,7 +237,7 @@ describe('finished matches (issue #407)', () => {
     const feb = new FakeFeb(pack)
     feb.at = 0
     const finishedStore = memoryFinishedStore()
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     await screen.findByText(/en directo/i)
     fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
@@ -246,7 +257,7 @@ describe('package of another match (issue #417)', () => {
     const feb = new FakeFeb(pack)
     feb.at = 10
     const engine = fakeEngine({ update: vi.fn(async () => mismatched()) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     const warning = await screen.findByRole('alert', { name: /paquete de otro partido/i })
     expect(warning.textContent).toMatch(/no corresponde a este partido/i)
@@ -259,7 +270,7 @@ describe('package of another match (issue #417)', () => {
     const feb = new FakeFeb(pack)
     feb.at = 10
     const engine = fakeEngine({ update: vi.fn(async () => ({ ...out([ALERT]), package_match: { ok: true, expected: ['1', '2'], found: ['1', '2'] } })) })
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     expect(await screen.findByText(/J\. PÉREZ: 4 faltas/)).toBeTruthy()
     expect(screen.queryByRole('alert', { name: /paquete de otro partido/i })).toBeNull()
@@ -275,7 +286,7 @@ describe('recording of the live feed (issue #416)', () => {
     if (!over.feb) feb.at = 10
     const engine = over.engine ?? fakeEngine({ recording: vi.fn().mockResolvedValue(RECORDING) })
     const recordingStore = over.recordingStore ?? memoryRecordingStore()
-    render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={(over.get as typeof feb.get) ?? feb.get} feedTiming={instant}
+    render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={(over.get as typeof feb.get) ?? feb.get} feedTiming={instant}
       finishedStore={memoryFinishedStore()} recordingStore={recordingStore} shareFile={vi.fn().mockResolvedValue(undefined)} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     return { engine, recordingStore }
@@ -332,8 +343,9 @@ describe('recording of the live feed (issue #416)', () => {
     const bytes = new Uint8Array([0x1f, 0x8b, 8, 0])
     const old: SavedRecording = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', complete: false, frames: 120, encoding: 'gzip', bytes }
     const shareFile = vi.fn().mockResolvedValue(undefined)
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       recordingStore={memoryRecordingStore([old])} shareFile={shareFile} />)
+    await inPartidos()
     expect(await screen.findByText(/incompleta/i)).toBeTruthy()
     fireEvent.click(await screen.findByRole('button', { name: /compartir grabación de leon – unibasket/i }))
     await waitFor(() => expect(shareFile).toHaveBeenCalled())
@@ -365,7 +377,7 @@ describe('delay of the feed (issue #411)', () => {
     const feb = laggingFeb()
     // the device clock: 10 s more per poll; the line of each poll was logged 40 s before it
     const now = () => T0 + Math.max(0, feb.polls()) * 10_000
-    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.http} feedTiming={{ ...instant, now }} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.http} feedTiming={{ ...instant, now }} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     return feb
   }

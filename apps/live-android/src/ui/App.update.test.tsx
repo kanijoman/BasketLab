@@ -48,7 +48,7 @@ beforeEach(() => {
 const openAbout = () => fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
 
 const mount = (d: AppUpdateDeps, extra: object = {}) =>
-  render(<App engine={engine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} appUpdate={d} {...extra} />)
+  render(<App initialTab="partido" engine={engine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([])} appUpdate={d} {...extra} />)
 
 /** A device whose "back to the foreground" the test triggers by hand (issue #335). */
 function withResume(over: Partial<AppUpdateDeps> = {}) {
