@@ -184,7 +184,8 @@ test('live mode: connects to a (fake) FEB serving the real recording and follows
   await expect(page.getByText('Partido finalizado')).toBeVisible({ timeout: 120_000 })
   await expect(page.locator('.scoreboard .pts').nth(0)).toHaveText('59') // Zamora, local, on the left
   await expect(page.locator('.scoreboard .pts').nth(1)).toHaveText('38') // Leon, visitor
-  await expect(page.locator('.alert').first()).toBeVisible()
+  // the alerts are grouped by quarter and the older groups are folded: they exist, but the first one may be inside a closed group
+  expect(await page.locator('.alert').count()).toBeGreaterThan(0)
 
   expect(errors).toEqual([])
 })
