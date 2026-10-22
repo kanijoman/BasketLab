@@ -66,3 +66,13 @@ class TestCollect:
     def test_without_games_between_divisions_it_says_nothing(self, feb_game_doc):
         from src.live_prep.level_gap import collect
         assert collect([("SEGUNDA", [feb_game_doc])], {"SEGUNDA": 3}.get)["gap"] is None
+
+
+class TestSeasonFilter:
+    def test_a_collection_belongs_to_the_season_that_starts_in_that_year_regression(self):
+        """The first run (22/10/2026) read 0 collections: the season of a name is «2026_2027», not «2026»."""
+        from src.live_prep.level_gap import in_season
+        assert in_season("SEGUNDA_FEB_2026_2027_Liga_Regular_A", "2026")
+        assert in_season("COPA_ESPAÑA_2026_2027_Play-offs_1_16_Final", "2026")
+        assert not in_season("SEGUNDA_FEB_2025_2026_Liga_Regular_A", "2026")
+        assert not in_season("COLLECTION_META", "2026")
