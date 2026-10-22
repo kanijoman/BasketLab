@@ -128,3 +128,19 @@ describe('RoundPackages: teams «de interés» (issue #440)', () => {
     expect(onDownload).toHaveBeenCalledWith(ROUNDS[0], ROUNDS[0].matches[0], '2')
   })
 })
+
+describe('RoundPackages: each team on its own line with its star (issue #473)', () => {
+  it('the two teams of a match are two separate rows, each with its star and its name', () => {
+    const { container } = show()
+    const teams = Array.from(container.querySelector('li.round-match')!.querySelectorAll('.round-team'))
+    expect(teams).toHaveLength(2)
+    expect(teams.map(t => t.querySelector('.team-name')?.textContent)).toEqual(['LEONESA', 'ZAMORA'])
+    expect(teams.every(t => t.querySelector('button.star'))).toBe(true)
+  })
+
+  it('the date has its own line below the teams, not after the second star', () => {
+    const { container } = show()
+    const info = container.querySelector('li.round-match .round-info')!
+    expect(info.lastElementChild?.classList.contains('round-when')).toBe(true)
+  })
+})
