@@ -44,8 +44,7 @@ body {
 /* Transport bar of the demo (#231): match row, buttons + speed, timeline */
 .transport { display: grid; gap: 10px; margin: 16px 0; }
 .transport-source { display: flex; align-items: center; gap: 10px; }
-.transport-source .demo-source { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; color: var(--muted); font-size: 0.8rem; }
-.transport-source select { width: 100%; min-width: 0; font-size: 1rem; }
+.transport-title { flex: 1 1 auto; min-width: 0; text-align: center; font-size: 0.95rem; overflow-wrap: anywhere; }
 .transport-buttons { display: flex; align-items: center; gap: 8px; }
 .icon-button { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .segmented { display: flex; flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }

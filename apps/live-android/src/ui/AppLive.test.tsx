@@ -151,6 +151,9 @@ describe('live mode with a package', () => {
   })
 })
 
+/** The matches kept on the device are in the Partidos tab (issue #476). */
+const inPartidos = async () => { fireEvent.click(await screen.findByRole('tab', { name: 'Partidos' })) }
+
 // #407: a finished live match is kept on the device and can be reviewed afterwards
 describe('finished matches (issue #407)', () => {
   const connectAndFinish = async (finishedStore = memoryFinishedStore(), engine = fakeEngine()) => {
@@ -169,6 +172,7 @@ describe('finished matches (issue #407)', () => {
     expect(saved.plaintext).toBe(PKG)
     expect(saved.title).toBe('EQUIPO PROPIO – EQUIPO RIVAL')
     expect(Object.keys(JSON.parse(saved.game))).toEqual(expect.arrayContaining(['HEADER', 'PLAYBYPLAY', 'SHOTCHART']))
+    await inPartidos()
     expect(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i })).toBeTruthy()
   })
 
@@ -176,6 +180,7 @@ describe('finished matches (issue #407)', () => {
     const engine = fakeEngine()
     const { finishedStore } = await connectAndFinish(memoryFinishedStore(), engine)
     const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    await inPartidos()
     fireEvent.click(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i }))
     await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith(saved.game))
     expect(engine.start).toHaveBeenLastCalledWith(saved.plaintext)
@@ -186,6 +191,7 @@ describe('finished matches (issue #407)', () => {
     const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
     render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} />)
+    await inPartidos()
     expect(await screen.findByRole('button', { name: /revisar leon – unibasket/i })).toBeTruthy()
   })
 
@@ -206,9 +212,10 @@ describe('finished matches (issue #407)', () => {
     const pdf = { render: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])), share: vi.fn().mockResolvedValue(undefined) }
     render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} pdf={pdf} />)
+    await inPartidos()
     fireEvent.click(await screen.findByRole('button', { name: /informe pdf de leon – unibasket/i }))
     await waitFor(() => expect(pdf.share).toHaveBeenCalled())
-    expect(engine.report).toHaveBeenCalledWith(old.game, alerts, '1')
+    expect(engine.report).toHaveBeenCalledWith(old.game, alerts, '1', {})
     expect(pdf.render).toHaveBeenCalledWith(report)
     expect(pdf.share).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), 'informe-equipo-propio-equipo-rival-9.pdf', expect.stringContaining('EQUIPO PROPIO'))
   })
@@ -218,6 +225,7 @@ describe('finished matches (issue #407)', () => {
     const engine = fakeEngine({ report: vi.fn().mockRejectedValue(new Error('boom')) })
     render(<App engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} pdf={{ render: vi.fn(), share: vi.fn() }} />)
+    await inPartidos()
     fireEvent.click(await screen.findByRole('button', { name: /informe pdf de leon – unibasket/i }))
     expect(await screen.findByText(/no se pudo generar el informe/i)).toBeTruthy()
   })
@@ -334,6 +342,7 @@ describe('recording of the live feed (issue #416)', () => {
     const shareFile = vi.fn().mockResolvedValue(undefined)
     render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       recordingStore={memoryRecordingStore([old])} shareFile={shareFile} />)
+    await inPartidos()
     expect(await screen.findByText(/incompleta/i)).toBeTruthy()
     fireEvent.click(await screen.findByRole('button', { name: /compartir grabación de leon – unibasket/i }))
     await waitFor(() => expect(shareFile).toHaveBeenCalled())

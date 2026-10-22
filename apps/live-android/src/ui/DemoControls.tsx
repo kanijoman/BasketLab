@@ -12,11 +12,6 @@ export type DemoSource = string
 export const SAMPLE = 'sample'
 export const SPEEDS = [1, 10, 30, 60, 300]
 
-export interface SourceOption {
-  value: DemoSource
-  label: string
-}
-
 /** A jump forward longer than this skips alerts, so it asks first; any jump back asks (it rebuilds the engine and clears the alerts). */
 export const SEEK_FORWARD_FREE_S = 120
 
@@ -24,8 +19,8 @@ export const mmss = (seconds: number) => `${Math.floor(seconds / 60)}:${String(M
 
 interface Props {
   source: DemoSource
-  sources: SourceOption[]
-  onSource: (source: DemoSource) => void
+  /** The name of the match that is playing (the matches are chosen in the Partidos tab, issue #476). */
+  title: string
   playing: boolean
   onPlay: () => void
   finished: boolean
@@ -95,14 +90,9 @@ export default function DemoControls(p: Props) {
   }
   return (
     <section className="transport" aria-label="Reproducción">
-      <div className="transport-source">
+      <div className="transport-source" role="group" aria-label="Partido de la demostración">
         {p.home && <TeamLogo team={p.home} size={32} />}
-        <label className="demo-source">
-          Partido de la demostración
-          <select value={p.source} onChange={e => p.onSource(e.target.value as DemoSource)}>
-            {p.sources.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-        </label>
+        <strong className="transport-title">{p.title}</strong>
         {p.away && <TeamLogo team={p.away} size={32} />}
       </div>
 

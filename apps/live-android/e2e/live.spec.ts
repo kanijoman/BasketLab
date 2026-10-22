@@ -33,10 +33,11 @@ test('the demo opens on the latest recorded match, local team on the left, and a
   expect(errors).toEqual([])
 })
 
-test('the sample game is still there as the last option of the selector', async ({ page }) => {
+test('the sample game is still there as the last match of the Partidos tab', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
-  await page.getByLabel('Partido de la demostración').selectOption('sample')
+  await page.getByRole('tab', { name: 'Partidos' }).click()
+  await page.getByRole('button', { name: 'Ver Partido de ejemplo' }).click()
   await expect(page.getByText('ACEITES ABRIL ADBA SANFER').first()).toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('MANRESA CBF A').first()).toBeVisible()
 })

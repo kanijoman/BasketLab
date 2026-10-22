@@ -58,8 +58,10 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
   it('the sample game can be reviewed too', async () => {
     await open()
     review()
-    const select = (await screen.findByLabelText(/partido de la demostración/i)) as HTMLSelectElement
-    expect(Array.from(select.options).map(o => o.value)).toEqual(['2524470', 'sample'])
+    await screen.findByLabelText(/partido de la demostración/i)
+    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+    expect(screen.getByRole('button', { name: /ver partido de ejemplo/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /ver recoletas zamora/i })).toBeTruthy()
   })
 
   it('«Partido del paquete» loads the package again, with the live connection', async () => {

@@ -19,6 +19,7 @@ from .package import PreparationPackage
 from .postmatch import build_report
 from .replay import truncate_doc
 from .version import engine_version
+from .config import RuleConfig
 from .recorded_feed import RecordedFeed
 from .recording_builder import RecordingBuilder
 from .vectors import to_jsonable, unwrap_extended_json
@@ -86,7 +87,7 @@ class LiveSession:
 
     def report(self, game_doc: Dict[str, Any], alerts: Optional[Any] = None) -> Dict[str, Any]:
         """The post-match report (issue #409) of a finished game, from the point of view of the package's team."""
-        return to_jsonable(build_report(game_doc, str(self.package.team["id"]), alerts))
+        return to_jsonable(build_report(game_doc, str(self.package.team["id"]), alerts, RuleConfig.from_dict(self.package.rule_config)))
 
     def load_replay(self, game_doc: Dict[str, Any]) -> Dict[str, Any]:
         self._replay_doc = game_doc
@@ -191,10 +192,20 @@ def play_recording_json(t: float) -> str:
     return _dump(_session().play(t))
 
 
-def report_json(game_json: str, alerts_json: Optional[str] = None, own_team_id: Optional[str] = None) -> str:
+def _final_document(data: Any) -> Dict[str, Any]:
+    """The game of a report: a final FEB document as it is, or the last document of a packed recording (a demo, issue #477)."""
+    if isinstance(data, dict) and "frames" in data and "base" in data:
+        feed = RecordedFeed(data)
+        return feed.document_at(feed.duration)
+    return data
+
+
+def report_json(game_json: str, alerts_json: Optional[str] = None, own_team_id: Optional[str] = None, rule_config_json: Optional[str] = None) -> str:
     """The post-match report. With ``own_team_id`` it needs no session (a finished match kept on the device is reported while another
-    session may be running); without it the session's team is the own one."""
-    game, alerts = unwrap_extended_json(json.loads(game_json)), (json.loads(alerts_json) if alerts_json else None)
+    session may be running); without it the session's team is the own one. ``game_json`` is a final document or a packed recording; ``rule_config_json``
+    (the package's) gives the gender of the competition to the text (#475)."""
+    game, alerts = _final_document(unwrap_extended_json(json.loads(game_json))), (json.loads(alerts_json) if alerts_json else None)
+    config = RuleConfig.from_dict(json.loads(rule_config_json)) if rule_config_json else None
     if own_team_id is not None:
-        return _dump(to_jsonable(build_report(game, str(own_team_id), alerts)))
+        return _dump(to_jsonable(build_report(game, str(own_team_id), alerts, config)))
     return _dump(_session().report(game, alerts))

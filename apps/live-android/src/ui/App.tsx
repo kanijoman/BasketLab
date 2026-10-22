@@ -4,10 +4,10 @@
  * second by second so alerts and substitution proposals can be seen working on the device. Real
  * feeds plug into the same EngineApi (issues #118/#119).
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
 import {
-  demoLabel, loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch, orderDemos,
+  demoLabel, loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch,
   type DemoData, type DemoMatch, type RealDemoData,
 } from '../engine/demo'
 import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
@@ -18,7 +18,8 @@ import { summarizePackage, type PackageSummary } from '../package/summary'
 import { clockLabel } from './AlertCard'
 import AlertList, { type AlertEntry } from './AlertList'
 import { useAlertPacer } from './useAlertPacer'
-import DemoControls, { SAMPLE, mmss, type DemoSource, type SourceOption } from './DemoControls'
+import DemoControls, { SAMPLE, mmss, type DemoSource } from './DemoControls'
+import MatchLibrary from './MatchLibrary'
 import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
@@ -107,6 +108,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [recordings, setRecordings] = useState<SavedRecording[]>([])
   const [reporting, setReporting] = useState<string | null>(null)
   const [reportError, setReportError] = useState<string | null>(null)
+  const [demoReportError, setDemoReportError] = useState<string | null>(null)
   /** Every alert of the match being followed, with its clock label: the annex of the post-match report (issue #409). */
   const alertLog = useRef<LoggedAlert[]>([])
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -212,7 +214,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     try {
       const saved = await finishedStore.load(code)
       if (!saved) throw new Error('el partido ya no está guardado')
-      const report = await engine.report(saved.game, saved.alerts ?? [], saved.ownId)
+      const report = await engine.report(saved.game, saved.alerts ?? [], saved.ownId, summarizePackage(saved.plaintext).ruleConfig)
       const title = `Informe del partido ${report.match.own.name.trim()} – ${report.match.rival.name.trim()}`
       await pdf.share(await pdf.render(report), fileNameFor(report.match.own.name, report.match.rival.name, code), title)
       session.record(`Informe PDF del partido ${code}`)
@@ -391,7 +393,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     void store.load().then(r => r && beginPackage(r.plaintext))
   }
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); void store.load().then(r => r && beginPackage(r.plaintext)) }
-  const panel = <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice} />
+  const panelOf = (library?: ReactNode) => <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice} library={library} />
 
   if (phase.kind === 'loading') return <Splash />
   if (phase.kind === 'error') {
@@ -399,7 +401,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <main className="screen">
         <p className="status error">No se pudo iniciar el motor</p>
         <p className="detail">{phase.message}</p>
-        {pkg ? panel : demo && <button onClick={() => void beginDemo(demo)}>Reintentar</button>}
+        {pkg ? panelOf() : demo && <button onClick={() => void beginDemo(demo)}>Reintentar</button>}
       </main>
     )
   }
@@ -409,13 +411,44 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const snap = out?.snapshot
   const current = source.startsWith(FINISHED) ? finishedMatches.find(m => `${FINISHED}${m.code}` === source) : undefined
   const favorites = loadFavorites()      // the demos of the teams of interest first (issue #441); read on each render: it is marked in another tab
-  const sources: SourceOption[] = [...(current ? [{ value: source, label: current.title }] : []),
-    ...orderDemos(matches, favorites).map(m => ({ value: m.code, label: demoLabel(m) })), { value: SAMPLE, label: 'Partido de ejemplo' }]
+  const sourceMatch = matches.find(m => m.code === source)
+  const sourceTitle = current ? current.title : sourceMatch ? demoLabel(sourceMatch) : 'Partido de ejemplo'
   const pickSource = (value: DemoSource) => {
     if (value.startsWith(FINISHED)) { void beginFinished(value.slice(FINISHED.length)); return }
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
   }
+  /** The PDF report of a demo or of the sample game (issue #477): from the last document of its recording, with the gender of its package. */
+  const reportDemo = async (value: string) => {
+    setReporting(value)
+    setDemoReportError(null)
+    try {
+      const match = matches.find(m => m.code === value)
+      const source = value === SAMPLE && demo ? { game: demo.game, package: demo.package } : match ? await loadMatch(match).then(r => ({ game: r.recording, package: r.package })) : null
+      if (!source) throw new Error('no se encuentra el partido')
+      const summary = summarizePackage(source.package)
+      const report = await engine.report(source.game, [], summary.teamId, summary.ruleConfig)
+      await pdf.share(await pdf.render(report), fileNameFor(report.match.own.name, report.match.rival.name, value),
+        `Informe del partido ${report.match.own.name.trim()} – ${report.match.rival.name.trim()}`)
+      session.record(`Informe PDF de la demostración ${value}`)
+    } catch (e) {
+      setDemoReportError(`No se pudo generar el informe: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setReporting(null)
+    }
+  }
+  /** Opens a match of the list and goes to see it (the matches are chosen in the Partidos tab, issue #476). */
+  const openMatch = (value: DemoSource) => { record(`Partido abierto desde la lista (${value})`); pickSource(value); setTab('partido') }
+  const library = (
+    <>
+      <MatchLibrary demos={matches} favorites={favorites} hasSample={demo !== null} source={source} disabled={live.running}
+        onView={openMatch} reporting={reporting} onReport={value => void reportDemo(value)} error={demoReportError} />
+      <FinishedMatches matches={finishedMatches} disabled={live.running}
+        onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code); setTab('partido') }}
+        onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
+      <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
+    </>
+  )
   /** The next moment with something new: nothing happens in between, so it needs no question and the alerts of the tramo are none (#345). */
   const nextEvent = events.find(t => t > elapsedRef.current + 0.5)
   const goToNextEvent = async () => {
@@ -448,15 +481,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const matchTab = (
     <>
       {pkg && <ReviewSwitch reviewing={reviewing} disabled={live.running} onLive={backToPackage} onReview={reviewRecorded} />}
-      <FinishedMatches matches={finishedMatches} disabled={live.running} onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code) }}
-        onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
-      <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
-      {!pkg && (
-        <p className="notice">
-          Estás viendo un partido de demostración. Para seguir un partido real, carga un paquete de preparación en la pestaña Partidos.{' '}
-          <button className="secondary link-button" onClick={() => setTab('paquetes')}>Ir a Partidos</button>
-        </p>
-      )}
       {out?.package_match?.ok === false && (
         <PackageMismatch match={out.package_match.found.map(id => snap?.teams[id]?.name?.trim() ?? id)} own={own} rival={rival}
           onPackages={() => setTab('paquetes')} />
@@ -468,8 +492,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       {!liveMode && (
         <>
           <DemoControls
-            source={source} sources={sources}
-            onSource={value => { record(`Cambio de partido de la demostración (${value})`); pickSource(value) }}
+            source={source} title={sourceTitle}
             playing={playing} onPlay={() => setPlaying(p => !p)} finished={finished}
             speed={speed} onSpeed={setSpeed} onRestart={() => { record('Partido reiniciado con el botón Reiniciar'); pickSource(source) }}
             onSeek={to => { record(`Salto en la línea de tiempo a ${mmss(to)}`); void seek(to) }}
@@ -520,7 +543,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <BrandHeader />
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
       <div role="tabpanel" key={tab} className="tab-fade" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'partido' ? matchTab : tab === 'paquetes' ? panel : aboutTab}
+        {tab === 'partido' ? matchTab : tab === 'paquetes' ? panelOf(library) : aboutTab}
       </div>
       <TabBar active={tab} onChange={setTab} />
     </main>

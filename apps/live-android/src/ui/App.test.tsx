@@ -157,8 +157,11 @@ describe('App', () => {
   })
 
   describe('the most recently processed match is the default (issues #174, #223)', () => {
-    const pick = (value: string) =>
-      fireEvent.change(screen.getByLabelText(/partido de la demostración/i), { target: { value } })
+    /** The matches are chosen in the Partidos tab (issue #476): open the tab, press «Ver» of the match, and the app goes to see it. */
+    const pick = (label: RegExp) => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+      fireEvent.click(screen.getByRole('button', { name: label }))
+    }
     const MANIFEST = [{
       code: '2524470', title: 'Recoletas Zamora – Mipelletymas B.F. Leon', date: '2026-10-10T17:00',
       home: { id: '2', name: 'EQUIPO RIVAL' }, away: { id: '1', name: 'EQUIPO PROPIO' },
@@ -174,9 +177,11 @@ describe('App', () => {
       await waitFor(() => expect(engine.loadRecording).toHaveBeenCalledWith('REC'))
       expect(engine.start).toHaveBeenLastCalledWith('REALPKG')
       expect(engine.loadReplay).not.toHaveBeenCalled()
-      const select = await screen.findByLabelText(/partido de la demostración/i) as HTMLSelectElement
-      expect(select.value).toBe('2524470')
-      expect(within(select).getAllByRole('option').map(o => o.textContent))
+      const title = await screen.findByLabelText(/partido de la demostración/i)
+      expect(title.textContent).toContain('Recoletas Zamora – Mipelletymas B.F. Leon')
+      expect(title.closest('section')?.querySelector('select')).toBeNull()                       // no selector here any more (#476)
+      fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+      expect(within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => li.querySelector('span')?.textContent))
         .toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'Partido de ejemplo'])
     })
 
@@ -186,7 +191,11 @@ describe('App', () => {
         recording: `${code}.recording.json`, package: `${code}.package.json`, ...over,
       })
       const MANY = [MANIFEST[0], demo('2536133', { competition: 'SEGUNDA FEB · Liga Regular A', teamId: '1008857' }), demo('2536851', { competition: 'TERCERA FEB · Liga Regular A-B', teamId: '1010490' })]
-      const options = async () => within(await screen.findByLabelText(/partido de la demostración/i)).getAllByRole('option').map(o => o.textContent)
+      const options = async () => {
+        await screen.findByLabelText(/partido de la demostración/i)
+        fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+        return within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => li.querySelector('span')?.textContent)
+      }
 
       afterEach(() => localStorage.clear())
 
@@ -194,7 +203,7 @@ describe('App', () => {
         const engine = fakeEngine()
         render(<App engine={engine} {...props} loadManifest={() => Promise.resolve(MANY)} />)
         await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('REALPKG'))
-        expect(((await screen.findByLabelText(/partido de la demostración/i)) as HTMLSelectElement).value).toBe('2524470')
+        expect((await screen.findByLabelText(/partido de la demostración/i)).textContent).toContain('Recoletas Zamora')
         expect(await options()).toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'SEGUNDA FEB · Liga Regular A — Equipo 2536133 – Rival 2536133',
           'TERCERA FEB · Liga Regular A-B — Equipo 2536851 – Rival 2536851', 'Partido de ejemplo'])
       })
@@ -292,11 +301,57 @@ describe('App', () => {
       const engine = fakeEngine()
       render(<App engine={engine} {...props} />)
       await waitFor(() => expect(engine.loadRecording).toHaveBeenCalledTimes(1))
-      pick('sample')
+      pick(/ver partido de ejemplo/i)
       await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('PKG'))
       expect(engine.loadReplay).toHaveBeenLastCalledWith('GAME')
-      pick('2524470')
+      await screen.findByLabelText(/partido de la demostración/i)
+      pick(/ver recoletas zamora/i)
       await waitFor(() => expect(engine.loadRecording).toHaveBeenCalledTimes(2))
+    })
+
+    describe('the PDF report of a demo (issue #477)', () => {
+      const pdf = () => ({ render: vi.fn(async () => new Uint8Array([1, 2, 3])), share: vi.fn(async () => undefined) })
+      const REPORT = { match: { own: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' } } }
+      const pkgText = JSON.stringify({ package: { team: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' }, rule_config: { gender: 'F' } } })
+
+      it('is built from the recording of the demo with the gender of its package and shared', async () => {
+        const engine = fakeEngine({ report: vi.fn().mockResolvedValue(REPORT) })
+        const p = pdf()
+        render(<App engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={p as never} />)
+        await screen.findByLabelText(/partido de la demostración/i)
+        fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+        fireEvent.click(screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }))
+        await waitFor(() => expect(p.share).toHaveBeenCalledTimes(1))
+        expect(engine.report).toHaveBeenCalledWith('REC', [], '1', { gender: 'F' })
+        expect((p.share.mock.calls[0] as unknown as string[])[2]).toContain('EQUIPO PROPIO – EQUIPO RIVAL')
+      })
+
+      it('the sample game has its report too', async () => {
+        const engine = fakeEngine({ report: vi.fn().mockResolvedValue(REPORT) })
+        const p = pdf()
+        render(<App engine={engine} {...props} loadDemo={() => Promise.resolve({ package: pkgText, game: 'GAME' })} pdf={p as never} />)
+        await screen.findByLabelText(/partido de la demostración/i)
+        fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+        fireEvent.click(screen.getByRole('button', { name: /informe pdf de partido de ejemplo/i }))
+        await waitFor(() => expect(p.share).toHaveBeenCalledTimes(1))
+        expect(engine.report).toHaveBeenCalledWith('GAME', [], '1', { gender: 'F' })
+      })
+
+      it('a failure is said where the button is, and the buttons come back', async () => {
+        const engine = fakeEngine({ report: vi.fn().mockRejectedValue(new Error('motor')) })
+        render(<App engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={pdf() as never} />)
+        await screen.findByLabelText(/partido de la demostración/i)
+        fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+        fireEvent.click(screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }))
+        expect(await screen.findByText(/no se pudo generar el informe: motor/i)).toBeTruthy()
+        expect((screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }) as HTMLButtonElement).disabled).toBe(false)
+      })
+    })
+
+    it('the demo notice of the Partido tab is gone: the matches are in the Partidos tab (issue #476)', async () => {
+      render(<App engine={fakeEngine()} {...props} />)
+      await screen.findByLabelText(/partido de la demostración/i)
+      expect(screen.queryByText(/estás viendo un partido de demostración/i)).toBeNull()
     })
 
     it('says so and shows the sample game when the recording cannot be loaded', async () => {
