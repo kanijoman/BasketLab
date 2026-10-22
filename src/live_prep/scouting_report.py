@@ -66,6 +66,7 @@ ALERTS: Dict[str, Any] = {
     "own_run": ("Parciales a favor", "neutralize", None),
     "comeback_plan": ("Situaciones de remontada", "neutralize", None),
     "closing_briefing": ("Finales igualados", "exploit", None),
+    "closing_ft_reminder": ("Tiros libres en los finales igualados", "exploit", None),
     "advantage_management": ("Gestión de las ventajas", "exploit", None),
     "period_edge_deficit": ("Finales de cuarto en negativo", "exploit", None),
     "timeout_budget": ("Gestión de los tiempos muertos", "exploit", None),
