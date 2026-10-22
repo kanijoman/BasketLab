@@ -118,6 +118,8 @@ class RuleConfig:
     # Pace advice (#401, provisional): only in the last ``pace_max_left_s`` of the game (6:00) and when the pace lever of the win
     # probability (estimated possessions left, estimated net rating and the score) is worth at least ``pace_min_gain`` of probability.
     pace_max_left_s: int = 360
+    # The free-throw reminder of a close finish (#489): said again every this many game-seconds (and at once when who is on court changes).
+    closing_ft_every_s: int = 60
     pace_min_gain: float = 0.01
     # Summary of a quarter (the keys, in priority order): turnovers and rival offensive rebounds worse by this much, a rival scorer
     # with this many points, own free throws / threes / field goals poor with at least this many attempts, rival threes hot, team fouls.

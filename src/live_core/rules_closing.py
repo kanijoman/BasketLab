@@ -75,6 +75,27 @@ def _own_free_throws(snap: Dict[str, Any], ctx: RuleContext) -> Optional[str]:
     return None
 
 
+def _ft_reminder(snap: Dict[str, Any], ctx: RuleContext, context: Dict[str, Any], shooters: List[Dict[str, Any]],
+                 targets: List[Dict[str, Any]]) -> List[Advice]:
+    """The free-throw part of the briefing, kept alive during the whole close finish (#489): the briefing is said once per period (at 4:00) and the
+    shooters on court and who to foul change; it comes again every ``closing_ft_every_s`` and at once when who is on court changes."""
+    if not (shooters or targets):
+        return []
+    parts = []
+    if shooters:
+        parts.append("balón a " + ", ".join(f"{s['name']} ({s['ft_pct']} %)" for s in shooters))
+    if targets:
+        parts.append("hacer falta a " + ", ".join(f"{t['name']} ({t['ft_pct']} %)" for t in targets))
+    who = "-".join(s["player_id"] for s in shooters) + "/" + "-".join(t["player_id"] for t in targets)
+    every = max(1, ctx.config.closing_ft_every_s)
+    return [Advice(
+        key=f"closing_ft:{snap['period']}:{snap['remaining'] // every}:{who}", id="closing_ft_reminder", severity="info", category="gestion",
+        message=f"Tiros libres en el cierre ({context['margin']:+d} a {_clock(context['remaining_s'])}): " + "; ".join(parts) + ".",
+        evidence={"margin": context["margin"], "shooters": shooters, "foul_targets": targets},
+        proposal=([tactic_proposal(f"Balón a {' y '.join(s['name'] for s in shooters)} (tiros libres)")] if shooters else []) + (
+            [tactic_proposal(f"Hacer falta a {targets[0]['name']} ({targets[0]['ft_pct']} % en tiros libres)", targets[0]["player_id"], targets[0]["name"])] if targets else []))]
+
+
 def closing_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     cfg = ctx.config
     if not cfg.enabled("game_context"):
@@ -111,7 +132,8 @@ def closing_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if own_clutch:
         parts.append("las propias que más asumen en el cierre: " + ", ".join(_clutch_label(o) for o in own_clutch))
         proposal.append(tactic_proposal("Buscar a " + " y ".join(o["name"] for o in own_clutch) + " en el cierre"))
-    return [Advice(
+    reminder = _ft_reminder(snap, ctx, context, shooters, targets)
+    return [*reminder, Advice(
         key=f"closing:{snap['period']}", id="closing_briefing", severity="warning", category="gestion",
         message=f"Cierre igualado ({context['margin']:+d} a {_clock(context['remaining_s'])}): " + "; ".join(parts) + ".",
         evidence={"margin": context["margin"], "own_timeouts": own_left, "rival_timeouts": rival_left, "fouls": fouls,

@@ -423,3 +423,54 @@ def test_k2_the_bench_does_not_count_and_the_existing_parts_of_the_briefing_stay
     alert = briefing(rival={"r2": clutch(20.0, effective=True), "r1": clutch(12.0)}, players=players)
     assert "Rival r2" not in alert.message.split("asumen")[1].split(";")[0] and "Rita" in alert.message
     assert "tiempos muertos" in alert.message and "hacer falta a" in alert.message
+
+
+# --- the free-throw reminder of a close finish stays (issue #489, feedback of 0.3.2) ------------------------------------------------------
+
+def reminders(eng, *snapshots):
+    return [a for s in snapshots for a in by_id(eng.evaluate(s), "closing_ft_reminder")]
+
+
+def test_the_free_throw_reminder_comes_again_every_minute_of_a_close_finish_regression():
+    """Copa 21/10/2026: the briefing (once per period) was the only place that said who shoots free throws well, at 4:00 and never again."""
+    eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
+    first = reminders(eng, finish(remaining=235))
+    later = reminders(eng, finish(remaining=170))
+    assert len(first) == 1 and len(later) == 1 and first[0].key != later[0].key
+    for alert in first + later:
+        assert alert.evidence["base_severity"] == "info" and alert.category == "gestion"        # the close finish raises it one level (game_context)
+        assert "Guard Uno (88 %)" in alert.message and "Rita (52 %)" in alert.message
+
+
+def test_it_is_said_once_per_minute_not_on_every_poll():
+    eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
+    assert len(reminders(eng, finish(remaining=235), finish(remaining=232), finish(remaining=231))) == 1
+
+
+def test_it_is_said_at_once_when_who_is_on_court_changes():
+    eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
+    first = reminders(eng, finish(remaining=235))
+    swapped = lineup()
+    swapped["g1"]["on_court"] = False                 # the best shooter goes to the bench
+    again = reminders(eng, finish(remaining=232, players=swapped))
+    assert len(first) == 1 and len(again) == 1 and "Guard Uno" not in again[0].message
+
+
+def test_it_follows_the_finish_and_only_the_finish():
+    eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
+    assert reminders(eng, finish(period=4, remaining=300, margin=2)) == []          # more than 4:00 to go
+    assert reminders(eng, finish(period=4, remaining=100, margin=15)) == []         # not close
+    assert reminders(eng, finish(period=4, remaining=100, margin=3)) != []
+
+
+def test_without_free_throw_data_there_is_no_reminder():
+    assert reminders(engine(), finish(remaining=150)) == []
+
+
+def test_the_reminder_follows_the_overtime_too():
+    assert reminders(engine(baselines=OWN_FT, rival_baselines=RIVAL_FT), finish(period=5, remaining=120)) != []
+
+
+def test_the_interval_is_in_the_configuration():
+    eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT, config=RuleConfig(closing_ft_every_s=30))
+    assert len(reminders(eng, finish(remaining=235), finish(remaining=200))) == 2
