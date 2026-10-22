@@ -4,6 +4,8 @@ import { isFavorite, loadFavorites, toggleFavorite, type Favorite } from '../pac
 import { NO_FILTERS, competitionOf, filterRounds, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
 import { competitionLabel, orderRounds, sidesOf, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import { nextMatchesOfFavorites } from '../package/upcoming'
+import { LEAD_OPTIONS } from '../notify/schedule'
+import { useReminders, type ReminderLoader } from './useReminders'
 
 export { competitionLabel }
 
@@ -19,6 +21,8 @@ interface Props {
   isLoaded: (code: string, ownId: string) => boolean
   /** The moment the next matches are counted from (tests). */
   now?: Date
+  /** The notifications plugin (issue #482); the real one when absent (tests give a fake). */
+  reminders?: ReminderLoader
 }
 
 function when(start?: string | null): string {
@@ -37,7 +41,7 @@ function Star({ team, favorites, onToggle }: { team: { id: string; name: string 
   )
 }
 
-export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, now }: Props) {
+export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, now, reminders }: Props) {
   const [favorites, setFavorites] = useState<Favorite[]>(() => loadFavorites())
   const [chosen, setChosen] = useState<RoundFilters>(() => loadFilters())
   // a remembered league, competition, group or team that is not published any more must not hide everything: each one is checked against what is on offer
@@ -53,6 +57,9 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
   const { leagues, competitions, groups, teams } = optionsOf(rounds, filters)
   const shown = useMemo(() => filterRounds(orderRounds(rounds, favorites), filters, favorites), [rounds, favorites, filters.league, filters.competition, filters.group, filters.team, filters.onlyFavorites]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const next = nextMatchesOfFavorites(rounds, favorites, now)
+  const reminder = useReminders(next, now ?? new Date(), reminders)      // a hook: before the early return
+
   if (rounds.length === 0) return null
 
   const change = (patch: Partial<RoundFilters>) => {
@@ -65,7 +72,6 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
     setFavorites(loadFavorites())
   }
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS)
-  const next = nextMatchesOfFavorites(rounds, favorites, now)
 
   return (
     <>
@@ -91,6 +97,27 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
               </li>
             ))}
           </ul>
+          <div className="reminders">
+            <label className="round-filter-check">
+              <input type="checkbox" checked={reminder.prefs.enabled} onChange={e => reminder.update({ enabled: e.target.checked })} />
+              Avisarme antes de estos partidos
+            </label>
+            {reminder.prefs.enabled && (
+              <label>
+                Minutos antes
+                <select value={reminder.prefs.leadMin} onChange={e => reminder.update({ leadMin: Number(e.target.value) })}>
+                  {LEAD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </label>
+            )}
+            {reminder.prefs.enabled && reminder.result?.ok && <p className="detail">{reminder.result.scheduled === 1 ? '1 aviso programado' : `${reminder.result.scheduled} avisos programados`}.</p>}
+            {reminder.result && !reminder.result.ok && (
+              <p className="detail" role="status">
+                {reminder.result.reason === 'denied' ? 'Tienes las notificaciones desactivadas para la app: actívalas en los ajustes del sistema.'
+                  : reminder.result.reason === 'unavailable' ? 'Los avisos solo funcionan en la app instalada, no en el navegador.' : 'Falta el permiso de notificaciones.'}
+              </p>
+            )}
+          </div>
         </section>
       )}
       <div className="round-filters" role="group" aria-label="Filtrar partidos">

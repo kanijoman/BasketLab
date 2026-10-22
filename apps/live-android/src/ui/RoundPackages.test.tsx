@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoundIndexEntry, RoundMatch } from '../package/remote'
 import RoundPackages from './RoundPackages'
@@ -218,5 +218,81 @@ describe('RoundPackages: the next match of each team of interest (issue #478)', 
     const next = screen.getByRole('region', { name: /próximos de tus equipos de interés/i })
     expect(next.querySelectorAll('li')).toHaveLength(2)
     expect(Array.from(next.querySelectorAll('button')).every(b => (b as HTMLButtonElement).disabled)).toBe(true)
+  })
+})
+
+describe('RoundPackages: the reminders of the matches of interest (issue #482)', () => {
+  const FAVS = [{ teamId: '1008857', name: 'LEONESA' }, { teamId: '1008978', name: 'LLIRIA' }]
+  const fake = (over: Record<string, unknown> = {}) => ({
+    checkPermissions: vi.fn().mockResolvedValue({ display: 'granted' }), requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+    schedule: vi.fn().mockResolvedValue(undefined), cancel: vi.fn().mockResolvedValue(undefined), getPending: vi.fn().mockResolvedValue({ notifications: [] }), ...over,
+  })
+  const withPlugin = (plugin: ReturnType<typeof fake> | null) => ({ reminders: { load: () => Promise.resolve(plugin) } }) as Partial<React.ComponentProps<typeof RoundPackages>>
+
+  beforeEach(() => localStorage.setItem('basketlab-live-favorites', JSON.stringify(FAVS)))
+
+  it('are off until the user turns them on, and the app does not ask for the permission before', async () => {
+    const plugin = fake()
+    show(ROUNDS, withPlugin(plugin))
+    expect((screen.getByRole('checkbox', { name: /avisarme/i }) as HTMLInputElement).checked).toBe(false)
+    await Promise.resolve()
+    expect(plugin.requestPermissions).not.toHaveBeenCalled()
+    expect(plugin.schedule).not.toHaveBeenCalled()
+  })
+
+  it('turning them on asks for the permission and schedules one reminder per match, 30 minutes before', async () => {
+    const plugin = fake({ checkPermissions: vi.fn().mockResolvedValue({ display: 'prompt' }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    expect(plugin.requestPermissions).toHaveBeenCalled()
+    const notifications = plugin.schedule.mock.calls[0][0].notifications
+    expect(notifications.map((n: { title: string }) => n.title)).toEqual(['LEONESA juega en 30 min', 'LLIRIA juega en 30 min'])
+    expect(await screen.findByText(/2 avisos programados/i)).toBeTruthy()
+  })
+
+  it('the choice is kept on the device and the reminders are scheduled again when the app opens', async () => {
+    const plugin = fake()
+    const { unmount } = render(<RoundPackages rounds={ROUNDS} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...withPlugin(plugin)} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    unmount()
+    const again = fake()
+    render(<RoundPackages rounds={ROUNDS} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...withPlugin(again)} />)
+    await waitFor(() => expect(again.schedule).toHaveBeenCalledTimes(1))
+    expect((screen.getByRole('checkbox', { name: /avisarme/i }) as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('the lead time can be 15, 30 or 60 minutes', async () => {
+    const plugin = fake()
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    fireEvent.change(screen.getByLabelText(/minutos antes/i), { target: { value: '60' } })
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(2))
+    expect(plugin.schedule.mock.calls[1][0].notifications[0].title).toBe('LEONESA juega en 60 min')
+  })
+
+  it('turning them off cancels what was scheduled', async () => {
+    const plugin = fake({ getPending: vi.fn().mockResolvedValue({ notifications: [{ id: 5, extra: { basketlab: true } }] }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await waitFor(() => expect(plugin.cancel).toHaveBeenCalledTimes(2))
+  })
+
+  it('says what to do when the system has the notifications denied', async () => {
+    const plugin = fake({ checkPermissions: vi.fn().mockResolvedValue({ display: 'denied' }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    expect(await screen.findByText(/notificaciones desactivadas/i)).toBeTruthy()
+    expect(plugin.schedule).not.toHaveBeenCalled()
+  })
+
+  it('says it is only in the installed app when the device cannot (a browser)', async () => {
+    show(ROUNDS, withPlugin(null))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    expect(await screen.findByText(/solo funcionan en la app instalada/i)).toBeTruthy()
   })
 })

@@ -20,6 +20,7 @@ import AlertList, { type AlertEntry } from './AlertList'
 import { useAlertPacer } from './useAlertPacer'
 import DemoControls, { SAMPLE, mmss, type DemoSource } from './DemoControls'
 import MatchLibrary from './MatchLibrary'
+import { capacitorReminderPlugin, onReminderTapped } from '../notify/reminders'
 import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
@@ -134,6 +135,13 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
   const [tab, setTab] = useTab()
+  // a reminder of a match of a team of interest was tapped (issue #482): the app opens on the list of matches
+  useEffect(() => {
+    let stop: () => void = () => undefined
+    let gone = false
+    void capacitorReminderPlugin().then(plugin => plugin && onReminderTapped(plugin, () => setTab('paquetes')).then(s => { if (gone) s(); else stop = s }))
+    return () => { gone = true; stop() }
+  }, [setTab])
   // an invitation link opened the app (issue #410): its right is kept, the list of matches is shown and says what happened
   const [inviteNotice, setInviteNotice] = useState<string | null>(null)
   useEffect(() => listenInviteLinks(result => {
