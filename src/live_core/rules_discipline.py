@@ -70,8 +70,14 @@ def rival_pair_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if len(pair) < 2:
         return []
     names = ", ".join(_name(p) for _, p in pair)
+    key = "rival_pair:" + ":".join(pid for pid, _ in pair)
+    last = ctx.memory.get("rival_pair")
+    if last and last["key"] != key and snap["elapsed"] - last["at"] < ctx.config.rival_pair_gap_s:
+        return []        # another pair too soon after the last one: it waits (a third foul changes the pair all the time)
+    if not last or last["key"] != key:
+        ctx.memory["rival_pair"] = {"key": key, "at": snap["elapsed"]}
     return [Advice(
-        key="rival_pair:" + ":".join(pid for pid, _ in pair), id="rival_foul_pair", severity="warning", category="faltas",
+        key=key, id="rival_foul_pair", severity="warning", category="faltas",
         message=f"Dos rivales con {ctx.config.rival_pair_pf} o más faltas en pista ({names}).",
         evidence={"player_ids": [pid for pid, _ in pair], "team_id": ctx.rival_team_id},
         proposal=[tactic_proposal(f"Atacar a {names}, que acumulan faltas")])]

@@ -116,14 +116,19 @@ def test_c2_when_it_takes_more_than_one_and_a_half_net_points_per_possession_it_
     assert not comeback(-25, remaining=100)
 
 
-def test_c2_without_a_reliable_pace_it_says_nothing_and_it_is_said_once_per_block_of_four_minutes():
+def test_c2_without_a_reliable_pace_it_says_nothing():
     s = pace_snap(margin=-9, period=4, elapsed=200)
     s["remaining"] = 300
     assert not by_id(engine().evaluate(s), "comeback_plan")
+
+
+def test_c2_it_is_said_once_per_block_of_six_minutes_so_twice_at_most_in_the_last_ten():
+    """Reevaluation 22/10/2026: every four minutes repeated 49 % of the alerts; at most two reminders in the last ten minutes."""
     e = engine()
-    assert by_id(e.evaluate(comeback_snap(-9, 300)), "comeback_plan")
-    assert not by_id(e.evaluate(comeback_snap(-10, 290)), "comeback_plan")        # the same block of four minutes
-    assert by_id(e.evaluate(comeback_snap(-9, 230)), "comeback_plan")             # the next block, still a real plan
+    assert by_id(e.evaluate(comeback_snap(-9, 450)), "comeback_plan")
+    assert not by_id(e.evaluate(comeback_snap(-10, 400)), "comeback_plan")        # the same block of six minutes
+    assert by_id(e.evaluate(comeback_snap(-9, 300)), "comeback_plan")             # the next block, still a real plan
+    assert not by_id(e.evaluate(comeback_snap(-9, 120)), "comeback_plan")
 
 
 def test_c2_the_alert_is_json_serialisable():

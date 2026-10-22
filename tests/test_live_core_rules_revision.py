@@ -377,36 +377,52 @@ def test_r6_the_same_lever_is_said_once_and_not_repeated_by_time():
 def test_r6_it_is_said_again_when_the_lever_gets_five_points_worse_measured_unshrunk():
     e = engine()
     [first] = lever_alerts(e, 22)
-    [worse] = lever_alerts(e, 40, elapsed=1300)
+    [worse] = lever_alerts(e, 40, elapsed=1500)
     assert worse.evidence["pts100_raw"] <= first.evidence["pts100_raw"] - 5
     assert worse.key != first.key
-    assert lever_alerts(e, 40, elapsed=1400) == []
+    assert lever_alerts(e, 40, elapsed=1900) == []
 
 
 def test_r6_getting_better_and_worse_again_does_not_repeat_what_was_already_said():
     e = engine()
     assert lever_alerts(e, 22)
-    assert lever_alerts(e, 40, elapsed=1300)            # five points worse: said again
-    assert lever_alerts(e, 22, elapsed=1400) == []      # it improved
-    assert lever_alerts(e, 40, elapsed=1500) == []      # and worsened again to the same point: nothing new
+    assert lever_alerts(e, 40, elapsed=1500)            # five points worse: said again
+    assert lever_alerts(e, 22, elapsed=1900) == []      # it improved
+    assert lever_alerts(e, 40, elapsed=2300) == []      # and worsened again to the same point: nothing new
 
 
 def test_r6_a_small_oscillation_does_not_repeat_it():
     e = engine()
     lever_alerts(e, 22)
-    assert lever_alerts(e, 23, elapsed=1300) == []
+    assert lever_alerts(e, 23, elapsed=1500) == []
 
 
 def test_r6_the_step_comes_from_the_config():
     e = engine(config=RuleConfig(lever_step_pts100=1.0))
     lever_alerts(e, 22)
-    assert lever_alerts(e, 24, elapsed=1300)
+    assert lever_alerts(e, 24, elapsed=1500)
 
 
 def test_r6_a_different_lever_is_a_new_alert():
     e = engine()
     [first] = lever_alerts(e, 22)
-    other = by_id(e.evaluate(ff_snap(_stats_ff(), _stats_ff(fg2m=30, fg2a=40), elapsed=1400)), "four_factors_lever")
+    other = by_id(e.evaluate(ff_snap(_stats_ff(), _stats_ff(fg2m=30, fg2a=40), elapsed=1500)), "four_factors_lever")
     assert other and other[0].evidence["lever"] != "tov" and other[0].key != first.key
-    back = lever_alerts(e, 22, elapsed=1500)               # the first lever is the main one again: that is a change too
+    back = lever_alerts(e, 22, elapsed=1900)               # the first lever is the main one again: that is a change too
     assert back and back[0].evidence["lever"] == "tov" and back[0].key != first.key
+
+
+def test_r6_two_levers_are_never_said_less_than_five_minutes_apart_but_the_second_is_not_lost():
+    """Reevaluation 22/10/2026 (235 games): 1.10 per 10 min, 55 % repeated and 21 % followed. The change waits for the gap and is said then if it still holds."""
+    e = engine()
+    assert lever_alerts(e, 22)
+    assert lever_alerts(e, 40, elapsed=1300) == []         # five points worse, but only 100 s later
+    assert lever_alerts(e, 40, elapsed=1450) == []
+    [worse] = lever_alerts(e, 40, elapsed=1500)            # 300 s after the first one: now it is said
+    assert worse.evidence["lever"] == "tov"
+
+
+def test_r6_the_gap_comes_from_the_config():
+    e = engine(config=RuleConfig(ff_lever_gap_s=0))
+    lever_alerts(e, 22)
+    assert lever_alerts(e, 40, elapsed=1300)

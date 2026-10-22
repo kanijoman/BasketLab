@@ -125,11 +125,9 @@
      }
     },
     {
-     "alerts": [
-      "lever:ftr:1:2"
-     ],
+     "alerts": [],
      "digests": {
-      "alerts": "b941cbba7a71fa5d8b9d380bab046eb571ce37f14ff847512eb4697e55b767f9",
+      "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
       "analysis": "0e54bfb7c3c7a9f62c16caf8a76338896643f5f0eb3011af6cc632da7ba0edbe",
       "snapshot": "20f90fcb063cdcda416d83df3fcb01178df74dee16409af25699571ffed905f3"
      },

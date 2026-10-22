@@ -167,6 +167,24 @@ def test_v2_one_rival_with_fouls_on_court_or_our_own_players_are_not_a_pair(play
     assert not by_id(evaluate(players), "rival_foul_pair")
 
 
+def test_v2_a_new_pair_is_not_said_again_within_five_minutes_but_it_is_not_lost():
+    """Reevaluation 22/10/2026: 61 % of the pair alerts repeated one a few minutes before (a third foul changes the pair)."""
+    e = AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL)
+    first = {"r1": player("Rita", RIVAL, pf=3), "r2": player("Rosa", RIVAL, pf=4), "r3": player("Rut", RIVAL, pf=1)}
+    assert by_id(evaluate(first, elapsed=1000, eng=e), "rival_foul_pair")
+    changed = {**first, "r3": player("Rut", RIVAL, pf=3)}                      # a third rival reaches three fouls: another pair
+    assert not by_id(evaluate(changed, elapsed=1100, eng=e), "rival_foul_pair")
+    assert not by_id(evaluate(changed, elapsed=1250, eng=e), "rival_foul_pair")
+    assert by_id(evaluate(changed, elapsed=1300, eng=e), "rival_foul_pair")
+
+
+def test_v2_the_same_pair_keeps_being_the_same_alert():
+    e = AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL)
+    pair = {"r1": player("Rita", RIVAL, pf=3), "r2": player("Rosa", RIVAL, pf=4)}
+    assert by_id(evaluate(pair, elapsed=1000, eng=e), "rival_foul_pair")
+    assert not by_id(evaluate(pair, elapsed=2000, eng=e), "rival_foul_pair")
+
+
 def test_the_alerts_are_json_serialisable():
     [alert] = by_id(evaluate({"p1": player("Ana", OWN, unsportsmanlike=1)}), "disqualification_risk")
     assert json.loads(json.dumps(alert.proposal)) == alert.proposal
