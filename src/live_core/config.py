@@ -200,7 +200,7 @@ class RuleConfig:
     fatigue_alert_index: float = 80.0
     fatigue_warning_index: float = 80.0   # from here fatigue is a warning; between alert and warning it is context
     fatigue_rearm_s: int = 240            # no longer used by the rule since #241 (kept: a package may carry it)
-    fatigue_default_avg_stint_s: int = 420
+    fatigue_default_avg_stint_s: int = 300      # a player without a trusted baseline (#479: 5:00; 7:00 never alerted with baselines of one game)
     fatigue_weight_stint: float = 40.0
     fatigue_weight_minutes: float = 35.0
     fatigue_weight_projection: float = 25.0
@@ -208,6 +208,12 @@ class RuleConfig:
     fatigue_minutes_full_ratio: float = 1.5    # minutes / expected minutes at this point
     fatigue_projection_full_excess: float = 0.25  # projected minutes above the p90, as a fraction
     fatigue_min_elapsed_s: int = 600           # minutes-based components need this much game
+    # A baseline of fewer games or stints than this is not trusted (the default stint is used and the minutes components are left out), and an
+    # absolute floor on court: no fatigue alert below the first, no critical one below the second (issue #479).
+    fatigue_min_games: int = 3
+    fatigue_min_stints: int = 8
+    fatigue_floor_warning_s: int = 300
+    fatigue_floor_critical_s: int = 420
     # Four Factors (Oliver): enough possessions to trust the game, expected net rating per
     # unit of the weighted score (placeholder until calibrated), smallest lever worth a call.
     ff_min_possessions: float = 15.0

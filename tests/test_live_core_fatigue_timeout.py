@@ -62,6 +62,8 @@ def _replay_leon_unibasket():
     """
     package = PreparationPackage.loads((RECORDINGS / "2524470.package.json").read_text(encoding="utf-8"))
     package.rival = {"id": "1008895", "name": "BOSONIT UNIBASKET"}     # Leon's rival of that day (#417: the package must be the match's)
+    # these checks are about the timing of the alert, not about its thresholds: the floors and the minimum sample of #479 are off here
+    package.rule_config = {**package.rule_config, **{"fatigue_min_games": 0, "fatigue_min_stints": 0, "fatigue_floor_warning_s": 0, "fatigue_floor_critical_s": 0}}
     session = LiveSession(package.dumps())
     session.load_recording((RECORDINGS / "2524475.rec.json.gz").read_bytes())
     final = session._feed.document_at(session._feed.duration)

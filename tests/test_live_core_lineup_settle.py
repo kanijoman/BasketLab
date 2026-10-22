@@ -147,6 +147,8 @@ def package_for(rival):
     package = PreparationPackage.loads((RECORDINGS / "2524470.package.json").read_text(encoding="utf-8"))
     if rival:
         package.rival = rival
+    # about the timing of the alerts, not their thresholds: the floors and the minimum sample of fatigue (#479) are off here
+    package.rule_config = {**package.rule_config, **{"fatigue_min_games": 0, "fatigue_min_stints": 0, "fatigue_floor_warning_s": 0, "fatigue_floor_critical_s": 0}}
     return package.dumps()
 
 

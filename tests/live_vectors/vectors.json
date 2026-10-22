@@ -85,9 +85,11 @@
      }
     },
     {
-     "alerts": [],
+     "alerts": [
+      "fatigue:2175850:315:critical"
+     ],
      "digests": {
-      "alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "alerts": "5333440297f2a041ad1f310165e7aff8b89925208f72c70bada3defe6b51ccba",
       "analysis": "5cb007274495735337d994e6c799b617834af93e7d6663f840d0a142429d29d9",
       "snapshot": "c1de9efc7dec6747022e6b58cea30368530eefd974f8a2bc3f741e607118562c"
      },
@@ -2972,6 +2974,7 @@
       "category": "rotacion",
       "confirm": 1,
       "evidence": {
+       "avg_stint_s": 360,
        "components": {
         "minutes": 0.933,
         "projection": 0.4,
@@ -2983,12 +2986,17 @@
        "level": "warning",
        "minutes_s": 1100,
        "player_id": "p",
+       "sample": {
+        "games": null,
+        "stints": null,
+        "trusted": true
+       },
        "stint_s": 720,
        "team_id": "T1"
       },
       "id": "fatigue_high",
       "key": "fatigue:p:480:warning",
-      "message": "Ana: riesgo de fatiga alto (índice 83/100), 12:00 seguidos en pista y 18 min jugados. Valorar descanso.",
+      "message": "Ana: riesgo de fatiga alto (índice 83/100), 12:00 seguidos en pista (su tramo habitual: 6:00) y 18 min jugados. Valorar descanso.",
       "proposal": [],
       "rearm_s": null,
       "severity": "warning"
