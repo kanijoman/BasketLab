@@ -90,9 +90,9 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
         </Section>
       )}
       {report.players.length > 0 && (
-        <Section title="Jugadoras clave">
+        <Section title={report.gender === 'F' ? 'Jugadoras clave' : 'Jugadores clave'}>
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs text-ink-secondary"><th>Jugadora</th><th className="text-right">PJ</th><th className="text-right">Pts/p</th><th className="text-right">% puntos</th><th className="text-right">Pts cierre</th></tr></thead>
+            <thead><tr className="text-left text-xs text-ink-secondary"><th>{report.gender === 'F' ? 'Jugadora' : 'Jugador'}</th><th className="text-right">PJ</th><th className="text-right">Pts/p</th><th className="text-right">% puntos</th><th className="text-right">Pts cierre</th></tr></thead>
             <tbody>
               {report.players.map(p => (
                 <tr key={p.id} className="border-t border-surface-border text-ink-secondary">
@@ -233,7 +233,7 @@ export default function ScoutingRivalPage() {
             <div className="card p-5 space-y-4">
               <p className="text-sm text-ink-secondary">
                 Elige el equipo a analizar (cualquiera de la competición): se reproducen sus partidos como en directo con el motor
-                y se genera un informe con sus claves tácticas, jugadoras, quintetos, zonas y plan de partido. Puede tardar un poco.
+                y se genera un informe con sus claves tácticas, jugadores, quintetos, zonas y plan de partido. Puede tardar un poco.
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
                 <label className="flex flex-col gap-1 text-xs text-ink-secondary">
