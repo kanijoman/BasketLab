@@ -77,6 +77,9 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
             {' '}{loaded.rivalPlayers} rivales · partidos: {loaded.games.own} propios, {loaded.games.rival} rival,
             {' '}{loaded.games.league} de la liga
           </p>
+          {loaded.crossDivision && (
+            <p className="detail">Equipos de divisiones distintas: sus estadísticas se midieron contra rivales de distinto nivel, así que el valor previo del partido (y la probabilidad de victoria) es solo aproximado.</p>
+          )}
           <button className="secondary" onClick={() => void remove()}>Quitar paquete</button>
         </div>
       ) : (

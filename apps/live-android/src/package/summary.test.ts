@@ -26,6 +26,12 @@ describe('summarizePackage', () => {
     expect(summarizePackage(pkg({ rule_config: { gender: 'F' } })).ruleConfig).toEqual({ gender: 'F' })
   })
 
+  it('carries the cross-division marker of the package when there is one (#464)', () => {
+    const marker = { own_level: 3, rival_level: 2, adjusted: 'shrink' }
+    expect(summarizePackage(pkg({ baselines: { cross_division: marker } })).crossDivision).toEqual(marker)
+    expect(summarizePackage(pkg()).crossDivision).toBeUndefined()
+  })
+
   it('tolerates missing optional sections', () => {
     const s = summarizePackage(pkg({ tables: {}, baselines: {} }))
     expect(s.ownPlayers).toBe(0)

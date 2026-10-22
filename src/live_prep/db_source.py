@@ -28,6 +28,24 @@ def season_of(mongo_collection: Any, collection: str) -> str:
     return str(first["_season"]) if first and first.get("_season") else collection
 
 
+def catalog_level_of(handler: Any) -> Callable[[str], Optional[int]]:
+    """The division (catalog ``level``) of a collection, read once per collection; ``None`` for a cup, an unknown competition or any failure (issue #464)."""
+    cache: Dict[str, Optional[int]] = {}
+
+    def level_of(collection: str) -> Optional[int]:
+        if collection not in cache:
+            try:
+                from .competition_info import competition_infos
+                from .publisher import load_config
+
+                cache[collection] = competition_infos(handler, [collection], load_config()["competitions"], [])[collection].get("level")
+            except Exception:  # noqa: BLE001 - the division only refines the prior: a package never depends on it
+                cache[collection] = None
+        return cache[collection]
+
+    return level_of
+
+
 def build_package_from_db(
     handler: Any,
     collection: str,
@@ -38,6 +56,7 @@ def build_package_from_db(
     progress: Optional[Callable[[int, int], None]] = None,
     roster_source: Optional[Callable[[Sequence[str]], Optional[Dict[str, Dict[str, Any]]]]] = None,
     rule_config: Optional[Dict[str, Any]] = None,
+    level_of: Optional[Callable[[str], Optional[int]]] = None,
 ) -> PreparationPackage:
     """``handler`` is a MongoDBHandler. FEB and FBCYL (its games are adapted to the FEB document, ``fbcyl_adapter``; no shot chart, no roster of "formación").
 
@@ -48,7 +67,7 @@ def build_package_from_db(
     mongo_collection = handler.repository.connection.get_collection(collection)
     total = mongo_collection.count_documents(feed_of(collection).with_pbp)
     sources = source_collections(handler, collection, [team_id, rival_id])    # the own collection + the other games of both teams (#456)
-    games = _counted(games_of_sources(handler, sources, [team_id, rival_id]), total, progress)
+    games = _counted(games_of_sources(handler, sources, [team_id, rival_id], level_of or catalog_level_of(handler)), total, progress)
     return build_package(games, collection, season or season_of(mongo_collection, collection),
                          team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id), rule_config=rule_config)
 

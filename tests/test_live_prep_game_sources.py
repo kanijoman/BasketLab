@@ -63,9 +63,9 @@ def names(sources):
 
 
 class TestSourceCollections:
-    def test_the_own_collection_comes_first_and_is_the_only_league_source(self, world):
-        sources = source_collections(Handler(world), COPA, [OWN, RIVAL])
-        assert sources[0] == (COPA, True) and [lg for _, lg in sources[1:]] == [False] * (len(sources) - 1)
+    def test_the_own_collection_comes_first_and_is_the_only_league_source_of_a_regular_group(self, world):
+        sources = source_collections(Handler(world), SEGUNDA, [OWN, RIVAL])
+        assert sources[0] == (SEGUNDA, True) and [lg for _, lg in sources[1:]] == [False] * (len(sources) - 1)
 
     def test_other_collections_of_the_season_with_a_game_of_the_teams_are_sources(self, world):
         assert set(names(source_collections(Handler(world), COPA, [OWN, RIVAL]))) == {COPA, GROUP, SEGUNDA, PRIMERA}
@@ -102,10 +102,11 @@ class TestPackages:
         package = build_package_from_db(Handler(world), COPA, OWN, RIVAL, "2026")
         assert package.baselines["sample_games"]["own"] == 2   # the Copa game + the shared one
 
-    def test_the_league_baselines_come_only_from_the_own_collection(self, world):
-        package = build_package_from_db(Handler(world), COPA, OWN, RIVAL, "2026")
-        alone = build_package_from_db(Handler({COPA: world[COPA]}), COPA, OWN, RIVAL, "2026")
-        assert package.baselines["sample_games"]["league"] == 1
+    def test_the_league_baselines_of_a_regular_collection_come_only_from_it(self, world):
+        """A group of a regular league is its own league: the other division and the other group are not part of its baselines."""
+        package = build_package_from_db(Handler(world), SEGUNDA, OWN, "555", "2026")
+        alone = build_package_from_db(Handler({SEGUNDA: world[SEGUNDA]}), SEGUNDA, OWN, "555", "2026")
+        assert package.baselines["sample_games"]["league"] == 2
         assert package.baselines["league_rates"] == alone.baselines["league_rates"]
         assert package.tables["zones"]["league"] == alone.tables["zones"]["league"]
 
@@ -136,6 +137,47 @@ class TestRounds:
         package = built[0]["package"]
         assert package.baselines["sample_games"]["own"] == 2 and package.baselines["sample_games"]["rival"] == 2
 
-    def test_games_of_teams_not_in_the_round_are_not_accumulated(self, world):
-        built = build_round_packages_from_db(Handler(world), COPA, [self.match(OWN, RIVAL)], season="2026")
-        assert built[0]["package"].baselines["sample_games"]["league"] == 1
+    def test_games_of_other_competitions_feed_the_teams_not_the_league(self, world):
+        built = build_round_packages_from_db(Handler(world), SEGUNDA, [self.match(OWN, "555")], season="2026")
+        assert built[0]["package"].baselines["sample_games"]["league"] == 2
+
+
+class TestLeagueOfAPhase:
+    """Issue #464: a knockout tie has 1 game in its own collection (the 1/16 of the Copa has 16): the league baselines of a phase come from the whole competition."""
+
+    def test_the_other_phases_of_the_competition_are_league_sources_of_a_knockout(self, world):
+        sources = dict(source_collections(Handler(world), COPA, [OWN, RIVAL]))
+        assert sources[COPA] is True and sources[GROUP] is True
+        assert sources[SEGUNDA] is False and sources[PRIMERA] is False      # other competitions: their games feed the teams, not the league
+
+    def test_a_phase_without_games_of_the_teams_still_gives_its_league(self, world):
+        world[GROUP] = [world[GROUP][0]]
+        other = "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_B"
+        world[other] = [game(world[GROUP][0], "801", "802", 90)]
+        assert dict(source_collections(Handler(world), COPA, [OWN, RIVAL]))[other] is True
+
+    def test_the_league_of_a_knockout_counts_the_group_stage(self, world):
+        package = build_package_from_db(Handler(world), COPA, OWN, RIVAL, "2026")
+        assert package.baselines["sample_games"]["league"] == 3       # the tie + the two games of the group stage
+        assert package.baselines["sample_games"]["own"] == 3          # all the games of the team, as before
+
+    def test_the_group_stage_is_a_league_for_its_own_package_too_regression(self, world):
+        """The groups of a cup are one pool of teams: from a group, the other phases of the cup do not become league (only a knockout pools them)."""
+        sources = dict(source_collections(Handler(world), GROUP, [OWN, RIVAL]))
+        assert sources[GROUP] is True and sources[COPA] is False
+
+    def test_the_two_groups_of_a_regular_league_stay_two_leagues(self, world):
+        other = "SEGUNDA_FEB_2026_2027_Liga_Regular_B"
+        world[other] = [game(world[SEGUNDA][0], OWN, "888", 91)]
+        assert dict(source_collections(Handler(world), SEGUNDA, [OWN, RIVAL]))[other] is False
+
+    def test_the_playoffs_of_a_regular_league_pool_its_groups(self, world):
+        playoffs = "SEGUNDA_FEB_2026_2027_Eliminatorias_de_Ascenso"
+        world[playoffs] = [game(world[SEGUNDA][0], OWN, "999", 92)]
+        sources = dict(source_collections(Handler(world), playoffs, [OWN, "999"]))
+        assert sources[playoffs] is True and sources[SEGUNDA] is True
+
+    def test_a_database_that_fails_reading_the_phase_keeps_the_own_collection(self):
+        handler = MagicMock()
+        handler.repository.connection.get_database.return_value.list_collection_names.side_effect = RuntimeError("down")
+        assert source_collections(handler, COPA, [OWN]) == [(COPA, True)]
