@@ -174,6 +174,7 @@ describe('finished matches (issue #407)', () => {
     const saved = (await finishedStore.load('2524475')) as FinishedMatch
     expect(saved.plaintext).toBe(PKG)
     expect(saved.title).toBe('EQUIPO PROPIO – EQUIPO RIVAL')
+    expect(saved.competition).toBe('c')                    // the competition of the package, for the filters (#497)
     expect(Object.keys(JSON.parse(saved.game))).toEqual(expect.arrayContaining(['HEADER', 'PLAYBYPLAY', 'SHOTCHART']))
     await inPartidos()
     expect(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i })).toBeTruthy()

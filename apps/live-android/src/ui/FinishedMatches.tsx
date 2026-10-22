@@ -1,4 +1,5 @@
 import type { FinishedMatch } from '../feed/finishedStore'
+import { useMatchFilters } from './MatchFilters'
 
 /** The live matches that ended and were kept on the device (issue #407): each one can be reviewed again. */
 interface Props {
@@ -14,14 +15,20 @@ interface Props {
 
 const date = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
+/** «Local – Visitante»: the teams of the title (the saved match has no other record of them). */
+const teamsOf = (title: string) => title.split(' – ').map(t => t.trim()).filter(Boolean)
+
 export default function FinishedMatches({ matches, disabled, onReview, onReport, reporting, error }: Props) {
+  const { shown, controls } = useMatchFilters(matches, m => ({ competition: m.competition, teams: teamsOf(m.title) }), 'Filtrar partidos finalizados')
   if (matches.length === 0) return null
   return (
     <section className="panel finished-matches" aria-label="Partidos finalizados">
       <h2>Partidos finalizados</h2>
       <p className="detail">Guardados en este dispositivo al terminar el partido, para revisarlos cuando quieras.</p>
+      {matches.length > 1 && controls}
+      {shown.length === 0 && <p className="detail">Ningún partido finalizado coincide con los filtros.</p>}
       <ul className="remote-packages">
-        {matches.map(m => (
+        {shown.map(m => (
           <li key={m.code}>
             <span>{m.title} <span className="detail">· {date(m.savedAt)}</span></span>
             <span className="round-sides">
