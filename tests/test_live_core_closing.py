@@ -474,3 +474,14 @@ def test_the_reminder_follows_the_overtime_too():
 def test_the_interval_is_in_the_configuration():
     eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT, config=RuleConfig(closing_ft_every_s=30))
     assert len(reminders(eng, finish(remaining=235), finish(remaining=200))) == 2
+
+
+def test_g1_says_why_when_the_recent_pace_decided_it_regression():
+    """#488: the pace advice of the finish names the result of the pace of the last minutes (who it favoured), not only the score."""
+    from src.live_core.rules_closing import pace_rule
+
+    lever = {"id": "pace", "direction": "down", "gain": 0.06, "gain_pts": 1.0,
+             "reason": {"kind": "harm", "faster": True, "change": 9.0, "net": -9}}
+    [alert] = pace_rule(_late(margin=-4), _pace_ctx([lever]))
+    assert "bajar el ritmo para salir del ritmo que nos perjudica (el ritmo subió (+9) y nos perjudicó (-9 en los últimos minutos))" in alert.message
+    assert alert.evidence["reason"]["kind"] == "harm" and alert.proposal[0]["message"].startswith("Bajar el ritmo")

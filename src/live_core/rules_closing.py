@@ -27,6 +27,7 @@ from .advice_types import Advice, RuleContext
 from .clock import game_seconds_left
 from .game_context import game_phase
 from .proposals import tactic_proposal, timeout_proposal
+from .rules_winflip import pace_reason_text
 from .timeouts import timeouts_left
 
 LAST_PERIOD = 4
@@ -177,12 +178,16 @@ def pace_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     direction, margin = lever["direction"], score[ctx.own_team_id] - score[ctx.rival_team_id]
     verb = "subir" if direction == "up" else "bajar"
     goal = "forzar la remontada" if direction == "up" else "evitar el vuelco"
+    why = pace_reason_text(lever)       # when the pace of the last minutes decided it (#488): who it favoured
+    if why:
+        goal = ("seguir con el ritmo que nos favorece" if lever["reason"]["kind"] == "benefit" else "salir del ritmo que nos perjudica") + f" ({why})"
     return [Advice(
         key=f"pace:{direction}:{snap['period']}", id="pace_control", severity="info", category="gestion",
         message=(f"Quedan unas {current['poss_remaining']:.0f} posesiones por equipo con el marcador {margin:+d} (proyección "
                  f"{current['projected_margin']:+.0f}): {verb} el ritmo para {goal} (+{lever['gain'] * 100:.0f} % de victoria, experimental)."),
         evidence={"direction": direction, "margin": margin, "poss_remaining": current["poss_remaining"], "p": current["p"],
-                  "projected_margin": current["projected_margin"], "gain": lever["gain"], "gain_pts": lever["gain_pts"]},
+                  "projected_margin": current["projected_margin"], "gain": lever["gain"], "gain_pts": lever["gain_pts"],
+                  **({"reason": lever["reason"]} if lever.get("reason") else {})},
         proposal=[tactic_proposal(f"{verb.capitalize()} el ritmo: " + ("correr más, transición rápida" if direction == "up"
                                                                          else "atacar más tiempo y cuidar cada posesión"))])]
 

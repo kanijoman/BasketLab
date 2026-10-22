@@ -279,10 +279,12 @@ class RuleConfig:
     wp_home_adv: float = 4.0
     # Levers (#256): how much faster or slower the pace is tried, and the smallest probability gain worth listing.
     wp_pace_change: float = 0.10
-    # The pace lever is not advised against the pace the game already has (#488): the last ``wp_pace_recent_s`` seconds against the game before them;
-    # asking to raise a pace that has just risen (or to lower one that has just fallen) by at least this many possessions per 40 min contradicts the cause.
+    # Who the recent pace favoured decides the pace advice (#488): the last ``wp_pace_recent_s`` seconds against the game before them; a change of at least
+    # ``wp_pace_recent_delta`` possessions per 40 min with a net result of at least ``wp_pace_recent_min_net`` points keeps the regime that favoured us
+    # (and leaves the one that did not); without that evidence the lever is the score one (behind: raise, ahead: lower).
     wp_pace_recent_s: int = 300
     wp_pace_recent_delta: float = 4.0
+    wp_pace_recent_min_net: int = 3
     wp_lever_min_gain: float = 0.01
     # Flip alert (#258): the probability of winning falls this much (0-1) within this many game-seconds. Provisional: to confirm with the
     # staff, and the probability itself is experimental in the app (#257).

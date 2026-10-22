@@ -89,8 +89,20 @@ def test_a_slower_quarter_that_we_lost_asks_for_a_faster_one():
     assert "pace" in alert.evidence["keys"] and alert.proposal[0]["message"].startswith("Subir el ritmo")
 
 
-def test_a_change_of_pace_that_does_not_match_the_result_is_data_not_a_key():
+def test_a_faster_quarter_that_we_lost_asks_to_lower_the_pace_not_to_raise_it_regression():
+    """#488 (Copa, end of Q3): the quarter was faster than the game before and we lost it: the pace hurt us, so the advice is the opposite one."""
     alert = summary(3, flat(both(1, 15), both(2, 15), both(3, 20), scored(RIVAL, 1250, 3)))      # faster, and lost
+    assert "pace" in alert.evidence["keys"] and "Ritmo más alto que antes" in alert.message and "perdió" in alert.message
+    assert alert.proposal[0]["message"].startswith("Bajar el ritmo") and not any(p["message"].startswith("Subir el ritmo") for p in alert.proposal)
+
+
+def test_a_slower_quarter_that_we_won_asks_to_keep_the_pace_low():
+    alert = summary(3, flat(both(1, 20), both(2, 20), both(3, 14), scored(OWN, 1250, 3)))
+    assert "pace" in alert.evidence["keys"] and alert.proposal[0]["message"].startswith("Mantener el ritmo bajo")
+
+
+def test_a_change_of_pace_with_a_tied_quarter_is_data_not_a_key():
+    alert = summary(3, flat(both(1, 15), both(2, 15), both(3, 20)))
     assert "pace" not in alert.evidence["keys"] and "Ritmo: 80 posesiones por 40 min" in alert.message
     assert not any("ritmo" in p["message"].lower() for p in alert.proposal)
 

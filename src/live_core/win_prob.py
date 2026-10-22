@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 from .config import RuleConfig
 from .four_factors import WEIGHTS, points_per_unit
 from .summary_pace import window_pace
+from .windows import window_stats
 
 GAME_SECONDS = 2400
 DEFAULT_PACE_PER_40 = 70.0   # possessions per 40 min when the package has no pace
@@ -92,26 +93,41 @@ class WinProbabilityModel:
             if shortfall > 0:
                 pts = per_unit[factor] * shortfall * left / 100
                 rows.append({"id": factor, "gain": self._p(margin, mean + pts, sd) - base, "gain_pts": pts})
-        c = self._cfg.wp_pace_change
-        if mean != 0 and not self._pace_already_moved(snap, up=mean < 0):
-            up = mean < 0
-            factor = 1 + c if up else 1 - c
-            pace_mean = margin + mu * left * factor / 100
-            rows.append({"id": "pace", "direction": "up" if up else "down", "gain": self._p(margin, pace_mean, sd * math.sqrt(factor)) - base,
-                         "gain_pts": pace_mean - mean})
+        pace = self._pace_row(snap, margin, mean, mu, left, sd, base)
+        if pace:
+            rows.append(pace)
         rows = [r for r in rows if r["gain"] >= self._cfg.wp_lever_min_gain]
         return [{**r, "gain": round(r["gain"], 4), "gain_pts": round(r["gain_pts"], 2)} for r in sorted(rows, key=lambda r: -r["gain"])]
 
-    def _pace_already_moved(self, snap: Dict[str, Any], up: bool) -> bool:
-        """Has the pace of the last minutes already gone the way the lever would ask (up when behind, down when ahead)? Then the lever is not offered (#488)."""
+    def _recent_pace(self, snap: Dict[str, Any]) -> Optional[Dict[str, float]]:
+        """How the pace of the last minutes changed against the game before and what the result of those minutes was (None without enough play)."""
         now, window = int(snap.get("elapsed") or 0), self._cfg.wp_pace_recent_s
         log = snap.get("log") or []
         recent = window_pace(log, self._own, self._rival, now - window, now)
         before = window_pace(log, self._own, self._rival, 0, now - window) if now > window else None
         if recent is None or before is None:
-            return False
-        change = recent - before
-        return change >= self._cfg.wp_pace_recent_delta if up else change <= -self._cfg.wp_pace_recent_delta
+            return None
+        mine, theirs = window_stats(log, self._own, now - window, now), window_stats(log, self._rival, now - window, now)
+        return {"change": recent - before, "net": mine["pts"] - theirs["pts"], "poss": recent * window / GAME_SECONDS}
+
+    def _pace_row(self, snap: Dict[str, Any], margin: float, mean: float, mu: float, left: float, sd: float, base: float) -> Optional[Dict[str, Any]]:
+        """The pace lever (#401, #488). If the pace changed in the last minutes with a result, competitive advantage decides: keep (or push) the regime that
+        favoured us, leave the one that hurt us. Otherwise the score decides: who is behind gains from more possessions, who is ahead from fewer."""
+        cfg = self._cfg
+        recent = self._recent_pace(snap)
+        if recent and abs(recent["change"]) >= cfg.wp_pace_recent_delta and abs(recent["net"]) >= cfg.wp_pace_recent_min_net:
+            faster, benefited = recent["change"] > 0, recent["net"] > 0
+            up = faster == benefited                      # fast and good, or slow and bad: more pace; fast and bad, or slow and good: less
+            local_mu = abs(recent["net"]) / max(recent["poss"], 1.0) * 100        # points per 100 possessions that this regime gave or took
+            gain_pts = local_mu * left * cfg.wp_pace_change / 100
+            return {"id": "pace", "direction": "up" if up else "down", "gain": self._p(margin, mean + gain_pts, sd) - base, "gain_pts": gain_pts,
+                    "reason": {"kind": "benefit" if benefited else "harm", "faster": faster, "change": round(recent["change"], 1), "net": recent["net"]}}
+        if mean == 0:
+            return None
+        up = mean < 0
+        factor = 1 + cfg.wp_pace_change if up else 1 - cfg.wp_pace_change
+        pace_mean = margin + mu * left * factor / 100
+        return {"id": "pace", "direction": "up" if up else "down", "gain": self._p(margin, pace_mean, sd * math.sqrt(factor)) - base, "gain_pts": pace_mean - mean}
 
     def lever_gains(self, snap: Dict[str, Any], four_factors: Optional[Dict[str, Any]]) -> Dict[str, float]:
         """Lever id -> probability gain, for the alerts' evidence."""
