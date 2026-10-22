@@ -52,20 +52,56 @@ describe('RoundPackages: filters (issue #440)', () => {
     expect(screen.queryByLabelText('Grupo')).not.toBeNull()
   })
 
-  it('filters by the text of a team, ignoring case and accents', () => {
+  it('has no free text box any more: the team is chosen from a list (issue #474)', () => {
+    show()
+    expect(screen.queryByLabelText('Buscar equipo')).toBeNull()
+    expect(screen.queryByLabelText('Equipo')).toBeNull()          // not before a competition is chosen
+  })
+
+  it('once a competition is chosen the team selector lists its teams, and choosing one keeps its matches', () => {
     const { container } = show()
-    fireEvent.change(screen.getByLabelText('Buscar equipo'), { target: { value: 'llíria' } })
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    const team = screen.getByLabelText('Equipo') as HTMLSelectElement
+    expect(Array.from(team.options).map(o => o.textContent)).toEqual(['Todos', 'GETAFE', 'LEONESA', 'LLIRIA', 'PRAT', 'TOLEDO', 'ZAMORA'])
+    fireEvent.change(team, { target: { value: '1008978' } })
     expect(headings(container)).toEqual(['SEGUNDA FEB · Liga Regular "B" · jornada 4'])
     expect(container.querySelectorAll('li.round-match')).toHaveLength(1)
   })
 
-  it('says so when nothing matches, and the filters can be cleared', () => {
+  it('changing the group or the competition brings the team back to «Todos» if it is not there', () => {
     show()
-    fireEvent.change(screen.getByLabelText('Buscar equipo'), { target: { value: 'zzz' } })
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    fireEvent.change(screen.getByLabelText('Equipo'), { target: { value: '1008978' } })
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'TERCERA FEB' } })
+    expect((screen.getByLabelText('Equipo') as HTMLSelectElement).value).toBe('')
+  })
+
+  it('a remembered team that is not published any more does not hide everything', () => {
+    localStorage.setItem('basketlab-live-filters', JSON.stringify({ league: '', competition: 'SEGUNDA FEB', group: '', team: 'ya no está', onlyFavorites: false }))
+    const { container } = show()
+    expect(headings(container)).toHaveLength(2)
+  })
+
+  it('the league selector appears only when there are FEB and FBCYL matches, and filters by it', () => {
+    show()
+    expect(screen.queryByLabelText('Liga')).toBeNull()
+    cleanup()
+    const fbcyl = round('FBCYL_1_FASE-GRUPO_A-1_2026_', [match('77', ['39609', 'UNILEON'], ['40083', 'HIJOLUSA'])])
+    const { container } = show([...ROUNDS, fbcyl])
+    fireEvent.change(screen.getByLabelText('Liga'), { target: { value: 'FBCYL' } })
+    expect(headings(container)).toEqual(['FBCYL 1 FASE-GRUPO A-1 2026 · jornada 4'])
+    expect(Array.from((screen.getByLabelText('Competición') as HTMLSelectElement).options).map(o => o.textContent)).toEqual(['Todas', 'FBCYL 1 FASE-GRUPO A-1 2026'])
+  })
+
+  it('says so when nothing matches, and the filters can be cleared', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1010490', name: 'RDL' }]))       // a team of interest of another competition
+    show()
+    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    fireEvent.click(screen.getByRole('checkbox', { name: /de interés/i }))
     expect(screen.getByText(/ningún partido coincide/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /quitar filtros/i }))
     expect(screen.queryByText(/ningún partido coincide/i)).toBeNull()
-    expect((screen.getByLabelText('Buscar equipo') as HTMLInputElement).value).toBe('')
+    expect((screen.getByRole('checkbox', { name: /de interés/i }) as HTMLInputElement).checked).toBe(false)
   })
 
   it('remembers the filters on the device', () => {
@@ -78,7 +114,7 @@ describe('RoundPackages: filters (issue #440)', () => {
   })
 
   it('a remembered competition that is not published any more does not hide everything', () => {
-    localStorage.setItem('basketlab-live-filters', JSON.stringify({ competition: 'COMPETICIÓN QUE YA NO ESTÁ', group: '', text: '', onlyFavorites: false }))
+    localStorage.setItem('basketlab-live-filters', JSON.stringify({ league: '', competition: 'COMPETICIÓN QUE YA NO ESTÁ', group: '', team: '', onlyFavorites: false }))
     const { container } = show()
     expect(headings(container)).toHaveLength(3)
   })

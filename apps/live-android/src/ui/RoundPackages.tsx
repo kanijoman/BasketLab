@@ -37,12 +37,18 @@ function Star({ team, favorites, onToggle }: { team: { id: string; name: string 
 export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded }: Props) {
   const [favorites, setFavorites] = useState<Favorite[]>(() => loadFavorites())
   const [chosen, setChosen] = useState<RoundFilters>(() => loadFilters())
-  const { competitions, groups: allGroups } = optionsOf(rounds, chosen.competition)
-  // a remembered competition or group that is not published any more must not hide everything
-  const competition = competitions.includes(chosen.competition) ? chosen.competition : ''
-  const groups = competition ? allGroups : []
-  const filters: RoundFilters = { ...chosen, competition, group: groups.includes(chosen.group) ? chosen.group : '' }
-  const shown = useMemo(() => filterRounds(orderRounds(rounds, favorites), filters, favorites), [rounds, favorites, filters.competition, filters.group, filters.text, filters.onlyFavorites]) // eslint-disable-line react-hooks/exhaustive-deps
+  // a remembered league, competition, group or team that is not published any more must not hide everything: each one is checked against what is on offer
+  const checked = (f: RoundFilters): RoundFilters => {
+    const leagues = optionsOf(rounds, { ...NO_FILTERS }).leagues
+    const league = leagues.includes(f.league) ? f.league : ''
+    const competition = optionsOf(rounds, { ...NO_FILTERS, league }).competitions.includes(f.competition) ? f.competition : ''
+    const group = optionsOf(rounds, { ...NO_FILTERS, league, competition }).groups.includes(f.group) ? f.group : ''
+    const team = optionsOf(rounds, { ...NO_FILTERS, league, competition, group }).teams.some(t => t.id === f.team) ? f.team : ''
+    return { ...f, league, competition, group, team }
+  }
+  const filters = checked(chosen)
+  const { leagues, competitions, groups, teams } = optionsOf(rounds, filters)
+  const shown = useMemo(() => filterRounds(orderRounds(rounds, favorites), filters, favorites), [rounds, favorites, filters.league, filters.competition, filters.group, filters.team, filters.onlyFavorites]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (rounds.length === 0) return null
 
@@ -62,9 +68,18 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
       <h2>Jornadas completas</h2>
       <p className="detail">Cualquier partido de la jornada, para seguirlo en directo. Primero tus equipos de interés (☆) y el partido de tu club.</p>
       <div className="round-filters" role="group" aria-label="Filtrar partidos">
+        {leagues.length > 0 && (
+          <label>
+            Liga
+            <select value={filters.league} onChange={e => change({ league: e.target.value, competition: '', group: '', team: '' })}>
+              <option value="">Todas</option>
+              {leagues.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </label>
+        )}
         <label>
           Competición
-          <select value={filters.competition} onChange={e => change({ competition: e.target.value, group: '' })}>
+          <select value={filters.competition} onChange={e => change({ competition: e.target.value, group: '', team: '' })}>
             <option value="">Todas</option>
             {competitions.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -72,16 +87,21 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
         {groups.length > 0 && (
           <label>
             Grupo
-            <select value={filters.group} onChange={e => change({ group: e.target.value })}>
+            <select value={filters.group} onChange={e => change({ group: e.target.value, team: '' })}>
               <option value="">Todos</option>
               {groups.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </label>
         )}
-        <label>
-          Buscar equipo
-          <input value={filters.text} onChange={e => change({ text: e.target.value })} autoComplete="off" autoCapitalize="off" spellCheck={false} />
-        </label>
+        {filters.competition && teams.length > 0 && (
+          <label>
+            Equipo
+            <select value={filters.team} onChange={e => change({ team: e.target.value })}>
+              <option value="">Todos</option>
+              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </label>
+        )}
         <label className="round-filter-check">
           <input type="checkbox" checked={filters.onlyFavorites} onChange={e => change({ onlyFavorites: e.target.checked })} />
           Solo de interés

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { orderRounds, type RoundIndexEntry, type RoundMatch } from './remote'
-import { NO_FILTERS, competitionOf, filterRounds, loadFilters, optionsOf, saveFilters } from './filters'
+import { NO_FILTERS, competitionOf, filterRounds, leagueOf, loadFilters, optionsOf, saveFilters } from './filters'
 
 const side = (id: string, name: string) => ({ id, name })
 const match = (code: string, home: [string, string], away: [string, string], start = '2026-10-17T17:00', isClub = false): RoundMatch =>
@@ -39,13 +39,29 @@ describe('filterRounds (issue #440)', () => {
     expect(codes(filterRounds(ALL, { ...NO_FILTERS, competition: 'SEGUNDA FEB', group: 'Liga Regular "B"' }, []))).toEqual(['3'])
   })
 
-  it('by text in the name of a team, ignoring case and accents', () => {
-    expect(codes(filterRounds(ALL, { ...NO_FILTERS, text: 'lliria' }, []))).toEqual(['3'])
-    expect(codes(filterRounds(ALL, { ...NO_FILTERS, text: ' zamora ' }, []))).toEqual(['1', '5'])
+  it('by team once a competition is chosen (a list, not a free text, issue #474)', () => {
+    const only = (team: string) => codes(filterRounds(ALL, { ...NO_FILTERS, competition: 'SEGUNDA FEB', team }, []))
+    expect(only('1008857')).toEqual(['1'])
+    expect(only('5')).toEqual(['3'])
+    expect(only('3')).toEqual(['2'])
   })
 
-  it('by text in the competition too', () => {
-    expect(codes(filterRounds(ALL, { ...NO_FILTERS, text: 'tercera' }, []))).toEqual(['4'])
+  it('a team of a competition that is not the chosen one gives nothing', () => {
+    expect(codes(filterRounds(ALL, { ...NO_FILTERS, competition: 'TERCERA FEB', team: '1008857' }, []))).toEqual([])
+  })
+
+  it('a team that is not in the published rounds does not hide everything: the filter is ignored by the screen, not here', () => {
+    expect(filterRounds(ALL, { ...NO_FILTERS, team: 'nobody' }, [])).toEqual([])
+  })
+
+  it('by league: FEB or FBCYL, from the competition data or from the name of the collection', () => {
+    const fbcyl = round('FBCYL_1_FASE-GRUPO_A-1_2026_', [match('77', ['39609', 'UNILEON'], ['40083', 'HIJOLUSA'])])
+    const mixed = [...ALL, fbcyl]
+    expect(leagueOf(fbcyl)).toBe('FBCYL')
+    expect(leagueOf(SEGUNDA_A)).toBe('FEB')
+    expect(codes(filterRounds(mixed, { ...NO_FILTERS, league: 'FBCYL' }, []))).toEqual(['77'])
+    expect(codes(filterRounds(mixed, { ...NO_FILTERS, league: 'FEB' }, []))).toEqual(['1', '2', '3', '4', '5'])
+    expect(leagueOf({ ...SEGUNDA_A, competition: { ...info('X', 'A'), league: 'FBCYL' } })).toBe('FBCYL')       // what the publisher says wins
   })
 
   it('only the matches of teams of interest; the rounds left empty disappear', () => {
@@ -64,22 +80,37 @@ describe('filterRounds (issue #440)', () => {
   })
 
   it('the filters combine', () => {
-    expect(codes(filterRounds(ALL, { competition: 'SEGUNDA FEB', group: '', text: 'zamora', onlyFavorites: false }, []))).toEqual(['1'])
+    expect(codes(filterRounds(ALL, { league: '', competition: 'SEGUNDA FEB', group: '', team: '2', onlyFavorites: false }, []))).toEqual(['1'])
   })
 
   it('does not change what it is given', () => {
     const before = JSON.stringify(ALL)
-    filterRounds(ALL, { ...NO_FILTERS, text: 'zamora' }, [])
+    filterRounds(ALL, { ...NO_FILTERS, competition: 'SEGUNDA FEB', team: '2' }, [])
     expect(JSON.stringify(ALL)).toBe(before)
   })
 })
 
 describe('options of the filters', () => {
   it('lists the competitions, and the groups of the chosen one (or none while it is not chosen)', () => {
-    expect(optionsOf(ALL, '').competitions).toEqual(['LF CHALLENGE 2026 Liga Regular Único', 'SEGUNDA FEB', 'TERCERA FEB'])
-    expect(optionsOf(ALL, 'SEGUNDA FEB').groups).toEqual(['Liga Regular "A"', 'Liga Regular "B"'])
-    expect(optionsOf(ALL, '').groups).toEqual([])
-    expect(optionsOf(ALL, 'LF CHALLENGE 2026 Liga Regular Único').groups).toEqual([])
+    expect(optionsOf(ALL, NO_FILTERS).competitions).toEqual(['LF CHALLENGE 2026 Liga Regular Único', 'SEGUNDA FEB', 'TERCERA FEB'])
+    expect(optionsOf(ALL, { ...NO_FILTERS, competition: 'SEGUNDA FEB' }).groups).toEqual(['Liga Regular "A"', 'Liga Regular "B"'])
+    expect(optionsOf(ALL, NO_FILTERS).groups).toEqual([])
+    expect(optionsOf(ALL, { ...NO_FILTERS, competition: 'LF CHALLENGE 2026 Liga Regular Único' }).groups).toEqual([])
+  })
+
+  it('lists the teams of the chosen competition and group, by name, once; none while no competition is chosen (issue #474)', () => {
+    expect(optionsOf(ALL, NO_FILTERS).teams).toEqual([])
+    const teams = (f: Partial<typeof NO_FILTERS>) => optionsOf(ALL, { ...NO_FILTERS, ...f }).teams.map(t => t.name)
+    expect(teams({ competition: 'SEGUNDA FEB' })).toEqual(['CULTURAL Y DEPORTIVA LEONESA', 'GETAFE', 'LLÍRIA', 'PRAT', 'TOLEDO', 'ZAMORA'])
+    expect(teams({ competition: 'SEGUNDA FEB', group: 'Liga Regular "B"' })).toEqual(['LLÍRIA', 'PRAT'])
+    expect(optionsOf(ALL, { ...NO_FILTERS, competition: 'SEGUNDA FEB' }).teams[0]).toEqual({ id: '1008857', name: 'CULTURAL Y DEPORTIVA LEONESA' })
+  })
+
+  it('the leagues appear only when there is more than one', () => {
+    expect(optionsOf(ALL, NO_FILTERS).leagues).toEqual([])
+    const fbcyl = round('FBCYL_1_FASE-GRUPO_A-1_2026_', [match('77', ['39609', 'UNILEON'], ['40083', 'HIJOLUSA'])])
+    expect(optionsOf([...ALL, fbcyl], NO_FILTERS).leagues).toEqual(['FBCYL', 'FEB'])
+    expect(optionsOf([...ALL, fbcyl], { ...NO_FILTERS, league: 'FBCYL' }).competitions).toEqual(['FBCYL 1 FASE-GRUPO A-1 2026'])
   })
 })
 
@@ -91,8 +122,8 @@ describe('the chosen filters are remembered on the device', () => {
 
   it('saves and loads them', () => {
     const s = memory()
-    saveFilters({ competition: 'SEGUNDA FEB', group: '', text: 'leo', onlyFavorites: true }, s)
-    expect(loadFilters(s)).toEqual({ competition: 'SEGUNDA FEB', group: '', text: 'leo', onlyFavorites: true })
+    saveFilters({ league: 'FEB', competition: 'SEGUNDA FEB', group: '', team: '1008857', onlyFavorites: true }, s)
+    expect(loadFilters(s)).toEqual({ league: 'FEB', competition: 'SEGUNDA FEB', group: '', team: '1008857', onlyFavorites: true })
   })
 
   it('nothing saved, corrupted or half-written storage gives no filter', () => {
@@ -100,8 +131,8 @@ describe('the chosen filters are remembered on the device', () => {
     expect(loadFilters(s)).toEqual(NO_FILTERS)
     s.setItem('basketlab-live-filters', 'no json')
     expect(loadFilters(s)).toEqual(NO_FILTERS)
-    s.setItem('basketlab-live-filters', JSON.stringify({ competition: 3, onlyFavorites: 'yes', text: 'x' }))
-    expect(loadFilters(s)).toEqual({ ...NO_FILTERS, text: 'x' })
+    s.setItem('basketlab-live-filters', JSON.stringify({ competition: 3, onlyFavorites: 'yes', team: 'x', text: 'an old free text' }))
+    expect(loadFilters(s)).toEqual({ ...NO_FILTERS, team: 'x' })
   })
 })
 
