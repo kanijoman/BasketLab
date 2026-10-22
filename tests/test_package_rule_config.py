@@ -120,3 +120,49 @@ class TestPublisher:
         publish_round_bundles(object(), tmp_path, PASSWORD, ["COL"], OWN, service=_round_service({"COL": _round(4, (OWN, R1))}), build=build,
                               competitions={"COL": self.INFO})
         assert seen == [RULES]
+
+
+class TestRulesByPhase:
+    """The formation rule depends on the PHASE of a competition (issue #481): Copa de España applies 2ª FEB's criterion (at least 2 players of
+    formación on court) in the group stage and 1ª FEB's (no limit) in the knockout phases; Primera FEB has no limit either."""
+
+    CATALOG = [{"competition": "COPA ESPAÑA", "rule_config": {"formation_min_on_court": 0},
+                "group_rules": [{"group": "FASE DE GRUPOS", "rule_config": {"formation_min_on_court": 2}}]}]
+
+    def info(self, group):
+        from tests.test_publisher_competitions import _db
+
+        meta = {"_id": "C", "competition_label": "COPA ESPAÑA", "season_label": "2026/2027", "group_label": group}
+        return competition_infos(_db(meta), ["C"], normalize_catalog(self.CATALOG), ["1"])["C"]
+
+    def test_a_group_that_matches_takes_its_own_rules_over_the_competition_ones(self):
+        assert self.info('FASE DE GRUPOS "A"')["rule_config"] == {"formation_min_on_court": 2}
+
+    def test_the_other_groups_keep_the_rules_of_the_competition(self):
+        assert self.info("Play-offs 1/16 Final")["rule_config"] == {"formation_min_on_court": 0}
+        assert self.info("Play-offs 1/8 Final")["rule_config"] == {"formation_min_on_court": 0}     # a round that is not drawn yet
+
+    def test_the_group_is_matched_ignoring_case_and_accents(self):
+        assert self.info("fase de grupos B")["rule_config"] == {"formation_min_on_court": 2}
+
+    def test_the_rules_of_a_group_add_to_the_ones_of_the_competition(self):
+        catalog = normalize_catalog([{"competition": "X", "rule_config": {"rules_off": ["fatigue_high"]},
+                                      "group_rules": [{"group": "A", "rule_config": {"formation_min_on_court": 0}}]}])
+        from tests.test_publisher_competitions import _db
+
+        meta = {"_id": "C", "competition_label": "X", "group_label": "A"}
+        assert competition_infos(_db(meta), ["C"], catalog, ["1"])["C"]["rule_config"] == {"rules_off": ["fatigue_high"], "formation_min_on_court": 0}
+
+    @pytest.mark.parametrize("bad", [{"group": "", "rule_config": {}}, {"rule_config": {}}, {"group": "A", "rule_config": {"no_such_field": 1}},
+                                     {"group": "A"}, "A"])
+    def test_a_wrong_group_rule_is_rejected_when_the_config_is_read(self, bad):
+        with pytest.raises(ValueError, match="group_rules"):
+            normalize_catalog([{"competition": "X", "group_rules": [bad]}])
+
+    def test_the_repository_applies_the_phase_criteria_of_the_copa_and_of_primera_feb(self):
+        catalog = {c["competition"]: c for c in load_config()["competitions"]}
+        copa = catalog["COPA ESPAÑA"]
+        assert copa["rule_config"].get("formation_min_on_court") == 0
+        assert [(g["group"], g["rule_config"]["formation_min_on_court"]) for g in copa["group_rules"]] == [("FASE DE GRUPOS", 2)]
+        assert catalog["PRIMERA FEB"]["rule_config"]["formation_min_on_court"] == 0
+        assert "formation_min_on_court" not in catalog["SEGUNDA FEB"].get("rule_config", {})      # 2ª FEB: the default, 2

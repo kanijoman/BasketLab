@@ -26,7 +26,10 @@
   {
    "competition": "PRIMERA FEB",
    "level": 2,
-   "gender": "M"
+   "gender": "M",
+   "rule_config": {
+    "formation_min_on_court": 0
+   }
   },
   {
    "competition": "SEGUNDA FEB",
@@ -56,6 +59,17 @@
     "1008857",
     "1008978",
     "1010490"
+   ],
+   "rule_config": {
+    "formation_min_on_court": 0
+   },
+   "group_rules": [
+    {
+     "group": "FASE DE GRUPOS",
+     "rule_config": {
+      "formation_min_on_court": 2
+     }
+    }
    ]
   }
  ]

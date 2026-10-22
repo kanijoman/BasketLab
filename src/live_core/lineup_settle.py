@@ -14,8 +14,9 @@ from __future__ import annotations
 from typing import Any, Dict
 
 # the rules whose alerts name a player or a lineup on court (their ids in ``RULE_IDS``)
-# (not ``formation_lineup``: an illegal lineup must be said during the stoppage, before play goes on with it)
-LINEUP_RULES = frozenset({"fatigue_high", "player_plus_minus", "lineup_net", "rest_starters"})
+# ``formation_lineup`` too (#481): a block of substitutions is several lines written one after the other (a formación player who comes in for a
+# formación player arrives after the non-formación one who comes in for another), so the five are checked at the next play, when the block is complete
+LINEUP_RULES = frozenset({"fatigue_high", "player_plus_minus", "lineup_net", "rest_starters", "formation_lineup"})
 # events after which the substitutions of the stoppage may still be to be written
 STOPPAGE_KINDS = frozenset({"timeout", "foul", "ft", "sub_in", "sub_out", "period_end"})
 
