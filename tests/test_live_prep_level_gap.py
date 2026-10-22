@@ -76,3 +76,36 @@ class TestSeasonFilter:
         assert in_season("COPA_ESPAÑA_2026_2027_Play-offs_1_16_Final", "2026")
         assert not in_season("SEGUNDA_FEB_2025_2026_Liga_Regular_A", "2026")
         assert not in_season("COLLECTION_META", "2026")
+
+
+class TestSeveralSeasons:
+    """Issue #503: one season has too few games between divisions, so the estimate pools several; team ids change every season and must not mix."""
+
+    def world(self, feb_game_doc):
+        import json
+
+        def remap(mapping):
+            text = json.dumps(feb_game_doc)
+            for old, new in mapping.items():
+                text = text.replace(f'"{old}"', f'"{new}"')
+            return json.loads(text)
+
+        a, b = [t["id"] for t in feb_game_doc["HEADER"]["TEAM"]]
+        return [("SEGUNDA", [remap({a: "11", b: "12"}), remap({a: "12", b: "11"})]),
+                ("PRIMERA", [remap({a: "21", b: "22"}), remap({a: "22", b: "21"})]),
+                ("COPA", [remap({a: "21", b: "11"})])]
+
+    def test_the_games_of_every_season_add_up(self, feb_game_doc):
+        from src.live_prep.level_gap import collect_seasons
+        levels = {"SEGUNDA": 3, "PRIMERA": 2}
+        one = collect_seasons({"2025": self.world(feb_game_doc)}, levels.get)
+        two = collect_seasons({"2025": self.world(feb_game_doc), "2024": self.world(feb_game_doc)}, levels.get)
+        assert one["n"] == 1 and two["n"] == 2 and two["seasons"] == {"2025": 1, "2024": 1}
+
+    def test_the_same_ids_in_two_seasons_are_different_teams(self, feb_game_doc):
+        """Team 11 of 2024 plays in a division other than team 11 of 2025: ratings and divisions are kept apart."""
+        from src.live_prep.level_gap import collect_seasons
+        worlds = {"2025": self.world(feb_game_doc), "2024": [("PRIMERA", self.world(feb_game_doc)[0][1]), ("SEGUNDA", self.world(feb_game_doc)[1][1])]}
+        levels = {"SEGUNDA": 3, "PRIMERA": 2}
+        # in 2024 team 11/12 are of the first division and 21/22 of the second: pooling by id alone would give them two divisions
+        assert collect_seasons(worlds, levels.get)["teams"] == 8

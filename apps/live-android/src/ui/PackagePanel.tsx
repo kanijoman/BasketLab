@@ -78,7 +78,7 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
             {' '}{loaded.games.league} de la liga
           </p>
           {loaded.crossDivision && (
-            <p className="detail">Equipos de divisiones distintas: sus estadísticas se midieron contra rivales de distinto nivel, así que el valor previo del partido (y la probabilidad de victoria) es solo aproximado.</p>
+            <p className="detail">Equipos de divisiones distintas: sus estadísticas se midieron contra rivales de distinto nivel. El valor previo se ha corregido con la diferencia entre divisiones (estimada con partidos de Copa), pero la probabilidad de victoria sigue siendo aproximada.</p>
           )}
           <button className="secondary" onClick={() => void remove()}>Quitar paquete</button>
         </div>
