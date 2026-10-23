@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import run_causes, window_stats
+from .windows import run_causes, run_start, window_stats
 
 
 def _clock(seconds: int) -> str:
@@ -42,8 +42,9 @@ def run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if not ctx.rival_team_id or timeout_within(snap, ctx.own_team_id, ctx.config.after_timeout_quiet_s):
         return []
     cfg, now, log = ctx.config, snap["elapsed"], snap.get("log", [])
-    own = window_stats(log, ctx.own_team_id, now - cfg.run_window_s, now)
-    rival = window_stats(log, ctx.rival_team_id, now - cfg.run_window_s, now)
+    start = run_start(snap, cfg.run_window_s)
+    own = window_stats(log, ctx.own_team_id, start, now)
+    rival = window_stats(log, ctx.rival_team_id, start, now)
     level = _run_level(rival["pts"], own["pts"], cfg)
     if level is None:
         return []

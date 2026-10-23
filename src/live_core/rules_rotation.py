@@ -8,7 +8,7 @@ from .advice_types import Advice, RuleContext
 from .config import RuleConfig
 from .game_context import game_phase
 from .rules_players import orb_dominant
-from .windows import player_form, window_stats
+from .windows import player_form, run_start, window_stats
 
 GAME_SECONDS = 2400
 
@@ -85,7 +85,7 @@ def _level(index: float, cfg: RuleConfig, stint: int = 10 ** 6) -> Optional[str]
 def _reason_to_keep(snap: Dict[str, Any], ctx: RuleContext, pid: str) -> Optional[str]:
     """Why a tired player may stay for now: the team is on a run, or he is on a hot streak (else None)."""
     cfg, own, rival, now, log = ctx.config, ctx.own_team_id, ctx.rival_team_id, snap["elapsed"], snap.get("log", [])
-    start = now - cfg.run_window_s
+    start = run_start(snap, cfg.run_window_s)
     net = window_stats(log, own, start, now)["pts"] - (window_stats(log, rival, start, now)["pts"] if rival else 0)
     if net >= cfg.own_run_net:
         return "parcial a favor"

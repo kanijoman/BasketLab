@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from .clock import period_start
 from .config import RuleConfig
 
 _SHOT_KINDS = ("fg2", "fg3", "ft")
@@ -17,6 +18,11 @@ _FIELD_GOALS = ("fg2", "fg3")
 
 def player_of(entry: Sequence[Any]) -> Optional[str]:
     return entry[4] if len(entry) > 4 else None
+
+
+def run_start(snap: Dict[str, Any], length: int) -> int:
+    """Where the window of a run of ``length`` seconds starts: a run does not cross the change of quarter (issue #515: «parcial 1-9» 30 s into a quarter was a 1-7 of the previous one)."""
+    return max(snap["elapsed"] - length, period_start(snap.get("period", 1)))
 
 
 def window_stats(log: Iterable[Sequence[Any]], team_id: str, start: int, end: int) -> Dict[str, Any]:

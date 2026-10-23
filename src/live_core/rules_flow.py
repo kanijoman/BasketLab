@@ -21,7 +21,7 @@ from typing import Any, Dict, List
 from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import field_goal_gap, points_after_turnovers, run_causes, scoring_gap, scores_after_timeouts, window_stats
+from .windows import field_goal_gap, points_after_turnovers, run_causes, run_start, scoring_gap, scores_after_timeouts, window_stats
 
 
 def _clock(seconds: int) -> str:
@@ -78,16 +78,16 @@ def long_run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if not rival:
         return []
     cfg, own, now, log, out = ctx.config, ctx.own_team_id, snap["elapsed"], snap.get("log", []), []
-    long_net = (window_stats(log, own, now - cfg.long_run_window_s, now)["pts"]
-                - window_stats(log, rival, now - cfg.long_run_window_s, now)["pts"])
+    long_start = run_start(snap, cfg.long_run_window_s)
+    long_net = window_stats(log, own, long_start, now)["pts"] - window_stats(log, rival, long_start, now)["pts"]
     if long_net <= -cfg.long_run_net and not _quiet(snap, ctx):
         out.append(Advice(
             key=f"long_run:{episode(snap, own)}", id="long_run", severity="warning", category="gestion",
             message=f"Parcial largo en contra: {long_net} neto en los últimos {cfg.long_run_window_s // 60} min.",
             evidence={"net": long_net, "window_s": cfg.long_run_window_s},
             proposal=[timeout_proposal(timeouts_left(snap, own))]))
-    net = (window_stats(log, own, now - cfg.run_window_s, now)["pts"]
-           - window_stats(log, rival, now - cfg.run_window_s, now)["pts"])
+    start = run_start(snap, cfg.run_window_s)
+    net = window_stats(log, own, start, now)["pts"] - window_stats(log, rival, start, now)["pts"]
     if net >= cfg.own_run_net:
         out.append(Advice(
             key=f"own_run:{episode(snap, rival)}", id="own_run", severity="info", category="gestion",
@@ -102,26 +102,35 @@ def window_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if not rival:
         return []
     cfg, own, now, log, out = ctx.config, ctx.own_team_id, snap["elapsed"], snap.get("log", []), []
-    start, minutes = now - cfg.flow_window_s, cfg.flow_window_s // 60
-    theirs = window_stats(log, rival, start, now)
+    window, minutes = cfg.flow_window_s, cfg.flow_window_s // 60
+    said = ctx.memory.setdefault("flow_said", {})       # alert id -> where its last window ended: the same events are never counted for it twice (issue #517)
+
+    def counted(alert_id: str) -> int:
+        return max(now - window, said.get(alert_id, -1))
+
+    theirs = window_stats(log, rival, counted("rival_orb_window"), now)
     if theirs["orb"] >= cfg.rival_orb_n:
+        said["rival_orb_window"] = now
         out.append(Advice(
             key=f"rival_orb:{episode(snap, own)}", id="rival_orb_window", severity="warning", category="four_factors",
             message=f"El rival lleva {theirs['orb']} rebotes ofensivos en los últimos {minutes} min. Cerrar el rebote y meter un reboteador.",
             evidence={"orb": theirs["orb"], "window_s": cfg.flow_window_s},
             proposal=[tactic_proposal("Cerrar el rebote: bloqueo y balance")]))
-    points = points_after_turnovers(log, own, rival, start, now, cfg.tov_points_horizon_s)
+    points = points_after_turnovers(log, own, rival, counted("points_off_turnovers"), now, cfg.tov_points_horizon_s)
     if points >= cfg.tov_points_n:
+        said["points_off_turnovers"] = now
         out.append(Advice(
             key=f"tov_points:{episode(snap, own)}", id="points_off_turnovers", severity="warning", category="four_factors",
             message=f"El rival ha anotado {points} puntos tras nuestras pérdidas en los últimos {minutes} min. Balance defensivo.",
             evidence={"points": points, "window_s": cfg.flow_window_s},
             proposal=[tactic_proposal("Balance defensivo tras pérdida")]))
-    if theirs["tov"] >= cfg.rival_tov_n:
+    turnovers = window_stats(log, rival, counted("rival_turnovers"), now)["tov"]
+    if turnovers >= cfg.rival_tov_n:
+        said["rival_turnovers"] = now
         out.append(Advice(
             key=f"rival_tov:{episode(snap, rival)}", id="rival_turnovers", severity="info", category="rival",
-            message=f"El rival suma {theirs['tov']} pérdidas en los últimos {minutes} min. Mantener la presión.",
-            evidence={"turnovers": theirs["tov"], "window_s": cfg.flow_window_s, "team_id": rival},
+            message=f"El rival suma {turnovers} pérdidas en los últimos {minutes} min. Mantener la presión.",
+            evidence={"turnovers": turnovers, "window_s": cfg.flow_window_s, "team_id": rival},
             proposal=[tactic_proposal("Mantener la presión defensiva")]))
     return out
 
