@@ -68,10 +68,12 @@
     {
      "alerts": [
       "star_out:1949844:1",
-      "summary:1"
+      "summary:1",
+      "timeout_review:982047:470",
+      "timeout_followup:982047:470"
      ],
      "digests": {
-      "alerts": "ac068fc2d5349136f640f719d4689e708bce6c5ce7a1547daaf7878e097e6f2a",
+      "alerts": "4d048ff3f21151d9dec926a63b9fc72317a6998d38ffb66f245d2e0cfb308ac6",
       "analysis": "6bfd10db16e8f27109ddc74f8f33bfa28a716f617b2b283dd6a600e603dccb6e",
       "snapshot": "3c11c715eb6462ec1befc6d3a22470febd131e8b099faf528ea87d852cf09f81"
      },
@@ -108,10 +110,13 @@
       "bonus:982047:2",
       "lever:ftr:1:1",
       "rival_dependence:1949844:1",
-      "summary:2"
+      "summary:2",
+      "timeout_review:981204:911",
+      "timeout_review:982047:1182",
+      "timeout_review:981204:1195"
      ],
      "digests": {
-      "alerts": "443d35133dfafbba6ea4d32b23c20106d65de24cbb41d4be7185388ca65caed2",
+      "alerts": "45e7122dc66255fdd7b5cd7862a2ca171bd1c5cf6af18f464a74b9151e37159f",
       "analysis": "14e8cd9a9f2c8eb49812bcfa71da0a5a7e676a44a20c26d8f5fa3fa654f9d0b9",
       "snapshot": "e1a7244ad07fcc899d59d26830443f4dc2bf82b4c11f9073dcb3f26d85611b34"
      },
@@ -145,10 +150,11 @@
       "bonus:982047:3",
       "rbonus:981204:3",
       "star_out:1949844:2",
-      "summary:3"
+      "summary:3",
+      "timeout_review:981204:1603"
      ],
      "digests": {
-      "alerts": "b7da514cfe6ee17b1e36e0d2484d6c6a115445d7e292342671e1a40cd1ecf7f5",
+      "alerts": "51d925b3ffd408b369d9611e523e6996810cc1ecafc0f369c24cbc221a9a61cb",
       "analysis": "c9a38ba5452118b12b440c4ada75c4a14cf61ab462b22cf680ddccaebb9b090a",
       "snapshot": "c6ee948a011da5e6b06fef71da918585da971a740c891cda8ea802cca1966891"
      },

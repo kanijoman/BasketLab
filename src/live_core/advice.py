@@ -34,6 +34,7 @@ from .rules_players import own_orb_rule, own_player_rule, rival_player_rule as r
 from .rules_rest import rest_rule
 from .rules_zones import own_zone_rule, paint_rule, rival_defence_rule, rival_player_zone_rule
 from .rules_summary import edges_rule, summary_rule
+from .rules_timeout_review import timeout_followup_rule, timeout_review_rule
 from .rules_timeouts import first_half_timeouts_rule, timeout_budget_rule
 from .rules_winflip import win_flip_rule
 from .rules_streaks import cold_shooting_rule, free_throw_rule, rival_hot_rule
@@ -59,7 +60,7 @@ RULES: List[Tuple[str, Rule]] = [
     ("closing_briefing", closing_rule), ("period_summary", summary_rule), ("advantage_management", advantage_rule),
     ("pace_control", pace_rule), ("lineup_net", lineup_rule), ("player_plus_minus", player_rule),
     ("own_zones", own_zone_rule), ("rival_defence_zones", rival_defence_rule), ("rival_zone_player", rival_player_zone_rule),
-    ("paint_battle", paint_rule), ("after_timeout_scoring", after_timeout_rule),
+    ("paint_battle", paint_rule), ("after_timeout_scoring", after_timeout_rule), ("timeout_review", timeout_review_rule), ("timeout_followup", timeout_followup_rule),
     ("own_orb_player", own_orb_rule), ("static_offense", static_rule),
     ("period_edges", edges_rule), ("comeback_plan", comeback_rule), ("win_flip", win_flip_rule),
 ]

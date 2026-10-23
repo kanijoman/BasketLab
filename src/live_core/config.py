@@ -16,7 +16,7 @@ RULE_IDS: Tuple[str, ...] = (
     "disqualification", "timeout_budget", "first_half_timeouts", "key_fouls_close", "rival_foul_pair",
     "closing_briefing", "period_summary", "advantage_management", "pace_control",
     "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
-    "after_timeout_scoring", "own_orb_player", "static_offense",
+    "after_timeout_scoring", "timeout_review", "timeout_followup", "own_orb_player", "static_offense",
     "period_edges", "comeback_plan", "win_flip",
 )
 # Engine features that can be switched off with ``rules_off`` like a rule but have no alerts of their own.
@@ -199,6 +199,22 @@ class RuleConfig:
     comeback_left_s: int = 600
     comeback_hard: float = 0.5
     comeback_max_need: float = 1.5   # above this many net points per possession the comeback is not a plan: nothing is said
+    # Timeout review (23/10/2026, provisional): the window around a timeout, the net points of a run against the team that called it, the turnovers, drought and fouls that
+    # explain it, how recent a timeout must be to be reviewed and what counts as «it worked».
+    timeout_review_window_s: int = 120
+    timeout_run_net: int = 6
+    timeout_tov_n: int = 3
+    timeout_drought_s: int = 90
+    timeout_foul_pf: int = 4
+    timeout_last_possession_s: int = 45
+    timeout_good_net: int = 4
+    timeout_shots_min: int = 5
+    timeout_efg_good: float = 0.55
+    timeout_efg_bad: float = 0.35
+    timeout_fresh_s: int = 300
+    timeout_followup_min_s: int = 30
+    timeout_followup_net: int = 3
+    timeout_rival_answer_net: int = 4
     # Team fouls: the next foul after this many in a period puts the opponent in the bonus.
     team_foul_bonus: int = 4
     # Scoring run against us: opponent points with no answer inside the window.

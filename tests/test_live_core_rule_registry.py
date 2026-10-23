@@ -22,6 +22,7 @@ from tests.test_live_core_sanctions import player as sa_player, snapshot as sa_e
 from tests.test_live_core_streaks import free_throws, shots
 from tests.test_live_core_rest import TABLE as REST_TABLE, decided as rest_decided
 from tests.test_live_core_rival_zones import zsnap
+from tests.test_live_core_timeout_review import RIVAL_RUN as tr_run, T as tr_t, at as tr_at
 from tests.test_live_core_win_flip import board as wf_board
 
 EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_fouls", "rival_run", "turnover_streak",
@@ -32,7 +33,7 @@ EXPECTED_IDS = ("foul_trouble", "rival_foul_trouble", "formation_lineup", "team_
                 "disqualification", "timeout_budget", "first_half_timeouts", "key_fouls_close", "rival_foul_pair",
                 "closing_briefing", "period_summary", "advantage_management", "pace_control",
                 "lineup_net", "player_plus_minus", "own_zones", "rival_defence_zones", "rival_zone_player", "paint_battle",
-                "after_timeout_scoring", "own_orb_player", "static_offense",
+                "after_timeout_scoring", "timeout_review", "timeout_followup", "own_orb_player", "static_offense",
                 "period_edges", "comeback_plan", "win_flip")
 
 
@@ -129,6 +130,8 @@ SCENARIOS = {
     "paint_battle": (lambda: zr_snap(rival={"restricted_area": zr_cell(9, 7, 22)}), {"paint_battle"}, {}),
     "after_timeout_scoring": (lambda: in_play(snap(elapsed=1500, period=3, log=[[100, RIVAL, "timeout", 1, None], [112, RIVAL, "pts", 2, "p1"], [400, RIVAL, "timeout", 1, None], [420, RIVAL, "pts", 2, "p1"]])),
                               {"rival_scores_after_timeout"}, {}),
+    "timeout_review": (lambda: tr_at(tr_t + 10, tr_run, own_timeouts=[tr_t]), {"timeout_review"}, {}),
+    "timeout_followup": (lambda: tr_at(tr_t + 125, tr_run, own_timeouts=[tr_t]), {"timeout_followup"}, {}),
     "own_orb_player": (lambda: j8_snap(4), {"own_orb_player"}, {}),
     "static_offense": (lambda: g4_snap(14, 4), {"static_offense"}, {}),
     "period_edges": (lambda: cl_end_of(2, [cl_pts(RIVAL, 50, 3), cl_pts(RIVAL, 100, 2), cl_pts(RIVAL, 650, 2), cl_pts(RIVAL, 700, 2)]),
