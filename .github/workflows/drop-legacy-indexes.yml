@@ -1,0 +1,38 @@
+name: Drop legacy indexes
+
+# One-off maintenance (issue #137): drops the old index header_local_team_name_1 from the FEB collections of Atlas.
+# Manual only. Dry run by default (lists what it would drop); tick "apply" to drop. Uses the secret ATLAS_WRITE_URI like Atlas refresh.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Drop the indexes (unticked: dry run, only lists them)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-refresh
+  cancel-in-progress: false
+
+jobs:
+  drop:
+    name: Drop header_local_team_name_1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Drop the legacy index
+        env:
+          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_WRITE_URI }}
+          APPLY: ${{ github.event.inputs.apply }}
+        run: python run_drop_legacy_indexes.py --require-env ${APPLY:+$([ "$APPLY" = "true" ] && echo --apply)}
