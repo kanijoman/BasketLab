@@ -424,3 +424,25 @@ class TestAtlasRefreshBackfill:
         paths = data[True]["pull_request"]["paths"] if True in data else data["on"]["pull_request"]["paths"]
 
         assert "run_backfill_derived.py" in paths and "src/services/derived_backfill.py" in paths
+
+
+class TestRedProofJob:
+    """Issue #542: the tests of a pull request must fail on the source of its base (scripts/red_proof.py). Informative: it never blocks a merge or a deploy."""
+
+    def _job(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]["red-proof"]
+
+    def test_it_runs_only_on_pull_requests_with_the_whole_history(self):
+        job = self._job()
+        assert job["if"] == "github.event_name == 'pull_request'"
+        checkout = next(s for s in job["steps"] if "checkout" in s.get("uses", ""))
+        assert checkout["with"]["fetch-depth"] == 0                  # the diff against the base needs it
+
+    def test_it_is_informative_and_the_deploy_does_not_wait_for_it(self):
+        data = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+        assert self._job()["continue-on-error"] is True
+        assert "red-proof" not in data["jobs"]["deploy-backend"]["needs"]
+
+    def test_it_runs_the_script_against_the_base_branch_of_the_pull_request(self):
+        run = " ".join(s.get("run", "") for s in self._job()["steps"])
+        assert "scripts/red_proof.py" in run and "origin/${{ github.base_ref }}" in run
