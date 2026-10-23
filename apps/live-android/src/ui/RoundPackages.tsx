@@ -1,9 +1,9 @@
-/** The next round of every competition (issues #286, #172, #440): the matches to follow, with filters and the teams "de interés" first. */
+/** The matches to follow (issues #286, #172, #440, #511): the next match of each team, filtered by league, competition, group and team, the teams "de interés" first. */
 import { useMemo, useState } from 'react'
 import { isFavorite, loadFavorites, toggleFavorite, type Favorite } from '../package/favorites'
-import { NO_FILTERS, competitionOf, filterRounds, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
-import { competitionLabel, orderRounds, sidesOf, type RoundIndexEntry, type RoundMatch } from '../package/remote'
-import { nextMatchesOfFavorites } from '../package/upcoming'
+import { NO_FILTERS, competitionOf, loadFilters, optionsOf, saveFilters, type RoundFilters } from '../package/filters'
+import { competitionLabel, type RoundIndexEntry, type RoundMatch } from '../package/remote'
+import { nextMatchesOfFavorites, nextMatchList } from '../package/upcoming'
 import { LEAD_OPTIONS } from '../notify/schedule'
 import { useReminders, type ReminderLoader } from './useReminders'
 
@@ -19,6 +19,9 @@ interface Props {
   onDownload: (round: RoundIndexEntry, match: RoundMatch, ownId: string) => void
   /** Is this match, followed as this team, the package that is loaded now? (issue #342) */
   isLoaded: (code: string, ownId: string) => boolean
+  /** Is the loaded match the one on the Partido tab? When it is not (a demo is open), the loaded match offers «Ver este partido» (issue #509). */
+  viewing?: boolean
+  onOpenLoaded?: () => void
   /** The moment the next matches are counted from (tests). */
   now?: Date
   /** The notifications plugin (issue #482); the real one when absent (tests give a fake). */
@@ -41,7 +44,35 @@ function Star({ team, favorites, onToggle }: { team: { id: string; name: string 
   )
 }
 
-export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, now, reminders }: Props) {
+function Reminders({ next, now, reminders }: { next: ReturnType<typeof nextMatchesOfFavorites>; now: Date; reminders?: ReminderLoader }) {
+  const reminder = useReminders(next, now, reminders)
+  if (next.length === 0) return null
+  return (
+    <section className="panel reminders" aria-label="Avisos de los partidos de interés">
+      <label className="round-filter-check">
+        <input type="checkbox" checked={reminder.prefs.enabled} onChange={e => reminder.update({ enabled: e.target.checked })} />
+        Avisarme antes de los partidos de mis equipos de interés
+      </label>
+      {reminder.prefs.enabled && (
+        <label>
+          Minutos antes
+          <select value={reminder.prefs.leadMin} onChange={e => reminder.update({ leadMin: Number(e.target.value) })}>
+            {LEAD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </label>
+      )}
+      {reminder.prefs.enabled && reminder.result?.ok && <p className="detail">{reminder.result.scheduled === 1 ? '1 aviso programado' : `${reminder.result.scheduled} avisos programados`}.</p>}
+      {reminder.result && !reminder.result.ok && (
+        <p className="detail" role="status">
+          {reminder.result.reason === 'denied' ? 'Tienes las notificaciones desactivadas para la app: actívalas en los ajustes del sistema.'
+            : reminder.result.reason === 'unavailable' ? 'Los avisos solo funcionan en la app instalada, no en el navegador.' : 'Falta el permiso de notificaciones.'}
+        </p>
+      )}
+    </section>
+  )
+}
+
+export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoaded, viewing = true, onOpenLoaded, now, reminders }: Props) {
   const [favorites, setFavorites] = useState<Favorite[]>(() => loadFavorites())
   const [chosen, setChosen] = useState<RoundFilters>(() => loadFilters())
   // a remembered league, competition, group or team that is not published any more must not hide everything: each one is checked against what is on offer
@@ -55,10 +86,9 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
   }
   const filters = checked(chosen)
   const { leagues, competitions, groups, teams } = optionsOf(rounds, filters)
-  const shown = useMemo(() => filterRounds(orderRounds(rounds, favorites), filters, favorites), [rounds, favorites, filters.league, filters.competition, filters.group, filters.team, filters.onlyFavorites]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const next = nextMatchesOfFavorites(rounds, favorites, now)
-  const reminder = useReminders(next, now ?? new Date(), reminders)      // a hook: before the early return
+  const moment = now ?? new Date()
+  const shown = useMemo(() => nextMatchList(rounds, filters, favorites, moment), [rounds, favorites, filters.league, filters.competition, filters.group, filters.team, moment.getTime()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const nextOfInterest = nextMatchesOfFavorites(rounds, favorites, now)
 
   if (rounds.length === 0) return null
 
@@ -71,55 +101,13 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
     toggleFavorite(team)
     setFavorites(loadFavorites())
   }
-  const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS)
+  const filtered = filters.league !== '' || filters.competition !== '' || filters.group !== '' || filters.team !== ''
 
   return (
     <>
-      <h2>Jornadas completas</h2>
-      <p className="detail">Cualquier partido de la jornada, para seguirlo en directo. Primero tus equipos de interés (☆) y el partido de tu club.</p>
-      {next.length > 0 && (
-        <section className="panel next-of-interest" aria-label="Próximos de tus equipos de interés">
-          <h3>Próximos de tus equipos de interés</h3>
-          <ul className="remote-packages">
-            {next.map(n => (
-              <li key={`${n.favorite.teamId}-${n.match.code}`} className="next-match">
-                <span className="round-info">
-                  <strong className="team-name">★ {n.favorite.name}</strong>
-                  <span className="team-name">{n.match.home.name} – {n.match.away.name}</span>
-                  <span className="detail round-when">{when(n.match.start)} · {competitionOf(n.round).label}</span>
-                </span>
-                <span className="round-sides">
-                  <button type="button" aria-label={`Seguir a ${n.favorite.name} en ${n.match.home.name} contra ${n.match.away.name}`}
-                    disabled={isLoaded(n.match.code, n.ownId) || !canOpen(n.round) || busy !== null} onClick={() => onDownload(n.round, n.match, n.ownId)}>
-                    {isLoaded(n.match.code, n.ownId) ? 'Ya disponible' : `Seguir como ${n.favorite.name}`}
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-          <div className="reminders">
-            <label className="round-filter-check">
-              <input type="checkbox" checked={reminder.prefs.enabled} onChange={e => reminder.update({ enabled: e.target.checked })} />
-              Avisarme antes de estos partidos
-            </label>
-            {reminder.prefs.enabled && (
-              <label>
-                Minutos antes
-                <select value={reminder.prefs.leadMin} onChange={e => reminder.update({ leadMin: Number(e.target.value) })}>
-                  {LEAD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </label>
-            )}
-            {reminder.prefs.enabled && reminder.result?.ok && <p className="detail">{reminder.result.scheduled === 1 ? '1 aviso programado' : `${reminder.result.scheduled} avisos programados`}.</p>}
-            {reminder.result && !reminder.result.ok && (
-              <p className="detail" role="status">
-                {reminder.result.reason === 'denied' ? 'Tienes las notificaciones desactivadas para la app: actívalas en los ajustes del sistema.'
-                  : reminder.result.reason === 'unavailable' ? 'Los avisos solo funcionan en la app instalada, no en el navegador.' : 'Falta el permiso de notificaciones.'}
-              </p>
-            )}
-          </div>
-        </section>
-      )}
+      <h2>Partidos a seguir</h2>
+      <p className="detail">El próximo partido de cada equipo, para seguirlo en directo. Primero los de tus equipos de interés (☆).</p>
+      <Reminders next={nextOfInterest} now={moment} reminders={reminders} />
       <div className="round-filters" role="group" aria-label="Filtrar partidos">
         {leagues.length > 0 && (
           <label>
@@ -155,54 +143,45 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
             </select>
           </label>
         )}
-        <label className="round-filter-check">
-          <input type="checkbox" checked={filters.onlyFavorites} onChange={e => change({ onlyFavorites: e.target.checked })} />
-          Solo de interés
-        </label>
         {filtered && <button type="button" className="secondary" onClick={() => change(NO_FILTERS)}>Quitar filtros</button>}
       </div>
       {shown.length === 0 && (
-        <p className="detail">
-          {filters.onlyFavorites && favorites.length === 0
-            ? 'Todavía no has marcado ningún equipo: marca con la estrella (☆) los equipos que te interesan.'
-            : 'Ningún partido coincide con los filtros.'}
-        </p>
+        <p className="detail">{filtered ? 'Ningún partido coincide con los filtros.' : 'No hay partidos por jugar en las jornadas publicadas.'}</p>
       )}
-      {shown.map(round => (
-        <section key={round.file} className="round-packages">
-          <h3>{competitionOf(round).label}{round.round ? ` · jornada ${round.round}` : ''}</h3>
-          <ul className="remote-packages">
-            {round.matches.map(match => {
-              const label = `${match.home.name} contra ${match.away.name}`
-              const nameOf = (id: string) => (id === match.home.id ? match.home.name : id === match.away.id ? match.away.name : id)
-              return (
-                <li key={match.code} className="round-match">
-                  <span className="round-info">
-                    {[match.home, match.away].map(team => (
-                      <span key={team.id} className="round-team">
-                        <Star team={team} favorites={favorites} onToggle={toggle} />
-                        {match.is_club ? <strong className="team-name">{team.name}</strong> : <span className="team-name">{team.name}</span>}
-                      </span>
-                    ))}
-                    <span className="detail round-when">{when(match.start)}</span>
+      <ul className="remote-packages match-list">
+        {shown.map(({ round, match, sides }) => {
+          const label = `${match.home.name} contra ${match.away.name}`
+          const nameOf = (id: string) => (id === match.home.id ? match.home.name : id === match.away.id ? match.away.name : id)
+          return (
+            <li key={match.code} className="round-match" data-code={match.code}>
+              <span className="round-info">
+                <span className="detail round-competition">{competitionOf(round).label}</span>
+                {[match.home, match.away].map(team => (
+                  <span key={team.id} className="round-team">
+                    <Star team={team} favorites={favorites} onToggle={toggle} />
+                    {match.is_club ? <strong className="team-name">{team.name}</strong> : <span className="team-name">{team.name}</span>}
                   </span>
-                  <span className="round-sides">
-                    {sidesOf(match).map(id => {
-                      const ready = isLoaded(match.code, id)
-                      return (
-                        <button key={id} aria-label={ready ? `${label} como ${nameOf(id)}: ya disponible` : `Descargar ${label} como ${nameOf(id)}`}
-                          disabled={ready || !canOpen(round) || busy !== null} onClick={() => onDownload(round, match, id)}>
-                          {ready ? 'Ya disponible' : busy === `${round.file}#${match.code}#${id}` ? 'Descargando…' : `Seguir como ${nameOf(id)}`}
-                        </button>
-                      )
-                    })}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-      ))}
+                ))}
+                <span className="detail round-when">{when(match.start)}</span>
+              </span>
+              <span className="round-sides">
+                {sides.map(id => {
+                  const ready = isLoaded(match.code, id)
+                  if (ready && !viewing && onOpenLoaded) {
+                    return <button key={id} aria-label={`Ver este partido: ${label} como ${nameOf(id)}`} onClick={onOpenLoaded}>Ver este partido</button>
+                  }
+                  return (
+                    <button key={id} aria-label={ready ? `${label} como ${nameOf(id)}: ya disponible` : `Descargar ${label} como ${nameOf(id)}`}
+                      disabled={ready || !canOpen(round) || busy !== null} onClick={() => onDownload(round, match, id)}>
+                      {ready ? 'Ya disponible' : busy === `${round.file}#${match.code}#${id}` ? 'Descargando…' : `Seguir como ${nameOf(id)}`}
+                    </button>
+                  )
+                })}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
     </>
   )
 }

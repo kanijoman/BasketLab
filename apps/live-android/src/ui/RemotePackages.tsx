@@ -19,6 +19,9 @@ interface Props {
   fetcher?: Fetcher
   /** The package that is loaded now (the app knows it: it survives a restart). Without it the component remembers what it downloaded. */
   loaded?: PackageSummary | null
+  /** The loaded match is the one on the Partido tab (false while a demo is open); `onOpenLoaded` goes back to it (issue #509). */
+  viewing?: boolean
+  onOpenLoaded?: () => void
 }
 
 function when(entry: PackageIndexEntry): string {
@@ -28,7 +31,7 @@ function when(entry: PackageIndexEntry): string {
   return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-export default function RemotePackages({ engine, store, onLoaded, fetcher, loaded }: Props) {
+export default function RemotePackages({ engine, store, onLoaded, fetcher, loaded, viewing, onOpenLoaded }: Props) {
   const [entries, setEntries] = useState<PackageIndexEntry[] | null>(null)
   const [rounds, setRounds] = useState<RoundIndexEntry[]>([])
   const [openKey, setOpenKey] = useState<string | null>(null)
@@ -178,7 +181,8 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
             ))}
           </ul>
           <RoundPackages rounds={rounds} canOpen={round => canOpen(round.wraps)} busy={busy}
-            onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)} isLoaded={isLoaded} />
+            onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)} isLoaded={isLoaded}
+            viewing={viewing} onOpenLoaded={onOpenLoaded} />
         </>
       )}
       <button className="secondary" disabled={busy !== null} onClick={() => void refresh()}>Actualizar lista</button>

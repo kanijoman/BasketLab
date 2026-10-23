@@ -46,7 +46,6 @@ import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './Abo
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab, { type MatchKind } from './PackagesTab'
 import { listenInviteLinks } from '../package/inviteLink'
-import ReviewSwitch from './ReviewSwitch'
 import TabBar from './TabBar'
 import { useTab, type TabId } from './useTab'
 import FeedbackPanel from './FeedbackPanel'
@@ -395,19 +394,17 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     if (demo) void beginDefault(demo, matches)
   }, [demo, matches, beginDefault, record])
 
-  const reviewRecorded = () => {
-    if (!demo) return
-    record('Revisión de un partido grabado: el paquete sigue guardado')
-    void beginDefault(demo, matches)
-  }
+  /** Back to the match of the loaded package (issue #509: the demos are chosen in Partidos, so the way back is there too). */
   const backToPackage = () => {
     record('Vuelta al partido del paquete')
     void store.load().then(r => r && beginPackage(r.plaintext))
+    setTab('partido')
   }
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); setTab('partido'); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panelOf = (lists?: { demos: ReactNode; finished: ReactNode }) => (
     <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice}
-      kind={lists ? kind : 'live'} onKind={lists ? setKind : undefined} demos={lists?.demos} finished={lists?.finished} />
+      kind={lists ? kind : 'live'} onKind={lists ? setKind : undefined} demos={lists?.demos} finished={lists?.finished}
+      viewing={liveMode} onOpenLoaded={backToPackage} />
   )
 
   if (phase.kind === 'loading') return <Splash />
@@ -499,7 +496,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [home, away] = homeFirst ? [rival, own] : [own, rival]
   const matchTab = (
     <>
-      {pkg && <ReviewSwitch reviewing={reviewing} disabled={live.running} onLive={backToPackage} onReview={reviewRecorded} />}
       {out?.package_match?.ok === false && (
         <PackageMismatch match={out.package_match.found.map(id => snap?.teams[id]?.name?.trim() ?? id)} own={own} rival={rival}
           onPackages={() => setTab('paquetes')} />

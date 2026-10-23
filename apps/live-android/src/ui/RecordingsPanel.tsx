@@ -17,12 +17,15 @@ export default function RecordingsPanel({ recordings, onShare }: Props) {
       <ul className="remote-packages">
         {recordings.map(r => (
           <li key={r.code}>
-            <span>
-              {r.title} <span className="detail">· {date(r.savedAt)} · {r.complete ? 'completa' : 'incompleta'} · {r.frames} documentos</span>
+            <span className="round-info">
+              <strong className="match-title">{r.title}</strong>
+              <span className="detail round-when">{date(r.savedAt)} · {r.complete ? 'completa' : 'incompleta'} · {r.frames} documentos</span>
             </span>
-            <button type="button" className="secondary" aria-label={`Compartir grabación de ${r.title}`} onClick={() => onShare(r.code)}>
-              Compartir grabación
-            </button>
+            <span className="round-sides">
+              <button type="button" className="secondary" aria-label={`Compartir grabación de ${r.title}`} onClick={() => onShare(r.code)}>
+                Compartir grabación
+              </button>
+            </span>
           </li>
         ))}
       </ul>

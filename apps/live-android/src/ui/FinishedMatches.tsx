@@ -30,7 +30,11 @@ export default function FinishedMatches({ matches, disabled, onReview, onReport,
       <ul className="remote-packages">
         {shown.map(m => (
           <li key={m.code}>
-            <span>{m.title} <span className="detail">· {date(m.savedAt)}</span></span>
+            <span className="round-info">
+              {m.competition && <span className="detail round-competition">{m.competition}</span>}
+              <strong className="match-title">{m.title}</strong>
+              <span className="detail round-when">{date(m.savedAt)}</span>
+            </span>
             <span className="round-sides">
               <button type="button" className="secondary" disabled={disabled || reporting !== null} onClick={() => onReview(m.code)}>
                 Revisar {m.title}

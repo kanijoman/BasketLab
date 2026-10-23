@@ -22,8 +22,8 @@ interface Props {
 
 export default function MatchLibrary({ demos, favorites, hasSample, source, disabled, onView, reporting, onReport, error }: Props) {
   const { shown, filtered, controls } = useMatchFilters(demos, m => ({ competition: m.competition, teams: [m.home.name, m.away.name] }), 'Filtrar demostraciones')
-  const items = [...orderDemos(shown, favorites).map(m => ({ value: m.code, label: demoLabel(m) })),
-    ...(hasSample && !filtered ? [{ value: SAMPLE_SOURCE, label: 'Partido de ejemplo' }] : [])]
+  const items = [...orderDemos(shown, favorites).map(m => ({ value: m.code, label: demoLabel(m), competition: m.competition, title: m.title })),
+    ...(hasSample && !filtered ? [{ value: SAMPLE_SOURCE, label: 'Partido de ejemplo', competition: undefined, title: 'Partido de ejemplo' }] : [])]
   if (demos.length === 0 && items.length === 0) return null
   return (
     <section className="panel match-library" aria-label="Partidos de demostración">
@@ -34,7 +34,10 @@ export default function MatchLibrary({ demos, favorites, hasSample, source, disa
       <ul className="remote-packages">
         {items.map(item => (
           <li key={item.value}>
-            <span>{item.label}</span>
+            <span className="round-info">
+              {item.competition && <span className="detail round-competition">{item.competition}</span>}
+              <strong className="match-title">{item.title}</strong>
+            </span>
             <span className="round-sides">
               <button type="button" aria-label={`Ver ${item.label}`} disabled={disabled || item.value === source} onClick={() => onView(item.value)}>
                 {item.value === source ? 'Viendo' : 'Ver'}

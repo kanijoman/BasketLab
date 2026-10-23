@@ -180,7 +180,7 @@ describe('finished matches (issue #407)', () => {
     expect(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i })).toBeTruthy()
   })
 
-  it('reviewing it replays the saved document with the saved package, and the package match can be recovered', async () => {
+  it('reviewing it replays the saved document with the saved package, and goes to the Partido tab', async () => {
     const engine = fakeEngine()
     const { finishedStore } = await connectAndFinish(memoryFinishedStore(), engine)
     const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
@@ -188,7 +188,8 @@ describe('finished matches (issue #407)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i }))
     await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith(saved.game))
     expect(engine.start).toHaveBeenLastCalledWith(saved.plaintext)
-    expect(await screen.findByText(/estás revisando un partido/i)).toBeTruthy()
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true'))
+    expect(screen.queryByRole('button', { name: /conectar con feb/i })).toBeNull()      // a match under review never offers to connect (issue #513)
   })
 
   it('the matches saved in earlier sessions are listed from the start', async () => {

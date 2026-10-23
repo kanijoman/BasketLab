@@ -26,12 +26,15 @@ interface Props {
   /** The kind of match listed; it is kept by the app so that it survives a change of tab. */
   kind?: MatchKind
   onKind?: (kind: MatchKind) => void
+  /** The loaded match is the one on the Partido tab (issue #509); `onOpenLoaded` goes back to it when a demo is open. */
+  viewing?: boolean
+  onOpenLoaded?: () => void
   /** The demos, and the finished matches and recordings kept on the device (issue #476). */
   demos?: ReactNode
   finished?: ReactNode
 }
 
-export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved, fetcher, notice, kind = 'live', onKind, demos, finished }: Props) {
+export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved, fetcher, notice, kind = 'live', onKind, demos, finished, viewing, onOpenLoaded }: Props) {
   return (
     <>
       {notice && <p role="status" className="status">{notice}</p>}
@@ -45,8 +48,8 @@ export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved
       )}
       {kind === 'live' && (
         <>
-          <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={fetcher} loaded={loaded} />
-          <PackagePanel engine={engine} store={store} loaded={loaded} onLoaded={onLoaded} onRemoved={onRemoved} />
+          <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={fetcher} loaded={loaded} viewing={viewing} onOpenLoaded={onOpenLoaded} />
+          <PackagePanel engine={engine} store={store} loaded={loaded} onLoaded={onLoaded} onRemoved={onRemoved} viewing={viewing} onOpenLoaded={onOpenLoaded} />
         </>
       )}
       {kind === 'demo' && demos}

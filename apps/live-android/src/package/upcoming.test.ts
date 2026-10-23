@@ -57,3 +57,69 @@ describe('the next match of each team of interest (issue #478, feedback of 0.3.2
     expect(next.map(n => n.ownId)).toEqual(['1008857', '1008978'])
   })
 })
+
+
+describe('the list of matches to follow: the next match of each team that passes the filters (issues #510, #511)', () => {
+  const NONE = { league: '', competition: '', group: '', team: '', onlyFavorites: false }
+  const info = (competition: string, group = '') => ({ key: competition, label: group ? `${competition} · ${group}` : competition, competition, group, season: '2026/2027', league: 'FEB', level: 3, gender: 'M' as const })
+  const rounds = (): RoundIndexEntry[] => [
+    { ...round('SEGUNDA_A', [match('1', ['1008857', 'CULTURAL Y DEPORTIVA LEONESA'], ['2', 'ZAMORA'], '2026-10-24T19:30'), match('2', ['3', 'GETAFE'], ['4', 'TOLEDO'], '2026-10-24T18:00')]), competition: info('SEGUNDA FEB', 'A') },
+    { ...round('SEGUNDA_A_NEXT', [match('5', ['2', 'ZAMORA'], ['3', 'GETAFE'], '2026-10-31T19:30')]), competition: info('SEGUNDA FEB', 'A') },
+    { ...round('TERCERA', [match('9', ['7', 'MARÍN'], ['8', 'COYA'], '2026-10-25T12:00')]), competition: info('TERCERA FEB', 'A-B') },
+  ]
+
+  it('shows only the next match of each team: the following round of the same teams is not listed', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    const codes = nextMatchList(rounds(), NONE, [], NOW).map(n => n.match.code)
+    expect(codes).toEqual(expect.arrayContaining(['1', '2', '9']))
+    expect(codes).not.toContain('5')
+  })
+
+  it('lists the matches by date when nobody is of interest', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    expect(nextMatchList(rounds(), NONE, [], NOW).map(n => n.match.code)).toEqual(['2', '1', '9'])
+  })
+
+  it('without a team chosen, the matches of the teams of interest come first', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    expect(nextMatchList(rounds(), NONE, [{ teamId: '7', name: 'MARÍN' }], NOW).map(n => n.match.code)).toEqual(['9', '2', '1'])
+  })
+
+  it('only the matches of the chosen competition and group are listed', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    expect(nextMatchList(rounds(), { ...NONE, competition: 'TERCERA FEB' }, [], NOW).map(n => n.match.code)).toEqual(['9'])
+    expect(nextMatchList(rounds(), { ...NONE, competition: 'SEGUNDA FEB', group: 'B' }, [], NOW)).toEqual([])
+  })
+
+  it('a team chosen shows only its next match', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    expect(nextMatchList(rounds(), { ...NONE, competition: 'SEGUNDA FEB', team: '2' }, [], NOW).map(n => n.match.code)).toEqual(['1'])
+  })
+
+  it('a match that has ended is not listed, and the next one of that team takes its place', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    const past = [{ ...round('A', [match('10', ['3', 'GETAFE'], ['4', 'TOLEDO'], '2026-10-20T18:00'), match('11', ['3', 'GETAFE'], ['5', 'PRAT'], '2026-10-27T18:00')]), competition: info('SEGUNDA FEB', 'A') }]
+    expect(nextMatchList(past, { ...NONE, team: '3' }, [], NOW).map(n => n.match.code)).toEqual(['11'])
+  })
+
+  describe('which side is followed', () => {
+    const FAVORITE_HOME = [{ teamId: '1008857', name: 'CULTURAL Y DEPORTIVA LEONESA' }]
+
+    it('without teams of interest, either side', async () => {
+      const { nextMatchList } = await import('./upcoming')
+      expect(nextMatchList(rounds(), NONE, [], NOW).find(n => n.match.code === '1')!.sides).toEqual(['1008857', '2'])
+    })
+
+    it('a favourite is always the side followed, without offering the other', async () => {
+      const { nextMatchList } = await import('./upcoming')
+      expect(nextMatchList(rounds(), NONE, FAVORITE_HOME, NOW).find(n => n.match.code === '1')!.sides).toEqual(['1008857'])
+      expect(nextMatchList(rounds(), NONE, [{ teamId: '2', name: 'ZAMORA' }], NOW).find(n => n.match.code === '1')!.sides).toEqual(['2'])
+    })
+
+    it('when two favourites play each other the user chooses', async () => {
+      const { nextMatchList } = await import('./upcoming')
+      const both = [...FAVORITE_HOME, { teamId: '2', name: 'ZAMORA' }]
+      expect(nextMatchList(rounds(), NONE, both, NOW).find(n => n.match.code === '1')!.sides).toEqual(['1008857', '2'])
+    })
+  })
+})
