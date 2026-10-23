@@ -15,6 +15,9 @@ interface Props {
   loaded?: PackageSummary | null
   onLoaded: (summary: PackageSummary) => void
   onRemoved?: () => void
+  /** The loaded match is not the one on the Partido tab (a demo is open): the panel offers to go back to it (issue #509). */
+  viewing?: boolean
+  onOpenLoaded?: () => void
 }
 
 function formatDate(iso: string): string {
@@ -27,7 +30,7 @@ function formatDateTime(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-export default function PackagePanel({ engine, store, loaded, onLoaded, onRemoved }: Props) {
+export default function PackagePanel({ engine, store, loaded, onLoaded, onRemoved, viewing = true, onOpenLoaded }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [pass, setPass] = useState('')
   const [busy, setBusy] = useState(false)
@@ -80,6 +83,7 @@ export default function PackagePanel({ engine, store, loaded, onLoaded, onRemove
           {loaded.crossDivision && (
             <p className="detail">Equipos de divisiones distintas: sus estadísticas se midieron contra rivales de distinto nivel. El valor previo se ha corregido con la diferencia entre divisiones (estimada con partidos de Copa), pero la probabilidad de victoria sigue siendo aproximada.</p>
           )}
+          {!viewing && onOpenLoaded && <button type="button" onClick={onOpenLoaded}>Ver el partido del paquete</button>}
           <button className="secondary" onClick={() => void remove()}>Quitar paquete</button>
         </div>
       ) : (

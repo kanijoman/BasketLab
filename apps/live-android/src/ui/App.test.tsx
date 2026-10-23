@@ -183,7 +183,7 @@ describe('App', () => {
       expect(title.closest('section')?.querySelector('select')).toBeNull()                       // no selector here any more (#476)
       fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
       fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
-      expect(within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => li.querySelector('span')?.textContent))
+      expect(within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => li.querySelector('.match-title')?.textContent))
         .toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'Partido de ejemplo'])
     })
 
@@ -197,7 +197,7 @@ describe('App', () => {
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
         fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
-        return within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => li.querySelector('span')?.textContent)
+        return within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => Array.from(li.querySelector('.round-info')!.children).map(c => c.textContent).join(' — '))
       }
 
       afterEach(() => localStorage.clear())

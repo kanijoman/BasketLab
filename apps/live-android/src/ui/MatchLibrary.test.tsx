@@ -23,8 +23,17 @@ describe('MatchLibrary: the demos of the Partidos tab (issues #476, #477, feedba
   it('lists every demo with its competition and the sample game last', () => {
     show()
     expect(rows()[0]).toContain('Recoletas Zamora')
-    expect(rows()[1]).toContain('SEGUNDA FEB · Liga Regular A —')
+    expect(rows()[1]).toContain('SEGUNDA FEB · Liga Regular A')
     expect(rows()[rows().length - 1]).toContain('Partido de ejemplo')
+  })
+
+  it('each row has its text and then its buttons, with the competition in its own line (issue #507)', () => {
+    show()
+    const row = document.querySelector('.match-library li')!
+    expect(row.children[0].classList.contains('round-info') && row.children[1].classList.contains('round-sides')).toBe(true)
+    const second = document.querySelectorAll('.match-library li')[1]
+    expect(second.querySelector('.round-info')!.firstElementChild?.classList.contains('round-competition')).toBe(true)
+    expect(second.querySelector('.match-title')?.textContent).toContain('Equipo 2536133')
   })
 
   it('the demos of a team of interest come first', () => {

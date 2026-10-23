@@ -28,6 +28,16 @@ describe.each([
     expect(all[0].game).toBe('{"v":2}')
   })
 
+  it('removes a match by its code and leaves the others (issue #512)', async () => {
+    const store = make()
+    await store.save(match('1', '2026-10-17T20:00:00Z'))
+    await store.save(match('2', '2026-10-18T20:00:00Z'))
+    await store.remove('1')
+    expect((await store.list()).map(m => m.code)).toEqual(['2'])
+    await store.remove('nope')                                   // a match that is not there is not an error
+    expect(await store.list()).toHaveLength(1)
+  })
+
   it('keeps only the latest matches: a document of a match weighs about 1 MB', async () => {
     const store = make()
     for (let i = 0; i < MAX_FINISHED + 2; i++) await store.save(match(String(i), `2026-10-1${i}T20:00:00Z`.replace(/1(\d)T/, (_m, d) => `${10 + Number(d)}T`)))
@@ -40,7 +50,7 @@ describe.each([
 
 describe('safeFinishedStore', () => {
   it('never throws when the storage is unavailable', async () => {
-    const broken = { list: () => Promise.reject(new Error('x')), load: () => Promise.reject(new Error('x')), save: () => Promise.reject(new Error('x')) }
+    const broken = { list: () => Promise.reject(new Error('x')), load: () => Promise.reject(new Error('x')), save: () => Promise.reject(new Error('x')), remove: () => Promise.reject(new Error('x')) }
     const store = safeFinishedStore(broken)
     expect(await store.list()).toEqual([])
     expect(await store.load('1')).toBeNull()

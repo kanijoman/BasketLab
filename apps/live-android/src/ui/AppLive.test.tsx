@@ -180,7 +180,7 @@ describe('finished matches (issue #407)', () => {
     expect(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i })).toBeTruthy()
   })
 
-  it('reviewing it replays the saved document with the saved package, and the package match can be recovered', async () => {
+  it('reviewing it replays the saved document with the saved package, and goes to the Partido tab', async () => {
     const engine = fakeEngine()
     const { finishedStore } = await connectAndFinish(memoryFinishedStore(), engine)
     const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
@@ -188,7 +188,21 @@ describe('finished matches (issue #407)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /revisar equipo propio – equipo rival/i }))
     await waitFor(() => expect(engine.loadReplay).toHaveBeenCalledWith(saved.game))
     expect(engine.start).toHaveBeenLastCalledWith(saved.plaintext)
-    expect(await screen.findByText(/estás revisando un partido/i)).toBeTruthy()
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true'))
+    expect(screen.queryByRole('button', { name: /conectar con feb/i })).toBeNull()      // a match under review never offers to connect (issue #513)
+  })
+
+  it('a saved match can be deleted from the device, asking first (issue #512)', async () => {
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const finishedStore = memoryFinishedStore([old])
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+      finishedStore={finishedStore} />)
+    await inPartidos()
+    fireEvent.click(await screen.findByRole('button', { name: /eliminar leon – unibasket/i }))
+    expect(await finishedStore.list()).toHaveLength(1)                       // only asked
+    fireEvent.click(screen.getByRole('button', { name: /sí, eliminar/i }))
+    await waitFor(async () => expect(await finishedStore.list()).toHaveLength(0))
+    expect(await screen.findByText(/todavía no hay partidos finalizados/i)).toBeTruthy()
   })
 
   it('the matches saved in earlier sessions are listed from the start', async () => {

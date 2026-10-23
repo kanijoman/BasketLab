@@ -27,18 +27,34 @@ export function teamIdsFromCalendar(html) {
   return [...ids];
 }
 
-/** Downloads the missing logos; never throws: returns what was saved, skipped and what failed (and why). */
+/** The crest of every team of a FBCYL group: its calendar (``getAllGamesByGrupWithMatchRecords``) carries a ``logoLocal`` / ``logoVisitant`` url next to the team ids
+ *  the stored games use (``idLocalTeam`` is ``teamIdExtern``), issue #514. Once per team. */
+export function fbcylLogosFromCalendar(json) {
+  const found = new Map();
+  for (const round of Object.values(json?.messageData?.rounds ?? {})) {
+    for (const match of Object.values(round?.matches ?? {})) {
+      for (const [id, url] of [[match.idLocalTeam, match.logoLocal], [match.idVisitorTeam, match.logoVisitant]]) {
+        if (id && url && !found.has(String(id))) found.set(String(id), url);
+      }
+    }
+  }
+  return [...found].map(([id, url]) => ({ id, url }));
+}
+
+/** Downloads the missing logos (ids, or ``{id, url}`` for the ones that do not come from FEB); never throws: returns what was saved, skipped and what failed (and why). */
 export async function downloadLogos(ids, outDir, fetchFn = fetch, { resize = async (bytes) => bytes } = {}) {
   fs.mkdirSync(outDir, { recursive: true });
   const result = { saved: 0, skipped: 0, failed: [] };
-  for (const id of ids) {
+  for (const item of ids) {
+    const id = typeof item === "string" ? item : item.id;
+    const url = typeof item === "string" ? febLogoUrl(id) : item.url;
     const target = path.join(outDir, `${id}.png`);
     if (fs.existsSync(target)) {
       result.skipped += 1;
       continue;
     }
     try {
-      const response = await fetchFn(febLogoUrl(id), { headers: { Accept: "image/*" } });
+      const response = await fetchFn(url, { headers: { Accept: "image/*" } });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const type = response.headers?.get?.("content-type") ?? "";
       const body = new Uint8Array(await response.arrayBuffer());

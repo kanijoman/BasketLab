@@ -51,7 +51,7 @@ export function leagueOf(round: RoundIndexEntry): string {
 const hasFavorite = (match: RoundMatch, favorites: Favorite[]) =>
   isFavorite(favorites, match.home.id, match.home.name) || isFavorite(favorites, match.away.id, match.away.name)
 
-const inScope = (round: RoundIndexEntry, filters: RoundFilters) => {
+export const inScope = (round: RoundIndexEntry, filters: RoundFilters) => {
   const c = competitionOf(round)
   return (!filters.league || leagueOf(round) === filters.league) && (!filters.competition || c.name === filters.competition) && (!filters.group || c.group === filters.group)
 }

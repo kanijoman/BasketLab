@@ -215,14 +215,14 @@ const roundFixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/dem
 async function roundFetcher(over: { club?: boolean } = {}) {
   const side = (id: string, name: string) => ({ id, name })
   const matches = [
-    { code: '101', start: '2026-10-17T12:00', home: side('11', 'EQ 11'), away: side('12', 'EQ 12'), own_id: '11', own_ids: ['11', '12'], is_club: false },
-    { code: '102', start: '2026-10-17T17:00', home: side('1008631', 'LEON'), away: side('1008898', 'ZAMORA'), own_id: '1008631', own_ids: ['1008631', '1008898'], is_club: true },
-    { code: '103', start: '2026-10-17T19:00', home: side('31', 'EQ 31'), away: side('32', 'EQ 32'), own_id: '31', own_ids: ['31', '32'], is_club: false },
+    { code: '101', start: '2027-10-17T12:00', home: side('11', 'EQ 11'), away: side('12', 'EQ 12'), own_id: '11', own_ids: ['11', '12'], is_club: false },
+    { code: '102', start: '2027-10-17T17:00', home: side('1008631', 'LEON'), away: side('1008898', 'ZAMORA'), own_id: '1008631', own_ids: ['1008631', '1008898'], is_club: true },
+    { code: '103', start: '2027-10-17T19:00', home: side('31', 'EQ 31'), away: side('32', 'EQ 32'), own_id: '31', own_ids: ['31', '32'], is_club: false },
   ]
   const index = {
     v: 1, packages: [], club_team_id: '1008631', rounds: [
       { collection: 'OTRA_COMPETICION_2026', round: 2, file: 'rounds/OTRA__r2.bpkgz', sha256: 'x', bytes: 1000, club: false,
-        matches: [{ code: '900', start: '2026-10-17T10:00', home: side('91', 'LOCAL 91'), away: side('92', 'VISIT 92'), own_id: '91', is_club: false }] },
+        matches: [{ code: '900', start: '2027-10-17T10:00', home: side('91', 'LOCAL 91'), away: side('92', 'VISIT 92'), own_id: '91', is_club: false }] },
       { collection: 'DEMO_2026', round: 4, file: 'rounds/DEMO__r4.bpkgz', sha256: await sha(roundFixture), bytes: 70000, club: over.club ?? true, matches },
     ],
   }
@@ -233,26 +233,24 @@ async function roundFetcher(over: { club?: boolean } = {}) {
 }
 
 describe('RemotePackages: the round of every competition', () => {
-  it('lists the competitions with the club first, and in the round the club match first', async () => {
+  it('lists the next match of each team by date, with the label of its competition (the club match in bold)', async () => {
     const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
-    await screen.findByRole('heading', { name: /DEMO 2026/ })
-    const headings = Array.from(container.querySelectorAll('.round-packages h3')).map(h => h.textContent)
-    expect(headings[0]).toMatch(/DEMO 2026.*jornada 4/)
-    expect(headings[1]).toMatch(/OTRA COMPETICION 2026.*jornada 2/)
-    const rows = Array.from(container.querySelectorAll('.round-packages')[0].querySelectorAll('li')).map(li => li.textContent)
-    expect(rows[0]).toMatch(/LEON.*ZAMORA/)
-    expect(rows[1]).toMatch(/EQ 11/)
-    expect(rows[2]).toMatch(/EQ 31/)
+    await screen.findAllByText(/EQ 31/)
+    const rows = Array.from(container.querySelectorAll('li.round-match'))
+    expect(rows.map(li => li.getAttribute('data-code'))).toEqual(['900', '101', '102', '103'])
+    expect(rows[2].textContent).toMatch(/DEMO 2026/)
+    expect(rows[0].textContent).toMatch(/OTRA COMPETICION 2026/)
+    expect(rows[2].querySelector('strong.team-name')?.textContent).toBe('LEON')
   })
 
   it('every match offers to follow it as either of its two teams, the default one first (issue #286)', async () => {
     const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
-    await screen.findByRole('heading', { name: /DEMO 2026/ })
-    const clubRow = container.querySelectorAll('.round-packages')[0].querySelectorAll('li')[0] as HTMLElement
+    await screen.findAllByText(/EQ 31/)
+    const clubRow = container.querySelector('li.round-match[data-code="102"]') as HTMLElement
     expect(Array.from(clubRow.querySelectorAll('.round-sides button')).map(b => b.textContent)).toEqual(['Seguir como LEON', 'Seguir como ZAMORA'])
     expect(screen.getByRole('button', { name: /descargar LEON contra ZAMORA como ZAMORA/i })).toBeTruthy()
     // an index from before both sides existed: one button per match, as before
-    expect(container.querySelectorAll('.round-packages')[1].querySelectorAll('li .round-sides button')).toHaveLength(1)
+    expect(container.querySelectorAll('li.round-match[data-code="900"] .round-sides button')).toHaveLength(1)
   })
 
   it('downloads the bundle once, decrypts it once and installs the package of the chosen match', async () => {
@@ -261,7 +259,7 @@ describe('RemotePackages: the round of every competition', () => {
     const onLoaded = vi.fn()
     const f = await roundFetcher()
     render(<RemotePackages engine={eng} store={store} onLoaded={onLoaded} fetcher={f} />)
-    await screen.findByRole('heading', { name: /DEMO 2026/ })
+    await screen.findAllByText(/EQ 31/)
     fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
     fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
     await waitFor(() => expect(onLoaded).toHaveBeenCalledTimes(1))
@@ -276,7 +274,7 @@ describe('RemotePackages: the round of every competition', () => {
   it('a wrong password says so and installs nothing', async () => {
     const store = memoryStore()
     render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
-    await screen.findByRole('heading', { name: /DEMO 2026/ })
+    await screen.findAllByText(/EQ 31/)
     fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
     fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/contraseña/i)
@@ -293,7 +291,7 @@ describe('RemotePackages: the round of every competition', () => {
 describe('RemotePackages: feedback of a round download (issue #342)', () => {
   it('only the side that was downloaded is «Ya disponible»; the other side of the match can still be followed', async () => {
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
-    await screen.findByRole('heading', { name: /DEMO 2026/ })
+    await screen.findAllByText(/EQ 31/)
     fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
     fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
     expect((await screen.findByRole('status')).textContent).toMatch(/descargado/i)
@@ -308,7 +306,7 @@ describe('RemotePackages: feedback of a round download (issue #342)', () => {
   it('a loaded package of a round match shows its side as available from the start', async () => {
     localStorage.setItem(PASS_KEY, PASS)
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} loaded={loadedSummary('103', '32')} />)
-    await screen.findByRole('heading', { name: /DEMO 2026/ })
+    await screen.findAllByText(/EQ 31/)
     expect((screen.getByRole('button', { name: /EQ 31 contra EQ 32 como EQ 32/i }) as HTMLButtonElement).textContent).toMatch(/ya disponible/i)
     expect((screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }) as HTMLButtonElement).disabled).toBe(false)
   })

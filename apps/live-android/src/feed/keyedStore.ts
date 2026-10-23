@@ -8,6 +8,8 @@ export interface KeyedStore<T extends Keyed> {
   load(code: string): Promise<T | null>
   /** Saves (replacing the same code) and drops the oldest beyond the limit of the store. */
   save(item: T): Promise<void>
+  /** Deletes one (nothing happens when it is not there; issue #512). */
+  remove(code: string): Promise<void>
 }
 
 const newestFirst = <T extends Keyed>(all: T[]): T[] => [...all].sort((a, b) => b.savedAt.localeCompare(a.savedAt))
@@ -50,6 +52,10 @@ export class IndexedDbKeyedStore<T extends Keyed> implements KeyedStore<T> {
     await request((await this.store('readwrite')).put(item))
     for (const old of (await this.list()).slice(this.limit)) await request((await this.store('readwrite')).delete(old.code))
   }
+
+  async remove(code: string): Promise<void> {
+    await request((await this.store('readwrite')).delete(code))
+  }
 }
 
 export function memoryKeyedStore<T extends Keyed>(limit: number, initial: T[] = []): KeyedStore<T> {
@@ -61,6 +67,7 @@ export function memoryKeyedStore<T extends Keyed>(limit: number, initial: T[] = 
       all.set(item.code, item)
       for (const old of newestFirst([...all.values()]).slice(limit)) all.delete(old.code)
     },
+    remove: async code => { all.delete(code) },
   }
 }
 
@@ -70,5 +77,6 @@ export function safeKeyedStore<T extends Keyed>(inner: KeyedStore<T>): KeyedStor
     list: () => inner.list().catch(() => []),
     load: code => inner.load(code).catch(() => null),
     save: item => inner.save(item).catch(() => undefined),
+    remove: code => inner.remove(code).catch(() => undefined),
   }
 }

@@ -8,8 +8,10 @@ const match = (code: string, title: string, competition?: string): FinishedMatch
 })
 const MATCHES = [match('1', 'LEON – UNIBASKET', 'SEGUNDA FEB Liga Regular A'), match('2', 'ZAMORA – LEON', 'TERCERA FEB Liga Regular A-B'), match('3', 'CULTURAL – OVIEDO')]
 
+const onRemove = vi.fn()
+
 function show(matches = MATCHES) {
-  render(<FinishedMatches matches={matches} disabled={false} onReview={vi.fn()} onReport={vi.fn()} reporting={null} error={null} />)
+  render(<FinishedMatches matches={matches} disabled={false} onReview={vi.fn()} onReport={vi.fn()} onRemove={onRemove} reporting={null} error={null} />)
 }
 const rows = () => Array.from(document.querySelectorAll('.finished-matches li')).map(li => li.textContent ?? '')
 const pick = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
@@ -54,5 +56,13 @@ describe('FinishedMatches filters (issue #497)', () => {
     cleanup()
     show([match('1', 'LEON – UNIBASKET')])
     expect(screen.queryByLabelText('Equipo')).toBeNull()
+  })
+
+  it('each match can be deleted, asking first (issue #512)', () => {
+    show()
+    fireEvent.click(screen.getByRole('button', { name: /eliminar leon – unibasket/i }))
+    expect(onRemove).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: /sí, eliminar/i }))
+    expect(onRemove).toHaveBeenCalledWith('1')
   })
 })

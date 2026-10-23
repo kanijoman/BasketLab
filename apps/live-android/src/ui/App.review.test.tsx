@@ -26,46 +26,56 @@ async function open(over: { store?: ReturnType<typeof memoryStore>; engine?: Ret
   return { store, engine }
 }
 
-const review = () => fireEvent.click(screen.getByRole('radio', { name: /revisar partidos grabados/i }))
-const backToPackage = () => fireEvent.click(screen.getByRole('radio', { name: /partido del paquete/i }))
+const toDemos = () => {
+  fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+  fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+}
+/** Reviewing a recorded match is chosen in Partidos (issue #509): the Partido tab has no «Qué partido ver» any more. */
+const review = () => {
+  toDemos()
+  fireEvent.click(screen.getByRole('button', { name: /ver recoletas zamora/i }))
+}
+const toLive = () => {
+  fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+  fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'live' } })
+}
+const backToPackage = () => {
+  toLive()
+  fireEvent.click(screen.getByRole('button', { name: /ver el partido del paquete/i }))
+}
 
-describe('review the recorded matches with a package loaded (issue #344)', () => {
-  it('a package that is loaded starts in its own match, and the switch is there', async () => {
+describe('review the recorded matches with a package loaded (issues #344, #509)', () => {
+  it('a package that is loaded starts in its own match, and there is no «Qué partido ver» in the Partido tab', async () => {
     await open()
-    expect((screen.getByRole('radio', { name: /partido del paquete/i }) as HTMLInputElement).checked).toBe(true)
-    expect((screen.getByRole('radio', { name: /revisar partidos grabados/i }) as HTMLInputElement).checked).toBe(false)
+    expect(screen.queryByRole('radiogroup', { name: /qué partido ver/i })).toBeNull()
     expect(screen.queryByLabelText(/partido de la demostración/i)).toBeNull()
+    expect(screen.getByRole('button', { name: /conectar con feb/i })).toBeTruthy()
   })
 
-  it('without a package there is no switch: the recorded matches are already there', async () => {
+  it('without a package the recorded matches are already there', async () => {
     await open({ store: memoryStore(null) })
-    expect(screen.queryByRole('radio', { name: /revisar partidos grabados/i })).toBeNull()
     expect(screen.getByLabelText(/partido de la demostración/i)).toBeTruthy()
   })
 
-  it('«Revisar» opens the recorded match and the selector, and the package stays saved', async () => {
+  it('a demo chosen in Partidos opens the recorded match and the package stays saved', async () => {
     const { store, engine } = await open()
     review()
     await waitFor(() => expect(engine.start).toHaveBeenLastCalledWith('REALPKG'))
     expect(await screen.findByLabelText(/partido de la demostración/i)).toBeTruthy()
-    expect(screen.getByText(/tu paquete sigue guardado/i)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /conectar con feb/i })).toBeNull()
     expect(store.saved?.plaintext).toBe(PKG_TEXT)
-    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+    toLive()
     expect(screen.getByRole('button', { name: /quitar paquete/i })).toBeTruthy()          // still loaded
   })
 
   it('the sample game can be reviewed too', async () => {
     await open()
-    review()
-    await screen.findByLabelText(/partido de la demostración/i)
-    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-    fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+    toDemos()
     expect(screen.getByRole('button', { name: /ver partido de ejemplo/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /ver recoletas zamora/i })).toBeTruthy()
   })
 
-  it('«Partido del paquete» loads the package again, with the live connection', async () => {
+  it('«Ver el partido del paquete» (in Partidos) loads the package again, with the live connection', async () => {
     const { engine } = await open()
     review()
     await screen.findByLabelText(/partido de la demostración/i)
@@ -75,19 +85,24 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
     expect(screen.queryByLabelText(/partido de la demostración/i)).toBeNull()
   })
 
+  it('while the package match is the one on screen there is no button to go back to it', async () => {
+    await open()
+    toLive()
+    expect(screen.queryByRole('button', { name: /ver el partido del paquete/i })).toBeNull()
+  })
+
   it('removing the package while reviewing leaves just the recorded matches, as before', async () => {
     const { store } = await open()
     review()
     await screen.findByLabelText(/partido de la demostración/i)
-    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+    toLive()
     fireEvent.click(screen.getByRole('button', { name: /quitar paquete/i }))
     await waitFor(() => expect(store.saved).toBeNull())
     fireEvent.click(screen.getByRole('tab', { name: 'Partido' }))
     expect(await screen.findByLabelText(/partido de la demostración/i)).toBeTruthy()
-    expect(screen.queryByRole('radio', { name: /revisar partidos grabados/i })).toBeNull()
   })
 
-  it('cannot be switched away from a live connection that is running', async () => {
+  it('cannot be switched away from a live connection that is running (the demos cannot be opened)', async () => {
     const pack: Pack = {
       v: 1, match: '2524475',
       base: { HEADER: { TEAM: [{ id: '1', pts: '0' }, { id: '2', pts: '0' }] }, BOXSCORE: { TEAM: [] }, PLAYBYPLAY: {}, SHOTCHART: {} },
@@ -104,7 +119,8 @@ describe('review the recorded matches with a package loaded (issue #344)', () =>
     await screen.findByText('EQUIPO PROPIO')
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     await screen.findByRole('button', { name: /desconectar/i })
-    expect((screen.getByRole('radio', { name: /revisar partidos grabados/i }) as HTMLInputElement).disabled).toBe(true)
-    expect(screen.getByText(/desconecta antes de revisar/i)).toBeTruthy()
+    toDemos()
+    expect((screen.getByRole('button', { name: /ver recoletas zamora/i }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText(/desconecta antes de abrir una demostración/i)).toBeTruthy()
   })
 })
