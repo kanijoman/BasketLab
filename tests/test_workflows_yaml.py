@@ -351,7 +351,7 @@ class TestAndroidWorkflowManualRelease:
 class TestBackendTestsRunInParallel:
     """The backend tests were the bottleneck of every integration (8 min in one process on a 4-CPU runner).
 
-    They run with pytest-xdist; the coverage gate (70 %) only on main, so a pull request does not pay the tracing cost.
+    They run with pytest-xdist; the coverage gate (82 %) only on main, so a pull request does not pay the tracing cost.
     ``python -m pytest`` (not the bare command) keeps the repo root on ``sys.path`` for ``from tests.x import y`` in the workers.
     """
 
@@ -366,7 +366,7 @@ class TestBackendTestsRunInParallel:
             assert "python -m pytest" in step["run"] and "-n auto" in step["run"] and "--dist loadscope" in step["run"], step["name"]
 
     def test_the_coverage_gate_runs_only_on_main_and_everything_else_runs_without_it(self):
-        with_cov = [s for s in self._test_steps() if "--cov-fail-under=70" in s["run"]]
+        with_cov = [s for s in self._test_steps() if "--cov-fail-under=82" in s["run"]]
         without = [s for s in self._test_steps() if "--cov" not in s["run"]]
         assert len(with_cov) == 1 and len(without) == 1
         assert with_cov[0]["if"] == "github.ref == 'refs/heads/main'"
