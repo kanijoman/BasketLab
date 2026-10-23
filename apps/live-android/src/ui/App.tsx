@@ -449,6 +449,17 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       setReporting(null)
     }
   }
+  /** Deletes a saved match or a recording from the device (issue #512). */
+  const removeFinished = async (code: string) => {
+    await finishedStore.remove(code)
+    setFinishedMatches(await finishedStore.list())
+    session.record(`Partido finalizado ${code} eliminado`)
+  }
+  const removeRecording = async (code: string) => {
+    await recordingStore.remove(code)
+    setRecordings(await recordingStore.list())
+    session.record(`Grabación ${code} eliminada`)
+  }
   /** Opens a match of the list and goes to see it (the matches are chosen in the Partidos tab, issue #476). */
   const openMatch = (value: DemoSource) => { record(`Partido abierto desde la lista (${value})`); pickSource(value); setTab('partido') }
   const library = {
@@ -460,8 +471,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <>
         <FinishedMatches matches={finishedMatches} disabled={live.running}
           onReview={code => { record(`Revisión del partido finalizado ${code}`); void beginFinished(code); setTab('partido') }}
-          onReport={code => void reportFinished(code)} reporting={reporting} error={reportError} />
-        <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} />
+          onReport={code => void reportFinished(code)} onRemove={code => void removeFinished(code)} reporting={reporting} error={reportError} />
+        <RecordingsPanel recordings={recordings} onShare={code => void shareRecording(code)} onRemove={code => void removeRecording(code)} />
       </>
     ),
   }

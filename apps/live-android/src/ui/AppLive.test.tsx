@@ -192,6 +192,19 @@ describe('finished matches (issue #407)', () => {
     expect(screen.queryByRole('button', { name: /conectar con feb/i })).toBeNull()      // a match under review never offers to connect (issue #513)
   })
 
+  it('a saved match can be deleted from the device, asking first (issue #512)', async () => {
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const finishedStore = memoryFinishedStore([old])
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
+      finishedStore={finishedStore} />)
+    await inPartidos()
+    fireEvent.click(await screen.findByRole('button', { name: /eliminar leon – unibasket/i }))
+    expect(await finishedStore.list()).toHaveLength(1)                       // only asked
+    fireEvent.click(screen.getByRole('button', { name: /sí, eliminar/i }))
+    await waitFor(async () => expect(await finishedStore.list()).toHaveLength(0))
+    expect(await screen.findByText(/todavía no hay partidos finalizados/i)).toBeTruthy()
+  })
+
   it('the matches saved in earlier sessions are listed from the start', async () => {
     const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
     render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}

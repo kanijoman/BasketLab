@@ -149,6 +149,9 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .round-packages h3 { margin: 12px 0 4px; font-size: 1rem; }
 .round-sides { display: flex; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .round-sides button { flex: 1 1 9rem; min-width: 0; max-width: 100%; min-height: 44px; height: auto; padding-block: 8px; overflow-wrap: anywhere; white-space: normal; }
+.confirm-remove { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 100%; min-width: 0; }
+.confirm-remove .detail { flex: 1 1 100%; }
+.confirm-remove button { flex: 1 1 8rem; min-height: 44px; }
 .match-title { overflow-wrap: anywhere; font-weight: 600; }
 .round-competition { font-size: 0.8rem; overflow-wrap: anywhere; }
 .reminders { display: grid; gap: 8px; margin: 8px 0; }

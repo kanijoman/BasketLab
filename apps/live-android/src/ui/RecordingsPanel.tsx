@@ -1,14 +1,17 @@
 import type { SavedRecording } from '../feed/recordingStore'
+import RemoveButton from './RemoveButton'
 
 /** The recordings of the matches followed live that are kept on the device (issue #416): each can be shared as a file to replay it. */
 interface Props {
   recordings: SavedRecording[]
   onShare: (code: string) => void
+  /** Deletes a recording (issue #512; the button asks first). */
+  onRemove: (code: string) => void
 }
 
 const date = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
-export default function RecordingsPanel({ recordings, onShare }: Props) {
+export default function RecordingsPanel({ recordings, onShare, onRemove }: Props) {
   if (recordings.length === 0) return null
   return (
     <section className="panel recordings" aria-label="Grabaciones del partido en directo">
@@ -25,6 +28,7 @@ export default function RecordingsPanel({ recordings, onShare }: Props) {
               <button type="button" className="secondary" aria-label={`Compartir grabación de ${r.title}`} onClick={() => onShare(r.code)}>
                 Compartir grabación
               </button>
+              <RemoveButton what={`grabación de ${r.title}`} onConfirm={() => onRemove(r.code)} />
             </span>
           </li>
         ))}
