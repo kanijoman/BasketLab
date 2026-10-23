@@ -25,6 +25,8 @@ Ciclo rojo→verde (sin excepciones, incluye bugfixes):
 3. Implementar el mínimo código que lo corrija
 4. `pytest -v tests/test_<feature>.py` — confirmar que **pasa** (verde)
 5. Ningún PR / commit sin este ciclo
+6. El test reproduce el fallo **con el estado más real posible**: la situación se construye jugando eventos con `tests/builders.py` (`Match`), con un partido real o con un fixture de partido raro, no con un dict inventado (puede describir un estado inalcanzable).
+7. **Prueba de rojo**: tus tests nuevos deben fallar con el `src/` de la base. Compruébalo antes del PR: `python scripts/red_proof.py` (el CI lo repite en cada PR, informativo, job `red-proof`).
 
 Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests después · "es un fix pequeño" (**no existe fix pequeño sin test**).
 **Bug fix → test de regresión** (`test_<síntoma>_regression` o bug documentado en el docstring) que reproduce el fallo exacto, pasa solo con el fix y va en el mismo commit.
@@ -34,7 +36,7 @@ Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests
 - **Dual format**: siempre FEB + FBCYL (`is_fbcyl`, ver DATA_FORMATS).
 - **Código y comentarios en inglés; textos de UI en español.**
 - **Preguntar solo por**: umbrales de lógica de negocio, alcance ambiguo, preferencias de layout.
-- **Testing tras features**: plan (camino feliz + bordes + errores) → ejecutar **solo los tests que cubren lo que se ha tocado** (los nuevos y los antiguos del mismo código: `pytest --no-cov tests/test_<área>*.py`, `vitest run <ruta>`; tras cambiar `live_core`, también vectores y `test_docs_consistency`). **No lanzar la suite completa en local** (≈ 6 min): la ejecuta el CI de GitHub en el PR y un fallo ahí se arregla en el mismo PR. Checklist: sin excepciones · bordes (vacío/None/cero) · FEB+FBCYL · sin regresiones en lo afectado.
+- **Testing tras features**: plan guiado por el **checklist de esquinas de docs/TESTING.md** (fronteras de periodo, determinismo y orden, vacío/None/cero, FEB y FBCYL, idempotencia, datos tardíos o corregidos) en vez de «camino feliz + bordes + errores»; sin tests de constantes o defaults sueltos (una tabla `parametrize`), texto exacto de un mensaje solo en las frases críticas, mocks solo en fronteras (red, Mongo) → ejecutar **solo los tests que cubren lo que se ha tocado** (los nuevos y los antiguos del mismo código: `pytest --no-cov tests/test_<área>*.py`, `vitest run <ruta>`; tras cambiar `live_core`, también vectores y `test_docs_consistency`). **No lanzar la suite completa en local** (≈ 6 min): la ejecuta el CI de GitHub en el PR y un fallo ahí se arregla en el mismo PR. Checklist: sin excepciones · bordes (vacío/None/cero) · FEB+FBCYL · sin regresiones en lo afectado.
 
 ## Calidad (antes de escribir y cada ~100 líneas)
 | Comprobación | Umbral | Acción |

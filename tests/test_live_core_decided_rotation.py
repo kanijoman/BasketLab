@@ -10,7 +10,7 @@ from src.live_core.advice import AdviceEngine
 from src.live_core.config import RuleConfig
 from src.live_core.game_context import PHASE_SHIFT, kept_when_decided
 from src.live_core.rules_rotation import fatigue_index
-from tests.test_live_core_advice import _player, engine, snap
+from tests.builders import _player, engine, snap
 
 
 def level(s, margin):

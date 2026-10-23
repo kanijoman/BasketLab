@@ -4,7 +4,7 @@ Cultural–Melilla, 1st quarter: «El rival suma 4 pérdidas en los últimos 3 m
 timeout (the rival's, here) opened a new stretch while the window still held the SAME four turnovers. The window now starts where the last alert of that kind ended.
 """
 from src.live_core.advice import AdviceEngine
-from tests.test_live_core_advice import OWN, RIVAL, snap
+from tests.builders import OWN, RIVAL, snap
 
 
 def run(eng, elapsed, log, rival_timeouts=(), own_timeouts=()):

@@ -12,7 +12,7 @@ from live_helpers import OWN as H_OWN, RIVAL as H_RIVAL, TABLE, snap as h_snap
 from src.live_core.advice import Advice, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
 from src.live_core.recommender import Recommender
-from tests.test_live_core_advice import OWN, RIVAL, _player, snap
+from tests.builders import OWN, RIVAL, _player, snap
 
 YES, NO, UNKNOWN = True, False, None
 

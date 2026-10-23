@@ -8,7 +8,7 @@ import pytest
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
 from tests.test_live_core_closing import OWN, POSSESSIONS, RIVAL, end_of, engine, flat, pace_snap, pts
-from tests.test_live_core_advice import snap
+from tests.builders import snap
 
 
 def by_id(advices, advice_id):

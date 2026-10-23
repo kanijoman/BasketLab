@@ -10,7 +10,7 @@ from pathlib import Path
 from src.live_core.events import parse_line
 from src.live_core.package import PreparationPackage
 from src.live_core.session import LiveSession
-from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, engine, snap
+from tests.builders import BASE, OWN, RIVAL, _player, engine, snap
 
 RECORDINGS = Path(__file__).parent / "recordings"
 

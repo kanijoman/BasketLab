@@ -6,7 +6,7 @@
   of range against what is usual for both teams and justifies the lead or the deficit.
 """
 from src.live_core.advice import AdviceEngine
-from tests.test_live_core_advice import OWN, RIVAL
+from tests.builders import OWN, RIVAL
 from tests.test_live_core_closing import by_id, end_of, flat, player, pts
 from tests.test_live_core_summary_scope import STARTS, attempts
 

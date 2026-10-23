@@ -132,6 +132,31 @@ jobs:
           path: frontend/test-results
           retention-days: 7
 
+  # ── Red proof (informative, issue #542) ────────────────────────────────────
+  # The tests that a pull request adds or changes must FAIL on the source of its base (CLAUDE.md: write the failing test first). It never blocks a merge or a deploy:
+  # the summary of the run says whether there is proof. ``continue-on-error`` keeps a failure of the script itself from turning the check red.
+  red-proof:
+    name: Red proof of the new tests
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Do the new tests fail on the base?
+        run: python scripts/red_proof.py --base origin/${{ github.base_ref }}
+
   # ── Deploy to Render (backend) ─────────────────────────────────────────────
   deploy-backend:
     name: Deploy → Render

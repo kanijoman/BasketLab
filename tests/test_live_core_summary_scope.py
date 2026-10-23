@@ -5,7 +5,7 @@ quarter. A key of a period measures the period (from where it started to where i
 summary (against the quarters before and the usual one of both teams) instead of a recommendation to "keep the pace" nobody measured.
 """
 from src.live_core.advice import AdviceEngine
-from tests.test_live_core_advice import OWN, RIVAL
+from tests.builders import OWN, RIVAL
 from tests.test_live_core_closing import by_id, end_of, flat, pts
 
 STARTS = {1: 0, 2: 600, 3: 1200, 4: 1800}

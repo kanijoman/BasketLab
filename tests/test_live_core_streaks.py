@@ -9,7 +9,7 @@ import pytest
 
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
-from tests.test_live_core_advice import OWN, RIVAL, snap
+from tests.builders import OWN, RIVAL, snap
 
 KIND = {2: "fg2", 3: "fg3"}
 

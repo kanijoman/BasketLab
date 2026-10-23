@@ -10,7 +10,7 @@ import pytest
 
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig, unknown_rule_ids
-from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
+from tests.builders import BASE, OWN, RIVAL, _player, _stats, ff_snap, snap
 from tests.test_live_core_rival_alerts import BASELINES as RIVAL_BASELINES, rival_snap
 from tests.test_live_core_players import basket as pl_basket, impact as pl_impact, pl_snap, player as pl_player
 from tests.test_live_core_closing import end_of as cl_end_of, finish as cl_finish, pace_late as cl_pace_late, pts as cl_pts
