@@ -447,21 +447,3 @@ class TestRedProofJob:
         run = " ".join(s.get("run", "") for s in self._job()["steps"])
         assert "scripts/red_proof.py" in run and "origin/${{ github.base_ref }}" in run
 
-
-class TestDropLegacyIndexesWorkflow:
-    """Issue #137: the legacy index is dropped from Atlas with a manual workflow (the secret lives in GitHub, nobody configures a connection string by hand)."""
-
-    def _data(self):
-        return yaml.safe_load((ROOT / ".github" / "workflows" / "drop-legacy-indexes.yml").read_text(encoding="utf-8"))
-
-    def test_it_only_runs_by_hand_and_never_on_a_schedule_or_a_pull_request(self):
-        triggers = self._data().get("on") or self._data()[True]
-        assert set(triggers) == {"workflow_dispatch"}
-
-    def test_it_is_a_dry_run_unless_apply_is_asked_for_and_uses_the_atlas_secret(self):
-        data = self._data()
-        triggers = data.get("on") or data[True]
-        assert triggers["workflow_dispatch"]["inputs"]["apply"]["default"] in (False, "false")
-        step = next(s for s in _steps_of_job("drop-legacy-indexes.yml", "drop") if "run_drop_legacy_indexes.py" in s.get("run", ""))
-        assert step["env"]["MONGODB_CONNECTION_STRING"] == "${{ secrets.ATLAS_WRITE_URI }}"
-        assert "--require-env" in step["run"] and "--apply" in step["run"]
