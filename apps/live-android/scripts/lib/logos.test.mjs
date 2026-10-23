@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { downloadLogos, febLogoUrl, teamIdsFromCalendar } from './logos.mjs'
+import { downloadLogos, fbcylLogosFromCalendar, febLogoUrl, teamIdsFromCalendar } from './logos.mjs'
 
 const calendar = fs.readFileSync(path.resolve(import.meta.dirname, '../../../../tests/fixtures/feb_calendar_snippet.html'), 'utf8')
 const tmp = []
@@ -97,5 +97,32 @@ describe('downloadLogos', () => {
     const meta = await sharp(Buffer.from(small)).metadata()
     expect([meta.width, meta.height, meta.format]).toEqual([96, 96, 'png'])
     expect(small.byteLength).toBeLessThan(big.byteLength)
+  })
+})
+
+
+describe('FBCYL crests (issue #514)', () => {
+  const calendarJson = { messageData: { rounds: { 1: { matches: {
+    10: { idLocalTeam: '40285', logoLocal: 'https://cdn.example/a.png', idVisitorTeam: '40286', logoVisitant: 'https://cdn.example/b.jpg' },
+    11: { idLocalTeam: '40286', logoLocal: 'https://cdn.example/b.jpg', idVisitorTeam: '40287', logoVisitant: null },
+  } } } } }
+
+  it('takes the crest of every team from the calendar of its group, once, with the id the stored games use (idLocalTeam = teamIdExtern)', () => {
+    expect(fbcylLogosFromCalendar(calendarJson)).toEqual([
+      { id: '40285', url: 'https://cdn.example/a.png' }, { id: '40286', url: 'https://cdn.example/b.jpg' }])
+  })
+
+  it('a calendar without data or without logos gives nothing', () => {
+    expect(fbcylLogosFromCalendar({})).toEqual([])
+    expect(fbcylLogosFromCalendar({ messageData: { rounds: {} } })).toEqual([])
+  })
+
+  it('downloads from the url of the team, not from FEB, and names the file after the id', async () => {
+    const dir = outDir()
+    const fetchFn = vi.fn(async () => ok())
+    const result = await downloadLogos([{ id: '40285', url: 'https://cdn.example/a.png' }], dir, fetchFn)
+    expect(fs.readdirSync(dir)).toEqual(['40285.png'])
+    expect(fetchFn).toHaveBeenCalledWith('https://cdn.example/a.png', expect.anything())
+    expect(result.saved).toBe(1)
   })
 })
