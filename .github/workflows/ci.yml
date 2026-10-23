@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -171,7 +171,7 @@ jobs:
 
       # The hook is asynchronous: wait until the API serves THIS commit and its database is connected.
       # Needs the repository variable RENDER_API_URL (public URL of basketlab-api); skipped without it.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Post-deploy check (api)
         env:
           RENDER_API_URL: ${{ vars.RENDER_API_URL }}
