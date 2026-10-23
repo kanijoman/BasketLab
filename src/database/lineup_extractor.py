@@ -38,24 +38,28 @@ class LineupExtractor:
         if self._substitutions_cache is None:
             self._substitutions_cache = self.analyzer.parse_substitutions()
         
-        # Build timeline of who's on court
-        on_court = set()
-        
+        # Build timeline of who's on court: player -> where the segment that contains the timestamp started
+        on_court: Dict[str, int] = {}
+
         # Get all players from this team
         team_players = self._get_team_players(team_id)
-        
+
         # For each player, check if they're on court at timestamp (use cached segments)
         for player_id in team_players:
             if player_id not in self._segments_cache:
                 self._segments_cache[player_id] = self.analyzer.get_player_court_segments(player_id)
-            
+
             segments = self._segments_cache[player_id]
             for start, end in segments:
                 if start <= timestamp_seconds <= end:
-                    on_court.add(player_id)
+                    on_court[player_id] = start
                     break
-        
-        return on_court if len(on_court) <= 5 else set(list(on_court)[:5])
+
+        if len(on_court) <= 5:
+            return set(on_court)
+        # Segments are inclusive, so at a substitution the player who leaves and the one who enters are both there (6+): keep the five who were already
+        # on court (the earliest segment), ties by id. Never an arbitrary five: the order of a set depends on the hash seed of the process (issue #539).
+        return set(sorted(on_court, key=lambda pid: (on_court[pid], str(pid)))[:5])
 
     def get_all_lineups_for_team(
         self, 
