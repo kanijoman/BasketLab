@@ -48,16 +48,16 @@ body {
 .transport { display: grid; gap: 10px; margin: 16px 0; }
 .transport-source { display: flex; align-items: center; gap: 10px; }
 .transport-title { flex: 1 1 auto; min-width: 0; text-align: center; font-size: 0.95rem; overflow-wrap: anywhere; }
-.transport-buttons { display: flex; align-items: center; gap: 8px; }
+.transport-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .icon-button { width: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-.segmented { display: flex; flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.segmented { display: flex; flex: 1 1 13rem; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .segment { flex: 1 1 0; min-width: 0; border: 0; border-radius: 0; padding: 0 4px; background: var(--card); color: var(--text); font-variant-numeric: tabular-nums; }
 .segment + .segment { border-left: 1px solid var(--line); }
 .segment.selected { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
 .timeline { display: flex; align-items: center; gap: 10px; }
 .timeline input[type='range'] { flex: 1 1 auto; min-width: 0; min-height: 44px; accent-color: var(--accent);
   touch-action: pan-y; /* a vertical swipe over it scrolls the page instead of dragging the thumb (#309) */ }
-.timeline-time { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85rem; min-width: 7.5em; text-align: right; }
+.timeline-time { flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85rem; min-width: 6em; text-align: right; }
 /* the match picker has long option labels: it takes its own row and never wider than the screen (phone e2e) */
 .perf { margin: 0; text-align: right; color: var(--muted); font-size: 0.8rem; }
 
@@ -130,9 +130,9 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .package-import { margin-top: 12px; }
 .package-import > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
 .package-import > ol { margin: 4px 0 12px; padding-left: 20px; display: grid; gap: 6px; }
-.package-import-body { display: grid; gap: 10px; }
-.package-import label { display: grid; gap: 4px; color: var(--muted); font-size: 0.85rem; }
-.package-import input { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; }
+.package-import-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.package-import label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
+.package-import input { min-width: 0; max-width: 100%; box-sizing: border-box; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; }
 .package-summary p { margin: 4px 0; }
 
 /* Published packages (Próximos partidos): a card per match, the match on the left and the button on the right */

@@ -94,6 +94,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | ruta de credenciales fija | `get_mongodb_connection_string()` (`src/database/db_config.py`: env → `db_credentials.txt`) |
 | `import src.x` y `import x` mezclados | usa siempre `src.…` |
 | texto de UI en inglés | UI en español |
+| pantalla/lista nueva de la app sin comprobar su maquetación | añadirla a `apps/live-android/e2e/layout.spec.ts` (412 y 320 px, nombres largos): nada sale de la pantalla ni se superpone (#508) |
 | leer `min`/`sec` de FBCYL como tiempo transcurrido | es tiempo **restante** (#370) |
 
 ## Decisiones tomadas (no re-debatir)
