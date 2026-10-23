@@ -41,10 +41,10 @@ jobs:
         env:
           ENVIRONMENT: development
 
-      # The coverage gate (70 %) is enforced on main, where the tracing cost does not delay a pull request.
+      # The coverage gate (82 %) is enforced on main, where the tracing cost does not delay a pull request.
       - name: Run tests in parallel with the coverage gate (main)
         if: github.ref == 'refs/heads/main'
-        run: python -m pytest tests/ -n auto --dist loadscope --cov=src --cov-report=term-missing --cov-fail-under=70 --tb=short -q --override-ini='addopts='
+        run: python -m pytest tests/ -n auto --dist loadscope --cov=src --cov-report=term-missing --cov-fail-under=82 --tb=short -q --override-ini='addopts='
         env:
           ENVIRONMENT: development
 

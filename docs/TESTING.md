@@ -12,7 +12,7 @@ cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 ```
 Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requirements.txt`). Tests con marker `ml` (`test_backtesting`, `test_game_prediction`, `test_player_prediction`, `test_predictive`, 2 de `test_regression_formulas`) se **saltan** solos sin `scikit-learn`; en CI corren. Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
 
-## Mapa de tests (≈ 117 archivos, 2.304 tests backend, cobertura ≈72 %; frontend 23 archivos / 146 tests)
+## Mapa de tests (≈ 254 archivos, 4.746 tests backend, cobertura 84 % medida el 23/10/2026; frontend 23 archivos / 146 tests)
 - API (`TestClient`, `dependency_overrides[get_db]`): `test_api*.py`, `test_*_router.py`, `test_integration_api_services.py`, `test_lineups_sse.py`, `test_scraper_endpoints.py`.
 - Servicios y BD con `mongomock` (sin red ni Mongo real): `test_services.py`, `test_rotation_service.py`, `test_repository_*`, `test_pipeline_builder.py`, `test_indexes.py`.
 - PBP/posesiones: `test_possession_*`, `test_playbyplay_analyzer.py`, `test_pbp_*`. Predictivo (necesita sklearn): ver arriba. Informes/export: `test_pdf_generator.py`, `test_weekly_report*`, `test_individual_scouting.py`.
@@ -115,13 +115,13 @@ Dependencias: `pip install -r requirements-dev.txt` (Render usa solo `requiremen
 - Fixtures: `tests/conftest.py` (`feb_game_doc`, `fbcyl_game_doc`, `mock_*_db`; limpia cachés bajo ambos alias de import), `tests/live_helpers.py`, `tests/db_helpers.py` (`new_mock_db`: única forma de crear una BD mongomock).
 
 ## CI (`.github/workflows`)
-`ci.yml`: backend (**en paralelo con `pytest-xdist`**: `python -m pytest tests/ -n auto --dist loadscope`, un proceso por CPU —4 en el runner— y los tests de un módulo juntos para construir sus fixtures de módulo una vez por proceso; hay que usar `python -m pytest` y no `pytest` a secas porque algunos tests importan `from tests.x import y`. **La cobertura (`--cov-fail-under=70`) solo se calcula en `main`**; en un PR no se mide, así que un PR puede bajarla y se nota al integrar. Antes: 8 min en un solo proceso; medido en local con 4 procesos, los 3.002 tests tardan 1 min 22 s. Python 3.11, instala `requirements-dev.txt`; base de cobertura medida 77,7 % (primer run de `main` con xdist, 14/10; antes 71,8 %); subir el umbral solo cuando la cobertura mejore de forma estable), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), job `e2e-web` (smoke Playwright, ver abajo), deploy a Render solo en push a `main` (necesita `e2e-web`) con comprobación posterior (`scripts/post_deploy_check.py`, ver OPERATIONS). `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
+`ci.yml`: backend (**en paralelo con `pytest-xdist`**: `python -m pytest tests/ -n auto --dist loadscope`, un proceso por CPU —4 en el runner— y los tests de un módulo juntos para construir sus fixtures de módulo una vez por proceso; hay que usar `python -m pytest` y no `pytest` a secas porque algunos tests importan `from tests.x import y`. **La cobertura (`--cov-fail-under=82`, medida 84 % el 23/10/2026: 4.746 tests en 8 min 45 s en local con `-n auto`) solo se calcula en `main`**; en un PR no se mide, así que un PR puede bajarla y se nota al integrar. Antes: 8 min en un solo proceso; medido en local con 4 procesos, los 3.002 tests tardan 1 min 22 s. Python 3.11, instala `requirements-dev.txt`; base de cobertura medida 77,7 % (primer run de `main` con xdist, 14/10; antes 71,8 %); subir el umbral solo cuando la cobertura mejore de forma estable), frontend (`npm ci`, lint, type-check, vitest, `npm run build`), job `e2e-web` (smoke Playwright, ver abajo), deploy a Render solo en push a `main` (necesita `e2e-web`) con comprobación posterior (`scripts/post_deploy_check.py`, ver OPERATIONS). `live-vectors.yml`: regenera vectores (falla si `git diff`), pruebas de referencia sin `conftest`, vectores en Pyodide.
 
 ## Evaluación (estado actual) y mejoras
 | Hueco | Prioridad | Estado |
 |---|---|---|
 | Tests de ML y deps de test mezcladas con runtime | alta | **hecho** (marker `ml`, `requirements-dev.txt`) |
-| Sin `vite build` ni gate de cobertura en CI | alta | **hecho** (build + `--cov-fail-under=70`, base 72 %) |
+| Sin `vite build` ni gate de cobertura en CI | alta | **hecho** (build + `--cov-fail-under=82`, base 84 %; era 70 con base 72 %) |
 | Router `rotaciones` sin test; `analysis_predictive` | alta | **hecho** (`test_rotaciones_router.py`; predictive ya estaba cubierto) |
 | `fetch` crudo en páginas ignoraba `VITE_API_BASE`; `getPlayerRankings/Radar` a rutas inexistentes | media | **hecho** (todo vía `client.ts`; `client.test.ts`) |
 | Frontend: sin tests de páginas ni del SSE de `client.ts` | media | pendiente (bajo retorno; preferir smoke e2e) |
