@@ -1,6 +1,14 @@
 # Testing (para Claude)
 Regla de trabajo (TDD, regresión por bug): [CLAUDE.md](../CLAUDE.md). Este doc: cómo se prueba, qué hay y qué falta.
 
+## Cómo diseñamos los tests (TDD con riesgos reales, épica #540)
+La cobertura (84 %) no dice si algo vigila el código. Lo que más bugs ha encontrado son las técnicas de esquinas, paridad, datos reales e integración, no los tests de ejemplo con datos inventados. Reglas:
+- **Estados alcanzables**: `tests/builders.py` → `Match` juega eventos por la máquina de estados real (`LiveGame`) y devuelve el snapshot; se niega a lo imposible (tiempo hacia atrás, rebote sin tiro fallado, equipo desconocido). `snap()` (dict a mano) queda para fijar un solo campo. Los helpers que antes se importaban de `test_live_core_advice.py` (`OWN`, `RIVAL`, `snap`, `_player`, `engine`…) viven ahí; los tests no se importan entre sí. Ejemplos: `test_live_core_scenarios.py`.
+- **Prueba de rojo** (`scripts/red_proof.py`, job `red-proof` del CI, informativo): ejecuta los tests nuevos o modificados contra el `src/` de la base (worktree desechable); debe fallar al menos uno (o no poder importarse la función nueva). `--strict` devuelve 1 si no hay prueba. Prueba: `test_red_proof.py`.
+- **Checklist de esquinas** (elige las que apliquen; cada bug nuevo añade la suya): frontera de periodo/cuarto y prórroga · determinismo (`PYTHONHASHSEED`, orden, `set`) · vacío/None/cero · FEB **y** FBCYL · idempotencia (evaluar dos veces) · datos que llegan tarde, corregidos o duplicados · ids que cambian de temporada · estados que el motor no puede alcanzar (usar `Match`).
+- **Qué no se escribe**: un test por constante o default (tabla `parametrize` de umbrales acordados), el texto exacto de un mensaje salvo en frases críticas (lo demás, por `evidence`), interacciones de mocks que solo repiten la implementación; mocks solo en fronteras (red, Mongo), con fakes (`FakeFeb`) mejor que `MagicMock`.
+- **Fases siguientes (aplazadas hasta medir la A)**: propiedades e invariantes con `hypothesis` (#544), nightly de robustez con orden y semillas aleatorias (#545, absorbe #293), biblioteca de partidos raros (#546), `mongod` real y `schemathesis` (#547), spike de mutación (#548).
+
 ## Ejecutar
 ```bash
 pytest -q                                   # backend completo (cobertura sobre src/ por defecto, pytest.ini)
