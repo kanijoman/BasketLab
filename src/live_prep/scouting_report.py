@@ -80,6 +80,8 @@ ALERTS: Dict[str, Any] = {
     "formation_lineup": ("Alineación indebida ({jugadores} de formación)", "exploit", None),
     "four_factors_lever": ("Palanca de los Four Factors", "exploit", None),
     "win_flip": ("Caídas bruscas de su probabilidad de victoria", "exploit", None),
+    "timeout_review": ("Tiempos muertos analizados", "exploit", None),
+    "timeout_followup": ("Efecto de los tiempos muertos", "exploit", None),
 }
 
 
