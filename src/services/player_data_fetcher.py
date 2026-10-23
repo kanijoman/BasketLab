@@ -4,14 +4,11 @@ Moved from src/ui/player_data_fetcher.py (Qt UI layer removed).
 Used by individual_scouting_service.py for photo/bio data.
 """
 
-import os
 import re
-import tempfile
 import requests
 from typing import Optional, Any
 from bs4 import BeautifulSoup
 from datetime import datetime
-from PIL import Image
 
 
 class PlayerDataFetcher:
@@ -168,48 +165,3 @@ class PlayerDataFetcher:
             return None, None, None
         except Exception:
             return None, None, None
-
-    def download_photo_from_url(
-        self, photo_url: str, player_id: str
-    ) -> Optional[str]:
-        """Download a player photo and return path to a temp file, or None."""
-        if player_id in self.photo_cache:
-            cached = self.photo_cache[player_id]
-            if os.path.exists(cached):
-                return cached
-
-        try:
-            response = requests.get(photo_url, timeout=10)
-            if response.status_code != 200:
-                return None
-
-            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-            tmp.write(response.content)
-            tmp.close()
-
-            try:
-                with Image.open(tmp.name) as img:
-                    if img.mode in ("RGBA", "LA", "P"):
-                        img = img.convert("RGB")
-                    img.thumbnail((400, 400), Image.Resampling.LANCZOS)
-                    img.save(tmp.name, "JPEG", quality=85)
-            except Exception:
-                pass
-
-            self.photo_cache[player_id] = tmp.name
-            return tmp.name
-
-        except requests.RequestException:
-            return None
-        except Exception:
-            return None
-
-    def cleanup_photo_cache(self) -> None:
-        """Delete all temporary downloaded photos from the cache."""
-        for photo_path in self.photo_cache.values():
-            try:
-                if photo_path and os.path.exists(photo_path):
-                    os.unlink(photo_path)
-            except Exception:
-                pass
-        self.photo_cache.clear()

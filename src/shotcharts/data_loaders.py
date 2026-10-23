@@ -7,7 +7,7 @@ basketball shot data from FEB JSON files and other sources.
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from .coordinate_utils import convert_shot_to_fiba
 
@@ -182,72 +182,3 @@ def load_feb_game_data(json_path: str) -> List[Dict]:
         convert_coordinates=True,
         include_metadata=True
     )
-
-
-def extract_game_metadata(data: Dict) -> Dict:
-    """
-    Extract game metadata from FEB JSON structure.
-
-    Parameters:
-    -----------
-    data : Dict
-        Parsed FEB game JSON data
-
-    Returns:
-    --------
-    Dict
-        Game metadata with keys like 'home_team', 'away_team', 'date', etc.
-    """
-    metadata = {}
-
-    # Extract from SHOTCHART or root level
-    shotchart = data.get('SHOTCHART', {})
-
-    # Try to extract common fields
-    metadata['home_team'] = shotchart.get('home', data.get('home', ''))
-    metadata['away_team'] = shotchart.get('away', data.get('away', ''))
-    metadata['date'] = shotchart.get('date', data.get('date', ''))
-    metadata['competition'] = shotchart.get('competition', data.get('competition', ''))
-
-    return metadata
-
-
-def validate_feb_json_structure(data: Dict) -> bool:
-    """
-    Validate FEB JSON structure has required fields.
-
-    Parameters:
-    -----------
-    data : Dict
-        Parsed FEB game JSON data
-
-    Returns:
-    --------
-    bool
-        True if structure is valid, False otherwise
-    """
-    if not isinstance(data, dict):
-        return False
-
-    if 'SHOTCHART' not in data:
-        return False
-
-    shotchart = data['SHOTCHART']
-    if not isinstance(shotchart, dict):
-        return False
-
-    if 'SHOTS' not in shotchart:
-        return False
-
-    shots = shotchart['SHOTS']
-    if not isinstance(shots, list):
-        return False
-
-    # Validate at least one shot has required fields
-    if shots:
-        required_fields = ['x', 'y', 'team', 'm']
-        first_shot = shots[0]
-        if not all(field in first_shot for field in required_fields):
-            return False
-
-    return True
