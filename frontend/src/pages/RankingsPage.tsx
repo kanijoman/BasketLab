@@ -46,6 +46,7 @@ const STAT_GROUPS: StatGroup[] = [
       { key: 'fouls_per_game',              label: 'Faltas',      format: v => fmt(v), reverse: true },
       { key: 'valoracion_per_game',         label: 'Valoración',  format: v => fmt(v) },
       { key: 'pllss_per_game',              label: '+/-',         format: v => fmt(v) },
+      { key: 'minutes_per_game',            label: 'Minutos',     format: v => fmt(v) },
     ],
   },
   {
@@ -216,7 +217,7 @@ export default function RankingsPage() {
         {/* Filters row */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Min minutes */}
-          <label className="flex items-center gap-2 text-xs text-ink-muted">
+          <label className="flex items-center gap-2 text-xs text-ink-muted" title="Solo entran en el ranking los jugadores con al menos estos minutos por partido">
             MIN &ge;
             <input
               type="number"
