@@ -9,33 +9,7 @@ import pytest
 from src.live_core.advice import Advice, AdviceEngine
 from src.live_core.config import RuleConfig
 from src.live_core.rules_rotation import fatigue_index
-
-OWN, RIVAL = "T1", "T2"
-
-
-def _player(name, team, pf=0, on_court=True, minutes=0, stint=0, pf_by_period=None):
-    return {"name": name, "team_id": team, "on_court": on_court, "minutes": minutes,
-            "stint": stint, "pf": pf, "pts": 0, "pf_by_period": pf_by_period or {}}
-
-
-def snap(elapsed=600, period=1, players=None, fouls_by_period=None, log=None):
-    fouls_by_period = fouls_by_period or {}
-    return {
-        "period": period, "remaining": 300, "elapsed": elapsed, "last_num": 1,
-        "score": {OWN: 0, RIVAL: 0},
-        "teams": {tid: {"name": tid, "fouls_game": sum(fouls_by_period.get(tid, {}).values()),
-                        "timeouts": [], "fouls_by_period": fouls_by_period.get(tid, {}),
-                        "stats": {}} for tid in (OWN, RIVAL)},
-        "players": players or {}, "log": log or [],
-    }
-
-
-def engine(**kw):
-    return AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, **kw)
-
-
-def ids(advices):
-    return [a.id for a in advices]
+from tests.builders import BASE, OWN, RIVAL, _player, _pts, _stats, engine, ff_snap, ids, snap
 
 
 # --- foul trouble ------------------------------------------------------------------
@@ -95,9 +69,6 @@ def test_rival_near_bonus_is_info():
 
 # --- scoring runs / turnovers ------------------------------------------------------
 
-def _pts(t, team, v):
-    return [t, team, "pts", v]
-
 
 def test_unanswered_rival_run_is_critical_and_suggests_a_timeout():
     log = [_pts(1000, RIVAL, 3), _pts(1040, RIVAL, 2), _pts(1100, RIVAL, 3)]
@@ -127,8 +98,6 @@ def test_old_turnovers_do_not_count():
 
 
 # --- fatigue -----------------------------------------------------------------------
-
-BASE = {"p1": {"avg_stint": 360, "avg_min": 1500, "p90_min": 2000}}
 
 
 def test_fatigue_index_components_and_weights():
@@ -251,19 +220,6 @@ def test_sample_game_run_is_deterministic(feb_game_doc):
 
 
 # --- Four Factors lever ------------------------------------------------------------
-
-def _stats(**kw):
-    base = dict(fg2m=20, fg2a=40, fg3m=6, fg3a=20, ftm=10, fta=14, orb=8, drb=25,
-                tov=10, tov_team=0, stl=5, ast=12, blk=2, pts=0)
-    base.update(kw)
-    return base
-
-
-def ff_snap(own, rival, elapsed=1200):
-    s = snap(elapsed=elapsed)
-    s["teams"][OWN]["stats"], s["teams"][RIVAL]["stats"] = own, rival
-    s["score"] = {OWN: 40, RIVAL: 40}
-    return s
 
 
 def test_main_lever_alert_names_the_factor_with_numbers():

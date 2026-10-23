@@ -8,7 +8,7 @@ import pytest
 
 from src.live_core.advice import AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
-from tests.test_live_core_advice import OWN, RIVAL, _stats, snap
+from tests.builders import OWN, RIVAL, _stats, snap
 
 
 def board(margin, elapsed, period=None, remaining=300):
