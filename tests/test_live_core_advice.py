@@ -227,7 +227,21 @@ def test_main_lever_alert_names_the_factor_with_numbers():
     [a] = [a for a in out if a.id == "four_factors_lever"]
     assert a.severity == "info" and a.category == "four_factors"
     assert a.evidence["lever"] == "tov" and a.evidence["pts100"] <= -3
-    assert "pérdidas" in a.message.lower() and "pts/100" in a.message
+    assert "pérdidas" in a.message.lower()
+
+
+@pytest.mark.parametrize("lever, own, rival, expected", [
+    ("tov", dict(tov=22), {}, "Balón: perdemos el "),
+    ("efg", dict(fg2m=12, fg3m=2), dict(fg2m=30, fg3m=10), "Tiro: acertamos el "),
+])
+def test_the_lever_alert_speaks_the_staff_language_and_says_whose_numbers_are_whose_regression(lever, own, rival, expected):
+    """0.4.0 feedback (#566): «eFG% 60% vs 75%» did not say whose it was, with respect to what, and mentioned the adjustment to the history. Now: ours against the rival's, no acronyms."""
+    out = engine().evaluate(ff_snap(_stats(**own), _stats(**rival)))
+    [a] = [a for a in out if a.id == "four_factors_lever"]
+    assert a.evidence["lever"] == lever and a.message.startswith(expected)
+    assert " frente al " in a.message and "del rival" in a.message and "cada 100 posesiones" in a.message
+    for jargon in ("pts/100", "histórico", "ajustar", "eFG", "TOV%", "ORB%"):
+        assert jargon not in a.message
 
 
 def test_no_lever_alert_when_the_sample_is_too_small():
