@@ -15,7 +15,7 @@ PERIOD_NET = 5             # a quarter won or lost by this much
 LINEUP_NET = 4             # a lineup with this plus/minus
 FT_COLD = 0.60
 FT_MIN_ATT = 8
-_FACTOR = {"efg": "Acierto de tiro (eFG %)", "tov": "Pérdidas (TOV %)", "orb": "Rebote ofensivo (ORB %)", "ftr": "Tiros libres (FTr)"}
+_FACTOR = {"efg": "Acierto de tiro", "tov": "Pérdidas", "orb": "Rebote ofensivo", "ftr": "Tiros libres"}
 _LOWER_IS_BETTER = {"tov"}
 
 

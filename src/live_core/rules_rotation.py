@@ -135,7 +135,7 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         trusted = baseline_trusted(baseline, ctx.config)
         usual = (baseline or {}).get("avg_stint") if trusted else None
         usual = usual or ctx.config.fatigue_default_avg_stint_s
-        message = (f"{p['name']}: riesgo de fatiga {'muy alto' if level == 'critical' else 'alto'} (índice {index:.0f}/100), "
+        message = (f"{p['name']}: riesgo de fatiga {'muy alto' if level == 'critical' else 'alto'}, "
                    f"{_clock(p['stint'])} seguidos en pista (su tramo habitual: {_clock(int(usual))}) y {p['minutes'] // 60} min jugados. "
                    + ("Cambio recomendado." if level == "critical" else "Valorar descanso."))
         if reason:

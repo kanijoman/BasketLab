@@ -184,7 +184,7 @@ def pace_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return [Advice(
         key=f"pace:{direction}:{snap['period']}", id="pace_control", severity="info", category="gestion",
         message=(f"Quedan unas {current['poss_remaining']:.0f} posesiones por equipo con el marcador {margin:+d} (proyección "
-                 f"{current['projected_margin']:+.0f}): {verb} el ritmo para {goal} (+{lever['gain'] * 100:.0f} % de victoria, experimental)."),
+                 f"{current['projected_margin']:+.0f}): {verb} el ritmo para {goal} (+{lever['gain'] * 100:.0f} % de victoria, estimación)."),
         evidence={"direction": direction, "margin": margin, "poss_remaining": current["poss_remaining"], "p": current["p"],
                   "projected_margin": current["projected_margin"], "gain": lever["gain"], "gain_pts": lever["gain_pts"],
                   **({"reason": lever["reason"]} if lever.get("reason") else {})},
@@ -213,8 +213,8 @@ def comeback_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     reading = "Hace falta mucho más que el ritmo normal." if hard else "Es posible a ritmo normal."
     return [Advice(
         key=f"comeback:{left // max(1, cfg.comeback_every_s)}", id="comeback_plan", severity="info", category="gestion",
-        message=(f"Remontada: perdemos por {deficit} con unas {possessions_left:.0f} posesiones por equipo: hace falta ganar "
-                 f"{need:+.2f} netos por posesión (hoy {now:+.2f}). {reading}"),
+        message=(f"Remontada: perdemos por {deficit} con unas {possessions_left:.0f} posesiones por equipo: hace falta sacar "
+                 f"{need:.2f} puntos de ventaja por posesión (ahora {now:+.2f}). {reading}"),
         evidence={"deficit": deficit, "possessions_left": round(possessions_left, 1), "need": round(need, 3), "now": round(now, 3)},
         proposal=[tactic_proposal("Buscar posesiones extra: presión, rebote ofensivo y faltas tácticas" if hard
                                   else "Mantener el ritmo y no perder balones")])]

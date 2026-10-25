@@ -57,7 +57,7 @@ def own_orb_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             out.append(Advice(
                 key=f"own_orb:{pid}:{found['orb'] // ctx.config.orb_player_min}", id="own_orb_player", severity="info",
                 category="four_factors",
-                message=f"{_name(p)} lleva {found['orb']} rebotes ofensivos en {p['minutes'] // 60} min (esperados {found['expected']}).",
+                message=f"{_name(p)} lleva {found['orb']} rebotes ofensivos en {p['minutes'] // 60} min (lo habitual: {found['expected']}).",
                 evidence={"player_id": pid, "team_id": p["team_id"], **found},
                 proposal=[tactic_proposal(f"Mantener a {_name(p)} en pista: rebote ofensivo", pid, _name(p))]))
     return out
@@ -123,7 +123,7 @@ def own_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             out.append(Advice(
                 key=f"own_cold:{pid}:{period}", id="own_cold_player", severity="info", category="four_factors",
                 message=(f"{_name(p)}: {cold['made']}/{cold['attempts']} en tiros de campo con más volumen del habitual "
-                         f"(esperados {cold['expected']:.0f})."),
+                         f"(lo habitual: {cold['expected']:.0f})."),
                 evidence={"player_id": pid, "team_id": p["team_id"], **cold},
                 proposal=[tactic_proposal(f"Buscar otro tirador en lugar de {_name(p)}", pid, _name(p))]))
     return out

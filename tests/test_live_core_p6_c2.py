@@ -94,7 +94,7 @@ def comeback(margin, remaining=300, period=4, **kw):
 def test_c2_nine_down_with_five_minutes_says_how_many_possessions_are_left_and_what_it_takes():
     [alert] = comeback(-9)
     assert alert.severity == "info" and alert.category == "gestion" and "perdemos por 9" in alert.message
-    assert "9 posesiones" in alert.message and "+0.98" in alert.message and "-0.14" in alert.message
+    assert "9 posesiones" in alert.message and "0.98 puntos de ventaja por posesión" in alert.message and "-0.14" in alert.message
     assert alert.proposal[0]["type"] == "tactic" and "extra" in alert.proposal[0]["message"].lower()
     assert alert.evidence["deficit"] == 9 and alert.evidence["need"] == pytest.approx(0.98, abs=0.01)
 

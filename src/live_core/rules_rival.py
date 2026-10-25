@@ -48,7 +48,7 @@ def rival_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             out.append(Advice(
                 key=f"rival_hot:{pid}:{metric}", id="rival_hot_player", severity="warning", category="rival",
                 message=(f"Rival {p['name'].strip()}: {observed} {noun} en {p['minutes'] // 60} min "
-                         f"(esperado {expected:.1f}). {response}"),
+                         f"(lo habitual: {expected:.1f}). {response}"),
                 evidence={"player_id": pid, "team_id": p["team_id"], "metric": metric, "observed": observed,
                           "expected": round(expected, 3), "minutes_s": p["minutes"],
                           "has_baseline": bool(base)},
@@ -118,8 +118,8 @@ def rival_zone_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
                 and pps - expected_pps >= cfg.zone_pps_excess:
             out.append(Advice(
                 key=f"zone:{family}:eficiencia", id="rival_zone", severity="info", category="rival",
-                message=(f"Rival castiga desde {label}: {makes}/{attempts} ({pps:.2f} pts/tiro, "
-                         f"esperado {expected_pps:.2f}). {response}"),
+                message=(f"Rival castiga desde {label}: {makes}/{attempts} ({pps:.2f} puntos por tiro; "
+                         f"lo habitual {expected_pps:.2f}). {response}"),
                 evidence={**base, "kind": "eficiencia"}))
         share = attempts / total
         if attempts >= cfg.zone_min_share_attempts and share >= cfg.zone_share \

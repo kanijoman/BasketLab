@@ -44,12 +44,12 @@ def own_zone_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if attempts >= cfg.zone_min_attempts and makes >= cfg.zone_min_makes and pps - expected_pps >= cfg.zone_pps_excess:
             out.append(Advice(
                 key=f"zone_own:{family}:hot", id="own_zone_hot", severity="info", category="four_factors",
-                message=f"Desde {label} anotamos {makes}/{attempts} ({pps:.2f} pts/tiro, esperado {expected_pps:.2f}).",
+                message=f"Desde {label} anotamos {makes}/{attempts} ({pps:.2f} puntos por tiro; lo habitual {expected_pps:.2f}).",
                 evidence=base, proposal=[tactic_proposal(f"Insistir por {label}")]))
         elif attempts >= cfg.zone_min_attempts and expected_pps - pps >= cfg.zone_pps_excess:
             out.append(Advice(
                 key=f"zone_own:{family}:cold", id="own_zone_cold", severity="info", category="four_factors",
-                message=f"Desde {label} solo {makes}/{attempts} ({pps:.2f} pts/tiro, esperado {expected_pps:.2f}).",
+                message=f"Desde {label} solo {makes}/{attempts} ({pps:.2f} puntos por tiro; lo habitual {expected_pps:.2f}).",
                 evidence=base, proposal=[tactic_proposal(f"Cambiar la selección de tiro: menos tiros desde {label}")]))
         share = attempts / total
         if (family == SELECTION_FAMILY and attempts >= cfg.zone_min_share_attempts and share >= cfg.zone_share
