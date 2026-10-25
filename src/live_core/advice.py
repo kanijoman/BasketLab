@@ -13,6 +13,7 @@ import dataclasses
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
+from .coherence import Coherence
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .recent_timeout import adapt_for_recent_timeout
@@ -104,6 +105,7 @@ class AdviceEngine:
         )
         self._last: Dict[str, int] = {}
         self._streak: Dict[str, int] = {}   # key -> consecutive evaluations it has appeared in (alerts that ask to confirm)
+        self._coherence = Coherence()
         self._lag: Dict[str, Any] = {}      # the log is behind the scoreboard (score_settle): what is being waited for, and the offset that became normal
         self._count: Dict[str, int] = {}
 
@@ -187,6 +189,10 @@ class AdviceEngine:
                     if streaks[advice.key] < advice.confirm:
                         continue
                 if self._is_new(advice, raw.key, now):
+                    advice = self._coherence.check(advice, now, cfg.conflict_window_s)
+                    if advice is None:
+                        continue         # it contradicts something said a moment ago: it waits, it is not recorded as said (#568)
+                    self._coherence.said(advice, now)
                     self._last[advice.key] = now
                     emitted.append(adapt_for_recent_timeout(self._with_proposal(self._numbered(advice), snapshot), snapshot,
                                                             self._ctx.own_team_id, self._ctx.config))
