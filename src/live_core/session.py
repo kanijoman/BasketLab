@@ -92,7 +92,9 @@ class LiveSession:
     def load_replay(self, game_doc: Dict[str, Any]) -> Dict[str, Any]:
         self._replay_doc = game_doc
         last = max((e.elapsed for e in map(parse_line, game_doc["PLAYBYPLAY"]["LINES"]) if e), default=0)
-        period, _ = period_and_remaining(last)
+        period, remaining = period_and_remaining(last)
+        if period > 1 and remaining == period_length(period):
+            period -= 1         # the closing line "Fin del Cuarto N" is at exactly the end of N, which is also the start of N + 1: no overtime was played (#561)
         self.replay_info = {
             "duration": period_start(period) + period_length(period),
             "status": (game_doc.get("HEADER") or {}).get("statusText", ""),
