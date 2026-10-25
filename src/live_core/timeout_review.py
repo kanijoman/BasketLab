@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import RuleConfig
 from .proposals import tactic_proposal
-from .windows import run_causes, scoring_gap
+from .windows import run_causes, scoring_gap, window_stats
 
 # the usual way to answer the cause of a run against us (the kinds of ``windows.run_causes``)
 _ANSWER = {
@@ -26,6 +26,10 @@ _ANSWER = {
 
 def _n(count: int, one: str, many: str) -> str:
     return f"{count} {one if count == 1 else many}"
+
+
+def other_team(team: str, own: str, rival: str) -> str:
+    return rival if team == own else own
 
 
 def reason_of(team: str, own: str, rival: str, mine: Dict[str, Any], theirs: Dict[str, Any], log: List[Any], now: int, remaining: int,
@@ -46,6 +50,12 @@ def reason_of(team: str, own: str, rival: str, mine: Dict[str, Any], theirs: Dic
         return "drought", (f"tras {clock} sin anotar" if team == own else f"tras {clock} sin anotar el rival"), None
     if tired:
         return "fatigue", ("por cansancio de " if team == own else "para descansar a ") + ", ".join(tired), tired
+    made, tried = theirs["fg2"][0] + theirs["fg3"][0], theirs["fg2"][1] + theirs["fg3"][1]
+    if made >= cfg.timeout_scoring_n and made / tried >= cfg.timeout_scoring_pct:
+        return "rival_scoring", (f"tras {made} canastas del rival en {tried} tiros" if team == own else f"para frenar nuestro acierto ({made} canastas en {tried} tiros)"), None
+    behind = window_stats(log, other_team(team, own, rival), 0, now)["pts"] - window_stats(log, team, 0, now)["pts"]
+    if behind >= cfg.timeout_deficit:
+        return "deficit", f"con el marcador en contra ({-behind:+d})" if team == own else f"con el rival {behind} puntos por debajo", None
     return "none", "sin motivo claro: descanso o preparar una jugada", None
 
 
@@ -96,6 +106,8 @@ def proposals_for(kind: str, team: str, own: str, own_w: Dict[str, Any], rival_w
         out += [tactic_proposal(a) for a in answers] or [tactic_proposal("Defensa alternativa: cambiar de defensa (zona o presión al balón) y cortar el ritmo del rival")]
     elif kind == "turnovers":
         out.append(tactic_proposal(_ANSWER["turnovers"]))
+    elif kind == "rival_scoring":
+        out.append(tactic_proposal("Cambiar la defensa: el rival está anotando casi todo lo que tira (ayudas, defensa del balón o cambio de emparejamientos)"))
     elif kind == "drought":
         out.append(tactic_proposal("Jugada preparada para la primera posesión: atacar el aro o buscar al mejor tirador"))
     elif kind == "last_possession":

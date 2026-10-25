@@ -109,6 +109,30 @@ def test_fouls_are_never_the_reason_of_a_timeout_whoever_has_them_regression(cal
     assert "falta" not in alert.message.lower() and not any("Ana" in p["message"] or "Rita" in p["message"] for p in alert.proposal)
 
 
+def _made(team, t, kind="fg2"):
+    return [shot(team, t, True, kind), pts(team, t, 3 if kind == "fg3" else 2)]
+
+
+def test_a_rival_that_scores_everything_is_the_reason_of_our_timeout_regression():
+    """Unicaja - León (feedback 0.4.0, #565): we were 7 down and the rival had scored its last 3 attacks, but the review said «sin motivo claro»."""
+    log = [e for t in (660, 700, 750) for e in _made(RIVAL, t)] + _made(OWN, 680) + [shot(OWN, 720, False)]
+    [alert] = review(at(T + 10, log, own_timeouts=[T]))
+    assert alert.evidence["reason"] == "rival_scoring"
+    assert "3 canastas del rival en 3 tiros" in alert.message
+
+
+def test_the_rival_that_calls_a_timeout_after_our_good_attack_is_told_that_way():
+    log = [e for t in (660, 700, 750) for e in _made(OWN, t)] + _made(RIVAL, 680) + [shot(RIVAL, 720, False)]
+    [alert] = review(at(T + 10, log, rival_timeouts=[T]))
+    assert alert.evidence["reason"] == "rival_scoring" and "nuestro acierto (3 canastas en 3 tiros)" in alert.message
+
+
+def test_a_team_that_is_clearly_behind_calls_the_timeout_because_of_the_score_when_the_window_says_nothing_else():
+    log = [pts(RIVAL, 100 + 10 * i) for i in range(4)] + [pts(OWN, 670), pts(RIVAL, 700), pts(OWN, 730), pts(RIVAL, 750)]          # -8 for us over the game, even in the last two minutes
+    [alert] = review(at(T + 10, log, own_timeouts=[T]))
+    assert alert.evidence["reason"] == "deficit" and "con el marcador en contra (-8)" in alert.message
+
+
 def test_a_timeout_at_the_end_of_a_period_is_to_prepare_the_last_possession():
     log = [pts(OWN, 1100), pts(RIVAL, 1130), pts(OWN, 1160), pts(RIVAL, 1170)]
     [alert] = review(at(1175, log, own_timeouts=[1170], remaining=25))
