@@ -447,3 +447,20 @@ class TestRedProofJob:
         run = " ".join(s.get("run", "") for s in self._job()["steps"])
         assert "scripts/red_proof.py" in run and "origin/${{ github.base_ref }}" in run
 
+
+
+class TestDuplicateCodeJob:
+    """Issue #452: the duplicate-code baseline is in the summary of every CI run and never blocks anything."""
+
+    def _job(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]["duplicate-code"]
+
+    def test_it_is_informative_and_needs_no_installation(self):
+        job = self._job()
+        assert job["continue-on-error"] is True
+        runs = [s["run"] for s in job["steps"] if "run" in s]
+        assert any("scripts/duplicate_code.py" in r for r in runs) and not any("pip install" in r for r in runs)
+
+    def test_no_deploy_waits_for_it(self):
+        jobs = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]
+        assert all("duplicate-code" not in (j.get("needs") or []) for j in jobs.values())

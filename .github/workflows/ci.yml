@@ -157,6 +157,22 @@ jobs:
       - name: Do the new tests fail on the base?
         run: python scripts/red_proof.py --base origin/${{ github.base_ref }}
 
+  # Baseline of the duplicated code (issue #452) in the summary of every run; it never blocks a merge or a deploy and nothing waits for it.
+  duplicate-code:
+    name: Duplicate code report
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Report the duplicated blocks
+        run: python scripts/duplicate_code.py
+
   # ── Deploy to Render (backend) ─────────────────────────────────────────────
   deploy-backend:
     name: Deploy → Render
