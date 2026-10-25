@@ -4359,32 +4359,7 @@
     ]
    ],
    [
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "causes": "",
-       "gap_s": 1500
-      },
-      "id": "own_drought",
-      "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       },
-       {
-        "message": "Cambio de sistema",
-        "type": "tactic"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
-     }
-    ],
+    [],
     [
      {
       "category": "alineacion",
@@ -4436,6 +4411,30 @@
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1750
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 29:10 sin anotar.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ]
    ],
@@ -4462,30 +4461,6 @@
       "message": "Alineación indebida de x: solo 1 de formación en pista (mínimo 2). Corregirlo con el próximo cambio.",
       "proposal": [],
       "rearm_s": 180,
-      "severity": "critical"
-     },
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "causes": "",
-       "gap_s": 1500
-      },
-      "id": "own_drought",
-      "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       },
-       {
-        "message": "Cambio de sistema",
-        "type": "tactic"
-       }
-      ],
-      "rearm_s": null,
       "severity": "critical"
      }
     ],
@@ -4516,21 +4491,50 @@
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
+     },
+     {
+      "category": "gestion",
+      "confirm": 1,
+      "evidence": {
+       "causes": "",
+       "gap_s": 1750
+      },
+      "id": "own_drought",
+      "key": "drought:3:1200",
+      "message": "Sequía de 29:10 sin anotar.",
+      "proposal": [
+       {
+        "left": 3,
+        "message": "Tiempo muerto · quedan 3",
+        "type": "timeout"
+       },
+       {
+        "message": "Cambio de sistema",
+        "type": "tactic"
+       }
+      ],
+      "rearm_s": null,
+      "severity": "critical"
      }
     ]
    ],
    [
+    [],
+    [],
+    [],
+    [],
+    [],
     [
      {
       "category": "gestion",
       "confirm": 1,
       "evidence": {
        "causes": "",
-       "gap_s": 1500
+       "gap_s": 1750
       },
       "id": "own_drought",
       "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
+      "message": "Sequía de 29:10 sin anotar.",
       "proposal": [
        {
         "left": 3,
@@ -4545,25 +4549,25 @@
       "rearm_s": null,
       "severity": "critical"
      }
-    ],
-    [],
-    [],
-    [],
-    [],
-    []
+    ]
    ],
    [
+    [],
+    [],
+    [],
+    [],
+    [],
     [
      {
       "category": "gestion",
       "confirm": 1,
       "evidence": {
        "causes": "",
-       "gap_s": 1500
+       "gap_s": 1750
       },
       "id": "own_drought",
       "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
+      "message": "Sequía de 29:10 sin anotar.",
       "proposal": [
        {
         "left": 3,
@@ -4578,40 +4582,10 @@
       "rearm_s": null,
       "severity": "critical"
      }
-    ],
-    [],
-    [],
-    [],
-    [],
-    []
+    ]
    ],
    [
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "causes": "",
-       "gap_s": 1500
-      },
-      "id": "own_drought",
-      "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       },
-       {
-        "message": "Cambio de sistema",
-        "type": "tactic"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
-     }
-    ],
+    [],
     [],
     [],
     [
@@ -4664,30 +4638,6 @@
       "proposal": [],
       "rearm_s": 180,
       "severity": "critical"
-     },
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "causes": "",
-       "gap_s": 1500
-      },
-      "id": "own_drought",
-      "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       },
-       {
-        "message": "Cambio de sistema",
-        "type": "tactic"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
      }
     ],
     [],
@@ -4695,77 +4645,32 @@
     []
    ],
    [
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "causes": "",
-       "gap_s": 1500
-      },
-      "id": "own_drought",
-      "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       },
-       {
-        "message": "Cambio de sistema",
-        "type": "tactic"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
-     }
-    ],
+    [],
     [],
     []
    ],
    [
-    [
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "causes": "",
-       "gap_s": 1500
-      },
-      "id": "own_drought",
-      "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       },
-       {
-        "message": "Cambio de sistema",
-        "type": "tactic"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
-     }
-    ],
+    [],
     [],
     []
    ],
    [
+    [],
+    [],
+    [],
+    [],
+    [],
     [
      {
       "category": "gestion",
       "confirm": 1,
       "evidence": {
        "causes": "",
-       "gap_s": 1500
+       "gap_s": 1750
       },
       "id": "own_drought",
       "key": "drought:3:1200",
-      "message": "Sequía de 25:00 sin anotar.",
+      "message": "Sequía de 29:10 sin anotar.",
       "proposal": [
        {
         "left": 3,
@@ -4780,12 +4685,7 @@
       "rearm_s": null,
       "severity": "critical"
      }
-    ],
-    [],
-    [],
-    [],
-    [],
-    []
+    ]
    ],
    [
     {
@@ -22319,7 +22219,22 @@
     "snapshots": [
      {
       "elapsed": 600,
-      "log": [],
+      "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        40,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        40,
+        null
+       ]
+      ],
       "period": 2,
       "players": {
        "b1": {
@@ -22458,6 +22373,20 @@
      {
       "elapsed": 1200,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        40,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        40,
+        null
+       ],
        [
         1200,
         "T1",
@@ -22622,6 +22551,20 @@
       "elapsed": 1260,
       "log": [
        [
+        0,
+        "T1",
+        "pts",
+        40,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        40,
+        null
+       ],
+       [
         1260,
         "T1",
         "tov",
@@ -22784,6 +22727,20 @@
      {
       "elapsed": 1800,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        40,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        40,
+        null
+       ],
        [
         1800,
         "T1",
@@ -27443,7 +27400,22 @@
     "snapshot": {
      "elapsed": 0,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 1,
      "players": {},
      "remaining": 600,
@@ -27477,7 +27449,22 @@
     "snapshot": {
      "elapsed": 0,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 1,
      "players": {},
      "remaining": 600,
@@ -27511,7 +27498,22 @@
     "snapshot": {
      "elapsed": 0,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 1,
      "players": {},
      "remaining": 600,
@@ -27545,7 +27547,22 @@
     "snapshot": {
      "elapsed": 1100,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 100,
@@ -27581,7 +27598,22 @@
     "snapshot": {
      "elapsed": 1100,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 100,
@@ -27617,7 +27649,22 @@
     "snapshot": {
      "elapsed": 1100,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 100,
@@ -27653,7 +27700,22 @@
     "snapshot": {
      "elapsed": 1100,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 100,
@@ -27690,7 +27752,22 @@
     "snapshot": {
      "elapsed": 1100,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 100,
@@ -27727,7 +27804,22 @@
     "snapshot": {
      "elapsed": 1100,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 100,
@@ -27764,7 +27856,22 @@
     "snapshot": {
      "elapsed": 1200,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 600,
@@ -27801,7 +27908,22 @@
     "snapshot": {
      "elapsed": 1200,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 600,
@@ -27838,7 +27960,22 @@
     "snapshot": {
      "elapsed": 1200,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 600,
@@ -27875,7 +28012,22 @@
     "snapshot": {
      "elapsed": 1500,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 300,
@@ -27911,7 +28063,22 @@
     "snapshot": {
      "elapsed": 1500,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 300,
@@ -27947,7 +28114,22 @@
     "snapshot": {
      "elapsed": 1500,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 300,
@@ -27983,7 +28165,22 @@
     "snapshot": {
      "elapsed": 2270,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 130,
@@ -28017,7 +28214,22 @@
     "snapshot": {
      "elapsed": 2270,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 130,
@@ -28051,7 +28263,22 @@
     "snapshot": {
      "elapsed": 2270,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 130,
@@ -28085,7 +28312,22 @@
     "snapshot": {
      "elapsed": 2280,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 120,
@@ -28119,7 +28361,22 @@
     "snapshot": {
      "elapsed": 2280,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 120,
@@ -28153,7 +28410,22 @@
     "snapshot": {
      "elapsed": 2280,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 120,
@@ -28187,7 +28459,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28223,7 +28510,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28259,7 +28561,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28295,7 +28612,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28332,7 +28664,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28369,7 +28716,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28406,7 +28768,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28445,7 +28822,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28484,7 +28876,22 @@
     "snapshot": {
      "elapsed": 2340,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 60,
@@ -28523,7 +28930,22 @@
     "snapshot": {
      "elapsed": 2400,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 300,
@@ -28557,7 +28979,22 @@
     "snapshot": {
      "elapsed": 2400,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 300,
@@ -28591,7 +29028,22 @@
     "snapshot": {
      "elapsed": 2400,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 300,
@@ -28625,7 +29077,22 @@
     "snapshot": {
      "elapsed": 2600,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 100,
@@ -28661,7 +29128,22 @@
     "snapshot": {
      "elapsed": 2600,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 100,
@@ -28697,7 +29179,22 @@
     "snapshot": {
      "elapsed": 2600,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 100,
@@ -28733,7 +29230,22 @@
     "snapshot": {
      "elapsed": 2700,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 6,
      "players": {},
      "remaining": 300,
@@ -28769,7 +29281,22 @@
     "snapshot": {
      "elapsed": 2700,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 6,
      "players": {},
      "remaining": 300,
@@ -28805,7 +29332,22 @@
     "snapshot": {
      "elapsed": 2700,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 6,
      "players": {},
      "remaining": 300,
@@ -28841,7 +29383,22 @@
     "snapshot": {
      "elapsed": 1320,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 480,
@@ -28879,7 +29436,22 @@
     "snapshot": {
      "elapsed": 1320,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 480,
@@ -28917,7 +29489,22 @@
     "snapshot": {
      "elapsed": 1320,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 480,
@@ -28958,7 +29545,22 @@
     "snapshot": {
      "elapsed": 1921,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       80,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 479,
@@ -28998,7 +29600,22 @@
     "snapshot": {
      "elapsed": 1921,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       80,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 479,
@@ -29034,7 +29651,22 @@
     "snapshot": {
      "elapsed": 1920,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       85,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 480,
@@ -29074,7 +29706,22 @@
     "snapshot": {
      "elapsed": 1920,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       85,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 480,
@@ -29110,7 +29757,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       41,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29150,7 +29812,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       41,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29186,7 +29863,22 @@
     "snapshot": {
      "elapsed": 2160,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       66,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 240,
@@ -29226,7 +29918,22 @@
     "snapshot": {
      "elapsed": 2160,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       66,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 240,
@@ -29262,7 +29969,22 @@
     "snapshot": {
      "elapsed": 2159,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       62,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 241,
@@ -29302,7 +30024,22 @@
     "snapshot": {
      "elapsed": 2159,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       62,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 241,
@@ -29338,7 +30075,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       67,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29378,7 +30130,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       67,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29414,7 +30181,22 @@
     "snapshot": {
      "elapsed": 1700,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       90,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 100,
@@ -29454,7 +30236,22 @@
     "snapshot": {
      "elapsed": 1700,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       90,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 3,
      "players": {},
      "remaining": 100,
@@ -29490,7 +30287,22 @@
     "snapshot": {
      "elapsed": 2400,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 300,
@@ -29530,7 +30342,22 @@
     "snapshot": {
      "elapsed": 2400,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       60,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 300,
@@ -29566,7 +30393,22 @@
     "snapshot": {
      "elapsed": 2500,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       70,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 200,
@@ -29606,7 +30448,22 @@
     "snapshot": {
      "elapsed": 2500,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       70,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 5,
      "players": {},
      "remaining": 200,
@@ -29642,7 +30499,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       38,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29682,7 +30554,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       38,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29718,7 +30605,22 @@
     "snapshot": {
      "elapsed": 900,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       30,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 300,
@@ -29758,7 +30660,22 @@
     "snapshot": {
      "elapsed": 900,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       30,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 2,
      "players": {},
      "remaining": 300,
@@ -29794,7 +30711,22 @@
     "snapshot": {
      "elapsed": 2300,
      "last_num": 1,
-     "log": [],
+     "log": [
+      [
+       0,
+       "T1",
+       "pts",
+       90,
+       null
+      ],
+      [
+       0,
+       "T2",
+       "pts",
+       60,
+       null
+      ]
+     ],
      "period": 4,
      "players": {},
      "remaining": 100,
@@ -29831,6 +30763,20 @@
       "elapsed": 2100,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        38,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
        [
         2000,
         "T2",
@@ -29879,6 +30825,20 @@
       "last_num": 1,
       "log": [
        [
+        0,
+        "T1",
+        "pts",
+        38,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
+       [
         2000,
         "T2",
         "pts",
@@ -29926,6 +30886,20 @@
       "last_num": 1,
       "log": [
        [
+        0,
+        "T1",
+        "pts",
+        51,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
+       [
         2000,
         "T2",
         "pts",
@@ -29972,6 +30946,20 @@
       "elapsed": 2400,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        38,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
        [
         2300,
         "T2",
@@ -30034,6 +31022,20 @@
       "last_num": 1,
       "log": [
        [
+        0,
+        "T1",
+        "pts",
+        38,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
+       [
         2000,
         "T2",
         "pts",
@@ -30080,6 +31082,20 @@
       "elapsed": 2110,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        38,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
        [
         2000,
         "T2",
@@ -30128,6 +31144,20 @@
       "last_num": 1,
       "log": [
        [
+        0,
+        "T1",
+        "pts",
+        51,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
+       [
         2000,
         "T2",
         "pts",
@@ -30174,6 +31204,20 @@
       "elapsed": 2400,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        38,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        52,
+        null
+       ],
        [
         2300,
         "T2",
@@ -30229,7 +31273,22 @@
      {
       "elapsed": 1700,
       "last_num": 1,
-      "log": [],
+      "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        62,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        60,
+        null
+       ]
+      ],
       "period": 3,
       "players": {
        "x": {
@@ -30269,6 +31328,20 @@
       "elapsed": 2200,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        62,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        60,
+        null
+       ],
        [
         2100,
         "T1",
@@ -30333,6 +31406,20 @@
       "elapsed": 2250,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        63,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        60,
+        null
+       ],
        [
         2100,
         "T1",
@@ -30410,7 +31497,22 @@
      {
       "elapsed": 1700,
       "last_num": 1,
-      "log": [],
+      "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        62,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        60,
+        null
+       ]
+      ],
       "period": 3,
       "players": {
        "x": {
@@ -30450,6 +31552,20 @@
       "elapsed": 2200,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        62,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        60,
+        null
+       ],
        [
         2100,
         "T1",
@@ -30514,6 +31630,20 @@
       "elapsed": 2250,
       "last_num": 1,
       "log": [
+       [
+        0,
+        "T1",
+        "pts",
+        63,
+        null
+       ],
+       [
+        0,
+        "T2",
+        "pts",
+        60,
+        null
+       ],
        [
         2100,
         "T1",

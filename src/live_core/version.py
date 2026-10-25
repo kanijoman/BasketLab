@@ -13,6 +13,11 @@ from typing import Optional, Union
 
 _LENGTH = 8
 
+# What a match kept on the tablet (a finished match, a recording) was saved under (issue #562). Raise it, here AND in the app (feed/replayCompat.ts), when a change of the engine
+# makes the replay of an older saved match unreliable (a duration, a lineup, a score read differently): the app warns about the matches kept under an older number and offers to delete them.
+# It is not the hash above: that one changes with every edit and would flag every saved match every week. 1: until 0.4.0 (they carry no number); 2: 0.4.1 (duration of a replay, scores read from the header).
+REPLAY_COMPAT = 2
+
 
 def engine_version(root: Optional[Union[str, Path]] = None) -> str:
     """Eight hex characters identifying the ``*.py`` modules of ``root`` (by default, this package)."""

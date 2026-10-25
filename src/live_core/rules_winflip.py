@@ -72,6 +72,7 @@ def win_flip_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
                  f"(experimental).{_lever_text(lever)}"),
         evidence={"p_before": round(before, 4), "p_now": current["p"], "drop": round(drop, 4), "window_s": window,
                   "projected_margin": current["projected_margin"],
-                  "lever": lever["id"] if lever else None, "lever_gain": lever["gain"] if lever else None},
+                  "lever": lever["id"] if lever else None, "lever_gain": lever["gain"] if lever else None,
+                  **({"lever_direction": lever["direction"]} if lever and lever.get("direction") else {})},
         rearm_s=window,
     )]

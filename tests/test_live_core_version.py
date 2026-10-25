@@ -43,3 +43,21 @@ def test_a_new_or_renamed_module_changes_it_and_what_is_not_python_does_not(tmp_
 def test_the_session_meta_carries_it_for_the_app():
     package = (ROOT / "tests" / "recordings" / "2524470.package.json").read_text(encoding="utf-8")
     assert LiveSession(package).meta["engine_version"] == engine_version()
+
+
+def test_the_replay_compatibility_is_a_number_the_app_knows_too_regression():
+    """0.4.0 feedback (#562): a match saved with an earlier engine replays with errors (a lineup that is not illegal, an overtime that was not played). The app stamps what it keeps
+    with ``REPLAY_COMPAT`` and warns about the matches kept under an older one, offering to delete them. It is raised on purpose when a change makes old replays unreliable
+    (the hash of the engine changes with every edit, so it cannot be the stamp: every saved match would be flagged every week)."""
+    from src.live_core.version import REPLAY_COMPAT
+
+    assert isinstance(REPLAY_COMPAT, int) and REPLAY_COMPAT >= 2
+    app = (ROOT / "apps" / "live-android" / "src" / "feed" / "replayCompat.ts").read_text(encoding="utf-8")
+    assert int(re.search(r"REPLAY_COMPAT\s*=\s*(\d+)", app).group(1)) == REPLAY_COMPAT, "raise it in version.py AND in the app (feed/replayCompat.ts)"
+
+
+def test_the_session_meta_carries_the_replay_compatibility():
+    from src.live_core.version import REPLAY_COMPAT
+
+    package = (ROOT / "tests" / "recordings" / "2524470.package.json").read_text(encoding="utf-8")
+    assert LiveSession(package).meta["replay_compat"] == REPLAY_COMPAT

@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
 from live_helpers import ON_COURT, OWN, RIVAL, TABLE, player, snap  # noqa: E402
+from builders import pad_to_score  # noqa: E402
 from context_cases import context_cases  # noqa: E402
 from formation_cases import formation_cases  # noqa: E402
 from possession_cases import possession_cases  # noqa: E402
@@ -49,6 +50,7 @@ def mk(period, elapsed, players):
     """A snapshot with exactly the given players (live_helpers.snap uses the shared roster)."""
     s = snap(period=period, elapsed=elapsed)
     s["players"] = players
+    s["log"] = pad_to_score(s["log"], s["score"])
     return s
 
 
@@ -216,7 +218,7 @@ def advice_sequences():
                     stl=5, ast=12, blk=2, pts=0)
         s["teams"] = {OWN: {**team, "stats": {**base, "tov": tov}}, RIVAL: {**team, "stats": base}}
         s["score"] = {OWN: 40, RIVAL: 40}
-        s["log"] = [[e - 30 * i, OWN, "tov", 1] for i in range(4)] if tov > 20 else []
+        s["log"] = pad_to_score([[e - 30 * i, OWN, "tov", 1] for i in range(4)] if tov > 20 else [], s["score"])
         ff.append(s)
     out.append(case("advice.sequence", {"own": OWN, "rival": RIVAL, "baselines": TABLE, "snapshots": ff}))
     return out

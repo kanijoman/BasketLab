@@ -10,6 +10,7 @@ import type { PackageStore, StoredPackage } from '../package/storage'
 import { memoryFinishedStore, type FinishedMatch } from '../feed/finishedStore'
 import { decodeRecording, memoryRecordingStore, type SavedRecording } from '../feed/recordingStore'
 import { pickOption } from '../test/select'
+import { REPLAY_COMPAT } from '../feed/replayCompat'
 
 const META = {
   package_id: 'p', schema_version: 1, created_at: '', collection: 'c', season: '2025',
@@ -267,6 +268,7 @@ describe('finished matches (issue #407)', () => {
     const { finishedStore } = await connectAndFinish()
     const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
     expect(saved.complete).toBe(true)
+    expect(saved.compat).toBe(REPLAY_COMPAT)                 // stamped, so a later release can tell it was kept under this engine (#562)
   })
 
   it('keeps the match every few minutes while it is followed, so closing the app loses little', async () => {

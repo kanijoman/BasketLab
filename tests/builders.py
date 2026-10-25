@@ -39,6 +39,17 @@ def snap(elapsed=600, period=1, players=None, fouls_by_period=None, log=None):
     }
 
 
+def pad_to_score(log, score):
+    """The log of a snapshot whose header says ``score`` (team -> points): a log that holds fewer points than the header is a play-by-play that is behind it, a state the engine
+    waits in (score_settle). A fixture that only wants a header score gets the missing points as one early basket per team, so it describes a state of a settled game."""
+    padding = []
+    for team, header in (score or {}).items():
+        have = sum(e[3] for e in log if e[1] == team and e[2] == "pts")
+        if header > have:
+            padding.append([0, team, "pts", header - have, None])
+    return padding + list(log)
+
+
 def engine(**kw):
     return AdviceEngine(own_team_id=OWN, rival_team_id=RIVAL, **kw)
 

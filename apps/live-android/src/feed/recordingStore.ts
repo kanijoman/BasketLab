@@ -14,6 +14,8 @@ export interface SavedRecording {
   /** ``gzip`` (the normal case) or ``raw`` text when the platform cannot compress. */
   encoding: 'gzip' | 'raw'
   bytes: Uint8Array
+  /** ``REPLAY_COMPAT`` it was saved under (issue #562); absent before 0.4.1. */
+  compat?: number
 }
 
 export type RecordingStore = KeyedStore<SavedRecording>

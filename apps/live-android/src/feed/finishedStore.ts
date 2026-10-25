@@ -22,6 +22,8 @@ export interface FinishedMatch {
   game: string
   /** False when the match was kept before its end (the staff stopped following it, or it is being followed); absent in a match saved before issue #556. */
   complete?: boolean
+  /** ``REPLAY_COMPAT`` it was saved under (issue #562); absent in a match saved before 0.4.1. */
+  compat?: number
 }
 
 export type FinishedStore = KeyedStore<FinishedMatch>

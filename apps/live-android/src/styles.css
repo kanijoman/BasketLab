@@ -179,6 +179,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .round-filters input:not([type='checkbox']) { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
 .round-filters .round-filter-check { display: flex; align-items: center; gap: 10px; min-height: 44px; color: var(--text); font-size: 1rem; }
 .round-filters input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+.stale-note { color: var(--warning, var(--muted)); font-size: 0.85rem; }
 .round-info { display: grid; gap: 2px; min-width: 0; }
 .round-team { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .round-team .team-name { min-width: 0; overflow-wrap: anywhere; }

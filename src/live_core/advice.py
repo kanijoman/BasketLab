@@ -13,10 +13,12 @@ import dataclasses
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
+from .coherence import Coherence
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .recent_timeout import adapt_for_recent_timeout
 from .lineup_settle import LINEUP_RULES, lineup_unsettled
+from .score_settle import RECENT_ACTION_RULES, log_lags
 from .win_prob import WinProbabilityModel
 from .game_context import adjust_for_phase, game_phase, kept_when_decided
 from .pace import PaceModel
@@ -103,6 +105,8 @@ class AdviceEngine:
         )
         self._last: Dict[str, int] = {}
         self._streak: Dict[str, int] = {}   # key -> consecutive evaluations it has appeared in (alerts that ask to confirm)
+        self._coherence = Coherence()
+        self._lag: Dict[str, Any] = {}      # the log is behind the scoreboard (score_settle): what is being waited for, and the offset that became normal
         self._count: Dict[str, int] = {}
 
     @classmethod
@@ -170,9 +174,12 @@ class AdviceEngine:
                    if cfg.enabled("game_context") else None)
         streaks: Dict[str, int] = {}
         settled = not lineup_unsettled(snapshot)
+        waiting = log_lags(snapshot, self._ctx.own_team_id, self._ctx.rival_team_id or "", self._lag, cfg.log_lag_max_s)
         for rule_id, rule in RULES:
             if not cfg.enabled(rule_id) or (rule_id in LINEUP_RULES and not settled):
                 continue       # who is on court may be stale until the lines of the stoppage arrive (#413)
+            if waiting and rule_id in RECENT_ACTION_RULES:
+                continue       # the log is behind the scoreboard: the last actions are not all there yet (#564)
             for raw in rule(snapshot, self._ctx):
                 advice = adjust_for_phase(raw, context) if context else raw
                 if context and context["phase"] == "decided" and cfg.decided_only_rotation and not kept_when_decided(advice):
@@ -182,6 +189,10 @@ class AdviceEngine:
                     if streaks[advice.key] < advice.confirm:
                         continue
                 if self._is_new(advice, raw.key, now):
+                    advice = self._coherence.check(advice, now, cfg.conflict_window_s)
+                    if advice is None:
+                        continue         # it contradicts something said a moment ago: it waits, it is not recorded as said (#568)
+                    self._coherence.said(advice, now)
                     self._last[advice.key] = now
                     emitted.append(adapt_for_recent_timeout(self._with_proposal(self._numbered(advice), snapshot), snapshot,
                                                             self._ctx.own_team_id, self._ctx.config))
