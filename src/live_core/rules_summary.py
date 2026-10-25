@@ -18,6 +18,7 @@ from .advice_types import Advice, RuleContext
 from .clock import period_length, period_start
 from .proposals import tactic_proposal
 from .summary_cause import cause_key, fouls_key
+from .score_text import header_score, score_text
 from .summary_pace import pace_facts, pace_key, pace_line
 from .windows import player_points, window_stats
 
@@ -25,9 +26,9 @@ _TITLES = {1: "Fin del 1.er cuarto", 2: "Descanso", 3: "Fin del 3.er cuarto"}
 _ORDINALS = {1: "1.er", 2: "2.º", 3: "3.er"}
 
 
-def _points(label: str, pair) -> str:
-    """``marcador 21-13 (+8)``: a score of the game or of a period, with its difference (issue #486)."""
-    return f"{label} {pair[0]}-{pair[1]} ({pair[0] - pair[1]:+d})"
+def _points(label: str, snap: Dict[str, Any], own_id: str, pair) -> str:
+    """``marcador 21-13 (+8)``: a score of the game or of a period, with its difference, in the order of the scoreboard (issues #486, #560)."""
+    return f"{label} {score_text(snap, own_id, pair[0], pair[1])}"
 
 MAX_KEYS, MAX_ADJUSTMENTS = 3, 2
 
@@ -225,10 +226,18 @@ def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     adjustments = list(dict.fromkeys(adjustment for _, (_, adjustment) in found))[:MAX_ADJUSTMENTS]
     own, rival = facts["own"]["pts"], facts["rival"]["pts"]
     log, rival_id = snap.get("log", []), ctx.rival_team_id or ""
-    score = (window_stats(log, ctx.own_team_id, 0, end)["pts"], window_stats(log, rival_id, 0, end)["pts"])     # the game, up to the end of the period
-    quarter = (window_stats(log, ctx.own_team_id, period_start(period), end)["pts"], window_stats(log, rival_id, period_start(period), end)["pts"])
-    message = f"{_TITLES[period]}: {_points('marcador', score)}; " + (f"1.ª parte {own}-{rival} ({own - rival:+d}); 2.º cuarto {quarter[0]}-{quarter[1]} ({quarter[0] - quarter[1]:+d})."
-                                                                      if period == 2 else f"{_points(f'{_ORDINALS[period]} cuarto', quarter)}.") + " "
+    log_score = (window_stats(log, ctx.own_team_id, 0, end)["pts"], window_stats(log, rival_id, 0, end)["pts"])     # the game, up to the end of the period, by the log
+    # what the staff sees on the scoreboard wins over the log when both are at the end of the period: a correction of the table can leave the log with other points (#560)
+    header = header_score(snap, ctx.own_team_id, rival_id, end)
+    score = header or log_score
+    if header and start == 0:
+        own, rival = score                                                                                           # the first quarter and the first half start at 0-0
+    quarter = score if header and period == 1 else (window_stats(log, ctx.own_team_id, period_start(period), end)["pts"],
+                                                    window_stats(log, rival_id, period_start(period), end)["pts"])
+    own_id = ctx.own_team_id
+    message = f"{_TITLES[period]}: {_points('marcador', snap, own_id, score)}; " + (
+        f"1.ª parte {score_text(snap, own_id, own, rival)}; 2.º cuarto {score_text(snap, own_id, quarter[0], quarter[1])}."
+        if period == 2 else f"{_points(f'{_ORDINALS[period]} cuarto', snap, own_id, quarter)}.") + " "
     message += "Claves: " + "; ".join(text for _, (text, _) in found) + "." if found else "Sin claves destacadas."
     if facts["pace"]:
         message += " " + pace_line(facts["pace"])
@@ -236,6 +245,7 @@ def summary_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         key=f"summary:{period}", id="period_summary", severity="info", category="resumen", message=message,
         evidence={"period": period, "own_points": own, "rival_points": rival, "keys": [key for key, _ in found],
                   "adjustments": adjustments, "pace": facts["pace"], "score": {"own": score[0], "rival": score[1]},
+                  **({"log_score": {"own": log_score[0], "rival": log_score[1]}} if header and header != log_score else {}),
                   "period_points": {"own": quarter[0], "rival": quarter[1]}, **({"half_points": {"own": own, "rival": rival}} if period == 2 else {}),
                   "foul_trouble": facts["trouble"]},
         proposal=[tactic_proposal(a) for a in adjustments])]

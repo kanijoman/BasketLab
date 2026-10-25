@@ -29,10 +29,11 @@ def _n(count: int, one: str, many: str) -> str:
 
 
 def reason_of(team: str, own: str, rival: str, mine: Dict[str, Any], theirs: Dict[str, Any], log: List[Any], now: int, remaining: int,
-              tired: List[str], cfg: RuleConfig) -> Tuple[str, str, Optional[List[str]]]:
+              tired: List[str], cfg: RuleConfig, own_first: bool = True) -> Tuple[str, str, Optional[List[str]]]:
     """``(kind, text, names)``: why ``team`` called the timeout, from the window before it. ``mine``/``theirs`` are the window of the team and of the other one."""
     net = mine["pts"] - theirs["pts"]
-    score = f"{mine['pts']}-{theirs['pts']}" if team == own else f"{theirs['pts']}-{mine['pts']}"      # always own-rival
+    own_w, rival_w = (mine, theirs) if team == own else (theirs, mine)
+    score = f"{own_w['pts']}-{rival_w['pts']}" if own_first else f"{rival_w['pts']}-{own_w['pts']}"      # the order of the scoreboard (#560)
     if net <= -cfg.timeout_run_net:
         return "run", ("para cortar el parcial rival (" + score + ")") if team == own else ("para cortar nuestro parcial (" + score + ")"), None
     if 0 < remaining <= cfg.timeout_last_possession_s:

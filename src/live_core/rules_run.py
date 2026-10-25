@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
+from .score_text import plain_score
 from .timeouts import episode, timeout_within, timeouts_left
 from .windows import run_causes, run_start, window_stats
 
@@ -52,7 +53,7 @@ def run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     left = timeouts_left(snap, ctx.own_team_id)
     return [Advice(
         key=f"rival_run:{episode(snap, ctx.own_team_id)}:{level}", id="rival_run", severity=level, category="gestion",
-        message=(f"Parcial de {own['pts']}-{rival['pts']} en contra en los últimos {_clock(cfg.run_window_s)}"
+        message=(f"Parcial de {plain_score(snap, ctx.own_team_id, own['pts'], rival['pts'])} en contra en los últimos {_clock(cfg.run_window_s)}"
                  + (f" ({causes})" if causes else "") + "."),
         evidence={"rival_points": rival["pts"], "own_points": own["pts"], "window_s": cfg.run_window_s,
                   "net": rival["pts"] - own["pts"], "causes": causes},
