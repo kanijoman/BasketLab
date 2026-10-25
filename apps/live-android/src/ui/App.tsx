@@ -41,6 +41,7 @@ import RecordingsPanel from './RecordingsPanel'
 import { IndexedDbRecordingStore, encodeRecording, safeRecordingStore, type RecordingStore, type SavedRecording } from '../feed/recordingStore'
 import { reportBlocks } from '../postmatch/blocks'
 import { fileNameFor, shareFile as shareFileDefault, sharePdf } from '../postmatch/share'
+import { REPLAY_COMPAT } from '../feed/replayCompat'
 import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
@@ -329,7 +330,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const match: FinishedMatch = {
       code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), ownId: current.team.id,
       competition: competitionLabel(summarizePackage(saved.plaintext).collection) || undefined,
-      alerts: [...alertLog.current], plaintext: saved.plaintext, game, complete,
+      alerts: [...alertLog.current], plaintext: saved.plaintext, game, complete, compat: REPLAY_COMPAT,
     }
     await finishedStore.save(match)
     setFinishedMatches(await finishedStore.list())
@@ -341,7 +342,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     const { encoding, bytes } = await encodeRecording(JSON.stringify(recording))
     await recordingStore.save({
       code, title: current ? `${current.team.name} – ${current.rival.name}` : code, savedAt: new Date().toISOString(), complete,
-      frames: (recording as { frames?: unknown[] }).frames?.length ?? 0, encoding, bytes,
+      frames: (recording as { frames?: unknown[] }).frames?.length ?? 0, encoding, bytes, compat: REPLAY_COMPAT,
     })
     setRecordings(await recordingStore.list())
     session.record(`Grabación del partido ${code} guardada (${complete ? 'completa' : 'incompleta'})`)

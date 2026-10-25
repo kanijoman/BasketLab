@@ -1,4 +1,5 @@
 import type { FinishedMatch } from '../feed/finishedStore'
+import { STALE_NOTE, isStale } from '../feed/replayCompat'
 import { useMatchFilters } from './MatchFilters'
 import RemoveButton from './RemoveButton'
 
@@ -38,6 +39,7 @@ export default function FinishedMatches({ matches, disabled, onReview, onReport,
               <strong className="match-title">{m.title}</strong>
               <span className="detail round-when">{date(m.savedAt)}{m.complete === false && ' · incompleto (se dejó de seguir antes del final)'}</span>
             </span>
+            {isStale(m.compat) && <span className="detail stale-note">{STALE_NOTE}</span>}
             <span className="round-sides">
               <button type="button" className="secondary" aria-label={`Revisar ${m.title}`} disabled={disabled || reporting !== null} onClick={() => onReview(m.code)}>
                 Revisar

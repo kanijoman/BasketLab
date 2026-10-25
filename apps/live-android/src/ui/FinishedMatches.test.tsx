@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FinishedMatch } from '../feed/finishedStore'
 import FinishedMatches from './FinishedMatches'
+import { REPLAY_COMPAT } from '../feed/replayCompat'
 import { optionLabels, pickOption, valueOf } from '../test/select'
 
 const match = (code: string, title: string, competition?: string): FinishedMatch => ({
@@ -83,5 +84,16 @@ describe('FinishedMatches buttons (issue #570)', () => {
     expect(Array.from(row.querySelectorAll('button')).map(b => b.textContent)).toEqual(['Revisar', 'Informe', 'Eliminar'])
     expect(screen.getByRole('button', { name: 'Revisar LEON – UNIBASKET' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Informe PDF de LEON – UNIBASKET' })).toBeTruthy()
+  })
+})
+
+describe('FinishedMatches saved under an older engine (issue #562)', () => {
+  it('warns about the matches kept before the current compatibility (or without a stamp) and not about the current ones, next to the delete button', () => {
+    show([{ ...match('1', 'LEON – UNIBASKET'), compat: REPLAY_COMPAT }, match('2', 'ZAMORA – LEON'), { ...match('3', 'CULTURAL – OVIEDO'), compat: 1 }])
+    const [fresh, unstamped, old] = rows()
+    expect(fresh).not.toContain('versión anterior')
+    expect(unstamped).toContain('versión anterior de la app')
+    expect(old).toContain('versión anterior de la app')
+    expect(screen.getByRole('button', { name: 'Eliminar CULTURAL – OVIEDO' })).toBeTruthy()
   })
 })

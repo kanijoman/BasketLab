@@ -1,4 +1,5 @@
 import type { SavedRecording } from '../feed/recordingStore'
+import { STALE_NOTE, isStale } from '../feed/replayCompat'
 import RemoveButton from './RemoveButton'
 
 /** The recordings of the matches followed live that are kept on the device (issue #416): each can be shared as a file to replay it. */
@@ -24,6 +25,7 @@ export default function RecordingsPanel({ recordings, onShare, onRemove }: Props
               <strong className="match-title">{r.title}</strong>
               <span className="detail round-when">{date(r.savedAt)} · {r.complete ? 'completa' : 'incompleta'} · {r.frames} documentos</span>
             </span>
+            {isStale(r.compat) && <span className="detail stale-note">{STALE_NOTE}</span>}
             <span className="round-sides">
               <button type="button" className="secondary" aria-label={`Compartir grabación de ${r.title}`} onClick={() => onShare(r.code)}>
                 Compartir
