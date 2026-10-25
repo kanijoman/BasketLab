@@ -36,7 +36,7 @@ export default function FinishedMatches({ matches, disabled, onReview, onReport,
             <span className="round-info">
               {m.competition && <span className="detail round-competition">{m.competition}</span>}
               <strong className="match-title">{m.title}</strong>
-              <span className="detail round-when">{date(m.savedAt)}</span>
+              <span className="detail round-when">{date(m.savedAt)}{m.complete === false && ' · incompleto (se dejó de seguir antes del final)'}</span>
             </span>
             <span className="round-sides">
               <button type="button" className="secondary" disabled={disabled || reporting !== null} onClick={() => onReview(m.code)}>
