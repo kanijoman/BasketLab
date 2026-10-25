@@ -75,3 +75,13 @@ describe('FinishedMatches incomplete (issue #556)', () => {
     expect(tagged[0]).toContain('UNIBASKET')
   })
 })
+
+describe('FinishedMatches buttons (issue #570)', () => {
+  it('say what they do without repeating the teams: Revisar, Informe and Eliminar (the names for a screen reader keep the match)', () => {
+    show([match('1', 'LEON – UNIBASKET')])
+    const row = document.querySelector('.finished-matches li') as HTMLElement
+    expect(Array.from(row.querySelectorAll('button')).map(b => b.textContent)).toEqual(['Revisar', 'Informe', 'Eliminar'])
+    expect(screen.getByRole('button', { name: 'Revisar LEON – UNIBASKET' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Informe PDF de LEON – UNIBASKET' })).toBeTruthy()
+  })
+})

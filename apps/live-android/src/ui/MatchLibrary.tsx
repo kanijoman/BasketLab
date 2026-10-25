@@ -43,7 +43,7 @@ export default function MatchLibrary({ demos, favorites, hasSample, source, disa
                 {item.value === source ? 'Viendo' : 'Ver'}
               </button>
               <button type="button" className="secondary" aria-label={`Informe PDF de ${item.label}`} disabled={disabled || reporting !== null} onClick={() => onReport(item.value)}>
-                {reporting === item.value ? 'Generando informe…' : 'Informe PDF'}
+                {reporting === item.value ? 'Generando informe…' : 'Informe'}
               </button>
             </span>
           </li>
