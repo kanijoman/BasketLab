@@ -13,7 +13,7 @@ import pytest
 
 from src.live_core.config import RuleConfig
 from src.live_core.session import LiveSession
-from tests.test_live_core_advice import BASE, OWN, RIVAL, _player, _stats, engine, ff_snap, snap
+from tests.builders import BASE, OWN, RIVAL, _player, _stats, engine, ff_snap, snap
 
 RECORDINGS = Path(__file__).parent / "recordings"
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from src.live_core.advice import Advice
 from src.live_core.session import LiveSession
-from tests.test_live_core_advice import engine, snap
+from tests.builders import engine, snap
 
 RECORDINGS = Path(__file__).parent / "recordings"
 REARM = 240

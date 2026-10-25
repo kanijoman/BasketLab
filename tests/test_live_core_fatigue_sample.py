@@ -10,7 +10,7 @@ In the demo Cultural - Melilla the alert said "riesgo de fatiga muy alto, 3:35 s
 """
 from src.live_core.config import RuleConfig
 from src.live_core.rules_rotation import fatigue_index
-from tests.test_live_core_advice import OWN, _player, engine, snap
+from tests.builders import OWN, _player, engine, snap
 
 SIQUIER = {"avg_min": 370, "p90_min": 700, "avg_stint": 108, "games": 2, "stints": 4}      # the real baseline of the demo
 VETERAN = {"avg_min": 1500, "p90_min": 1900, "avg_stint": 300, "games": 8, "stints": 40}

@@ -9,7 +9,7 @@ import pytest
 
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
-from tests.test_live_core_advice import OWN, RIVAL, snap
+from tests.builders import OWN, RIVAL, snap
 
 STATS0 = {k: 0 for k in ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", "tov", "stl", "ast", "blk")}
 
@@ -351,7 +351,7 @@ def test_g1_without_the_win_model_or_the_score_it_says_nothing():
 
 def pace_late(margin=3, remaining=300, tov=10):
     """A close finish with a sample big enough for the win model: the pace lever is listed."""
-    from tests.test_live_core_advice import _stats
+    from tests.builders import _stats
     s = snap(elapsed=2400 - remaining, period=4)
     s["remaining"] = remaining
     s["teams"][OWN]["stats"], s["teams"][RIVAL]["stats"] = _stats(tov=tov), _stats()

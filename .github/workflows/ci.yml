@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,10 +41,10 @@ jobs:
         env:
           ENVIRONMENT: development
 
-      # The coverage gate (70 %) is enforced on main, where the tracing cost does not delay a pull request.
+      # The coverage gate (82 %) is enforced on main, where the tracing cost does not delay a pull request.
       - name: Run tests in parallel with the coverage gate (main)
         if: github.ref == 'refs/heads/main'
-        run: python -m pytest tests/ -n auto --dist loadscope --cov=src --cov-report=term-missing --cov-fail-under=70 --tb=short -q --override-ini='addopts='
+        run: python -m pytest tests/ -n auto --dist loadscope --cov=src --cov-report=term-missing --cov-fail-under=82 --tb=short -q --override-ini='addopts='
         env:
           ENVIRONMENT: development
 
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -132,6 +132,47 @@ jobs:
           path: frontend/test-results
           retention-days: 7
 
+  # ── Red proof (informative, issue #542) ────────────────────────────────────
+  # The tests that a pull request adds or changes must FAIL on the source of its base (CLAUDE.md: write the failing test first). It never blocks a merge or a deploy:
+  # the summary of the run says whether there is proof. ``continue-on-error`` keeps a failure of the script itself from turning the check red.
+  red-proof:
+    name: Red proof of the new tests
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Do the new tests fail on the base?
+        run: python scripts/red_proof.py --base origin/${{ github.base_ref }}
+
+  # Baseline of the duplicated code (issue #452) in the summary of every run; it never blocks a merge or a deploy and nothing waits for it.
+  duplicate-code:
+    name: Duplicate code report
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Report the duplicated blocks
+        run: python scripts/duplicate_code.py
+
   # ── Deploy to Render (backend) ─────────────────────────────────────────────
   deploy-backend:
     name: Deploy → Render
@@ -171,7 +212,7 @@ jobs:
 
       # The hook is asynchronous: wait until the API serves THIS commit and its database is connected.
       # Needs the repository variable RENDER_API_URL (public URL of basketlab-api); skipped without it.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Post-deploy check (api)
         env:
           RENDER_API_URL: ${{ vars.RENDER_API_URL }}

@@ -7,7 +7,7 @@ import pytest
 
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
-from tests.test_live_core_advice import OWN, RIVAL, _player, snap
+from tests.builders import OWN, RIVAL, _player, snap
 
 
 def pts(team, t, value=2):

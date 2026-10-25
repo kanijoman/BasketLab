@@ -1,7 +1,7 @@
 """No timeout is proposed right after one (issue #318): the alert stays, and offers a tactical or a rotation change instead."""
 
 from src.live_core.config import RuleConfig
-from tests.test_live_core_advice import OWN, RIVAL, _player, _pts, engine, snap
+from tests.builders import OWN, RIVAL, _player, _pts, engine, snap
 
 RUN = [_pts(1000, RIVAL, 3), _pts(1040, RIVAL, 2), _pts(1100, RIVAL, 3)]
 

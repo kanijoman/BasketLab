@@ -15,7 +15,7 @@ from src.live_core.lexicon import jugador, jugadores, pronoun, object_pronoun
 from src.live_core.package import PreparationPackage
 from src.live_core.rules_lineup import departure_note
 from src.live_core.session import LiveSession
-from tests.test_live_core_advice import OWN, RIVAL
+from tests.builders import OWN, RIVAL
 from tests.test_live_core_players import RIVAL_TABLE, by_id, evaluate, player
 
 RECORDINGS = Path(__file__).parent / "recordings"

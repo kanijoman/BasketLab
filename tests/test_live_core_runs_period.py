@@ -4,7 +4,7 @@ The staff read «parcial 1-9» 30 seconds into a quarter: it was a 1-7 of the pr
 period; a run inside the quarter is said as before.
 """
 from src.live_core.advice import AdviceEngine
-from tests.test_live_core_advice import OWN, RIVAL, snap
+from tests.builders import OWN, RIVAL, snap
 
 
 def evaluate(period, elapsed, log):

@@ -9,7 +9,7 @@ import pytest
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
 from src.live_core.modes import MODES
-from tests.test_live_core_advice import OWN, RIVAL, snap
+from tests.builders import OWN, RIVAL, snap
 from tests.test_live_core_sanctions import by_id, evaluate
 
 

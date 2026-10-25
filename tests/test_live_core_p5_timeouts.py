@@ -10,7 +10,7 @@ import pytest
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
 from src.live_core.windows import scores_after_timeouts
-from tests.test_live_core_advice import OWN, RIVAL, snap
+from tests.builders import OWN, RIVAL, snap
 
 
 def timeout(team, t):
