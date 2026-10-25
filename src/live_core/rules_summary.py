@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
-from .clock import period_length, period_start
+from .clock import period_and_remaining, period_length, period_start
 from .proposals import tactic_proposal
 from .summary_cause import cause_key, fouls_key
 from .score_text import header_score, score_text
@@ -115,11 +115,27 @@ def _pace(f: Facts) -> Optional[Tuple[str, str]]:
     return pace_key(f["pace"], f["own"]["pts"] - f["rival"]["pts"], cfg.summary_pace_delta, cfg.summary_pace_min_net)
 
 
+_PERIOD_NAMES = {1: "1.er cuarto", 2: "2.º cuarto", 3: "3.er cuarto", 4: "4.º cuarto"}
+
+
+def _moment(at: int) -> Tuple[str, str]:
+    """``(period name, clock)`` of a game second, e.g. ``("2.º cuarto", "4:36")``."""
+    period, remaining = period_and_remaining(at)
+    return _PERIOD_NAMES.get(period, "prórroga"), f"{remaining // 60}:{remaining % 60:02d}"
+
+
+def _origin(f: Facts) -> str:
+    """Where a conceded run comes from (#565): the score difference it started from and reached, and between which moments."""
+    (p_from, c_from), (p_to, c_to) = _moment(f["drop_from"]), _moment(f["drop_to"])
+    when = f"en el {p_from} del {c_from} al {c_to}" if p_from == p_to else f"del {p_from} {c_from} al {p_to} {c_to}"
+    return f"de {f['drop_net']:+d} a {f['drop_net'] - f['drop']:+d}, {when}"
+
+
 def _collapse(f: Facts) -> Optional[Tuple[str, str]]:
     if f["drop"] >= f["cfg"].summary_collapse_drop:
         if f["drop_to"] == f["rise_from"] and _comeback(f) is not None:
             return None         # the fall that started the comeback is already in it (issue #516): the key is our run, not the rival's
-        return f"Parcial en contra: {-f['drop']:+d}", "Parar el parcial antes: tiempo muerto o cambio de defensa"
+        return f"Parcial en contra: {-f['drop']:+d} ({_origin(f)})", "Parar el parcial antes: tiempo muerto o cambio de defensa"
     return None
 
 
@@ -149,17 +165,20 @@ def _net_range(log: List[Any], own: str, rival: str, start: int, end: int) -> Tu
     return worst, net
 
 
-def _net_drop(log: List[Any], own: str, rival: str, start: int, end: int) -> Tuple[int, int]:
-    """The biggest fall of the net score (own - rival) from its best point within ``[start, end]``: a hard run conceded, and the moment it ended."""
+def _net_drop(log: List[Any], own: str, rival: str, start: int, end: int) -> Tuple[int, int, int, int]:
+    """The biggest fall of the net score (own - rival) from its best point within ``[start, end]``: a hard run conceded.
+    ``(drop, low_at, high_at, high_net)``: its size, the moment it ended, the moment it started and the net it started from."""
     net = best = drop = 0
-    low_at = start
+    low_at = high_at = high_net = start
+    best_at = start
     for e in log:
         if start <= e[0] <= end and e[2] == "pts":
             net += e[3] if e[1] == own else -e[3] if e[1] == rival else 0
-            best = max(best, net)
+            if net > best:
+                best, best_at = net, e[0]
             if best - net > drop:
-                drop, low_at = best - net, e[0]
-    return drop, low_at
+                drop, low_at, high_at, high_net = best - net, e[0], best_at, best
+    return drop, low_at, high_at, high_net
 
 
 def _net_rise(log: List[Any], own: str, rival: str, start: int, end: int) -> Tuple[int, int]:
@@ -186,14 +205,14 @@ def _facts(snap: Dict[str, Any], ctx: RuleContext, start: int, end: int, periods
     own_fouls = ((snap["teams"].get(ctx.own_team_id) or {}).get("fouls_by_period") or {})
     rival_fouls = ((snap["teams"].get(rival) or {}).get("fouls_by_period") or {})
     worst, net = _net_range(log, ctx.own_team_id, rival, start, end)
-    drop, drop_to = _net_drop(log, ctx.own_team_id, rival, start, end)
+    drop, drop_to, drop_from, drop_net = _net_drop(log, ctx.own_team_id, rival, start, end)
     rise, rise_from = _net_rise(log, ctx.own_team_id, rival, start, end)
     return {"cfg": ctx.config, "own": window_stats(log, ctx.own_team_id, start, end), "rival": window_stats(log, rival, start, end),
             "scorer": (name, pts), "fouls": sum(own_fouls.get(str(p), 0) for p in periods), "worst_net": worst, "net": net,
             "rival_fouls": sum(rival_fouls.get(str(p), 0) for p in periods), "window_s": end - start, "baselines": ctx.team_baselines,
             "trouble": [{"name": p["name"].strip(), "pf": p["pf"]} for p in snap["players"].values()
                         if p["team_id"] == ctx.own_team_id and p["pf"] >= ctx.config.summary_foul_trouble_pf],
-            "drop": drop, "drop_to": drop_to, "rise": rise, "rise_from": rise_from, "scope": "en la 1.ª parte" if len(periods) > 1 else "en el cuarto",
+            "drop": drop, "drop_to": drop_to, "drop_from": drop_from, "drop_net": drop_net, "rise": rise, "rise_from": rise_from, "scope": "en la 1.ª parte" if len(periods) > 1 else "en el cuarto",
             "pace": pace_facts(log, ctx.own_team_id, rival, start, end, ctx.team_baselines)}
 
 
