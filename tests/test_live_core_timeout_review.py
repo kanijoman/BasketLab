@@ -98,11 +98,15 @@ def test_fatigue_is_the_reason_and_the_tired_players_are_named_with_a_rotation()
     assert any(p["type"] == "tactic" and "Ana" in p["message"] for p in alert.proposal)
 
 
-def test_foul_trouble_is_the_reason_of_a_timeout_with_a_player_with_four_fouls_on_court():
-    players = {"p1": _player("Ana", OWN, pf=4, stint=100, minutes=500)}
+@pytest.mark.parametrize("called_by", ["own", "rival"])
+def test_fouls_are_never_the_reason_of_a_timeout_whoever_has_them_regression(called_by):
+    """Oses - Joventut (feedback 0.4.0, #563): the review named the personal fouls as the cause of a timeout. A foul is not why a coach stops the game."""
+    players = {"p1": _player("Ana", OWN, pf=4, stint=100, minutes=500), "r1": _player("Rita", RIVAL, pf=5, stint=100, minutes=500)}
     log = [pts(OWN, 670), pts(RIVAL, 700), pts(OWN, 730), pts(RIVAL, 750)]
-    [alert] = review(at(T + 10, log, own_timeouts=[T], players=players))
-    assert alert.evidence["reason"] == "fouls" and "Ana" in alert.message
+    timeouts = {"own_timeouts": [T]} if called_by == "own" else {"rival_timeouts": [T]}
+    [alert] = review(at(T + 10, log, players=players, **timeouts))
+    assert alert.evidence["reason"] != "fouls"
+    assert "falta" not in alert.message.lower() and not any("Ana" in p["message"] or "Rita" in p["message"] for p in alert.proposal)
 
 
 def test_a_timeout_at_the_end_of_a_period_is_to_prepare_the_last_possession():

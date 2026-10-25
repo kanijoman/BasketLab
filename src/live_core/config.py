@@ -205,7 +205,6 @@ class RuleConfig:
     timeout_run_net: int = 6
     timeout_tov_n: int = 3
     timeout_drought_s: int = 90
-    timeout_foul_pf: int = 4
     timeout_last_possession_s: int = 45
     timeout_good_net: int = 4
     timeout_shots_min: int = 5

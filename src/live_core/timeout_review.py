@@ -1,7 +1,7 @@
 """What a timeout was for and what it did (the staff's request of 23/10/2026): the analysis behind ``timeout_review`` and ``timeout_followup``.
 
 Pure functions over the window statistics of the log (``windows.window_stats``). The reason of a timeout is read from the two minutes before it: a run against the team that called it,
-the last possession of a period, turnovers, a drought, tired players or a player in foul trouble; without any of them it is rest or a play being prepared. What went well and badly is
+the last possession of a period, turnovers, a drought or tired players (never fouls: a foul is not why a game is stopped, #563); without any of them it is rest or a play being prepared. What went well and badly is
 always told from OUR side, whoever called the timeout. Thresholds are provisional, in ``RuleConfig``. Standard library only.
 """
 
@@ -29,7 +29,7 @@ def _n(count: int, one: str, many: str) -> str:
 
 
 def reason_of(team: str, own: str, rival: str, mine: Dict[str, Any], theirs: Dict[str, Any], log: List[Any], now: int, remaining: int,
-              tired: List[str], fouled: List[str], cfg: RuleConfig) -> Tuple[str, str, Optional[List[str]]]:
+              tired: List[str], cfg: RuleConfig) -> Tuple[str, str, Optional[List[str]]]:
     """``(kind, text, names)``: why ``team`` called the timeout, from the window before it. ``mine``/``theirs`` are the window of the team and of the other one."""
     net = mine["pts"] - theirs["pts"]
     score = f"{mine['pts']}-{theirs['pts']}" if team == own else f"{theirs['pts']}-{mine['pts']}"      # always own-rival
@@ -45,8 +45,6 @@ def reason_of(team: str, own: str, rival: str, mine: Dict[str, Any], theirs: Dic
         return "drought", (f"tras {clock} sin anotar" if team == own else f"tras {clock} sin anotar el rival"), None
     if tired:
         return "fatigue", ("por cansancio de " if team == own else "para descansar a ") + ", ".join(tired), tired
-    if fouled:
-        return "fouls", "por faltas de " + ", ".join(fouled), fouled
     return "none", "sin motivo claro: descanso o preparar una jugada", None
 
 
@@ -101,9 +99,8 @@ def proposals_for(kind: str, team: str, own: str, own_w: Dict[str, Any], rival_w
         out.append(tactic_proposal("Jugada preparada para la primera posesión: atacar el aro o buscar al mejor tirador"))
     elif kind == "last_possession":
         out.append(tactic_proposal("Preparar la última posesión: jugada para el mejor tirador y cerrar la defensa del último tiro"))
-    elif kind in ("fatigue", "fouls"):
-        verb = "Dar descanso a" if kind == "fatigue" else "Proteger a"
-        out += [tactic_proposal(f"{verb} {name}", pid, name) for pid, name in zip(player_ids or [], who or [])]
+    elif kind == "fatigue":
+        out += [tactic_proposal(f"Dar descanso a {name}", pid, name) for pid, name in zip(player_ids or [], who or [])]
     if kind in ("none", "run") or not out:
         out.append(tactic_proposal("Definir la primera jugada tras el tiempo muerto"))
     return out
