@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { FakeFeb, type Pack } from '../feed/fakeFeb'
 import { PKG_TEXT, fakeEngine, loadDemo, memoryStore } from './appTestKit'
+import { pickOption } from '../test/select'
 
 const MANIFEST = [{
   code: '2524470', title: 'Recoletas Zamora – Mipelletymas B.F. Leon', date: '2026-10-10T17:00',
@@ -28,7 +29,7 @@ async function open(over: { store?: ReturnType<typeof memoryStore>; engine?: Ret
 
 const toDemos = () => {
   fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-  fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+  pickOption('Tipo de partido', 'demo')
 }
 /** Reviewing a recorded match is chosen in Partidos (issue #509): the Partido tab has no «Qué partido ver» any more. */
 const review = () => {
@@ -37,7 +38,7 @@ const review = () => {
 }
 const toLive = () => {
   fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-  fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'live' } })
+  pickOption('Tipo de partido', 'live')
 }
 const backToPackage = () => {
   toLive()

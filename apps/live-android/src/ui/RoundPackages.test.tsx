@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoundIndexEntry, RoundMatch } from '../package/remote'
 import RoundPackages from './RoundPackages'
+import { optionLabels, pickOption, valueOf } from '../test/select'
 
 const side = (id: string, name: string) => ({ id, name })
 const match = (code: string, home: [string, string], away: [string, string]): RoundMatch =>
@@ -60,40 +61,39 @@ describe('RoundPackages: the filters come in order and the list is under them (i
 
   it('filters by competition and then by group', () => {
     const { container } = show()
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
+    pickOption('Competición', 'SEGUNDA FEB')
     expect(codes(container)).toEqual(['1', '2', '3'])
-    fireEvent.change(screen.getByLabelText('Grupo'), { target: { value: 'Liga Regular "B"' } })
+    pickOption('Grupo', 'Liga Regular "B"')
     expect(codes(container)).toEqual(['3'])
   })
 
   it('the group selector appears only once a competition with groups is chosen', () => {
     show()
-    expect(screen.queryByLabelText('Grupo')).toBeNull()
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'TERCERA FEB' } })
-    expect(screen.queryByLabelText('Grupo')).not.toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Grupo' })).toBeNull()
+    pickOption('Competición', 'TERCERA FEB')
+    expect(screen.queryByRole('combobox', { name: 'Grupo' })).not.toBeNull()
   })
 
   it('has no free text box: the team is chosen from a list, after the competition (issue #474)', () => {
     show()
     expect(screen.queryByLabelText('Buscar equipo')).toBeNull()
-    expect(screen.queryByLabelText('Equipo')).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Equipo' })).toBeNull()
   })
 
   it('once a competition is chosen the team selector lists its teams, and choosing one shows only its next match', () => {
     const { container } = show()
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
-    const team = screen.getByLabelText('Equipo') as HTMLSelectElement
-    expect(Array.from(team.options).map(o => o.textContent)).toEqual(['Todos', 'GETAFE', 'LEONESA', 'LLIRIA', 'PRAT', 'TOLEDO', 'ZAMORA'])
-    fireEvent.change(team, { target: { value: '1008978' } })
+    pickOption('Competición', 'SEGUNDA FEB')
+    expect(optionLabels('Equipo')).toEqual(['Todos', 'GETAFE', 'LEONESA', 'LLIRIA', 'PRAT', 'TOLEDO', 'ZAMORA'])
+    pickOption('Equipo', '1008978')
     expect(codes(container)).toEqual(['3'])
   })
 
   it('changing the competition brings the team back to «Todos» if it is not there', () => {
     show()
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
-    fireEvent.change(screen.getByLabelText('Equipo'), { target: { value: '1008978' } })
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'TERCERA FEB' } })
-    expect((screen.getByLabelText('Equipo') as HTMLSelectElement).value).toBe('')
+    pickOption('Competición', 'SEGUNDA FEB')
+    pickOption('Equipo', '1008978')
+    pickOption('Competición', 'TERCERA FEB')
+    expect(valueOf('Equipo')).toBe('')
   })
 
   it('a remembered team that is not published any more does not hide everything', () => {
@@ -104,13 +104,13 @@ describe('RoundPackages: the filters come in order and the list is under them (i
 
   it('the league selector appears only when there are FEB and FBCYL matches, and filters by it', () => {
     show()
-    expect(screen.queryByLabelText('Liga')).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Liga' })).toBeNull()
     cleanup()
     const fbcyl = round('FBCYL_1_FASE-GRUPO_A-1_2026_', [match('77', ['39609', 'UNILEON'], ['40083', 'HIJOLUSA'])])
     const { container } = show([...ROUNDS, fbcyl])
-    fireEvent.change(screen.getByLabelText('Liga'), { target: { value: 'FBCYL' } })
+    pickOption('Liga', 'FBCYL')
     expect(codes(container)).toEqual(['77'])
-    expect(Array.from((screen.getByLabelText('Competición') as HTMLSelectElement).options).map(o => o.textContent)).toEqual(['Todas', 'FBCYL 1 FASE-GRUPO A-1 2026'])
+    expect(optionLabels('Competición')).toEqual(['Todas', 'FBCYL 1 FASE-GRUPO A-1 2026'])
   })
 
   it('says so when nothing is left to play, and the filters can be cleared', () => {
@@ -118,15 +118,15 @@ describe('RoundPackages: the filters come in order and the list is under them (i
     show(ROUNDS, { now: new Date('2026-12-01T10:00:00') })
     expect(screen.getByText(/ningún partido coincide/i)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /quitar filtros/i }))
-    expect((screen.getByLabelText('Competición') as HTMLSelectElement).value).toBe('')
+    expect(valueOf('Competición')).toBe('')
   })
 
   it('remembers the filters on the device', () => {
     show()
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'TERCERA FEB' } })
+    pickOption('Competición', 'TERCERA FEB')
     cleanup()
     const { container } = show()
-    expect((screen.getByLabelText('Competición') as HTMLSelectElement).value).toBe('TERCERA FEB')
+    expect(valueOf('Competición')).toBe('TERCERA FEB')
     expect(codes(container)).toEqual(['4'])
   })
 
@@ -153,17 +153,31 @@ describe('RoundPackages: teams «de interés» (issue #440)', () => {
     expect(JSON.parse(localStorage.getItem('basketlab-live-favorites') ?? '[]')).toEqual([])
   })
 
-  it('without a team chosen the matches with a team of interest come first, the rest by date', () => {
+  it('by default, with teams of interest, only their next match is listed, and the text says so (#569)', () => {
     localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1010490', name: 'RDL' }]))
     const { container } = show()
-    expect(codes(container)[0]).toBe('4')
+    expect(codes(container)).toEqual(['4'])
+    expect(screen.getByText(/próximo partido de tus equipos de interés/i)).toBeTruthy()
+  })
+
+  it('once a competition is chosen the rest of its matches come after the ones with a team of interest', () => {
+    localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1008978', name: 'LLIRIA' }]))
+    const { container } = show()
+    pickOption('Competición', 'SEGUNDA FEB')
+    expect(codes(container)).toEqual(['3', '1', '2'])
+  })
+
+  it('with nobody of interest it lists every team and asks to mark some', () => {
+    const { container } = show()
+    expect(codes(container)).toEqual(['1', '2', '3', '4'])
+    expect(screen.getByText(/marca equipos de interés/i)).toBeTruthy()
   })
 
   it('a team chosen shows only its match even if it is not a team of interest', () => {
     localStorage.setItem('basketlab-live-favorites', JSON.stringify([{ teamId: '1010490', name: 'RDL' }]))
     const { container } = show()
-    fireEvent.change(screen.getByLabelText('Competición'), { target: { value: 'SEGUNDA FEB' } })
-    fireEvent.change(screen.getByLabelText('Equipo'), { target: { value: '3' } })
+    pickOption('Competición', 'SEGUNDA FEB')
+    pickOption('Equipo', '3')
     expect(codes(container)).toEqual(['2'])
   })
 })
@@ -283,7 +297,7 @@ describe('RoundPackages: the reminders of the matches of interest (issue #482)',
     show(ROUNDS, withPlugin(plugin))
     fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
     await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
-    fireEvent.change(screen.getByLabelText(/minutos antes/i), { target: { value: '60' } })
+    pickOption('Minutos antes', '60')
     await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(2))
     expect(plugin.schedule.mock.calls[1][0].notifications[0].title).toBe('LEONESA juega en 60 min')
   })

@@ -31,6 +31,15 @@ function when(entry: PackageIndexEntry): string {
   return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+/** «Local – Visitante» with our team in bold (a package of an old index may not say both: then only the rival). */
+function EntryTeams({ entry }: { entry: PackageIndexEntry }) {
+  const { home, away } = entry.match
+  if (!home || !away) return <strong>{entry.rival}</strong>
+  return <>{[home, away].map((team, i) => (
+    <span key={team.id}>{i > 0 && ' – '}{team.id === entry.team_id ? <strong>{team.name.trim()}</strong> : team.name.trim()}</span>
+  ))}</>
+}
+
 export default function RemotePackages({ engine, store, onLoaded, fetcher, loaded, viewing, onOpenLoaded }: Props) {
   const [entries, setEntries] = useState<PackageIndexEntry[] | null>(null)
   const [rounds, setRounds] = useState<RoundIndexEntry[]>([])
@@ -167,19 +176,21 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
               )}
             </>
           )}
-          <ul className="remote-packages">
-            {(entries ?? []).map(entry => (
-              <li key={entry.file}>
-                <span>
-                  <strong>{entry.rival}</strong>
-                  <span className="detail"> · {when(entry)}{entry.match.round ? ` · jornada ${entry.match.round}` : ''}</span>
-                </span>
-                <button disabled={isLoaded(entry.match.code, entry.team_id) || !canOpen(entry.wraps) || busy !== null} onClick={() => void download(entry)}>
-                  {isLoaded(entry.match.code, entry.team_id) ? 'Ya disponible' : busy === entry.file ? 'Descargando…' : 'Descargar'}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {rounds.length === 0 && (
+            <ul className="remote-packages">
+              {(entries ?? []).map(entry => (
+                <li key={entry.file}>
+                  <span>
+                    <EntryTeams entry={entry} />
+                    <span className="detail"> · {when(entry)}{entry.match.round ? ` · jornada ${entry.match.round}` : ''}</span>
+                  </span>
+                  <button disabled={isLoaded(entry.match.code, entry.team_id) || !canOpen(entry.wraps) || busy !== null} onClick={() => void download(entry)}>
+                    {isLoaded(entry.match.code, entry.team_id) ? 'Ya disponible' : busy === entry.file ? 'Descargando…' : 'Descargar'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <RoundPackages rounds={rounds} canOpen={round => canOpen(round.wraps)} busy={busy}
             onDownload={(round, match, ownId) => void downloadRoundMatch(round, match, ownId)} isLoaded={isLoaded}
             viewing={viewing} onOpenLoaded={onOpenLoaded} />

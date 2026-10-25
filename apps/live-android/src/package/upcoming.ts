@@ -50,11 +50,13 @@ export interface UpcomingMatch {
   sides: string[]
 }
 
-/** The matches to follow (issues #510, #511): the next match of each team that passes the filters (the chosen team alone), each match once.
- *  Without a team chosen, the matches of the teams of interest come first; then by date, the ones without a date last. */
+/** The matches to follow (issues #510, #511, #569): the next match BY DATE (a postponed or brought-forward match counts, the round does not) of each team that passes
+ *  the filters (the chosen team alone), each match once. With no filter and teams of interest, only theirs; once a filter is chosen it is what the user asked for, with the
+ *  matches of the teams of interest first; then by date, the ones without a date last. */
 export function nextMatchList(rounds: RoundIndexEntry[], filters: RoundFilters, favorites: Favorite[], now: Date = new Date()): UpcomingMatch[] {
   const limit = now.getTime() - STILL_ON_MS
   const best = new Map<string, { round: RoundIndexEntry; match: RoundMatch }>()    // team id -> its next match
+  const onlyInterest = !filters.league && !filters.competition && !filters.group && !filters.team && favorites.length > 0
   for (const round of rounds) {
     if (!inScope(round, filters)) continue
     for (const match of round.matches) {
@@ -62,6 +64,7 @@ export function nextMatchList(rounds: RoundIndexEntry[], filters: RoundFilters, 
       if (at !== null && at < limit) continue
       for (const team of [match.home, match.away]) {
         if (filters.team && team.id !== filters.team) continue
+        if (onlyInterest && !isFavorite(favorites, team.id, team.name)) continue
         const current = best.get(team.id)
         const currentAt = current ? startOf(current.match) : null
         if (!current || (at !== null && (currentAt === null || at < currentAt))) best.set(team.id, { round, match })

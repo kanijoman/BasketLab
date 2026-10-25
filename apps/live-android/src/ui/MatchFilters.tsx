@@ -1,5 +1,6 @@
 /** Competition and team filters shared by the lists of demos and finished matches (issues #474, #497). */
 import { useState } from 'react'
+import Select from './Select'
 
 export interface Filterable {
   competition?: string
@@ -24,21 +25,9 @@ export function useMatchFilters<T>(items: T[], describe: (item: T) => Filterable
   const controls = (
     <div className="round-filters" role="group" aria-label={label}>
       {competitions.length > 0 && (
-        <label>
-          Competición
-          <select value={competition} onChange={e => setCompetition(e.target.value)}>
-            <option value="">Todas</option>
-            {competitions.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
+        <Select label="Competición" value={competition} onChange={setCompetition} options={[{ value: '', label: 'Todas' }, ...competitions.map(c => ({ value: c, label: c }))]} />
       )}
-      <label>
-        Equipo
-        <select value={activeTeam} onChange={e => setTeam(e.target.value)}>
-          <option value="">Todos</option>
-          {teams.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </label>
+      <Select label="Equipo" value={activeTeam} onChange={setTeam} options={[{ value: '', label: 'Todos' }, ...teams.map(t => ({ value: t, label: t }))]} />
     </div>
   )
   return { shown, filtered: competition !== '' || activeTeam !== '', controls }

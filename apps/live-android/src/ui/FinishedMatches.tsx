@@ -39,12 +39,12 @@ export default function FinishedMatches({ matches, disabled, onReview, onReport,
               <span className="detail round-when">{date(m.savedAt)}{m.complete === false && ' · incompleto (se dejó de seguir antes del final)'}</span>
             </span>
             <span className="round-sides">
-              <button type="button" className="secondary" disabled={disabled || reporting !== null} onClick={() => onReview(m.code)}>
-                Revisar {m.title}
+              <button type="button" className="secondary" aria-label={`Revisar ${m.title}`} disabled={disabled || reporting !== null} onClick={() => onReview(m.code)}>
+                Revisar
               </button>
               <button type="button" className="secondary" aria-label={`Informe PDF de ${m.title}`} disabled={disabled || reporting !== null}
                 onClick={() => onReport(m.code)}>
-                {reporting === m.code ? 'Generando informe…' : 'Informe PDF'}
+                {reporting === m.code ? 'Generando informe…' : 'Informe'}
               </button>
               <RemoveButton what={m.title} disabled={disabled || reporting !== null} onConfirm={() => onRemove(m.code)} />
             </span>

@@ -65,11 +65,11 @@ describe('styles of the filters and of the teams of the matches list (issue #473
     expect(field).toContain('min-height: 44px')
     expect(field).toContain('border-radius: 10px')
     expect(field).toContain('border: 1px solid var(--line)')
-    expect(rule('.round-filters select')).toContain('width: 100%')
+    expect(rule('.select-box')).toContain('width: 100%')                       // the dropdowns of the app (#571) fill the cell like any other field
   })
 
   it('the filter labels look like the labels of the other fields: small, muted, over their control', () => {
-    const label = rule('.round-filters label')
+    const label = rule('.select-field')
     expect(label).toContain('display: grid')
     expect(label).toContain('color: var(--muted)')
   })

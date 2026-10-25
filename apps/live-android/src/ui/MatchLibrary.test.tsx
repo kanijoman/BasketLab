@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DemoMatch } from '../engine/demo'
 import MatchLibrary from './MatchLibrary'
+import { optionLabels, pickOption, valueOf } from '../test/select'
 
 const demo = (code: string, over: Partial<DemoMatch> = {}): DemoMatch => ({
   code, title: `Equipo ${code} – Rival ${code}`, date: '2026-10-18T18:30', home: { id: `h${code}`, name: `EQUIPO ${code}` }, away: { id: `a${code}`, name: `RIVAL ${code}` },
@@ -80,14 +81,14 @@ describe('MatchLibrary: the demos of the Partidos tab (issues #476, #477, feedba
   })
 
   describe('filters by competition and team', () => {
-    const pick = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
+    const pick = pickOption
 
     it('narrows the list to a competition and its teams, and the sample game is not part of a filtered list', () => {
       show()
       pick('Competición', 'SEGUNDA FEB · Liga Regular A')
       expect(rows()).toHaveLength(1)
       expect(rows()[0]).toContain('SEGUNDA FEB')
-      const teams = within(screen.getByLabelText('Equipo')).getAllByRole('option').map(o => o.textContent)
+      const teams = optionLabels('Equipo')
       expect(teams).toEqual(['Todos', 'EQUIPO 2536133', 'RIVAL 2536133'])
     })
 
@@ -104,13 +105,13 @@ describe('MatchLibrary: the demos of the Partidos tab (issues #476, #477, feedba
       show()
       pick('Equipo', 'RIVAL 2536851')
       pick('Competición', 'SEGUNDA FEB · Liga Regular A')
-      expect((screen.getByLabelText('Equipo') as HTMLSelectElement).value).toBe('')
+      expect(valueOf('Equipo')).toBe('')
       expect(rows()).toHaveLength(1)
     })
 
     it('says so when nothing matches, and has no competition filter when the manifest has none', () => {
       show({ demos: [demo('1')], hasSample: false })
-      expect(screen.queryByLabelText('Competición')).toBeNull()
+      expect(screen.queryByRole('combobox', { name: 'Competición' })).toBeNull()
       pick('Equipo', 'EQUIPO 1')
       expect(rows()).toHaveLength(1)
     })

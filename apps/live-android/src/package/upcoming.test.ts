@@ -80,9 +80,28 @@ describe('the list of matches to follow: the next match of each team that passes
     expect(nextMatchList(rounds(), NONE, [], NOW).map(n => n.match.code)).toEqual(['2', '1', '9'])
   })
 
-  it('without a team chosen, the matches of the teams of interest come first', async () => {
+  it('by default, with teams of interest, the list is only their next match (feedback 0.4.0, #569)', async () => {
     const { nextMatchList } = await import('./upcoming')
-    expect(nextMatchList(rounds(), NONE, [{ teamId: '7', name: 'MARÍN' }], NOW).map(n => n.match.code)).toEqual(['9', '2', '1'])
+    expect(nextMatchList(rounds(), NONE, [{ teamId: '7', name: 'MARÍN' }], NOW).map(n => n.match.code)).toEqual(['9'])
+    expect(nextMatchList(rounds(), NONE, [{ teamId: '7', name: 'MARÍN' }, { teamId: '2', name: 'ZAMORA' }], NOW).map(n => n.match.code)).toEqual(['1', '9'])
+  })
+
+  it('once a filter is chosen the list is what the user asked for, with the matches of the teams of interest first', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    const zamora = [{ teamId: '2', name: 'ZAMORA' }]
+    expect(nextMatchList(rounds(), { ...NONE, competition: 'SEGUNDA FEB' }, zamora, NOW).map(n => n.match.code)).toEqual(['1', '2'])   // Zamora's, then the rest of the round
+    expect(nextMatchList(rounds(), { ...NONE, competition: 'TERCERA FEB' }, zamora, NOW).map(n => n.match.code)).toEqual(['9'])        // the favourite does not play there: all the same
+  })
+
+  it('a postponed or brought-forward match is the next one by date, not by round (#569)', async () => {
+    const { nextMatchList } = await import('./upcoming')
+    const leonesa = [{ teamId: '1008857', name: 'CULTURAL Y DEPORTIVA LEONESA' }]
+    const moved = [
+      { ...round('R6', [match('20', ['1008857', 'CULTURAL Y DEPORTIVA LEONESA'], ['9', 'X'], '2026-11-14T19:30')]), round: 6, competition: info('SEGUNDA FEB', 'A') },
+      { ...round('R5', [match('21', ['1008857', 'CULTURAL Y DEPORTIVA LEONESA'], ['8', 'Y'], '2026-11-07T19:30')]), round: 5, competition: info('SEGUNDA FEB', 'A') },
+      { ...round('R4_POSTPONED', [match('22', ['1008857', 'CULTURAL Y DEPORTIVA LEONESA'], ['7', 'Z'], '2026-10-28T20:00')]), round: 4, competition: info('SEGUNDA FEB', 'A') },
+    ]
+    expect(nextMatchList(moved, NONE, leonesa, NOW).map(n => n.match.code)).toEqual(['22'])
   })
 
   it('only the matches of the chosen competition and group are listed', async () => {

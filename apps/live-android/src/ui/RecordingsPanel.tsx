@@ -26,7 +26,7 @@ export default function RecordingsPanel({ recordings, onShare, onRemove }: Props
             </span>
             <span className="round-sides">
               <button type="button" className="secondary" aria-label={`Compartir grabación de ${r.title}`} onClick={() => onShare(r.code)}>
-                Compartir grabación
+                Compartir
               </button>
               <RemoveButton what={`grabación de ${r.title}`} onConfirm={() => onRemove(r.code)} />
             </span>

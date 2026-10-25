@@ -212,7 +212,7 @@ describe('RemotePackages help (issue #225)', () => {
 
 const roundFixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo_round.bpkgz'), 'utf8')
 
-async function roundFetcher(over: { club?: boolean } = {}) {
+async function roundFetcher(over: { club?: boolean; withPackage?: boolean } = {}) {
   const side = (id: string, name: string) => ({ id, name })
   const matches = [
     { code: '101', start: '2027-10-17T12:00', home: side('11', 'EQ 11'), away: side('12', 'EQ 12'), own_id: '11', own_ids: ['11', '12'], is_club: false },
@@ -220,7 +220,10 @@ async function roundFetcher(over: { club?: boolean } = {}) {
     { code: '103', start: '2027-10-17T19:00', home: side('31', 'EQ 31'), away: side('32', 'EQ 32'), own_id: '31', own_ids: ['31', '32'], is_club: false },
   ]
   const index = {
-    v: 1, packages: [], club_team_id: '1008631', rounds: [
+    v: 1, club_team_id: '1008631', packages: over.withPackage ? [{
+      team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg', sha256: 'x', bytes: 100,
+      match: { code: '102', start: '2027-10-17T17:00', round: 2, home: side('1008631', 'LEON'), away: side('1008898', 'RECOLETAS ZAMORA') },
+    }] : [], rounds: [
       { collection: 'OTRA_COMPETICION_2026', round: 2, file: 'rounds/OTRA__r2.bpkgz', sha256: 'x', bytes: 1000, club: false,
         matches: [{ code: '900', start: '2027-10-17T10:00', home: side('91', 'LOCAL 91'), away: side('92', 'VISIT 92'), own_id: '91', is_club: false }] },
       { collection: 'DEMO_2026', round: 4, file: 'rounds/DEMO__r4.bpkgz', sha256: await sha(roundFixture), bytes: 70000, club: over.club ?? true, matches },
@@ -309,5 +312,26 @@ describe('RemotePackages: feedback of a round download (issue #342)', () => {
     await screen.findAllByText(/EQ 31/)
     expect((screen.getByRole('button', { name: /EQ 31 contra EQ 32 como EQ 32/i }) as HTMLButtonElement).textContent).toMatch(/ya disponible/i)
     expect((screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }) as HTMLButtonElement).disabled).toBe(false)
+  })
+})
+
+
+// Feedback of 0.4.0 (#569): «Próximos partidos» and «Partidos a seguir» were two lists, one of them with only the rival
+describe('RemotePackages: one list of upcoming matches', () => {
+  it('has a single title and a single list when the index has packages and rounds: the rounds cover the same matches', async () => {
+    const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher({ withPackage: true })} />)
+    await screen.findAllByText(/EQ 31/)
+    expect(screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Próximos partidos'])
+    expect(container.querySelectorAll('ul.remote-packages')).toHaveLength(1)
+    expect(container.querySelectorAll('li.round-match[data-code="102"]')).toHaveLength(1)
+  })
+
+  it('an index without rounds still lists its packages, now with the two teams and not only the rival', async () => {
+    const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    await screen.findByText(/RECOLETAS ZAMORA/)
+    const row = container.querySelector('ul.remote-packages li') as HTMLElement
+    expect(row.textContent).toContain('RECOLETAS ZAMORA')
+    expect(row.textContent).toContain('LEON')
+    expect(row.querySelector('strong')?.textContent).toBe('LEON')       // ours, in bold
   })
 })
