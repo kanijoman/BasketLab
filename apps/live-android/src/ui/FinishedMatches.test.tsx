@@ -66,3 +66,12 @@ describe('FinishedMatches filters (issue #497)', () => {
     expect(onRemove).toHaveBeenCalledWith('1')
   })
 })
+
+describe('FinishedMatches incomplete (issue #556)', () => {
+  it('says which matches were kept before their end, and only those', () => {
+    show([{ ...match('1', 'LEON – UNIBASKET'), complete: false }, { ...match('2', 'ZAMORA – LEON'), complete: true }, match('3', 'CULTURAL – OVIEDO')])
+    const tagged = rows().filter(r => /incompleto/i.test(r))
+    expect(tagged).toHaveLength(1)
+    expect(tagged[0]).toContain('UNIBASKET')
+  })
+})

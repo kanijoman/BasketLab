@@ -248,7 +248,8 @@ describe('finished matches (issue #407)', () => {
     expect(await screen.findByText(/no se pudo generar el informe/i)).toBeTruthy()
   })
 
-  it('a match that did not reach its end is not saved', async () => {
+  // #556: the staff watched it, so it must be kept (and give its PDF) even if they stopped before the end or the app was closed
+  it('a match that did not reach its end is kept too, marked as not complete, when the staff disconnects', async () => {
     const feb = new FakeFeb(pack)
     feb.at = 0
     const finishedStore = memoryFinishedStore()
@@ -256,7 +257,29 @@ describe('finished matches (issue #407)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     await screen.findByText(/en directo/i)
     fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
-    expect(await finishedStore.list()).toEqual([])
+    const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    expect(saved).toMatchObject({ code: '2524475', title: 'EQUIPO PROPIO – EQUIPO RIVAL', complete: false })
+    expect(Object.keys(JSON.parse(saved.game))).toEqual(expect.arrayContaining(['HEADER', 'PLAYBYPLAY']))
+  })
+
+  it('a match that ends is marked complete, replacing what was kept halfway', async () => {
+    const { finishedStore } = await connectAndFinish()
+    const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    expect(saved.complete).toBe(true)
+  })
+
+  it('keeps the match every few minutes while it is followed, so closing the app loses little', async () => {
+    const feb = new FakeFeb(pack)
+    feb.at = 0
+    const finishedStore = memoryFinishedStore()
+    let clock = Date.UTC(2026, 9, 24, 18, 0, 0)
+    const timing = { ...instant, now: () => (clock += 100_000) }          // every reading of the clock is 100 s later
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={timing} finishedStore={finishedStore} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    await screen.findByText(/en directo/i)
+    const saved = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    expect(saved.complete).toBe(false)
+    expect(screen.getByRole('button', { name: /desconectar/i })).toBeTruthy()      // still connected: nobody stopped it
   })
 })
 

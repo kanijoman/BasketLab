@@ -322,18 +322,18 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const metaRef = useRef<SessionMeta | null>(null)
   metaRef.current = meta
   /** The match ended: keep it on the device so it can be reviewed afterwards (issue #407). */
-  const keepFinished = useCallback(async (game: string, code: string) => {
+  const keepFinished = useCallback(async (game: string, code: string, complete: boolean) => {
     const saved = await store.load()
     const current = metaRef.current
-    if (!saved || !current) return
+    if (!saved || !current) { session.record(`Partido ${code}: no se pudo guardar para revisarlo (sin paquete cargado)`); return }
     const match: FinishedMatch = {
       code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), ownId: current.team.id,
       competition: competitionLabel(summarizePackage(saved.plaintext).collection) || undefined,
-      alerts: [...alertLog.current], plaintext: saved.plaintext, game,
+      alerts: [...alertLog.current], plaintext: saved.plaintext, game, complete,
     }
     await finishedStore.save(match)
     setFinishedMatches(await finishedStore.list())
-    session.record(`Partido ${code} finalizado y guardado para revisarlo`)
+    if (complete) session.record(`Partido ${code} finalizado y guardado para revisarlo`)
   }, [store, finishedStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
   /** The engine kept a recording of the feed (issue #416): it is saved, gzipped, whether the match ended or the staff disconnected. */
   const keepRecording = useCallback(async ({ code, recording, complete }: { code: string; recording: unknown; complete: boolean }) => {

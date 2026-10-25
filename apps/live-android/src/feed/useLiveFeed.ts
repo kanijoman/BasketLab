@@ -21,11 +21,15 @@ interface Options {
   onOutput: (output: EngineOutput) => void
   /** Called before connecting: gives the engine a fresh session and clears what the screen shows. */
   restart: () => Promise<void>
-  /** Called when the match ends, with the last merged FEB document (JSON text) so it can be kept for a later review (issue #407). */
-  onFinished?: (lastDocument: string, code: string) => void
+  /** Called with the last merged FEB document (JSON text) so the match can be kept for a later review (issue #407): when it ends (``complete``), when the staff
+   *  disconnects halfway and every few minutes while it is followed, so closing the app loses little (issue #556). */
+  onFinished?: (lastDocument: string, code: string, complete: boolean) => void
   /** Called when the connection ends (the match is over, or the staff disconnects) with the recording the engine kept of the feed (issue #416). */
   onRecording?: (recording: { code: string; recording: unknown; complete: boolean }) => void
 }
+
+/** How often the match followed is kept on the device while it is on (issue #556). */
+const KEEP_EVERY_MS = 180_000
 
 const RUNNING = new Set<FeedState['kind']>(['connecting', 'waiting', 'live', 'gap'])
 
@@ -40,6 +44,8 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
   const lastDocument = useRef<string | null>(null)
   /** The match being recorded, until its recording is handed over (so a disconnection after the end does not save it twice). */
   const recording = useRef<string | null>(null)
+  /** When the document was last kept for review (clock of the connection). */
+  const keptAt = useRef(0)
 
   /** The feed goes silent when stopped, so "disconnected" is reported here. */
   const keepRecording = useCallback(async (complete: boolean) => {
@@ -61,8 +67,9 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
     feed.current?.stop()
     setState({ kind: 'stopped' })
     noteLag()
+    if (recording.current !== null && lastDocument.current !== null) onFinished?.(lastDocument.current, recording.current, false)
     void keepRecording(false)
-  }, [keepRecording, noteLag])
+  }, [keepRecording, noteLag, onFinished])
 
   const connect = useCallback(async (code: string) => {
     feed.current?.stop()
@@ -73,6 +80,7 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
     setLag(null)
     const clock = timing?.now ?? Date.now
     const started = clock()
+    keptAt.current = started
     const at = () => (clock() - started) / 1000          // seconds since the first poll: the time of the recording
     await engine.beginRecording(code, new Date(started).toISOString())
     recording.current = code
@@ -82,12 +90,13 @@ export function useLiveFeed({ engine, http = defaultHttp, device = capacitorDevi
         setState(state)
         if (state.kind !== 'finished') return
         noteLag()
-        if (lastDocument.current !== null) onFinished?.(lastDocument.current, code)
+        if (lastDocument.current !== null) onFinished?.(lastDocument.current, code, true)
         void keepRecording(true)
       },
       onFailure: endpoint => void engine.recordGap(endpoint, at()),
       onDocument: async (json, info) => {
         lastDocument.current = json
+        if (clock() - keptAt.current >= KEEP_EVERY_MS) { keptAt.current = clock(); onFinished?.(json, code, false) }
         meter.current?.observe(info)
         if (meter.current) setLag(meter.current.summary())
         onOutput(await engine.update(json, at()))
