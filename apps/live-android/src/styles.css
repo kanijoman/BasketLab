@@ -61,7 +61,7 @@ body {
 /* the match picker has long option labels: it takes its own row and never wider than the screen (phone e2e) */
 .perf { margin: 0; text-align: right; color: var(--muted); font-size: 0.8rem; }
 
-button, select {
+button {
   min-height: 44px; /* touch target */
   border-radius: 10px;
   border: 1px solid var(--line);
@@ -70,7 +70,7 @@ button, select {
   font: inherit;
   padding: 0 16px;
 }
-button.secondary, select { background: var(--card); color: var(--text); }
+button.secondary { background: var(--card); color: var(--text); }
 button:disabled { opacity: 0.5; }
 
 h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
@@ -161,11 +161,21 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .reminders label.round-filter-check { display: flex; color: var(--text); font-size: 1rem; }
 
 /* Filters of the matches list and the teams "de interés" (#440, #473): the same controls as the rest of the app, a team per line with its star */
-.kind-select { display: grid; gap: 4px; margin: 8px 0 12px; color: var(--muted); font-size: 0.85rem; }
-.kind-select select { width: 100%; font-size: 1.05rem; padding: 8px; }
+.kind-select { margin: 8px 0 12px; }
+.kind-select .select-box { font-size: 1.05rem; }
+/* dropdown of the app (issue #571): a button with the chosen option and a list under it, instead of the system list of radio buttons */
+.select-field { position: relative; display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
+.select-box { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; text-align: left; font-size: 1rem; color: var(--text); }
+.select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-chevron { flex: none; color: var(--muted); }
+.select-box[aria-expanded='true'] { border-color: var(--accent); }
+.select-list { position: absolute; z-index: 20; top: 100%; left: 0; right: 0; margin: 4px 0 0; padding: 4px; list-style: none; max-height: 40vh; overflow-y: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); color: var(--text); font-size: 1rem; }
+.select-list li { padding: 12px; border-radius: 8px; overflow-wrap: anywhere; cursor: pointer; }
+.select-list li.active { background: var(--bg); }
+.select-list li[aria-selected='true'] { color: var(--accent); font-weight: 700; }
 .round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin: 8px 0 12px; align-items: end; }
 .round-filters label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
-.round-filters select { width: 100%; min-width: 0; font-size: 1rem; }
 .round-filters input:not([type='checkbox']) { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
 .round-filters .round-filter-check { display: flex; align-items: center; gap: 10px; min-height: 44px; color: var(--text); font-size: 1rem; }
 .round-filters input[type='checkbox'] { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { fakeEngine, loadDemo, memoryStore, PKG_TEXT } from './appTestKit'
+import { optionLabels, pickOption, valueOf } from '../test/select'
 
 beforeEach(() => {
   localStorage.clear()
@@ -50,7 +51,7 @@ describe('tabs of the app (issue #224)', () => {
     render(<App engine={fakeEngine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([RECORDED])} loadMatch={() => Promise.resolve({ package: 'PKG', recording: 'REC' })} />)
     expect(await screen.findByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Partidos' }).getAttribute('aria-selected')).toBe('true')
-    fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+    pickOption('Tipo de partido', 'demo')
     await waitFor(() => expect((screen.getByRole('button', { name: /ver partido de ejemplo/i }) as HTMLButtonElement).disabled).toBe(false))
     fireEvent.click(screen.getByRole('button', { name: /ver partido de ejemplo/i }))
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true'))
@@ -59,37 +60,37 @@ describe('tabs of the app (issue #224)', () => {
   describe('the kind of match is chosen with a selector in Partidos', () => {
     const open = async () => {
       render(<App engine={fakeEngine()} loadDemo={loadDemo} loadManifest={() => Promise.resolve([RECORDED])} loadMatch={() => Promise.resolve({ package: 'PKG', recording: 'REC' })} />)
-      return screen.findByLabelText('Tipo de partido') as Promise<HTMLSelectElement>
+      return screen.findByRole('combobox', { name: 'Tipo de partido' })
     }
 
     it('starts on the live matches and offers live, demos and finished matches', async () => {
       const kind = await open()
-      expect(kind.value).toBe('live')
-      expect(Array.from(kind.options).map(o => o.textContent)).toEqual(['En directo', 'Demos', 'Finalizados'])
+      expect(kind.getAttribute('data-value')).toBe('live')
+      expect(optionLabels('Tipo de partido')).toEqual(['En directo', 'Demos', 'Finalizados'])
       expect(screen.getByRole('heading', { name: 'Próximos partidos' })).toBeTruthy()
       expect(screen.queryByRole('region', { name: 'Partidos de demostración' })).toBeNull()
     })
 
     it('«Demos» shows the list of demos with its filters, and not the live packages', async () => {
-      const kind = await open()
-      fireEvent.change(kind, { target: { value: 'demo' } })
+      await open()
+      pickOption('Tipo de partido', 'demo')
       expect(screen.getByRole('region', { name: 'Partidos de demostración' })).toBeTruthy()
-      expect(screen.getByLabelText('Equipo')).toBeTruthy()
+      expect(screen.getByRole('combobox', { name: 'Equipo' })).toBeTruthy()
       expect(screen.queryByRole('heading', { name: 'Próximos partidos' })).toBeNull()
     })
 
     it('«Finalizados» says there are none yet instead of showing an empty page', async () => {
-      const kind = await open()
-      fireEvent.change(kind, { target: { value: 'finished' } })
+      await open()
+      pickOption('Tipo de partido', 'finished')
       expect(screen.getByText(/todavía no hay partidos finalizados/i)).toBeTruthy()
     })
 
     it('the choice is kept when the user goes to another tab and comes back', async () => {
-      const kind = await open()
-      fireEvent.change(kind, { target: { value: 'demo' } })
+      await open()
+      pickOption('Tipo de partido', 'demo')
       openTab('Acerca de')
       openTab('Partidos')
-      expect((screen.getByLabelText('Tipo de partido') as HTMLSelectElement).value).toBe('demo')
+      expect(valueOf('Tipo de partido')).toBe('demo')
     })
   })
 

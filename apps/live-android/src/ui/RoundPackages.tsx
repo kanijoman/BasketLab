@@ -5,6 +5,7 @@ import { NO_FILTERS, competitionOf, loadFilters, optionsOf, saveFilters, type Ro
 import { competitionLabel, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import { nextMatchesOfFavorites, nextMatchList } from '../package/upcoming'
 import { LEAD_OPTIONS } from '../notify/schedule'
+import Select from './Select'
 import { useReminders, type ReminderLoader } from './useReminders'
 
 export { competitionLabel }
@@ -54,12 +55,8 @@ function Reminders({ next, now, reminders }: { next: ReturnType<typeof nextMatch
         Avisarme antes de los partidos de mis equipos de interés
       </label>
       {reminder.prefs.enabled && (
-        <label>
-          Minutos antes
-          <select value={reminder.prefs.leadMin} onChange={e => reminder.update({ leadMin: Number(e.target.value) })}>
-            {LEAD_OPTIONS.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </label>
+        <Select label="Minutos antes" value={String(reminder.prefs.leadMin)} onChange={v => reminder.update({ leadMin: Number(v) })}
+          options={LEAD_OPTIONS.map(m => ({ value: String(m), label: String(m) }))} />
       )}
       {reminder.prefs.enabled && reminder.result?.ok && <p className="detail">{reminder.result.scheduled === 1 ? '1 aviso programado' : `${reminder.result.scheduled} avisos programados`}.</p>}
       {reminder.result && !reminder.result.ok && (
@@ -105,43 +102,26 @@ export default function RoundPackages({ rounds, canOpen, busy, onDownload, isLoa
 
   return (
     <>
-      <h2>Partidos a seguir</h2>
-      <p className="detail">El próximo partido de cada equipo, para seguirlo en directo. Primero los de tus equipos de interés (☆).</p>
+      <p className="detail">
+        {filtered ? 'Los partidos que coinciden con los filtros; primero los de tus equipos de interés (☆).'
+          : favorites.length > 0 ? 'El próximo partido de tus equipos de interés (☆). Con los filtros ves el de otros equipos.'
+            : 'Marca equipos de interés (☆) y aquí verás su próximo partido; mientras tanto, el próximo partido de cada equipo.'}
+      </p>
       <Reminders next={nextOfInterest} now={moment} reminders={reminders} />
       <div className="round-filters" role="group" aria-label="Filtrar partidos">
         {leagues.length > 0 && (
-          <label>
-            Liga
-            <select value={filters.league} onChange={e => change({ league: e.target.value, competition: '', group: '', team: '' })}>
-              <option value="">Todas</option>
-              {leagues.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </label>
+          <Select label="Liga" value={filters.league} onChange={v => change({ league: v, competition: '', group: '', team: '' })}
+            options={[{ value: '', label: 'Todas' }, ...leagues.map(l => ({ value: l, label: l }))]} />
         )}
-        <label>
-          Competición
-          <select value={filters.competition} onChange={e => change({ competition: e.target.value, group: '', team: '' })}>
-            <option value="">Todas</option>
-            {competitions.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
+        <Select label="Competición" value={filters.competition} onChange={v => change({ competition: v, group: '', team: '' })}
+          options={[{ value: '', label: 'Todas' }, ...competitions.map(c => ({ value: c, label: c }))]} />
         {groups.length > 0 && (
-          <label>
-            Grupo
-            <select value={filters.group} onChange={e => change({ group: e.target.value, team: '' })}>
-              <option value="">Todos</option>
-              {groups.map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-          </label>
+          <Select label="Grupo" value={filters.group} onChange={v => change({ group: v, team: '' })}
+            options={[{ value: '', label: 'Todos' }, ...groups.map(g => ({ value: g, label: g }))]} />
         )}
         {filters.competition && teams.length > 0 && (
-          <label>
-            Equipo
-            <select value={filters.team} onChange={e => change({ team: e.target.value })}>
-              <option value="">Todos</option>
-              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </label>
+          <Select label="Equipo" value={filters.team} onChange={v => change({ team: v })}
+            options={[{ value: '', label: 'Todos' }, ...teams.map(t => ({ value: t.id, label: t.name }))]} />
         )}
         {filtered && <button type="button" className="secondary" onClick={() => change(NO_FILTERS)}>Quitar filtros</button>}
       </div>

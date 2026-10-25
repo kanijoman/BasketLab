@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { fakeEngine, loadDemo, memoryStore, META, out, PKG_TEXT, replayCalls } from './appTestKit'
+import { pickOption } from '../test/select'
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
@@ -160,7 +161,7 @@ describe('App', () => {
     /** The matches are chosen in the Partidos tab (issue #476): open the tab, press «Ver» of the match, and the app goes to see it. */
     const pick = (label: RegExp) => {
       fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-      fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+      pickOption('Tipo de partido', 'demo')
       fireEvent.click(screen.getByRole('button', { name: label }))
     }
     const MANIFEST = [{
@@ -182,7 +183,7 @@ describe('App', () => {
       expect(title.textContent).toContain('Recoletas Zamora – Mipelletymas B.F. Leon')
       expect(title.closest('section')?.querySelector('select')).toBeNull()                       // no selector here any more (#476)
       fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-      fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+      pickOption('Tipo de partido', 'demo')
       expect(within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => li.querySelector('.match-title')?.textContent))
         .toEqual(['Recoletas Zamora – Mipelletymas B.F. Leon', 'Partido de ejemplo'])
     })
@@ -196,7 +197,7 @@ describe('App', () => {
       const options = async () => {
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-        fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+        pickOption('Tipo de partido', 'demo')
         return within(screen.getByRole('region', { name: 'Partidos de demostración' })).getAllByRole('listitem').map(li => Array.from(li.querySelector('.round-info')!.children).map(c => c.textContent).join(' — '))
       }
 
@@ -323,7 +324,7 @@ describe('App', () => {
         render(<App initialTab="partido" engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={p as never} />)
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-        fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+        pickOption('Tipo de partido', 'demo')
         fireEvent.click(screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }))
         await waitFor(() => expect(p.share).toHaveBeenCalledTimes(1))
         expect(engine.report).toHaveBeenCalledWith('REC', [], '1', { gender: 'F' })
@@ -336,7 +337,7 @@ describe('App', () => {
         render(<App initialTab="partido" engine={engine} {...props} loadDemo={() => Promise.resolve({ package: pkgText, game: 'GAME' })} pdf={p as never} />)
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-        fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+        pickOption('Tipo de partido', 'demo')
         fireEvent.click(screen.getByRole('button', { name: /informe pdf de partido de ejemplo/i }))
         await waitFor(() => expect(p.share).toHaveBeenCalledTimes(1))
         expect(engine.report).toHaveBeenCalledWith('GAME', [], '1', { gender: 'F' })
@@ -347,7 +348,7 @@ describe('App', () => {
         render(<App initialTab="partido" engine={engine} {...props} loadMatch={() => Promise.resolve({ package: pkgText, recording: 'REC' })} pdf={pdf() as never} />)
         await screen.findByLabelText(/partido de la demostración/i)
         fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-        fireEvent.change(screen.getByLabelText('Tipo de partido'), { target: { value: 'demo' } })
+        pickOption('Tipo de partido', 'demo')
         fireEvent.click(screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }))
         expect(await screen.findByText(/no se pudo generar el informe: motor/i)).toBeTruthy()
         expect((screen.getByRole('button', { name: /informe pdf de recoletas zamora/i }) as HTMLButtonElement).disabled).toBe(false)

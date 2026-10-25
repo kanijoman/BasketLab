@@ -17,6 +17,12 @@ const INDEX = {
   ],
 }
 
+/** Opens the dropdown of the app (issue #571) and chooses the option with that value. */
+async function choose(page: Page, label: string, value: string) {
+  await page.getByRole('combobox', { name: label }).click()
+  await page.locator(`[role="option"][data-value="${value}"]`).click()
+}
+
 async function open(page: Page, width: number) {
   await page.setViewportSize({ width, height: 800 })
   await page.route('**/live-packages/**', route => route.fulfill({ json: INDEX }))
@@ -39,16 +45,20 @@ for (const width of [412, 320]) {
     await check('Partido')
 
     await page.getByRole('tab', { name: 'Partidos' }).click()
-    await expect(page.getByLabel('Tipo de partido')).toBeVisible()
+    await expect(page.getByRole('combobox', { name: 'Tipo de partido' })).toBeVisible()
     await expect(page.getByText(/CULTURAL Y DEPORTIVA LEONESA/).first()).toBeVisible({ timeout: 30_000 })
     await check('Partidos / En directo')
-    await page.getByLabel('Competición').selectOption('SEGUNDA FEB')
+    // an open dropdown stays inside the screen, whatever the length of its options (it floats over the list on purpose, so it is not part of the overlap check)
+    await page.getByRole('combobox', { name: 'Competición' }).click()
+    const list = await page.getByRole('listbox').boundingBox()
+    if (!list || list.x < 0 || list.x + list.width > width) found.push(`Desplegable de competición: sale de la pantalla (${JSON.stringify(list)})`)
+    await page.getByRole('option', { name: 'SEGUNDA FEB' }).click()
     await check('Partidos / En directo, filtrado')
 
-    await page.getByLabel('Tipo de partido').selectOption('demo')
+    await choose(page, 'Tipo de partido', 'demo')
     await check('Partidos / Demos')
 
-    await page.getByLabel('Tipo de partido').selectOption('finished')
+    await choose(page, 'Tipo de partido', 'finished')
     await check('Partidos / Finalizados')
 
     await page.getByRole('tab', { name: 'Acerca de' }).click()

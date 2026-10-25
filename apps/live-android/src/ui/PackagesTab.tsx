@@ -6,6 +6,7 @@ import type { PackageStore } from '../package/storage'
 import type { PackageSummary } from '../package/summary'
 import PackagePanel from './PackagePanel'
 import RemotePackages from './RemotePackages'
+import Select from './Select'
 
 export type MatchKind = 'live' | 'demo' | 'finished'
 const KINDS: { id: MatchKind; label: string }[] = [
@@ -39,12 +40,7 @@ export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved
     <>
       {notice && <p role="status" className="status">{notice}</p>}
       {onKind && (
-        <label className="kind-select">
-          Tipo de partido
-          <select value={kind} onChange={e => onKind(e.target.value as MatchKind)}>
-            {KINDS.map(k => <option key={k.id} value={k.id}>{k.label}</option>)}
-          </select>
-        </label>
+        <Select className="kind-select" label="Tipo de partido" value={kind} onChange={v => onKind(v as MatchKind)} options={KINDS.map(k => ({ value: k.id, label: k.label }))} />
       )}
       {kind === 'live' && (
         <>
