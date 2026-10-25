@@ -83,7 +83,7 @@ def long_run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if long_net <= -cfg.long_run_net and not _quiet(snap, ctx):
         out.append(Advice(
             key=f"long_run:{episode(snap, own)}", id="long_run", severity="warning", category="gestion",
-            message=f"Parcial largo en contra: {long_net} neto en los últimos {cfg.long_run_window_s // 60} min.",
+            message=f"Parcial largo en contra: {long_net} de diferencia en los últimos {cfg.long_run_window_s // 60} min.",
             evidence={"net": long_net, "window_s": cfg.long_run_window_s},
             proposal=[timeout_proposal(timeouts_left(snap, own))]))
     start = run_start(snap, cfg.run_window_s)
@@ -91,7 +91,7 @@ def long_run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if net >= cfg.own_run_net:
         out.append(Advice(
             key=f"own_run:{episode(snap, rival)}", id="own_run", severity="info", category="gestion",
-            message=(f"Parcial a favor: +{net} neto en los últimos {_clock(cfg.run_window_s)}. No romper el quinteto "
+            message=(f"Parcial a favor: +{net} de diferencia en los últimos {_clock(cfg.run_window_s)}. No romper el quinteto "
                      "y preparar la defensa tras el tiempo muerto del rival."),
             evidence={"net": net, "window_s": cfg.run_window_s}))
     return out

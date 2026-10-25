@@ -91,7 +91,7 @@
       "fatigue:2175850:315:critical"
      ],
      "digests": {
-      "alerts": "5333440297f2a041ad1f310165e7aff8b89925208f72c70bada3defe6b51ccba",
+      "alerts": "fdf71f640fee8e2d7138a81123b0302458c92660dc8c821f4bcf601530fe6208",
       "analysis": "5cb007274495735337d994e6c799b617834af93e7d6663f840d0a142429d29d9",
       "snapshot": "879056b73f56a9f225cd8e07b13f14269af2befbc000d3ee404979eadebd28f0"
      },
@@ -3000,7 +3000,7 @@
       },
       "id": "fatigue_high",
       "key": "fatigue:p:480:warning",
-      "message": "Ana: riesgo de fatiga alto (índice 83/100), 12:00 seguidos en pista (su tramo habitual: 6:00) y 18 min jugados. Valorar descanso.",
+      "message": "Ana: riesgo de fatiga alto, 12:00 seguidos en pista (su tramo habitual: 6:00) y 18 min jugados. Valorar descanso.",
       "proposal": [],
       "rearm_s": null,
       "severity": "warning"
@@ -3052,7 +3052,7 @@
       },
       "id": "rival_hot_player",
       "key": "rival_hot:r1:pts",
-      "message": "Rival Rival Uno: 17 pts en 14 min (esperado 4.9). Ayudas, doblar o no dejarle tirar cómodo.",
+      "message": "Rival Rival Uno: 17 pts en 14 min (lo habitual: 4.9). Ayudas, doblar o no dejarle tirar cómodo.",
       "proposal": [],
       "rearm_s": null,
       "severity": "warning"
@@ -3071,7 +3071,7 @@
       },
       "id": "rival_hot_player",
       "key": "rival_hot:r1:orb",
-      "message": "Rival Rival Uno: 4 rebotes ofensivos en 14 min (esperado 0.5). Bloquear el rebote y reforzar el balance defensivo.",
+      "message": "Rival Rival Uno: 4 rebotes ofensivos en 14 min (lo habitual: 0.5). Bloquear el rebote y reforzar el balance defensivo.",
       "proposal": [],
       "rearm_s": null,
       "severity": "warning"
@@ -3115,7 +3115,7 @@
       },
       "id": "rival_zone",
       "key": "zone:esquina:eficiencia",
-      "message": "Rival castiga desde las esquinas (triples): 5/7 (2.14 pts/tiro, esperado 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
+      "message": "Rival castiga desde las esquinas (triples): 5/7 (2.14 puntos por tiro; lo habitual 1.02). Cerrar las esquinas: ayuda del lado débil y salir al tirador.",
       "proposal": [],
       "rearm_s": null,
       "severity": "info"
