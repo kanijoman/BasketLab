@@ -116,7 +116,7 @@
       "timeout_review:981204:1195"
      ],
      "digests": {
-      "alerts": "45e7122dc66255fdd7b5cd7862a2ca171bd1c5cf6af18f464a74b9151e37159f",
+      "alerts": "2317dec261900cbb1b602adddc0267ab2450e5747c5f1ffa916e8180859f7e18",
       "analysis": "14e8cd9a9f2c8eb49812bcfa71da0a5a7e676a44a20c26d8f5fa3fa654f9d0b9",
       "snapshot": "e1a7244ad07fcc899d59d26830443f4dc2bf82b4c11f9073dcb3f26d85611b34"
      },
@@ -3180,7 +3180,7 @@
       },
       "id": "four_factors_lever",
       "key": "lever:tov:1:2",
-      "message": "Balón: pérdidas (TOV%) 25% vs 13% (-8.8 pts/100 posesiones; -12 sin ajustar al histórico). Pérdidas: asegurar el balón.",
+      "message": "Balón: perdemos el 25% de nuestras posesiones frente al 13% del rival: nos cuesta unos 9 puntos cada 100 posesiones. Pérdidas: asegurar el balón.",
       "proposal": [
        {
         "balance_delta": {

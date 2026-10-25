@@ -36,7 +36,7 @@ describe('LiveBridge on Pyodide', () => {
   })
 
   it('loads the demo game and reports its duration', () => {
-    expect(bridge.loadReplay(demoGame).duration).toBe(2700)
+    expect(bridge.loadReplay(demoGame).duration).toBe(2400)   // four periods: the sample has no overtime (its closing line at 40:00 once counted as one, #561)
   })
 
   it('reproduces the reference vectors (score, clock and new alerts per checkpoint)', () => {

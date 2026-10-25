@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from .advice_types import Advice, RuleContext
 from .clock import period_and_remaining, period_length, period_start
 from .proposals import tactic_proposal, timeout_proposal
+from .score_text import own_first, plain_score
 from .rules_rotation import _level as fatigue_level, fatigue_index
 from .timeout_review import proposals_for, reason_of, well_and_bad
 from .timeouts import timeouts_left
@@ -56,10 +57,6 @@ def _tired(snap: Dict[str, Any], ctx: RuleContext, team: str) -> List[Tuple[str,
     return found
 
 
-def _fouled(snap: Dict[str, Any], ctx: RuleContext, team: str) -> List[Tuple[str, str]]:
-    return [(pid, p["name"].strip()) for pid, p in _on_court(snap, team) if p["pf"] >= ctx.config.timeout_foul_pf]
-
-
 def timeout_review_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     rival, cfg, own, now, log = ctx.rival_team_id, ctx.config, ctx.own_team_id, snap["elapsed"], snap.get("log", [])
     if not rival:
@@ -73,12 +70,12 @@ def timeout_review_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         start = max(at - cfg.timeout_review_window_s, period_start(period))
         mine, theirs = window_stats(log, team, start, at), window_stats(log, other, start, at)
         own_w, rival_w = (mine, theirs) if team == own else (theirs, mine)
-        tired, fouled = _tired(snap, ctx, team), _fouled(snap, ctx, team)
-        kind, reason, who = reason_of(team, own, rival, mine, theirs, log, at, remaining, [n for _, n in tired], [n for _, n in fouled], cfg)
-        ids = [pid for pid, _ in (tired if kind == "fatigue" else fouled)] if who else None
+        tired = _tired(snap, ctx, team)
+        kind, reason, who = reason_of(team, own, rival, mine, theirs, log, at, remaining, [n for _, n in tired], cfg, own_first(snap, own))
+        ids = [pid for pid, _ in tired] if who else None
         well, bad = well_and_bad(own_w, rival_w, cfg)
         score = snap.get("score") or {}
-        text = (f"Tiempo muerto {'propio' if team == own else 'del rival'} ({_when(at)}, {score.get(own, 0)}-{score.get(rival, 0)}): {reason}."
+        text = (f"Tiempo muerto {'propio' if team == own else 'del rival'} ({_when(at)}, {plain_score(snap, own, score.get(own, 0), score.get(rival, 0))}): {reason}."
                 + (f" Ha ido bien: {'; '.join(well)}." if well else "") + (f" Ha ido mal: {'; '.join(bad)}." if bad else ""))
         proposal = proposals_for(kind, team, own, own_w, rival_w, _names(snap), cfg, who, ids)
         if team == own and kind == "fatigue" and ctx.recommender is not None:
@@ -118,7 +115,8 @@ def timeout_followup_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice
             worked = True
         else:
             continue
-        score = f"{mine['pts']}-{theirs['pts']}" if own_side else f"{theirs['pts']}-{mine['pts']}"
+        own_pts, rival_pts = (mine["pts"], theirs["pts"]) if own_side else (theirs["pts"], mine["pts"])
+        score = plain_score(snap, own, own_pts, rival_pts)
         if own_side:
             verdict = "Ha funcionado" if worked else "No ha funcionado" if worked is False else "Sin efecto claro"
             text = f"Tras el tiempo muerto propio ({_when(at)}): {score} en los {end - start} s siguientes ({net:+d}). {verdict}."
