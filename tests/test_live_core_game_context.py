@@ -14,6 +14,7 @@ from src.live_core.advice import Advice, AdviceEngine
 from src.live_core.clock import elapsed_seconds
 from src.live_core.config import RULE_IDS, FEATURE_IDS, RuleConfig, unknown_rule_ids
 from src.live_core.game_context import PHASES, adjust_for_phase, game_phase
+from tests.builders import pad_to_score
 
 OWN, RIVAL = "T1", "T2"
 CFG = RuleConfig()
@@ -22,9 +23,10 @@ CFG = RuleConfig()
 def mk(period=4, remaining=300, margin=0, own_to=(), rival_to=(), log=None, players=None):
     stamp = lambda pairs: [elapsed_seconds(p, r) for p, r in pairs]  # noqa: E731
     team = lambda timeouts: {"name": "x", "fouls_game": 0, "timeouts": timeouts, "fouls_by_period": {}, "stats": {}}  # noqa: E731
+    score = {OWN: 60 + margin, RIVAL: 60}
     return {"period": period, "remaining": remaining, "elapsed": elapsed_seconds(period, remaining), "last_num": 1,
-            "score": {OWN: 60 + margin, RIVAL: 60}, "teams": {OWN: team(stamp(own_to)), RIVAL: team(stamp(rival_to))},
-            "players": players or {}, "log": log or []}
+            "score": score, "teams": {OWN: team(stamp(own_to)), RIVAL: team(stamp(rival_to))},
+            "players": players or {}, "log": pad_to_score(log or [], score)}
 
 
 def phase(period, remaining, margin, cfg=CFG):

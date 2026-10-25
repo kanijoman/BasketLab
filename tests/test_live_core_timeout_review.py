@@ -7,7 +7,7 @@ import pytest
 
 from src.live_core.advice import RULES, AdviceEngine
 from src.live_core.config import RULE_IDS, RuleConfig
-from tests.builders import OWN, RIVAL, _player, snap
+from tests.builders import OWN, RIVAL, _player, pad_to_score, snap
 
 
 def pts(team, t, value=2):
@@ -31,6 +31,7 @@ def at(elapsed, log, own_timeouts=(), rival_timeouts=(), players=None, period=2,
     s["teams"][RIVAL]["timeouts"] = list(rival_timeouts)
     if score:
         s["score"] = score
+        s["log"] = pad_to_score(s["log"], score)
     return s
 
 

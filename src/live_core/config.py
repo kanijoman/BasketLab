@@ -205,6 +205,7 @@ class RuleConfig:
     timeout_run_net: int = 6
     timeout_tov_n: int = 3
     timeout_drought_s: int = 90
+    log_lag_max_s: int = 90                 # game seconds a rule of recent actions waits for the log to reach the scoreboard (#564)
     timeout_scoring_n: int = 3              # baskets of the other team, at this accuracy, in the window before a timeout (#565)
     timeout_scoring_pct: float = 0.75
     timeout_deficit: int = 6                # a team this far behind in the game calls the timeout because of the score when the window says nothing else

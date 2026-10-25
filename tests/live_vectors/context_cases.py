@@ -1,5 +1,6 @@
 """Vector cases of the FIBA timeout budget and the game context (issue #239); imported by ``generate.py``."""
 
+from builders import pad_to_score
 from live_helpers import OWN, RIVAL
 
 REGULATION = 2400
@@ -16,9 +17,10 @@ def ctx_snap(period, remaining, margin=0, own_to=(), rival_to=(), log=None, pf=0
                        "fouls_by_period": {}, "stats": {}}
     players = {"x": {"name": "Ana", "team_id": OWN, "on_court": True, "minutes": 0, "stint": 0, "pf": pf, "pts": 0,
                      "pf_by_period": {}}} if pf else {}
+    score = {OWN: 60 + margin, RIVAL: 60}
     return {"period": period, "remaining": remaining, "elapsed": elapsed_of(period, remaining), "last_num": 1,
-            "score": {OWN: 60 + margin, RIVAL: 60}, "teams": {OWN: team(own_to), RIVAL: team(rival_to)},
-            "players": players, "log": log or []}
+            "score": score, "teams": {OWN: team(own_to), RIVAL: team(rival_to)},
+            "players": players, "log": pad_to_score(log or [], score)}
 
 
 def context_cases(case):
