@@ -18,7 +18,7 @@ from .events import parse_line
 from .package import PreparationPackage
 from .postmatch import build_report
 from .replay import truncate_doc
-from .version import engine_version
+from .version import REPLAY_COMPAT, engine_version
 from .config import RuleConfig
 from .recorded_feed import RecordedFeed
 from .recording_builder import RecordingBuilder
@@ -48,6 +48,7 @@ class LiveSession:
             # who plays at home in the match the package was prepared for (None: the first document will say)
             "home_id": ((p.competition_meta or {}).get("match") or {}).get("home", {}).get("id"),
             "engine_version": engine_version(),   # for the About screen and the diagnostics (#226)
+            "replay_compat": REPLAY_COMPAT,       # what a match kept on the device is stamped with (#562)
         }
 
     def package_match(self, doc: Dict[str, Any]) -> Dict[str, Any]:
