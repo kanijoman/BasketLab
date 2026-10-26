@@ -44,5 +44,13 @@ export function useReminders(next: NextMatch[], now: Date, loader: ReminderLoade
     if (patch.enabled === false) setResult(null)
   }, [])
 
-  return { prefs, result, update }
+  /** Opens the system screen of the exact alarms and schedules again with what the user decided (#559). */
+  const allowExact = useCallback(async () => {
+    const plugin = await loaderRef.current.load()
+    if (!plugin?.changeExactNotificationSetting) return
+    try { await plugin.changeExactNotificationSetting() } catch { /* the screen could not be opened: the note stays */ }
+    setResult(await syncReminders(plugin, plan, { ask: false }))
+  }, [planKey])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { prefs, result, update, plan, allowExact }
 }
