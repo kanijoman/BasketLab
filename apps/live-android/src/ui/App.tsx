@@ -49,6 +49,7 @@ import PackagesTab, { type MatchKind } from './PackagesTab'
 import TabBar from './TabBar'
 import { useTab, type TabId } from './useTab'
 import FeedbackPanel from './FeedbackPanel'
+import BoxscoreTab from './boxscore/BoxscoreTab'
 import { useFeedback } from '../feedback/useFeedback'
 
 export type { AppUpdateDeps }
@@ -476,7 +477,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       <BrandHeader />
       {update.result?.status === 'available' && !live.running && <UpdateBanner latest={update.result.latest} onOpen={update.open} />}
       <div role="tabpanel" key={tab} className="tab-fade" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'partido' ? matchTab : tab === 'paquetes' ? panelOf(library) : aboutTab}
+        {tab === 'partido' ? matchTab : tab === 'boxscore' ? <BoxscoreTab snapshot={snap} entries={out?.analysis?.boxscore} own={own} rival={rival} homeId={snap?.home_id ?? meta?.home_id} /> : tab === 'paquetes' ? panelOf(library) : aboutTab}
       </div>
       <TabBar active={tab} onChange={setTab} />
     </main>

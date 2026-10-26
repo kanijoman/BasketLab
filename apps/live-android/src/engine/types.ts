@@ -80,7 +80,11 @@ export interface Snapshot {
   score: Record<string, number>
   /** Local team (the first of FEB's header): the engine says it because the JSON boundary sorts keys. */
   home_id?: string | null
-  teams: Record<string, { name: string; fouls_game: number }>
+  teams: Record<string, { name: string; fouls_game: number; stats?: PlayerStats & { tov_team?: number; pts?: number } }>
+  /** Every player the engine has seen, with what the box score shows (issue #593). */
+  players?: Record<string, SnapshotPlayer>
+  /** The last action that changed the box score of someone (#593); null before the first one. */
+  last_stat?: LastStat | null
   /** The last line applied: its text, clock and team (the app shows it under the score, #490); null before the first one. */
   last_event?: { kind: string; elapsed: number; text?: string; period?: number; remaining?: number; team_id?: string | null } | null
   /** Exact possessions of the closed possessions and points by origin (live_possessions.py); null without two teams. No alert uses it yet. */
@@ -88,6 +92,48 @@ export interface Snapshot {
   /** Who has the ball after the last line (null before the first one or between periods); team_id null = loose ball after a miss. */
   ball?: { team_id: string | null; since: number; why: string } | null
   [key: string]: unknown
+}
+
+/** What a player did in the match so far (the counts of ``LiveGame``). */
+export interface PlayerStats {
+  fg2m: number; fg2a: number; fg3m: number; fg3a: number; ftm: number; fta: number
+  orb: number; drb: number; tov: number; stl: number; ast: number; blk: number
+}
+
+/** A player of the snapshot as the box score reads him (issue #593). */
+export interface SnapshotPlayer {
+  name: string
+  team_id: string | null
+  on_court: boolean
+  /** Seconds played. */
+  minutes: number
+  pf: number
+  pts: number
+  /** Plus/minus of the match. */
+  pm: number
+  /** Fouls drawn. */
+  fd: number
+  stats: PlayerStats
+}
+
+/** The last action that changed a box score: the columns that changed (``keys``) and, for a foul, who drew it (``also``). ``seq`` grows with every one. */
+export interface LastStat {
+  seq: number
+  player_id: string | null
+  team_id: string | null
+  keys: string[]
+  also: { player_id: string; team_id: string | null; keys: string[] }[]
+}
+
+/** The advanced figures of the web, as ``boxscore.build`` says them; null when there is nothing to say yet. */
+export const ADVANCED_KEYS = ['usage', 'orating', 'drating', 'net_rtg', 'efg', 'ts', 'ftr', 'three_pr', 'ast_pct', 'tov_pct', 'stl_pct', 'blk_pct', 'drb_pct', 'orb_pct', 'pie'] as const
+export type AdvancedKey = typeof ADVANCED_KEYS[number]
+
+/** Per player: the valuation, the advanced figures and how far each column is from his own average, in [-1, 1] with the sign of good. */
+export interface BoxscoreEntry {
+  val: number
+  adv: Record<AdvancedKey, number | null>
+  dev: Partial<Record<string, number | null>>
 }
 
 export interface PossessionsSnapshot {
@@ -169,6 +215,8 @@ export interface EngineOutput {
   analysis: {
     four_factors?: { reliable: boolean; lever?: string | null; [key: string]: unknown }; pace?: PaceAnalysis; context?: GameContext
     formation?: FormationStatus; win_prob?: WinProb; win_levers?: WinLever[]
+    /** The box score tab (issue #593): per player, the valuation, the advanced figures and the deviation from his own average. */
+    boxscore?: Record<string, BoxscoreEntry>
   }
   /** Whether the teams of the package are the teams of the match (issue #417); when not, there are no alerts nor analysis. */
   package_match?: { ok: boolean; expected: string[]; found: string[] }

@@ -57,11 +57,16 @@ export function collectBoxes(): Box[] {
   all.forEach((el, i) => owner.set(el, `${el.tagName.toLowerCase()}#${i}`))
   for (const el of all) {
     const rect = el.getBoundingClientRect()
+    // what a box that scrolls sideways hides is not outside the screen: the box is clipped to its scroll containers (the box score table, #593)
+    let left = rect.left, right = rect.right
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      if (getComputedStyle(p).overflowX !== 'visible') { const area = p.getBoundingClientRect(); left = Math.max(left, area.left); right = Math.min(right, area.right) }
+    }
     const own = Array.from(el.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => (n.textContent ?? '').trim()).join(' ').trim()
     let parent: string | null = null
     for (let p = el.parentElement; p; p = p.parentElement) if (owner.has(p)) { parent = owner.get(p)!; break }
     const label = (own || el.getAttribute('aria-label') || el.tagName.toLowerCase()).slice(0, 40)
-    boxes.push({ id: `${label} [${owner.get(el)}]`, text: own, left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, parent: parent ? boxes.find(b => b.id.endsWith(`[${parent}]`))?.id ?? null : null,
+    boxes.push({ id: `${label} [${owner.get(el)}]`, text: own, left, top: rect.top, right, bottom: rect.bottom, parent: parent ? boxes.find(b => b.id.endsWith(`[${parent}]`))?.id ?? null : null,
       button: el.tagName === 'BUTTON' || el.getAttribute('role') === 'button' })
   }
   return boxes

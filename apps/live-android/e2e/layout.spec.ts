@@ -40,9 +40,39 @@ for (const width of [412, 320]) {
     await open(page, width)
     const found: string[] = []
     const check = async (where: string) => found.push(...(await problems(page, width)).map(p => `${where}: ${p}`))
+    // the page must not be wider than the screen (a scrolled table must not stretch it) and the fixed bar of tabs, which the geometry check leaves out, must fit
+    const fits = async (where: string) => {
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth)
+      if (wide > width + 2) found.push(`${where}: la página es más ancha que la pantalla (${wide} > ${width})`)
+      const bar = await page.getByRole('tablist', { name: 'Secciones' }).boundingBox()
+      if (!bar || bar.x < -1 || bar.x + bar.width > width + 1) found.push(`${where}: la barra de pestañas se sale de la pantalla (${JSON.stringify(bar)})`)
+      for (const tab of await page.getByRole('tab').all()) {
+        const box = await tab.boundingBox()
+        if (box && box.x + box.width > width + 1) found.push(`${where}: la pestaña «${await tab.textContent()}» se sale de la pantalla`)
+      }
+    }
 
     await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
     await check('Partido')
+
+    // Boxscore (#593): the table moves sideways inside its own box, so the box, the controls and the names must fit; the name of the player stays when it is moved
+    await page.getByRole('radio', { name: '300×' }).click()
+    await page.getByRole('button', { name: 'Reproducir' }).click()
+    await page.getByRole('tab', { name: 'Boxscore' }).click()
+    await expect(page.locator('.bx-table tbody tr').first()).toBeVisible({ timeout: 30_000 })
+    await check('Boxscore / propio')
+    await fits('Boxscore / propio')
+    await page.getByRole('radio', { name: 'Avanzada' }).click()
+    await check('Boxscore / avanzada')
+    await fits('Boxscore / avanzada')
+    await page.getByRole('radiogroup', { name: 'Equipo' }).getByRole('radio').nth(1).click()
+    await check('Boxscore / el otro equipo')
+    await fits('Boxscore / el otro equipo')
+    const scroll = page.locator('.bx-scroll')
+    await scroll.evaluate(el => { el.scrollLeft = 10_000 })
+    const [area, name] = [await scroll.boundingBox(), await page.locator('.bx-table tbody .bx-name').first().boundingBox()]
+    if (!area || !name || Math.abs(name.x - area.x) > 2) found.push(`Boxscore: el nombre del jugador no se queda fijo al mover la tabla (${JSON.stringify({ area, name })})`)
+    await page.getByRole('tab', { name: 'Partido', exact: true }).click()
 
     await page.getByRole('tab', { name: 'Partidos' }).click()
     await expect(page.getByRole('combobox', { name: 'Tipo de partido' })).toBeVisible()

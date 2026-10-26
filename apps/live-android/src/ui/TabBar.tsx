@@ -1,8 +1,8 @@
-/** Bottom navigation of the app (issue #224): Partido · Partidos · Acerca de. The match keeps the window; the lists live in the others. */
-import { Info, Package, Radio, type LucideIcon } from 'lucide-react'
+/** Bottom navigation of the app (issue #224): Partido · Boxscore · Partidos · Acerca de. The match keeps the window; the lists live in the others. */
+import { Info, Package, Radio, Table2, type LucideIcon } from 'lucide-react'
 import { TABS, type TabId } from './useTab'
 
-const ICON: Record<TabId, LucideIcon> = { partido: Radio, paquetes: Package, acerca: Info }
+const ICON: Record<TabId, LucideIcon> = { partido: Radio, boxscore: Table2, paquetes: Package, acerca: Info }
 
 interface Props {
   active: TabId

@@ -319,3 +319,31 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 .alert-period > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
 
 .next-of-interest h3 { margin: 0 0 6px; font-size: 1rem; }
+
+/* Boxscore tab (#593) */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.bx-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+.bx-controls .segmented { flex: 1 1 14rem; }
+.bx-controls .segment { min-height: 44px; position: relative; }
+.bx-controls .segment-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bx-news { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.segment.selected .bx-news { background: var(--accent-ink); }
+.bx-scroll { position: relative; overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.bx-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; --dev-max: 0.34; }
+.bx-table th, .bx-table td { padding: 8px 8px; text-align: right; white-space: nowrap; background: var(--card); border-bottom: 1px solid var(--line); }
+.bx-table thead th { position: sticky; top: 0; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; }
+.bx-table .bx-name { position: sticky; left: 0; z-index: 1; text-align: left; width: 8.5rem; min-width: 8.5rem; max-width: 8.5rem; overflow: hidden; text-overflow: ellipsis; font-weight: 600; border-right: 1px solid var(--line); }
+.bx-table thead .bx-name { z-index: 2; }
+.bx-player { overflow: hidden; text-overflow: ellipsis; }
+.bx-on { color: var(--ok); margin-right: 4px; font-size: 0.7rem; }
+.bx-team td, .bx-team th, .bx-total td, .bx-total th { color: var(--text-muted); }
+.bx-total td, .bx-total th { font-weight: 700; border-top: 2px solid var(--line); }
+.bx-arrow { margin-left: 2px; font-size: 0.65rem; }
+/* How far a figure is from the average of its player: the neutral colour is the one of the table, so it is white in light and dark in dark */
+.bx-table td[data-dev="up"] { background: color-mix(in srgb, var(--ok) calc(var(--dev-abs) * var(--dev-max) * 100%), var(--card)); }
+.bx-table td[data-dev="down"] { background: color-mix(in srgb, var(--dev-bad) calc(var(--dev-abs) * var(--dev-max) * 100%), var(--card)); }
+.bx-hit .bx-name { border-left: 3px solid var(--accent); }
+.bx-table td.bump { animation: bx-flash 1.4s ease-out; }
+@keyframes bx-flash { from { box-shadow: inset 0 0 0 999px rgb(var(--accent-rgb) / 0.45); } to { box-shadow: inset 0 0 0 999px rgb(var(--accent-rgb) / 0); } }
+@media (prefers-reduced-motion: reduce) { .bx-table td.bump { animation: none; box-shadow: inset 0 0 0 999px rgb(var(--accent-rgb) / 0.25); } }
+.bx-legend { margin: 8px 0 0; }
