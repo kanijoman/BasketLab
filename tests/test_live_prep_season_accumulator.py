@@ -169,3 +169,37 @@ def test_a_game_of_another_competition_does_not_move_the_ratings(feb_game_doc):
 def test_net_rating_prior_is_zero_without_games():
     acc = SeasonAccumulator()
     assert acc.to_package("FEB_TEST", "2025-2026", A, B, None, STAMP).baselines["net_rtg_prior"] == 0.0
+
+
+# #586 (study of #567): the package says how each team ATTACKS and DEFENDS in the season, so a lever can say whether the problem is the attack or the defence
+def test_the_package_carries_the_attack_and_the_defence_of_each_team_and_the_league(feb_game_doc):
+    from src.live_core.engine import LiveEngine
+    from src.live_core.four_factors import factors
+    from src.live_prep.package_builder import PRIOR_SHRINK_GAMES
+
+    snap = LiveEngine().update(feb_game_doc)
+    a, b = snap["teams"][A]["stats"], snap["teams"][B]["stats"]
+    levels = accumulated([feb_game_doc], A, B).baselines["team_levels"]
+    league = factors({k: a[k] + b[k] for k in a}, {k: a[k] + b[k] for k in a})
+    weight = 1 / (1 + PRIOR_SHRINK_GAMES)
+    for factor, usual in league.items():
+        assert levels["league"][factor] == pytest.approx(usual, abs=1e-3)
+        # a team with one game is mostly the league: its own level is shrunk towards it
+        assert levels["own"]["attack"][factor] == pytest.approx(usual + (factors(a, b)[factor] - usual) * weight, abs=1e-3)
+        assert levels["own"]["defence"][factor] == pytest.approx(usual + (factors(b, a)[factor] - usual) * weight, abs=1e-3)       # what rivals do against it
+        assert levels["rival"]["attack"][factor] == pytest.approx(levels["own"]["defence"][factor], abs=1e-3)                      # the rival is A's opponent in the only game
+    assert levels["games"] == {"own": 1, "rival": 1}
+
+
+def test_a_team_without_games_has_no_level_and_the_package_is_what_it_was_without_any(feb_game_doc):
+    acc = SeasonAccumulator(track=(A, "999999"))
+    acc.add_game(feb_game_doc)
+    levels = acc.to_package("FEB_TEST", "2025-2026", A, "999999", None, STAMP).baselines["team_levels"]
+    assert "rival" not in levels and levels["games"] == {"own": 1, "rival": 0}
+    assert "team_levels" not in SeasonAccumulator().to_package("FEB_TEST", "2025-2026", A, B, None, STAMP).baselines      # nothing played: nothing to say
+
+
+def test_the_levels_do_not_count_the_games_of_other_competitions(feb_game_doc):
+    from src.live_prep.game_sources import LEAGUE_KEY
+
+    assert "team_levels" not in accumulated([{**feb_game_doc, LEAGUE_KEY: False}], A, B).baselines

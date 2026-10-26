@@ -38,6 +38,14 @@ describe('WinProbCard (issue #257, experimental)', () => {
     expect(screen.queryByText(/acierto de tiro/i)).toBeNull()
   })
 
+  it('says whether a factor lever is in the attack or in the defence when the engine knows it (#586)', () => {
+    render(<WinProbCard winProb={WP} levers={[{ id: 'efg', side: 'defence', gain: 0.05, gain_pts: 1 }, { id: 'tov', side: 'both', gain: 0.04, gain_pts: 1 }, { id: 'orb', side: 'attack', gain: 0.03, gain_pts: 1 }]} own={OWN} history={[]} />)
+    const items = screen.getAllByRole('listitem').map(li => li.textContent)
+    expect(items[0]).toMatch(/acierto de tiro \(defensa\)/i)
+    expect(items[1]).toMatch(/pérdidas \(ataque y defensa\)/i)
+    expect(items[2]).toMatch(/rebote ofensivo \(ataque\)/i)
+  })
+
   it('a faster pace is said as such', () => {
     render(<WinProbCard winProb={WP} levers={[{ id: 'pace', direction: 'up', gain: 0.02, gain_pts: 0.3 }]} own={OWN} history={[]} />)
     expect(screen.getByText(/subir el ritmo/i)).toBeTruthy()

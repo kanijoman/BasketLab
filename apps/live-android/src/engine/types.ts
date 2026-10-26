@@ -157,6 +157,8 @@ export interface WinLever {
   gain_pts: number
   /** Pace only: who is behind wants it faster ('up'), who is ahead slower ('down'). */
   direction?: 'up' | 'down'
+  /** Factor levers: whether the game shows it more in our attack or in our defence, against what is usual for the matchup (#586); absent without the team levels. */
+  side?: 'attack' | 'defence' | 'both'
   /** Factor levers: the recommender's substitutions for it. */
   proposal?: Proposal[]
 }
