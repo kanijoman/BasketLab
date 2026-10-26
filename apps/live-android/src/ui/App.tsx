@@ -4,15 +4,15 @@
  * second by second so alerts and substitution proposals can be seen working on the device. Real
  * feeds plug into the same EngineApi (issues #118/#119).
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createWorkerEngine, type EngineApi } from '../engine/client'
 import {
   demoLabel, loadDemoData, loadManifest as fetchManifest, loadMatch as fetchMatch,
   type DemoData, type DemoMatch, type RealDemoData,
 } from '../engine/demo'
-import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
+import type { EngineOutput, LoggedAlert, RecordingFrame, ReplayInfo, SessionMeta } from '../engine/types'
 import { loadFavorites } from '../package/favorites'
-import { competitionLabel, type Fetcher } from '../package/remote'
+import type { Fetcher } from '../package/remote'
 import { IndexedDbPackageStore, safeStore, type PackageStore } from '../package/storage'
 import { summarizePackage, type PackageSummary } from '../package/summary'
 import { clockLabel } from './AlertCard'
@@ -20,7 +20,6 @@ import AlertList, { type AlertEntry } from './AlertList'
 import { useAlertPacer } from './useAlertPacer'
 import DemoControls, { SAMPLE, mmss, type DemoSource } from './DemoControls'
 import MatchLibrary from './MatchLibrary'
-import { capacitorReminderPlugin, onReminderTapped } from '../notify/reminders'
 import Scoreboard from './Scoreboard'
 import LiveConnect from './LiveConnect'
 import { useLiveFeed, type FeedTiming } from '../feed/useLiveFeed'
@@ -38,16 +37,15 @@ import FormationStatus from './FormationStatus'
 import FinishedMatches from './FinishedMatches'
 import PackageMismatch from './PackageMismatch'
 import RecordingsPanel from './RecordingsPanel'
-import { IndexedDbRecordingStore, encodeRecording, safeRecordingStore, type RecordingStore, type SavedRecording } from '../feed/recordingStore'
-import { reportBlocks } from '../postmatch/blocks'
-import { fileNameFor, shareFile as shareFileDefault, sharePdf } from '../postmatch/share'
-import { purgeStale } from '../feed/compatMigration'
-import { REPLAY_COMPAT } from '../feed/replayCompat'
-import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
+import { IndexedDbRecordingStore, safeRecordingStore, type RecordingStore } from '../feed/recordingStore'
+import { shareFile as shareFileDefault } from '../postmatch/share'
+import { IndexedDbFinishedStore, safeFinishedStore, type FinishedStore } from '../feed/finishedStore'
+import { useStoredMatches } from './useStoredMatches'
+import { defaultPdf, useMatchReports, type PdfDeps } from './useMatchReports'
+import { useEntryPoints } from './useEntryPoints'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
 import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab, { type MatchKind } from './PackagesTab'
-import { listenInviteLinks } from '../package/inviteLink'
 import TabBar from './TabBar'
 import { useTab, type TabId } from './useTab'
 import FeedbackPanel from './FeedbackPanel'
@@ -91,14 +89,7 @@ const FINISHED = 'finished:'
 /** Whether the source is replayed from one final document (the sample game and the finished live matches) and not from a recording. */
 const isReplayDoc = (source: DemoSource) => source === SAMPLE || source.startsWith(FINISHED)
 
-export interface PdfDeps {
-  render(report: PostMatchReport): Promise<Uint8Array>
-  share(bytes: Uint8Array, fileName: string, title: string): Promise<void>
-}
-const defaultPdf: PdfDeps = {
-  render: async report => (await import('../postmatch/pdf')).renderPdf(reportBlocks(report)),
-  share: (bytes, fileName, title) => sharePdf(bytes, fileName, title),
-}
+export type { PdfDeps }
 
 type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready' }
 type Entry = AlertEntry
@@ -107,13 +98,8 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [engine] = useState<EngineApi>(() => injected ?? createWorkerEngine())
   const [store] = useState<PackageStore>(() => injectedStore ?? safeStore(new IndexedDbPackageStore()))
   const [finishedStore] = useState<FinishedStore>(() => injectedFinished ?? safeFinishedStore(new IndexedDbFinishedStore()))
-  const [finishedMatches, setFinishedMatches] = useState<FinishedMatch[]>([])
   const [recordingStore] = useState<RecordingStore>(() => injectedRecordings ?? safeRecordingStore(new IndexedDbRecordingStore()))
-  const [recordings, setRecordings] = useState<SavedRecording[]>([])
-  const [reporting, setReporting] = useState<string | null>(null)
   const [kind, setKind] = useState<MatchKind>('live')
-  const [reportError, setReportError] = useState<string | null>(null)
-  const [demoReportError, setDemoReportError] = useState<string | null>(null)
   /** Every alert of the match being followed, with its clock label: the annex of the post-match report (issue #409). */
   const alertLog = useRef<LoggedAlert[]>([])
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
@@ -139,19 +125,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const [notice, setNotice] = useState<string | null>(null)
   const [ms, setMs] = useState<number | null>(null)
   const [tab, setTab] = useTab(initialTab)
-  // a reminder of a match of a team of interest was tapped (issue #482): the app opens on the list of matches
-  useEffect(() => {
-    let stop: () => void = () => undefined
-    let gone = false
-    void capacitorReminderPlugin().then(plugin => plugin && onReminderTapped(plugin, () => setTab('paquetes')).then(s => { if (gone) s(); else stop = s }))
-    return () => { gone = true; stop() }
-  }, [setTab])
-  // an invitation link opened the app (issue #410): its right is kept, the list of matches is shown and says what happened
-  const [inviteNotice, setInviteNotice] = useState<string | null>(null)
-  useEffect(() => listenInviteLinks(result => {
-    setInviteNotice(result.ok ? `Invitación aceptada: ${result.scope}.` : result.message)
-    setTab('paquetes')
-  }), [setTab])
+  const inviteNotice = useEntryPoints(setTab)
   const [winProbOn, setWinProbOn] = useExperimental('win_prob')
   const winProbHistory = useWinProbHistory(out)
   const session = useSessionLog()
@@ -215,33 +189,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     }
   }, [engine, reset, finishedStore])
 
-  /** Shares the file of a recording: the one the repository keeps in ``tests/recordings`` (issue #416). */
-  const shareRecording = useCallback(async (code: string) => {
-    const saved = await recordingStore.load(code)
-    if (!saved) return
-    const gz = saved.encoding === 'gzip'
-    await shareFile(saved.bytes, `grabacion-${code}.rec.json${gz ? '.gz' : ''}`, `Grabación del partido ${saved.title}`, gz ? 'application/gzip' : 'application/json')
-    session.record(`Grabación del partido ${code} compartida`)
-  }, [recordingStore, shareFile, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** The post-match analysis of a kept match as a PDF the staff can share (issue #409). */
-  const reportFinished = useCallback(async (code: string) => {
-    setReporting(code)
-    setReportError(null)
-    try {
-      const saved = await finishedStore.load(code)
-      if (!saved) throw new Error('el partido ya no está guardado')
-      const report = await engine.report(saved.game, saved.alerts ?? [], saved.ownId, summarizePackage(saved.plaintext).ruleConfig)
-      const title = `Informe del partido ${report.match.own.name.trim()} – ${report.match.rival.name.trim()}`
-      await pdf.share(await pdf.render(report), fileNameFor(report.match.own.name, report.match.rival.name, code), title)
-      session.record(`Informe PDF del partido ${code}`)
-    } catch (e) {
-      setReportError(`No se pudo generar el informe: ${e instanceof Error ? e.message : String(e)}`)
-    } finally {
-      setReporting(null)
-    }
-  }, [engine, finishedStore, pdf, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
-
   /** A recorded match: the engine is fed with what FEB served (404 windows included). */
   const beginRecorded = useCallback(async (match: DemoMatch, fallback: DemoData) => {
     setPhase({ kind: 'loading' })
@@ -304,17 +251,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }, [loadDemo, loadManifest, store, beginDefault, beginPackage])
 
   useEffect(() => () => { if (!injected) engine.dispose() }, [engine, injected])
-  const [purgedNotice, setPurgedNotice] = useState<string | null>(null)
-  // the first start under a new REPLAY_COMPAT clears what an older version kept and says so (#562); the lists are read after it
-  useEffect(() => {
-    void purgeStale(finishedStore, recordingStore).then(async purged => {
-      const count = purged.finished.length + purged.recordings.length
-      if (count > 0) setPurgedNotice(`Se han eliminado ${count} ${count === 1 ? 'partido guardado' : 'partidos guardados'} con una versión anterior de la app (ya no se podían revisar con fiabilidad): ${[...purged.finished, ...purged.recordings].join(', ')}.`)
-      setFinishedMatches(await finishedStore.list())
-      setRecordings(await recordingStore.list())
-    })
-  }, [finishedStore, recordingStore])
-
   const finished = info !== null && elapsed >= info.duration
 
   /** What the screen shows for an engine output: the snapshot and the alerts not seen before. */
@@ -342,30 +278,10 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }, [engine, store, pacer])
   const metaRef = useRef<SessionMeta | null>(null)
   metaRef.current = meta
-  /** The match ended: keep it on the device so it can be reviewed afterwards (issue #407). */
-  const keepFinished = useCallback(async (game: string, code: string, complete: boolean) => {
-    const plaintext = plaintextRef.current, current = metaRef.current, alerts = [...alertLog.current]      // taken now: a new package may be loaded while this is saved (#557)
-    if (!plaintext || !current) { session.record(`Partido ${code}: no se pudo guardar para revisarlo (sin paquete cargado)`); return }
-    const match: FinishedMatch = {
-      code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), ownId: current.team.id,
-      competition: competitionLabel(summarizePackage(plaintext).collection) || undefined,
-      alerts, plaintext, game, complete, compat: REPLAY_COMPAT,
-    }
-    await finishedStore.save(match)
-    setFinishedMatches(await finishedStore.list())
-    if (complete) session.record(`Partido ${code} finalizado y guardado para revisarlo`)
-  }, [finishedStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
-  /** The engine kept a recording of the feed (issue #416): it is saved, gzipped, whether the match ended or the staff disconnected. */
-  const keepRecording = useCallback(async ({ code, recording, complete }: { code: string; recording: unknown; complete: boolean }) => {
-    const title = followedRef.current ?? code
-    const { encoding, bytes } = await encodeRecording(JSON.stringify(recording))
-    await recordingStore.save({
-      code, title, savedAt: new Date().toISOString(), complete,
-      frames: (recording as { frames?: unknown[] }).frames?.length ?? 0, encoding, bytes, compat: REPLAY_COMPAT,
-    })
-    setRecordings(await recordingStore.list())
-    session.record(`Grabación del partido ${code} guardada (${complete ? 'completa' : 'incompleta'})`)
-  }, [recordingStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
+  const followed = useMemo(() => ({ plaintext: plaintextRef, meta: metaRef, alerts: alertLog, title: followedRef }), [])
+  const { finishedMatches, recordings, purgedNotice, keepFinished, keepRecording, shareRecording, removeFinished, removeRecording } =
+    useStoredMatches({ finishedStore, recordingStore, followed, shareFile, record: session.record })
+  const { reporting, reportError, demoReportError, reportFinished, reportDemo } = useMatchReports({ engine, finishedStore, pdf, record: session.record, matches, demo, loadMatch })
   const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive,
     onFinished: keepFinished, onRecording: keepRecording })
   liveRef.current = live
@@ -450,36 +366,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     if (value.startsWith(FINISHED)) { void beginFinished(value.slice(FINISHED.length)); return }
     const match = matches.find(m => m.code === value)
     if (demo) void (match ? beginRecorded(match, demo) : beginDemo(demo))
-  }
-  /** The PDF report of a demo or of the sample game (issue #477): from the last document of its recording, with the gender of its package. */
-  const reportDemo = async (value: string) => {
-    setReporting(value)
-    setDemoReportError(null)
-    try {
-      const match = matches.find(m => m.code === value)
-      const source = value === SAMPLE && demo ? { game: demo.game, package: demo.package } : match ? await loadMatch(match).then(r => ({ game: r.recording, package: r.package })) : null
-      if (!source) throw new Error('no se encuentra el partido')
-      const summary = summarizePackage(source.package)
-      const report = await engine.report(source.game, [], summary.teamId, summary.ruleConfig)
-      await pdf.share(await pdf.render(report), fileNameFor(report.match.own.name, report.match.rival.name, value),
-        `Informe del partido ${report.match.own.name.trim()} – ${report.match.rival.name.trim()}`)
-      session.record(`Informe PDF de la demostración ${value}`)
-    } catch (e) {
-      setDemoReportError(`No se pudo generar el informe: ${e instanceof Error ? e.message : String(e)}`)
-    } finally {
-      setReporting(null)
-    }
-  }
-  /** Deletes a saved match or a recording from the device (issue #512). */
-  const removeFinished = async (code: string) => {
-    await finishedStore.remove(code)
-    setFinishedMatches(await finishedStore.list())
-    session.record(`Partido finalizado ${code} eliminado`)
-  }
-  const removeRecording = async (code: string) => {
-    await recordingStore.remove(code)
-    setRecordings(await recordingStore.list())
-    session.record(`Grabación ${code} eliminada`)
   }
   /** Opens a match of the list and goes to see it (the matches are chosen in the Partidos tab, issue #476). */
   const openMatch = (value: DemoSource) => { record(`Partido abierto desde la lista (${value})`); pickSource(value); setTab('partido') }

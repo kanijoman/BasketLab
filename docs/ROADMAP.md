@@ -33,7 +33,7 @@ Actualizar al cerrar cada entrega (regla de [CLAUDE.md](../CLAUDE.md)). Estado d
 
 ## Deuda técnica (>500 líneas; dividir al tocarlos)
 Python: `database/aggregation/fbcyl_pipeline.py` 1304 · `scraper/feb_scraper.py` 856 · `services/rotation_service.py` 722 · `shotcharts/court_zones.py` 662 · `_weekly_report_helpers.py` 660 · `shotcharts/detailed_zones.py` 629 · `database/inout_calculator.py` 619 · `lineup_stats_calculator.py` 609 · `shot_visualizer.py` 596 · `repository_inout.py` 595 · `fiba_court.py` 579 · `weekly_report_service.py` 576 · `fbcyl_scraper.py` 542 · `pipeline_player_stats.py` 505.
-Frontend: `PredictivePage.tsx` 1424 · `api/client.ts` 1338 · `AdminPage.tsx` 707 · `PlayerStatsPage.tsx` 674 · `LineupsPage.tsx` 650 · `RotacionesPage.tsx` 624 · `TeamStatsPage.tsx` 529 · `MultiPhaseStatsPage.tsx` 510. App live: `ui/App.tsx` 577 (extraer hooks tras la 0.4.0). (Cifras del 23/10/2026.)
+Frontend: `PredictivePage.tsx` 1424 · `api/client.ts` 1338 · `AdminPage.tsx` 707 · `PlayerStatsPage.tsx` 674 · `LineupsPage.tsx` 650 · `RotacionesPage.tsx` 624 · `TeamStatsPage.tsx` 529 · `MultiPhaseStatsPage.tsx` 510. App live: `ui/App.tsx` 484 tras extraer `useStoredMatches`, `useMatchReports` y `useEntryPoints` (#590). (Cifras del 23/10/2026.)
 Código duplicado: medición repetible en el CI (`scripts/duplicate_code.py`, #452; línea base 65 + 22 bloques); queda decidir qué extraer (gemelos FEB/FBCYL, `GAME_SECONDS` en 10 módulos de `live_core` tras la próxima release). Otros: la API solo tiene una clave de administración (sin usuarios/roles ni protección de lecturas; #115)
 
 ## Límites conocidos
