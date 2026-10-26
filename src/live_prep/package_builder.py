@@ -16,7 +16,7 @@ from src.live_core.engine import LiveEngine
 from .category_strength import adjust, team_level
 from .game_sources import LEAGUE_KEY, LEVEL_KEY
 from .team_rating import TeamRatings
-from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, possessions
+from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, factors, possessions
 from src.live_core.package import PreparationPackage
 from src.live_core.profiles import (
     League,
@@ -155,6 +155,8 @@ class SeasonAccumulator:
         self.zone_conceded: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> zones of the shots its defence let the opponents take (#247)
         self.total_games = 0
         self.levels: Dict[str, Dict[int, int]] = {}   # team -> games per known division (issue #464)
+        self.team_sums: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> season totals of its own stats ("for") and of its opponents' against it ("against"): attack and defence (#586)
+        self.league_sums: Dict[str, int] = {}   # the stats of both teams of every league game
         self.ratings = TeamRatings()   # every team of the competition, tracked or not: the prior of a matchup depends on whom they beat (#567)
 
     def tracked(self, team_id: str) -> bool:
@@ -188,6 +190,9 @@ class SeasonAccumulator:
 
     def _add_league(self, ids: List[str], snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self.total_games += 1
+        for tid in ids:
+            for key, value in stats[tid].items():
+                self.league_sums[key] = self.league_sums.get(key, 0) + value
         self.league_diffs.append(differentials(stats[ids[0]], stats[ids[1]]))
         for pid, p in snap["players"].items():
             self.league_players.setdefault(pid, _PlayerAcc(p["name"], str(p["team_id"]))).add(p)
@@ -196,6 +201,10 @@ class SeasonAccumulator:
 
     def _add_team(self, tid: str, other: str, snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self._played[tid] = self.played(tid) + 1
+        sums = self.team_sums.setdefault(tid, {"for": {}, "against": {}})
+        for side, source in (("for", tid), ("against", other)):
+            for key, value in stats[source].items():
+                sums[side][key] = sums[side].get(key, 0) + value
         for row in snap["lineups"].get(tid, []):
             total = self.lineup_totals.setdefault(tid, {}).setdefault(
                 tuple(row["players"]), {"seconds": 0, "pts_for": 0, "pts_against": 0, "stints": 0, "games": 0})
@@ -237,6 +246,9 @@ class SeasonAccumulator:
             out["four_factors_prior"], out["net_rtg_prior"], team_level(self.levels.get(team_id, {})), team_level(self.levels.get(rival_id, {})))
         if cross:
             out["cross_division"] = cross       # the teams were measured against rivals of different divisions (issue #464)
+        levels = self._team_levels(team_id, rival_id)
+        if levels:
+            out["team_levels"] = levels         # how each team attacks and defends in the season, shrunk to the league (#586)
         spread = league_spread(self.league_diffs)
         if spread:
             out["four_factors_sd"] = spread
@@ -250,6 +262,28 @@ class SeasonAccumulator:
             own = self._paces(tid)
             if own:
                 out[key] = round(sum(own) / len(own), 1)
+        return out
+
+    def _team_levels(self, team_id: str, rival_id: str) -> Dict[str, Any]:
+        """``{league, own: {attack, defence}, rival: {attack, defence}, games}``: the four factors a team makes (attack) and lets its opponents make (defence),
+        each shrunk towards the league like the prior of the matchup. Nothing without league games to compare with."""
+        if not self.league_sums or not self.total_games:
+            return {}
+        league = factors(self.league_sums, self.league_sums)
+
+        def of(tid: str) -> Optional[Dict[str, Dict[str, float]]]:
+            sums, games = self.team_sums.get(tid), self.played(tid)
+            if not sums or not games:
+                return None
+            weight = games / (games + PRIOR_SHRINK_GAMES)
+            return {kind: {f: round(league[f] + (v - league[f]) * weight, 4) for f, v in level.items()}
+                    for kind, level in (("attack", factors(sums["for"], sums["against"])), ("defence", factors(sums["against"], sums["for"])))}
+
+        out: Dict[str, Any] = {"league": {f: round(v, 4) for f, v in league.items()}, "games": {"own": self.played(team_id), "rival": self.played(rival_id)}}
+        for key, tid in (("own", team_id), ("rival", rival_id)):
+            level = of(tid)
+            if level:
+                out[key] = level
         return out
 
     def _league_players_with_minutes(self) -> List[_PlayerAcc]:

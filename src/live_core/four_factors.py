@@ -95,6 +95,43 @@ def points_per_unit(own: Dict[str, int]) -> Dict[str, float]:
     }
 
 
+# +1: a higher value of the factor is good for the team that makes it (turnovers: -1)
+_GOOD = {"efg": 1, "tov": -1, "orb": 1, "ftr": 1}
+SIDE_SHARE = 0.7      # a side is «the» problem when it carries this share of what is lost in the factor
+
+
+def lever_sides(levels: Optional[Dict[str, Any]], own_game: Dict[str, float], rival_game: Dict[str, float], per_unit: Dict[str, float]) -> Optional[Dict[str, Dict[str, float]]]:
+    """Per factor, points per 100 possessions the game costs (negative) or gives us (positive) in our ATTACK and in our DEFENCE (issue #586), and what each team was expected to make.
+
+    Each team is expected to make what it usually makes plus what the other usually lets (both measured against the league): our attack is what we make against that
+    expectation, our defence is what the rival makes against its own. A diagnosis of what the game shows, not a forecast. ``levels`` is ``baselines.team_levels``."""
+    if not levels or not all(k in levels for k in ("league", "own", "rival")):
+        return None
+    league, own, rival = levels["league"], levels["own"], levels["rival"]
+    out: Dict[str, Dict[str, float]] = {}
+    for f, good in _GOOD.items():
+        expected_own = own["attack"][f] + rival["defence"][f] - league[f]
+        expected_rival = rival["attack"][f] + own["defence"][f] - league[f]
+        out[f] = {"attack": round(per_unit[f] * (own_game[f] - expected_own) * good, 3), "defence": round(per_unit[f] * (expected_rival - rival_game[f]) * good, 3),
+                  "expected_own": round(expected_own, 4), "expected_rival": round(expected_rival, 4)}
+    return out
+
+
+def side_of(sides: Optional[Dict[str, Dict[str, float]]], factor: str) -> Optional[str]:
+    """``attack``, ``defence`` or ``both``: where the game loses points in ``factor`` (None when nothing is lost or there is no diagnosis)."""
+    if not sides or factor not in sides:
+        return None
+    attack, defence = sides[factor]["attack"], sides[factor]["defence"]
+    lost = -min(attack, 0.0) - min(defence, 0.0)
+    if lost <= 0:
+        return None
+    if -min(attack, 0.0) >= SIDE_SHARE * lost:
+        return "attack"
+    if -min(defence, 0.0) >= SIDE_SHARE * lost:
+        return "defence"
+    return "both"
+
+
 class FourFactorsModel:
     def __init__(self, own_team_id: Optional[str], rival_team_id: Optional[str],
                  baselines: Optional[Dict[str, Any]] = None, config: Optional[RuleConfig] = None) -> None:
@@ -138,6 +175,7 @@ class FourFactorsModel:
             "factors_rival": _round(factors(rival, own)),
             "diffs": _round(raw), "shrunk": _round(shrunk), "z": _round(z),
             "contributions": _round(contributions), "pts100": _round(pts100), "pts100_raw": _round(pts100_raw),
+            "sides": lever_sides(self._base.get("team_levels"), factors(own, rival), factors(rival, own), points_per_unit(own)),
             "score": round(score, 4), "lever": lever,
             "expected_net_rtg": round(self._cfg.ff_beta * score, 3),
             "projection": self._project(snap, n, score),

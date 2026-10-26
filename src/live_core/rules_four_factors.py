@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from .advice_types import Advice, RuleContext
+from .four_factors import side_of
 
 # lever -> (title, what we do in the staff's words, what to do about it); the numbers are OURS against the RIVAL'S in what has been played of the game (#566)
 _LABELS = {
@@ -26,6 +27,37 @@ def _own_vs_rival(lever: str, result: Dict[str, Any]) -> Dict[str, str]:
     if lever == "ftr":
         return {"own": f"{own:.2f}", "rival": f"{rival:.2f}"}
     return {"own": f"{own:.0%}", "rival": f"{rival:.0%}"}
+
+
+def _pct(value: float) -> str:
+    return f"{value:.0%}"
+
+
+def _ratio(value: float) -> str:
+    return f"{value:.2f}"
+
+
+# lever -> side -> (sentence, which numbers it quotes: (our game, expected of ours) or (the rival's game, expected of the rival)) (#586)
+_SIDE_TEXT = {
+    "efg": {"attack": ("acertamos el {game} de nuestros tiros y lo habitual del emparejamiento es el {expected}", _pct),
+            "defence": ("el rival acierta el {game} y lo habitual contra nosotros es el {expected}", _pct)},
+    "tov": {"attack": ("perdemos el {game} de nuestras posesiones y lo habitual es el {expected}", _pct),
+            "defence": ("el rival pierde el {game} de las suyas y lo habitual contra nosotros es el {expected}", _pct)},
+    "orb": {"attack": ("capturamos el {game} de nuestros fallos y lo habitual es el {expected}", _pct),
+            "defence": ("el rival captura el {game} de sus fallos y lo habitual contra nosotros es el {expected}", _pct)},
+    "ftr": {"attack": ("lanzamos {game} tiros libres por tiro de campo y lo habitual es {expected}", _ratio),
+            "defence": ("el rival lanza {game} tiros libres por tiro de campo y lo habitual contra nosotros es {expected}", _ratio)},
+}
+
+
+def _side_sentence(lever: str, side: str, result: Dict[str, Any]) -> str:
+    """`` Es sobre todo la defensa: el rival acierta el 75 % y lo habitual contra nosotros es el 50 %.`` (a diagnosis of what the game shows, not a forecast)."""
+    if side == "both":
+        return " Pesa en el ataque y en la defensa."
+    template, fmt = _SIDE_TEXT[lever][side]
+    sides = result["sides"][lever]
+    game, expected = (result["factors_own"][lever], sides["expected_own"]) if side == "attack" else (result["factors_rival"][lever], sides["expected_rival"])
+    return f" Es sobre todo {'el ataque' if side == 'attack' else 'la defensa'}: {template.format(game=fmt(game), expected=fmt(expected))}."
 
 
 def _stable_lever(result: Dict[str, Any], ctx: RuleContext) -> str:
@@ -54,7 +86,6 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     _title, template, action = _LABELS[lever]
     raw = result["pts100_raw"][lever]
-    gain = ctx.win_prob.lever_gains(snap, result).get(lever) if ctx.win_prob is not None else None
     step = int(max(0.0, -raw) // ctx.config.lever_step_pts100)
     memory = ctx.memory.setdefault("lever", {"name": None, "changes": 0, "step": -1})
     if memory["name"] == lever and step <= memory["step"]:
@@ -64,10 +95,12 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if memory["name"] != lever:
         memory["changes"] += 1
     memory["name"], memory["step"], memory["at"] = lever, max(step, memory["step"] if memory["name"] == lever else -1), snap["elapsed"]
+    side = side_of(result.get("sides"), lever)
+    side_text = _side_sentence(lever, side, result) if side else ""
     return [Advice(
         key=f"lever:{lever}:{memory['changes']}:{step}", id="four_factors_lever", severity="info", category="four_factors",
-        message=f"{template.format(**_own_vs_rival(lever, result))}: nos cuesta unos {-pts100:.0f} puntos cada 100 posesiones. {action}",
+        message=f"{template.format(**_own_vs_rival(lever, result))}: nos cuesta unos {-pts100:.0f} puntos cada 100 posesiones.{side_text} {action}",
         evidence={"lever": lever, "pts100": pts100, "pts100_raw": raw, "possessions": result["possessions"],
                   "factors_own": result["factors_own"], "factors_rival": result["factors_rival"],
-                  "contributions": result["contributions"], **({"win_gain": gain} if gain is not None else {})},
+                  "contributions": result["contributions"], **({"side": side} if side else {})},
     )]

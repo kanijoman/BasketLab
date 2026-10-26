@@ -184,7 +184,7 @@ def pace_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     return [Advice(
         key=f"pace:{direction}:{snap['period']}", id="pace_control", severity="info", category="gestion",
         message=(f"Quedan unas {current['poss_remaining']:.0f} posesiones por equipo con el marcador {margin:+d} (proyección "
-                 f"{current['projected_margin']:+.0f}): {verb} el ritmo para {goal} (+{lever['gain'] * 100:.0f} % de victoria, estimación)."),
+                 f"{current['projected_margin']:+.0f}): {verb} el ritmo para {goal}."),
         evidence={"direction": direction, "margin": margin, "poss_remaining": current["poss_remaining"], "p": current["p"],
                   "projected_margin": current["projected_margin"], "gain": lever["gain"], "gain_pts": lever["gain_pts"],
                   **({"reason": lever["reason"]} if lever.get("reason") else {})},

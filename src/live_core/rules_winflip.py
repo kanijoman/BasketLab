@@ -40,14 +40,14 @@ def pace_reason_text(lever: Dict[str, Any]) -> str:
 
 
 def _lever_text(lever: Optional[Dict[str, Any]]) -> str:
+    """The main lever as a DIAGNOSIS of what is going on, with no promised gain: what a factor shows in the game does not predict the next minutes (study of #567)."""
     if lever is None:
         return ""
-    gain = f"+{lever['gain'] * 100:.0f} %"
     if lever["id"] == "pace":
         why = pace_reason_text(lever)
-        return f" Palanca principal: {_PACE_TEXT.get(lever.get('direction'), 'cambiar el ritmo')} ({gain}{'; ' + why if why else ''})."
+        return f" Palanca principal: {_PACE_TEXT.get(lever.get('direction'), 'cambiar el ritmo')}{' (' + why + ')' if why else ''}."
     title, _metric, action = _LABELS[lever["id"]]
-    return f" Palanca principal: {title.lower()} ({gain} si vuelve a su nivel habitual). {action}"
+    return f" Palanca principal: {title.lower()}. {action}"
 
 
 def win_flip_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:

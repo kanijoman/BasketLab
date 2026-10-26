@@ -16,7 +16,7 @@ import math
 from typing import Any, Dict, List, Optional
 
 from .config import RuleConfig
-from .four_factors import WEIGHTS, points_per_unit
+from .four_factors import WEIGHTS, points_per_unit, side_of
 from .summary_pace import window_pace
 from .windows import window_stats
 
@@ -92,7 +92,9 @@ class WinProbabilityModel:
             shortfall = prior.get(factor, 0.0) - four_factors["shrunk"][factor]
             if shortfall > 0:
                 pts = per_unit[factor] * shortfall * left / 100
-                rows.append({"id": factor, "gain": self._p(margin, mean + pts, sd) - base, "gain_pts": pts})
+                row = {"id": factor, "gain": self._p(margin, mean + pts, sd) - base, "gain_pts": pts}
+                side = side_of(four_factors.get("sides"), factor)
+                rows.append({**row, "side": side} if side else row)
         pace = self._pace_row(snap, margin, mean, mu, left, sd, base)
         if pace:
             rows.append(pace)
