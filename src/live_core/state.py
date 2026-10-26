@@ -25,6 +25,8 @@ PLAYER_STAT_KEYS = ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "fta", "orb", "drb", 
 _PLAYER_KINDS = {"sub_in", "sub_out", "fg2", "fg3", "ft", "rebound", "turnover", "steal",
                  "assist", "block", "foul"}
 _TEAM_FOUL_TYPES = {"personal", "unsportsmanlike", "technical"}
+# What a box score shows of a player and can change with one action (``last_stat``, #593), in the order the keys are reported.
+_LAST_KEYS = ("pts",) + PLAYER_STAT_KEYS + ("pf", "on_court")
 
 # Recovery credited to a player who stays on court through a break (game-seconds of the
 # current stint; real minutes are never discounted). Halftime resets the stint completely.
@@ -78,6 +80,10 @@ class LiveGame:
         self.remaining = 600
         self.elapsed = 0
         self.last_num = 0
+        self._licenses: Dict[str, str] = {}      # idLicense -> player id, from every line that names both (a foul only says the licence of who suffers it)
+        self._drawn: Dict[str, int] = {}         # licence -> fouls suffered
+        self._seq = 0
+        self.last_stat: Optional[Dict[str, Any]] = None     # the last action that changed a player's box score (the tab highlights it, #593)
         self.last_event: Optional[Dict[str, Any]] = None   # {kind, elapsed, text, period, remaining, team_id} of the last line applied (lineup_settle.py, #413; the app shows the text, #490)
         self._last_miss_team: Optional[str] = None
         self.ball: Optional[Dict[str, Any]] = None        # who has the ball now: {team_id, since, why}; an indicator for the scoreboard (#497)
@@ -132,12 +138,32 @@ class LiveGame:
         self._move_ball(ev)
         player = self._player_for(ev)
         team = self.teams.get(ev.team_id) if ev.team_id else None
+        if ev.player_id and ev.license:
+            self._licenses[ev.license] = ev.player_id
+        before = self._box(player)
 
         handler = getattr(self, f"_on_{ev.kind}", None)
         if handler:
             handler(ev, player, team)
+        self._note_last_stat(ev, player, before)
         self.lineups.refresh(self.players, ev.elapsed)
         self.possessions.feed(ev)
+
+    @staticmethod
+    def _box(player: Optional[_Player]) -> Optional[Dict[str, Any]]:
+        """What a box score shows of a player right now (to see afterwards what one action changed)."""
+        return None if player is None else {**player.stats, "pts": player.pts, "pf": player.pf, "on_court": player.on_court}
+
+    def _note_last_stat(self, ev: Event, player: Optional[_Player], before: Optional[Dict[str, Any]]) -> None:
+        """Remember the action if it changed a box score: who, which columns and, for a foul, who drew it."""
+        keys = [k for k in _LAST_KEYS if before is not None and self._box(player)[k] != before[k]]
+        also = []
+        if ev.kind == "foul" and ev.fouled and self._licenses.get(ev.fouled) in self.players:
+            drawn = self.players[self._licenses[ev.fouled]]
+            also.append({"player_id": self._licenses[ev.fouled], "team_id": drawn.team_id, "keys": ["fd"]})
+        if keys:
+            self._seq += 1
+            self.last_stat = {"seq": self._seq, "player_id": ev.player_id, "team_id": ev.team_id, "keys": keys, "also": also}
 
     def _other(self, team_id: Optional[str]) -> Optional[str]:
         others = [t for t in self.teams if t != team_id]
@@ -182,6 +208,10 @@ class LiveGame:
             # First sighting through something other than "enters": already on court.
             player.on_court = True
             player.stint_start = 0 if ev.period == 1 else ev.elapsed
+            if ev.period == 1:
+                # on court since the tip-off, so the margin of his team so far is his plus/minus (the five of the start are not in the feed, #593)
+                other = self._other(ev.team_id)
+                player.pm = player.stint_pm = self.score.get(ev.team_id, 0) - (self.score.get(other, 0) if other else 0)
         return player
 
     def _enter_period(self, period: int) -> None:
@@ -292,6 +322,8 @@ class LiveGame:
                     on_court.credit += TIMEOUT_CREDIT_S
 
     def _on_foul(self, ev: Event, player: Optional[_Player], team: Optional[_Team]) -> None:
+        if ev.fouled:
+            self._drawn[ev.fouled] = self._drawn.get(ev.fouled, 0) + 1
         if player:
             player.pf = ev.pf_count if ev.pf_count is not None else player.pf + 1
             player.pf_by_period[ev.period] = player.pf_by_period.get(ev.period, 0) + 1
@@ -319,6 +351,10 @@ class LiveGame:
         """Plain JSON-serialisable dict (the Pyodide <-> JS boundary)."""
         now = self.elapsed
         players = {}
+        drawn: Dict[str, int] = {}
+        for licence, count in self._drawn.items():       # resolved here, not when the foul is read: the fouled player may show up in a later line
+            if licence in self._licenses:
+                drawn[self._licenses[licence]] = drawn.get(self._licenses[licence], 0) + count
         for pid, p in self.players.items():
             stint = max(0, now - p.stint_start - p.credit) if p.on_court else 0
             players[pid] = {
@@ -327,7 +363,7 @@ class LiveGame:
                 "stint": stint, "pf": p.pf, "pts": p.pts, "unsportsmanlike": p.unsports, "technical": p.techs,
                 "stints_done": p.stints_done, "stint_sum": p.stint_sum, "stats": dict(p.stats),
                 "pf_by_period": {str(k): v for k, v in sorted(p.pf_by_period.items())},
-                "clutch": dict(p.clutch), "q4": dict(p.q4), "pm": p.pm, "stint_pm": p.stint_pm,
+                "clutch": dict(p.clutch), "q4": dict(p.q4), "pm": p.pm, "stint_pm": p.stint_pm, "fd": drawn.get(pid, 0),
             }
         teams = {
             tid: {
@@ -339,7 +375,7 @@ class LiveGame:
         }
         return {
             "period": self.period, "remaining": self.remaining, "elapsed": self.elapsed,
-            "last_num": self.last_num, "last_event": dict(self.last_event) if self.last_event else None, "score": dict(self.score), "teams": teams, "players": players,
+            "last_num": self.last_num, "last_event": dict(self.last_event) if self.last_event else None, "last_stat": dict(self.last_stat) if self.last_stat else None, "score": dict(self.score), "teams": teams, "players": players,
             "log": [list(e) for e in self.log],
             "possessions": self.possessions.snapshot(),
             "ball": dict(self.ball) if self.ball else None,

@@ -46,6 +46,8 @@ class Event:
     pf_count: Optional[int] = None
     deleted: bool = False
     text: str = ""
+    license: Optional[str] = None    # ``idLicense`` of the player of the line: how a licence found in another line is turned into a player (fouls drawn, #593)
+    fouled: Optional[str] = None     # a foul: the licence of whoever suffers it (``logParam4`` of the FEB line)
 
 
 def _to_int(value: Any) -> Optional[int]:
@@ -113,5 +115,7 @@ def parse_line(line: Dict[str, Any]) -> Optional[Event]:
         name=name.group(1).strip() if name else None,
         deleted=line.get("deleted") not in _NOT_DELETED,
         text=text,
+        license=str(line["idLicense"]) if line.get("idLicense") else None,
+        fouled=str(line["logParam4"]) if line.get("action") == "foul" and line.get("logParam4") else None,
         **_classify(line.get("action") or "", text),
     )
