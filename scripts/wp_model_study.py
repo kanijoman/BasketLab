@@ -12,7 +12,7 @@ import math
 import pickle
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 ROOT = Path(__file__).resolve().parents[1]
 for extra in (ROOT, ROOT / "src"):
@@ -305,7 +305,7 @@ def lineup_pass(folder: str) -> Dict[str, Any]:
         ids = [str(t["id"]) for t in game["HEADER"]["TEAM"]]
         if len(ids) != 2:
             continue
-        engine, rows, cuts, state = LiveEngine(), [], {}, None
+        engine, rows, cuts, state, snap = LiveEngine(), [], {}, None, None
         for poll in finished_game_polls(game, latency_s=0.0, poll_s=10.0):
             snap = engine.update(poll.doc)
             fives = {tid: sorted(pid for pid, p in snap["players"].items() if p["team_id"] == tid and p["on_court"]) for tid in ids}
@@ -321,7 +321,8 @@ def lineup_pass(folder: str) -> Dict[str, Any]:
             cut = (now // 300) * 300
             if 0 < cut < 2400 and cut not in cuts:
                 cuts[cut] = fives
-        out[str(game_code(game))] = {"order": order, "teams": ids, "rows": rows, "cuts": cuts}
+        box = {pid: {"team": p["team_id"], "min": p["minutes"], "pts": p["pts"], "pf": p["pf"], **p["stats"]} for pid, p in (snap or {}).get("players", {}).items()}   # the box score of the game: the prior of a rating
+        out[str(game_code(game))] = {"order": order, "teams": ids, "rows": rows, "cuts": cuts, "box": box}
     return out
 
 
@@ -337,7 +338,7 @@ def collect_lineups(folders: Sequence[str], out: str) -> None:
         pickle.dump(data, fh)
 
 
-def ratings(games: Dict[str, Any], codes: Sequence[str], ridge: float = 2000.0) -> Dict[str, float]:
+def ratings(games: Dict[str, Any], codes: Sequence[str], ridge: float = 2000.0, prior: Optional[Dict[str, float]] = None) -> Dict[str, float]:
     """Adjusted plus-minus of every player (points per 40 minutes above the average player), ridge-regularised, from the rows of the games in ``codes`` only."""
     import numpy as np
     from scipy.sparse import csr_matrix, diags
@@ -358,8 +359,39 @@ def ratings(games: Dict[str, Any], codes: Sequence[str], ridge: float = 2000.0) 
         return {}
     A = csr_matrix((data, (ri, ci)), shape=(len(y), len(players)))
     sw = np.sqrt(np.array(w, dtype=float))
-    beta = lsqr(diags(sw) @ A, np.array(y) * sw, damp=math.sqrt(ridge))[0]
-    return {pid: float(beta[i]) for pid, i in players.items()}
+    mu = np.array([(prior or {}).get(pid, 0.0) for pid in players])           # shrink towards what the box score says of the player, not towards zero
+    beta = lsqr(diags(sw) @ A, (np.array(y) - A @ mu) * sw, damp=math.sqrt(ridge))[0]
+    return {pid: float(mu[i] + beta[i]) for pid, i in players.items()}
+
+
+BOX = ["pts", "ast", "orb", "drb", "stl", "blk", "tov", "pf", "fga", "fta"]
+
+
+def box_prior(games: Dict[str, Any], codes: Sequence[str], ridge: float, min_minutes: float = 60.0) -> Dict[str, float]:
+    """A prior rating from the box score alone: the plain ratings are regressed on the per-40 box of the players with minutes, and applied to every player."""
+    import numpy as np
+    from sklearn.linear_model import Ridge
+
+    total: Dict[str, Dict[str, float]] = {}
+    for code in codes:
+        for pid, b in (games[code].get("box") or {}).items():
+            row = total.setdefault(pid, {"min": 0.0, **{k: 0.0 for k in BOX}})
+            row["min"] += b["min"] / 60
+            for k in ("pts", "ast", "orb", "drb", "stl", "blk", "tov", "pf"):
+                row[k] += b.get(k, 0)
+            row["fga"] += b.get("fg2a", 0) + b.get("fg3a", 0)
+            row["fta"] += b.get("fta", 0)
+    plain = ratings(games, codes, ridge)
+    pids = [p_ for p_, r in total.items() if r["min"] >= min_minutes and p_ in plain]        # enough minutes for the plain rating to say something
+    if len(pids) < 30:
+        return {}
+    per40 = lambda r: [r[k] / r["min"] * 40 for k in BOX]  # noqa: E731
+    X = np.array([per40(total[p_]) for p_ in pids])
+    y = np.array([plain[p_] for p_ in pids])
+    w = np.array([total[p_]["min"] for p_ in pids])
+    mu, sd = X.mean(0), X.std(0) + 1e-9
+    model = Ridge(alpha=10.0).fit((X - mu) / sd, y, sample_weight=w)
+    return {p_: float(model.predict(((np.array([per40(r)]) - mu) / sd))[0]) for p_, r in total.items() if r["min"] >= 8}
 
 
 def individual(samples_path: str, lineups_path: str) -> str:
@@ -379,12 +411,17 @@ def individual(samples_path: str, lineups_path: str) -> str:
         cut = int(len(codes) * 0.6)
         train, test = codes[:cut], set(codes[cut:])
         rate = ratings(games, train)
-        before = lineups.get(folder.replace("/2025", "/2024")) if folder.endswith("/2025") else None
-        if before:                                                       # the previous season of the same competition: the players are mostly the same
-            pool = {**{f"p:{c}": g_ for c, g_ in before.items()}, **games}
-            rate_carry = ratings(pool, [f"p:{c}" for c in before] + train)
+        rate_box = ratings(games, train, prior=box_prior(games, train, 2000.0))
+        parent, season = folder.rsplit("/", 1)
+        earlier = sorted(f for f in lineups if f.rsplit("/", 1)[0] == parent and f.rsplit("/", 1)[1] < season)          # every earlier season of the same competition
+        if earlier:                                                      # the players are mostly the same from one season to the next
+            pool = {f"{k}:{c}": g_ for k, f in enumerate(earlier) for c, g_ in lineups[f].items()} | games
+            rate_carry = ratings(pool, [f"{k}:{c}" for k, f in enumerate(earlier) for c in lineups[f]] + train)
+            used = [f"{k}:{c}" for k, f in enumerate(earlier) for c in lineups[f]] + train
+            rate_carry_box = ratings(pool, used, prior=box_prior(pool, used, 2000.0))
         else:
-            rate_carry = rate
+            rate_carry, rate_carry_box = rate, rate_box
+        before = bool(earlier)
         half = ratings(games, train[::2]), ratings(games, train[1::2])
         common = [p for p in half[0] if p in half[1]]
         if len(common) > 20:
@@ -403,8 +440,10 @@ def individual(samples_path: str, lineups_path: str) -> str:
                     continue
                 strength = lambda ps: sum(rate.get(p, 0.0) for p in ps)               # a player never seen is worth the average  # noqa: E731
                 carried = lambda ps: sum(rate_carry.get(p, 0.0) for p in ps)  # noqa: E731
+                boxed = lambda ps: sum(rate_box.get(p, 0.0) for p in ps)  # noqa: E731
+                carried_box = lambda ps: sum(rate_carry_box.get(p, 0.0) for p in ps)  # noqa: E731
                 f = features(a)
-                rows.append([f["prior_net"], f["home"], f["margin"], f["frac_left"], strength(five_o) - strength(five_r), strength(five_o), strength(five_r), carried(five_o) - carried(five_r), 1.0 if before else 0.0])
+                rows.append([f["prior_net"], f["home"], f["margin"], f["frac_left"], strength(five_o) - strength(five_r), strength(five_o), strength(five_r), carried(five_o) - carried(five_r), 1.0 if before else 0.0, boxed(five_o) - boxed(five_r), carried_box(five_o) - carried_box(five_r)])
                 target.append((b["snap"]["score"][own] - b["snap"]["score"][rival]) - (a["snap"]["score"][own] - a["snap"]["score"][rival]))
                 wins.append(int(a["won"]))
                 groups.append(f"{folder}:{game}")
@@ -413,7 +452,7 @@ def individual(samples_path: str, lineups_path: str) -> str:
              "Fiabilidad de los ratings (correlación entre los calculados con los partidos pares y los impares del tramo de entrenamiento, jugadores presentes en ambos):", "",
              "| Carpeta | Jugadores | Correlación |", "|---|---|---|"]
     lines += [f"| {f.split('historical_games/')[-1][-22:]} | {n} | {r:+.2f} |" for f, n, r in reliability]
-    sets = {"valor previo + campo + marcador (equipo)": [0, 1, 2, 3], "+ calidad de los quintetos en pista (propio − rival)": [0, 1, 2, 3, 4], "+ los dos quintetos por separado": [0, 1, 2, 3, 5, 6]}
+    sets = {"valor previo + campo + marcador (equipo)": [0, 1, 2, 3], "+ calidad de los quintetos en pista (propio − rival)": [0, 1, 2, 3, 4], "+ los dos quintetos por separado": [0, 1, 2, 3, 5, 6], "+ quintetos con valor previo de la estadística individual": [0, 1, 2, 3, 9]}
     lines += ["", "Margen de los 5 min siguientes (R², validación cruzada por partido):", "", "| Variables | R² |", "|---|---|"]
     for name, cols in sets.items():
         pred = np.zeros(len(y))
@@ -423,11 +462,12 @@ def individual(samples_path: str, lineups_path: str) -> str:
         lines.append(f"| {name} | {1 - np.sum((y - pred) ** 2) / np.sum((y - y.mean()) ** 2):.4f} |")
     with_before = X[:, 8] == 1.0
     if with_before.any():
-        lines += ["", f"Solo las carpetas con la temporada anterior de la misma competición ({int(with_before.sum())} tramos): ratings de esa temporada y del 60 % antiguo de la actual.", "",
+        lines += ["", f"Solo las carpetas con alguna temporada anterior de la misma competición ({int(with_before.sum())} tramos): ratings de esa temporada y del 60 % antiguo de la actual.", "",
                   "| Variables | R² |", "|---|---|"]
         Xs, ys, gs = X[with_before], y[with_before], g[with_before]
         for name, cols_ in (("equipo (valor previo + campo + marcador)", [0, 1, 2, 3]), ("+ quintetos con ratings de la temporada actual", [0, 1, 2, 3, 4]),
-                            ("+ quintetos con ratings que incluyen la temporada anterior", [0, 1, 2, 3, 7])):
+                            ("+ quintetos con ratings que incluyen las temporadas anteriores", [0, 1, 2, 3, 7]),
+                            ("+ ídem con valor previo de la estadística individual", [0, 1, 2, 3, 10])):
             pred = np.zeros(len(ys))
             for tr, te in GroupKFold(n_splits=5).split(Xs, ys, gs):
                 mu_, sd_ = Xs[tr][:, cols_].mean(0), Xs[tr][:, cols_].std(0) + 1e-9

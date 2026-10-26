@@ -88,12 +88,31 @@ Coeficiente tipificado del quinteto propio − rival: **+0,521** (IC 95 % por pa
 
 **Lectura**: a diferencia de la estadística de equipo, la **calidad de las jugadoras en pista sí predice lo que viene**, y mejora cuanto más datos tiene el rating. Es la base de palancas **individuales** accionables (quién debería estar en pista: «el quinteto actual es 3 puntos por 40 min peor que el mejor disponible») y de una mejora pequeña de la probabilidad. Con ratings más fiables (varias temporadas, o partiendo de la estadística individual de la plantilla como valor previo del rating) la señal debería crecer; con los de una sola temporada es modesta.
 
+### Experimento 3b: ligas masculinas, cadena de temporadas y estimador del rating (26/10/2026)
+Mismo método con **Primera y Segunda FEB** de la base local (Primera 2024-25, 2025-26 y las 9 primeras jornadas de 2026/27; Segunda igual; 1.478 partidos, sin scrapear nada) y los ratings de **todas las temporadas anteriores** de la competición más el 60 % antiguo de la actual. Se prueba además la **regularización** del rating y un **valor previo a partir de la estadística individual** (puntos, asistencias, rebotes, robos, tapones, pérdidas, faltas, tiros por 40 min).
+
+| Competición | Equipo (valor previo + campo + marcador) | + quintetos, temporada actual | + quintetos, con temporadas anteriores | Coeficiente del quinteto (IC 95 %) |
+|---|---|---|---|---|
+| Ligas femeninas (ridge 500) | 0,0973 | 0,1037 | **0,1105** | +0,46 (+0,31 a +0,64) |
+| Ligas femeninas (ridge 2.000) | 0,0973 | 0,1029 | 0,1085 | +0,52 (+0,35 a +0,71) |
+| Primera y Segunda FEB (ridge 2.000) | 0,0482 | 0,0531 | 0,0550 | +0,30 (+0,10 a +0,49) |
+| Primera y Segunda FEB (ridge 8.000) | 0,0482 | 0,0547 | 0,0570 | +0,40 (+0,18 a +0,63) |
+| Primera y Segunda FEB (ridge 30.000) | 0,0482 | 0,0546 | **0,0579** | +0,50 (+0,21 a +0,80) |
+
+(R² del margen de los 5 minutos siguientes, validación cruzada por partido; 6.838 tramos de 571 partidos en las masculinas.)
+
+- **La señal se repite en las ligas masculinas**, con menos fuerza (el valor previo del equipo explica menos y los ratings son aún más ruidosos: fiabilidad par/impar de 0,01 a 0,07).
+- **Más temporadas siempre ayudan** (de +0,005 a +0,010 de R² extra), y **la regularización óptima depende de la competición**: poca para las femeninas (ridge 500-2.000), mucha para las masculinas (8.000-30.000), donde hay más jugadores y menos minutos por jugador. Hay que ajustarla **por competición con validación cruzada**, no fijarla.
+- **El valor previo con la estadística individual no aporta** (0,0550 con y sin él): el rating de plus-minus ya recoge lo que dice la estadística, y la estadística no recoge más.
+- En probabilidad de ganar la mejora sigue sin distinguirse del ruido (+0,0003, IC −0,0012 a +0,0018).
+- **Tamaño**: un quinteto una desviación típica mejor que el rival vale ≈ 0,4-0,5 puntos cada 5 minutos (≈ 4 puntos en un partido): útil como criterio de rotación, pequeño como predictor.
+
 ## Qué recomiendo (decisiones para el usuario)
 1. **No sustituir el modelo**: ningún modelo más rico lo mejora con estos datos. Tampoco hace falta un modelo de caja negra: los árboles empeoran y descalibran.
 2. **Quitar de los avisos las cifras causales** («+N % de victoria si vuelve a su nivel habitual» de `win_flip`, «+N % de victoria» de `pace_control`): no están respaldadas (experimento 2). Dejar la palanca como **diagnóstico** («el rival acierta el 75 % y nosotros el 60 %: nos cuesta unos 12 puntos cada 100 posesiones»), que sí es cierto de lo ocurrido.
 3. **Partir las palancas en ataque y defensa** (lo que se pedía: «¿atacan bien?, ¿hay que mejorar la defensa?») **sin pretender predecir**: ataque = nuestro nivel frente a lo habitual de la liga, defensa = el del rival frente a lo habitual contra equipos como el nuestro. Requiere que el paquete lleve los cuatro factores de ataque y de defensa de la temporada de cada equipo (hoy solo lleva el prior de la *diferencia*): cambio de esquema del paquete (`schema_version`) y regenerar los publicados.
 4. **Mejorar el valor previo con el ajuste por rival** (ridge): es lo único que sube la calidad (0,0006 de log loss; más con equipos con pocos partidos) y se calcula en el publicador sin tocar la app (cambia `net_rtg_prior`).
-5. **Llevar el rating de jugador al paquete y a las alertas** (es lo único con señal): el publicador calcula el rating de cada jugadora con **varias temporadas** (RAPM con ridge, ≈ 10 min de cálculo por competición) y lo guarda en `players` (`rating`); el motor lo usa para (a) una palanca individual («el quinteto en pista rinde X por 40 min menos que el mejor disponible», que alimenta la rotación), (b) un pequeño ajuste de la probabilidad de victoria y (c) la propuesta de cambios. Medir antes con un test A/B sobre grabaciones reales. Cambia el esquema del paquete (`schema_version`).
+5. **Llevar el rating de jugador al paquete y a las alertas** (es lo único con señal): el publicador calcula, **en local** (la base compartida no guarda temporadas antiguas), el rating de cada jugadora con **varias temporadas** (RAPM con ridge ajustado por competición, ≈ 10 min de cálculo por competición) y solo se **publica el agregado** (unas decenas de bytes por jugadora, solo las de los equipos publicados) y lo guarda en `players` (`rating`); el motor lo usa para (a) una palanca individual («el quinteto en pista rinde X por 40 min menos que el mejor disponible», que alimenta la rotación), (b) un pequeño ajuste de la probabilidad de victoria y (c) la propuesta de cambios. Medir antes con un test A/B sobre grabaciones reales. Cambia el esquema del paquete (`schema_version`).
 6. **Después, probar la calidad de tiro por zona** (`ShotChart`: tiros abiertos frente a forzados, que persisten más que el porcentaje) y el tipo de posesión: no probados aún.
 
 ## Límites
