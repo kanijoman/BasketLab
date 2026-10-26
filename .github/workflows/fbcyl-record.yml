@@ -1,0 +1,120 @@
+name: FBCYL live recorder
+
+# Spike of the epic #435 (issue #444): does FBCYL publish a match WHILE it is played? Records the matches of config/fbcyl_watchlist.json: a cheap planner runs
+# every 15 minutes; when a watched match is about to start (or is being played) it launches one recorder job, which follows the calendar row until the match has an
+# id, polls the moves and the stats, and uploads the recording with a report (GO / NO-GO). Manual run: "Run workflow" + group and the ids of the two teams.
+
+on:
+  schedule:
+    - cron: "*/15 6-22 * * *"
+  pull_request:
+    paths:
+      - "src/live_prep/fbcyl_recorder.py"
+      - "src/live_prep/fbcyl_recording_report.py"
+      - "config/fbcyl_watchlist.json"
+      - ".github/workflows/fbcyl-record.yml"
+  workflow_dispatch:
+    inputs:
+      group:
+        description: "Group id of the calendar (e.g. 7298 = 1ª División Femenina, grupo A-1)"
+        required: false
+        default: ""
+      home:
+        description: "Id of the local team (idLocalTeam of the calendar row)"
+        required: false
+        default: ""
+      away:
+        description: "Id of the visitor team (idVisitorTeam of the calendar row)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Which matches are starting
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install the dependency of the recorder
+        run: python -m pip install requests
+
+      - name: Plan
+        id: plan
+        env:
+          GROUP: ${{ github.event.inputs.group }}
+          HOME_ID: ${{ github.event.inputs.home }}
+          AWAY_ID: ${{ github.event.inputs.away }}
+        run: |
+          python -m src.live_prep.fbcyl_recorder plan --watchlist config/fbcyl_watchlist.json > plan.json
+          if [ -n "$GROUP" ] && [ -n "$HOME_ID" ] && [ -n "$AWAY_ID" ]; then
+            python - <<'PY'
+          import json, os
+          plan = json.load(open("plan.json"))
+          plan["include"].append({"key": f"{os.environ['GROUP']}-{os.environ['HOME_ID']}-{os.environ['AWAY_ID']}", "group": os.environ["GROUP"],
+                                  "home_id": os.environ["HOME_ID"], "away_id": os.environ["AWAY_ID"], "start_at": None, "label": "manual"})
+          json.dump(plan, open("plan.json", "w"))
+          PY
+          fi
+          cat plan.json
+          echo "matrix=$(cat plan.json)" >> "$GITHUB_OUTPUT"
+
+  record:
+    name: Record ${{ matrix.label }}
+    needs: plan
+    if: ${{ fromJSON(needs.plan.outputs.matrix).include[0] != null }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355   # up to 3 h waiting for the match to exist + 170 min recording; the hosted limit is 360
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    # a second launch for the same match queues behind the running one and, when it starts, finds the match played (--skip-if-finished) and exits at once
+    concurrency:
+      group: fbcyl-record-${{ matrix.key }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install the dependency of the recorder
+        run: python -m pip install requests
+
+      - name: Record
+        env:
+          GROUP: ${{ matrix.group }}
+          HOME_ID: ${{ matrix.home_id }}
+          AWAY_ID: ${{ matrix.away_id }}
+        run: python -m src.live_prep.fbcyl_recorder record --group "$GROUP" --home "$HOME_ID" --away "$AWAY_ID" --skip-if-finished --max-wait-minutes 175 --max-minutes 170 --interval 10
+
+      - name: Report
+        if: always()
+        env:
+          KEY: ${{ matrix.key }}
+        run: |
+          dir="recordings/fbcyl-$KEY"
+          if [ -d "$dir" ]; then
+            python -m src.live_prep.fbcyl_recording_report "$dir" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nothing recorded."
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fbcyl-recording-${{ matrix.key }}
+          path: recordings/fbcyl-${{ matrix.key }}
+          retention-days: 90
+          if-no-files-found: ignore
