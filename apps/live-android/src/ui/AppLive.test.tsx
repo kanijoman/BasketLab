@@ -198,7 +198,7 @@ describe('finished matches (issue #407)', () => {
   })
 
   it('a saved match can be deleted from the device, asking first (issue #512)', async () => {
-    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}', compat: REPLAY_COMPAT }
     const finishedStore = memoryFinishedStore([old])
     render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={finishedStore} />)
@@ -211,7 +211,7 @@ describe('finished matches (issue #407)', () => {
   })
 
   it('the matches saved in earlier sessions are listed from the start', async () => {
-    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}', compat: REPLAY_COMPAT }
     render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} />)
     await inPartidos()
@@ -229,7 +229,7 @@ describe('finished matches (issue #407)', () => {
 
   it('builds the PDF report of a saved match from its document and alerts, and shares it (#409)', async () => {
     const alerts = [{ alert: ALERT, at: 'Q2 03:00' }]
-    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts, plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}' }
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts, plaintext: PKG, game: '{"PLAYBYPLAY":{"LINES":[]}}', compat: REPLAY_COMPAT }
     const report = { match: { own: { id: '1', name: 'EQUIPO PROPIO' }, rival: { id: '2', name: 'EQUIPO RIVAL' } } }
     const engine = fakeEngine({ report: vi.fn().mockResolvedValue(report) })
     const pdf = { render: vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3])), share: vi.fn().mockResolvedValue(undefined) }
@@ -244,7 +244,7 @@ describe('finished matches (issue #407)', () => {
   })
 
   it('says so when the report cannot be built', async () => {
-    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{}' }
+    const old: FinishedMatch = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', ownId: '1', alerts: [], plaintext: PKG, game: '{}', compat: REPLAY_COMPAT }
     const engine = fakeEngine({ report: vi.fn().mockRejectedValue(new Error('boom')) })
     render(<App initialTab="partido" engine={engine} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       finishedStore={memoryFinishedStore([old])} pdf={{ render: vi.fn(), share: vi.fn() }} />)
@@ -385,7 +385,7 @@ describe('recording of the live feed (issue #416)', () => {
 
   it('lists the recordings and shares the file as it is, with a name that says the match', async () => {
     const bytes = new Uint8Array([0x1f, 0x8b, 8, 0])
-    const old: SavedRecording = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', complete: false, frames: 120, encoding: 'gzip', bytes }
+    const old: SavedRecording = { code: '9', title: 'LEON – UNIBASKET', savedAt: '2026-10-17T20:30:00Z', complete: false, frames: 120, encoding: 'gzip', bytes, compat: REPLAY_COMPAT }
     const shareFile = vi.fn().mockResolvedValue(undefined)
     render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={new FakeFeb(pack).get} feedTiming={instant}
       recordingStore={memoryRecordingStore([old])} shareFile={shareFile} />)

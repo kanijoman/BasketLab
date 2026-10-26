@@ -41,6 +41,7 @@ import RecordingsPanel from './RecordingsPanel'
 import { IndexedDbRecordingStore, encodeRecording, safeRecordingStore, type RecordingStore, type SavedRecording } from '../feed/recordingStore'
 import { reportBlocks } from '../postmatch/blocks'
 import { fileNameFor, shareFile as shareFileDefault, sharePdf } from '../postmatch/share'
+import { purgeStale } from '../feed/compatMigration'
 import { REPLAY_COMPAT } from '../feed/replayCompat'
 import { IndexedDbFinishedStore, safeFinishedStore, type FinishedMatch, type FinishedStore } from '../feed/finishedStore'
 import AboutPanel, { UpdateBanner, VersionFooter, buildDiagnostics } from './AboutPanel'
@@ -303,8 +304,16 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }, [loadDemo, loadManifest, store, beginDefault, beginPackage])
 
   useEffect(() => () => { if (!injected) engine.dispose() }, [engine, injected])
-  useEffect(() => { void finishedStore.list().then(setFinishedMatches) }, [finishedStore])
-  useEffect(() => { void recordingStore.list().then(setRecordings) }, [recordingStore])
+  const [purgedNotice, setPurgedNotice] = useState<string | null>(null)
+  // the first start under a new REPLAY_COMPAT clears what an older version kept and says so (#562); the lists are read after it
+  useEffect(() => {
+    void purgeStale(finishedStore, recordingStore).then(async purged => {
+      const count = purged.finished.length + purged.recordings.length
+      if (count > 0) setPurgedNotice(`Se han eliminado ${count} ${count === 1 ? 'partido guardado' : 'partidos guardados'} con una versión anterior de la app (ya no se podían revisar con fiabilidad): ${[...purged.finished, ...purged.recordings].join(', ')}.`)
+      setFinishedMatches(await finishedStore.list())
+      setRecordings(await recordingStore.list())
+    })
+  }, [finishedStore, recordingStore])
 
   const finished = info !== null && elapsed >= info.duration
 
@@ -414,7 +423,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }
   const onLoaded = (s: PackageSummary) => { record('Paquete cargado: el partido empieza de nuevo'); setPkg(s); setTab('partido'); void store.load().then(r => r && beginPackage(r.plaintext)) }
   const panelOf = (lists?: { demos: ReactNode; finished: ReactNode }) => (
-    <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={inviteNotice}
+    <PackagesTab engine={engine} store={store} loaded={pkg} onLoaded={onLoaded} onRemoved={removePackage} fetcher={remoteFetcher} notice={[inviteNotice, purgedNotice].filter(Boolean).join(' ') || null}
       kind={lists ? kind : 'live'} onKind={lists ? setKind : undefined} demos={lists?.demos} finished={lists?.finished}
       viewing={liveMode} onOpenLoaded={backToPackage} />
   )
