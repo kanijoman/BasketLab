@@ -109,7 +109,7 @@ class RadarChart:
             field_name = self.METRIC_FIELD_MAPPING.get(metric, metric.lower())
 
             # Get player value
-            player_value = player_data.get(field_name, 0)
+            player_value = player_data.get(field_name, 0)       # None: no data for this player (drawn on the league average below)
 
             # Calculate league statistics - only filter out None, keep zeros
             league_values = [p.get(field_name, 0) for p in league_data
@@ -133,7 +133,10 @@ class RadarChart:
                     break
 
             # Normalize using min-max normalization (0-100 scale)
-            if league_max - league_min > 0:
+            if player_value is None:
+                normalized = avg_normalized = (50 if league_max - league_min <= 0 else
+                                               100 * ((league_max - league_avg) if is_reverse else (league_avg - league_min)) / (league_max - league_min))
+            elif league_max - league_min > 0:
                 if is_reverse:
                     # For reverse metrics, invert the scale
                     normalized = 100 * (league_max - player_value) / (league_max - league_min)
@@ -299,15 +302,23 @@ class RadarChart:
         """
         metrics = {}
 
-        # Extract basic stats
-        games = player_stats.get('games_played', 1)
-        minutes = player_stats.get('total_minutes', 0) / 60  # Convert to minutes
+        def count(key: str) -> float:
+            """A counter: a player without it has done none."""
+            value = player_stats.get(key)
+            return 0 if value is None else value
 
+        # A rate that is None means "no data" (no attempts, no minutes): it stays None and the chart draws it on the league average, never as a zero
+        # (zero turnovers would look like the best of the league).
         # Shooting percentages (already calculated)
         metrics['ts'] = player_stats.get('ts', 0)
-        metrics['fg3_pct'] = player_stats.get('total_p3m', 0) / max(player_stats.get('total_p3a', 1), 1) * 100
-        metrics['fg2_pct'] = player_stats.get('total_p2m', 0) / max(player_stats.get('total_p2a', 1), 1) * 100
-        metrics['ft_pct'] = player_stats.get('total_p1m', 0) / max(player_stats.get('total_p1a', 1), 1) * 100
+        def pct(made: str, attempted: str):
+            if player_stats.get(attempted, 1) is None:
+                return None                      # the attempts are not known: no data, not a percentage of nothing
+            return count(made) / max(count(attempted), 1) * 100
+
+        metrics['fg3_pct'] = pct('total_p3m', 'total_p3a')
+        metrics['fg2_pct'] = pct('total_p2m', 'total_p2a')
+        metrics['ft_pct'] = pct('total_p1m', 'total_p1a')
 
         # Advanced stats
         metrics['ast_pct'] = player_stats.get('ast_pct', 0)
@@ -318,18 +329,18 @@ class RadarChart:
         metrics['drating'] = player_stats.get('drating', 100)
 
         # Ratios - check if already calculated, otherwise calculate from raw stats
-        if 'ast_ratio' in player_stats and 'ast_to_ratio' in player_stats and 'ast_usg' in player_stats:
+        if all(player_stats.get(k) is not None for k in ('ast_ratio', 'ast_to_ratio', 'ast_usg')):
             # Use pre-calculated values
-            metrics['ast_ratio'] = player_stats.get('ast_ratio', 0)
-            metrics['ast_to_ratio'] = player_stats.get('ast_to_ratio', 0)
-            metrics['ast_usg'] = player_stats.get('ast_usg', 0)
+            metrics['ast_ratio'] = player_stats['ast_ratio']
+            metrics['ast_to_ratio'] = player_stats['ast_to_ratio']
+            metrics['ast_usg'] = player_stats['ast_usg']
         else:
             # Calculate from raw stats
-            assists = player_stats.get('total_assist', 0)
-            turnovers = player_stats.get('total_to', 0)
-            fga = player_stats.get('total_p2a', 0) + player_stats.get('total_p3a', 0)
-            fta = player_stats.get('total_p1a', 0)
-            usage = player_stats.get('usage', 0)
+            assists = count('total_assist')
+            turnovers = count('total_to')
+            fga = count('total_p2a') + count('total_p3a')
+            fta = count('total_p1a')
+            usage = count('usage')
 
             # AST Ratio = Porcentaje de posesiones que terminan en asistencia
             possessions = fga + (0.44 * fta) + assists + turnovers
@@ -339,7 +350,7 @@ class RadarChart:
             metrics['ast_to_ratio'] = assists / turnovers if turnovers > 0 else 0
 
             # AST/USG = ratio of assist percentage to usage percentage
-            ast_pct = player_stats.get('ast_pct', 0)
+            ast_pct = count('ast_pct')
             # Scale up to make values more visible (multiply by 100)
             metrics['ast_usg'] = (ast_pct / usage * 100) if usage > 0 else 0
 
