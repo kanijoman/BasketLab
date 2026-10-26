@@ -100,4 +100,4 @@ def test_analysis_levers_come_with_who_to_bring_in_and_the_alert_carries_the_pro
     assert levers["tov"]["gain"] > 0
     assert levers["tov"]["proposal"] and levers["tov"]["proposal"][0]["in_id"] == "g2"
     [alert] = by_id(eng.evaluate(s), "four_factors_lever")
-    assert alert.evidence["win_gain"] == levers["tov"]["gain"]
+    assert "win_gain" not in alert.evidence                                   # no promised gain of probability (#567)

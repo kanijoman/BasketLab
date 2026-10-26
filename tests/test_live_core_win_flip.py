@@ -111,3 +111,15 @@ def test_going_back_in_time_or_repeating_a_moment_does_not_break_the_memory():
 def test_without_a_rival_there_is_no_probability_and_no_alert():
     eng = AdviceEngine(own_team_id=OWN, rival_team_id=None, config=RuleConfig())
     assert flips(eng, board(6, 1200), board(-8, 1380)) == []
+
+
+def test_the_main_lever_is_a_diagnosis_without_a_promised_gain_regression():
+    """Study of #567 (26/10/2026): what the game shows in a factor does not predict the next minutes, so «+8 % si vuelve a su nivel habitual» promised an effect nobody measured."""
+    import re
+
+    eng = engine()
+    eng._win_prob.levers = lambda s, f: [{"id": "efg", "gain": 0.08, "gain_pts": 1.5}]
+    flips(eng, board(6, 1200))
+    [a] = flips(eng, board(-8, 1380))
+    assert a.evidence["lever"] == "efg" and "Palanca principal: tiro" in a.message
+    assert not re.search(r"\+\d+ ?%|nivel habitual", a.message)

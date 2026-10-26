@@ -116,7 +116,7 @@
       "timeout_review:981204:1195"
      ],
      "digests": {
-      "alerts": "fde6e7b855ecad227350e3176ac1c4ce4b7772853fd6e647ba6b42fd487720a6",
+      "alerts": "de5d4467336dbe22baff9a91783cd1c9394c735f7a83a1b0cd439b9fcd72ecd8",
       "analysis": "1b00504ed38b1fbe4ddb833779bb43328a90849cd86c5a785cb4c4a3b32eeac9",
       "snapshot": "e1a7244ad07fcc899d59d26830443f4dc2bf82b4c11f9073dcb3f26d85611b34"
      },
@@ -3175,8 +3175,7 @@
        "lever": "tov",
        "possessions": 74.2,
        "pts100": -8.8432,
-       "pts100_raw": -11.8244,
-       "win_gain": 0.2918
+       "pts100_raw": -11.8244
       },
       "id": "four_factors_lever",
       "key": "lever:tov:1:2",

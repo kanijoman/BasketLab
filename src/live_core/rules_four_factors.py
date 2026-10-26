@@ -54,7 +54,6 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     _title, template, action = _LABELS[lever]
     raw = result["pts100_raw"][lever]
-    gain = ctx.win_prob.lever_gains(snap, result).get(lever) if ctx.win_prob is not None else None
     step = int(max(0.0, -raw) // ctx.config.lever_step_pts100)
     memory = ctx.memory.setdefault("lever", {"name": None, "changes": 0, "step": -1})
     if memory["name"] == lever and step <= memory["step"]:
@@ -69,5 +68,5 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         message=f"{template.format(**_own_vs_rival(lever, result))}: nos cuesta unos {-pts100:.0f} puntos cada 100 posesiones. {action}",
         evidence={"lever": lever, "pts100": pts100, "pts100_raw": raw, "possessions": result["possessions"],
                   "factors_own": result["factors_own"], "factors_rival": result["factors_rival"],
-                  "contributions": result["contributions"], **({"win_gain": gain} if gain is not None else {})},
+                  "contributions": result["contributions"]},
     )]

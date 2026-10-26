@@ -14,7 +14,7 @@ FILES = sorted(p for p in (ROOT / "src" / "live_core").glob("*.py") if p.name no
 # word -> what to say instead
 BANNED = {
     "eFG": "acierto de tiro", "TOV%": "pérdidas", "ORB%": "rebote ofensivo", "pts/100": "puntos cada 100 posesiones", "histórico": "lo habitual",
-    "sin ajustar": "", "esperado": "lo habitual", "esperados": "lo habitual", "experimental": "estimación", "índice": "", " neto": "de diferencia", "netos": "de diferencia",
+    "sin ajustar": "", "% de victoria": "una palanca es un diagnóstico, no promete probabilidad (#567)", "si vuelve a su nivel habitual": "", "esperado": "lo habitual", "esperados": "lo habitual", "experimental": "estimación", "índice": "", " neto": "de diferencia", "netos": "de diferencia",
 }
 
 

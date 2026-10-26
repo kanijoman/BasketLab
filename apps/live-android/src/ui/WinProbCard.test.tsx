@@ -25,12 +25,13 @@ describe('WinProbCard (issue #257, experimental)', () => {
     expect(screen.getByText(/entre el 30 % y el 70 % puede desviarse unos ±7 puntos/i)).toBeTruthy()
   })
 
-  it('lists the three best levers with their gain and the first proposal', () => {
+  it('lists the three main levers as a diagnosis, with the first proposal and no promised gain (#567)', () => {
     render(<WinProbCard winProb={WP} levers={LEVERS} own={OWN} history={[]} />)
+    expect(screen.getByRole('heading', { name: /dónde se pierden puntos/i })).toBeTruthy()
     const items = screen.getAllByRole('listitem')
     expect(items).toHaveLength(3)
     expect(items[0].textContent).toMatch(/rebote ofensivo/i)
-    expect(items[0].textContent).toMatch(/\+6 %/)
+    expect(items.map(li => li.textContent).join(' ')).not.toMatch(/\+\d+ ?%/)       // the study found no effect on the probability: no «+6 %»
     expect(items[0].textContent).toMatch(/entra b por a/i)
     expect(items[1].textContent).toMatch(/bajar el ritmo/i)
     expect(items[2].textContent).toMatch(/pérdidas/i)
@@ -108,7 +109,7 @@ describe('useExperimental', () => {
     expect(details.open).toBe(false)
     expect(details.contains(screen.getByText('64 %'))).toBe(false)
     expect(details.contains(screen.getByText(/margen proyectado/i))).toBe(true)
-    expect(details.contains(screen.getByText(/lo que más la mueve/i))).toBe(true)
+    expect(details.contains(screen.getByText(/dónde se pierden puntos/i))).toBe(true)
     expect(details.contains(screen.getByRole('img', { name: /evolución/i }))).toBe(true)
     expect(details.contains(screen.getByText(/puede desviarse/i))).toBe(true)
   })
