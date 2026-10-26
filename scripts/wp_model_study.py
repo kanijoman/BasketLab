@@ -20,6 +20,7 @@ for extra in (ROOT, ROOT / "src", Path(__file__).resolve().parent):
 
 from wp_study.families import benchmark, structural  # noqa: E402
 from wp_study.players import collect_lineups, individual  # noqa: E402
+from wp_study.rotation import reliability as rotation_reliability, report as rotation_report  # noqa: E402
 from wp_study.samples import collect  # noqa: E402
 from wp_study.team import fit, persistence  # noqa: E402
 
@@ -44,6 +45,9 @@ def main(argv: Sequence[str] = None) -> int:
     ind = sub.add_parser("individual")
     ind.add_argument("samples")
     ind.add_argument("lineups")
+    rot = sub.add_parser("rotation")
+    rot.add_argument("lineups")
+    rot.add_argument("--men", action="store_true")
     args = parser.parse_args(argv)
     if args.cmd == "collect":
         collect(args.folders, args.out)
@@ -55,6 +59,10 @@ def main(argv: Sequence[str] = None) -> int:
         print(benchmark(args.samples))
     elif args.cmd == "individual":
         print(individual(args.samples, args.lineups))
+    elif args.cmd == "rotation":
+        print(rotation_report(args.lineups, women=not args.men))
+        print()
+        print(rotation_reliability(args.lineups, women=not args.men))
     elif args.cmd == "persistence":
         print(persistence(args.samples))
     else:
