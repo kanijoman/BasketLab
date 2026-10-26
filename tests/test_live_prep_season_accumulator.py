@@ -136,19 +136,34 @@ def test_a_team_without_games_has_no_three_point_rate(feb_game_doc):
 
 
 def test_package_carries_the_net_rating_prior_for_the_win_probability(feb_game_doc):
-    """#254: expected margin per 100 possessions of team vs rival = gap of their net ratings, shrunk by games played."""
+    """#254, #567: expected margin per 100 possessions of team vs rival = the gap of their Bayesian (Kalman) ratings, at the pace of the matchup."""
+    from src.live_prep.team_rating import TeamRatings
+
     from src.live_core.engine import LiveEngine
-    from src.live_core.four_factors import possessions
-    from src.live_prep.package_builder import PRIOR_SHRINK_GAMES
 
     snap = LiveEngine().update(feb_game_doc)
-    poss = (possessions(snap["teams"][A]["stats"]) + possessions(snap["teams"][B]["stats"])) / 2
-    net_a = (snap["score"][A] - snap["score"][B]) / poss * 100
-    weight = 1 / (1 + PRIOR_SHRINK_GAMES)
-    ab = accumulated([feb_game_doc], A, B).baselines["net_rtg_prior"]
-    ba = accumulated([feb_game_doc], B, A).baselines["net_rtg_prior"]
-    assert ab == pytest.approx(2 * net_a * weight, abs=1e-3)
-    assert ab == pytest.approx(-ba, abs=1e-3)
+    home, away = [str(t["id"]) for t in feb_game_doc["HEADER"]["TEAM"]]
+    ratings = TeamRatings()
+    ratings.update(home, away, snap["score"][home] - snap["score"][away])
+    package = accumulated([feb_game_doc], A, B)
+    ab, ba = package.baselines["net_rtg_prior"], accumulated([feb_game_doc], B, A).baselines["net_rtg_prior"]
+    assert ab == pytest.approx(ratings.gap_per_100(A, B, package.baselines["pace_per_40"]), abs=1e-3)
+    assert ab == pytest.approx(-ba, abs=1e-3) and ab != 0
+
+
+def test_the_rating_of_a_team_counts_the_games_of_teams_the_package_does_not_track(season):
+    """The publisher tracks only the teams of the round; their rating still depends on who their opponents beat (C - D is not of a tracked team)."""
+    everyone = accumulated(season, A, C).baselines["net_rtg_prior"]
+    some = accumulated(season, A, C, track=(A, C)).baselines["net_rtg_prior"]
+    assert some == pytest.approx(everyone)
+
+
+def test_a_game_of_another_competition_does_not_move_the_ratings(feb_game_doc):
+    """#456: the games of the teams in other competitions feed their tables, not the league; a cup game against a weaker division must not inflate a rating."""
+    from src.live_prep.game_sources import LEAGUE_KEY
+
+    other = {**feb_game_doc, LEAGUE_KEY: False}
+    assert accumulated([other], A, B).baselines["net_rtg_prior"] == 0.0
 
 
 def test_net_rating_prior_is_zero_without_games():
