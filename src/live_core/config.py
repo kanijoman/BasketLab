@@ -29,6 +29,15 @@ def unknown_rule_ids(rule_ids: Iterable[str]) -> Tuple[str, ...]:
     return tuple(r for r in rule_ids if r not in RULE_IDS and r not in FEATURE_IDS)
 
 
+# The win probability calibrated per family of competitions (issue #567, study of 26/10/2026 on 2,886 games): the package says the gender of its
+# competition and gets these values unless it overrides them; men's margins spread more and their home court is worth more, and in both families the
+# prior of the matchup (now a Bayesian rating of the teams) weighs more than the factors of the game.
+WP_BY_GENDER: Dict[str, Dict[str, float]] = {
+    "F": {"wp_sigma": 14.0, "wp_home_adv": 5.0, "wp_n0": 960.0},     # LF Endesa, LF Challenge, L.F.-2: log loss 0.3926 -> 0.3905 (cross-fitted)
+    "M": {"wp_sigma": 15.0, "wp_home_adv": 7.0, "wp_n0": 960.0},     # Primera and Segunda FEB: 0.4403 -> 0.4276; wp_n0 1920 fits 0.0001 better, 960 is the smaller step
+}
+
+
 @dataclass(frozen=True)
 class RuleConfig:
     # Rules and features switched off (ids in RULE_IDS and FEATURE_IDS). Nothing is off by default.
@@ -294,7 +303,7 @@ class RuleConfig:
     # Game pace (possessions per 40 min): minimum game time before the pace, its projection and its +/- are
     # trusted (the extrapolation is very noisy in the first minutes: 45 vs 69 possessions at 3 min in a real game).
     pace_min_elapsed_s: int = 300
-    # Win probability (#254; wp_n0 calibrated in #255 on LF Challenge 2024-25, the rest still placeholders): spread of the final margin of a
+    # Win probability (#254; the defaults, for a package that does not say its gender: see WP_BY_GENDER for the calibrated families, #567): spread of the final margin of a
     # whole game (points), prior weight in possessions of the pre-game expectation against what the game shows, and
     # home court in points per 100 possessions.
     wp_sigma: float = 12.0
@@ -329,7 +338,8 @@ class RuleConfig:
     def from_dict(cls, overrides: Optional[Dict[str, Any]]) -> "RuleConfig":
         """Build from a package's ``rule_config``; unknown keys are ignored."""
         known = {f.name for f in fields(cls)}
-        values = {k: v for k, v in (overrides or {}).items() if k in known}
+        given = overrides or {}
+        values = {**WP_BY_GENDER.get(str(given.get("gender") or ""), {}), **{k: v for k, v in given.items() if k in known}}
         off = values.get("rules_off")
         # JSON gives a list; the dataclass is frozen and hashable, so keep a tuple. Anything else is ignored.
         values["rules_off"] = tuple(str(r) for r in off) if isinstance(off, (list, tuple)) else ()
