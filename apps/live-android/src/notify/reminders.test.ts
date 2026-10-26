@@ -8,7 +8,7 @@ function plugin(over: Partial<ReminderPlugin> = {}): ReminderPlugin {
   return {
     checkPermissions: vi.fn().mockResolvedValue({ display: 'granted' }), requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
     schedule: vi.fn().mockResolvedValue(undefined), cancel: vi.fn().mockResolvedValue(undefined), getPending: vi.fn().mockResolvedValue({ notifications: [] }), ...over,
-  }
+  } as ReminderPlugin
 }
 function memory(): Storage {
   const data = new Map<string, string>()
@@ -95,5 +95,22 @@ describe('opening the app from a reminder (issue #482)', () => {
   it('without a plugin that listens there is nothing to stop', async () => {
     const { onReminderTapped } = await import('./reminders')
     expect(await onReminderTapped(plugin(), () => undefined)).toBeTypeOf('function')
+  })
+})
+
+
+// Feedback 0.4.0 (#559): the 30-minute reminder never came and nothing on the screen said whether it had been scheduled, nor that Android 12+ delays
+// the ones that are not exact. The result says which alarms are exact; the plugin is asked only when it can answer.
+describe('syncReminders: exact alarms (issue #559)', () => {
+  it('says whether Android lets the app set exact alarms', async () => {
+    const denied = plugin({ checkExactNotificationSetting: vi.fn().mockResolvedValue({ exact_alarm: 'denied' }) })
+    expect(await syncReminders(denied, [reminder(1)], { ask: false })).toEqual({ ok: true, scheduled: 1, exact: 'denied' })
+    const granted = plugin({ checkExactNotificationSetting: vi.fn().mockResolvedValue({ exact_alarm: 'granted' }) })
+    expect(await syncReminders(granted, [reminder(1)], { ask: false })).toEqual({ ok: true, scheduled: 1, exact: 'granted' })
+  })
+
+  it('a plugin that cannot tell, or fails telling, does not stop the reminders: the answer is left out', async () => {
+    const broken = plugin({ checkExactNotificationSetting: vi.fn().mockRejectedValue(new Error('no')) })
+    expect(await syncReminders(broken, [reminder(1)], { ask: false })).toEqual({ ok: true, scheduled: 1 })
   })
 })

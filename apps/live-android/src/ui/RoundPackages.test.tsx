@@ -292,6 +292,35 @@ describe('RoundPackages: the reminders of the matches of interest (issue #482)',
     expect((screen.getByRole('checkbox', { name: /avisarme/i }) as HTMLInputElement).checked).toBe(true)
   })
 
+  it('lists the reminders that are scheduled, with the match and the time, so the user can see that they exist (issue #559)', async () => {
+    const plugin = fake()
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await screen.findByText(/2 avisos programados/i)
+    const list = screen.getByRole('list', { name: /avisos programados/i })
+    expect(list.textContent).toContain('LEONESA – ZAMORA')
+    expect(list.textContent).toContain('16:30')                            // 30 minutes before the 17:00 match of the fixture
+    expect(list.querySelectorAll('li')).toHaveLength(2)
+  })
+
+  it('says when Android does not allow exact alarms (they can come late) and offers to allow them', async () => {
+    const change = vi.fn().mockResolvedValue({ exact_alarm: 'granted' })
+    const plugin = fake({ checkExactNotificationSetting: vi.fn().mockResolvedValue({ exact_alarm: 'denied' }), changeExactNotificationSetting: change })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    expect(await screen.findByText(/pueden llegar con retraso/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /permitir alarmas exactas/i }))
+    await waitFor(() => expect(change).toHaveBeenCalled())
+  })
+
+  it('says nothing about exact alarms when Android allows them', async () => {
+    const plugin = fake({ checkExactNotificationSetting: vi.fn().mockResolvedValue({ exact_alarm: 'granted' }) })
+    show(ROUNDS, withPlugin(plugin))
+    fireEvent.click(screen.getByRole('checkbox', { name: /avisarme/i }))
+    await screen.findByText(/2 avisos programados/i)
+    expect(screen.queryByText(/pueden llegar con retraso/i)).toBeNull()
+  })
+
   it('the lead time can be 15, 30 or 60 minutes', async () => {
     const plugin = fake()
     show(ROUNDS, withPlugin(plugin))

@@ -37,10 +37,24 @@ export interface ReminderPlugin {
   schedule(options: { notifications: Array<Record<string, unknown>> }): Promise<unknown>
   cancel(options: { notifications: Array<{ id: number }> }): Promise<void>
   getPending(): Promise<{ notifications: Array<{ id: number; extra?: Record<string, unknown> | null }> }>
+  /** Android 12+: whether the app may set exact alarms (without it the reminders can come minutes late, #559). Absent in a browser. */
+  checkExactNotificationSetting?(): Promise<{ exact_alarm: string }>
+  /** Opens the system screen where the user allows the exact alarms. */
+  changeExactNotificationSetting?(): Promise<{ exact_alarm: string }>
   addListener?(name: 'localNotificationActionPerformed', callback: (event: { notification: { extra?: Record<string, unknown> | null } }) => void): Promise<{ remove: () => Promise<void> }>
 }
 
-export type SyncResult = { ok: true; scheduled: number } | { ok: false; reason: 'denied' | 'not-asked' | 'unavailable'; scheduled: 0 }
+export type SyncResult = { ok: true; scheduled: number; exact?: 'granted' | 'denied' } | { ok: false; reason: 'denied' | 'not-asked' | 'unavailable'; scheduled: 0 }
+
+/** ``{exact}`` when the plugin can say whether Android allows exact alarms; nothing when it cannot (it must never stop the reminders). */
+async function exactAlarms(plugin: ReminderPlugin): Promise<{ exact?: 'granted' | 'denied' }> {
+  try {
+    if (!plugin.checkExactNotificationSetting) return {}
+    return { exact: (await plugin.checkExactNotificationSetting()).exact_alarm === 'granted' ? 'granted' : 'denied' }
+  } catch {
+    return {}
+  }
+}
 
 /** Replaces the reminders of the app with `reminders`. `ask`: it may show the permission dialog (when the user has just turned the reminders on). */
 export async function syncReminders(plugin: ReminderPlugin, reminders: Reminder[], opts: { ask: boolean }): Promise<SyncResult> {
@@ -57,7 +71,7 @@ export async function syncReminders(plugin: ReminderPlugin, reminders: Reminder[
         })),
       })
     }
-    return { ok: true, scheduled: reminders.length }
+    return { ok: true, scheduled: reminders.length, ...(await exactAlarms(plugin)) }
   } catch {
     return { ok: false, reason: 'unavailable', scheduled: 0 }
   }

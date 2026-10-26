@@ -35,6 +35,9 @@ function when(start?: string | null): string {
   return `${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+/** «sáb 24/10 16:30»: when a reminder rings. */
+const whenAt = (d: Date) => `${d.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+
 function Star({ team, favorites, onToggle }: { team: { id: string; name: string }; favorites: Favorite[]; onToggle: (team: Favorite) => void }) {
   const marked = isFavorite(favorites, team.id, team.name)
   return (
@@ -59,6 +62,17 @@ function Reminders({ next, now, reminders }: { next: ReturnType<typeof nextMatch
           options={LEAD_OPTIONS.map(m => ({ value: String(m), label: String(m) }))} />
       )}
       {reminder.prefs.enabled && reminder.result?.ok && <p className="detail">{reminder.result.scheduled === 1 ? '1 aviso programado' : `${reminder.result.scheduled} avisos programados`}.</p>}
+      {reminder.prefs.enabled && reminder.result?.ok && reminder.plan.length > 0 && (
+        <ul className="detail reminder-list" aria-label="Avisos programados">
+          {reminder.plan.map(r => <li key={r.id}>{r.body.split(' · ')[0]} · {whenAt(r.at)}</li>)}
+        </ul>
+      )}
+      {reminder.prefs.enabled && reminder.result?.ok && reminder.result.exact === 'denied' && (
+        <p className="detail" role="status">
+          Android no deja a la app poner alarmas exactas: los avisos pueden llegar con retraso.{' '}
+          <button type="button" className="secondary link-button" onClick={() => void reminder.allowExact()}>Permitir alarmas exactas</button>
+        </p>
+      )}
       {reminder.result && !reminder.result.ok && (
         <p className="detail" role="status">
           {reminder.result.reason === 'denied' ? 'Tienes las notificaciones desactivadas para la app: actívalas en los ajustes del sistema.'
