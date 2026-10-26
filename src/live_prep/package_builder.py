@@ -15,6 +15,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from src.live_core.engine import LiveEngine
 from .category_strength import adjust, team_level
 from .game_sources import LEAGUE_KEY, LEVEL_KEY
+from .team_rating import TeamRatings
 from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, possessions
 from src.live_core.package import PreparationPackage
 from src.live_core.profiles import (
@@ -65,15 +66,6 @@ def matchup_prior(own: List[Dict[str, float]], rival: List[Dict[str, float]]) ->
     games = min(len(own), len(rival)) if rival else len(own)
     weight = games / (games + PRIOR_SHRINK_GAMES) if games else 0.0
     return {f: round((own_mean[f] - rival_mean[f]) * weight, 4) for f in WEIGHTS}
-
-
-def net_prior(own: List[float], rival: List[float]) -> float:
-    """Expected margin per 100 possessions of own vs rival: gap of their mean net ratings, shrunk like ``matchup_prior``."""
-    games = min(len(own), len(rival)) if rival else len(own)
-    if not own or not games:
-        return 0.0
-    gap = sum(own) / len(own) - (sum(rival) / len(rival) if rival else 0.0)
-    return round(gap * games / (games + PRIOR_SHRINK_GAMES), 3)
 
 
 def _percentile(values: List[int], q: float) -> float:
@@ -163,7 +155,7 @@ class SeasonAccumulator:
         self.zone_conceded: Dict[str, Dict[str, Dict[str, int]]] = {}   # team -> zones of the shots its defence let the opponents take (#247)
         self.total_games = 0
         self.levels: Dict[str, Dict[int, int]] = {}   # team -> games per known division (issue #464)
-        self.net_log: Dict[str, List[float]] = {}   # team -> net rating per 100 possessions of each game (#254)
+        self.ratings = TeamRatings()   # every team of the competition, tracked or not: the prior of a matchup depends on whom they beat (#567)
 
     def tracked(self, team_id: str) -> bool:
         return self._track is None or team_id in self._track
@@ -183,14 +175,11 @@ class SeasonAccumulator:
         stats = {tid: snap["teams"][tid]["stats"] for tid in ids}
         if league:
             self._add_league(ids, snap, stats)
+            if snap["elapsed"]:
+                self.ratings.update(ids[0], ids[1], snap["score"][ids[0]] - snap["score"][ids[1]])     # FEB's header lists the home team first
         if snap["elapsed"] and any(self.tracked(tid) for tid in ids):
             n = (possessions(stats[ids[0]]) + possessions(stats[ids[1]])) / 2
             self.pace_log.append(((ids[0], ids[1]), n / snap["elapsed"] * GAME_SECONDS))
-            if n:
-                margin = (snap["score"][ids[0]] - snap["score"][ids[1]]) / n * 100
-                for tid, sign in ((ids[0], 1), (ids[1], -1)):
-                    if self.tracked(tid):
-                        self.net_log.setdefault(tid, []).append(sign * margin)
         for tid in ids:
             if self.tracked(tid) and level is not None:
                 self.levels.setdefault(tid, {}).update({level: self.levels.get(tid, {}).get(level, 0) + 1})
@@ -240,7 +229,10 @@ class SeasonAccumulator:
             "four_factors_prior": matchup_prior(self.diffs.get(team_id, []), self.diffs.get(rival_id, [])),
             "sample_games": {"own": self.played(team_id), "rival": self.played(rival_id), "league": self.total_games},
         }
-        out["net_rtg_prior"] = net_prior(self.net_log.get(team_id, []), self.net_log.get(rival_id, []))
+        paces = self._paces(team_id, rival_id)
+        # the Bayesian rating of the two teams at the pace of the matchup (#567): it discounts whom they played and how sure each rating is
+        pace = round(sum(paces) / len(paces), 1) if paces else 0.0
+        out["net_rtg_prior"] = round(self.ratings.gap_per_100(team_id, rival_id, pace), 3)
         out["four_factors_prior"], out["net_rtg_prior"], cross = adjust(
             out["four_factors_prior"], out["net_rtg_prior"], team_level(self.levels.get(team_id, {})), team_level(self.levels.get(rival_id, {})))
         if cross:
@@ -252,9 +244,8 @@ class SeasonAccumulator:
             threes, attempts = self.team_threes.get(tid, [0, 0])
             if attempts:
                 out[key] = round(threes / attempts, 3)     # the share of the shots a team usually takes from three (issue #291)
-        paces = self._paces(team_id, rival_id)
         if paces:
-            out["pace_per_40"] = round(sum(paces) / len(paces), 1)
+            out["pace_per_40"] = pace
         for key, tid in (("pace_own_per_40", team_id), ("pace_rival_per_40", rival_id)):
             own = self._paces(tid)
             if own:
