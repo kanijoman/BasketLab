@@ -161,6 +161,7 @@ class TestRecorderWorkflowBudget:
         assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]
         assert "completed" in triggers["workflow_run"]["types"]
         assert "schedule" in triggers and "workflow_dispatch" in triggers
+        assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]       # the schedule alone is unreliable: it also plans after each Atlas refresh (13:30 UTC covers a 17:00 match)
 
 
 class TestRuleEvaluation:
@@ -464,3 +465,23 @@ class TestDuplicateCodeJob:
     def test_no_deploy_waits_for_it(self):
         jobs = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]
         assert all("duplicate-code" not in (j.get("needs") or []) for j in jobs.values())
+
+
+class TestFbcylRecordWorkflow:
+    """Issue #444: the FBCYL recorder waits for the match and records it; its job must fit in what GitHub allows (360 minutes) and a second launch of the same match must queue, not run twice."""
+
+    def _data(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "fbcyl-record.yml").read_text(encoding="utf-8"))
+
+    def test_the_record_job_fits_in_the_hosted_limit_with_its_wait_and_its_recording(self):
+        job = self._data()["jobs"]["record"]
+        run = next(s["run"] for s in job["steps"] if "fbcyl_recorder record" in s.get("run", ""))
+        wait, record = int(run.split("--max-wait-minutes ")[1].split()[0]), int(run.split("--max-minutes ")[1].split()[0])
+        assert job["timeout-minutes"] <= 355 and wait + record < job["timeout-minutes"]
+
+    def test_the_same_match_never_records_twice_at_once_and_the_planner_runs_by_schedule_and_by_hand(self):
+        data = self._data()
+        assert data["jobs"]["record"]["concurrency"]["cancel-in-progress"] is False
+        assert "matrix" in data["jobs"]["record"]["concurrency"]["group"]
+        triggers = data.get("on") or data[True]
+        assert "schedule" in triggers and "workflow_dispatch" in triggers
