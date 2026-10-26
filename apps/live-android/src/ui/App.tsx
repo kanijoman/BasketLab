@@ -168,7 +168,12 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const feedback = useFeedback(liveMode ? `live:${pkg!.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null, undefined, alertMode)
   const { register: registerAlert } = feedback
 
+  const liveRef = useRef<{ running: boolean; disconnect: () => void } | null>(null)
+  /** The package the engine was started with (what a match followed is kept with: the store may already hold the next one, #557) and the title of the match followed. */
+  const plaintextRef = useRef<string | null>(null)
+  const followedRef = useRef<string | null>(null)
   const reset = useCallback(() => {
+    if (liveRef.current?.running) liveRef.current.disconnect()      // another match starts: the connection of the previous one goes down first, keeping it (#557, #556)
     seen.current.clear()
     alertLog.current = []
     pacer.clear()
@@ -269,6 +274,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setPhase({ kind: 'loading' })
     reset()
     setReviewing(false)
+    plaintextRef.current = plaintext
     try {
       setMeta(await engine.start(plaintext))
       setPkg(summarizePackage(plaintext))
@@ -318,30 +324,34 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     pacer.clear()
     setEntries([]); setOut(null)
     const saved = await store.load()
-    if (saved) setMeta(await engine.start(saved.plaintext))
+    if (saved) {
+      plaintextRef.current = saved.plaintext
+      const started = await engine.start(saved.plaintext)
+      followedRef.current = `${started.team.name} – ${started.rival.name}`
+      setMeta(started)
+    }
   }, [engine, store, pacer])
   const metaRef = useRef<SessionMeta | null>(null)
   metaRef.current = meta
   /** The match ended: keep it on the device so it can be reviewed afterwards (issue #407). */
   const keepFinished = useCallback(async (game: string, code: string, complete: boolean) => {
-    const saved = await store.load()
-    const current = metaRef.current
-    if (!saved || !current) { session.record(`Partido ${code}: no se pudo guardar para revisarlo (sin paquete cargado)`); return }
+    const plaintext = plaintextRef.current, current = metaRef.current, alerts = [...alertLog.current]      // taken now: a new package may be loaded while this is saved (#557)
+    if (!plaintext || !current) { session.record(`Partido ${code}: no se pudo guardar para revisarlo (sin paquete cargado)`); return }
     const match: FinishedMatch = {
       code, title: `${current.team.name} – ${current.rival.name}`, savedAt: new Date().toISOString(), ownId: current.team.id,
-      competition: competitionLabel(summarizePackage(saved.plaintext).collection) || undefined,
-      alerts: [...alertLog.current], plaintext: saved.plaintext, game, complete, compat: REPLAY_COMPAT,
+      competition: competitionLabel(summarizePackage(plaintext).collection) || undefined,
+      alerts, plaintext, game, complete, compat: REPLAY_COMPAT,
     }
     await finishedStore.save(match)
     setFinishedMatches(await finishedStore.list())
     if (complete) session.record(`Partido ${code} finalizado y guardado para revisarlo`)
-  }, [store, finishedStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [finishedStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
   /** The engine kept a recording of the feed (issue #416): it is saved, gzipped, whether the match ended or the staff disconnected. */
   const keepRecording = useCallback(async ({ code, recording, complete }: { code: string; recording: unknown; complete: boolean }) => {
-    const current = metaRef.current
+    const title = followedRef.current ?? code
     const { encoding, bytes } = await encodeRecording(JSON.stringify(recording))
     await recordingStore.save({
-      code, title: current ? `${current.team.name} – ${current.rival.name}` : code, savedAt: new Date().toISOString(), complete,
+      code, title, savedAt: new Date().toISOString(), complete,
       frames: (recording as { frames?: unknown[] }).frames?.length ?? 0, encoding, bytes, compat: REPLAY_COMPAT,
     })
     setRecordings(await recordingStore.list())
@@ -349,6 +359,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   }, [recordingStore, session.record])  // eslint-disable-line react-hooks/exhaustive-deps
   const live = useLiveFeed({ engine, http: febHttp, device, onNote: session.record, timing: feedTiming, onOutput: handleLiveOutput, restart: restartLive,
     onFinished: keepFinished, onRecording: keepRecording })
+  liveRef.current = live
   const update = useAppUpdate(appUpdate)
 
   const step = useCallback(async (to: number) => {

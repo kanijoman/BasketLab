@@ -1,6 +1,9 @@
 // Live mode of the app (issue #217): a loaded package + "Conectar con FEB" -> the feed client polls FEB and the
 // engine is fed with the merged documents; alerts and the connection status show up.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { webcrypto } from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import type { EngineApi } from '../engine/client'
@@ -434,5 +437,31 @@ describe('delay of the feed (issue #411)', () => {
     fireEvent.click(screen.getByRole('button', { name: /desconectar/i }))
     fireEvent.click(screen.getByRole('tab', { name: 'Acerca de' }))
     expect(await screen.findByText(/Retraso de los datos de FEB: mediana 40 s, p90 40 s, máx. 40 s \(\d+ líneas\); caché de FEB: 11 s de mediana; \d+ % de los sondeos traen novedades/)).toBeTruthy()
+  })
+})
+
+
+// Feedback 0.4.0 (#557): another match was loaded while the connection of the previous one was still running, so the feed kept serving Getafe - Cultural to the package of
+// Caja Rural - Xiria («el paquete corresponde a otro partido»). Whatever loads a package takes the connection down first, and what was being followed is kept (#556).
+describe('loading another package while connected (issue #557)', () => {
+  const bpkg = fs.readFileSync(path.join(import.meta.dirname, '../../../../tests/live_vectors/demo.bpkg'), 'utf8')
+
+  it('disconnects the match that was being followed, keeps it, and says so', async () => {
+    vi.stubGlobal('crypto', webcrypto)
+    const feb = new FakeFeb(pack)
+    feb.at = 0
+    const finishedStore = memoryFinishedStore()
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
+    fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
+    await screen.findByText(/en directo/i)
+    fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
+    fireEvent.change(await screen.findByLabelText(/contraseña del paquete/i), { target: { value: 'clave-de-prueba-1' } })
+    fireEvent.change(screen.getByLabelText(/fichero del paquete/i), { target: { files: [new File([bpkg], 'live.bpkg')] } })
+    fireEvent.click(screen.getByRole('button', { name: /importar/i }))
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true'))
+    expect(screen.queryByRole('button', { name: /desconectar/i })).toBeNull()                 // the old connection is gone
+    expect(await screen.findByRole('button', { name: /conectar con feb/i })).toBeTruthy()      // the new package waits to be connected to its own match
+    const kept = await waitFor(async () => { const m = await finishedStore.load('2524475'); if (!m) throw new Error('not yet'); return m })
+    expect(kept.complete).toBe(false)                                                          // the match followed is not lost
   })
 })
