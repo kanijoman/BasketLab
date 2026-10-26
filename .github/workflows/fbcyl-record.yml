@@ -7,6 +7,11 @@ name: FBCYL live recorder
 on:
   schedule:
     - cron: "*/15 6-22 * * *"
+  # GitHub runs the schedule above only a few times a day (as for the FEB recorder, issue #205): also plan after every Atlas refresh (05:30, 13:30 and 21:30 UTC)
+  workflow_run:
+    workflows: ["Atlas refresh"]
+    types: [completed]
+    branches: [main]
   pull_request:
     paths:
       - "src/live_prep/fbcyl_recorder.py"

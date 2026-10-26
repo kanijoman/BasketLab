@@ -161,6 +161,7 @@ class TestRecorderWorkflowBudget:
         assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]
         assert "completed" in triggers["workflow_run"]["types"]
         assert "schedule" in triggers and "workflow_dispatch" in triggers
+        assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]       # the schedule alone is unreliable: it also plans after each Atlas refresh (13:30 UTC covers a 17:00 match)
 
 
 class TestRuleEvaluation:
