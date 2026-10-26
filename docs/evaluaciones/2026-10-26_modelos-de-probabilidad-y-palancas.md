@@ -8,8 +8,8 @@ Responde a #567 (feedback de la 0.4.0: «en las palancas de probabilidad de vict
 3. **Consecuencia para las palancas**: son una buena **descripción de lo que ha pasado** (dónde se están perdiendo puntos respecto al rival) pero **no hay evidencia de que corregirlas cambie la probabilidad de ganar** como dicen hoy los mensajes («+N % si vuelve a su nivel habitual», «+2 % de victoria» del control de ritmo). Propuesta: quitar esas cifras de los avisos y presentarlas como diagnóstico.
 4. **Partir las palancas en ataque y defensa no mejora la predicción** (experimento 2b: el mismo R² de 0,071 y coeficientes simétricos de ±0,03). Sí es útil para el **staff**: dice dónde actuar (el rival acierta mucho: defensa; nosotros fallamos: ataque), aunque no prediga.
 5. **El jugador sí aporta, y es lo único que aporta** (experimento 3): la calidad de los **quintetos en pista** (rating individual ajustado, tipo RAPM, calculado con partidos anteriores) predice el margen de los 5 minutos siguientes con un coeficiente de **+0,52 puntos por desviación típica** (intervalo 95 %: +0,35 a +0,71) y sube el R² de 0,088 a 0,094; con los ratings de la **temporada anterior** además, de 0,097 a **0,109** (+12 % relativo). En probabilidad de ganar la mejora es de 0,0016 de log loss y **no es distinguible del ruido** (−0,0009 a +0,0037). Los ratings son todavía muy ruidosos (fiabilidad par/impar 0,05-0,21): con más datos (varias temporadas) mejorarán.
-6. **Dónde más margen hay**: el **valor previo** de los equipos (el ajuste por rival da +0,0006 de log loss) y los **ratings de jugador con varias temporadas**.
-7. **El modelo actual no necesita sustituirse**: es tan bueno como cualquiera de los probados (A 0,3938 frente a un óptimo de 0,3908) y está calibrado.
+6. **Otras familias de modelos no ganan** (experimento 4, 2.886 partidos con las ligas masculinas): logística, árboles potenciados y una red neuronal no superan al modelo de la app **bien calibrado**; la red neuronal es la peor. Las redes bayesianas (grafos discretos) y los modelos de secuencia no encajan con estos datos ni con el motor.
+7. **El modelo actual no necesita sustituirse, pero sí recalibrarse**: en las ligas **masculinas** está descalibrado (log loss 0,4433, desvío de 3,3 pp; pide más dispersión y más ventaja de campo). **Calibrado por familia de competiciones y con un valor previo bayesiano dinámico** (Kalman que arranca de la temporada anterior) baja el log loss de 0,4158 a **0,4070** (−0,0088, IC 95 % −0,0120 a −0,0057): la mayor mejora de todo el estudio, sin cambiar la app ni el tamaño de los paquetes.
 
 ## Qué información hay
 | Momento | Fuente | Qué contiene |
@@ -107,11 +107,51 @@ Mismo método con **Primera y Segunda FEB** de la base local (Primera 2024-25, 2
 - En probabilidad de ganar la mejora sigue sin distinguirse del ruido (+0,0003, IC −0,0012 a +0,0018).
 - **Tamaño**: un quinteto una desviación típica mejor que el rival vale ≈ 0,4-0,5 puntos cada 5 minutos (≈ 4 puntos en un partido): útil como criterio de rotación, pequeño como predictor.
 
+## Experimento 4: otras familias de modelos (redes bayesianas, aprendizaje automático, redes neuronales)
+Pregunta del usuario: ¿qué otros modelos predictivos encajan en el producto, con sus límites (motor en biblioteca estándar en la tablet con Pyodide, paquetes pequeños, 512 MB en Render, poco tiempo de cálculo)? Muestra: **2.886 partidos y 40.190 cortes**, ligas femeninas (las de arriba) y **masculinas** (Primera y Segunda FEB 2024-25 a 2026/27 de la base local).
+
+### 4a. Comparación con validación cruzada por partido (5 grupos)
+
+| Modelo | Log loss | Femeninas | Masculinas | Desvío máx. por decil | Diferencia con la app (IC 95 %) |
+|---|---|---|---|---|---|
+| A. Modelo de la app (parámetros actuales) | 0,4158 | 0,3938 | **0,4433** | **3,3 pp** | — |
+| D. Logística: marcador, tiempo y valor previo | 0,4098 | 0,3917 | 0,4325 | 1,5 pp | −0,0060 (−0,0097 a −0,0019) |
+| K. Logística + valor previo bayesiano dinámico (Kalman) | 0,4085 | 0,3912 | 0,4302 | 0,9 pp | −0,0073 (−0,0114 a −0,0029) |
+| F2. Árboles potenciados (monótonos y regularizados), todo + Kalman | 0,4104 | 0,3921 | 0,4334 | 1,2 pp | −0,0054 (−0,0097 a −0,0006) |
+| N. Red neuronal (32-16), todo + Kalman | 0,4176 | 0,3977 | 0,4426 | 3,9 pp | +0,0018 (−0,0029 a +0,0069) |
+
+### 4b. El modelo de la app, calibrado por familia de competiciones
+Con la mitad de los partidos se eligen `wp_sigma`, `wp_home_adv` y `wp_n0` para cada familia (femeninas, masculinas) y se puntúa la otra mitad (y al revés): tres números por familia, que caben en `rule_config`.
+
+| Modelo | Log loss | Femeninas | Masculinas | Primeros 10 min | Desvío máx. por decil |
+|---|---|---|---|---|---|
+| A. App (parámetros actuales) | 0,4158 | 0,3938 | 0,4433 | 0,5281 | 3,3 pp |
+| A3. Estructural calibrado por familia | 0,4105 | 0,3924 | 0,4332 | 0,5284 | 0,5 pp |
+| **A4. A3 + valor previo bayesiano (Kalman)** | **0,4070** | **0,3892** | **0,4293** | **0,5227** | 0,7 pp |
+
+A3 − app: −0,0053 (IC 95 % −0,0076 a −0,0026) · A4 − app: **−0,0088** (−0,0120 a −0,0057) · A4 − A3: −0,0035 (−0,0055 a −0,0016). Parámetros elegidos: femeninas `wp_sigma` 12-14 y campo 4; masculinas **14-16 y campo 6**; en las dos `wp_n0` 960 (pesa más el valor previo que los cuatro factores del partido, coherente con los experimentos 1 y 2).
+
+**Valor previo bayesiano dinámico (Kalman)**: el rating de cada equipo en puntos por partido arranca de la **temporada anterior** (encogido al 60 %, con más incertidumbre), se actualiza con cada resultado según lo seguro que se esté de cada equipo (su varianza) y deriva un poco durante la temporada. Es estadística bayesiana de espacio de estados, cuesta milisegundos en Python puro y solo necesita los **marcadores finales** de las temporadas anteriores (no las jugadas): se puede guardar como **un dato por equipo** al terminar cada temporada, sin partidos antiguos en la nube.
+
+### Lectura por familia
+| Familia | Resultado | Encaje en el producto |
+|---|---|---|
+| **Modelo estructural actual, recalibrado por familia** | −0,0053; arregla la descalibración de las ligas masculinas (de 3,3 a 0,5 pp) | Ideal: tres parámetros por competición en `rule_config`, nada cambia en la app; las palancas siguen saliendo del modelo |
+| **Valor previo bayesiano dinámico (Kalman)** | −0,0035 más (A4); el mejor en los primeros 10 min | Ideal: lo calcula el publicador en Python puro y viaja como `net_rtg_prior`; la temporada anterior se guarda agregada (un dato por equipo) |
+| Regresión logística | −0,0060 / −0,0073 con Kalman: buena, pero no mejor que A4 | Fácil (coeficientes en el paquete), pero pierde la estructura de la que salen las palancas |
+| Árboles potenciados | −0,0054: no mejor que la logística | Posible (50-150 KB de árboles, evaluación de ms en Python puro), opaco, necesita restricciones monótonas; no compensa |
+| Red neuronal | +0,0018: peor y peor calibrada | Exportable (≈ 1.600 pesos) pero opaca y sin ganancia con estos datos |
+| **Redes bayesianas** (grafo de variables discretas) | No probadas | Mal encaje: las variables son continuas y van en el tiempo; discretizarlas pierde información y el modelo actual ya es una actualización bayesiana (valor previo + evidencia del partido, ponderadas por posesiones). La parte útil de lo bayesiano es el **valor previo dinámico** (4b) y la **agrupación por competición** (4b) |
+| Modelos de secuencia (LSTM, transformers sobre jugada a jugada) | No probados | Necesitan decenas de miles de partidos (hay ≈ 3.000) y no corren en el motor de biblioteca estándar; descartados por ahora |
+
+**Conclusión**: el límite no es el tipo de modelo sino **la información y la calibración**. Ninguna familia más compleja supera al modelo actual bien calibrado con un buen valor previo, y las dos mejoras con mejor encaje (**recalibrar por familia** y **valor previo bayesiano dinámico**) bajan el log loss en 0,0088 (≈ 2 %), más que todo lo probado antes, sin tocar la app ni el tamaño de los paquetes.
+
 ## Qué recomiendo (decisiones para el usuario)
-1. **No sustituir el modelo**: ningún modelo más rico lo mejora con estos datos. Tampoco hace falta un modelo de caja negra: los árboles empeoran y descalibran.
+1. **No sustituir el modelo, recalibrarlo**: ninguna familia más rica (logística, árboles, red neuronal) lo mejora con estos datos (experimento 4). Sí hay que **calibrarlo por familia de competiciones** (`wp_sigma`, `wp_home_adv`, `wp_n0` en `rule_config`): en las masculinas está descalibrado hoy (3,3 pp de desvío).
+1b. **Valor previo bayesiano dinámico (Kalman) en el publicador**, arrancando de la temporada anterior: es la mejora más grande y no cambia la app; la temporada anterior se guarda como un dato por equipo.
 2. **Quitar de los avisos las cifras causales** («+N % de victoria si vuelve a su nivel habitual» de `win_flip`, «+N % de victoria» de `pace_control`): no están respaldadas (experimento 2). Dejar la palanca como **diagnóstico** («el rival acierta el 75 % y nosotros el 60 %: nos cuesta unos 12 puntos cada 100 posesiones»), que sí es cierto de lo ocurrido.
 3. **Partir las palancas en ataque y defensa** (lo que se pedía: «¿atacan bien?, ¿hay que mejorar la defensa?») **sin pretender predecir**: ataque = nuestro nivel frente a lo habitual de la liga, defensa = el del rival frente a lo habitual contra equipos como el nuestro. Requiere que el paquete lleve los cuatro factores de ataque y de defensa de la temporada de cada equipo (hoy solo lleva el prior de la *diferencia*): cambio de esquema del paquete (`schema_version`) y regenerar los publicados.
-4. **Mejorar el valor previo con el ajuste por rival** (ridge): es lo único que sube la calidad (0,0006 de log loss; más con equipos con pocos partidos) y se calcula en el publicador sin tocar la app (cambia `net_rtg_prior`).
+4. ~~Valor previo ajustado por rival (ridge)~~: lo supera el valor previo bayesiano dinámico (1b).
 5. **Llevar el rating de jugador al paquete y a las alertas** (es lo único con señal): el publicador calcula, **en local** (la base compartida no guarda temporadas antiguas), el rating de cada jugadora con **varias temporadas** (RAPM con ridge ajustado por competición, ≈ 10 min de cálculo por competición) y solo se **publica el agregado** (unas decenas de bytes por jugadora, solo las de los equipos publicados) y lo guarda en `players` (`rating`); el motor lo usa para (a) una palanca individual («el quinteto en pista rinde X por 40 min menos que el mejor disponible», que alimenta la rotación), (b) un pequeño ajuste de la probabilidad de victoria y (c) la propuesta de cambios. Medir antes con un test A/B sobre grabaciones reales. Cambia el esquema del paquete (`schema_version`).
 6. **Después, probar la calidad de tiro por zona** (`ShotChart`: tiros abiertos frente a forzados, que persisten más que el porcentaje) y el tipo de posesión: no probados aún.
 
@@ -122,4 +162,4 @@ Mismo método con **Primera y Segunda FEB** de la base local (Primera 2024-25, 2
 - Los cortes son cada 5 min y los dos lados de un partido son espejos: se agrupa por partido en la validación, pero las muestras efectivas son 1.610 partidos, no 22.351.
 
 ## Reproducir
-`python scripts/wp_model_study.py collect --out samples.pkl <carpetas con los partidos de UNA temporada de UNA competición cada una>` (≈ 18 min para las 8 carpetas; usa `data/historical_games/*` y los partidos de 2026/27 exportados de Mongo), después `python scripts/wp_model_study.py fit samples.pkl` (experimento 1) y `python scripts/wp_model_study.py persistence samples.pkl` (experimento 2). `collect-lineups --out lineups.pkl <las mismas carpetas>` (≈ 8 min, 4 procesos) y `individual samples.pkl lineups.pkl` (experimento 3), y `persistence` incluye el 2b. Necesita scikit-learn y scipy.
+`python scripts/wp_model_study.py collect --out samples.pkl <carpetas con los partidos de UNA temporada de UNA competición cada una>` (≈ 18 min para las 8 carpetas; usa `data/historical_games/*` y los partidos de 2026/27 exportados de Mongo), después `python scripts/wp_model_study.py fit samples.pkl` (experimento 1), `benchmark samples.pkl [más.pkl]` (4a) y `structural samples.pkl [más.pkl]` (4b) y `python scripts/wp_model_study.py persistence samples.pkl` (experimento 2). `collect-lineups --out lineups.pkl <las mismas carpetas>` (≈ 8 min, 4 procesos) y `individual samples.pkl lineups.pkl` (experimento 3), y `persistence` incluye el 2b. Necesita scikit-learn y scipy.
