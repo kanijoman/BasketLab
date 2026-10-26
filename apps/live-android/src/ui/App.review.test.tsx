@@ -5,6 +5,8 @@ import App from './App'
 import { FakeFeb, type Pack } from '../feed/fakeFeb'
 import { PKG_TEXT, fakeEngine, loadDemo, memoryStore } from './appTestKit'
 import { pickOption } from '../test/select'
+import { COMPAT_KEY } from '../feed/compatMigration'
+import { memoryFinishedStore } from '../feed/finishedStore'
 
 const MANIFEST = [{
   code: '2524470', title: 'Recoletas Zamora – Mipelletymas B.F. Leon', date: '2026-10-10T17:00',
@@ -123,5 +125,26 @@ describe('review the recorded matches with a package loaded (issues #344, #509)'
     toDemos()
     expect((screen.getByRole('button', { name: /ver recoletas zamora/i }) as HTMLButtonElement).disabled).toBe(true)
     expect(screen.getByText(/desconecta antes de abrir una demostración/i)).toBeTruthy()
+  })
+})
+
+// 0.4.1 raises REPLAY_COMPAT: the first start clears what an older version kept and says which, in the Partidos tab (issue #562)
+describe('matches kept by an older version', () => {
+  const old = (code: string) => ({ code, title: `LEON – ${code}`, savedAt: '2026-10-2' + code + 'T20:00:00Z', ownId: '1', alerts: [], plaintext: '{}', game: '{}' })
+
+  it('are cleared at the first start, which says how many and which', async () => {
+    localStorage.removeItem(COMPAT_KEY)
+    const finishedStore = memoryFinishedStore([old('1'), old('2')])
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} finishedStore={finishedStore} />)
+    expect(await screen.findByText(/se han eliminado 2 partidos guardados con una versión anterior/i)).toBeTruthy()
+    expect(await finishedStore.list()).toEqual([])
+  })
+
+  it('say nothing when there was nothing to clear', async () => {
+    localStorage.removeItem(COMPAT_KEY)
+    render(<App engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} finishedStore={memoryFinishedStore()} />)
+    await screen.findByRole('tab', { name: 'Partidos' })
+    await waitFor(() => expect(localStorage.getItem(COMPAT_KEY)).not.toBeNull())
+    expect(screen.queryByText(/se han eliminado/i)).toBeNull()
   })
 })
