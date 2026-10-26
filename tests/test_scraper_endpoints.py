@@ -38,6 +38,14 @@ def clear_scrape_jobs():
     SCRAPE_JOBS.clear()
 
 
+@pytest.fixture(autouse=True)
+def no_real_scraping():
+    """TestClient runs the background task of ``POST /scrape/start`` inline: without this the tests scraped FEB for real, and on a CI runner whose request timed out
+    ``test_progress_counters_start_at_zero`` read ``errors == ['Fatal: RetryError ... ConnectTimeout']`` (flaky, seen on the PR of 26/10/2026). The job lifecycle is what is tested here."""
+    with patch("src.api.routers.scrape._run_feb_scrape"), patch("src.api.routers.scrape._run_fbcyl_scrape"):
+        yield
+
+
 @pytest.fixture
 def client():
     mock_db = MagicMock()
