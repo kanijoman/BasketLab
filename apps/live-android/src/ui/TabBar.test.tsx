@@ -4,11 +4,11 @@ import TabBar from './TabBar'
 import { useTab } from './useTab'
 
 describe('TabBar (issue #224)', () => {
-  it('has the three tabs in order with the active one selected', () => {
+  it('has the four tabs in order with the active one selected', () => {
     render(<TabBar active="paquetes" onChange={() => undefined} />)
     const tabs = screen.getAllByRole('tab')
-    expect(tabs.map(t => t.textContent)).toEqual(['Partido', 'Partidos', 'Acerca de'])
-    expect(tabs.map(t => t.getAttribute('aria-selected'))).toEqual(['false', 'true', 'false'])
+    expect(tabs.map(t => t.textContent)).toEqual(['Partido', 'Boxscore', 'Partidos', 'Acerca de'])
+    expect(tabs.map(t => t.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true', 'false'])
     expect(screen.getByRole('tablist', { name: 'Secciones' })).toBeTruthy()
   })
 

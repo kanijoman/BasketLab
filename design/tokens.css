@@ -25,6 +25,7 @@
   --accent: #f97316;        --accent-rgb: 249 115 22;
   --accent-ink: #1a0f06;
   --ok: #3fb950;
+  --dev-bad: #f85149;       /* the red of a column below the player's own average (box score); the green is --ok */
 
   /* severity: how urgent an alert is */
   --sev-critical: #f85149;  --sev-critical-rgb: 248 81 73;
@@ -81,6 +82,7 @@
     --accent: #ea580c;       --accent-rgb: 234 88 12;
     --accent-ink: #ffffff;
     --ok: #1a7f37;
+    --dev-bad: #cf222e;
     --sev-critical: #cf222e; --sev-critical-rgb: 207 34 46;
     --sev-warning: #9a6700;  --sev-warning-rgb: 154 103 0;
     --sev-info: #0969da;     --sev-info-rgb: 9 105 218;
@@ -110,6 +112,7 @@
   --accent: #ea580c;       --accent-rgb: 234 88 12;
   --accent-ink: #ffffff;
   --ok: #1a7f37;
+  --dev-bad: #cf222e;
   --sev-critical: #cf222e; --sev-critical-rgb: 207 34 46;
   --sev-warning: #9a6700;  --sev-warning-rgb: 154 103 0;
   --sev-info: #0969da;     --sev-info-rgb: 9 105 218;

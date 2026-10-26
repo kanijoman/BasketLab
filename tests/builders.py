@@ -103,6 +103,8 @@ class Match:
         self._num += 1
         self._now = at
         name = kw.pop("name", kw.get("player_id"))
+        if kw.get("player_id"):
+            kw.setdefault("license", f"L-{kw['player_id']}")        # what FEB writes in ``idLicense``: how the engine knows who was fouled
         self.game.apply(Event(num=self._num, period=period, remaining=remaining, elapsed=at, kind=kind, team_id=team, name=name, **kw))
         return self
 
@@ -132,9 +134,16 @@ class Match:
     def steal(self, team: str, at: int, player: Optional[str] = None) -> "Match":
         return self._event("steal", team, at, player_id=player or ("p1" if team == self.own else "r1"))
 
-    def foul(self, team: str, player: str, at: int) -> "Match":
+    def foul(self, team: str, player: str, at: int, drawn_by: Optional[str] = None) -> "Match":
+        """A personal foul of ``player``; ``drawn_by`` is who suffers it (the receiver FEB writes in the line)."""
         self._fouls[player] = self._fouls.get(player, 0) + 1
-        return self._event("foul", team, at, player_id=player, foul_type="personal", pf_count=self._fouls[player])
+        return self._event("foul", team, at, player_id=player, foul_type="personal", pf_count=self._fouls[player], fouled=f"L-{drawn_by}" if drawn_by else None)
+
+    def assist(self, team: str, at: int, player: Optional[str] = None) -> "Match":
+        return self._event("assist", team, at, player_id=player or ("p1" if team == self.own else "r1"))
+
+    def block(self, team: str, at: int, player: Optional[str] = None) -> "Match":
+        return self._event("block", team, at, player_id=player or ("p1" if team == self.own else "r1"))
 
     def timeout(self, team: str, at: int) -> "Match":
         return self._event("timeout", team, at)

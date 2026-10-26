@@ -111,20 +111,32 @@ def _lines(game: Dict[str, Any], teams: List[Dict[str, Any]]) -> List[Dict[str, 
     lengths = _period_lengths(game.get("stats") or {})
     lines: List[Dict[str, Any]] = []
     fouls: Dict[str, int] = {}
+    waiting: Dict[Any, Optional[str]] = {}       # a «Falta recibida» whose foul has not been written yet, by clock
     seen_periods = set()
 
     def add(period: int, minutes: int, seconds: int, team: Optional[str], player: Optional[str], action: str, text: str, score: Optional[str] = None) -> None:
         home, away = (score.split("-") + [None, None])[:2] if score else (None, None)
         lines.append({"num": str(len(lines) + 1), "quarter": str(period), "time": f"{minutes:02d}:{seconds:02d}", "idTeam": team, "idPlayer": player,
+                      "idLicense": player,      # in FBCYL the licence of a player is his id: what lets the engine find who a foul was suffered by (#593)
                       "action": action, "text": text, "deleted": None, "scoreA": home, "scoreB": away, "Position": ""})
+
+    def receiver(period: int, minutes: int, seconds: int, victim: Optional[str]) -> None:
+        """«Falta recibida»: the foul it belongs to is next to it, at the same clock, before or after (checked on a real game: 37 and 37, always adjacent)."""
+        clock = (str(period), f"{minutes:02d}:{seconds:02d}")
+        last = lines[-1] if lines else None
+        if victim and last and last["action"] == "foul" and (last["quarter"], last["time"]) == clock and not last.get("logParam4"):
+            last["logParam4"] = victim
+        else:
+            waiting[clock] = victim            # the foul comes next
 
     for move in game.get("moves") or []:
         text = str(move.get("move") or "")
-        if text.lower().startswith("falta recibida"):
-            continue
         try:
             period, minutes, seconds = int(move.get("period") or 1), int(move.get("min") or 0), int(move.get("sec") or 0)
         except (TypeError, ValueError):
+            continue
+        if text.lower().startswith("falta recibida"):
+            receiver(period, minutes, seconds, str(move["actorId"]) if move.get("actorId") else None)
             continue
         if period not in seen_periods:
             seen_periods.add(period)
@@ -140,10 +152,13 @@ def _lines(game: Dict[str, Any], teams: List[Dict[str, Any]]) -> List[Dict[str, 
             counted = _FOUL_N.search(text)
             fouls[player or ""] = int(counted.group(1)) if counted else fouls.get(player or "", 0) + 1
             body = _foul_text(text, fouls[player or ""])
+            victim = waiting.pop((str(period), f"{minutes:02d}:{seconds:02d}"), None)
         made = action in ("shoot", "fthrow") and "ANOTADO" in body
         who = str(move.get("actorName") or "").strip()
         prefix = f"({names.get(team or '', '')}) {who}: " if player else f"({names.get(team or '', '')}) "
         add(period, minutes, seconds, team, player, action, prefix + body, str(move.get("score")) if made and move.get("score") else None)
+        if action == "foul" and victim:
+            lines[-1]["logParam4"] = victim
     return lines
 
 

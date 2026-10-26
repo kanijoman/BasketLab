@@ -49,6 +49,10 @@ class RuleConfig:
     # Illegal lineup: players of "formación" that must be on court at all times (0 = the competition has no such rule), and
     # how many consecutive evaluations the violation must last before it is said (a substitution is two feed lines).
     formation_min_on_court: int = 2
+    # Box score tab (#593): the advanced figures and the comparison with the player's own average wait for this much game of his (seconds), and a column
+    # is at its strongest colour at this many noises away from what he usually does in his minutes (provisional, to be tuned with real matches).
+    boxscore_min_seconds: int = 120
+    boxscore_z_max: float = 2.0
     formation_confirm_polls: int = 2
     decided_margin: int = 20
     # In a decided game (#320) only fatigue and rotation alerts are shown (False: everything as in any other phase), and fatigue

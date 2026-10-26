@@ -107,6 +107,45 @@ describe('tabs of the app (issue #224)', () => {
     expect(screen.getByRole('button', { name: 'Pausa' })).toBeTruthy()
   })
 
+  describe('the Boxscore tab (issue #593)', () => {
+    const player = (name: string, team: string, over = {}) => ({ name, team_id: team, on_court: true, minutes: 600, pf: 0, pts: 0, pm: 0, fd: 0, stats: { fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, orb: 0, drb: 0, tov: 0, stl: 0, ast: 0, blk: 0 }, ...over })
+    const withBoxscore = fakeEngine({
+      replay: vi.fn(async (e: number) => ({
+        snapshot: { period: 1, remaining: 600 - e, elapsed: e, score: { '1': 2, '2': 0 }, home_id: '1', teams: { '1': { name: 'EQUIPO PROPIO', fouls_game: 0 }, '2': { name: 'EQUIPO RIVAL', fouls_game: 0 } },
+          players: { p1: player('A. PROPIA', '1', { pts: 2 }), r1: player('R. RIVAL', '2') }, last_stat: { seq: e, player_id: 'p1', team_id: '1', keys: ['pts'], also: [] } } as never,
+        alerts: [], analysis: { boxscore: { p1: { val: 2, adv: {} as never, dev: { pts: 0.9 } } } },
+      })),
+    })
+
+    it('is a tab of its own, between the match and the lists, and shows the box score of the engine', async () => {
+      render(<App initialTab="partido" engine={withBoxscore} loadDemo={loadDemo} />)
+      await screen.findByText('EQUIPO PROPIO')
+      expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual(['Partido', 'Boxscore', 'Partidos', 'Acerca de'])
+      fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+      openTab('Boxscore')
+      expect(screen.getByRole('table', { name: /EQUIPO PROPIO/ })).toBeTruthy()
+      expect(screen.getByText('A. PROPIA')).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: 'Alertas' })).toBeNull()
+    })
+
+    it('keeps following the match while it is open: a new action of the player flashes his row', async () => {
+      render(<App initialTab="partido" engine={withBoxscore} loadDemo={loadDemo} />)
+      await screen.findByText('EQUIPO PROPIO')
+      fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+      openTab('Boxscore')
+      expect(document.querySelector('tr.bx-hit')).toBeNull()
+      await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+      expect(document.querySelector('tr.bx-hit')).not.toBeNull()
+    })
+
+    it('before the engine has said anything it says there is no match yet', async () => {
+      render(<App initialTab="boxscore" engine={fakeEngine()} loadDemo={loadDemo} />)
+      await screen.findByText(/sin partido todavía/i)
+    })
+  })
+
   it('has no demo notice any more: the matches are chosen in the Partidos tab (issue #476)', async () => {
     render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} />)
     await screen.findByText('EQUIPO PROPIO')

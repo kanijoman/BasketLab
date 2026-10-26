@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .coherence import Coherence
+from .boxscore import build as box_score
 from .config import RuleConfig
 from .four_factors import FourFactorsModel
 from .recent_timeout import adapt_for_recent_timeout
@@ -144,6 +145,7 @@ class AdviceEngine:
                 "own": timeouts_left(snapshot, own), "rival": timeouts_left(snapshot, rival) if rival else None}}
             if self._ctx.config.formation_min_on_court > 0:
                 analysis["formation"] = self._formation_status(snapshot)
+            analysis["boxscore"] = box_score(snapshot, {**self._ctx.rival_baselines, **self._ctx.baselines}, self._ctx.config)
         return analysis
 
     def _win_levers(self, snapshot: Dict[str, Any], four_factors: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:

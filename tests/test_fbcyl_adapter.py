@@ -136,6 +136,28 @@ class TestShotChartAndInput:
         assert json.dumps(raw, sort_keys=True) == before
 
 
+class TestFoulsReceived:
+    """FBCYL writes every foul twice (#593): «Falta, Na falta» for who commits it and «Falta recibida» for who suffers it, next to each other at the same clock, in either order.
+    The adapter does not make a line of the second, but tells the first who suffers it, so the box score can say the fouls each player draws."""
+
+    def test_every_player_draws_the_fouls_the_feed_says_he_received(self, raw, game):
+        received = Counter(str(m["actorId"]) for m in raw["moves"] if m["move"].startswith("Falta recibida"))
+        drawn = {pid: p["fd"] for pid, p in LiveEngine().update(game)["players"].items() if p["fd"]}
+        assert drawn == dict(received)
+
+    def test_the_foul_line_names_the_receiver_whether_the_received_one_comes_before_or_after(self, raw, game):
+        moves = raw["moves"]
+        before = [i for i, m in enumerate(moves) if m["move"].startswith("Falta, ") and moves[i - 1]["move"].startswith("Falta recibida")]
+        after = [i for i, m in enumerate(moves) if m["move"].startswith("Falta, ") and i + 1 < len(moves) and moves[i + 1]["move"].startswith("Falta recibida")]
+        assert before and after                                  # the fixture has both orders: the test is about both
+        fouls = [l for l in game["PLAYBYPLAY"]["LINES"] if l["action"] == "foul"]
+        assert all(l.get("logParam4") for l in fouls if "Faltas: " in l["text"] and "Tecnica" not in l["text"])
+
+    def test_it_does_not_change_how_many_fouls_each_player_committed(self, game):
+        snap = LiveEngine().update(game)
+        assert sum(p["pf"] for p in snap["players"].values()) == sum(p["fd"] for p in snap["players"].values())
+
+
 class TestEngine:
     def test_the_engine_replays_the_whole_game_to_the_final_score(self, game):
         snap = LiveEngine().update(game)
