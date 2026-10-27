@@ -4,8 +4,8 @@
  *   - Global search filter
  *   - Quartile cell coloring (pass quartiles prop)
  *   - Trend badge in cells (rendered via column meta)
- *   - Sticky first column (team/player name)
- *   - Loading skeleton
+ *   - Sticky first column (team/player name; teamColumn() of TeamCell for the team)
+ *   - Density, the states of the system (Spinner while loading, EmptyState) and, on a phone, every row as a card (issue #184)
  *
  * Usage:
  *   <DataTable columns={columns} data={rows} quartiles={quartiles} />
@@ -20,11 +20,19 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
+  type Cell,
   type Row,
 } from '@tanstack/react-table'
 import { ArrowUpDown, ArrowUp, ArrowDown, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ExportButton, { type ExportOptions } from '@/components/ui/ExportButton'
+import { useMediaQuery } from '@/lib/useMediaQuery'
+import DataTableCards from './DataTableCards'
+import EmptyState from './EmptyState'
+import Spinner from './Spinner'
+
+const DENSITY = { compact: 'py-1', normal: 'py-1.5', comfortable: 'py-2.5' } as const
+const PHONE = '(max-width: 639px)'
 export interface QuartileMap {
   /** key = column id; value = [q1, q2, q3] thresholds for colour coding */
   [columnId: string]: [number, number, number] | undefined
@@ -48,6 +56,10 @@ interface Props<TData> {
   onRowClick?: (row: Row<TData>) => void
   /** Width (px) of the columns that do not set their own ``size`` (default 80) */
   defaultColumnSize?: number
+  /** Height of the rows (default `normal`) */
+  density?: keyof typeof DENSITY
+  /** What to say when no row is left (under «Sin resultados») */
+  emptyMessage?: string
   className?: string
 }
 
@@ -76,7 +88,7 @@ function quartileCellClass(
 
 function SkeletonRow({ cols }: { cols: number }) {
   return (
-    <tr>
+    <tr aria-hidden="true">
       {Array.from({ length: cols }).map((_, i) => (
         <td key={i} className="px-3 py-2.5">
           <div className="h-3.5 rounded animate-pulse bg-line/50" />
@@ -97,8 +109,11 @@ export default function DataTable<TData>({
   exportOptions,
   onRowClick,
   defaultColumnSize = 80,
+  density = 'normal',
+  emptyMessage = 'Ningún dato coincide con los filtros aplicados.',
   className,
 }: Props<TData>) {
+  const phone = useMediaQuery(PHONE)
   const tableRef = useRef<HTMLTableElement>(null)
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -117,6 +132,12 @@ export default function DataTable<TData>({
     columnResizeMode: 'onChange',
     defaultColumn: { size: defaultColumnSize, minSize: 40 },
   })
+
+  const cellClass = (cell: Cell<TData, unknown>) => {
+    const q = quartiles?.[cell.column.id]
+    return q ? quartileCellClass(cell.getValue(), q, reverseColumns.includes(cell.column.id)) : ''
+  }
+  const empty = !loading && table.getRowModel().rows.length === 0
 
   const csvData = useMemo(
     () => exportOptions?.csvData ?? (data as Record<string, unknown>[]),
@@ -150,8 +171,12 @@ export default function DataTable<TData>({
         </div>
       )}
 
+      {loading && <Spinner size="sm" label="Cargando la tabla" className="self-start" />}
+
+      {phone && !loading && !empty && <DataTableCards table={table} cellClass={cellClass} onRowClick={onRowClick} />}
+
       {/* Table wrapper */}
-      <div className="overflow-x-auto rounded-card border border-line">
+      {!(phone && !loading && !empty) && <div className="overflow-x-auto rounded-card border border-line">
         <table
           ref={tableRef}
           className="text-sm border-collapse"
@@ -215,18 +240,13 @@ export default function DataTable<TData>({
                     className={`group border-b border-line/50 hover:bg-surface-raised transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
                   >
                     {row.getVisibleCells().map((cell, i) => {
-                      const colId = cell.column.id
-                      const cellValue = cell.getValue()
-                      const q = quartiles?.[colId]
-                      const isReversed = reverseColumns.includes(colId)
-                      const qClass = q ? quartileCellClass(cellValue, q, isReversed) : ''
-
+                      const qClass = cellClass(cell)
                       return (
                         <td
                           key={cell.id}
                           style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize(), overflow: 'hidden' }}
                           className={cn(
-                            'px-2 py-1.5 tabular-nums',
+                            'px-2 tabular-nums', DENSITY[density],
                             qClass ? '' : 'text-ink',
                             i === 0 && 'sticky left-0 z-10 bg-surface font-medium text-ink',
                             qClass,
@@ -242,12 +262,8 @@ export default function DataTable<TData>({
           </tbody>
         </table>
 
-        {!loading && table.getRowModel().rows.length === 0 && (
-          <div className="py-12 text-center text-sm text-ink-muted">
-            Sin resultados para los filtros aplicados.
-          </div>
-        )}
-      </div>
+        {empty && <EmptyState title="Sin resultados" description={emptyMessage} />}
+      </div>}
 
       {/* Row count */}
       <div className="flex items-center justify-between gap-4 flex-wrap">

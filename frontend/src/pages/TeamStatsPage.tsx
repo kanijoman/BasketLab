@@ -7,6 +7,7 @@
  * Trend badges inline in every numeric cell when a date filter is active
  * Export: CSV / PNG / PDF via DataTable > ExportButton
  */
+import { teamColumn } from '@/components/ui/TeamCell'
 import Tabs from '@/components/ui/Tabs'
 import SegmentedControl from '@/components/ui/SegmentedControl'
 import { useMemo, useRef, useState } from 'react'
@@ -29,21 +30,6 @@ import CVBadge from '@/components/ui/CVBadge'
 import { ADVANCED_COL_DEFS, BASIC_COL_DEFS, REVERSE_ADV, REVERSE_BASIC, type ColDef } from '@/lib/teamColumns'
 
 // -- Column factory ------------------------------------------------------------
-
-function nameCol(): ColumnDef<TeamStat, unknown> {
-  return {
-    id: 'team_name',
-    accessorKey: 'team_name',
-    size: 150,
-    header: 'Equipo',
-    cell: ({ getValue }) => (
-      <span className="font-medium text-ink whitespace-nowrap">
-        {getValue() as string}
-      </span>
-    ),
-    enableSorting: true,
-  }
-}
 
 /**
  * Build a ColumnDef from a ColDef descriptor.
@@ -93,7 +79,7 @@ function buildCols(
   seasonByName: Record<string, TeamStat> | null,
   consistencyByName: CVMap | null,
 ): ColumnDef<TeamStat, unknown>[] {
-  return [nameCol(), ...defs.map(d => buildCol(d, seasonByName, consistencyByName))]
+  return [teamColumn<TeamStat>(), ...defs.map(d => buildCol(d, seasonByName, consistencyByName))]
 }
 
 // -- Helpers -------------------------------------------------------------------

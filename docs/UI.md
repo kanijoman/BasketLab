@@ -34,7 +34,8 @@ Gráficos (recharts, SVG): `useChartTheme()` de `lib/chartTheme.ts` (colores ya 
 | `EmptyState` | no hay nada que enseñar: qué falta y qué hacer | `<EmptyState icon={Users} title="Sin combinaciones" description="Selecciona un equipo…" />` |
 | `Spinner` · `Skeleton` | carga: `Spinner` lo anuncia (`role="status"`); `Skeleton` dibuja la forma (oculto al lector) | `<Spinner label="Generando DOCX" />` · `<Skeleton lines={3} />` |
 | `Badge` · `StatCard` | etiqueta y cifra destacada con un **tono** del sistema (`components/ui/tone.ts`: `neutral`, `accent`, `secondary`, `ok`, `warn`, `bad`) | `<Badge tone="secondary">FBCYL</Badge>` · `<StatCard label="OER" value="107" tone="ok" />` |
-| `DataTable` · `TeamCell` | tablas con orden, búsqueda, cuartiles, columna fija y cabeceras agrupadas; la columna de equipo la pone la tabla (U3, #184) | ver `pages/TeamStatsPage.tsx` |
+| `DataTable` | tablas con orden, búsqueda, cuartiles, columna fija y cabeceras agrupadas; `density` (`compact`/`normal`/`comfortable`), `emptyMessage`, `Spinner` al cargar y **en un móvil (< 640 px) cada fila es una tarjeta** (la primera columna de título y el resto «etiqueta: valor»; la etiqueta es la cabecera o `meta.label`) | `<DataTable columns={cols} data={rows} quartiles={q} density="compact" />` |
+| `teamColumn()` · `TeamCell` | **la columna de equipo de cualquier tabla** (#184): logo FEB, nombre en dos líneas como mucho y entero en el tooltip, 240 px; `{ compact: true }` solo el logo, junto a un jugador. Ninguna página escribe la suya (lo vigila `TeamCell.test.tsx`) | `[teamColumn<TeamStat>(), ...cols]` |
 
 Accesibilidad mínima de todos: rol y nombre (`radiogroup`/`radio`, `tablist`/`tab`, `status`), foco visible (`focus`), teclado (flechas en segmentos y pestañas; Inicio/Fin en pestañas) y objetivos de pulsación suficientes.
 

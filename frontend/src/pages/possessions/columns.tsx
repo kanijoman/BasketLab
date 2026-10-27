@@ -8,7 +8,7 @@ import CVBadge from '@/components/ui/CVBadge'
 import Tooltip, { tippedHeader } from '@/components/ui/Tooltip'
 import type { QuartileMap } from '@/components/ui/DataTable'
 import { fmt } from '@/lib/utils'
-import TeamCell from '@/components/ui/TeamCell'
+import { teamColumn } from '@/components/ui/TeamCell'
 
 export type PossessionView = 'summary' | 'own' | 'rival'
 
@@ -20,20 +20,9 @@ export const VIEWS: { key: PossessionView; label: string }[] = [
 
 type Col = ColumnDef<PossessionStat, unknown>
 
-export const TEAM_COLUMN_SIZE = 240
 export const NUMERIC_COLUMN_SIZE = 64
 
 // -- Cells --------------------------------------------------------------------
-
-const teamCol: Col = {
-  id: 'team_name',
-  accessorKey: 'team_name',
-  header: 'Equipo',
-  size: TEAM_COLUMN_SIZE,
-  cell: ({ getValue, row }) => (
-    <TeamCell name={getValue() as string} teamId={(row.original as PossessionStat).team_id} />
-  ),
-}
 
 function numCol(key: string, header: string, decimals = 1, cv: CVMap | null = null): Col {
   return {
@@ -100,7 +89,7 @@ function styleGroups(prefix: '' | 'rival_'): Col[] {
 
 function summaryCols(cv: CVMap | null): Col[] {
   return [
-    teamCol,
+    teamColumn<PossessionStat>(),
     numCol('total_games', 'PJ', 0),
     numCol('possessions_per_game', 'Pos/P', 1, cv),
     numCol('pace', 'Ritmo', 1, cv),
@@ -112,7 +101,7 @@ function summaryCols(cv: CVMap | null): Col[] {
 
 function ownCols(): Col[] {
   return [
-    teamCol,
+    teamColumn<PossessionStat>(),
     numColOpt('avg_duration', 'Tpo. Pos. (s)'),
     numColOpt('est_possessions_per_game', 'Est. Pos/40'),
     ...styleGroups(''),
@@ -121,7 +110,7 @@ function ownCols(): Col[] {
 
 function rivalCols(): Col[] {
   return [
-    teamCol,
+    teamColumn<PossessionStat>(),
     numColOpt('rival_avg_duration', 'Tpo. Pos. Rival (s)'),
     numColOpt('rival_pace_differential', 'Δ Ritmo Rival (s)'),
     ...styleGroups('rival_'),

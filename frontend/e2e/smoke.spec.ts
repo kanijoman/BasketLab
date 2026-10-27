@@ -74,6 +74,20 @@ test('possessions: summary by default, grouped fast/medium/slow in the own-style
   expect(errors).toEqual([])
 })
 
+test('on a phone a table is a list of cards and no value leaves its card (#184)', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`/${COLLECTION}/possessions`)
+  const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: TEAM }) })
+  await expect(card).toBeVisible()
+  await expect(page.locator('table')).toHaveCount(0)
+  const right = await card.evaluate(el => el.getBoundingClientRect().right)
+  const values = await card.locator('dd').evaluateAll(els => els.map(e => e.getBoundingClientRect().right))
+  expect(values.length).toBeGreaterThan(3)
+  for (const v of values) expect(v).toBeLessThanOrEqual(right)
+  expect(errors).toEqual([])
+})
+
 test('the API behind the page is healthy', async ({ request }) => {
   const live = await request.get('/api/v1/health')
   expect(await live.json()).toMatchObject({ status: 'ok' })
