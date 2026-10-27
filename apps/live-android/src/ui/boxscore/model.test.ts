@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BoxscoreEntry, LastStat, Snapshot, SnapshotPlayer } from '../../engine/types'
-import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, highlightFor, playerRows, teamRows } from './model'
+import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, highlightFor, playerRowLabel, playerRows, teamRows } from './model'
 
 const stats = (over: Partial<SnapshotPlayer['stats']> = {}) => ({ fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, orb: 0, drb: 0, tov: 0, stl: 0, ast: 0, blk: 0, ...over })
 const player = (name: string, team: string, over: Partial<SnapshotPlayer> = {}): SnapshotPlayer =>
@@ -38,6 +38,36 @@ describe('the rows of a team', () => {
     const { team, totals } = teamRows(SNAP, 'A', playerRows(SNAP, 'A', ENTRIES))
     expect(team.stats).toMatchObject({ orb: 3 - 1, drb: 7 - 4, tov: 5 + 1 - 2 })     // team turnovers are the 1 of tov_team plus what no player owns
     expect(totals.pts).toBe(10)
+  })
+})
+
+describe('the jersey number (issue #597)', () => {
+  const rowOf = (id: string, entry?: Partial<BoxscoreEntry>, no?: string | null) => {
+    const snap = { ...SNAP, players: { [id]: { ...(SNAP.players as Record<string, SnapshotPlayer>).p1, no } } } as unknown as Snapshot
+    return playerRows(snap, 'A', entry ? { [id]: { val: 0, adv: {} as BoxscoreEntry['adv'], dev: {}, ...entry } } : {})[0]
+  }
+
+  it('is the one the engine settled (the document, else the roster of the package)', () => {
+    expect(rowOf('p1', { no: '7' }, '04').number).toBe('7')
+  })
+
+  it('is the one of the snapshot when the analysis has none', () => {
+    expect(rowOf('p1', undefined, '04').number).toBe('04')
+  })
+
+  it.each([[undefined, undefined], [null, null], ['', '']])('is nothing when nobody says it (%s)', (no, fromEntry) => {
+    expect(rowOf('p1', { no: fromEntry as string | null | undefined }, no as string | null | undefined).number).toBeNull()
+  })
+
+  it('a zero is a number', () => {
+    expect(rowOf('p1', { no: '0' }).number).toBe('0')
+  })
+
+  it('goes before the name as #<dorsal>, and the rows of the team and the totals have none', () => {
+    expect(playerRowLabel(rowOf('p1', { no: '7' }))).toBe('#7 A. PRIMERA')
+    expect(playerRowLabel(rowOf('p1'))).toBe('A. PRIMERA')
+    const { team, totals } = teamRows(SNAP, 'A', [])
+    expect([playerRowLabel(team), playerRowLabel(totals)]).toEqual(['Equipo', 'Totales'])
   })
 })
 

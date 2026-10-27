@@ -61,6 +61,20 @@ describe('BoxscoreTab (issue #593)', () => {
     expect(within(rowOf('A. PRIMERA')).getByText('30,0')).toBeTruthy()
   })
 
+  it('the name goes with the jersey number as #<dorsal> when there is one, and the title says the whole thing (#597)', () => {
+    render(view({ entries: { p1: { ...ENTRIES.p1, no: '7' } } }))
+    expect(screen.getByText('#7 A. PRIMERA')).toBeTruthy()
+    expect(screen.getByText('#7 A. PRIMERA').closest('th')?.getAttribute('title')).toBe('#7 A. PRIMERA')
+    expect(screen.getByText('B. BANQUILLO')).toBeTruthy()                      // nobody says his number: only the name
+  })
+
+  it('the number of the snapshot is used when the analysis has none', () => {
+    const snap = snapshot()
+    ;(snap.players as Record<string, SnapshotPlayer>).p2.no = '04'
+    render(view({ snapshot: snap }))
+    expect(screen.getByText('#04 B. BANQUILLO')).toBeTruthy()
+  })
+
   it('the player on court is marked for everybody, not only by colour', () => {
     render(view())
     expect(within(rowOf('A. PRIMERA')).getByRole('img', { name: 'En pista' })).toBeTruthy()

@@ -7,6 +7,8 @@ export interface Row {
   id: string
   kind: 'player' | 'team' | 'total'
   name: string
+  /** Jersey number as text (null: nobody says it; a zero is a number). */
+  number: string | null
   onCourt: boolean
   /** Seconds played. */
   minutes: number
@@ -41,12 +43,17 @@ const signed = (value: number | null): string => (value === null ? '' : value > 
 const ratio = (made: number, attempted: number): string => `${made}/${attempted}`
 const fg = (s: PlayerStats) => ({ made: s.fg2m + s.fg3m, attempted: s.fg2a + s.fg3a })
 
+const numberOf = (value: string | number | null | undefined): string | null => (value === null || value === undefined || String(value).trim() === '' ? null : String(value).trim())
+
+/** The name of a row as the table says it: «#7 A. PRIMERA» when the number is known (issue #597). */
+export const playerRowLabel = (row: Row): string => (row.number === null ? row.name : `#${row.number} ${row.name}`)
+
 /** Only the players of the team (the rows of the team and of the totals are made apart). The ones on court go first; within each group the order is the alphabetical one,
  *  so a row never jumps because of the minutes. */
 export function playerRows(snapshot: Snapshot, teamId: string, entries: Record<string, BoxscoreEntry> | undefined): Row[] {
   const rows = Object.entries(snapshot.players ?? {})
     .filter(([, p]) => p.team_id === teamId)
-    .map(([id, p]): Row => ({ id, kind: 'player', name: p.name, onCourt: p.on_court, minutes: p.minutes, pts: p.pts, pm: p.pm, pf: p.pf, fd: p.fd ?? 0, stats: p.stats, entry: entries?.[id] }))
+    .map(([id, p]): Row => ({ id, kind: 'player', name: p.name, number: numberOf(entries?.[id]?.no ?? p.no), onCourt: p.on_court, minutes: p.minutes, pts: p.pts, pm: p.pm, pf: p.pf, fd: p.fd ?? 0, stats: p.stats, entry: entries?.[id] }))
   return rows.sort((a, b) => Number(b.onCourt) - Number(a.onCourt) || a.name.localeCompare(b.name, 'es'))
 }
 
@@ -61,8 +68,8 @@ export function teamRows(snapshot: Snapshot, teamId: string, players: Row[]): { 
   }
   const totals: PlayerStats = { ...stats, tov: stats.tov + (team?.tov_team ?? 0) }
   return {
-    team: { id: `${teamId}:team`, kind: 'team', name: 'Equipo', onCourt: false, minutes: 0, pts: 0, pm: null, pf: 0, fd: 0, stats: nobody },
-    totals: { id: `${teamId}:total`, kind: 'total', name: 'Totales', onCourt: false, minutes: players.reduce((acc, r) => acc + r.minutes, 0), pts: team?.pts ?? snapshot.score[teamId] ?? 0,
+    team: { id: `${teamId}:team`, kind: 'team', name: 'Equipo', number: null, onCourt: false, minutes: 0, pts: 0, pm: null, pf: 0, fd: 0, stats: nobody },
+    totals: { id: `${teamId}:total`, kind: 'total', name: 'Totales', number: null, onCourt: false, minutes: players.reduce((acc, r) => acc + r.minutes, 0), pts: team?.pts ?? snapshot.score[teamId] ?? 0,
       pm: null, pf: players.reduce((acc, r) => acc + r.pf, 0), fd: players.reduce((acc, r) => acc + r.fd, 0), stats: totals,
       entry: { val: players.reduce((acc, r) => acc + (r.entry?.val ?? 0), 0), adv: {} as BoxscoreEntry['adv'], dev: {} } },
   }

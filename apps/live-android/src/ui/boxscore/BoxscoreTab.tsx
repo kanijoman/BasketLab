@@ -3,7 +3,7 @@
 import { useRef, useState, type CSSProperties } from 'react'
 import type { BoxscoreEntry, Snapshot, TeamRef } from '../../engine/types'
 import { orderTeams } from '../teams'
-import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, deviationOf, highlightFor, playerRows, teamRows, type Column, type Mode, type Row } from './model'
+import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, deviationOf, highlightFor, playerRowLabel, playerRows, teamRows, type Column, type Mode, type Row } from './model'
 
 interface Props {
   snapshot?: Snapshot | null
@@ -62,9 +62,9 @@ export default function BoxscoreTab({ snapshot, entries, own, rival, homeId }: P
     const light = fresh && row.kind === 'player' ? highlightFor(last, row.id) : null
     return (
       <tr key={row.id} className={[row.kind !== 'player' ? `bx-${row.kind}` : '', light ? 'bx-hit' : ''].filter(Boolean).join(' ') || undefined}>
-        <th scope="row" className="bx-name" title={row.name}>
+        <th scope="row" className="bx-name" title={playerRowLabel(row)}>
           {row.onCourt && <span className="bx-on" role="img" aria-label="En pista">●</span>}
-          <span className="bx-player">{row.name}</span>
+          <span className="bx-player">{playerRowLabel(row)}</span>
         </th>
         {columns.map(column => <Cell key={column.id} column={column} row={row} hit={!!light?.cell(column)} seq={fresh ? last.seq : null} />)}
       </tr>

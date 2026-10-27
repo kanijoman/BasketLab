@@ -31,6 +31,13 @@ def _roster(doc: Dict[str, Any]) -> Dict[str, Tuple[str, str]]:
     return roster
 
 
+def _numbers(doc: Dict[str, Any]) -> Dict[str, str]:
+    """Player id -> jersey number as text («04» keeps its zero), from the box score of the document when it numbers its players (the FEB feed of a live match does not, the
+    FBCYL adapter does; the package's roster says it otherwise, ``boxscore.build``)."""
+    return {str(p["id"]): str(p["no"]).strip() for team in (doc.get("BOXSCORE") or {}).get("TEAM", []) for p in team.get("PLAYER", [])
+            if p.get("id") and p.get("no") is not None and str(p["no"]).strip() != ""}
+
+
 def _dorsals(doc: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
     """Team id -> jersey number -> player id, from the box score (the shot chart only has jersey numbers)."""
     return {str(team.get("id")): {str(p["no"]): str(p["id"]) for p in team.get("PLAYER", []) if p.get("id") and p.get("no") is not None}
@@ -70,7 +77,7 @@ class LiveEngine:
 
         if self._game is None:
             teams = _teams(doc)
-            self._game = LiveGame(teams, _roster(doc))
+            self._game = LiveGame(teams, _roster(doc), _numbers(doc))
             self._shots = ShotTracker([tid for tid, _ in teams], _dorsals(doc))
         for event in live:
             if event.num not in self._applied:

@@ -111,6 +111,8 @@ export interface SnapshotPlayer {
   pts: number
   /** Plus/minus of the match. */
   pm: number
+  /** Jersey number as text, when the box score of the document has it (the FEB feed of a live match does not; the roster of the package says it then, ``BoxscoreEntry.no``). */
+  no?: string | null
   /** Fouls drawn. */
   fd: number
   stats: PlayerStats
@@ -131,6 +133,8 @@ export type AdvancedKey = typeof ADVANCED_KEYS[number]
 
 /** Per player: the valuation, the advanced figures and how far each column is from his own average, in [-1, 1] with the sign of good. */
 export interface BoxscoreEntry {
+  /** Jersey number as text (the document's, else the roster's); null when nobody says it. */
+  no?: string | null
   val: number
   adv: Record<AdvancedKey, number | null>
   dev: Partial<Record<string, number | null>>
