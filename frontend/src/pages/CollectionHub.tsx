@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart2, Users, TrendingUp, Target, Trophy,
-  FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit, ClipboardList, Radio, FileSearch,
+  FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit, ClipboardList, Radio, FileSearch, Scale,
 } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getPlayerStats, type TeamStat, type PlayerStat } from '@/api/client'
@@ -27,6 +27,7 @@ interface Module {
 
 const MODULES: Module[] = [
   { icon: BarChart2,      label: 'Estadísticas de Equipo',     description: 'Básicas y avanzadas con cuartiles y tendencias',  subPath: 'teams',       accent: 'text-brand-400' },
+  { icon: Scale,          label: 'Comparativas',               description: 'Local vs visitante, ganados vs perdidos y un tramo vs el resto', subPath: 'comparativas', accent: 'text-brand-400' },
   { icon: Users,          label: 'Estadísticas Individuales',  description: 'Jugadores con radar, comparativa y trends',        subPath: 'players',     accent: 'text-brand-400' },
   { icon: TrendingUp,     label: 'Evolución Temporal',         description: 'Progresión de métricas a lo largo de la temporada', subPath: 'evolution',   accent: 'text-accent-400' },
   { icon: Target,         label: 'Gráficos de Tiro',           description: 'Mapa de calor FIBA interactivo por zonas',         subPath: 'shots',       accent: 'text-accent-400' },

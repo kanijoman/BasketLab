@@ -122,6 +122,35 @@ export const getTeamStats = (collection: string, params?: TeamFilters) =>
     `/teams/${encodeURIComponent(collection)}${buildTeamQs(params)}`,
   )
 
+/** Comparative reports of the teams (issue #607): home vs away, won vs lost, a stretch of dates vs the rest of the season. */
+export type ComparisonKind = 'venue' | 'result' | 'period'
+
+export interface ComparisonRow {
+  team_id?: number | string | null
+  team_name: string
+  games_a: number
+  games_b: number
+  a: Partial<TeamStat> | null
+  b: Partial<TeamStat> | null
+  /** group A minus group B, in the unit of the figure (points for a percentage); a figure missing in a group has none */
+  diff: Partial<Record<keyof TeamStat, number>>
+}
+
+export interface TeamComparison {
+  by: ComparisonKind
+  label_a: string
+  label_b: string
+  team: ComparisonRow[]
+  opponent: ComparisonRow[]
+}
+
+export const getTeamComparison = (collection: string, by: ComparisonKind, range?: { from?: string; to?: string }) => {
+  const qs = new URLSearchParams({ by })
+  if (range?.from) qs.set('from_date', range.from)
+  if (range?.to)   qs.set('to_date', range.to)
+  return get<TeamComparison>(`/teams/${encodeURIComponent(collection)}/compare?${qs}`)
+}
+
 export const getTeamQuartiles = (collection: string) =>
   get<Record<string, Record<string, number>>>(
     `/teams/${encodeURIComponent(collection)}/quartiles`,

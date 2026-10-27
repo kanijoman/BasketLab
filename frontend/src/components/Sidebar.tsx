@@ -25,6 +25,7 @@ import {
   Swords,
   Layers,
   RotateCcw,
+  Scale,
   ClipboardList,
   Radio,
   FileSearch,
@@ -42,6 +43,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { icon: LayoutDashboard,  label: 'Resumen',              subPath: '' },
   { icon: BarChart2,        label: 'Equipo',               subPath: 'teams' },
+  { icon: Scale,            label: 'Comparativas',         subPath: 'comparativas' },
   { icon: Users,            label: 'Individual',           subPath: 'players' },
   { icon: TrendingUp,       label: 'Evolución',            subPath: 'evolution' },
   { icon: Target,           label: 'Gráficos de tiro',     subPath: 'shots' },

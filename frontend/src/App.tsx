@@ -5,6 +5,7 @@
  *   /                         → HomePage (collection selector)
  *   /:collection              → CollectionHub (dashboard)
  *   /:collection/teams        → TeamStatsPage
+ *   /:collection/comparativas → ComparativasPage
  *   /:collection/players      → PlayerStatsPage
  *   /:collection/evolution    → EvolutionPage
  *   /:collection/shots        → ShotChartPage
@@ -31,6 +32,7 @@ import PrivateRoute from '@/components/PrivateRoute'
 import HomePage from '@/pages/HomePage'
 import CollectionHub from '@/pages/CollectionHub'
 import TeamStatsPage from '@/pages/TeamStatsPage'
+import ComparativasPage from '@/pages/ComparativasPage'
 import PlayerStatsPage from '@/pages/PlayerStatsPage'
 import LineupsPage from '@/pages/LineupsPage'
 import EvolutionPage from '@/pages/EvolutionPage'
@@ -64,6 +66,7 @@ export default function App() {
             <Route path=":collection">
               <Route index element={<CollectionHub />} />
               <Route path="teams"       element={<TeamStatsPage />} />
+              <Route path="comparativas" element={<ComparativasPage />} />
               <Route path="players"     element={<PlayerStatsPage />} />
               <Route path="evolution"   element={<EvolutionPage />} />
               <Route path="shots"       element={<ShotChartPage />} />
