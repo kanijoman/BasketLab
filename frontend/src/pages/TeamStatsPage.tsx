@@ -14,14 +14,14 @@ import { BarChart2, Loader2, Shield, TrendingUp, Zap } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getTeamConsistency, getRivalAdjusted, type TeamStat, type TeamFilters, type CVMap, type CVEntry, type RivalAdjustedResult } from '@/api/client'
-import { fmt, fmtPct, getTrend } from '@/lib/utils'
+import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import { computeQuartileMap } from '@/lib/quartiles'
 import ExportButton from '@/components/ui/ExportButton'
 import StatCard from '@/components/ui/StatCard'
-import TrendBadge from '@/components/ui/TrendBadge'
+import DiffBadge from '@/components/ui/DiffBadge'
 import { tippedHeader } from '@/components/ui/Tooltip'
 import CVBadge from '@/components/ui/CVBadge'
 
@@ -101,7 +101,7 @@ function nameCol(): ColumnDef<TeamStat, unknown> {
 /**
  * Build a ColumnDef from a ColDef descriptor.
  * When seasonByName is provided (date filter active) and the column is not a
- * count, the cell also shows an inline TrendBadge.
+ * count, the cell also shows the difference with the season (DiffBadge, #608).
  */
 function buildCol(
   def: ColDef,
@@ -133,7 +133,7 @@ function buildCol(
       return (
         <span className="inline-flex items-center gap-1.5">
           <span>{formatted}</span>
-          {showTrend && <TrendBadge recent={v} season={seasonVal} reverse={reverse} className="text-[10px]" />}
+          {showTrend && <DiffBadge recent={v} season={seasonVal} reverse={reverse} decimals={decimals} className="text-[10px]" />}
           {cvEntry && <CVBadge entry={cvEntry} />}
         </span>
       )
@@ -420,30 +420,13 @@ export default function TeamStatsPage() {
         {/* Highlight stat cards — show trend vs full season when date filter active */}
         <div className="grid grid-cols-3 gap-3">
           {(() => {
-            const posTrend  = seasonHighlights ? getTrend(highlights.pos, seasonHighlights.pos)  : null
-            const oerTrend  = seasonHighlights ? getTrend(highlights.oer, seasonHighlights.oer)  : null
-            const ppgTrend  = seasonHighlights ? getTrend(highlights.ppg, seasonHighlights.ppg)  : null
+            // the difference with the season, in the unit of each figure (#608)
+            const diff = (now: number, season: number | undefined) => (seasonHighlights && season !== undefined ? now - season : undefined)
             return (
               <>
-                <StatCard
-                  label="Pos/Partido"
-                  value={fmt(highlights.pos)}
-                  trend={posTrend?.symbol}
-                  trendClass={posTrend?.className}
-                />
-                <StatCard
-                  label="OER Medio"
-                  value={fmt(highlights.oer)}
-                  accent="green"
-                  trend={oerTrend?.symbol}
-                  trendClass={oerTrend?.className}
-                />
-                <StatCard
-                  label="PPP Medio"
-                  value={fmt(highlights.ppg)}
-                  trend={ppgTrend?.symbol}
-                  trendClass={ppgTrend?.className}
-                />
+                <StatCard label="Pos/Partido" value={fmt(highlights.pos)} delta={diff(highlights.pos, seasonHighlights?.pos)} />
+                <StatCard label="OER Medio" value={fmt(highlights.oer)} accent="green" delta={diff(highlights.oer, seasonHighlights?.oer)} />
+                <StatCard label="PPP Medio" value={fmt(highlights.ppg)} delta={diff(highlights.ppg, seasonHighlights?.ppg)} />
               </>
             )
           })()}

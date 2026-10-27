@@ -87,3 +87,36 @@ describe('TeamStatsPage: the colours of the quartiles follow the table that is s
     expect(document.querySelector('[class*="table-cell-q"]')).toBeNull()
   })
 })
+
+describe('TeamStatsPage: with a date filter the cells say the real difference with the season, not an arrow (issue #608)', () => {
+  beforeEach(() => {
+    // the filtered table (the stretch) and the baseline (the season without dates) are two calls with different filters
+    api.getTeamStats.mockReset().mockImplementation(async (_collection: string, filters?: { from?: string }) => ({
+      team_stats: NAMES.map((n, i) => row(n, (filters?.from ? 82 : 80) + i)), opponent_stats: [],
+    }))
+    api.getTeamQuartiles.mockReset().mockResolvedValue(LEAGUE_QUARTILES)
+    api.getTeamConsistency.mockReset().mockResolvedValue({ own: {}, rival: {} })
+    api.getRivalAdjusted.mockReset().mockResolvedValue({})
+  })
+
+  it('puts +2.0 next to the points per game of every team and no arrow of trend anywhere', async () => {
+    renderPage('/?from=2026-10-01')
+    await screen.findByText('Alfa')
+    await waitFor(() => expect(screen.getAllByText('+2.0').length).toBeGreaterThan(0))
+    const tr = screen.getByText('Alfa').closest('tr') as HTMLElement
+    expect(within(tr).getAllByText('+2.0').length).toBeGreaterThan(0)
+    expect(document.body.textContent).not.toMatch(/[⇈↑≈↓⇊]/)
+  })
+
+  it('the highlight cards say the difference too', async () => {
+    renderPage('/?from=2026-10-01')
+    await screen.findByText('Alfa')
+    await waitFor(() => expect(screen.getByText('PPP Medio').closest('div')?.textContent).toContain('+2.0'))
+  })
+
+  it('without a date filter there is nothing to compare with: no difference', async () => {
+    renderPage('/')
+    await screen.findByText('Alfa')
+    expect(screen.queryByText('+2.0')).toBeNull()
+  })
+})
