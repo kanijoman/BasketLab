@@ -20,7 +20,7 @@ import {
 type Tab = 'origin' | 'period' | 'situations' | 'timeouts'
 
 const TABS: [Tab, string, string][] = [
-  ['origin', 'Por origen', 'Puntos según cómo empezó la posesión, del banquillo y en la pintura, por partido. Definición por posesión: más generosa que la que usa la FEB en su PDF (que no se puede reproducir desde el play-by-play). El contraataque es una estimación propia (canasta en ≤ 6 s tras pérdida rival, con o sin robo, o rebote defensivo): se queda de media 0,6 puntos por debajo de la FEB.'],
+  ['origin', 'Por origen', 'Puntos según cómo empezó la posesión. Tras pérdida, tras robo y 2ª oportunidad son clases de posesión: la OER es el rendimiento de las posesiones que empezaron así (puntos por 100) y Pts/P el total por partido; «Tras pérdida» no incluye los robos. Banquillo, pintura y contraataque son puntos, no una clase de posesión: van por 100 posesiones del equipo. Definición por posesión: más generosa que la que usa la FEB en su PDF (que no se puede reproducir desde el play-by-play). El contraataque es una estimación propia (canasta en ≤ 6 s tras pérdida rival, con o sin robo, o rebote defensivo): se queda de media 0,6 puntos por debajo de la FEB.'],
   ['period', 'Por cuarto', 'Puntos, posesiones, ratings, ritmo y factores por equipo y periodo (la prórroga agrupa todas).'],
   ['situations', 'Situaciones', 'Puntos por posesión tras un tiempo muerto propio o del rival, en la primera posesión de cada periodo, y el rating neto en los primeros y últimos 2:00 frente al resto del periodo.'],
   ['timeouts', 'Tiempos muertos', 'Rating neto en las 5 posesiones de cada equipo antes y después de cada tiempo muerto, y % tras los que mejora quien lo pidió. Quedan fuera los del último minuto del periodo (umbrales provisionales).'],
@@ -92,7 +92,7 @@ export default function PbpAnalysisPage() {
   const periodCols = useMemo(() => periodColumns(), [])
   const situationCols = useMemo(() => situationColumns(), [])
   const timeoutCols = useMemo(() => timeoutColumns(), [])
-  const originKeys = originView === 'opp' ? ORIGIN_KEYS.filter(k => k.startsWith('opp_')) : ORIGIN_KEYS.filter(k => !k.startsWith('opp_'))
+  const originKeys = useMemo(() => ORIGIN_KEYS(originView), [originView])
 
   let body: React.ReactNode
   if (current.isLoading) {

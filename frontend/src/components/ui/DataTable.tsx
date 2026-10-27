@@ -59,6 +59,8 @@ function quartileCellClass(
   if (!thresholds || typeof value !== 'number') return ''
   // Support both [q1,q2,q3] and [min,q1,q2,q3,max]
   const [q1, q2, q3] = thresholds.length === 5 ? thresholds.slice(1) : thresholds
+  // [0, 0, 0] is how the helpers say «not enough values to split»: colouring every cell «best» against it would be wrong (issue #601)
+  if (q1 === 0 && q2 === 0 && q3 === 0) return ''
   if (!reverse) {
     if (value >= q3) return 'table-cell-q1'
     if (value >= q2) return 'table-cell-q2'

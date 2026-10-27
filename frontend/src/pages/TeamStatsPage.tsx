@@ -13,11 +13,12 @@ import { type ColumnDef } from '@tanstack/react-table'
 import { BarChart2, Loader2, Shield, TrendingUp, Zap } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getTeamStats, getTeamQuartiles, getTeamConsistency, getRivalAdjusted, type TeamStat, type TeamFilters, type CVMap, type CVEntry, type RivalAdjustedResult } from '@/api/client'
+import { getTeamStats, getTeamConsistency, getRivalAdjusted, type TeamStat, type TeamFilters, type CVMap, type CVEntry, type RivalAdjustedResult } from '@/api/client'
 import { fmt, fmtPct, getTrend } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
-import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
+import DataTable from '@/components/ui/DataTable'
+import { computeQuartileMap } from '@/lib/quartiles'
 import ExportButton from '@/components/ui/ExportButton'
 import StatCard from '@/components/ui/StatCard'
 import TrendBadge from '@/components/ui/TrendBadge'
@@ -149,16 +150,6 @@ function buildCols(
 }
 
 // -- Helpers -------------------------------------------------------------------
-
-function buildQuartileMap(raw: Record<string, Record<string, number>>): QuartileMap {
-  const map: QuartileMap = {}
-  for (const [key, vals] of Object.entries(raw)) {
-    if (vals?.q1 != null && vals?.q2 != null && vals?.q3 != null) {
-      map[key] = [vals.q1, vals.q2, vals.q3]
-    }
-  }
-  return map
-}
 
 function mean(rows: TeamStat[], key: keyof TeamStat): number {
   if (!rows.length) return 0
@@ -334,13 +325,6 @@ export default function TeamStatsPage() {
     staleTime: 5 * 60_000,
   })
 
-  const { data: quartilesRaw } = useQuery({
-    queryKey: ['team-quartiles', collection?.name],
-    queryFn:  () => getTeamQuartiles(collection!.name),
-    enabled:  Boolean(collection),
-    staleTime: 10 * 60_000,
-  })
-
   const { data: consistencyRaw } = useQuery({
     queryKey:  ['team-consistency-v2', collection?.name],
     queryFn:   () => getTeamConsistency(collection!.name),
@@ -359,11 +343,6 @@ export default function TeamStatsPage() {
     for (const r of (seasonData?.team_stats ?? [])) m[r.team_name] = r
     return m
   }, [seasonData])
-  const quartileMap = useMemo(
-    () => (quartilesRaw ? buildQuartileMap(quartilesRaw) : {}),
-    [quartilesRaw],
-  )
-
   // Trend source: season baseline for team rows; no trend for rivals
   const trendSource = useMemo(
     () => (hasDateFilter && tab !== 'rivals' ? seasonByName : null),
@@ -406,6 +385,14 @@ export default function TeamStatsPage() {
     tab === 'advanced' || (tab === 'rivals' && rivalsView === 'advanced')
       ? REVERSE_ADV
       : REVERSE_BASIC
+
+  // The colours say how a team compares with the OTHER TEAMS OF THE TABLE: the quartiles come from the rows shown (filters, tab and rivals included), never from the
+  // whole season, or a table of wins would be all «best» and one of defeats all «worst» (issue #601)
+  const colouredDefs = tab === 'advanced' || (tab === 'rivals' && rivalsView === 'advanced') ? ADVANCED_COL_DEFS : BASIC_COL_DEFS
+  const quartileMap = useMemo(
+    () => computeQuartileMap(activeData, colouredDefs.filter(d => !d.count).map(d => d.key as string)),
+    [activeData, colouredDefs],
+  )
 
   if (!collection) {
     return (
