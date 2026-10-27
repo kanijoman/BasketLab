@@ -142,7 +142,7 @@ export default function InOutPage() {
 
   // Independent team list — available before player data loads; use team_id for stable matching
   const { data: teamList = [] } = useQuery<TeamOption[]>({
-    queryKey: ['team-list-lineups', collection?.name],
+    queryKey: ['team-list-inout', collection?.name],         // the {id, name} list: LineupsPage keeps the whole answer under its own key (#605)
     queryFn:  () => getTeamStats(collection!.name).then(d =>
       (d.team_stats ?? [])
         .filter(t => t.team_id != null)
