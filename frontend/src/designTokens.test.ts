@@ -23,6 +23,8 @@ const FORBIDDEN: [string, RegExp][] = [
   ['a Tailwind palette colour', new RegExp(`(?<![\\w-])(?:[\\w-]+:)*(?:bg|text|border(?:-[trblxy])?|ring(?:-offset)?|from|via|to|fill|stroke|divide|outline|placeholder|decoration|shadow|caret)-(?:${PALETTE})-\\d{2,3}\\b`)],
   ['an old name of the web palette', /(?<![\w-])(?:[\w-]+:)*[\w-]*-(?:surface-(?:base|border|hover)|ink-(?:primary|secondary)|brand-\d+|accent-\d+|court-\d+|primary-\d+)\b|(?<![\w-])(?:text|bg|border)-(?:up|down)\b/],
   ['a dark: variant (the tokens already change with the theme)', /(?<![\w-])dark:/],
+  // jsPDF takes a colour as three numbers too: the PDF painted a fixed dark page that way, uncaught (#617)
+  ['a colour as numbers for jsPDF', /set(?:Fill|Text|Draw)Color\(\s*\d+\s*,/],
 ]
 
 const stripComments = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1')
