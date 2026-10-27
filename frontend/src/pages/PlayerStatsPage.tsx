@@ -390,7 +390,7 @@ export default function PlayerStatsPage() {
 
   // Independent team list — lightweight distinct() call, always available
   const { data: teamList = [] } = useQuery({
-    queryKey: ['team-list', collection?.name],
+    queryKey: ['team-names', collection?.name],         // the names as text: not the key of the {id, name} lists of the other pages (#605)
     queryFn:  () => getTeamsInCollection(collection!.name),
     enabled:  Boolean(collection),
     staleTime: 10 * 60_000,
