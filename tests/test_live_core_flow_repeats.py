@@ -53,3 +53,22 @@ def test_what_was_said_in_one_period_does_not_hide_a_new_problem_in_the_next():
     s = snap(elapsed=900, period=2, log=TOV4 + [[800 + 10 * i, RIVAL, "tov", 1, "r1"] for i in range(4)])
     s["remaining"] = 300
     assert by_id(e.evaluate(s), "rival_turnovers")
+
+
+def test_the_event_of_the_second_an_alert_was_said_is_not_counted_again_regression():
+    """#619, found by the invariants of B1 (#544): the rival loses the ball at 538, 544, 550 and 556 s and «El rival suma 4 pérdidas» comes at 556 s.
+    Four more at 659-677 s, in the next quarter (a new episode, so the alert may come again), said «5 pérdidas»: the window of the new alert began
+    at the second of the last one, both ends included, so the turnover of the 556th second counted twice. It begins one second later now."""
+    from tests.builders import Match
+
+    m = Match()
+    eng = m.engine()
+    for at in (538, 544, 550, 556):
+        m.turnover(RIVAL, at=at)
+    assert by_id(eng.evaluate(m.snapshot()), "rival_turnovers")[0].evidence["turnovers"] == 4
+    m.period_end(1)
+    for at in (659, 665, 671, 677):
+        m.turnover(RIVAL, at=at)
+    [again] = by_id(eng.evaluate(m.snapshot()), "rival_turnovers")
+    assert again.evidence["turnovers"] == 4
+    assert again.message.startswith("El rival suma 4 pérdidas")

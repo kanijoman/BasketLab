@@ -106,7 +106,8 @@ def window_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     said = ctx.memory.setdefault("flow_said", {})       # alert id -> where its last window ended: the same events are never counted for it twice (issue #517)
 
     def counted(alert_id: str) -> int:
-        return max(now - window, said.get(alert_id, -1))
+        # the second after the last one said: the windows include both ends, and an event of that very second was already counted (#619)
+        return max(now - window, said.get(alert_id, -2) + 1)
 
     theirs = window_stats(log, rival, counted("rival_orb_window"), now)
     if theirs["orb"] >= cfg.rival_orb_n:
