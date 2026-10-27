@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
 import {
   PERIODS, flattenPeriod, flattenSituations, flattenTimeouts, originColumns, periodColumns, situationColumns, timeoutColumns,
-  ORIGIN_REVERSE, PERIOD_REVERSE, SITUATION_REVERSE, TIMEOUT_REVERSE,
+  ORIGIN_KEYS, ORIGIN_REVERSE, PERIOD_REVERSE, SITUATION_REVERSE, TIMEOUT_REVERSE,
 } from './columns'
 
 const figures = (pts: number) => ({
@@ -72,24 +72,57 @@ describe('columns', () => {
     cols.flatMap(c => (c.columns ? ids(c.columns as never) : [String(c.id ?? c.accessorKey)]))
 
   it('own and conceded views of the origins have the same shape and a team column first', () => {
-    const own = ids(originColumns('own') as never), opp = ids(originColumns('opp') as never)
+    const own = ids(originColumns('own', 'game') as never), opp = ids(originColumns('opp', 'game') as never)
 
     expect(own[0]).toBe('team_name')
     expect(own.map(i => i.replace('opp_', ''))).toEqual(opp.map(i => i.replace('opp_', '')))
-    expect(opp).toContain('opp_pts_off_tov_per_game')
+    expect(opp).toContain('opp_pts_off_loss_per_game')
   })
 
   it('has the fast-break estimate, own and conceded, and the conceded one is lower-is-better (#398)', () => {
-    expect(ids(originColumns('own') as never)).toEqual(expect.arrayContaining(['pts_fastbreak_per_game', 'oer_fastbreak']))
-    expect(ids(originColumns('opp') as never)).toEqual(expect.arrayContaining(['opp_pts_fastbreak_per_game', 'opp_oer_fastbreak']))
+    expect(ids(originColumns('own', 'game') as never)).toEqual(expect.arrayContaining(['pts_fastbreak_per_game', 'oer_fastbreak']))
+    expect(ids(originColumns('opp', 'game') as never)).toEqual(expect.arrayContaining(['opp_pts_fastbreak_per_game', 'opp_oer_fastbreak']))
     expect(ORIGIN_REVERSE.opp).toEqual(expect.arrayContaining(['opp_pts_fastbreak_per_game', 'opp_oer_fastbreak']))
+  })
+
+  it('the turnovers are without the steals, which have their own group of columns (#602)', () => {
+    const own = ids(originColumns('own', 'game') as never)
+    expect(own).toEqual(expect.arrayContaining(['pts_off_loss_per_game', 'oer_off_loss', 'pts_off_steal_per_game', 'oer_off_steal']))
+    expect(own).not.toContain('pts_off_tov_per_game')               // the one that added the steals
+    expect(own).not.toContain('oer_off_tov')
+  })
+
+  it('every origin can be seen per game or per 100 possessions of the team, with the efficiency of its possessions in both (#603)', () => {
+    const perGame = ids(originColumns('own', 'game') as never), per100 = ids(originColumns('own', 'poss') as never)
+    for (const origin of ['off_loss', 'off_steal', 'second_chance', 'bench', 'paint', 'fastbreak']) {
+      expect(perGame).toContain(`pts_${origin}_per_game`)
+      expect(per100).toContain(`pts_${origin}_per_100`)
+      expect(per100).not.toContain(`pts_${origin}_per_game`)
+    }
+    for (const oer of ['oer_off_loss', 'oer_off_steal', 'oer_second_chance', 'oer_fastbreak', 'bench_pct']) {
+      expect(perGame).toContain(oer)
+      expect(per100).toContain(oer)
+    }
+  })
+
+  it('the conceded points per 100 possessions are lower-is-better columns and every coloured key is a column of its table', () => {
+    for (const basis of ['game', 'poss'] as const) {
+      for (const view of ['own', 'opp'] as const) {
+        const shown = ids(originColumns(view, basis) as never)
+        expect(ORIGIN_KEYS(view, basis).every(k => shown.includes(k))).toBe(true)
+        expect(ORIGIN_REVERSE[view].filter(k => shown.includes(k)).every(k => k.startsWith('opp_'))).toBe(true)
+      }
+    }
+    expect(ORIGIN_REVERSE.opp).toEqual(expect.arrayContaining(['opp_pts_paint_per_100', 'opp_pts_fastbreak_per_100', 'opp_pts_off_loss_per_100']))
+    expect(ORIGIN_REVERSE.opp).not.toContain('opp_bench_pct')       // the bench share conceded is not good or bad
   })
 
   it('every reverse (lower is better) column exists in its table', () => {
     expect(ids(periodColumns() as never)).toEqual(expect.arrayContaining(PERIOD_REVERSE))
     expect(ids(situationColumns() as never)).toEqual(expect.arrayContaining(SITUATION_REVERSE))
     expect(ids(timeoutColumns() as never)).toEqual(expect.arrayContaining(TIMEOUT_REVERSE))
-    expect(ids(originColumns('opp') as never)).toEqual(expect.arrayContaining(ORIGIN_REVERSE.opp))
+    expect(ids(originColumns('opp', 'game') as never)).toEqual(expect.arrayContaining(ORIGIN_REVERSE.opp.filter(k => !k.endsWith('_per_100'))))
+    expect(ids(originColumns('opp', 'poss') as never)).toEqual(expect.arrayContaining(ORIGIN_REVERSE.opp.filter(k => !k.endsWith('_per_game'))))
     expect(ORIGIN_REVERSE.own).toEqual([])
   })
 

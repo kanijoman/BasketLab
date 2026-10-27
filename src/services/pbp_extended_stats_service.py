@@ -1,9 +1,9 @@
 """Season points by origin, bench and paint per team (#352), summed from the ``DERIVED`` field of each match.
 
-Per team: points per game after turnovers (steals included), after steals, second chance, bench (+ its share of the
+Per team: points per game after turnovers (``pts_off_tov``: steals included; ``pts_off_loss``: without them, #602), after steals, second chance, bench (+ its share of the
 points) and in the paint; the efficiency of each origin (points per 100 possessions that started that way) and the same
 figures for the rivals (``opp_``: what the team concedes). Games that are not reliable (#390: more than 10 % of their points of unknown origin, or a possession count more than 10 % off the estimate) are left out
-(``games_unreliable``); ``games_doubtful`` counts the games used whose feed has alternation breaks (stored, not shown, #392). FEB and FBCYL (#432); fast-break points are not derived (the FEB definition is not reproducible from the pbp).
+(``games_unreliable``); ``games_doubtful`` counts the games used whose feed has alternation breaks (stored, not shown, #392). FEB and FBCYL (#432); fast-break points are our own estimate (#398: the FEB definition is not reproducible from the pbp). Every origin also comes per 100 possessions of the team (``*_per_100``, #603).
 """
 from __future__ import annotations
 
@@ -47,7 +47,26 @@ def _team_row(raw: Dict[str, Any]) -> Dict[str, Any]:
         for origin, possessions in _ORIGINS.items():
             row[f"{prefix}oer_{origin}"] = _ratio(raw[f"{prefix}pts_{origin}"], raw[prefix + possessions], 100.0)
         row[f"{prefix}bench_pct"] = _ratio(raw[prefix + "pts_bench"], raw[prefix + "pts"], 100.0)
+        _without_steals(row, raw, prefix, games)
+        _per_100(row, raw, prefix, games)
     return row
+
+
+def _without_steals(row: Dict[str, Any], raw: Dict[str, Any], prefix: str, games: int) -> None:
+    """«After a turnover» without the steals (#602): ``pts_off_tov`` / ``poss_off_tov`` of DERIVED add the possessions that start after a turnover OR a steal, and the steals
+    have their own group of columns, so the plain turnovers are what is left. The figures that were there stay (they are the endpoint's)."""
+    points, possessions = raw[prefix + "pts_off_tov"] - raw[prefix + "pts_off_steal"], raw[prefix + "poss_off_tov"] - raw[prefix + "poss_off_steal"]
+    row[prefix + "pts_off_loss"] = points if games else None
+    row[prefix + "pts_off_loss_per_game"] = _ratio(points, games) if games else None
+    row[prefix + "oer_off_loss"] = _ratio(points, possessions, 100.0)
+
+
+def _per_100(row: Dict[str, Any], raw: Dict[str, Any], prefix: str, games: int) -> None:
+    """The points of each origin per 100 possessions of the team (#603): per game they depend on the pace. What the rival scores is over the rival's possessions."""
+    row[prefix + "possessions"] = raw[prefix + "possessions"] if games else None
+    for field in ("pts_off_loss", "pts_off_steal", "pts_second_chance", "pts_bench", "pts_paint", "pts_fastbreak"):
+        points = row.get(prefix + field) if field == "pts_off_loss" else row[prefix + field]
+        row[f"{prefix}{field}_per_100"] = _ratio(points, raw[prefix + "possessions"], 100.0) if points is not None else None
 
 
 def _period_row(raw: Dict[str, Any], games: int) -> Dict[str, Any]:

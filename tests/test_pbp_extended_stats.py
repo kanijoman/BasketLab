@@ -133,3 +133,55 @@ def test_endpoint_returns_the_rows_and_is_public_read_only():
     assert response.status_code == 200
     assert [r["team_name"] for r in response.json()] == ["Local", "Visitante"]
     assert response.json()[0]["pts_off_tov"] == 10
+
+
+# -- turnovers without the steals, and everything per 100 possessions (#602, #603) -----------------------------------------------------------------------
+
+def test_the_turnover_origin_leaves_the_steals_out_because_they_have_their_own_column():
+    """``pts_off_tov`` of DERIVED counts the possessions that start after a turnover OR a steal; the table shows the steals apart, so «tras pérdida» is what is left (#602)."""
+    out = _rows(_game(1, dict(pts_off_tov=10, poss_off_tov=8, pts_off_steal=4, poss_off_steal=3),
+                      dict(pts_off_tov=7, poss_off_tov=6, pts_off_steal=2, poss_off_steal=2)))["Local"]
+    assert (out["pts_off_loss"], out["pts_off_loss_per_game"]) == (6, 6.0)                       # 10 - 4: the points after a turnover that was not a steal
+    assert out["oer_off_loss"] == pytest.approx(6 / 5 * 100)                                      # over the 8 - 3 possessions that started that way
+    assert out["opp_pts_off_loss"] == 5 and out["opp_oer_off_loss"] == pytest.approx(5 / 4 * 100)
+    assert out["pts_off_tov"] == 10 and out["pts_off_steal"] == 4                                 # what was there stays (consumers of the endpoint)
+
+
+def test_a_team_with_only_steals_has_zero_points_after_a_plain_turnover_and_none_for_the_efficiency():
+    out = _rows(_game(1, dict(pts_off_tov=4, poss_off_tov=3, pts_off_steal=4, poss_off_steal=3), dict()))["Local"]
+    assert out["pts_off_loss"] == 0 and out["oer_off_loss"] is None                              # no possession of that origin: not a 0 %
+
+
+def test_the_points_of_each_origin_per_100_possessions_of_the_team():
+    out = _rows(
+        _game(1, dict(pts_off_tov=10, poss_off_tov=8, pts_off_steal=4, poss_off_steal=2, pts_second_chance=7, pts_bench=20, pts_paint=30, pts_fastbreak=6, possessions=80.0),
+              dict(pts_off_tov=4, pts_bench=12, pts_paint=20, pts_fastbreak=2, possessions=60.0)),
+        _game(2, dict(pts_off_tov=2, poss_off_tov=2, pts_second_chance=3, pts_bench=10, pts_paint=24, pts_fastbreak=4, possessions=120.0),
+              dict(pts_off_tov=0, pts_bench=8, pts_paint=26, pts_fastbreak=0, possessions=100.0)),
+    )["Local"]
+    assert out["possessions"] == 200.0 and out["opp_possessions"] == 160.0
+    assert out["pts_off_loss_per_100"] == pytest.approx((10 - 4 + 2) / 200 * 100)
+    assert out["pts_off_steal_per_100"] == pytest.approx(4 / 200 * 100)
+    assert out["pts_second_chance_per_100"] == pytest.approx(10 / 200 * 100)
+    assert out["pts_bench_per_100"] == pytest.approx(30 / 200 * 100)
+    assert out["pts_paint_per_100"] == pytest.approx(54 / 200 * 100)
+    assert out["pts_fastbreak_per_100"] == pytest.approx(10 / 200 * 100)
+
+
+def test_what_the_rival_scores_is_per_100_possessions_of_the_rival_not_of_the_team():
+    out = _rows(_game(1, dict(possessions=80.0), dict(pts_bench=12, pts_paint=20, pts_fastbreak=2, pts_off_tov=4, poss_off_tov=1, possessions=60.0)))["Local"]
+    assert out["opp_pts_paint_per_100"] == pytest.approx(20 / 60 * 100) and out["opp_pts_fastbreak_per_100"] == pytest.approx(2 / 60 * 100)
+    assert out["opp_pts_off_loss_per_100"] == pytest.approx(4 / 60 * 100)
+
+
+def test_without_possessions_the_per_100_figures_are_missing_not_zero_and_the_paint_keeps_its_rule():
+    out = _rows(_game(1, dict(possessions=0.0, pts_paint=None), dict(possessions=0.0)))["Local"]
+    assert out["pts_bench_per_100"] is None and out["pts_fastbreak_per_100"] is None
+    assert out["pts_paint_per_100"] is None                                                       # no shot chart: unknown, not 0
+
+
+@pytest.mark.parametrize("version", [6])
+def test_the_new_figures_come_with_the_same_games_as_before(version):
+    """Nothing about which games count changes: the same reliable games of the current version."""
+    out = _rows(_game(1, dict(), dict(), version=version), _game(2, dict(), dict(), version=5))["Local"]
+    assert out["games"] == 1

@@ -51,53 +51,68 @@ const excluded = num('games_unreliable', 'Excl.', 'Partidos excluidos por poco f
 // -- Points by origin ---------------------------------------------------------
 
 export type OriginView = 'own' | 'opp'
+/** How the points of each origin are said: per game (they depend on the pace) or per 100 possessions of the team (#603). */
+export type OriginBasis = 'game' | 'poss'
 
 export const ORIGIN_VIEWS: { key: OriginView; label: string }[] = [
   { key: 'own', label: 'Propios' },
   { key: 'opp', label: 'Concedidos (rival)' },
 ]
 
-export function originColumns(view: OriginView): Col[] {
+export const ORIGIN_BASES: { key: OriginBasis; label: string }[] = [
+  { key: 'game', label: 'Por partido' },
+  { key: 'poss', label: 'Por 100 posesiones' },
+]
+
+/** The points of each origin: `loss` is a turnover that was not a steal, which has its own group (#602). */
+const ORIGIN_POINTS = ['off_loss', 'off_steal', 'second_chance', 'bench', 'paint', 'fastbreak'] as const
+
+export function originColumns(view: OriginView, basis: OriginBasis = 'game'): Col[] {
   const p = view === 'opp' ? 'opp_' : ''
   const who = view === 'opp' ? ' que concede el equipo' : ''
   const group = (id: string, header: string, columns: Col[]): Col => ({ id: `${p}grp_${id}`, header, columns })
+  const pts = (origin: (typeof ORIGIN_POINTS)[number], what: string): Col => basis === 'poss'
+    ? num(`${p}pts_${origin}_per_100`, 'Pts/100', `Puntos ${what} por 100 posesiones del ${view === 'opp' ? 'rival' : 'equipo'}${who}`)
+    : num(`${p}pts_${origin}_per_game`, 'Pts/P', `Puntos por partido ${what}${who}`)
   return [
     teamCol, games, excluded,
     group('tov', 'Tras pérdida', [
-      num(`${p}pts_off_tov_per_game`, 'Pts/P', `Puntos por partido en posesiones tras pérdida o robo${who}`),
-      num(`${p}oer_off_tov`, 'OER', `Puntos por 100 posesiones que empiezan tras pérdida o robo${who}`),
+      pts('off_loss', 'en posesiones tras pérdida que no es robo (el robo tiene su columna)'),
+      num(`${p}oer_off_loss`, 'OER', `Puntos por 100 posesiones que empiezan tras una pérdida que no es robo${who}`),
     ]),
     group('steal', 'Tras robo', [
-      num(`${p}pts_off_steal_per_game`, 'Pts/P', `Puntos por partido en posesiones tras robo${who}`),
+      pts('off_steal', 'en posesiones tras robo'),
       num(`${p}oer_off_steal`, 'OER', `Puntos por 100 posesiones que empiezan tras robo${who}`),
     ]),
+    group('fastbreak', 'Contraataque (est.)', [
+      pts('fastbreak', 'de canastas en ≤ 6 s tras pérdida rival (con o sin robo) o rebote defensivo (estimación propia, no la de la FEB)'),
+      num(`${p}oer_fastbreak`, 'OER', `Puntos de contraataque por 100 posesiones que empiezan en pérdida rival o rebote defensivo${who}`),
+    ]),
     group('second', '2ª oportunidad', [
-      num(`${p}pts_second_chance_per_game`, 'Pts/P', `Puntos por partido tras rebote ofensivo de la misma posesión${who}`),
+      pts('second_chance', 'tras rebote ofensivo de la misma posesión'),
       num(`${p}oer_second_chance`, 'OER', `Puntos por 100 posesiones con rebote ofensivo${who}`),
     ]),
     group('bench', 'Banquillo', [
-      num(`${p}pts_bench_per_game`, 'Pts/P', `Puntos por partido de jugadoras no titulares${who}`),
+      pts('bench', 'de jugadoras no titulares'),
       num(`${p}bench_pct`, '%', `Porcentaje de los puntos que anota el banquillo${who}`),
     ]),
     group('paint', 'Pintura', [
-      num(`${p}pts_paint_per_game`, 'Pts/P', `Puntos por partido de canastas en el aro y la zona${who}`),
-    ]),
-    group('fastbreak', 'Contraataque (est.)', [
-      num(`${p}pts_fastbreak_per_game`, 'Pts/P', `Estimación propia: puntos por partido de canastas en ≤ 6 s tras pérdida rival (con o sin robo) o rebote defensivo${who}`),
-      num(`${p}oer_fastbreak`, 'OER', `Puntos de contraataque por 100 posesiones que empiezan en pérdida rival o rebote defensivo${who}`),
+      pts('paint', 'de canastas en el aro y la zona'),
     ]),
   ]
 }
 
-const ORIGIN_NUMERIC = [
-  'pts_off_tov_per_game', 'oer_off_tov', 'pts_off_steal_per_game', 'oer_off_steal', 'pts_second_chance_per_game', 'oer_second_chance',
-  'pts_bench_per_game', 'bench_pct', 'pts_paint_per_game', 'pts_fastbreak_per_game', 'oer_fastbreak',
-]
-export const ORIGIN_KEYS = [...ORIGIN_NUMERIC, ...ORIGIN_NUMERIC.map(k => `opp_${k}`)]
+const PER = { game: '_per_game', poss: '_per_100' } as const
+const OER_KEYS = ['oer_off_loss', 'oer_off_steal', 'oer_second_chance', 'oer_fastbreak', 'bench_pct']
+
+/** The numeric columns of the table (the ones the quartile colours are computed for) in a view and basis. */
+export const ORIGIN_KEYS = (view: OriginView, basis: OriginBasis): string[] =>
+  [...ORIGIN_POINTS.map(o => `pts_${o}${PER[basis]}`), ...OER_KEYS].map(k => (view === 'opp' ? `opp_${k}` : k))
+
 /** Lower is better only for what the rival scores against the team; the bench share conceded is not good or bad. */
 export const ORIGIN_REVERSE: Record<OriginView, string[]> = {
   own: [],
-  opp: ORIGIN_NUMERIC.filter(k => k !== 'bench_pct').map(k => `opp_${k}`),
+  opp: [...ORIGIN_KEYS('opp', 'game'), ...ORIGIN_KEYS('opp', 'poss')].filter(k => k !== 'opp_bench_pct').filter((k, i, all) => all.indexOf(k) === i),
 }
 
 // -- By period ----------------------------------------------------------------

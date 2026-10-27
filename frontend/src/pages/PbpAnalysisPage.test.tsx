@@ -21,10 +21,12 @@ const ok = (data: unknown[]) => ({ data, isLoading: false, isError: false, error
 
 const ORIGIN = {
   team_id: '1', team_name: NAME, games: 3, games_unreliable: 1, games_paint: 3,
-  pts_off_tov_per_game: 14, oer_off_tov: 105, pts_off_steal_per_game: 8, oer_off_steal: 110, pts_second_chance_per_game: 9, oer_second_chance: 95,
+  pts_off_loss_per_game: 6, oer_off_loss: 105, pts_off_steal_per_game: 8, oer_off_steal: 110, pts_second_chance_per_game: 9, oer_second_chance: 95,
   pts_bench_per_game: 25, bench_pct: 33, pts_paint_per_game: 34, pts_fastbreak_per_game: 6.5, oer_fastbreak: 41,
-  opp_pts_off_tov_per_game: 12, opp_oer_off_tov: 99, opp_pts_off_steal_per_game: 7, opp_oer_off_steal: 100, opp_pts_second_chance_per_game: 10,
+  pts_off_loss_per_100: 8.1, pts_off_steal_per_100: 11.2, pts_second_chance_per_100: 12.6, pts_bench_per_100: 35.2, pts_paint_per_100: 47.5, pts_fastbreak_per_100: 9.1,
+  opp_pts_off_loss_per_game: 5, opp_oer_off_loss: 99, opp_pts_off_steal_per_game: 7, opp_oer_off_steal: 100, opp_pts_second_chance_per_game: 10,
   opp_oer_second_chance: 101, opp_pts_bench_per_game: 22, opp_bench_pct: 30, opp_pts_paint_per_game: 31, opp_pts_fastbreak_per_game: 5.5, opp_oer_fastbreak: 37,
+  opp_pts_off_loss_per_100: 7.2, opp_pts_off_steal_per_100: 9.9, opp_pts_second_chance_per_100: 14.1, opp_pts_bench_per_100: 31.3, opp_pts_paint_per_100: 44.0, opp_pts_fastbreak_per_100: 7.8,
 }
 const figures = (pts: number) => ({
   games: 3, minutes: 30, pts, opp_pts: 50, pts_per_game: pts / 3, opp_pts_per_game: 50 / 3, poss: 30, opp_poss: 30, ortg: 100, drtg: 90,
@@ -69,6 +71,29 @@ describe('PbpAnalysisPage', () => {
     expect(screen.getByText(/contraataque.*estimación propia/i)).toBeTruthy()      // not the FEB's: #398
     expect(screen.getByText('Contraataque (est.)')).toBeTruthy()
     expect(screen.getByText('Tras pérdida')).toBeTruthy()
+  })
+
+  it('has the turnovers without the steals and the fast break visible next to them, per game by default (#602, #603)', () => {
+    renderPage()
+    expect(screen.getByText('Tras pérdida')).toBeTruthy()
+    expect(screen.getByText('Tras robo')).toBeTruthy()
+    expect(screen.getByText('6.0')).toBeTruthy()           // pts_off_loss_per_game: not the 14 that added the steals
+    expect(screen.queryByText('14.0')).toBeNull()
+    const groups = screen.getAllByRole('columnheader').map(h => h.textContent ?? '')
+    expect(groups.indexOf('Contraataque (est.)')).toBeGreaterThan(-1)
+    expect(groups.indexOf('Contraataque (est.)')).toBeLessThan(groups.indexOf('Banquillo') + 3)          // not hidden at the end of a very wide table
+  })
+
+  it('shows every origin per 100 possessions of the team when it is asked for, own and conceded (#603)', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Por partido' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Por 100 posesiones' }))
+    expect(screen.getByRole('button', { name: 'Por 100 posesiones' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText('47.5')).toBeTruthy()          // pts_paint_per_100
+    expect(screen.getByText('9.1')).toBeTruthy()           // pts_fastbreak_per_100
+    expect(screen.queryByText('34.0')).toBeNull()          // the per-game figure is gone in this view
+    fireEvent.click(screen.getByRole('button', { name: 'Concedidos (rival)' }))
+    expect(screen.getByText('44.0')).toBeTruthy()          // opp_pts_paint_per_100
   })
 
   it('switches the origins to what the rivals score against the team', () => {

@@ -23,6 +23,15 @@ export interface OriginRow {
   oer_off_tov: Num; oer_off_steal: Num; oer_second_chance: Num
   opp_oer_off_tov: Num; opp_oer_off_steal: Num; opp_oer_second_chance: Num
   bench_pct: Num; opp_bench_pct: Num
+  /** After a turnover that was NOT a steal (#602: the steals have their own columns): points, per game, and the efficiency of those possessions. */
+  pts_off_loss: Num; pts_off_loss_per_game: Num; oer_off_loss: Num
+  opp_pts_off_loss: Num; opp_pts_off_loss_per_game: Num; opp_oer_off_loss: Num
+  /** Possessions of the team (of the rival, for `opp_`) in the games used, and the points of each origin per 100 of them (#603). */
+  possessions: Num; opp_possessions: Num
+  pts_off_loss_per_100: Num; pts_off_steal_per_100: Num; pts_second_chance_per_100: Num
+  pts_bench_per_100: Num; pts_paint_per_100: Num; pts_fastbreak_per_100: Num
+  opp_pts_off_loss_per_100: Num; opp_pts_off_steal_per_100: Num; opp_pts_second_chance_per_100: Num
+  opp_pts_bench_per_100: Num; opp_pts_paint_per_100: Num; opp_pts_fastbreak_per_100: Num
 }
 
 /** One period (`"1"`..`"4"` or `"OT"`) of a team in `GET /possessions/{collection}/by-period`. */
