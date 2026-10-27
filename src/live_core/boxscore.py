@@ -118,8 +118,19 @@ def _deviation(p: Dict[str, Any], baseline: Optional[Dict[str, Any]], cfg: RuleC
     return out
 
 
-def build(snapshot: Dict[str, Any], baselines: Dict[str, Dict[str, Any]], cfg: RuleConfig) -> Dict[str, Dict[str, Any]]:
-    """``{player id: {"val", "adv", "dev"}}`` for every player of the snapshot. ``baselines``: player id -> season baseline of the package (own and rival players together)."""
+def _number(player: Dict[str, Any], roster: Optional[Dict[str, Dict[str, Any]]], pid: str, baselines: Optional[Dict[str, Dict[str, Any]]] = None) -> Optional[str]:
+    """The jersey number as text, from the best source that has one: the snapshot's (the document's box score, else the one read from the shot chart of the match), the
+    ``dorsal`` of the package's roster (FEB's current one), the ``dorsal`` of his last match of the season (``tables.players``; it reaches the players of the reserve team who
+    are not in the roster); None when nobody says it (zero is a number)."""
+    for value in (player.get("no"), ((roster or {}).get(pid) or {}).get("dorsal"), ((baselines or {}).get(pid) or {}).get("dorsal")):
+        if value is not None and str(value).strip() != "":
+            return str(value).strip()
+    return None
+
+
+def build(snapshot: Dict[str, Any], baselines: Dict[str, Dict[str, Any]], cfg: RuleConfig, roster: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, Dict[str, Any]]:
+    """``{player id: {"val", "adv", "dev", "no"}}`` for every player of the snapshot. ``baselines``: player id -> season baseline of the package (own and rival players together);
+    ``roster``: the package's roster (jersey numbers)."""
     if not all("fg2m" in (team.get("stats") or {}) for team in snapshot["teams"].values()) or not all("stats" in p for p in snapshot.get("players", {}).values()):
         return {}            # not a snapshot of the state machine (a hand-written one): there is nothing to count
     by_team: Dict[str, List[Dict[str, Any]]] = {tid: [] for tid in snapshot["teams"]}
@@ -133,5 +144,5 @@ def build(snapshot: Dict[str, Any], baselines: Dict[str, Dict[str, Any]], cfg: R
         others = [t for t in teams if t != tid]
         team, rival = teams.get(tid), teams[others[0]] if len(others) == 1 and tid in teams else None
         advanced = _advanced(p, team, rival, cfg) if team is not None and rival is not None else {key: None for key in ADVANCED_KEYS}
-        out[pid] = {"val": _valuation(p), "adv": advanced, "dev": _deviation(p, baselines.get(pid), cfg)}
+        out[pid] = {"val": _valuation(p), "adv": advanced, "dev": _deviation(p, baselines.get(pid), cfg), "no": _number(p, roster, pid, baselines)}
     return out

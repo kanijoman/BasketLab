@@ -203,3 +203,54 @@ def test_the_levels_do_not_count_the_games_of_other_competitions(feb_game_doc):
     from src.live_prep.game_sources import LEAGUE_KEY
 
     assert "team_levels" not in accumulated([{**feb_game_doc, LEAGUE_KEY: False}], A, B).baselines
+
+
+def numbered(doc, numbers):
+    """A copy of the game whose box score says exactly these jersey numbers (player id -> number) and whose shot chart says none."""
+    doc = json.loads(json.dumps(doc))
+    for team in doc["BOXSCORE"]["TEAM"]:
+        for p in team["PLAYER"]:
+            p.pop("no", None)
+            if p["id"] in numbers:
+                p["no"] = numbers[p["id"]]
+    doc["SHOTCHART"]["SHOTS"] = []
+    return doc
+
+
+def played_ids(doc):
+    from src.live_core.engine import LiveEngine
+    return [pid for pid, p in LiveEngine().update(doc)["players"].items() if p["minutes"] > 0]
+
+
+def dorsals(package):
+    return {pid: row.get("dorsal") for table in ("players", "rival_players") for pid, row in package.tables.get(table, {}).items()}
+
+
+def test_the_package_carries_the_last_jersey_number_of_each_player_issue_599(feb_game_doc):
+    """A player who is not in the roster of FEB (a reserve player who goes up with the first team) has no number for the box score tab: the number he wore in his last match
+    of the season is the closest thing to it, and the publisher already replays those matches."""
+    pid = played_ids(feb_game_doc)[0]
+    package = accumulated([numbered(feb_game_doc, {pid: "23"})], A, B)
+    assert dorsals(package)[pid] == "23"
+
+
+def test_the_number_of_the_most_recent_match_wins(feb_game_doc):
+    pid = played_ids(feb_game_doc)[0]
+    games = [numbered(feb_game_doc, {pid: "23"}), numbered(feb_game_doc, {pid: "7"})]
+    assert dorsals(accumulated(games, A, B))[pid] == "7"
+
+
+def test_a_match_without_his_number_does_not_erase_the_one_he_had(feb_game_doc):
+    pid = played_ids(feb_game_doc)[0]
+    games = [numbered(feb_game_doc, {pid: "23"}), numbered(feb_game_doc, {})]
+    assert dorsals(accumulated(games, A, B))[pid] == "23"
+
+
+def test_a_player_nobody_numbers_has_no_dorsal_key_and_the_package_is_what_it_was(feb_game_doc):
+    package = accumulated([numbered(feb_game_doc, {})], A, B)
+    assert all("dorsal" not in row for table in ("players", "rival_players") for row in package.tables.get(table, {}).values())
+
+
+def test_the_number_is_text_and_keeps_its_zero(feb_game_doc):
+    pid = played_ids(feb_game_doc)[0]
+    assert dorsals(accumulated([numbered(feb_game_doc, {pid: "04"})], A, B))[pid] == "04"

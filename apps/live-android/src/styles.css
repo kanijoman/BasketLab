@@ -332,7 +332,7 @@ button.count[aria-pressed='false'] { opacity: 0.5; border-style: dashed; text-de
 .bx-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; --dev-max: 0.34; }
 .bx-table th, .bx-table td { padding: 8px 8px; text-align: right; white-space: nowrap; background: var(--card); border-bottom: 1px solid var(--line); }
 .bx-table thead th { position: sticky; top: 0; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; }
-.bx-table .bx-name { position: sticky; left: 0; z-index: 1; text-align: left; width: 8.5rem; min-width: 8.5rem; max-width: 8.5rem; overflow: hidden; text-overflow: ellipsis; font-weight: 600; border-right: 1px solid var(--line); }
+.bx-table .bx-name { position: sticky; left: 0; z-index: 1; text-align: left; width: 9.5rem; min-width: 9.5rem; max-width: 9.5rem; overflow: hidden; text-overflow: ellipsis; font-weight: 600; border-right: 1px solid var(--line); }
 .bx-table thead .bx-name { z-index: 2; }
 .bx-player { overflow: hidden; text-overflow: ellipsis; }
 .bx-on { color: var(--ok); margin-right: 4px; font-size: 0.7rem; }

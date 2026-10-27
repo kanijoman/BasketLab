@@ -41,6 +41,7 @@ HALFTIME_PERIOD = 3
 class _Player:
     name: str
     team_id: Optional[str]
+    no: Optional[str] = None     # jersey number as text, when the box score of the document has it (#597)
     on_court: bool = False
     stint_start: int = 0
     closed: int = 0
@@ -69,12 +70,12 @@ class _Team:
 
 
 class LiveGame:
-    def __init__(self, teams: Iterable[Tuple[str, str]], roster: Optional[Dict[str, Tuple[str, str]]] = None):
-        """``teams``: (id, name) pairs. ``roster``: player id -> (name, team id)."""
+    def __init__(self, teams: Iterable[Tuple[str, str]], roster: Optional[Dict[str, Tuple[str, str]]] = None, numbers: Optional[Dict[str, str]] = None):
+        """``teams``: (id, name) pairs. ``roster``: player id -> (name, team id). ``numbers``: player id -> jersey number (text), when the box score has them."""
         self.teams: Dict[str, _Team] = {tid: _Team(name) for tid, name in teams}
         self.score: Dict[str, int] = {tid: 0 for tid in self.teams}
         self.players: Dict[str, _Player] = {
-            pid: _Player(name, team_id) for pid, (name, team_id) in (roster or {}).items()
+            pid: _Player(name, team_id, no=(numbers or {}).get(pid)) for pid, (name, team_id) in (roster or {}).items()
         }
         self.period = 1
         self.remaining = 600
@@ -358,7 +359,7 @@ class LiveGame:
         for pid, p in self.players.items():
             stint = max(0, now - p.stint_start - p.credit) if p.on_court else 0
             players[pid] = {
-                "name": p.name, "team_id": p.team_id, "on_court": p.on_court,
+                "name": p.name, "team_id": p.team_id, "no": p.no, "on_court": p.on_court,
                 "minutes": p.closed + (max(0, now - p.stint_start) if p.on_court else 0),
                 "stint": stint, "pf": p.pf, "pts": p.pts, "unsportsmanlike": p.unsports, "technical": p.techs,
                 "stints_done": p.stints_done, "stint_sum": p.stint_sum, "stats": dict(p.stats),

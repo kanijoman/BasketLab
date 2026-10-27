@@ -11,7 +11,7 @@ with the box score's mapping (``dorsals``: team id -> jersey number -> player id
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from .zones import classify_shot
 
@@ -33,7 +33,7 @@ class ShotTracker:
         self._teams = list(team_ids)
         self._seen: Set[Tuple[Any, ...]] = set()
         self._zones: Dict[str, Dict[str, Dict[str, int]]] = {tid: {} for tid in self._teams}
-        self._players: Dict[str, Dict[str, Dict[str, Dict[str, int]]]] = {tid: {} for tid in self._teams}
+        self._kept: List[Dict[str, Any]] = []        # every shot seen, with its zone: the zones of a player follow the mapping of numbers, which may arrive after the shot
         self._dorsals: Dict[str, Dict[str, str]] = {}
         self.set_dorsals(dorsals or {})
 
@@ -59,20 +59,30 @@ class ShotTracker:
             zone = classify_shot(shot)
             made = str(shot.get("m")) == "1"
             team = self._teams[team_index]
-            cells = [self._zones[team].setdefault(zone["zone"], {"a": 0, "m": 0, "pts": 0})]
-            pid = self._dorsals.get(team, {}).get(_dorsal(shot.get("player")))
-            if pid is not None:
-                cells.append(self._players[team].setdefault(pid, {}).setdefault(zone["zone"], {"a": 0, "m": 0, "pts": 0}))
-            for cell in cells:
-                cell["a"] += 1
-                if made:
-                    cell["m"] += 1
-                    cell["pts"] += zone["points"]
+            self._kept.append({"team": team, "number": _dorsal(shot.get("player")), "zone": zone["zone"], "points": zone["points"], "made": made, "raw": shot})
+            cell = self._zones[team].setdefault(zone["zone"], {"a": 0, "m": 0, "pts": 0})
+            cell["a"] += 1
+            if made:
+                cell["m"] += 1
+                cell["pts"] += zone["points"]
+
+    def raw_shots(self) -> List[Dict[str, Any]]:
+        """The shots seen so far, as the chart wrote them (the jersey numbers, for ``jerseys.infer_numbers``)."""
+        return [item["raw"] for item in self._kept]
 
     def player_snapshot(self) -> Dict[str, Dict[str, Dict[str, Dict[str, int]]]]:
         """Team id -> player id -> zone -> {"a", "m", "pts"} for the shots whose jersey number the box score maps to a player."""
-        return {tid: {pid: {z: dict(c) for z, c in sorted(zones.items())} for pid, zones in sorted(players.items())}
-                for tid, players in self._players.items()}
+        players: Dict[str, Dict[str, Dict[str, Dict[str, int]]]] = {tid: {} for tid in self._teams}
+        for item in self._kept:
+            pid = self._dorsals.get(item["team"], {}).get(item["number"])
+            if pid is None:
+                continue
+            cell = players[item["team"]].setdefault(pid, {}).setdefault(item["zone"], {"a": 0, "m": 0, "pts": 0})
+            cell["a"] += 1
+            if item["made"]:
+                cell["m"] += 1
+                cell["pts"] += item["points"]
+        return {tid: {pid: {z: dict(c) for z, c in sorted(zones.items())} for pid, zones in sorted(table.items())} for tid, table in players.items()}
 
     def snapshot(self) -> Dict[str, Dict[str, Dict[str, int]]]:
         return {tid: {z: dict(c) for z, c in sorted(zones.items())} for tid, zones in self._zones.items()}

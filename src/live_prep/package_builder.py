@@ -78,6 +78,7 @@ def _percentile(values: List[int], q: float) -> float:
 class _PlayerAcc:
     def __init__(self, name: str, team_id: str) -> None:
         self.name, self.team_id = name, team_id
+        self.dorsal: Optional[str] = None      # the jersey number of his most recent match (the games are replayed in order): the live app needs it for the players the roster lacks
         self.minutes: List[int] = []
         self.stint_sum = self.stints = self.pf = 0
         self.stats = {k: 0 for k in PLAYER_STAT_KEYS}
@@ -86,6 +87,8 @@ class _PlayerAcc:
     def add(self, p: Dict[str, Any]) -> None:
         if p["minutes"] <= 0:
             return
+        if p.get("no") not in (None, ""):
+            self.dorsal = str(p["no"]).strip()
         self.minutes.append(p["minutes"])
         self.pf += p["pf"]
         for key in PLAYER_STAT_KEYS:
@@ -103,6 +106,7 @@ class _PlayerAcc:
         shrunk = shrink_rates(rates, total, fga, league)
         impact = shrink_impact(impact_rates(self.stats, total), total, impact_means)
         return {
+            **({"dorsal": self.dorsal} if self.dorsal else {}),
             "rates": {k: round(v, 3) for k, v in shrunk.items()},
             "impact40": {k: round(v, 3) for k, v in impact.items()},
             "z": {k: round(v, 3) for k, v in z_scores(shrunk, league).items()},

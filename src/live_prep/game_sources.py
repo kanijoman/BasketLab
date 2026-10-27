@@ -26,6 +26,7 @@ FEB_PROJECTION: Dict[str, int] = {
     "BOXSCORE.TEAM.id": 1,
     "BOXSCORE.TEAM.PLAYER.id": 1,
     "BOXSCORE.TEAM.PLAYER.name": 1,
+    "BOXSCORE.TEAM.PLAYER.no": 1,      # the jersey number: the package keeps the last one of each player (issue #599)
     "PLAYBYPLAY.LINES": 1,
     "SHOTCHART.SHOTS": 1,
     "DERIVED": 1,      # exact possessions and points by origin, stored per game (scouting reads them: no box score totals here)
