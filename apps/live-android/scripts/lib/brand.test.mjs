@@ -33,6 +33,15 @@ describe("the brand files are there and the generated resources follow them", ()
     }
   });
 
+  // Issue #614: the ends of the white pulse go outside the ball and vanished on the light theme; a navy line under it, as the web's mark (#613).
+  it("draws the pulse of the mark over a navy line, so its ends are seen on a light screen", () => {
+    const mark = fs.readFileSync(path.join(brand, "live-mark.svg"), "utf8");
+    const pulse = 'd="M 6 54 L 30 54 L 38 36 L 51 70 L 60 44 L 66 54 L 94 54"';
+    const navy = mark.indexOf(`${pulse} fill="none" stroke="#1A2744"`);
+    expect(navy).toBeGreaterThan(-1);
+    expect(navy).toBeLessThan(mark.indexOf(`${pulse} fill="none" stroke="#FFFFFF"`));
+  });
+
   it("every launcher icon has the size of its spec", async () => {
     for (const spec of launcherSpecs()) {
       const meta = await sharp(path.join(res, spec.file)).metadata();
