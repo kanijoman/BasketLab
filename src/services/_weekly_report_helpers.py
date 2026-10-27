@@ -264,20 +264,15 @@ LAST_MATCH_ADV_HEADERS = [
 ]
 
 # ---------------------------------------------------------------------------
-# Trend arrows
+# Real difference of a comparison (issue #608: it replaces the trend arrows)
 # ---------------------------------------------------------------------------
 
-_TREND_LO, _TREND_HI = 5.0, 10.0
-
-
-def trend_arrow(delta: float, lower_is_better: bool) -> str:
-    abs_d = abs(delta)
-    if abs_d < _TREND_LO:
-        return '≈'
-    good = (delta > 0) != lower_is_better
-    if abs_d >= _TREND_HI:
-        return '⇈' if good else '⇊'
-    return '↑' if good else '↓'
+def with_diff(value: float, other: Any, decimals: int = 1) -> str:
+    """``78.4 (+2.1)``: the figure and its absolute difference with ``other`` (points for a percentage); only the figure if there is nothing to compare with."""
+    if other is None:
+        return sf(value, decimals)
+    diff = round(float(value) - float(other), decimals)
+    return f'{sf(value, decimals)} ({diff:+.{decimals}f})' if diff else f'{sf(value, decimals)} ({0:.{decimals}f})'
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +321,7 @@ def build_advanced_rows(
 
 
 # ---------------------------------------------------------------------------
-# Comparative row builders (period1 vs period2 with delta + arrow)
+# Comparative row builders (period1 vs period2 with the real difference)
 # ---------------------------------------------------------------------------
 
 def build_comparative_basic_rows(
@@ -339,7 +334,7 @@ def build_comparative_basic_rows(
     qs = {f: calc_quartiles([float(t.get(f) or 0) for t in p1_list]) for f, _ in BASIC_FIELDS}
     texts, colors = [], []
     for cs in comp_stats:
-        p1, p2, deltas = cs['monthly'], cs['rest'], cs.get('deltas', {})
+        p1, p2 = cs['monthly'], cs['rest']
         rt = [str(p1.get('team_name', p1.get('_id', '')))]
         rc = [_CELL_BG]
         for key in ('total_games', 'games_home', 'games_away'):
@@ -348,8 +343,7 @@ def build_comparative_basic_rows(
         for field, rev in BASIC_FIELDS:
             v = float(p1.get(field) or 0)
             eff_rev = rev != invert_colors
-            arrow = trend_arrow(float(deltas.get(field, 0)), eff_rev)
-            rt.append(f'{sf(v)} {arrow}')
+            rt.append(with_diff(v, p2.get(field)))
             rc.append(q_color(v, qs[field], eff_rev))
         texts.append(rt)
         colors.append(rc)
@@ -366,15 +360,14 @@ def build_comparative_advanced_rows(
     qs = {f: calc_quartiles([float(t.get(f) or 0) for t in p1_list]) for f, _ in ADV_FIELDS}
     texts, colors = [], []
     for cs in comp_stats:
-        p1, deltas = cs['monthly'], cs.get('deltas', {})
+        p1 = cs['monthly']
         pg1, pg2 = int(p1.get('total_games', 0) or 0), int(cs['rest'].get('total_games', 0) or 0)
         rt = [str(p1.get('team_name', p1.get('_id', ''))), f'{pg1}+{pg2}']
         rc = [_CELL_BG, _CELL_BG]
         for field, rev in ADV_FIELDS:
             v = float(p1.get(field) or 0)
             eff_rev = rev != invert_colors
-            arrow = trend_arrow(float(deltas.get(field, 0)), eff_rev)
-            rt.append(f'{sf(v)} {arrow}')
+            rt.append(with_diff(v, cs['rest'].get(field)))
             rc.append(q_color(v, qs[field], eff_rev))
         texts.append(rt)
         colors.append(rc)
@@ -426,10 +419,8 @@ def build_last_match_rows(
         for field, rev in ADV_FIELDS:
             val     = float(team_stats.get(field) or 0)
             opp_val = float(opp_match.get(field) or 0)
-            sv      = float(season.get(field) or 0)
-            arrow = trend_arrow(((val - sv) / abs(sv)) * 100, rev) if sv != 0 else ''
             col = _lm_cell_color(val, opp_val, field)
-            rt.append(f'{sf(val)} {arrow}' if arrow else sf(val))
+            rt.append(with_diff(val, season.get(field)))
             rc.append(col)
         rows_t.append(rt)
         rows_c.append(rc)
