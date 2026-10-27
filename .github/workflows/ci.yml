@@ -132,15 +132,16 @@ jobs:
           path: frontend/test-results
           retention-days: 7
 
-  # ── Red proof (informative, issue #542) ────────────────────────────────────
-  # The tests that a pull request adds or changes must FAIL on the source of its base (CLAUDE.md: write the failing test first). It never blocks a merge or a deploy:
-  # the summary of the run says whether there is proof. ``continue-on-error`` keeps a failure of the script itself from turning the check red.
+  # ── Red proof (informative, issues #542 and #610) ──────────────────────────
+  # The tests that a pull request adds or changes must FAIL on the source of its base (CLAUDE.md: write the failing test first): pytest, and the vitest of the web
+  # and of the live app. It never blocks a merge or a deploy: the summary of the run says whether there is proof. ``continue-on-error`` keeps a failure of the
+  # script itself from turning the check red. Only the suites with new tests get their dependencies installed.
   red-proof:
     name: Red proof of the new tests
     if: github.event_name == 'pull_request'
     continue-on-error: true
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -151,8 +152,33 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Which suites have new tests?
+        id: suites
+        run: python scripts/red_proof.py --base origin/${{ github.base_ref }} --needs >> "$GITHUB_OUTPUT"
+
+      - name: Install the backend dependencies
+        if: steps.suites.outputs.python == 'true'
         run: pip install -r requirements-dev.txt
+
+      - name: Set up Node
+        if: steps.suites.outputs.web == 'true' || steps.suites.outputs.app == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            frontend/package-lock.json
+            apps/live-android/package-lock.json
+
+      - name: Install the web dependencies
+        if: steps.suites.outputs.web == 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install the live app dependencies
+        if: steps.suites.outputs.app == 'true'
+        working-directory: apps/live-android
+        run: npm ci
 
       - name: Do the new tests fail on the base?
         run: python scripts/red_proof.py --base origin/${{ github.base_ref }}

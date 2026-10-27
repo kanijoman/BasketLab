@@ -26,7 +26,7 @@ Ciclo rojo→verde (sin excepciones, incluye bugfixes):
 4. `pytest -v tests/test_<feature>.py` — confirmar que **pasa** (verde)
 5. Ningún PR / commit sin este ciclo
 6. El test reproduce el fallo **con el estado más real posible**: la situación se construye jugando eventos con `tests/builders.py` (`Match`), con un partido real o con un fixture de partido raro, no con un dict inventado (puede describir un estado inalcanzable).
-7. **Prueba de rojo**: tus tests nuevos deben fallar con el `src/` de la base. Compruébalo antes del PR: `python scripts/red_proof.py` (el CI lo repite en cada PR, informativo, job `red-proof`).
+7. **Prueba de rojo**: tus tests nuevos (pytest y vitest de la web y de la app) deben fallar con el código de la base. Compruébalo antes del PR: `python scripts/red_proof.py` (el CI lo repite en cada PR, informativo, job `red-proof`).
 
 Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests después · "es un fix pequeño" (**no existe fix pequeño sin test**).
 **Bug fix → test de regresión** (`test_<síntoma>_regression` o bug documentado en el docstring) que reproduce el fallo exacto, pasa solo con el fix y va en el mismo commit.
