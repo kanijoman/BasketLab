@@ -16,6 +16,7 @@ import { Outlet, Link, useParams, useNavigate } from 'react-router-dom'
 import { ChevronRight, Home, ExternalLink } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import ThemeControl from '@/components/ThemeControl'
+import BrandLogo from '@/components/BrandLogo'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -40,12 +41,8 @@ function Header() {
   return (
     <header className="h-14 bg-surface border-b border-line flex items-center px-4 gap-4 shrink-0 z-20">
       {/* Logo */}
-      <Link
-        to="/"
-        className="flex items-center gap-2 font-bold text-accent-text hover:text-accent-text transition-colors shrink-0"
-      >
-        <img src="/logo.png" alt="BasketLab" className="h-7 w-7 rounded" onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
-        <span className="text-sm tracking-tight hidden sm:block">BasketLab</span>
+      <Link to="/" aria-label="BasketLab — inicio" className="shrink-0 rounded-md transition-opacity hover:opacity-80">
+        <BrandLogo nameClassName="hidden sm:inline" />
       </Link>
 
       {/* Breadcrumb */}

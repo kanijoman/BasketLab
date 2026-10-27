@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Clock, ChevronRight, Database, Settings, RefreshCw } from 'lucide-react'
 import { getCollectionList, type CollectionInfo } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import BrandLogo from '@/components/BrandLogo'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
 
 // ── Grouping helpers ──────────────────────────────────────────────────────────
@@ -170,15 +171,9 @@ export default function HomePage() {
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <img
-                src="/logo.png"
-                alt="BasketLab"
-                className="h-12 w-12 rounded-xl shadow-card"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-              <h1 className="text-3xl font-bold text-ink tracking-tight">BasketLab</h1>
-            </div>
+            <h1 className="flex items-center justify-center mb-4">
+              <BrandLogo size="lg" />
+            </h1>
             <p className="text-ink-muted text-sm">
               Análisis estadístico de baloncesto · Ligas españolas FEB / FBCYL
             </p>
