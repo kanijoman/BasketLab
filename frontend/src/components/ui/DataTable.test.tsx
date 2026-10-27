@@ -49,3 +49,19 @@ describe('DataTable header groups', () => {
     expect((screen.getByText('%').closest('th') as HTMLElement).style.width).toBe('60px')
   })
 })
+
+describe('DataTable quartile colours', () => {
+  const rows = [{ team: 'A', v: 1 }, { team: 'B', v: 2 }, { team: 'C', v: 3 }, { team: 'D', v: 4 }]
+  const columns: ColumnDef<(typeof rows)[number], unknown>[] = [{ id: 'team', accessorKey: 'team', header: 'Equipo' }, { id: 'v', accessorKey: 'v', header: 'V' }]
+  const classes = () => rows.map(r => (screen.getByText(String(r.v)).className.match(/table-cell-q\d/) ?? ['none'])[0])
+
+  it('colours the best to the worst with the thresholds it is given', () => {
+    render(<DataTable columns={columns} data={rows} quartiles={{ v: [1.75, 2.5, 3.25] }} />)
+    expect(classes()).toEqual(['table-cell-q4', 'table-cell-q3', 'table-cell-q2', 'table-cell-q1'])
+  })
+
+  it('does not colour a column whose thresholds are [0, 0, 0]: that is how «not enough values to split» is said (issue #601)', () => {
+    render(<DataTable columns={columns} data={rows} quartiles={{ v: [0, 0, 0] }} />)
+    expect(classes()).toEqual(['none', 'none', 'none', 'none'])
+  })
+})
