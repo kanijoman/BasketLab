@@ -71,14 +71,14 @@ function TeamPicker({
   return (
     <div className="flex gap-3 flex-wrap items-end">
       <div>
-        <label className="block text-xs text-slate-400 mb-1">Temporada</label>
+        <label className="block text-xs text-ink-muted mb-1">Temporada</label>
         {loadingSeasons
-          ? <div className="h-8 w-28 rounded bg-slate-700 animate-pulse" />
+          ? <div className="h-8 w-28 rounded bg-surface-raised animate-pulse" />
           : seasons.length === 0
-            ? <p className="text-xs text-slate-500 italic">Sin datos en HISTORICAL</p>
+            ? <p className="text-xs text-ink-muted italic">Sin datos en HISTORICAL</p>
             : (
               <select
-                className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-32"
+                className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-32"
                 value={season}
                 onChange={e => onSeasonChange(e.target.value)}
               >
@@ -88,14 +88,14 @@ function TeamPicker({
         }
       </div>
       <div>
-        <label className="block text-xs text-slate-400 mb-1">Equipo</label>
+        <label className="block text-xs text-ink-muted mb-1">Equipo</label>
         {loadingTeams
-          ? <div className="h-8 w-52 rounded bg-slate-700 animate-pulse" />
+          ? <div className="h-8 w-52 rounded bg-surface-raised animate-pulse" />
           : teams.length === 0
-            ? <p className="text-xs text-slate-500 italic">Sin equipos para esta temporada</p>
+            ? <p className="text-xs text-ink-muted italic">Sin equipos para esta temporada</p>
             : (
               <select
-                className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-56"
+                className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
                 value={teamId}
                 onChange={e => onTeamChange(e.target.value)}
               >
@@ -221,14 +221,14 @@ export function ElasticityTab() {
   return (
     <div className="space-y-6">
       {/* Train section */}
-      <div className="bg-slate-800/50 rounded-lg p-4 space-y-3">
-        <h3 className="font-semibold text-slate-200">Entrenar modelos de elasticidad</h3>
-        <p className="text-sm text-slate-400">
+      <div className="bg-surface/50 rounded-lg p-4 space-y-3">
+        <h3 className="font-semibold text-ink">Entrenar modelos de elasticidad</h3>
+        <p className="text-sm text-ink-muted">
           Entrena cuatro modelos con datos de HISTORICAL:{' '}
-          <span className="text-slate-300 font-medium">Modelo A</span> (rolling global),{' '}
-          <span className="text-slate-300 font-medium">Modelo B</span> (+ local/visitante y rival),{' '}
-          <span className="text-slate-300 font-medium">Modelo C</span> (+ ventana larga, momentum y cross-stats) y{' '}
-          <span className="text-slate-300 font-medium">Modelo D</span> (GBM con intervalos cuantílicos).
+          <span className="text-ink font-medium">Modelo A</span> (rolling global),{' '}
+          <span className="text-ink font-medium">Modelo B</span> (+ local/visitante y rival),{' '}
+          <span className="text-ink font-medium">Modelo C</span> (+ ventana larga, momentum y cross-stats) y{' '}
+          <span className="text-ink font-medium">Modelo D</span> (GBM con intervalos cuantílicos).
           Requiere haber ejecutado la ingesta histórica previamente.
         </p>
         <button
@@ -243,29 +243,29 @@ export function ElasticityTab() {
         {/* Live progress */}
         {training && (
           <div className="space-y-1.5">
-            <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+            <div className="w-full bg-surface-raised rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-brand-500 h-1.5 rounded-full transition-all duration-300"
+                className="bg-accent-solid h-1.5 rounded-full transition-all duration-300"
                 style={{ width: trainProgress ? `${(trainProgress.current / trainProgress.total) * 100}%` : '0%' }}
               />
             </div>
-            <p className="text-xs text-slate-400 font-mono">
+            <p className="text-xs text-ink-muted font-mono">
               {trainProgress ? trainProgress.step : 'Iniciando entrenamiento…'}
             </p>
           </div>
         )}
 
-        {trainMsg && <p className="text-sm text-brand-400">{trainMsg}</p>}
+        {trainMsg && <p className="text-sm text-accent-text">{trainMsg}</p>}
       </div>
 
       {/* Models list */}
       {models.length > 0 && (
         <div>
-          <h3 className="font-semibold text-slate-200 mb-2">Modelos almacenados</h3>
+          <h3 className="font-semibold text-ink mb-2">Modelos almacenados</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-200 border-collapse">
+            <table className="w-full text-sm text-ink border-collapse">
               <thead>
-                <tr className="bg-slate-700 text-slate-300">
+                <tr className="bg-surface-raised text-ink">
                   <th className="px-3 py-2 text-left">Tipo</th>
                   <th className="px-3 py-2 text-left">Stat</th>
                   <th className="px-3 py-2 text-left">Liga</th>
@@ -276,10 +276,10 @@ export function ElasticityTab() {
               </thead>
               <tbody>
                 {models.map(m => (
-                  <tr key={`${m.model_type}-${m.stat}`} className="border-t border-slate-700">
-                    <td className="px-3 py-1.5 font-mono text-brand-400">Modelo {m.model_type}</td>
+                  <tr key={`${m.model_type}-${m.stat}`} className="border-t border-line">
+                    <td className="px-3 py-1.5 font-mono text-accent-text">Modelo {m.model_type}</td>
                     <td className="px-3 py-1.5">{STAT_LABELS[m.stat]?.label ?? m.stat}</td>
-                    <td className="px-3 py-1.5 text-slate-400">{m.league}</td>
+                    <td className="px-3 py-1.5 text-ink-muted">{m.league}</td>
                     <td className="px-3 py-1.5 text-right">{fmt(m.r2_train, 3)}</td>
                     <td className="px-3 py-1.5 text-right">{m.n_samples}</td>
                     <td className="px-3 py-1.5 text-right">{m.n_teams}</td>
@@ -292,21 +292,21 @@ export function ElasticityTab() {
       )}
 
       {/* Prediction section */}
-      <div className="bg-slate-800/50 rounded-lg p-4 space-y-3">
-        <h3 className="font-semibold text-slate-200">Predecir próximo partido</h3>
+      <div className="bg-surface/50 rounded-lg p-4 space-y-3">
+        <h3 className="font-semibold text-ink">Predecir próximo partido</h3>
 
         <div className="flex gap-3 flex-wrap items-end">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Equipo</label>
+            <label className="block text-xs text-ink-muted mb-1">Equipo</label>
             {loadingLiveTeams
-              ? <div className="h-8 w-52 rounded bg-slate-700 animate-pulse" />
+              ? <div className="h-8 w-52 rounded bg-surface-raised animate-pulse" />
               : !collection
-                ? <p className="text-xs text-slate-500 italic">Selecciona una colección primero</p>
+                ? <p className="text-xs text-ink-muted italic">Selecciona una colección primero</p>
                 : liveTeams.length === 0
-                  ? <p className="text-xs text-slate-500 italic">Sin equipos en esta colección</p>
+                  ? <p className="text-xs text-ink-muted italic">Sin equipos en esta colección</p>
                   : (
                     <select
-                      className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-56"
+                      className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
                       value={liveTeam}
                       onChange={e => setLiveTeam(e.target.value)}
                     >
@@ -326,8 +326,8 @@ export function ElasticityTab() {
         {/* Optional Modelo B inputs */}
         <div className="flex gap-4 flex-wrap items-end pt-1">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">
-              ¿Local o visitante? <span className="text-slate-500">(opcional — activa Modelo B)</span>
+            <label className="block text-xs text-ink-muted mb-1">
+              ¿Local o visitante? <span className="text-ink-muted">(opcional — activa Modelo B)</span>
             </label>
             <div className="flex gap-1">
               {([null, true, false] as const).map(v => (
@@ -336,8 +336,8 @@ export function ElasticityTab() {
                   onClick={() => setIsHome(v)}
                   className={`px-3 py-1.5 rounded text-xs font-medium transition-colors border ${
                     isHome === v
-                      ? 'bg-brand-600 border-brand-500 text-white'
-                      : 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                      ? 'bg-accent-solid border-accent text-white'
+                      : 'bg-surface-raised border-line text-ink hover:bg-line'
                   }`}
                 >
                   {v === null ? 'Sin especificar' : v ? 'Local' : 'Visitante'}
@@ -346,26 +346,26 @@ export function ElasticityTab() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Net Rating rival <span className="text-slate-500">(opcional)</span></label>
+            <label className="block text-xs text-ink-muted mb-1">Net Rating rival <span className="text-ink-muted">(opcional)</span></label>
             <input
               type="number"
               step="0.1"
               placeholder="p.ej. -2.5"
               value={oppNetRtg}
               onChange={e => setOppNetRtg(e.target.value)}
-              className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-36"
+              className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-36"
             />
           </div>
         </div>
-        {predError && <p className="text-red-400 text-sm">{predError}</p>}
+        {predError && <p className="text-bad text-sm">{predError}</p>}
 
         {pred && (() => {
           const hasModelB = Object.values(pred).some(v => v.model_b)
           return (
           <div className="overflow-x-auto mt-3">
-            <table className="w-full text-sm text-slate-200 border-collapse">
+            <table className="w-full text-sm text-ink border-collapse">
               <thead>
-                <tr className="bg-slate-700 text-slate-300">
+                <tr className="bg-surface-raised text-ink">
                   <th className="px-3 py-2 text-left">Estadística</th>
                   <th className="px-3 py-2 text-right">Modelo A (estimación)</th>
                   <th className="px-3 py-2 text-right">IC 90% (A)</th>
@@ -375,21 +375,21 @@ export function ElasticityTab() {
               </thead>
               <tbody>
                 {Object.entries(pred).map(([stat, v]) => (
-                  <tr key={stat} className="border-t border-slate-700">
+                  <tr key={stat} className="border-t border-line">
                     <td className="px-3 py-1.5 font-medium">{STAT_LABELS[stat]?.label ?? stat}</td>
-                    <td className="px-3 py-1.5 text-right font-semibold text-brand-300">
+                    <td className="px-3 py-1.5 text-right font-semibold text-accent-text">
                       {v.model_a ? fmt(v.model_a.estimate) : '—'}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-slate-400">
+                    <td className="px-3 py-1.5 text-right text-ink-muted">
                       {v.model_a ? `[${fmt(v.model_a.ci_low)}, ${fmt(v.model_a.ci_high)}]` : '—'}
                     </td>
                     {hasModelB && (
-                      <td className="px-3 py-1.5 text-right font-semibold text-accent-300">
+                      <td className="px-3 py-1.5 text-right font-semibold text-secondary-text">
                         {v.model_b ? fmt(v.model_b.estimate) : '—'}
                       </td>
                     )}
                     {hasModelB && (
-                      <td className="px-3 py-1.5 text-right text-slate-400">
+                      <td className="px-3 py-1.5 text-right text-ink-muted">
                         {v.model_b ? `[${fmt(v.model_b.ci_low)}, ${fmt(v.model_b.ci_high)}]` : '—'}
                       </td>
                     )}
@@ -473,21 +473,21 @@ function MonteCarloTab() {
   return (
     <div className="space-y-6">
       {/* Config */}
-      <div className="bg-slate-800/50 rounded-lg p-4 space-y-4">
-        <h3 className="font-semibold text-slate-200">Configurar simulación</h3>
+      <div className="bg-surface/50 rounded-lg p-4 space-y-4">
+        <h3 className="font-semibold text-ink">Configurar simulación</h3>
 
         {/* Source toggle */}
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Fuente de datos</label>
-          <div className="inline-flex rounded-lg border border-slate-600 overflow-hidden text-sm">
+          <label className="block text-xs text-ink-muted mb-1">Fuente de datos</label>
+          <div className="inline-flex rounded-lg border border-line overflow-hidden text-sm">
             {(['historical', 'live'] as MCSource[]).map(s => (
               <button
                 key={s}
                 onClick={() => handleSourceChange(s)}
                 className={`px-4 py-1.5 transition-colors ${
                   source === s
-                    ? 'bg-brand-600 text-white font-medium'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    ? 'bg-accent-solid text-white font-medium'
+                    : 'bg-surface text-ink hover:bg-surface-raised'
                 }`}
               >
                 {s === 'historical' ? 'Temporadas anteriores' : 'Temporada actual'}
@@ -495,7 +495,7 @@ function MonteCarloTab() {
             ))}
           </div>
           {source === 'live' && (
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-ink-muted mt-1">
               Usa los partidos jugados esta temporada en la colección activa.
               Los modelos entrenados en HISTÓRICO no se ven afectados.
             </p>
@@ -511,14 +511,14 @@ function MonteCarloTab() {
             />
           ) : (
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Equipo</label>
+              <label className="block text-xs text-ink-muted mb-1">Equipo</label>
               {loadingLiveTeams
-                ? <div className="h-8 w-52 rounded bg-slate-700 animate-pulse" />
+                ? <div className="h-8 w-52 rounded bg-surface-raised animate-pulse" />
                 : liveTeams.length === 0
-                  ? <p className="text-xs text-slate-500 italic">Sin equipos en esta colección</p>
+                  ? <p className="text-xs text-ink-muted italic">Sin equipos en esta colección</p>
                   : (
                     <select
-                      className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-56"
+                      className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
                       value={liveTeam}
                       onChange={e => setLiveTeam(e.target.value)}
                     >
@@ -531,18 +531,18 @@ function MonteCarloTab() {
           )}
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Partidos a proyectar</label>
+            <label className="block text-xs text-ink-muted mb-1">Partidos a proyectar</label>
             <input
               type="number" min={1} max={10}
-              className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-20"
+              className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-20"
               value={nGames}
               onChange={e => setNGames(Number(e.target.value))}
             />
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Simulaciones</label>
+            <label className="block text-xs text-ink-muted mb-1">Simulaciones</label>
             <select
-              className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
+              className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink"
               value={nSims}
               onChange={e => setNSims(Number(e.target.value))}
             >
@@ -556,7 +556,7 @@ function MonteCarloTab() {
             {loading ? 'Simulando…' : 'Simular'}
           </button>
         </div>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-bad text-sm">{error}</p>}
       </div>
 
       {/* Results */}
@@ -570,18 +570,18 @@ function MonteCarloTab() {
               { label: 'IC 90% inferior', value: fmt(result.projected_wins_ci_low, 1) },
               { label: 'IC 90% superior', value: fmt(result.projected_wins_ci_high, 1) },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-slate-800 rounded-lg p-3 text-center">
-                <p className="text-2xl font-bold text-brand-400">{value}</p>
-                <p className="text-xs text-slate-400 mt-1">{label}</p>
+              <div key={label} className="bg-surface rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold text-accent-text">{value}</p>
+                <p className="text-xs text-ink-muted mt-1">{label}</p>
               </div>
             ))}
           </div>
 
           {/* Per-game table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-slate-200 border-collapse">
+            <table className="w-full text-sm text-ink border-collapse">
               <thead>
-                <tr className="bg-slate-700 text-slate-300">
+                <tr className="bg-surface-raised text-ink">
                   <th className="px-3 py-2 text-left">Partido</th>
                   <th className="px-3 py-2 text-center">Local/Visit.</th>
                   <th className="px-3 py-2 text-right">P(victoria)</th>
@@ -592,20 +592,20 @@ function MonteCarloTab() {
               </thead>
               <tbody>
                 {result.games.map(g => (
-                  <tr key={g.game_index} className="border-t border-slate-700">
+                  <tr key={g.game_index} className="border-t border-line">
                     <td className="px-3 py-1.5 text-center font-medium">#{g.game_index}</td>
-                    <td className="px-3 py-1.5 text-center text-slate-400">
+                    <td className="px-3 py-1.5 text-center text-ink-muted">
                       {g.is_home === null ? '—' : g.is_home ? 'Local' : 'Visitante'}
                     </td>
                     <td className={`px-3 py-1.5 text-right font-semibold ${
-                      g.win_prob >= 0.5 ? 'text-green-400' : 'text-red-400'
+                      g.win_prob >= 0.5 ? 'text-ok' : 'text-bad'
                     }`}>
                       {pct(g.win_prob)}
                     </td>
                     {Object.entries(g.stats).map(([s, sv]) => (
                       <td key={s} className="px-3 py-1.5 text-right">
                         <span className="font-medium">{fmt(sv.mean)}</span>
-                        <span className="text-slate-500 text-xs ml-1">
+                        <span className="text-ink-muted text-xs ml-1">
                           [{fmt(sv.ci_low)}, {fmt(sv.ci_high)}]
                         </span>
                       </td>
@@ -700,9 +700,9 @@ function GamePredictionTab() {
     }
   }
 
-  const inputCls = 'bg-slate-800 border border-slate-600 text-slate-200 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none'
+  const inputCls = 'bg-surface border border-line text-ink text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-focus outline-none'
   const probColor = (p: number) =>
-    p >= 0.6 ? 'text-emerald-400' : p <= 0.4 ? 'text-red-400' : 'text-amber-400'
+    p >= 0.6 ? 'text-ok' : p <= 0.4 ? 'text-bad' : 'text-warn'
 
   const sortedImportances = result
     ? Object.entries(result.feature_importances).sort(([, a], [, b]) => b - a).slice(0, 9)
@@ -711,8 +711,8 @@ function GamePredictionTab() {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-white mb-1">Predicción Victoria/Derrota</h3>
-        <p className="text-xs text-slate-400">
+        <h3 className="text-base font-semibold text-ink mb-1">Predicción Victoria/Derrota</h3>
+        <p className="text-xs text-ink-muted">
           Regresión Logística calibrada entrenada sobre el historial de la temporada.
           Usa rolling-window de Net Rtg, eFG% y TOV% más contexto local/visitante y fuerza del rival.
         </p>
@@ -726,8 +726,8 @@ function GamePredictionTab() {
             onClick={() => { setMode(m); setResult(null); setError(null) }}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               mode === m
-                ? 'bg-brand-600 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                ? 'bg-accent-solid text-white'
+                : 'bg-surface-raised text-ink hover:bg-line'
             }`}
           >
             {m === 'historical' ? 'Temporada histórica' : 'Temporada actual'}
@@ -740,13 +740,13 @@ function GamePredictionTab() {
         {mode === 'historical' ? (
           <>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400">Temporada</label>
+              <label className="text-xs text-ink-muted">Temporada</label>
               <select className={inputCls} value={season} onChange={e => setSeason(e.target.value)}>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400">Equipo</label>
+              <label className="text-xs text-ink-muted">Equipo</label>
               <select className={inputCls} value={teamId} onChange={e => setTeamId(e.target.value)}>
                 {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
               </select>
@@ -754,20 +754,20 @@ function GamePredictionTab() {
           </>
         ) : (
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Equipo (temporada actual)</label>
+            <label className="text-xs text-ink-muted">Equipo (temporada actual)</label>
             {collection
               ? (
                 <select className={inputCls + ' w-64'} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
                   {(liveTeams as TeamEntry[]).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               )
-              : <p className="text-xs text-slate-500 italic">Selecciona una colección primero</p>
+              : <p className="text-xs text-ink-muted italic">Selecciona una colección primero</p>
             }
           </div>
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Campo</label>
+          <label className="text-xs text-ink-muted">Campo</label>
           <select className={inputCls} value={isHome ? 'home' : 'away'}
             onChange={e => setIsHome(e.target.value === 'home')}>
             <option value="home">Local</option>
@@ -775,7 +775,7 @@ function GamePredictionTab() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Net Rtg rival</label>
+          <label className="text-xs text-ink-muted">Net Rtg rival</label>
           <input
             type="number"
             className={inputCls + ' w-28'}
@@ -787,7 +787,7 @@ function GamePredictionTab() {
         <button
           onClick={run}
           disabled={loading || (mode === 'historical' ? !teamId : !liveTeam)}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-solid hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           {loading ? 'Calculando…' : 'Predecir'}
@@ -795,34 +795,34 @@ function GamePredictionTab() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-900/30 border border-red-700/50 p-3 text-red-300 text-sm">{error}</div>
+        <div className="rounded-lg bg-bad/30 border border-bad/50 p-3 text-bad text-sm">{error}</div>
       )}
 
       {result && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Probability card */}
-          <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-5 flex flex-col items-center gap-3">
-            <span className="text-xs text-slate-400 uppercase tracking-wider">P(Victoria)</span>
+          <div className="bg-surface/60 rounded-xl border border-line/50 p-5 flex flex-col items-center gap-3">
+            <span className="text-xs text-ink-muted uppercase tracking-wider">P(Victoria)</span>
             <span className={`text-5xl font-bold tabular-nums ${probColor(result.win_prob)}`}>
               {(result.win_prob * 100).toFixed(1)}&thinsp;%
             </span>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-ink-muted">
               IC 90 %: {(result.ci_low * 100).toFixed(1)} % – {(result.ci_high * 100).toFixed(1)} %
             </span>
-            <div className="w-full bg-slate-700 rounded-full h-2 mt-1">
+            <div className="w-full bg-surface-raised rounded-full h-2 mt-1">
               <div
-                className="h-2 rounded-full bg-brand-500 transition-all"
+                className="h-2 rounded-full bg-accent-solid transition-all"
                 style={{ width: `${result.win_prob * 100}%` }}
               />
             </div>
             <div className="grid grid-cols-2 gap-3 w-full text-center mt-1">
               <div>
-                <p className="text-xs text-slate-400">Partidos entrenados</p>
-                <p className="text-sm font-semibold text-white">{result.n_train}</p>
+                <p className="text-xs text-ink-muted">Partidos entrenados</p>
+                <p className="text-sm font-semibold text-ink">{result.n_train}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400">Accuracy walk-fwd</p>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-xs text-ink-muted">Accuracy walk-fwd</p>
+                <p className="text-sm font-semibold text-ink">
                   {result.accuracy != null ? `${(result.accuracy * 100).toFixed(1)} %` : '—'}
                 </p>
               </div>
@@ -830,29 +830,29 @@ function GamePredictionTab() {
           </div>
 
           {/* Feature importances with sign */}
-          <div className="bg-slate-800/60 rounded-xl border border-slate-700/50 p-5">
-            <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
+          <div className="bg-surface/60 rounded-xl border border-line/50 p-5">
+            <h4 className="text-xs font-semibold text-ink uppercase tracking-wider mb-1">
               Importancia de variables
             </h4>
-            <p className="text-xs text-slate-500 mb-3">
-              <span className="text-emerald-400">Verde</span> = favorece la victoria · 
-              <span className="text-red-400">Rojo</span> = la perjudica
+            <p className="text-xs text-ink-muted mb-3">
+              <span className="text-ok">Verde</span> = favorece la victoria · 
+              <span className="text-bad">Rojo</span> = la perjudica
             </p>
             <div className="space-y-2.5">
               {sortedImportances.map(([name, absVal]) => {
                 const coef = result.feature_coefficients?.[name] ?? absVal
                 const positive = coef >= 0
-                const barColor = positive ? 'bg-emerald-500' : 'bg-red-500'
+                const barColor = positive ? 'bg-ok' : 'bg-bad'
                 const label = FEAT_LABELS[name] ?? name
                 return (
                   <div key={name}>
                     <div className="flex justify-between text-xs mb-0.5">
-                      <span className="text-slate-300">{label}</span>
-                      <span className={positive ? 'text-emerald-400' : 'text-red-400'}>
+                      <span className="text-ink">{label}</span>
+                      <span className={positive ? 'text-ok' : 'text-bad'}>
                         {positive ? '+' : '−'}{(absVal * 100).toFixed(1)} %
                       </span>
                     </div>
-                    <div className="w-full bg-slate-700 rounded-full h-1.5">
+                    <div className="w-full bg-surface-raised rounded-full h-1.5">
                       <div
                         className={`h-1.5 rounded-full ${barColor} transition-all`}
                         style={{ width: `${absVal * 100}%` }}
@@ -937,8 +937,8 @@ export function ValidationTab() {
     }
   }
 
-  const inputCls = 'bg-slate-800 border border-slate-600 text-slate-200 text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 outline-none'
-  const colHdr   = 'text-right text-xs text-slate-400 font-semibold py-2 px-3'
+  const inputCls = 'bg-surface border border-line text-ink text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-focus outline-none'
+  const colHdr   = 'text-right text-xs text-ink-muted font-semibold py-2 px-3'
   const cell     = (v: number | null | undefined, d = 2) =>
     v == null ? '—' : v.toFixed(d)
 
@@ -948,8 +948,8 @@ export function ValidationTab() {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-base font-semibold text-white mb-1">Validación Walk-Forward</h3>
-        <p className="text-xs text-slate-400">
+        <h3 className="text-base font-semibold text-ink mb-1">Validación Walk-Forward</h3>
+        <p className="text-xs text-ink-muted">
           Evalúa la precisión de los modelos Ridge entrenando sólo con datos pasados
           y midiendo el error en cada partido sucesivo (sin fuga de datos futuros).
         </p>
@@ -963,8 +963,8 @@ export function ValidationTab() {
             onClick={() => { setMode(m); setResult(null) }}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               mode === m
-                ? 'bg-brand-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+                ? 'bg-accent-solid text-white'
+                : 'bg-surface text-ink-muted hover:text-ink border border-line'
             }`}
           >
             {m === 'historical' ? 'Temporada histórica' : 'Temporada actual'}
@@ -977,13 +977,13 @@ export function ValidationTab() {
         {mode === 'historical' ? (
           <>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400">Temporada</label>
+              <label className="text-xs text-ink-muted">Temporada</label>
               <select className={inputCls} value={season} onChange={e => setSeason(e.target.value)}>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400">Equipo</label>
+              <label className="text-xs text-ink-muted">Equipo</label>
               <select className={inputCls} value={teamId} onChange={e => setTeamId(e.target.value)}>
                 {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
               </select>
@@ -991,7 +991,7 @@ export function ValidationTab() {
           </>
         ) : (
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Equipo — {collection?.name ?? '…'}</label>
+            <label className="text-xs text-ink-muted">Equipo — {collection?.name ?? '…'}</label>
             <select className={inputCls} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
               {liveTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
@@ -1000,7 +1000,7 @@ export function ValidationTab() {
         <button
           onClick={run}
           disabled={loading || (mode === 'historical' ? !teamId : !liveTeam)}
-          className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-solid hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           {loading ? 'Calculando…' : 'Ejecutar backtesting'}
@@ -1008,16 +1008,16 @@ export function ValidationTab() {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-900/30 border border-red-700/50 p-3 text-red-300 text-sm">{error}</div>
+        <div className="rounded-lg bg-bad/30 border border-bad/50 p-3 text-bad text-sm">{error}</div>
       )}
 
       {/* Results table */}
       {result && Object.keys(result).length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-slate-700/50">
-          <table className="w-full text-sm text-slate-200 border-collapse">
-            <thead className="bg-slate-800/80">
+        <div className="overflow-x-auto rounded-lg border border-line/50">
+          <table className="w-full text-sm text-ink border-collapse">
+            <thead className="bg-surface/80">
               <tr>
-                <th className="text-left text-xs text-slate-400 font-semibold py-2 px-3">Stat</th>
+                <th className="text-left text-xs text-ink-muted font-semibold py-2 px-3">Stat</th>
                 <th className={colHdr}>Modelo</th>
                 <th className={colHdr}>MAE</th>
                 <th className={colHdr}>RMSE</th>
@@ -1026,7 +1026,7 @@ export function ValidationTab() {
                 <th className={colHdr}>Partidos</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/40">
+            <tbody className="divide-y divide-line/40">
               {Object.entries(result).flatMap(([stat, models]) => {
                 const showMape = !MAPE_SUPPRESSED.has(stat)
                 const naiveMae = models.naive?.mae ?? null
@@ -1039,23 +1039,23 @@ export function ValidationTab() {
                     ? modelMae / naiveMae
                     : null
                   const ratioCls = ratio == null
-                    ? 'text-slate-500'
-                    : ratio < 0.95 ? 'text-green-400 font-semibold'
-                    : ratio > 1.05 ? 'text-red-400'
-                    : 'text-slate-400'
+                    ? 'text-ink-muted'
+                    : ratio < 0.95 ? 'text-ok font-semibold'
+                    : ratio > 1.05 ? 'text-bad'
+                    : 'text-ink-muted'
                   return (
-                    <tr key={`${stat}-${mk}`} className={`hover:bg-slate-800/40 ${isNaive ? 'bg-slate-800/20' : ''}`}>
+                    <tr key={`${stat}-${mk}`} className={`hover:bg-surface/40 ${isNaive ? 'bg-surface/20' : ''}`}>
                       {mk === 'model_a' && (
-                        <td rowSpan={3} className="px-3 py-2 font-medium text-slate-300 align-middle border-r border-slate-700/40">
+                        <td rowSpan={3} className="px-3 py-2 font-medium text-ink align-middle border-r border-line/40">
                           {STAT_LABELS[stat]?.label ?? stat}
                         </td>
                       )}
-                      <td className="px-3 py-1 text-right text-slate-400 text-xs">
+                      <td className="px-3 py-1 text-right text-ink-muted text-xs">
                         {mk === 'model_a' ? 'A (global)' : mk === 'model_b' ? 'B (cond.)' : 'Naive (media)'}
                       </td>
                       <td className="px-3 py-1 text-right tabular-nums">{cell(modelMae)}</td>
                       <td className="px-3 py-1 text-right tabular-nums">{cell('rmse' in m ? m.rmse : undefined)}</td>
-                      <td className="px-3 py-1 text-right tabular-nums text-slate-500">
+                      <td className="px-3 py-1 text-right tabular-nums text-ink-muted">
                         {isNaive || !showMape
                           ? '—'
                           : ('mape' in m && m.mape != null ? `${m.mape.toFixed(1)} %` : '—')
@@ -1064,7 +1064,7 @@ export function ValidationTab() {
                       <td className={`px-3 py-1 text-right tabular-nums ${ratioCls}`}>
                         {ratio == null ? '—' : ratio.toFixed(2)}
                       </td>
-                      <td className="px-3 py-1 text-right tabular-nums text-slate-400">{m.n_evaluated}</td>
+                      <td className="px-3 py-1 text-right tabular-nums text-ink-muted">{m.n_evaluated}</td>
                     </tr>
                   )
                 })
@@ -1072,9 +1072,9 @@ export function ValidationTab() {
               })}
             </tbody>
           </table>
-          <div className="px-3 py-2 flex gap-4 text-xs text-slate-500">
-            <span><span className="text-green-400 font-semibold">Verde</span> = modelo mejor que naive (&lt;0.95)</span>
-            <span><span className="text-red-400">Rojo</span> = naive mejor que modelo (&gt;1.05)</span>
+          <div className="px-3 py-2 flex gap-4 text-xs text-ink-muted">
+            <span><span className="text-ok font-semibold">Verde</span> = modelo mejor que naive (&lt;0.95)</span>
+            <span><span className="text-bad">Rojo</span> = naive mejor que modelo (&gt;1.05)</span>
             {Object.keys(result).some(s => MAPE_SUPPRESSED.has(s)) && (
               <span>· MAPE omitido para <span className="font-mono">net_rtg</span> (oscila cerca de cero)</span>
             )}
@@ -1083,7 +1083,7 @@ export function ValidationTab() {
       )}
 
       {result && Object.keys(result).length === 0 && (
-        <p className="text-slate-400 text-sm">
+        <p className="text-ink-muted text-sm">
           Sin datos suficientes para este equipo y temporada (mínimo {mode === 'live' ? 'temporada actual' : 'HISTORICAL'}).
         </p>
       )}
@@ -1116,34 +1116,34 @@ function SeasonProjectionTab() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-white">Proyección de Clasificación Final</h2>
-      <p className="text-slate-400 text-sm">
+      <h2 className="text-lg font-semibold text-ink">Proyección de Clasificación Final</h2>
+      <p className="text-ink-muted text-sm">
         Proyección Monte Carlo de la clasificación final de la liga simulando los partidos
         restantes usando modelos de net rating. Muestra victorias proyectadas, probabilidad
         de playoff y distribución de posiciones para cada equipo.
       </p>
 
       {!collectionName && (
-        <p className="text-slate-500 text-sm italic">Selecciona una colección primero.</p>
+        <p className="text-ink-muted text-sm italic">Selecciona una colección primero.</p>
       )}
 
       {collectionName && (
         <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Partidos/temporada</label>
+            <label className="text-xs text-ink-muted">Partidos/temporada</label>
             <input
               type="number"
               value={seasonLength}
               onChange={e => setSeasonLength(Number(e.target.value))}
               min={1} max={40}
-              className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-20"
+              className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink w-20"
             />
           </div>
 
           <button
             type="submit"
             disabled={isFetching}
-            className="px-5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm rounded disabled:opacity-50"
+            className="px-5 py-1.5 bg-accent-solid hover:bg-accent-hover text-white text-sm rounded disabled:opacity-50"
           >
             {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Proyectar'}
           </button>
@@ -1151,16 +1151,16 @@ function SeasonProjectionTab() {
       )}
 
       {error && (
-        <p className="text-red-400 text-sm">
+        <p className="text-bad text-sm">
           {error instanceof Error ? error.message : 'Error al obtener proyección'}
         </p>
       )}
 
       {data && data.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-slate-200 border-collapse">
+          <table className="w-full text-sm text-ink border-collapse">
             <thead>
-              <tr className="text-slate-400 border-b border-slate-700">
+              <tr className="text-ink-muted border-b border-line">
                 <th className="text-left py-2 px-3">#</th>
                 <th className="text-left py-2 px-3">Equipo</th>
                 <th className="text-right py-2 px-3">V-D act.</th>
@@ -1172,8 +1172,8 @@ function SeasonProjectionTab() {
             </thead>
             <tbody>
               {data.map((entry: SeasonProjectionEntry, idx: number) => (
-                <tr key={entry.team_id} className="border-b border-slate-800 hover:bg-slate-800/30">
-                  <td className="py-2 px-3 text-slate-400">{idx + 1}</td>
+                <tr key={entry.team_id} className="border-b border-line hover:bg-surface/30">
+                  <td className="py-2 px-3 text-ink-muted">{idx + 1}</td>
                   <td className="py-2 px-3 font-medium">{entry.team_name}</td>
                   <td className="py-2 px-3 text-right">
                     {entry.wins_so_far}-{entry.losses_so_far}
@@ -1181,16 +1181,16 @@ function SeasonProjectionTab() {
                   <td className="py-2 px-3 text-right font-semibold">
                     {fmt(entry.proj_wins)}
                   </td>
-                  <td className="py-2 px-3 text-right text-slate-400 text-xs">
+                  <td className="py-2 px-3 text-right text-ink-muted text-xs">
                     {fmt(entry.proj_wins_ci_low)}–{fmt(entry.proj_wins_ci_high)}
                   </td>
                   <td className={`py-2 px-3 text-right font-semibold ${
-                    entry.playoff_prob >= 0.7 ? 'text-green-400' :
-                    entry.playoff_prob >= 0.4 ? 'text-amber-400' : 'text-red-400'
+                    entry.playoff_prob >= 0.7 ? 'text-ok' :
+                    entry.playoff_prob >= 0.4 ? 'text-warn' : 'text-bad'
                   }`}>
                     {pct(entry.playoff_prob)}
                   </td>
-                  <td className="py-2 px-3 text-right text-slate-300">
+                  <td className="py-2 px-3 text-right text-ink">
                     {pct(entry.rank_probs?.[1] ?? 0)}
                   </td>
                 </tr>
@@ -1265,8 +1265,8 @@ function PlayerPredictionTab() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-white">Predicción por Jugador</h2>
-      <p className="text-slate-400 text-sm">
+      <h2 className="text-lg font-semibold text-ink">Predicción por Jugador</h2>
+      <p className="text-ink-muted text-sm">
         Predicción del próximo partido de un jugador usando regresión Ridge sobre su historial
         de la temporada actual en la colección seleccionada.
       </p>
@@ -1274,11 +1274,11 @@ function PlayerPredictionTab() {
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
         {/* Team filter */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Equipo</label>
+          <label className="text-xs text-ink-muted">Equipo</label>
           <select
             value={teamFilter}
             onChange={e => handleTeamFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-48"
+            className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink w-48"
           >
             <option value="">— Todos —</option>
             {teamNames.map(t => <option key={t} value={t}>{t}</option>)}
@@ -1287,7 +1287,7 @@ function PlayerPredictionTab() {
 
         {/* Player selector */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Jugador</label>
+          <label className="text-xs text-ink-muted">Jugador</label>
           <select
             value={playerId}
             onChange={e => {
@@ -1295,7 +1295,7 @@ function PlayerPredictionTab() {
               setPlayerId(e.target.value)
               setPlayerName(found?.player_name ?? '')
             }}
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-56"
+            className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
           >
             <option value="">— Selecciona jugador —</option>
             {filteredPlayers.map(p => (
@@ -1306,11 +1306,11 @@ function PlayerPredictionTab() {
 
         {/* Home/Away */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Local / Visitante</label>
+          <label className="text-xs text-ink-muted">Local / Visitante</label>
           <select
             value={isHome ? 'home' : 'away'}
             onChange={e => setIsHome(e.target.value === 'home')}
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white"
+            className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink"
           >
             <option value="home">Local</option>
             <option value="away">Visitante</option>
@@ -1319,27 +1319,27 @@ function PlayerPredictionTab() {
 
         {/* Opponent net rating */}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-slate-400">Net Rtg rival</label>
+          <label className="text-xs text-ink-muted">Net Rtg rival</label>
           <input
             type="number"
             value={oppNetRtg}
             onChange={e => setOppNetRtg(e.target.value)}
             placeholder="0.0"
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-24"
+            className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink w-24"
           />
         </div>
 
         <button
           type="submit"
           disabled={!playerId || isFetching}
-          className="px-5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-sm rounded disabled:opacity-50"
+          className="px-5 py-1.5 bg-accent-solid hover:bg-accent-hover text-white text-sm rounded disabled:opacity-50"
         >
           {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Predecir'}
         </button>
       </form>
 
       {error && (
-        <p className="text-red-400 text-sm">
+        <p className="text-bad text-sm">
           {error instanceof Error ? error.message : 'Error al obtener predicción'}
         </p>
       )}
@@ -1350,17 +1350,17 @@ function PlayerPredictionTab() {
             const s = data[stat]
             const hasValue = s.estimate != null
             return (
-              <div key={stat} className="bg-slate-800/60 rounded-lg p-4 space-y-1 border border-slate-700/50">
-                <p className="text-xs text-slate-400 uppercase tracking-wider">{statLabels[stat]}</p>
-                <p className="text-3xl font-bold text-white">
+              <div key={stat} className="bg-surface/60 rounded-lg p-4 space-y-1 border border-line/50">
+                <p className="text-xs text-ink-muted uppercase tracking-wider">{statLabels[stat]}</p>
+                <p className="text-3xl font-bold text-ink">
                   {hasValue ? fmt(s.estimate) : '—'}
                 </p>
                 {hasValue && (
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-ink-muted">
                     IC 90%: {fmt(s.ci_low)} – {fmt(s.ci_high)}
                   </p>
                 )}
-                <p className="text-xs text-slate-500">n={s.n_train} partidos</p>
+                <p className="text-xs text-ink-muted">n={s.n_train} partidos</p>
               </div>
             )
           })}
@@ -1387,22 +1387,22 @@ export default function PredictivePage() {
     <PageTransition>
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Análisis Predictivo</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-ink">Análisis Predictivo</h1>
+          <p className="text-ink-muted text-sm mt-1">
             Estadísticas ajustadas por rival · Modelos Ridge + Bootstrap · Proyección Monte Carlo · Validación walk-forward
           </p>
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-slate-800/60 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 bg-surface/60 rounded-lg p-1 w-fit">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 tab === id
-                  ? 'bg-brand-600 text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  ? 'bg-accent-solid text-white'
+                  : 'text-ink-muted hover:text-ink hover:bg-surface-raised/50'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -1412,7 +1412,7 @@ export default function PredictivePage() {
         </div>
 
         {/* Tab content */}
-        <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6">
+        <div className="bg-canvas/50 rounded-xl border border-line/50 p-6">
           {tab === 'montecarlo' && <MonteCarloTab />}
           {tab === 'prediction' && <GamePredictionTab />}
           {tab === 'player'     && <PlayerPredictionTab />}

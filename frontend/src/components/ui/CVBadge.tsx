@@ -27,9 +27,9 @@ interface CVBadgeProps {
 /** Returns Tailwind classes for the pill background + text so it remains
  *  readable on any quartile cell background (green Q1 through red Q4). */
 function cvClass(cv: number, thresholds: [number, number]): string {
-  if (cv >= thresholds[1]) return 'bg-red-950 text-red-300 ring-1 ring-red-800'
-  if (cv >= thresholds[0]) return 'bg-amber-950 text-amber-300 ring-1 ring-amber-800'
-  return 'bg-zinc-800 text-zinc-400 ring-1 ring-zinc-600'
+  if (cv >= thresholds[1]) return 'bg-bad/15 text-bad ring-1 ring-bad/30'
+  if (cv >= thresholds[0]) return 'bg-warn/15 text-warn ring-1 ring-warn/30'
+  return 'bg-surface text-ink-muted ring-1 ring-line'
 }
 
 function cvLabel(cv: number, thresholds: [number, number]): string {

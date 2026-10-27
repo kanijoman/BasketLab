@@ -62,7 +62,7 @@ function numColOpt(key: string, header: string | (() => JSX.Element), decimals =
     header: typeof header === 'string' ? tippedHeader(header) : header,
     cell: ({ getValue }) => {
       const v = getValue() as number | null | undefined
-      if (v == null) return <span className="text-ink-disabled">—</span>
+      if (v == null) return <span className="text-ink-faint">—</span>
       return fmt(v, decimals)
     },
   }

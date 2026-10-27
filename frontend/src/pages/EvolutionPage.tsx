@@ -15,6 +15,7 @@ import {
   Legend,
   Brush,
 } from 'recharts'
+import { useChartTheme } from '@/lib/chartTheme'
 import { TrendingUp, X, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
@@ -24,11 +25,6 @@ import ExportButton from '@/components/ui/ExportButton'
 
 // -- Helpers ------------------------------------------------------------------
 
-// Softer palette for up to 8 simultaneous team lines
-const TEAM_COLORS = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
-  '#8b5cf6', '#06b6d4', '#f97316', '#ec4899',
-]
 
 // Stat options grouped by category
 const STAT_GROUPS = [
@@ -122,6 +118,8 @@ function mergeSeriesData(
 // -- Component ----------------------------------------------------------------
 
 export default function EvolutionPage() {
+  const chart = useChartTheme()          // up to 8 team lines: the series of the theme (issue #188)
+  const TEAM_COLORS = chart.series
   const { collection } = useCollection()
 
   const [selectedTeams, setSelectedTeams] = useState<string[]>([])
@@ -204,8 +202,8 @@ export default function EvolutionPage() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-ink-primary">Evolución Temporal</h1>
-            <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+            <h1 className="text-2xl font-bold text-ink">Evolución Temporal</h1>
+            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
           </div>
           <ExportButton
             filename={`evolucion_${stat}_${collection?.name ?? ''}`}
@@ -220,12 +218,12 @@ export default function EvolutionPage() {
         <div className="card p-4 flex flex-wrap gap-3 items-center">
           {/* Stat selector with optgroups */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-ink-secondary font-medium uppercase tracking-wide">Métrica</span>
+            <span className="text-xs text-ink-muted font-medium uppercase tracking-wide">Métrica</span>
             <div className="relative">
               <select
                 value={stat}
                 onChange={e => setStat(e.target.value)}
-                className="appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-1.5 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                className="appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
               >
                 {STAT_GROUPS.map(group => (
                   <optgroup key={group.label} label={group.label}>
@@ -235,13 +233,13 @@ export default function EvolutionPage() {
                   </optgroup>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-secondary" />
+              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
             </div>
           </div>
 
           {/* Rolling window */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-ink-secondary font-medium uppercase tracking-wide">Media móvil</span>
+            <span className="text-xs text-ink-muted font-medium uppercase tracking-wide">Media móvil</span>
             <div className="flex gap-1">
               {WINDOW_OPTIONS.map(w => (
                 <button
@@ -249,8 +247,8 @@ export default function EvolutionPage() {
                   onClick={() => setRollingWindow(w)}
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     rollingWindow === w
-                      ? 'bg-accent-500 text-white'
-                      : 'bg-surface-base border border-surface-border text-ink-secondary hover:bg-surface-hover'
+                      ? 'bg-secondary text-white'
+                      : 'bg-canvas border border-line text-ink-muted hover:bg-surface-raised'
                   }`}
                 >
                   {w}J
@@ -261,21 +259,21 @@ export default function EvolutionPage() {
 
           {/* Series toggles */}
           <div className="flex items-center gap-3 ml-auto flex-wrap">
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-secondary">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
               <input type="checkbox" checked={showRaw}    onChange={e => setShowRaw(e.target.checked)}    className="rounded" /> Por partido
             </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-secondary">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
               <input type="checkbox" checked={showRolling} onChange={e => setShowRolling(e.target.checked)} className="rounded" /> Media móvil
             </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-secondary">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
               <input type="checkbox" checked={showCumulative} onChange={e => setShowCumulative(e.target.checked)} className="rounded" /> Promedio acumulado
             </label>
-            <span className="text-ink-muted text-xs select-none">|</span>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-secondary">
+            <span className="text-ink-faint text-xs select-none">|</span>
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
               <input type="checkbox" checked={showCompetitionRolling} onChange={e => setShowCompetitionRolling(e.target.checked)} className="rounded" />
               <span>Liga media móvil{competitionQuery.isFetching ? ' …' : ''}</span>
             </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-secondary">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
               <input type="checkbox" checked={showCompetitionCumulative} onChange={e => setShowCompetitionCumulative(e.target.checked)} className="rounded" />
               <span>Liga acumulado{competitionQuery.isFetching ? ' …' : ''}</span>
             </label>
@@ -284,7 +282,7 @@ export default function EvolutionPage() {
 
         {/* Team chips */}
         <div className="card p-3">
-          <p className="text-xs text-ink-secondary font-medium uppercase tracking-wide mb-2">
+          <p className="text-xs text-ink-muted font-medium uppercase tracking-wide mb-2">
             Equipos seleccionados ({selectedTeams.length}/8)
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -301,19 +299,19 @@ export default function EvolutionPage() {
               </span>
             ))}
             {selectedTeams.length === 0 && (
-              <span className="text-xs text-ink-secondary italic">
+              <span className="text-xs text-ink-muted italic">
                 Selecciona equipos de la lista inferior
               </span>
             )}
           </div>
           {/* Team list */}
           {teamList.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2 border-t border-surface-border pt-2">
+            <div className="flex flex-wrap gap-1 mt-2 border-t border-line pt-2">
               {teamList.filter(t => !selectedTeams.includes(t.id)).map(team => (
                 <button
                   key={team.id}
                   onClick={() => toggleTeam(team.id)}
-                  className="px-2 py-0.5 rounded text-xs border border-surface-border text-ink-secondary hover:border-accent-400 hover:text-accent-400 transition-colors"
+                  className="px-2 py-0.5 rounded text-xs border border-line text-ink-muted hover:border-secondary-text hover:text-secondary-text transition-colors"
                 >
                   + {team.name}
                 </button>
@@ -326,29 +324,29 @@ export default function EvolutionPage() {
         <div className="card p-4" ref={chartRef}>
           {selectedTeams.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-2 text-center">
-              <TrendingUp className="w-10 h-10 text-accent-400 opacity-40" />
-              <p className="text-ink-secondary text-sm">Selecciona al menos un equipo para ver la evolución</p>
+              <TrendingUp className="w-10 h-10 text-secondary-text opacity-40" />
+              <p className="text-ink-muted text-sm">Selecciona al menos un equipo para ver la evolución</p>
             </div>
           ) : isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-secondary-text border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <div>
-              <p className="text-sm font-medium text-ink-secondary mb-3">
+              <p className="text-sm font-medium text-ink-muted mb-3">
                 {statLabel} por partido — {collection?.label}
               </p>
               <ResponsiveContainer width="100%" height={340}>
                 <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} strokeOpacity={0.6} />
                   <XAxis
                     dataKey="game"
-                    tick={{ fontSize: 11, fill: '#6b7280' }}
-                    label={{ value: 'Jornada', position: 'insideBottomRight', offset: -5, fontSize: 11, fill: '#6b7280' }}
+                    tick={{ fontSize: 11, fill: chart.axis }}
+                    label={{ value: 'Jornada', position: 'insideBottomRight', offset: -5, fontSize: 11, fill: chart.axis }}
                   />
-                  <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={36} />
+                  <YAxis tick={{ fontSize: 11, fill: chart.axis }} width={36} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 12 }}
+                    contentStyle={chart.tooltip}
                     labelFormatter={v => `Jornada ${v}`}
                     formatter={(value: number, name: string) => {
                       if (name === 'comp_rolling')    return [typeof value === 'number' ? value.toFixed(1) : value, `Liga media ${rollingWindow}J`]
@@ -369,7 +367,7 @@ export default function EvolutionPage() {
                     }}
                     wrapperStyle={{ fontSize: 11 }}
                   />
-                  <Brush dataKey="game" height={20} stroke="#444" fill="#1a1a2e" travellerWidth={6} />
+                  <Brush dataKey="game" height={20} stroke={chart.grid} fill={chart.surface} travellerWidth={6} />
                   {selectedTeams.map((team, idx) => {
                     const color = TEAM_COLORS[idx % TEAM_COLORS.length]
                     return (
@@ -421,7 +419,7 @@ export default function EvolutionPage() {
                       key="comp_rolling"
                       type="monotone"
                       dataKey="comp_rolling"
-                      stroke="#9ca3af"
+                      stroke={chart.axis}
                       strokeWidth={2}
                       dot={false}
                       connectNulls
@@ -433,7 +431,7 @@ export default function EvolutionPage() {
                       key="comp_cumulative"
                       type="monotone"
                       dataKey="comp_cumulative"
-                      stroke="#6b7280"
+                      stroke={chart.reference}
                       strokeWidth={2}
                       strokeDasharray="6 3"
                       dot={false}

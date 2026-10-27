@@ -80,9 +80,9 @@ describe('ComparativasPage: the comparative reports of the weekly report, on the
     const good = within(cellOf('Alfa', 'PPP')).getByText('+7.0')
     const lessIsBetterUp = within(cellOf('Alfa', 'Perd')).getByText('+2.0')      // more turnovers: bad
     const lessIsBetterDown = within(cellOf('Bravo', 'Perd')).getByText('-1.0')   // fewer turnovers: good
-    expect(good.className).toContain('text-brand-400')
-    expect(lessIsBetterUp.className).toContain('text-down')
-    expect(lessIsBetterDown.className).toContain('text-brand-400')
+    expect(good.className).toContain('text-ok')
+    expect(lessIsBetterUp.className).toContain('text-bad')
+    expect(lessIsBetterDown.className).toContain('text-ok')
   })
 
   it('what the rivals did against each team is its own view, where the good and the bad are swapped', async () => {
@@ -90,8 +90,8 @@ describe('ComparativasPage: the comparative reports of the weekly report, on the
     await screen.findByText('Alfa')
     fireEvent.click(screen.getByRole('button', { name: 'Rivales' }))
     // the rivals scored 5 more points against Alfa at home: that is bad for Alfa, so it is red
-    expect(within(cellOf('Alfa', 'PPP')).getByText('+5.0').className).toContain('text-down')
-    expect(within(cellOf('Alfa', 'Perd')).getByText('-2.0').className).toContain('text-down')
+    expect(within(cellOf('Alfa', 'PPP')).getByText('+5.0').className).toContain('text-bad')
+    expect(within(cellOf('Alfa', 'Perd')).getByText('-2.0').className).toContain('text-bad')
   })
 
   it('the advanced figures are one click away', async () => {

@@ -61,8 +61,8 @@ export default function PossessionsPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-ink-primary">Análisis de Posesiones</h1>
-            <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+            <h1 className="text-2xl font-bold text-ink">Análisis de Posesiones</h1>
+            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
           </div>
           <div className="flex items-center gap-2">
             {collection && (
@@ -70,27 +70,27 @@ export default function PossessionsPage() {
                 <a
                   href={getPossessionsExportUrl(collection.name)}
                   download
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-border text-ink-secondary hover:bg-surface-hover transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors"
                 >
                   Exportar CSV
                 </a>
                 <a
                   href={getPossessionQualityExportUrl(collection.name)}
                   download
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-surface-border text-ink-secondary hover:bg-surface-hover transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors"
                 >
                   Calidad PBP CSV
                 </a>
               </>
             )}
           {/* Tab toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm">
+          <div className="flex rounded-lg overflow-hidden border border-line text-sm">
             {TABS.map(([key, lbl]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
                 className={`px-4 py-1.5 font-medium transition-colors ${
-                  tab === key ? 'bg-accent-500 text-white' : 'text-ink-secondary hover:bg-surface-hover'
+                  tab === key ? 'bg-secondary text-white' : 'text-ink-muted hover:bg-surface-raised'
                 }`}
               >
                 {lbl}
@@ -102,23 +102,23 @@ export default function PossessionsPage() {
 
         {isLoading ? (
           <div className="card p-16 flex justify-center">
-            <div className="w-8 h-8 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-secondary-text border-t-transparent rounded-full animate-spin" />
           </div>
         ) : stats.length === 0 ? (
           <div className="card p-10 flex flex-col items-center gap-3 text-center">
-            <Activity className="w-10 h-10 text-accent-400 opacity-40" />
-            <p className="text-ink-secondary text-sm">Sin datos de posesiones para esta colección</p>
+            <Activity className="w-10 h-10 text-secondary-text opacity-40" />
+            <p className="text-ink-muted text-sm">Sin datos de posesiones para esta colección</p>
           </div>
         ) : tab === 'table' ? (
           <div className="space-y-3">
-            <div role="group" aria-label="Vista de la tabla" className="inline-flex rounded-lg overflow-hidden border border-surface-border text-sm">
+            <div role="group" aria-label="Vista de la tabla" className="inline-flex rounded-lg overflow-hidden border border-line text-sm">
               {VIEWS.map(v => (
                 <button
                   key={v.key}
                   onClick={() => setView(v.key)}
                   aria-pressed={view === v.key}
                   className={`px-4 py-1.5 font-medium transition-colors ${
-                    view === v.key ? 'bg-accent-500 text-white' : 'text-ink-secondary hover:bg-surface-hover'
+                    view === v.key ? 'bg-secondary text-white' : 'text-ink-muted hover:bg-surface-raised'
                   }`}
                 >
                   {v.label}

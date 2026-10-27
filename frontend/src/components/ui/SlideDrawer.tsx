@@ -64,19 +64,19 @@ export default function SlideDrawer({
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className={cn(
-              'fixed right-0 top-0 bottom-0 w-full bg-surface-raised border-l border-surface-border',
+              'fixed right-0 top-0 bottom-0 w-full bg-surface border-l border-line',
               'flex flex-col z-50 shadow-panel',
               SIZES[size],
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-border shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-line shrink-0">
               {title && (
-                <h2 className="text-sm font-semibold text-ink-primary">{title}</h2>
+                <h2 className="text-sm font-semibold text-ink">{title}</h2>
               )}
               <button
                 onClick={onClose}
-                className="ml-auto p-1 rounded hover:bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors"
+                className="ml-auto p-1 rounded hover:bg-surface-raised text-ink-muted hover:text-ink transition-colors"
                 aria-label="Cerrar"
               >
                 <X className="w-4 h-4" />

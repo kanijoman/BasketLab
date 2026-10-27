@@ -35,14 +35,14 @@ export default function IQRBar({ value, min, q1, q3, max, reverse = false, class
   const iqrWidth  = pct(q3) - pct(q1)
   const valuePct  = pct(clamped)
 
-  // IQR band colour: green when direction is favourable, amber when not
+  // IQR band colour: the accent when high is good, the faint ink when the stat is reversed (low is good)
   // A value in Q3-Q4 is best for non-reversed stats (high = good)
   // A value in Q1-Q2 is best for reversed stats (low = good)
-  const iqrColor = reverse ? 'bg-slate-500/40' : 'bg-brand-500/40'
+  const iqrColor = reverse ? 'bg-ink-faint/40' : 'bg-accent/40'
 
   return (
     <span
-      className={`relative block w-full h-[4px] rounded-full bg-surface-border overflow-visible ${className ?? ''}`}
+      className={`relative block w-full h-[4px] rounded-full bg-line overflow-visible ${className ?? ''}`}
       title={`Rango: ${min.toFixed(1)} – ${max.toFixed(1)}  |  IQR: ${q1.toFixed(1)} – ${q3.toFixed(1)}`}
     >
       {/* IQR band */}

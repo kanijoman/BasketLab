@@ -36,12 +36,12 @@ type Flat = Partial<TeamStat> & { team_name: string; games: string }
 
 function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
   return (
-    <div className="flex rounded-lg overflow-hidden border border-surface-border">
+    <div className="flex rounded-lg overflow-hidden border border-line">
       {options.map(o => (
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
-          className={cn('px-3 py-1.5 text-sm font-medium transition-colors', value === o.id ? 'bg-brand-600/30 text-brand-400' : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary')}
+          className={cn('px-3 py-1.5 text-sm font-medium transition-colors', value === o.id ? 'bg-accent/30 text-accent-text' : 'text-ink-muted hover:bg-surface-raised hover:text-ink')}
         >
           {o.label}
         </button>
@@ -52,7 +52,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
 
 function buildColumns(defs: ColDef[], byName: Record<string, ComparisonRow>, rivals: boolean): ColumnDef<Flat, unknown>[] {
   const cols: ColumnDef<Flat, unknown>[] = [
-    { id: 'team_name', accessorKey: 'team_name', header: 'Equipo', size: 230, cell: ({ getValue }) => <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span> },
+    { id: 'team_name', accessorKey: 'team_name', header: 'Equipo', size: 230, cell: ({ getValue }) => <span className="font-medium text-ink whitespace-nowrap">{getValue() as string}</span> },
     { id: 'games', accessorKey: 'games', header: tippedHeader('PJ'), size: 60 },
   ]
   for (const def of defs.filter(d => !d.count)) {
@@ -106,7 +106,7 @@ export default function ComparativasPage() {
   const reverseColumns = useMemo(() => defs.filter(d => d.reverse !== rivals).map(d => d.key as string), [defs, rivals])
 
   if (!collection) {
-    return <PageTransition><p className="text-center text-ink-muted mt-16">Selecciona una colección para continuar.</p></PageTransition>
+    return <PageTransition><p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p></PageTransition>
   }
 
   const shortcut = (days: number) => { setFrom(isoDay(days - 1)); setTo(isoDay(0)) }
@@ -115,8 +115,8 @@ export default function ComparativasPage() {
     <PageTransition>
       <div className="space-y-4">
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">Comparativas</h1>
-          <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
+          <h1 className="text-xl font-bold text-ink">Comparativas</h1>
+          <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -127,22 +127,22 @@ export default function ComparativasPage() {
 
         {by === 'period' && (
           <div className="flex flex-wrap items-end gap-3">
-            <label className="text-xs text-ink-secondary flex flex-col gap-1">Desde
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="bg-surface-card border border-surface-border rounded px-2 py-1 text-sm text-ink-primary" />
+            <label className="text-xs text-ink-muted flex flex-col gap-1">Desde
+              <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="bg-canvas border border-line rounded px-2 py-1 text-sm text-ink" />
             </label>
-            <label className="text-xs text-ink-secondary flex flex-col gap-1">Hasta
-              <input type="date" value={to} onChange={e => setTo(e.target.value)} className="bg-surface-card border border-surface-border rounded px-2 py-1 text-sm text-ink-primary" />
+            <label className="text-xs text-ink-muted flex flex-col gap-1">Hasta
+              <input type="date" value={to} onChange={e => setTo(e.target.value)} className="bg-canvas border border-line rounded px-2 py-1 text-sm text-ink" />
             </label>
-            <button onClick={() => shortcut(30)} className="px-3 py-1.5 text-sm rounded border border-surface-border text-ink-secondary hover:bg-surface-hover">Últimos 30 días</button>
-            <button onClick={() => shortcut(15)} className="px-3 py-1.5 text-sm rounded border border-surface-border text-ink-secondary hover:bg-surface-hover">Últimos 15 días</button>
+            <button onClick={() => shortcut(30)} className="px-3 py-1.5 text-sm rounded border border-line text-ink-muted hover:bg-surface-raised">Últimos 30 días</button>
+            <button onClick={() => shortcut(15)} className="px-3 py-1.5 text-sm rounded border border-line text-ink-muted hover:bg-surface-raised">Últimos 15 días</button>
           </div>
         )}
 
-        {needsDates && <p className="text-sm text-ink-muted">Elige un tramo (desde y/o hasta, o un atajo) para compararlo con el resto de la temporada.</p>}
-        {isError && <p className="text-red-400 text-sm">Error al cargar los datos.</p>}
+        {needsDates && <p className="text-sm text-ink-faint">Elige un tramo (desde y/o hasta, o un atajo) para compararlo con el resto de la temporada.</p>}
+        {isError && <p className="text-bad text-sm">Error al cargar los datos.</p>}
 
         {data && (
-          <p className="text-xs text-ink-muted">
+          <p className="text-xs text-ink-faint">
             {data.label_a} frente a {data.label_b}: cada celda es el valor de «{data.label_a}» y, al lado, su diferencia con «{data.label_b}»
             {rivals ? ' (lo que lograron los rivales: verde es bueno para ellos).' : ' (verde es mejor, rojo peor; en pérdidas, menos es mejor).'}
           </p>

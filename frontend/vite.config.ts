@@ -8,10 +8,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // design/ is shared with the live app: tokens, Tailwind preset and theme store (issue #188)
+      '@design': path.resolve(__dirname, '../design'),
     },
   },
   server: {
     port: 5173,
+    fs: { allow: ['..'] },
     // Proxy /api requests to the FastAPI backend during development
     proxy: {
       '/api': {

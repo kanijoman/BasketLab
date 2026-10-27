@@ -12,7 +12,7 @@ export default function TeamCell({ name, teamId }: { name: string; teamId?: stri
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
         />
       )}
-      <span title={name} className="font-medium text-ink-primary leading-tight line-clamp-2 break-words">{name}</span>
+      <span title={name} className="font-medium text-ink leading-tight line-clamp-2 break-words">{name}</span>
     </span>
   )
 }

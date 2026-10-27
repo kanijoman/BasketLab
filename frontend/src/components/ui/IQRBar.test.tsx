@@ -62,20 +62,19 @@ describe('IQRBar - reverse prop', () => {
     expect(container.firstChild).not.toBeNull()
   })
 
-  it('uses amber IQR colour in reverse mode', () => {
+  it('uses the faint ink for the IQR band in reverse mode', () => {
     const { container } = render(
       <IQRBar value={30} min={10} q1={20} q3={40} max={60} reverse />,
     )
-    // In reverse mode the class is bg-slate-500/40
-    const iqrBand = container.querySelector('.bg-slate-500\\/40')
+    const iqrBand = container.querySelector('.bg-ink-faint\\/40')
     expect(iqrBand).not.toBeNull()
   })
 
-  it('uses brand IQR colour in normal mode', () => {
+  it('uses the accent for the IQR band in normal mode', () => {
     const { container } = render(
       <IQRBar value={70} min={10} q1={40} q3={80} max={100} />,
     )
-    const iqrBand = container.querySelector('.bg-brand-500\\/40')
+    const iqrBand = container.querySelector('.bg-accent\\/40')
     expect(iqrBand).not.toBeNull()
   })
 })

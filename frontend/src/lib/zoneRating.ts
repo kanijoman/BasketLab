@@ -21,10 +21,10 @@ export function ratingColor(rating?: ZoneRating): string {
 
 export function ratingTextClass(rating?: ZoneRating): string {
   switch (rating) {
-    case 'above': return 'text-green-400'
-    case 'average': return 'text-yellow-400'
-    case 'below': return 'text-red-400'
-    default: return 'text-ink-secondary'
+    case 'above': return 'text-ok'
+    case 'average': return 'text-warn'
+    case 'below': return 'text-bad'
+    default: return 'text-ink-muted'
   }
 }
 

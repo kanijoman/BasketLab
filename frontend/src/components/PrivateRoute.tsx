@@ -36,7 +36,7 @@ export default function PrivateRoute({
   if (!hasRole(requiredRole)) {
     if (showLocked) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 gap-3 text-ink-secondary">
+        <div className="flex flex-col items-center justify-center h-64 gap-3 text-ink-muted">
           <Lock className="w-10 h-10 opacity-40" />
           <p className="text-sm">Esta funcionalidad requiere un plan superior.</p>
         </div>

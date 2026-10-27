@@ -15,6 +15,7 @@ import { Component, type ReactNode } from 'react'
 import { Outlet, Link, useParams, useNavigate } from 'react-router-dom'
 import { ChevronRight, Home, ExternalLink } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
+import ThemeControl from '@/components/ThemeControl'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
 
 class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -24,8 +25,8 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   render() {
     if (this.state.error) return (
       <div className="p-8 space-y-2">
-        <p className="text-red-400 font-semibold">Error al cargar la página</p>
-        <pre className="text-xs text-slate-400 whitespace-pre-wrap">{(this.state.error as Error).message}</pre>
+        <p className="text-bad font-semibold">Error al cargar la página</p>
+        <pre className="text-xs text-ink-muted whitespace-pre-wrap">{(this.state.error as Error).message}</pre>
       </div>
     )
     return this.props.children
@@ -37,11 +38,11 @@ function Header() {
   const navigate = useNavigate()
 
   return (
-    <header className="h-14 bg-surface-raised border-b border-surface-border flex items-center px-4 gap-4 shrink-0 z-20">
+    <header className="h-14 bg-surface border-b border-line flex items-center px-4 gap-4 shrink-0 z-20">
       {/* Logo */}
       <Link
         to="/"
-        className="flex items-center gap-2 font-bold text-brand-500 hover:text-brand-400 transition-colors shrink-0"
+        className="flex items-center gap-2 font-bold text-accent-text hover:text-accent-text transition-colors shrink-0"
       >
         <img src="/logo.png" alt="BasketLab" className="h-7 w-7 rounded" onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
         <span className="text-sm tracking-tight hidden sm:block">BasketLab</span>
@@ -49,17 +50,17 @@ function Header() {
 
       {/* Breadcrumb */}
       {collection && (
-        <nav className="flex items-center gap-1 text-xs text-ink-secondary min-w-0">
+        <nav className="flex items-center gap-1 text-xs text-ink-muted min-w-0">
           <button
             onClick={() => navigate('/')}
-            className="hover:text-ink-primary transition-colors"
+            className="hover:text-ink transition-colors"
             aria-label="Inicio"
           >
             <Home className="w-3.5 h-3.5" />
           </button>
           <ChevronRight className="w-3 h-3 opacity-40 shrink-0" />
-          <span className="text-ink-primary font-medium truncate">{collection.label}</span>
-          <span className="ml-1 px-1.5 py-0.5 bg-surface-border/60 rounded text-ink-muted shrink-0">
+          <span className="text-ink font-medium truncate">{collection.label}</span>
+          <span className="ml-1 px-1.5 py-0.5 bg-line/60 rounded text-ink-faint shrink-0">
             {collection.isFbcyl ? 'FBCYL' : 'FEB'}
           </span>
         </nav>
@@ -67,6 +68,7 @@ function Header() {
 
       {/* Right side — future: user avatar / auth */}
       <div className="ml-auto flex items-center gap-2">
+        <ThemeControl />
         <a
           href="/docs"
           target="_blank"

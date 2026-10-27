@@ -27,9 +27,9 @@ describe('zone rating helpers', () => {
   })
 
   it('returns text classes per rating', () => {
-    expect(ratingTextClass('above')).toContain('green')
-    expect(ratingTextClass('below')).toContain('red')
-    expect(ratingTextClass('average')).toContain('yellow')
-    expect(ratingTextClass(undefined)).toContain('ink-secondary')
+    expect(ratingTextClass('above')).toBe('text-ok')
+    expect(ratingTextClass('below')).toBe('text-bad')
+    expect(ratingTextClass('average')).toBe('text-warn')
+    expect(ratingTextClass(undefined)).toBe('text-ink-muted')
   })
 })

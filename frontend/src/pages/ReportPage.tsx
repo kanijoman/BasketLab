@@ -23,7 +23,7 @@ import PageTransition from '@/components/ui/PageTransition'
 
 function ChevronDownIcon() {
   return (
-    <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-secondary"
+    <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted"
       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
@@ -44,13 +44,13 @@ function ReportCard({ icon, title, description, badge, children }: ReportCardPro
   return (
     <div className="card p-5 flex flex-col gap-4">
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-accent-500/10 text-accent-400">{icon}</div>
+        <div className="p-2 rounded-lg bg-secondary/10 text-secondary-text">{icon}</div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-ink-primary">{title}</h3>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-hover text-ink-secondary">{badge}</span>
+            <h3 className="font-semibold text-ink">{title}</h3>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-raised text-ink-muted">{badge}</span>
           </div>
-          <p className="text-xs text-ink-secondary mt-0.5">{description}</p>
+          <p className="text-xs text-ink-muted mt-0.5">{description}</p>
         </div>
       </div>
       {children}
@@ -86,14 +86,14 @@ export default function ReportPage() {
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary">Informes</h1>
-          <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+          <h1 className="text-2xl font-bold text-ink">Informes</h1>
+          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
         </div>
 
         {!collection && (
           <div className="card p-10 flex flex-col items-center gap-2 text-center">
             <FileText className="w-8 h-8 text-warn opacity-40" />
-            <p className="text-ink-secondary text-sm">Selecciona una colección para generar informes.</p>
+            <p className="text-ink-muted text-sm">Selecciona una colección para generar informes.</p>
           </div>
         )}
 
@@ -111,7 +111,7 @@ export default function ReportPage() {
                   <select
                     value={weeklyTeamA}
                     onChange={e => setWeeklyTeamA(e.target.value)}
-                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                    className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
                   >
                     <option value="">— Equipo propio (A) —</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -122,7 +122,7 @@ export default function ReportPage() {
                   <select
                     value={weeklyTeamB}
                     onChange={e => setWeeklyTeamB(e.target.value)}
-                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                    className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
                   >
                     <option value="">— Equipo rival (B) —</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -175,20 +175,20 @@ export default function ReportPage() {
                       setWeeklyLoading(false)
                     }
                   }}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
                 </button>
                 {weeklyLoading && weeklyProgress && (
                   <div className="flex flex-col gap-1">
-                    <div className="w-full h-1.5 rounded-full bg-surface-hover overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-surface-raised overflow-hidden">
                       <div
-                        className="h-full bg-accent-500 transition-all duration-500"
+                        className="h-full bg-secondary transition-all duration-500"
                         style={{ width: `${weeklyProgress.total > 0 ? (weeklyProgress.step / weeklyProgress.total) * 100 : 0}%` }}
                       />
                     </div>
-                    <p className="text-[11px] text-ink-secondary text-center">
+                    <p className="text-[11px] text-ink-muted text-center">
                       {weeklyProgress.message}
                       {weeklyProgress.total > 0 && ` (${weeklyProgress.step}/${weeklyProgress.total})`}
                     </p>
@@ -212,7 +212,7 @@ export default function ReportPage() {
                   <select
                     value={scoutTeam}
                     onChange={e => setScoutTeam(e.target.value)}
-                    className="w-full appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-2 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                    className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
                   >
                     <option value="">— Equipo —</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -238,7 +238,7 @@ export default function ReportPage() {
                       setScoutLoading(false)
                     }
                   }}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   {scoutLoading ? 'Generando documento…' : 'Descargar DOCX'}

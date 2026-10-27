@@ -35,7 +35,7 @@ function nameCol(): ColumnDef<TeamStat, unknown> {
     size: 150,
     header: 'Equipo',
     cell: ({ getValue }) => (
-      <span className="font-medium text-ink-primary whitespace-nowrap">
+      <span className="font-medium text-ink whitespace-nowrap">
         {getValue() as string}
       </span>
     ),
@@ -160,9 +160,9 @@ function RivalAdjPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-ink-secondary">Estadística:</label>
+        <label className="text-sm font-medium text-ink-muted">Estadística:</label>
         <select
-          className="bg-surface-card border border-surface-border rounded px-3 py-1.5 text-sm text-ink-primary"
+          className="bg-canvas border border-line rounded px-3 py-1.5 text-sm text-ink"
           value={statKey}
           onChange={e => setStatKey(e.target.value)}
         >
@@ -182,14 +182,14 @@ function RivalAdjPanel() {
         )}
       </div>
 
-      {isLoading && <Loader2 className="animate-spin text-brand-400 w-6 h-6" />}
-      {isError   && <p className="text-red-400 text-sm">Error al cargar los datos.</p>}
+      {isLoading && <Loader2 className="animate-spin text-accent-text w-6 h-6" />}
+      {isError   && <p className="text-bad text-sm">Error al cargar los datos.</p>}
 
       {tableData.length > 0 && (
-        <div ref={tableRef} className="overflow-x-auto rounded-lg border border-surface-border">
-          <table className="w-full text-sm text-ink-primary border-collapse">
+        <div ref={tableRef} className="overflow-x-auto rounded-lg border border-line">
+          <table className="w-full text-sm text-ink border-collapse">
             <thead>
-              <tr className="bg-surface-hover text-ink-secondary text-xs uppercase tracking-wider">
+              <tr className="bg-surface-raised text-ink-muted text-xs uppercase tracking-wider">
                 <th className="px-4 py-2.5 text-left">Equipo</th>
                 <th className="px-4 py-2.5 text-right cursor-help" title="Promedio real sin ajuste">Bruto</th>
                 <th className="px-4 py-2.5 text-right cursor-help" title="Corrección proporcional por calidad del rival. Positivo = calendario más difícil que la media de la liga">Ajuste</th>
@@ -202,18 +202,18 @@ function RivalAdjPanel() {
               {tableData.map((r, i) => (
                 <tr
                   key={r.team}
-                  className={`border-t border-surface-border hover:bg-surface-hover/50 ${i % 2 !== 0 ? 'bg-surface-card/30' : ''}`}
+                  className={`border-t border-line hover:bg-surface-raised/50 ${i % 2 !== 0 ? 'bg-surface-raised/30' : ''}`}
                 >
-                  <td className="px-4 py-2 font-medium text-ink-primary">{r.team}</td>
-                  <td className="px-4 py-2 text-right text-ink-secondary">{(r as { raw_avg?: number }).raw_avg?.toFixed(1) ?? '—'}</td>
-                  <td className={`px-4 py-2 text-right font-semibold ${((r as { adj?: number }).adj ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  <td className="px-4 py-2 font-medium text-ink">{r.team}</td>
+                  <td className="px-4 py-2 text-right text-ink-muted">{(r as { raw_avg?: number }).raw_avg?.toFixed(1) ?? '—'}</td>
+                  <td className={`px-4 py-2 text-right font-semibold ${((r as { adj?: number }).adj ?? 0) >= 0 ? 'text-ok' : 'text-bad'}`}>
                     {(r as { adj?: number }).adj != null
                       ? `${(r as { adj: number }).adj >= 0 ? '+' : ''}${(r as { adj: number }).adj.toFixed(1)}`
                       : '—'}
                   </td>
-                  <td className="px-4 py-2 text-right font-semibold text-ink-primary">{r.adj_avg.toFixed(1)}</td>
-                  <td className="px-4 py-2 text-right text-ink-muted">{(r as { sos?: number }).sos?.toFixed(1) ?? '—'}</td>
-                  <td className="px-4 py-2 text-right text-ink-muted">{(r as { n?: number }).n ?? '—'}</td>
+                  <td className="px-4 py-2 text-right font-semibold text-ink">{r.adj_avg.toFixed(1)}</td>
+                  <td className="px-4 py-2 text-right text-ink-faint">{(r as { sos?: number }).sos?.toFixed(1) ?? '—'}</td>
+                  <td className="px-4 py-2 text-right text-ink-faint">{(r as { n?: number }).n ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -222,14 +222,14 @@ function RivalAdjPanel() {
       )}
 
       {!isLoading && !isError && insufficientGames && (
-        <p className="text-amber-400 text-sm">
+        <p className="text-warn text-sm">
           La colección tiene muy pocos partidos (mínimo 5 por equipo) para calcular un ajuste por rival fiable.
           Con muestras pequeñas los cálculos generan resultados circulares que distorsionan los datos.
         </p>
       )}
 
       {!isLoading && !isError && !hasRawData && (
-        <p className="text-ink-muted text-sm">Sin datos disponibles para esta colección.</p>
+        <p className="text-ink-faint text-sm">Sin datos disponibles para esta colección.</p>
       )}
     </div>
   )
@@ -342,7 +342,7 @@ export default function TeamStatsPage() {
   if (!collection) {
     return (
       <PageTransition>
-        <p className="text-center text-ink-muted mt-16">
+        <p className="text-center text-ink-faint mt-16">
           Selecciona una colección para continuar.
         </p>
       </PageTransition>
@@ -356,8 +356,8 @@ export default function TeamStatsPage() {
         {/* Page header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Estadísticas de Equipo</h1>
-            <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
+            <h1 className="text-xl font-bold text-ink">Estadísticas de Equipo</h1>
+            <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
           </div>
           <FilterBar showDate />
         </div>
@@ -378,7 +378,7 @@ export default function TeamStatsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-surface-border">
+        <div className="flex items-center gap-1 border-b border-line">
           {TABS.map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -386,8 +386,8 @@ export default function TeamStatsPage() {
               className={[
                 'flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
                 tab === id
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-ink-muted hover:text-ink-primary',
+                  ? 'border-accent text-accent-text'
+                  : 'border-transparent text-ink-faint hover:text-ink',
               ].join(' ')}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -395,7 +395,7 @@ export default function TeamStatsPage() {
             </button>
           ))}
           {tab === 'rivals' && (
-            <div className="ml-auto mb-1 flex rounded-lg overflow-hidden border border-surface-border">
+            <div className="ml-auto mb-1 flex rounded-lg overflow-hidden border border-line">
               {(['basic', 'advanced'] as const).map(v => (
                 <button
                   key={v}
@@ -403,8 +403,8 @@ export default function TeamStatsPage() {
                   className={[
                     'px-3 py-1 text-xs font-medium transition-colors',
                     rivalsView === v
-                      ? 'bg-brand-600/30 text-brand-400'
-                      : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                      ? 'bg-accent/30 text-accent-text'
+                      : 'text-ink-muted hover:bg-surface-raised hover:text-ink',
                   ].join(' ')}
                 >
                   {v === 'basic' ? 'Básico' : 'Avanzado'}

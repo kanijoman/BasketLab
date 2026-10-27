@@ -84,9 +84,9 @@ const STAT_GROUPS: StatGroup[] = [
 interface MedalDef { icon: LucideIcon; bg: string; text: string }
 
 const MEDAL: Record<number, MedalDef> = {
-  1: { icon: Trophy, bg: 'bg-yellow-900/30', text: 'text-yellow-400' },
-  2: { icon: Medal,  bg: 'bg-slate-700/40',  text: 'text-slate-300'  },
-  3: { icon: Award,  bg: 'bg-amber-900/30',  text: 'text-amber-500'  },
+  1: { icon: Trophy, bg: 'bg-warn/30', text: 'text-warn' },
+  2: { icon: Medal,  bg: 'bg-surface-raised/40',  text: 'text-ink'  },
+  3: { icon: Award,  bg: 'bg-warn/30',  text: 'text-warn'  },
 }
 
 // -- Component -----------------------------------------------------------------
@@ -161,7 +161,7 @@ export default function RankingsPage() {
   if (!collection) {
     return (
       <PageTransition>
-        <p className="text-center text-ink-muted mt-16">Selecciona una colección para continuar.</p>
+        <p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p>
       </PageTransition>
     )
   }
@@ -172,8 +172,8 @@ export default function RankingsPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-xl font-bold text-ink-primary">Rankings de Jugadores</h1>
-          <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
+          <h1 className="text-xl font-bold text-ink">Rankings de Jugadores</h1>
+          <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
         </div>
 
         {/* Group tabs (Básicas / Tiro / Avanzadas) */}
@@ -185,8 +185,8 @@ export default function RankingsPage() {
               className={[
                 'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
                 i === groupIdx
-                  ? 'bg-brand-600/40 text-brand-300 border border-brand-500/50'
-                  : 'bg-surface-raised text-ink-secondary border border-surface-border hover:text-ink-primary',
+                  ? 'bg-accent/40 text-accent-text border border-accent/50'
+                  : 'bg-surface text-ink-muted border border-line hover:text-ink',
               ].join(' ')}
             >
               {g.label}
@@ -204,8 +204,8 @@ export default function RankingsPage() {
                 className={[
                   'px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
                   i === safeStatIdx
-                    ? 'bg-brand-600/30 text-brand-400 border border-brand-600/40'
-                    : 'bg-surface-raised text-ink-secondary border border-surface-border hover:text-ink-primary',
+                    ? 'bg-accent/30 text-accent-text border border-accent/40'
+                    : 'bg-surface text-ink-muted border border-line hover:text-ink',
                 ].join(' ')}
               >
                 {s.label}
@@ -217,7 +217,7 @@ export default function RankingsPage() {
         {/* Filters row */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Min minutes */}
-          <label className="flex items-center gap-2 text-xs text-ink-muted" title="Solo entran en el ranking los jugadores con al menos estos minutos por partido">
+          <label className="flex items-center gap-2 text-xs text-ink-faint" title="Solo entran en el ranking los jugadores con al menos estos minutos por partido">
             MIN &ge;
             <input
               type="number"
@@ -232,7 +232,7 @@ export default function RankingsPage() {
           </label>
 
           {/* Min games */}
-          <label className="flex items-center gap-2 text-xs text-ink-muted">
+          <label className="flex items-center gap-2 text-xs text-ink-faint">
             PJ &ge;
             <input
               type="number"
@@ -256,12 +256,12 @@ export default function RankingsPage() {
               <option value="">Todos los equipos</option>
               {teamOptions.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-muted pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-faint pointer-events-none" />
           </div>
 
           {/* Player search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-muted pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-faint pointer-events-none" />
             <input
               type="text"
               placeholder="Buscar jugador…"
@@ -271,18 +271,18 @@ export default function RankingsPage() {
             />
           </div>
 
-          <span className="text-xs text-ink-muted ml-auto">{filteredRanked.length} jugadores</span>
+          <span className="text-xs text-ink-faint ml-auto">{filteredRanked.length} jugadores</span>
         </div>
 
         {/* Ranked list */}
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="h-12 rounded-card animate-pulse bg-surface-raised/60" />
+              <div key={i} className="h-12 rounded-card animate-pulse bg-surface/60" />
             ))}
           </div>
         ) : filteredRanked.length === 0 ? (
-          <div className="py-16 text-center text-sm text-ink-muted">
+          <div className="py-16 text-center text-sm text-ink-faint">
             Sin resultados para los filtros aplicados.
           </div>
         ) : (
@@ -307,25 +307,25 @@ export default function RankingsPage() {
                   className={[
                     'relative flex items-center gap-3 px-4 py-3 rounded-card border overflow-hidden',
                     medal
-                      ? `${medal.bg} border-surface-border/60`
-                      : 'bg-surface-raised border-surface-border',
+                      ? `${medal.bg} border-line/60`
+                      : 'bg-surface border-line',
                   ].join(' ')}
                 >
                   {/* Bar fill */}
                   <div
-                    className="absolute inset-y-0 left-0 bg-brand-600/8 pointer-events-none"
+                    className="absolute inset-y-0 left-0 bg-accent/8 pointer-events-none"
                     style={{ width: `${Math.min(barPct, 100)}%` }}
                   />
 
                   {/* Rank / medal icon */}
-                  <span className={`w-8 shrink-0 flex items-center justify-center font-bold text-sm ${medal ? medal.text : 'text-ink-muted'}`}>
+                  <span className={`w-8 shrink-0 flex items-center justify-center font-bold text-sm ${medal ? medal.text : 'text-ink-faint'}`}>
                     {MedalIcon ? <MedalIcon className="w-5 h-5" /> : rank}
                   </span>
 
                   {/* Player info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-ink-primary truncate">{player.player_name}</p>
-                    <p className="text-xs text-ink-muted truncate">
+                    <p className="font-medium text-sm text-ink truncate">{player.player_name}</p>
+                    <p className="text-xs text-ink-faint truncate">
                       {player.team_name}
                       <span className="ml-2 opacity-50">{player.games_played}PJ</span>
                     </p>
@@ -333,10 +333,10 @@ export default function RankingsPage() {
 
                   {/* Value + delta vs league leader */}
                   <div className="shrink-0 text-right">
-                    <span className={`block text-lg font-bold tabular-nums leading-tight ${medal ? medal.text : 'text-ink-primary'}`}>
+                    <span className={`block text-lg font-bold tabular-nums leading-tight ${medal ? medal.text : 'text-ink'}`}>
                       {stat.format(val)}
                     </span>
-                    <span className={`block text-xs tabular-nums font-medium ${rank === 1 ? 'text-ink-muted' : 'text-ink-secondary'}`}>
+                    <span className={`block text-xs tabular-nums font-medium ${rank === 1 ? 'text-ink-faint' : 'text-ink-muted'}`}>
                       {deltaStr}
                     </span>
                   </div>
@@ -347,7 +347,7 @@ export default function RankingsPage() {
         )}
 
         {filteredRanked.length > 30 && (
-          <p className="text-xs text-center text-ink-muted">Mostrando los 30 primeros de {filteredRanked.length}</p>
+          <p className="text-xs text-center text-ink-faint">Mostrando los 30 primeros de {filteredRanked.length}</p>
         )}
 
       </div>

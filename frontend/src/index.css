@@ -1,22 +1,21 @@
-/* Inter variable font from Google Fonts (loaded in index.html) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-
+/* Colours, shadows and fonts: design/tokens.css (imported by main.tsx) through the shared Tailwind preset (issue #188). */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
-
   html {
     @apply h-full;
   }
 
   body {
-    @apply h-full bg-surface-base text-ink-primary antialiased;
+    @apply h-full bg-canvas text-ink antialiased;
     font-feature-settings: "cv02","cv03","cv04","cv11";
+  }
+
+  /* titles in the display face (Space Grotesk), the rest in Inter */
+  h1, h2 {
+    @apply font-display tracking-tight;
   }
 
   #root {
@@ -25,13 +24,13 @@
 
   /* Scrollbar styling */
   ::-webkit-scrollbar        { @apply w-1.5 h-1.5; }
-  ::-webkit-scrollbar-track  { @apply bg-surface-base; }
-  ::-webkit-scrollbar-thumb  { @apply bg-surface-border rounded-pill; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-muted; }
+  ::-webkit-scrollbar-track  { @apply bg-canvas; }
+  ::-webkit-scrollbar-thumb  { @apply bg-line rounded-pill; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-ink-faint; }
 
   /* Focus ring */
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-1 ring-offset-surface-base;
+    @apply outline-none ring-2 ring-focus ring-offset-1 ring-offset-canvas;
   }
 }
 
@@ -47,30 +46,30 @@
 @layer components {
   /* ── Card ──────────────────────────────────────────────────────── */
   .card {
-    @apply bg-surface-raised border border-surface-border rounded-card shadow-card;
+    @apply bg-surface border border-line rounded-card shadow-card;
   }
 
   /* ── Button variants ─────────────────────────────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-brand-600 [&:not(:disabled)]:hover:bg-brand-500
-           text-white text-sm font-medium transition-colors shadow-sm
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-accent-solid [&:not(:disabled)]:hover:bg-accent-hover
+           text-accent-ink text-sm font-medium transition-colors shadow-sm
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-surface-hover [&:not(:disabled)]:hover:bg-surface-border
-           text-ink-primary text-sm font-medium transition-colors border border-surface-border
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-surface-raised [&:not(:disabled)]:hover:bg-line
+           text-ink text-sm font-medium transition-colors border border-line
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-ghost {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded [&:not(:disabled)]:hover:bg-surface-hover
-           text-ink-secondary [&:not(:disabled)]:hover:text-ink-primary text-sm transition-colors
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded [&:not(:disabled)]:hover:bg-surface-raised
+           text-ink-muted [&:not(:disabled)]:hover:text-ink text-sm transition-colors
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* ── Input ──────────────────────────────────────────────────────── */
   .input {
-    @apply w-full bg-surface-base border border-surface-border rounded px-3 py-2 text-sm
-           text-ink-primary placeholder-ink-muted focus:border-brand-500 transition-colors;
+    @apply w-full bg-canvas border border-line rounded px-3 py-2 text-sm
+           text-ink placeholder-ink-faint focus:border-accent transition-colors;
   }
 
   /* ── Select ─────────────────────────────────────────────────────── */

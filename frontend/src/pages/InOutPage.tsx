@@ -25,16 +25,16 @@ function delta(a: number | undefined, b: number | undefined): number {
 
 function DeltaBar({ value, label }: { value: number; label: string }) {
   const pct = Math.min(Math.abs(value) * 5, 100)
-  const color = value >= 0 ? 'bg-emerald-500' : 'bg-red-500'
+  const color = value >= 0 ? 'bg-ok' : 'bg-bad'
   const sign  = value >= 0 ? '+' : ''
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-ink-secondary">{label}</span>
+      <span className="text-xs text-ink-muted">{label}</span>
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden">
+        <div className="flex-1 h-2 bg-surface-raised rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
         </div>
-        <span className={`text-xs font-mono font-semibold w-12 text-right ${value >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        <span className={`text-xs font-mono font-semibold w-12 text-right ${value >= 0 ? 'text-ok' : 'text-bad'}`}>
           {sign}{value.toFixed(1)}
         </span>
       </div>
@@ -49,8 +49,8 @@ function fmt(v: number | undefined, dec = 1): string {
 function StatRow({ label, val }: { label: string; val: string }) {
   return (
     <div className="flex justify-between text-sm">
-      <span className="text-ink-secondary">{label}</span>
-      <span className="font-mono text-ink-primary">{val}</span>
+      <span className="text-ink-muted">{label}</span>
+      <span className="font-mono text-ink">{val}</span>
     </div>
   )
 }
@@ -59,15 +59,15 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
   const nr = block.net_rating ?? 0
   return (
     <div className={`card p-4 flex-1 border-t-2 ${accent} space-y-3`}>
-      <h3 className="text-sm font-semibold text-ink-primary">{label}</h3>
+      <h3 className="text-sm font-semibold text-ink">{label}</h3>
 
       {/* Ratings */}
       <div>
-        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Rating</p>
+        <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Rating</p>
         <div className="space-y-0.5">
           <div className="flex justify-between text-sm">
-            <span className="text-ink-secondary">Net Rating</span>
-            <span className={`font-mono font-semibold ${nr >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <span className="text-ink-muted">Net Rating</span>
+            <span className={`font-mono font-semibold ${nr >= 0 ? 'text-ok' : 'text-bad'}`}>
               {nr >= 0 ? '+' : ''}{fmt(block.net_rating)}
             </span>
           </div>
@@ -79,7 +79,7 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
 
       {/* Shooting */}
       <div>
-        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Tiro</p>
+        <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Tiro</p>
         <div className="space-y-0.5">
           <StatRow label="Pts a favor"  val={fmt(block.points_for)} />
           <StatRow label="Pts en contra" val={fmt(block.points_against)} />
@@ -95,7 +95,7 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
 
       {/* Rebounding */}
       <div>
-        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Rebotes</p>
+        <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Rebotes</p>
         <div className="space-y-0.5">
           <StatRow label="OR%"  val={`${fmt(block.offensive_rebound_rate)}%`} />
           <StatRow label="DR%"  val={`${fmt(block.defensive_rebound_rate)}%`} />
@@ -106,7 +106,7 @@ function StatCard({ label, block, accent }: { label: string; block: InOutStatBlo
 
       {/* Other */}
       <div>
-        <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-1">Otros</p>
+        <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-1">Otros</p>
         <div className="space-y-0.5">
           <StatRow label="%AST"  val={`${fmt(block.assist_rate)}%`} />
           <StatRow label="%TO"   val={`${fmt(block.turnover_rate)}%`} />
@@ -176,18 +176,18 @@ export default function InOutPage() {
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary">Análisis IN/OUT</h1>
-          <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+          <h1 className="text-2xl font-bold text-ink">Análisis IN/OUT</h1>
+          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-surface-border">
+        <div className="flex border-b border-line">
           {TABS.map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === t
-                  ? 'border-accent-500 text-accent-400'
-                  : 'border-transparent text-ink-secondary hover:text-ink-primary'
+                  ? 'border-secondary text-secondary-text'
+                  : 'border-transparent text-ink-muted hover:text-ink'
               }`}>
               {t}
             </button>
@@ -202,26 +202,26 @@ export default function InOutPage() {
             </div>
 
             {inoutLoading && (
-              <div className="text-sm text-ink-secondary animate-pulse">Calculando impacto…</div>
+              <div className="text-sm text-ink-muted animate-pulse">Calculando impacto…</div>
             )}
 
             {inout && !inoutLoading && (
               <>
                 <div className="flex items-center gap-2">
-                  <ArrowLeftRight className="w-4 h-4 text-accent-400" />
-                  <span className="text-sm font-medium text-ink-primary">{inout.player_name}</span>
-                  <span className="text-xs text-ink-secondary">— {inout.team_name}</span>
+                  <ArrowLeftRight className="w-4 h-4 text-secondary-text" />
+                  <span className="text-sm font-medium text-ink">{inout.player_name}</span>
+                  <span className="text-xs text-ink-muted">— {inout.team_name}</span>
                 </div>
 
                 {/* ON/OFF cards */}
                 <div className="flex gap-3">
-                  <StatCard label="🟢 En cancha (ON)" block={inout.on} accent="border-emerald-500" />
-                  <StatCard label="🔴 Fuera (OFF)"    block={inout.off} accent="border-red-500" />
+                  <StatCard label="🟢 En cancha (ON)" block={inout.on} accent="border-ok" />
+                  <StatCard label="🔴 Fuera (OFF)"    block={inout.off} accent="border-bad" />
                 </div>
 
                 {/* Deltas */}
                 <div className="card p-4">
-                  <h3 className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-3">
+                  <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">
                     Impacto diferencial (ON − OFF)
                   </h3>
                   <div className="space-y-2">
@@ -240,8 +240,8 @@ export default function InOutPage() {
 
             {!p1 && (
               <div className="card p-10 flex flex-col items-center gap-2 text-center">
-                <ArrowLeftRight className="w-8 h-8 text-brand-400 opacity-40" />
-                <p className="text-ink-secondary text-sm">Selecciona un jugador para ver su impacto IN/OUT.</p>
+                <ArrowLeftRight className="w-8 h-8 text-accent-text opacity-40" />
+                <p className="text-ink-muted text-sm">Selecciona un jugador para ver su impacto IN/OUT.</p>
               </div>
             )}
           </div>
@@ -256,28 +256,28 @@ export default function InOutPage() {
             </div>
 
             {(inout1Loading || inout2Loading) && (
-              <div className="text-sm text-ink-secondary animate-pulse">Calculando impacto…</div>
+              <div className="text-sm text-ink-muted animate-pulse">Calculando impacto…</div>
             )}
 
             {inout1 && inout2 && !inout1Loading && !inout2Loading && (
               <>
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-accent-400" />
-                  <span className="text-sm font-medium text-ink-primary">{inout1.player_name}</span>
-                  <span className="text-xs text-ink-secondary">vs</span>
-                  <span className="text-sm font-medium text-ink-primary">{inout2.player_name}</span>
-                  <span className="text-xs text-ink-secondary">— Impacto en pista (ON)</span>
+                  <Users className="w-4 h-4 text-secondary-text" />
+                  <span className="text-sm font-medium text-ink">{inout1.player_name}</span>
+                  <span className="text-xs text-ink-muted">vs</span>
+                  <span className="text-sm font-medium text-ink">{inout2.player_name}</span>
+                  <span className="text-xs text-ink-muted">— Impacto en pista (ON)</span>
                 </div>
 
                 {/* ON cards side by side */}
                 <div className="flex gap-3">
-                  <StatCard label={`🟢 ${inout1.player_name} (ON)`} block={inout1.on} accent="border-accent-500" />
-                  <StatCard label={`🟢 ${inout2.player_name} (ON)`} block={inout2.on} accent="border-brand-500" />
+                  <StatCard label={`🟢 ${inout1.player_name} (ON)`} block={inout1.on} accent="border-secondary" />
+                  <StatCard label={`🟢 ${inout2.player_name} (ON)`} block={inout2.on} accent="border-accent" />
                 </div>
 
                 {/* Differential P1 ON − P2 ON */}
                 <div className="card p-4">
-                  <h3 className="text-xs font-semibold text-ink-secondary uppercase tracking-wide mb-3">
+                  <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">
                     Impacto diferencial ({inout1.player_name} − {inout2.player_name})
                   </h3>
                   <div className="space-y-2">
@@ -297,19 +297,19 @@ export default function InOutPage() {
             {inout1 && !inout2 && !inout1Loading && together2 === '' && (
               <>
                 <div className="flex items-center gap-2">
-                  <ArrowLeftRight className="w-4 h-4 text-accent-400" />
-                  <span className="text-sm font-medium text-ink-primary">{inout1.player_name} (ON)</span>
+                  <ArrowLeftRight className="w-4 h-4 text-secondary-text" />
+                  <span className="text-sm font-medium text-ink">{inout1.player_name} (ON)</span>
                 </div>
                 <div className="flex gap-3">
-                  <StatCard label={`🟢 ${inout1.player_name} (ON)`} block={inout1.on} accent="border-accent-500" />
+                  <StatCard label={`🟢 ${inout1.player_name} (ON)`} block={inout1.on} accent="border-secondary" />
                 </div>
               </>
             )}
 
             {(!together1 && !together2) && (
               <div className="card p-10 flex flex-col items-center gap-2 text-center">
-                <Users className="w-8 h-8 text-brand-400 opacity-40" />
-                <p className="text-ink-secondary text-sm">Selecciona dos jugadores para comparar su impacto en pista (ON).</p>
+                <Users className="w-8 h-8 text-accent-text opacity-40" />
+                <p className="text-ink-muted text-sm">Selecciona dos jugadores para comparar su impacto en pista (ON).</p>
               </div>
             )}
           </div>

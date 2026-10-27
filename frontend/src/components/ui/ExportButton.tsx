@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, RefObject } from 'react'
 import { Download, ChevronDown, FileText, Image, Table } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { prepareCloneForExport } from '@/lib/exportDom'
+import { cssColour } from '@/lib/chartTheme'   // the background of the theme in use (issue #188)
 import { collectBreakPoints, computePdfSlices } from '@/lib/pdfLayout'
 
 export interface ExportOptions {
@@ -79,7 +80,7 @@ async function downloadPng(ref: RefObject<HTMLElement | SVGElement>, filename: s
     // DOM element — use html2canvas
     const { default: html2canvas } = await import('html2canvas')
     const canvas = await html2canvas(el as HTMLElement, {
-      backgroundColor: '#0D1117', scale: 2, onclone: prepareCloneForExport,
+      backgroundColor: cssColour('--bg') || null, scale: 2, onclone: prepareCloneForExport,
     })
     canvas.toBlob(b => {
       if (!b) return
@@ -164,7 +165,7 @@ async function downloadPdf(
     } else {
       const { default: html2canvas } = await import('html2canvas')
       const canvas = await html2canvas(el as HTMLElement, {
-        backgroundColor: '#0D1117', scale: PDF_CAPTURE_SCALE, onclone: prepareCloneForExport,
+        backgroundColor: cssColour('--bg') || null, scale: PDF_CAPTURE_SCALE, onclone: prepareCloneForExport,
       })
       dataUrl = canvas.toDataURL('image/png')
       // pages end between table rows / cards instead of through them
@@ -219,8 +220,8 @@ export default function ExportButton({
         <div className="absolute right-0 mt-1 w-44 card shadow-panel py-1 z-30">
           {hasCsv && (
             <button
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-secondary
-                         hover:bg-surface-hover hover:text-ink-primary transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-muted
+                         hover:bg-surface-raised hover:text-ink transition-colors"
               onClick={() => {
                 downloadCsv(csvData!, csvHeaders!, filename)
                 setOpen(false)
@@ -231,8 +232,8 @@ export default function ExportButton({
           )}
           {hasPng && (
             <button
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-secondary
-                         hover:bg-surface-hover hover:text-ink-primary transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-muted
+                         hover:bg-surface-raised hover:text-ink transition-colors"
               onClick={() => {
                 downloadPng(captureRef!, filename)
                 setOpen(false)
@@ -243,8 +244,8 @@ export default function ExportButton({
           )}
           {hasPdf && (
             <button
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-secondary
-                         hover:bg-surface-hover hover:text-ink-primary transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ink-muted
+                         hover:bg-surface-raised hover:text-ink transition-colors"
               onClick={() => {
                 downloadPdf(captureRef, pdfTitle ?? filename, filename)
                 setOpen(false)

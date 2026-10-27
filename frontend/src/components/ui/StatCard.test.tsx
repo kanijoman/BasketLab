@@ -24,19 +24,19 @@ describe('StatCard — accent classes', () => {
   it('applies green accent border class', () => {
     const { container } = render(<StatCard label="OER" value="107" accent="green" />)
     const card = container.firstChild as HTMLElement
-    expect(card.className).toMatch(/border-brand/)
+    expect(card.className).toMatch(/border-ok/)
   })
 
   it('applies blue accent class', () => {
     const { container } = render(<StatCard label="DER" value="102" accent="blue" />)
     const card = container.firstChild as HTMLElement
-    expect(card.className).toMatch(/border-accent/)
+    expect(card.className).toMatch(/border-secondary/)
   })
 
   it('uses default border when no accent provided', () => {
     const { container } = render(<StatCard label="PPP" value="80" />)
     const card = container.firstChild as HTMLElement
-    expect(card.className).toMatch(/border-surface-border/)
+    expect(card.className).toMatch(/border-line/)
   })
 })
 

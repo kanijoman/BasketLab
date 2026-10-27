@@ -28,13 +28,13 @@ const TABS: [Tab, string, string][] = [
 
 function Pills<T extends string>({ items, value, onChange, label }: { items: { key: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex rounded-lg overflow-hidden border border-surface-border text-sm">
+    <div role="group" aria-label={label} className="inline-flex rounded-lg overflow-hidden border border-line text-sm">
       {items.map(i => (
         <button
           key={i.key}
           onClick={() => onChange(i.key)}
           aria-pressed={value === i.key}
-          className={`px-4 py-1.5 font-medium transition-colors ${value === i.key ? 'bg-accent-500 text-white' : 'text-ink-secondary hover:bg-surface-hover'}`}
+          className={`px-4 py-1.5 font-medium transition-colors ${value === i.key ? 'bg-secondary text-white' : 'text-ink-muted hover:bg-surface-raised'}`}
         >
           {i.label}
         </button>
@@ -46,8 +46,8 @@ function Pills<T extends string>({ items, value, onChange, label }: { items: { k
 function Notice({ children }: { children: React.ReactNode }) {
   return (
     <div className="card p-10 flex flex-col items-center gap-3 text-center">
-      <Microscope className="w-10 h-10 text-accent-400 opacity-40" />
-      <p className="text-ink-secondary text-sm max-w-2xl">{children}</p>
+      <Microscope className="w-10 h-10 text-secondary-text opacity-40" />
+      <p className="text-ink-muted text-sm max-w-2xl">{children}</p>
     </div>
   )
 }
@@ -96,7 +96,7 @@ export default function PbpAnalysisPage() {
 
   let body: React.ReactNode
   if (current.isLoading) {
-    body = <div className="card p-16 flex justify-center"><div className="w-8 h-8 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" /></div>
+    body = <div className="card p-16 flex justify-center"><div className="w-8 h-8 border-2 border-secondary-text border-t-transparent rounded-full animate-spin" /></div>
   } else if (current.isError) {
     body = <Notice>No se han podido cargar los datos: {(current.error as Error | null)?.message ?? 'error desconocido'}</Notice>
   } else if (!current.data || current.data.length === 0) {
@@ -133,14 +133,14 @@ export default function PbpAnalysisPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-ink-primary">Análisis pbp</h1>
-            <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+            <h1 className="text-2xl font-bold text-ink">Análisis pbp</h1>
+            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
           </div>
           <Pills items={TABS.map(([key, label]) => ({ key, label }))} value={tab} onChange={setTab} label="Sección" />
         </div>
-        <p className="text-ink-secondary text-sm max-w-4xl">{TABS.find(([key]) => key === tab)![2]}</p>
+        <p className="text-ink-muted text-sm max-w-4xl">{TABS.find(([key]) => key === tab)![2]}</p>
         {collection?.isFbcyl && (
-          <p className="text-ink-secondary text-sm max-w-4xl">
+          <p className="text-ink-muted text-sm max-w-4xl">
             <strong>FBCYL (experimental):</strong> el play-by-play lo anotan los clubes y tiene más errores que el de FEB (sin rebotes de equipo, a veces sin pérdidas ni
             robos); los partidos poco fiables se dejan fuera (columna «Excl.»). Sin pintura: el feed no trae el mapa de tiros.
           </p>

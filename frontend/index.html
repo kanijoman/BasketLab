@@ -1,12 +1,17 @@
 <!doctype html>
-<html lang="es" class="dark">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      /* The theme before the first paint (issue #188): the key and the default of src/lib/theme.ts (a test keeps them equal) */
+      var t; try { t = localStorage.getItem('basketlab-web-theme') } catch (e) {}
+      if (t !== 'dark' && t !== 'system') t = 'light'
+      if (t !== 'system') document.documentElement.setAttribute('data-theme', t)
+    </script>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0D1117" />
+    <meta name="theme-color" content="#f6f8fa" />
     <title>BasketLab</title>
-    <style>html,body{background:#0D1117}</style>
   </head>
   <body>
     <div id="root"></div>
