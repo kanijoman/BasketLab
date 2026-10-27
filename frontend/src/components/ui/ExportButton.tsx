@@ -8,7 +8,8 @@ import { useState, useRef, useEffect, RefObject } from 'react'
 import { Download, ChevronDown, FileText, Image, Table } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { prepareCloneForExport } from '@/lib/exportDom'
-import { cssColour } from '@/lib/chartTheme'   // the background of the theme in use (issue #188)
+import { cssColour } from '@/lib/chartTheme'   // the colours of the theme in use (issues #188, #617)
+import { THEME_COLOR } from '@design/theme'
 import { collectBreakPoints, computePdfSlices } from '@/lib/pdfLayout'
 
 export interface ExportOptions {
@@ -52,35 +53,46 @@ function downloadCsv(
 }
 
 // ── PNG export (client-side, SVG or DOM via html2canvas) ────────────────────
+/** A chart from its SVG on a canvas at 2x, over the background of the theme in use (issue #617: it was transparent). */
+function svgToCanvas(el: SVGElement): Promise<HTMLCanvasElement> {
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(el)], { type: 'image/svg+xml' }))
+  return new Promise(resolve => {
+    const img = new window.Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = el.clientWidth * 2; canvas.height = el.clientHeight * 2
+      const ctx = canvas.getContext('2d')!
+      ctx.scale(2, 2)
+      ctx.fillStyle = pageColour()
+      ctx.fillRect(0, 0, el.clientWidth, el.clientHeight)
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+      resolve(canvas)
+    }
+    img.src = url
+  })
+}
+
+/** The background of the page of the theme in use (the light one if the tokens are not there). */
+const pageColour = () => cssColour('--bg') || THEME_COLOR.light
+
 async function downloadPng(ref: RefObject<HTMLElement | SVGElement>, filename: string) {
   const el = ref.current
   if (!el) return
 
   if (el instanceof SVGElement) {
     // Direct SVG → canvas → PNG
-    const serializer = new XMLSerializer()
-    const svgStr = serializer.serializeToString(el)
-    const blob = new Blob([svgStr], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const img = new window.Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = el.clientWidth * 2; canvas.height = el.clientHeight * 2
-      const ctx = canvas.getContext('2d')!
-      ctx.scale(2, 2); ctx.drawImage(img, 0, 0)
-      canvas.toBlob(b => {
-        if (!b) return
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(b); link.download = `${filename}.png`; link.click()
-      })
-      URL.revokeObjectURL(url)
-    }
-    img.src = url
+    const canvas = await svgToCanvas(el)
+    canvas.toBlob(b => {
+      if (!b) return
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(b); link.download = `${filename}.png`; link.click()
+    })
   } else {
     // DOM element — use html2canvas
     const { default: html2canvas } = await import('html2canvas')
     const canvas = await html2canvas(el as HTMLElement, {
-      backgroundColor: cssColour('--bg') || null, scale: 2, onclone: prepareCloneForExport,
+      backgroundColor: pageColour(), scale: 2, onclone: prepareCloneForExport,
     })
     canvas.toBlob(b => {
       if (!b) return
@@ -93,6 +105,12 @@ async function downloadPng(ref: RefObject<HTMLElement | SVGElement>, filename: s
 // ── PDF export ───────────────────────────────────────────────────────────────
 const PDF_CAPTURE_SCALE = 2
 const PDF_LAYOUT = { pageW: 297, pageH: 210, margin: 14, firstTop: 28 }
+
+/** Paint a page of the PDF with the background of the theme in use (issue #617: it was dark in both themes). */
+function paintPage(pdf: import('jspdf').jsPDF) {
+  pdf.setFillColor(pageColour())
+  pdf.rect(0, 0, PDF_LAYOUT.pageW, PDF_LAYOUT.pageH, 'F')
+}
 
 /** Add a (possibly very tall) capture across as many pages as needed. */
 async function addPaginatedImage(
@@ -107,12 +125,11 @@ async function addPaginatedImage(
     img.src = dataUrl
   })
   const slices = computePdfSlices(img.naturalWidth, img.naturalHeight, PDF_LAYOUT, breakPoints)
-  const { pageW, margin, pageH } = PDF_LAYOUT
+  const { pageW, margin } = PDF_LAYOUT
   slices.forEach((sl, i) => {
     if (i > 0) {
       pdf.addPage()
-      pdf.setFillColor(13, 17, 23)
-      pdf.rect(0, 0, pageW, pageH, 'F')
+      paintPage(pdf)
     }
     const c = document.createElement('canvas')
     c.width = img.naturalWidth
@@ -130,13 +147,13 @@ async function downloadPdf(
   // Dynamic import avoids TypeScript constructor type resolution issues with jsPDF v4
   const { jsPDF: JsPDF } = await import('jspdf')
   const pdf = new JsPDF('l', 'mm', 'a4')
-  pdf.setFillColor(13, 17, 23)
-  pdf.rect(0, 0, 297, 210, 'F')
-  pdf.setTextColor(230, 237, 243)
+  paintPage(pdf)
+  const ink = cssColour('--text'), muted = cssColour('--text-muted')
+  if (ink) pdf.setTextColor(ink)
   pdf.setFontSize(14)
   pdf.text(title, 14, 16)
   pdf.setFontSize(9)
-  pdf.setTextColor(139, 148, 158)
+  if (muted) pdf.setTextColor(muted)
   pdf.text(`BasketLab · ${new Date().toLocaleDateString('es-ES')}`, 14, 22)
 
   if (ref?.current) {
@@ -145,27 +162,11 @@ async function downloadPdf(
     let breakPoints: number[] = []
 
     if (el instanceof SVGElement) {
-      const serializer = new XMLSerializer()
-      const svgStr = serializer.serializeToString(el)
-      const blob = new Blob([svgStr], { type: 'image/svg+xml' })
-      const url = URL.createObjectURL(blob)
-      await new Promise<void>(resolve => {
-        const img = new window.Image()
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          canvas.width = el.clientWidth * 2; canvas.height = el.clientHeight * 2
-          const ctx = canvas.getContext('2d')!
-          ctx.scale(2, 2); ctx.drawImage(img, 0, 0)
-          dataUrl = canvas.toDataURL('image/png')
-          URL.revokeObjectURL(url)
-          resolve()
-        }
-        img.src = url
-      })
+      dataUrl = (await svgToCanvas(el)).toDataURL('image/png')
     } else {
       const { default: html2canvas } = await import('html2canvas')
       const canvas = await html2canvas(el as HTMLElement, {
-        backgroundColor: cssColour('--bg') || null, scale: PDF_CAPTURE_SCALE, onclone: prepareCloneForExport,
+        backgroundColor: pageColour(), scale: PDF_CAPTURE_SCALE, onclone: prepareCloneForExport,
       })
       dataUrl = canvas.toDataURL('image/png')
       // pages end between table rows / cards instead of through them

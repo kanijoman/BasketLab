@@ -21,6 +21,8 @@ Guía de la épica #187 para la web (`frontend/`). Tokens, marca y tema son de l
 
 Gráficos (recharts, SVG): `useChartTheme()` de `lib/chartTheme.ts` (colores ya resueltos del tema activo; nunca `var(--x)` en un atributo SVG, una exportación lo perdería).
 
+**Exportaciones** (`ExportButton`): PNG y PDF salen **en el tema activo** (#617): la captura con el fondo del tema, el gráfico exportado desde su SVG sobre ese fondo (no transparente) y cada página del PDF con el fondo, el título (`--text`) y la fecha (`--text-muted`) del tema; en claro, el PDF es claro de borde a borde. Un color para jsPDF también sale de los tokens: el guarda rechaza `setFillColor(13, 17, 23)` y similares.
+
 ## Componentes (`components/ui`)
 | Componente | Cuándo | Ejemplo |
 |---|---|---|
