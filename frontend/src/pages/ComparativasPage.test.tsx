@@ -114,6 +114,19 @@ describe('ComparativasPage: the comparative reports of the weekly report, on the
   })
 })
 
+describe('ComparativasPage: a team with only one of the two groups', () => {
+  const only = (name: string, side: 'a' | 'b') => ({ ...team(name, { points_per_game: 80 }, { points_per_game: 80 }), games_a: side === 'a' ? 4 : 0, games_b: side === 'b' ? 4 : 0, a: side === 'a' ? { points_per_game: 80 } : null, b: side === 'b' ? { points_per_game: 66 } : null, diff: {} })
+
+  it('shows the figures it has, without a difference, whichever group is the empty one (4-0 and 0-4)', async () => {
+    api.getTeamComparison.mockReset().mockResolvedValue({ ...ANSWER('result', ['Ganados', 'Perdidos']), team: [only('Invicto', 'a'), only('Sinvictorias', 'b')], opponent: [] })
+    renderPage()
+    await screen.findByText('Invicto')
+    expect(cellOf('Invicto', 'PPP').textContent).toBe('80.0')
+    expect(cellOf('Sinvictorias', 'PPP').textContent).toBe('66.0')
+    expect(cellOf('Sinvictorias', 'PJ').textContent).toBe('0+4')
+  })
+})
+
 describe('ComparativasPage: a stretch of dates against the rest of the season', () => {
   beforeEach(() => api.getTeamComparison.mockReset().mockResolvedValue(ANSWER('period', ['Tramo', 'Resto de la temporada'])))
   afterEach(() => vi.useRealTimers())

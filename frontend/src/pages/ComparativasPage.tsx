@@ -64,7 +64,8 @@ function buildColumns(defs: ColDef[], byName: Record<string, ComparisonRow>, riv
       header: tippedHeader(header),
       cell: ({ getValue, row }) => {
         const v = getValue() as number | null | undefined
-        const other = byName[row.original.team_name]?.b?.[key] as number | null | undefined
+        const teamRow = byName[row.original.team_name]
+        const other = (teamRow?.a ? teamRow.b?.[key] : null) as number | null | undefined      // a team with one group only has nothing to compare with
         return (
           <span className="inline-flex items-center gap-1.5">
             <span>{pct ? fmtPct(v) : fmt(v, decimals)}</span>
@@ -98,7 +99,7 @@ export default function ComparativasPage() {
   const rivals = side === 'opponent'
   const defs = view === 'advanced' ? ADVANCED_COL_DEFS : BASIC_COL_DEFS
   const rows = useMemo(() => (data ? data[side] : []), [data, side])
-  const flat: Flat[] = useMemo(() => rows.map(r => ({ ...(r.a ?? {}), team_name: r.team_name, games: `${r.games_a}+${r.games_b}` })), [rows])
+  const flat: Flat[] = useMemo(() => rows.map(r => ({ ...(r.a ?? r.b ?? {}), team_name: r.team_name, games: `${r.games_a}+${r.games_b}` })), [rows])
   const byName = useMemo(() => Object.fromEntries(rows.map(r => [r.team_name, r])), [rows])
   const columns = useMemo(() => buildColumns(defs, byName, rivals), [defs, byName, rivals])
   const quartiles = useMemo(() => computeQuartileMap(flat, defs.filter(d => !d.count).map(d => d.key as string)), [flat, defs])
