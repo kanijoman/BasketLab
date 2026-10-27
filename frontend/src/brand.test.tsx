@@ -13,7 +13,15 @@ const page = readFileSync(join(ROOT, 'index.html'), 'utf8')
 const pub = (file: string) => join(ROOT, 'public', file)
 const pngSize = (file: string) => { const b = readFileSync(file); return [b.readUInt32BE(16), b.readUInt32BE(20)] }
 
-describe('brand of the web (issue #189)', () => {
+describe('brand of the web (issues #189, #613)', () => {
+  it('the mark is the ball of the suite with a rising line: the live app has the pulse, the web the trend (#613)', () => {
+    const mark = readFileSync(join(BRAND, 'web-mark.svg'), 'utf8')
+    expect(mark).not.toContain('<rect')                                          // no tile and no bars that hide the ball
+    expect(mark).toContain('M 8 70 L 32 58 L 48 64 L 80 34')
+    expect(readFileSync(join(BRAND, 'web-icon.svg'), 'utf8')).toContain('M 8 70 L 32 58 L 48 64 L 80 34')
+  })
+
+
   it('the page says what it is when its link is shared', () => {
     expect(page).toMatch(/<title>BasketLab · [^<]+<\/title>/)
     for (const tag of ['name="description"', 'property="og:title"', 'property="og:description"', 'property="og:type" content="website"',
@@ -30,7 +38,8 @@ describe('brand of the web (issue #189)', () => {
   })
 
   it('the icons of public/ are the ones of design/brand, at the size each place asks for', () => {
-    expect(readFileSync(pub('favicon.svg'), 'utf8')).toBe(readFileSync(join(BRAND, 'web-icon.svg'), 'utf8'))
+    // the tab shows the ball without the tile (#613); the tile stays where the platform asks for a square (Apple, manifest)
+    expect(readFileSync(pub('favicon.svg'), 'utf8')).toBe(readFileSync(join(BRAND, 'web-mark.svg'), 'utf8'))
     expect(pngSize(pub('apple-touch-icon.png'))).toEqual([180, 180])
     expect(pngSize(pub('icon-192.png'))).toEqual([192, 192])
     expect(pngSize(pub('icon-512.png'))).toEqual([512, 512])
@@ -53,7 +62,10 @@ describe('BrandLogo (issue #189)', () => {
   it('shows the mark and the name, and the mark is never hidden', () => {
     const { container } = render(<BrandLogo />)
     const mark = container.querySelector('img')!
-    expect(mark.getAttribute('src')).toMatch(/web-icon\.svg$|^data:image\/svg\+xml/)    // Vite inlines a small SVG
+    const src = mark.getAttribute('src') ?? ''
+    // the ball without the tile, as the live app shows its mark (#613); Vite inlines a small SVG
+    const inlined = src.startsWith('data:') ? (src.includes(';base64,') ? atob(src.split(',')[1]) : decodeURIComponent(src.split(',')[1])) : ''
+    expect(src.endsWith('web-mark.svg') || inlined.includes('M 8 70 L 32 58')).toBe(true)
     expect(mark).toHaveAttribute('alt', '')                                      // the name is the text next to it
     fireEvent.error(mark)
     expect(mark.style.display).not.toBe('none')
