@@ -103,6 +103,33 @@ def mock_fbcyl_connection(mock_fbcyl_db):
 
 
 # ---------------------------------------------------------------------------
+# The API of the web smoke e2e (issue #111), real app on mongomock
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def smoke_api(monkeypatch):
+    """The real API on mongomock with the games of the web smoke e2e (tests/e2e_web/serve_api.py): (TestClient, collection)."""
+    import importlib.util
+
+    import mongomock
+    import pymongo
+    from fastapi.testclient import TestClient
+
+    from src.api import deps
+    from src.api.app import app
+
+    monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
+    deps._create_handler.cache_clear()
+    spec = importlib.util.spec_from_file_location("serve_api", Path(__file__).parent / "e2e_web" / "serve_api.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.seed(deps._create_handler().connection.client)
+    yield TestClient(app), module.COLLECTION
+    deps._create_handler.cache_clear()
+    sys.modules.pop("serve_api", None)
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
