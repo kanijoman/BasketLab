@@ -448,6 +448,18 @@ class TestRedProofJob:
         run = " ".join(s.get("run", "") for s in self._job()["steps"])
         assert "scripts/red_proof.py" in run and "origin/${{ github.base_ref }}" in run
 
+    def test_it_installs_only_the_suites_with_new_tests(self):
+        """Issue #610: the vitest tests of the web and the app need their `npm ci`; a backend pull request must not wait for it (and the other way round)."""
+        steps = self._job()["steps"]
+        needs = next(s for s in steps if "--needs" in s.get("run", ""))
+        assert needs["id"] == "suites" and '"$GITHUB_OUTPUT"' in needs["run"]
+        installs = {s.get("working-directory", "."): s["if"] for s in steps if "npm ci" in s.get("run", "") or "pip install" in s.get("run", "")}
+        assert installs == {".": "steps.suites.outputs.python == 'true'",
+                            "frontend": "steps.suites.outputs.web == 'true'",
+                            "apps/live-android": "steps.suites.outputs.app == 'true'"}
+        node = next(s for s in steps if "setup-node" in s.get("uses", ""))
+        assert "web" in node["if"] and "app" in node["if"]
+
 
 
 class TestDuplicateCodeJob:
