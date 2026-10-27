@@ -7,6 +7,7 @@
  *   Equipos → Básico | Avanzado
  *   Jugadores → tabla básica
  */
+import { teamColumn } from '@/components/ui/TeamCell'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
@@ -81,21 +82,6 @@ const REVERSE_ADV   = ADVANCED_COL_DEFS.filter(d => d.reverse).map(d => d.key as
 // Team column builders
 // ---------------------------------------------------------------------------
 
-function teamNameCol(): ColumnDef<TeamStat, unknown> {
-  return {
-    id: 'team_name',
-    accessorKey: 'team_name',
-    size: 150,
-    header: 'Equipo',
-    cell: ({ getValue }) => (
-      <span className="font-medium text-ink whitespace-nowrap">
-        {getValue() as string}
-      </span>
-    ),
-    enableSorting: true,
-  }
-}
-
 function buildTeamCol(def: ColDef): ColumnDef<TeamStat, unknown> {
   const { key, header, decimals = 1, pct = false, size = 60 } = def
   return {
@@ -112,7 +98,7 @@ function buildTeamCol(def: ColDef): ColumnDef<TeamStat, unknown> {
 }
 
 function buildTeamCols(defs: ColDef[]): ColumnDef<TeamStat, unknown>[] {
-  return [teamNameCol(), ...defs.map(buildTeamCol)]
+  return [teamColumn<TeamStat>(), ...defs.map(buildTeamCol)]
 }
 
 // ---------------------------------------------------------------------------
@@ -127,21 +113,6 @@ function playerNameCol(): ColumnDef<PlayerStat, unknown> {
     header: 'Jugador',
     cell: ({ getValue }) => (
       <span className="font-medium text-ink whitespace-nowrap">
-        {getValue() as string}
-      </span>
-    ),
-    enableSorting: true,
-  }
-}
-
-function playerTeamCol(): ColumnDef<PlayerStat, unknown> {
-  return {
-    id: 'team_name',
-    accessorKey: 'team_name',
-    size: 130,
-    header: 'Equipo',
-    cell: ({ getValue }) => (
-      <span className="text-ink-muted whitespace-nowrap text-xs">
         {getValue() as string}
       </span>
     ),
@@ -170,7 +141,7 @@ function buildPlayerNumCol(
 
 const PLAYER_COLS: ColumnDef<PlayerStat, unknown>[] = [
   playerNameCol(),
-  playerTeamCol(),
+  teamColumn<PlayerStat>({ compact: true }),
   buildPlayerNumCol('games_played',      'PJ',   { decimals: 0, size: 44 }),
   buildPlayerNumCol('minutes_per_game',  'MIN',  { size: 52 }),
   buildPlayerNumCol('points_per_game',   'PTS',  { size: 52 }),
@@ -186,7 +157,7 @@ const PLAYER_COLS: ColumnDef<PlayerStat, unknown>[] = [
 
 const PLAYER_ADV_COLS: ColumnDef<PlayerStat, unknown>[] = [
   playerNameCol(),
-  playerTeamCol(),
+  teamColumn<PlayerStat>({ compact: true }),
   buildPlayerNumCol('games_played',              'PJ',   { decimals: 0, size: 44 }),
   buildPlayerNumCol('minutes_per_game',          'MIN',  { size: 52 }),
   buildPlayerNumCol('points_per_game',           'PTS',  { size: 52 }),

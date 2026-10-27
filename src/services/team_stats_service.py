@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 from src.database.team_stats_aggregator import TeamStatsAggregator
 from src.utils.team_utils import get_available_teams_from_collection
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+from src.services._team_id import with_team_id
 from src.services._possession_stats_builder import (
     apply_exact_fields,
     apply_pace_impact,
@@ -104,15 +105,8 @@ class TeamStatsService:
         opponent_stats = self._db.get_opponent_stats(
             collection_name, date_filter, venue_filter, result_filter
         )
-        # FEB pipelines use _id as the team identifier (group key); normalise so
-        # every row always carries an explicit team_id field for the frontend.
-        for row in team_stats or []:
-            if not row.get("team_id"):
-                row["team_id"] = row.get("_id")
-        for row in opponent_stats or []:
-            if not row.get("team_id"):
-                row["team_id"] = row.get("_id")
-        return {"team_stats": team_stats or [], "opponent_stats": opponent_stats or []}
+        # FEB pipelines use _id as the team identifier (group key): every row carries an explicit team_id for the frontend
+        return {"team_stats": with_team_id(team_stats), "opponent_stats": with_team_id(opponent_stats)}
 
     def get_quartiles(self, collection_name: str) -> Dict[str, Dict[str, float]]:
         """Compute league-wide quartile thresholds for all tracked statistics.

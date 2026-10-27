@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import DataTable from './DataTable'
 
 interface Row { name: string; a: number; b: number; c: number }
@@ -63,5 +63,49 @@ describe('DataTable quartile colours', () => {
   it('does not colour a column whose thresholds are [0, 0, 0]: that is how «not enough values to split» is said (issue #601)', () => {
     render(<DataTable columns={columns} data={rows} quartiles={{ v: [0, 0, 0] }} />)
     expect(classes()).toEqual(['none', 'none', 'none', 'none'])
+  })
+})
+
+// Issue #184: DataTable v2. Density, the states of the system (EmptyState, a Spinner that says it is loading) and, on a phone, every row as
+// a card (the first column is its title and the rest go label: value), so a wide table needs no sideways scroll.
+describe('DataTable v2 (issue #184)', () => {
+  const rows = [{ team: 'León', pts: 70.5, reb: 38 }, { team: 'Zamora', pts: 64.1, reb: 41 }]
+  const columns: ColumnDef<(typeof rows)[number], unknown>[] = [
+    { id: 'team', accessorKey: 'team', header: 'Equipo' },
+    { id: 'pts', accessorKey: 'pts', header: 'PTS' },
+    { id: 'reb', accessorKey: 'reb', header: () => <span>Reb</span>, meta: { label: 'Rebotes' } },
+  ]
+  const phone = (matches: boolean) => vi.stubGlobal('matchMedia', (query: string) => ({ matches: matches && query.includes('max-width'), media: query,
+    addEventListener: () => undefined, removeEventListener: () => undefined }))
+  afterEach(() => vi.unstubAllGlobals())
+
+  it.each([['compact', 'py-1'], ['comfortable', 'py-2.5']] as const)('density %s', (density, cls) => {
+    render(<DataTable columns={columns} data={rows} searchable={false} density={density} />)
+    expect(screen.getByText('León').closest('td')).toHaveClass(cls)
+  })
+
+  it('says it is loading, and says what to do when no row is left', () => {
+    const { rerender } = render(<DataTable columns={columns} data={[]} searchable={false} loading />)
+    expect(screen.getByRole('status', { name: 'Cargando la tabla' })).toBeInTheDocument()
+    rerender(<DataTable columns={columns} data={[]} searchable={false} emptyMessage="Esta temporada aún no tiene partidos." />)
+    expect(screen.getByText('Sin resultados')).toBeInTheDocument()
+    expect(screen.getByText('Esta temporada aún no tiene partidos.')).toBeInTheDocument()
+  })
+
+  it('on a phone every row is a card: the first column is its title, the rest label and value', () => {
+    phone(true)
+    render(<DataTable columns={columns} data={rows} searchable={false} />)
+    expect(document.querySelector('table')).toBeNull()
+    const cards = screen.getAllByRole('listitem')
+    expect(cards).toHaveLength(2)
+    expect(within(cards[0]).getByRole('heading', { name: 'León' })).toBeInTheDocument()
+    expect(within(cards[0]).getByText('PTS').nextElementSibling).toHaveTextContent('70.5')
+    expect(within(cards[0]).getByText('Rebotes').nextElementSibling).toHaveTextContent('38')   // a header that is not text says meta.label
+  })
+
+  it('on a wide screen it stays a table', () => {
+    phone(false)
+    render(<DataTable columns={columns} data={rows} searchable={false} />)
+    expect(document.querySelector('table')).not.toBeNull()
   })
 })

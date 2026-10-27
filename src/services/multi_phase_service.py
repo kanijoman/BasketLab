@@ -15,6 +15,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List
 
+from src.services._team_id import with_team_id
+
 # Fields that are simple totals (sum across phases)
 _SUM_FIELDS = (
     "games_played", "games_won", "games_lost",
@@ -51,6 +53,9 @@ _PCT_FIELDS: Dict[str, tuple] = {
     "fg3_percentage": ("fg3_made", "fg3_attempts"),
     "ft_percentage":  ("ft_made",  "ft_attempts"),
 }
+
+# Fields that name the entity, not count it: kept from its first row, never seeded with 0 (the web draws the crest of a team from team_id)
+_IDENTITY_FIELDS = frozenset({"_id", "team_id", "player_id"})
 
 # FEB MongoDB aggregation pipelines use slightly different field names than
 # the canonical names expected by _SUM_FIELDS / _PG_FIELDS / _PCT_FIELDS.
@@ -129,8 +134,7 @@ class MultiPhaseService:
     def _load_team_stats(self, is_fbcyl: bool) -> Dict[str, List[Dict]]:
         result: Dict[str, List[Dict]] = {}
         for coll in self._collections:
-            rows = self._db.get_team_stats(coll) or []
-            result[coll] = rows
+            result[coll] = with_team_id(self._db.get_team_stats(coll))
         return result
 
     def _load_player_stats(self, is_fbcyl: bool) -> Dict[str, List[Dict]]:
@@ -165,7 +169,7 @@ def _merge_by_key(
             if entity_key not in accumulated:
                 # Seed with a copy — use the raw data as starting point
                 accumulated[entity_key] = {
-                    k: (v if not isinstance(v, (int, float)) else 0)
+                    k: (v if not isinstance(v, (int, float)) or k in _IDENTITY_FIELDS else 0)
                     for k, v in row.items()
                 }
                 accumulated[entity_key][key] = entity_key

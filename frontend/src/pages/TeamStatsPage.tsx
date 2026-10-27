@@ -7,6 +7,9 @@
  * Trend badges inline in every numeric cell when a date filter is active
  * Export: CSV / PNG / PDF via DataTable > ExportButton
  */
+import { teamColumn } from '@/components/ui/TeamCell'
+import Tabs from '@/components/ui/Tabs'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
@@ -27,21 +30,6 @@ import CVBadge from '@/components/ui/CVBadge'
 import { ADVANCED_COL_DEFS, BASIC_COL_DEFS, REVERSE_ADV, REVERSE_BASIC, type ColDef } from '@/lib/teamColumns'
 
 // -- Column factory ------------------------------------------------------------
-
-function nameCol(): ColumnDef<TeamStat, unknown> {
-  return {
-    id: 'team_name',
-    accessorKey: 'team_name',
-    size: 150,
-    header: 'Equipo',
-    cell: ({ getValue }) => (
-      <span className="font-medium text-ink whitespace-nowrap">
-        {getValue() as string}
-      </span>
-    ),
-    enableSorting: true,
-  }
-}
 
 /**
  * Build a ColumnDef from a ColDef descriptor.
@@ -91,7 +79,7 @@ function buildCols(
   seasonByName: Record<string, TeamStat> | null,
   consistencyByName: CVMap | null,
 ): ColumnDef<TeamStat, unknown>[] {
-  return [nameCol(), ...defs.map(d => buildCol(d, seasonByName, consistencyByName))]
+  return [teamColumn<TeamStat>(), ...defs.map(d => buildCol(d, seasonByName, consistencyByName))]
 }
 
 // -- Helpers -------------------------------------------------------------------
@@ -370,49 +358,28 @@ export default function TeamStatsPage() {
             return (
               <>
                 <StatCard label="Pos/Partido" value={fmt(highlights.pos)} delta={diff(highlights.pos, seasonHighlights?.pos)} />
-                <StatCard label="OER Medio" value={fmt(highlights.oer)} accent="green" delta={diff(highlights.oer, seasonHighlights?.oer)} />
+                <StatCard label="OER Medio" value={fmt(highlights.oer)} tone="ok" delta={diff(highlights.oer, seasonHighlights?.oer)} />
                 <StatCard label="PPP Medio" value={fmt(highlights.ppg)} delta={diff(highlights.ppg, seasonHighlights?.ppg)} />
               </>
             )
           })()}
         </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-line">
-          {TABS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={[
-                'flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
-                tab === id
-                  ? 'border-accent text-accent-text'
-                  : 'border-transparent text-ink-faint hover:text-ink',
-              ].join(' ')}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-            </button>
-          ))}
-          {tab === 'rivals' && (
-            <div className="ml-auto mb-1 flex rounded-lg overflow-hidden border border-line">
-              {(['basic', 'advanced'] as const).map(v => (
-                <button
-                  key={v}
-                  onClick={() => setRivalsView(v)}
-                  className={[
-                    'px-3 py-1 text-xs font-medium transition-colors',
-                    rivalsView === v
-                      ? 'bg-accent/30 text-accent-text'
-                      : 'text-ink-muted hover:bg-surface-raised hover:text-ink',
-                  ].join(' ')}
-                >
-                  {v === 'basic' ? 'Básico' : 'Avanzado'}
-                </button>
-              ))}
-            </div>
+        {/* Tabs (issue #190: the Tabs of components/ui, with the basic/advanced view of the rivals at the end of the row) */}
+        <Tabs
+          label="Vistas de estadísticas de equipo"
+          tabs={TABS.map(({ id, label, Icon }) => ({ id, label, icon: Icon }))}
+          value={tab}
+          onChange={setTab}
+          trailing={tab === 'rivals' && (
+            <SegmentedControl
+              label="Vista de los rivales"
+              value={rivalsView}
+              onChange={setRivalsView}
+              options={[{ value: 'basic', label: 'Básico' }, { value: 'advanced', label: 'Avanzado' }]}
+            />
           )}
-        </div>
+        />
 
         {/* Data table / rival-adjusted panel */}
         {tab === 'rival-adj' ? (

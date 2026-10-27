@@ -4,6 +4,7 @@
  * Home vs away, won vs lost, and a stretch of dates vs the rest of the season. Each cell is the figure of the first group with the REAL difference with the second
  * (issue #608: no arrows); green when it is good, red when it is bad. The view of the rivals swaps good and bad: what they did against a team is good for them.
  */
+import { teamColumn } from '@/components/ui/TeamCell'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
@@ -52,7 +53,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
 
 function buildColumns(defs: ColDef[], byName: Record<string, ComparisonRow>, rivals: boolean): ColumnDef<Flat, unknown>[] {
   const cols: ColumnDef<Flat, unknown>[] = [
-    { id: 'team_name', accessorKey: 'team_name', header: 'Equipo', size: 230, cell: ({ getValue }) => <span className="font-medium text-ink whitespace-nowrap">{getValue() as string}</span> },
+    teamColumn<Flat>(),
     { id: 'games', accessorKey: 'games', header: tippedHeader('PJ'), size: 60 },
   ]
   for (const def of defs.filter(d => !d.count)) {
@@ -99,7 +100,7 @@ export default function ComparativasPage() {
   const rivals = side === 'opponent'
   const defs = view === 'advanced' ? ADVANCED_COL_DEFS : BASIC_COL_DEFS
   const rows = useMemo(() => (data ? data[side] : []), [data, side])
-  const flat: Flat[] = useMemo(() => rows.map(r => ({ ...(r.a ?? r.b ?? {}), team_name: r.team_name, games: `${r.games_a}+${r.games_b}` })), [rows])
+  const flat: Flat[] = useMemo(() => rows.map(r => ({ ...(r.a ?? r.b ?? {}), team_name: r.team_name, team_id: r.team_id ?? undefined, games: `${r.games_a}+${r.games_b}` })), [rows])
   const byName = useMemo(() => Object.fromEntries(rows.map(r => [r.team_name, r])), [rows])
   const columns = useMemo(() => buildColumns(defs, byName, rivals), [defs, byName, rivals])
   const quartiles = useMemo(() => computeQuartileMap(flat, defs.filter(d => !d.count).map(d => d.key as string)), [flat, defs])

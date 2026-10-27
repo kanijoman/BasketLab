@@ -16,7 +16,7 @@ describe('button styles', () => {
   // Regression: a disabled "Generar paquete" looked clickable (it changed colour on hover), so it was pressed
   // expecting it to work. Disabled buttons must look disabled and must not react to the pointer.
   // The hover goes through :not(:disabled), not :enabled, so links (<a class="btn-primary">) keep their hover.
-  it.each(['btn-primary', 'btn-secondary', 'btn-ghost'])('%s looks disabled and has no hover when disabled', name => {
+  it.each(['btn-primary', 'btn-secondary', 'btn-ghost', 'btn-danger'])('%s looks disabled and has no hover when disabled', name => {
     const r = rule(name)
     expect(r).toContain('disabled:opacity-50')
     expect(r).toContain('disabled:cursor-not-allowed')

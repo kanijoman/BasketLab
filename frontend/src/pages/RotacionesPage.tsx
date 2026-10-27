@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect, type FormEvent } from 'react'
+import { Select } from '@/components/ui/Field'
 import { useQuery } from '@tanstack/react-query'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -15,9 +16,6 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const selectCls =
-  'appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 text-sm ' +
-  'text-ink focus:outline-none focus:ring-2 focus:ring-focus'
 
 function fmtPct(v: number | null | undefined) {
   if (v == null) return '—'
@@ -231,13 +229,13 @@ export default function RotacionesPage() {
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Equipo</label>
-            <select
+            <Select
               value={pendingTeam?.id ?? ''}
               onChange={e => setPendingTeam(teams.find(t => t.id === e.target.value) ?? null)}
-              className={selectCls}
+             
             >
               {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            </Select>
           </div>
 
           <button

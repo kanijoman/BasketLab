@@ -5,24 +5,18 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
 import type { PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
-import TeamCell from '@/components/ui/TeamCell'
+import { teamColumn } from '@/components/ui/TeamCell'
 import Tooltip from '@/components/ui/Tooltip'
 import { fmt } from '@/lib/utils'
 
 type Col = ColumnDef<any, unknown> // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export const TEAM_COLUMN_SIZE = 240
+/** The team column of every table of the page (the shared one, issue #184) */
+const teamCol = teamColumn() as Col
+
 export const NUMERIC_COLUMN_SIZE = 66
 
 // -- Cells --------------------------------------------------------------------
-
-const teamCol: Col = {
-  id: 'team_name',
-  accessorKey: 'team_name',
-  header: 'Equipo',
-  size: TEAM_COLUMN_SIZE,
-  cell: ({ getValue, row }) => <TeamCell name={getValue() as string} teamId={row.original.team_id} />,
-}
 
 function head(short: string, description: string): () => JSX.Element {
   return () => (

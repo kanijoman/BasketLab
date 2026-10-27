@@ -124,7 +124,7 @@ export default function CollectionHub() {
                 label="Máx. anotador"
                 value={fmt(highlights.topScorer.ppg)}
                 sub={highlights.topScorer.name}
-                accent="green"
+                tone="ok"
                 onClick={() => goTo('rankings')}
               />
             )}
@@ -133,7 +133,7 @@ export default function CollectionHub() {
                 label="Mejor OER"
                 value={fmt(highlights.bestOER.oer)}
                 sub={highlights.bestOER.team}
-                accent="blue"
+                tone="secondary"
                 onClick={() => goTo('teams')}
               />
             )}
@@ -142,7 +142,7 @@ export default function CollectionHub() {
                 label="Ritmo medio"
                 value={fmt(highlights.avgPace)}
                 sub="posesiones / partido"
-                accent="default"
+                tone="neutral"
                 onClick={() => goTo('possessions')}
               />
             )}

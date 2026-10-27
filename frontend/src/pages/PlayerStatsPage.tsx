@@ -8,6 +8,7 @@
  * - SlideDrawer profile panel on row click
  * - Export: CSV / PNG / PDF via DataTable
  */
+import { teamColumn } from '@/components/ui/TeamCell'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
@@ -69,35 +70,6 @@ function nameCol(): ColumnDef<PlayerStat, unknown> {
   }
 }
 
-function TeamLogoCell({ teamId, teamName }: { teamId?: string; teamName: string }) {
-  const [failed, setFailed] = useState(false)
-  if (teamId && !failed) {
-    const url = `https://imagenes.feb.es/imagen.aspx?i=${teamId}&ti=1`
-    return (
-      <img
-        src={url}
-        alt={teamName}
-        title={teamName}
-        className="h-7 max-w-[42px] object-contain mx-auto block"
-        onError={() => setFailed(true)}
-      />
-    )
-  }
-  return <span className="text-ink-muted text-xs" title={teamName}>{teamName.slice(0, 3).toUpperCase()}</span>
-}
-
-function teamLogoCol(): ColumnDef<PlayerStat, unknown> {
-  return {
-    id: 'team_name',
-    accessorKey: 'team_name',
-    size: 42,
-    header: '',
-    cell: ({ getValue, row }) => (
-      <TeamLogoCell teamId={row.original.team_id} teamName={getValue() as string} />
-    ),
-  }
-}
-
 // -- Column sets (factories — receive consistency map at render time) ---------
 
 const PLAYER_CV: [number, number] = [50, 100]
@@ -105,7 +77,7 @@ const PLAYER_CV: [number, number] = [50, 100]
 function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
-    teamLogoCol(),
+    teamColumn<PlayerStat>({ compact: true }),
     buildNumCol('games_played',              'PJ',  { decimals: 0, size: 44 }),
     buildNumCol('minutes_per_game',          'MIN', { size: 52 },  cv, PLAYER_CV),
     buildNumCol('points_per_game',           'PTS', { size: 52 },  cv, PLAYER_CV),
@@ -128,7 +100,7 @@ function buildBasicCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknow
 function buildAdvancedCols(cv: ConsistencyMap | null): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
-    teamLogoCol(),
+    teamColumn<PlayerStat>({ compact: true }),
     buildNumCol('games_played',      'PJ',     { decimals: 0, size: 44 }),
     buildNumCol('minutes_per_game',  'MIN',    { size: 52 },  cv, PLAYER_CV),
     buildNumCol('usage_pct',         'Usg%',   { size: 58 },  cv, PLAYER_CV),
@@ -209,7 +181,7 @@ function buildProjectionQuartiles(data: PlayerStat[]): QuartileMap {
 function buildProjectionCols(): ColumnDef<PlayerStat, unknown>[] {
   return [
     nameCol(),
-    teamLogoCol(),
+    teamColumn<PlayerStat>({ compact: true }),
     buildNumCol('games_played',    'PJ',  { decimals: 0, size: 44 }),
     buildNumCol('minutes_per_game','MIN', { size: 52 }),
     projNum('pts_proj',   'PTS×30', 'points_per_game'),

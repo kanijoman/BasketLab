@@ -22,18 +22,18 @@ describe('StatCard — rendering', () => {
 
 describe('StatCard — accent classes', () => {
   it('applies green accent border class', () => {
-    const { container } = render(<StatCard label="OER" value="107" accent="green" />)
+    const { container } = render(<StatCard label="OER" value="107" tone="ok" />)
     const card = container.firstChild as HTMLElement
     expect(card.className).toMatch(/border-ok/)
   })
 
   it('applies blue accent class', () => {
-    const { container } = render(<StatCard label="DER" value="102" accent="blue" />)
+    const { container } = render(<StatCard label="DER" value="102" tone="secondary" />)
     const card = container.firstChild as HTMLElement
     expect(card.className).toMatch(/border-secondary/)
   })
 
-  it('uses default border when no accent provided', () => {
+  it('uses default border when no tone is given', () => {
     const { container } = render(<StatCard label="PPP" value="80" />)
     const card = container.firstChild as HTMLElement
     expect(card.className).toMatch(/border-line/)

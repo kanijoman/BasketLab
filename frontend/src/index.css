@@ -66,6 +66,13 @@
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  /* destructive actions (delete, drop): outlined in the bad tone, readable on both themes (issue #190) */
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded border border-bad/40 [&:not(:disabled)]:hover:bg-bad/10
+           text-bad text-sm font-medium transition-colors
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
   /* ── Input ──────────────────────────────────────────────────────── */
   .input {
     @apply w-full bg-canvas border border-line rounded px-3 py-2 text-sm

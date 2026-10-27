@@ -44,8 +44,9 @@ async function render(html, width, height, transparent = true) {
 }
 
 const icon = (size) => render(iconSvg, size, size)
-fs.copyFileSync(path.join(brand, 'web-icon.svg'), pub('favicon.svg'))
-fs.writeFileSync(pub('favicon.ico'), ico(await Promise.all([16, 32, 48].map(async size => ({ size, data: await icon(size) })))))
+// the tab shows the ball without the tile (#613); the tile stays where the platform asks for a square (Apple, manifest)
+fs.copyFileSync(path.join(brand, 'web-mark.svg'), pub('favicon.svg'))
+fs.writeFileSync(pub('favicon.ico'), ico(await Promise.all([16, 32, 48].map(async size => ({ size, data: await render(markSvg, size, size) })))))
 fs.writeFileSync(pub('apple-touch-icon.png'), await render(iconSvg.replace('rx="22"', 'rx="0"'), 180, 180, false))   // iOS rounds it itself
 fs.writeFileSync(pub('icon-192.png'), await icon(192))
 fs.writeFileSync(pub('icon-512.png'), await icon(512))

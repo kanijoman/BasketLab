@@ -13,6 +13,7 @@
  *
  * Ajuste por Rival (descriptivo) → Estadísticas de Equipo > tab "Aj. Rival"
  */
+import { Input, Select } from '@/components/ui/Field'
 import { useState, useEffect } from 'react'
 import { useCollection } from '@/context/CollectionContext'
 import { useQuery } from '@tanstack/react-query'
@@ -700,7 +701,6 @@ function GamePredictionTab() {
     }
   }
 
-  const inputCls = 'bg-surface border border-line text-ink text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-focus outline-none'
   const probColor = (p: number) =>
     p >= 0.6 ? 'text-ok' : p <= 0.4 ? 'text-bad' : 'text-warn'
 
@@ -741,15 +741,15 @@ function GamePredictionTab() {
           <>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Temporada</label>
-              <select className={inputCls} value={season} onChange={e => setSeason(e.target.value)}>
+              <Select value={season} onChange={e => setSeason(e.target.value)}>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Equipo</label>
-              <select className={inputCls} value={teamId} onChange={e => setTeamId(e.target.value)}>
+              <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
                 {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
-              </select>
+              </Select>
             </div>
           </>
         ) : (
@@ -757,9 +757,9 @@ function GamePredictionTab() {
             <label className="text-xs text-ink-muted">Equipo (temporada actual)</label>
             {collection
               ? (
-                <select className={inputCls + ' w-64'} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
+                <Select className="w-64" value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
                   {(liveTeams as TeamEntry[]).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
+                </Select>
               )
               : <p className="text-xs text-ink-muted italic">Selecciona una colección primero</p>
             }
@@ -768,17 +768,17 @@ function GamePredictionTab() {
 
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Campo</label>
-          <select className={inputCls} value={isHome ? 'home' : 'away'}
+          <Select value={isHome ? 'home' : 'away'}
             onChange={e => setIsHome(e.target.value === 'home')}>
             <option value="home">Local</option>
             <option value="away">Visitante</option>
-          </select>
+          </Select>
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Net Rtg rival</label>
-          <input
+          <Input
             type="number"
-            className={inputCls + ' w-28'}
+            className="w-28"
             placeholder="0.0"
             value={oppNetRtg}
             onChange={e => setOppNetRtg(e.target.value)}
@@ -937,7 +937,6 @@ export function ValidationTab() {
     }
   }
 
-  const inputCls = 'bg-surface border border-line text-ink text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-focus outline-none'
   const colHdr   = 'text-right text-xs text-ink-muted font-semibold py-2 px-3'
   const cell     = (v: number | null | undefined, d = 2) =>
     v == null ? '—' : v.toFixed(d)
@@ -978,23 +977,23 @@ export function ValidationTab() {
           <>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Temporada</label>
-              <select className={inputCls} value={season} onChange={e => setSeason(e.target.value)}>
+              <Select value={season} onChange={e => setSeason(e.target.value)}>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Equipo</label>
-              <select className={inputCls} value={teamId} onChange={e => setTeamId(e.target.value)}>
+              <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
                 {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
-              </select>
+              </Select>
             </div>
           </>
         ) : (
           <div className="flex flex-col gap-1">
             <label className="text-xs text-ink-muted">Equipo — {collection?.name ?? '…'}</label>
-            <select className={inputCls} value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
+            <Select value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>
               {liveTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            </Select>
           </div>
         )}
         <button
