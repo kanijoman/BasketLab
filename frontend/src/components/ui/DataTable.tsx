@@ -79,7 +79,7 @@ function SkeletonRow({ cols }: { cols: number }) {
     <tr>
       {Array.from({ length: cols }).map((_, i) => (
         <td key={i} className="px-3 py-2.5">
-          <div className="h-3.5 rounded animate-pulse bg-surface-border/50" />
+          <div className="h-3.5 rounded animate-pulse bg-line/50" />
         </td>
       ))}
     </tr>
@@ -130,7 +130,7 @@ export default function DataTable<TData>({
         <div className="flex items-center gap-3 flex-wrap">
           {searchable && (
             <div className="relative flex-1 min-w-[180px] max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted pointer-events-none" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-faint pointer-events-none" />
               <input
                 value={globalFilter}
                 onChange={e => setGlobalFilter(e.target.value)}
@@ -151,7 +151,7 @@ export default function DataTable<TData>({
       )}
 
       {/* Table wrapper */}
-      <div className="overflow-x-auto rounded-card border border-surface-border">
+      <div className="overflow-x-auto rounded-card border border-line">
         <table
           ref={tableRef}
           className="text-sm border-collapse"
@@ -168,7 +168,7 @@ export default function DataTable<TData>({
                         key={header.id}
                         colSpan={header.colSpan}
                         style={{ width: header.getSize() }}
-                        className={cn('bg-surface-raised', i === 0 && 'sticky left-0 z-10')}
+                        className={cn('bg-surface', i === 0 && 'sticky left-0 z-10')}
                       />
                     )
                   }
@@ -179,18 +179,18 @@ export default function DataTable<TData>({
                       colSpan={header.colSpan}
                       style={{ width: header.getSize() }}
                       className={cn(
-                        'px-2 py-2.5 text-xs font-medium text-ink-secondary',
-                        'bg-surface-raised border-b border-surface-border select-none',
-                        isGroup ? 'text-center border-l border-surface-border' : 'text-left',
-                        i === 0 && 'sticky left-0 z-10 bg-surface-raised',
-                        header.column.getCanSort() && 'cursor-pointer hover:text-ink-primary',
+                        'px-2 py-2.5 text-xs font-medium text-ink-muted',
+                        'bg-surface border-b border-line select-none',
+                        isGroup ? 'text-center border-l border-line' : 'text-left',
+                        i === 0 && 'sticky left-0 z-10 bg-surface',
+                        header.column.getCanSort() && 'cursor-pointer hover:text-ink',
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       <span className={cn('flex items-center gap-1', isGroup && 'justify-center')}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {header.column.getCanSort() && (
-                          <span className="text-ink-muted">
+                          <span className="text-ink-faint">
                             {header.column.getIsSorted() === 'asc'  && <ArrowUp className="w-3 h-3" />}
                             {header.column.getIsSorted() === 'desc' && <ArrowDown className="w-3 h-3" />}
                             {!header.column.getIsSorted()           && <ArrowUpDown className="w-3 h-3 opacity-30" />}
@@ -212,7 +212,7 @@ export default function DataTable<TData>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick?.(row)}
-                    className={`group border-b border-surface-border/50 hover:bg-surface-hover transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
+                    className={`group border-b border-line/50 hover:bg-surface-raised transition-colors${onRowClick ? ' cursor-pointer' : ''}`}
                   >
                     {row.getVisibleCells().map((cell, i) => {
                       const colId = cell.column.id
@@ -227,8 +227,8 @@ export default function DataTable<TData>({
                           style={{ width: cell.column.getSize(), maxWidth: cell.column.getSize(), overflow: 'hidden' }}
                           className={cn(
                             'px-2 py-1.5 tabular-nums',
-                            qClass ? '' : 'text-ink-primary',
-                            i === 0 && 'sticky left-0 z-10 bg-surface-raised font-medium text-ink-primary',
+                            qClass ? '' : 'text-ink',
+                            i === 0 && 'sticky left-0 z-10 bg-surface font-medium text-ink',
                             qClass,
                           )}
                         >
@@ -243,7 +243,7 @@ export default function DataTable<TData>({
         </table>
 
         {!loading && table.getRowModel().rows.length === 0 && (
-          <div className="py-12 text-center text-sm text-ink-secondary">
+          <div className="py-12 text-center text-sm text-ink-muted">
             Sin resultados para los filtros aplicados.
           </div>
         )}
@@ -251,7 +251,7 @@ export default function DataTable<TData>({
 
       {/* Row count */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <p className="text-xs text-ink-muted">
+        <p className="text-xs text-ink-faint">
           {table.getRowModel().rows.length} filas
           {data.length !== table.getRowModel().rows.length && ` de ${data.length}`}
         </p>

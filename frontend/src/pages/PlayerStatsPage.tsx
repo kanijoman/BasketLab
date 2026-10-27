@@ -64,7 +64,7 @@ function nameCol(): ColumnDef<PlayerStat, unknown> {
     size: 140,
     header: 'Jugador',
     cell: ({ getValue }) => (
-      <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span>
+      <span className="font-medium text-ink whitespace-nowrap">{getValue() as string}</span>
     ),
   }
 }
@@ -83,7 +83,7 @@ function TeamLogoCell({ teamId, teamName }: { teamId?: string; teamName: string 
       />
     )
   }
-  return <span className="text-ink-secondary text-xs" title={teamName}>{teamName.slice(0, 3).toUpperCase()}</span>
+  return <span className="text-ink-muted text-xs" title={teamName}>{teamName.slice(0, 3).toUpperCase()}</span>
 }
 
 function teamLogoCol(): ColumnDef<PlayerStat, unknown> {
@@ -255,9 +255,9 @@ function buildPlayerQuartiles(data: PlayerStat[], cols: ColumnDef<PlayerStat, un
 
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between items-center py-1.5 border-b border-surface-border/50">
-      <span className="text-xs text-ink-muted">{label}</span>
-      <span className="text-sm font-medium text-ink-primary tabular-nums">{value}</span>
+    <div className="flex justify-between items-center py-1.5 border-b border-line/50">
+      <span className="text-xs text-ink-faint">{label}</span>
+      <span className="text-sm font-medium text-ink tabular-nums">{value}</span>
     </div>
   )
 }
@@ -266,10 +266,10 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
   return (
     <SlideDrawer open onClose={onClose} title={player.player_name} size="md">
       <div className="space-y-4 p-5">
-        <p className="text-sm text-brand-400 font-medium">{player.team_name}</p>
+        <p className="text-sm text-accent-text font-medium">{player.team_name}</p>
 
         <div>
-          <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Por partido</h3>
+          <h3 className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-2">Por partido</h3>
           <StatRow label="Partidos jugados" value={fmt(player.games_played, 0)} />
           <StatRow label="Minutos / partido" value={fmt(player.minutes_per_game)} />
           <StatRow label="Puntos / partido"  value={fmt(player.points_per_game)} />
@@ -286,7 +286,7 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
         </div>
 
         <div>
-          <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Avanzado</h3>
+          <h3 className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-2">Avanzado</h3>
           <StatRow label="eFG%"              value={fmtPct(player.efg_percentage)} />
           <StatRow label="TS%"               value={fmtPct(player.true_shooting)} />
           <StatRow label="Tasa TL (FTr)"    value={fmtPct(player.free_throw_rate)} />
@@ -295,14 +295,14 @@ function PlayerDrawer({ player, onClose }: { player: PlayerStat; onClose: () => 
         </div>
 
         <div>
-          <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Porcentajes de tiro</h3>
+          <h3 className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-2">Porcentajes de tiro</h3>
           <StatRow label="% Tiros libres"   value={fmtPct(player.fg1_percentage)} />
           <StatRow label="% Tiros de 2"     value={fmtPct(player.fg2_percentage)} />
           <StatRow label="% Triples"        value={fmtPct(player.fg3_percentage)} />
         </div>
 
         <div>
-          <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Totales temporada</h3>
+          <h3 className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-2">Totales temporada</h3>
           <StatRow label="Puntos totales"   value={fmt(player.total_pts, 0)} />
           <StatRow label="Minutos totales"  value={fmt(player.total_minutes, 0)} />
         </div>
@@ -480,7 +480,7 @@ export default function PlayerStatsPage() {
   if (!collection) {
     return (
       <PageTransition>
-        <p className="text-center text-ink-muted mt-16">Selecciona una colección para continuar.</p>
+        <p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p>
       </PageTransition>
     )
   }
@@ -492,8 +492,8 @@ export default function PlayerStatsPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Estadísticas de Jugadores</h1>
-            <p className="text-sm text-ink-muted mt-0.5">{collection.label}</p>
+            <h1 className="text-xl font-bold text-ink">Estadísticas de Jugadores</h1>
+            <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
           </div>
           <FilterBar showDate />
         </div>
@@ -503,12 +503,12 @@ export default function PlayerStatsPage() {
           <div className="card p-4 space-y-3">
             {/* Header + stat toggles */}
             <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-ink-muted uppercase tracking-wider">
+              <h2 className="text-sm font-semibold text-ink-faint uppercase tracking-wider">
                 Tendencia vs temporada completa
               </h2>
               {TREND_STAT_GROUPS.map(({ group, options }) => (
                 <div key={group} className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider w-14 shrink-0">{group}</span>
+                  <span className="text-[10px] font-semibold text-ink-faint uppercase tracking-wider w-14 shrink-0">{group}</span>
                   {options.map(opt => {
                     const active = trendStats.includes(opt.key)
                     return (
@@ -524,8 +524,8 @@ export default function PlayerStatsPage() {
                         className={[
                           'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
                           active
-                            ? 'bg-brand-500/20 border-brand-500/50 text-brand-400'
-                            : 'bg-surface-muted border-surface-border text-ink-muted hover:text-ink-primary',
+                            ? 'bg-accent/20 border-accent/50 text-accent-text'
+                            : 'bg-surface-raised border-line text-ink-faint hover:text-ink',
                         ].join(' ')}
                       >
                         {opt.label}
@@ -536,22 +536,22 @@ export default function PlayerStatsPage() {
               ))}
             </div>
             {!teamFilter && trendStats.length > 0 && (
-              <p className="text-xs text-ink-muted">
+              <p className="text-xs text-ink-faint">
                 Top +3 / Top −3 por {TREND_STAT_OPTIONS.find(o => o.key === trendStats[0])?.label ?? 'PTS'}
               </p>
             )}
             {trendStats.length === 0 ? (
-              <p className="text-xs text-ink-muted italic">Selecciona al menos un estadístico para comparar.</p>
+              <p className="text-xs text-ink-faint italic">Selecciona al menos un estadístico para comparar.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {trendDisplay.map(({ p, s }) => (
                   <div
                     key={p.player_id}
-                    className="flex items-center justify-between p-2 rounded bg-surface-muted border border-surface-border gap-2"
+                    className="flex items-center justify-between p-2 rounded bg-surface-raised border border-line gap-2"
                   >
                     <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-xs font-medium text-ink-primary truncate">{p.player_name}</span>
-                      <span className="text-[10px] text-ink-muted truncate">{p.team_name}</span>
+                      <span className="text-xs font-medium text-ink truncate">{p.player_name}</span>
+                      <span className="text-[10px] text-ink-faint truncate">{p.team_name}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                       {trendStats.map(key => {
@@ -559,7 +559,7 @@ export default function PlayerStatsPage() {
                         if (!opt) return null
                         return (
                           <span key={String(key)} className="inline-flex items-center gap-0.5">
-                            <span className="text-[10px] text-ink-muted font-medium">{opt.label}</span>
+                            <span className="text-[10px] text-ink-faint font-medium">{opt.label}</span>
                             <DiffBadge
                               recent={p[key] as number}
                               season={s[key] as number}
@@ -588,10 +588,10 @@ export default function PlayerStatsPage() {
               <option value="">Todos los equipos</option>
               {teamList.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-muted pointer-events-none" />
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-faint pointer-events-none" />
           </div>
 
-          <span className="text-xs text-ink-muted ml-auto">
+          <span className="text-xs text-ink-faint ml-auto">
             <Users className="inline w-3.5 h-3.5 mr-1" />
             {players.length} jugadores
           </span>
@@ -600,14 +600,14 @@ export default function PlayerStatsPage() {
         {/* Prompt when no team selected */}
         {!teamFilter && (
           <div className="card p-8 flex flex-col items-center gap-2 text-center">
-            <Users className="w-8 h-8 text-ink-muted opacity-40" />
-            <p className="text-ink-secondary text-sm">Selecciona un equipo para ver las estadísticas de sus jugadores.</p>
+            <Users className="w-8 h-8 text-ink-faint opacity-40" />
+            <p className="text-ink-muted text-sm">Selecciona un equipo para ver las estadísticas de sus jugadores.</p>
           </div>
         )}
 
         {/* Tabs */}
         {teamFilter && (
-        <div className="flex gap-1 border-b border-surface-border">
+        <div className="flex gap-1 border-b border-line">
           {TABS.map(({ id, label }) => (
             <button
               key={id}
@@ -615,8 +615,8 @@ export default function PlayerStatsPage() {
               className={[
                 'px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
                 tab === id
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-ink-muted hover:text-ink-primary',
+                  ? 'border-accent text-accent-text'
+                  : 'border-transparent text-ink-faint hover:text-ink',
               ].join(' ')}
             >
               {label}
@@ -627,11 +627,11 @@ export default function PlayerStatsPage() {
 
         {/* Projection methodology banner */}
         {teamFilter && tab === 'projection' && (
-          <div className="flex items-start gap-3 rounded-md bg-blue-950/40 border border-blue-800/50 px-4 py-3 text-sm text-blue-200">
-            <Info className="w-4 h-4 mt-0.5 shrink-0 text-blue-400" />
+          <div className="flex items-start gap-3 rounded-md bg-secondary/40 border border-secondary/50 px-4 py-3 text-sm text-secondary-text">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-secondary-text" />
             <div className="space-y-0.5">
               <p className="font-semibold">Proyección estadística a 30 minutos</p>
-              <p className="text-blue-300/80 text-xs">
+              <p className="text-secondary-text/80 text-xs">
                 Escala las estadísticas de cada jugador al equivalente de disputar 30 minutos por partido.
                 Los jugadores con menos de 10 minutos de media por partido no se incluyen en el cálculo.
               </p>

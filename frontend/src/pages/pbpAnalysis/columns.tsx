@@ -40,7 +40,7 @@ function num(key: string, short: string, description: string, decimals = 1, suff
     header: head(short, description),
     cell: ({ getValue }) => {
       const v = getValue() as number | null | undefined
-      return v == null ? <span className="text-ink-disabled">—</span> : `${fmt(v, decimals)}${suffix}`
+      return v == null ? <span className="text-ink-faint">—</span> : `${fmt(v, decimals)}${suffix}`
     },
   }
 }

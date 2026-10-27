@@ -33,7 +33,7 @@ export default function DiffBadge({ recent, season, reverse = false, decimals = 
   const good = (diff > 0) !== reverse
   return (
     <span
-      className={cn('inline-flex items-center text-xs font-semibold tabular-nums', none ? 'text-ink-secondary' : good ? 'text-brand-400' : 'text-down', className)}
+      className={cn('inline-flex items-center text-xs font-semibold tabular-nums', none ? 'text-ink-muted' : good ? 'text-ok' : 'text-bad', className)}
       title={`${(recent as number).toFixed(decimals)} frente a ${(season as number).toFixed(decimals)}`}
     >
       {text}

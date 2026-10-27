@@ -12,6 +12,7 @@ import {
   Label,
 } from 'recharts'
 
+import { useChartTheme } from '@/lib/chartTheme'
 import type { PossessionStat } from '@/api/client'
 import { fmt } from '@/lib/utils'
 
@@ -34,6 +35,7 @@ interface DotProps {
 
 function TeamLogoDot({ cx = 0, cy = 0, payload }: DotProps) {
   const [imgError, setImgError] = useState(false)
+  const chart = useChartTheme()
   if (!payload) return null
 
   const teamId = payload.team_id
@@ -43,8 +45,8 @@ function TeamLogoDot({ cx = 0, cy = 0, payload }: DotProps) {
   if (!teamId || imgError) {
     return (
       <g>
-        <circle cx={cx} cy={cy} r={r} fill="#1e3a5f" stroke="#3b82f6" strokeWidth={1} />
-        <text x={cx} y={cy + 4} textAnchor="middle" fontSize={8} fill="#d1d5db" style={{ pointerEvents: 'none' }}>
+        <circle cx={cx} cy={cy} r={r} fill={chart.surface} stroke={chart.series[1]} strokeWidth={1} />
+        <text x={cx} y={cy + 4} textAnchor="middle" fontSize={8} fill={chart.axis} style={{ pointerEvents: 'none' }}>
           {initials}
         </text>
       </g>
@@ -59,7 +61,7 @@ function TeamLogoDot({ cx = 0, cy = 0, payload }: DotProps) {
           <circle cx={cx} cy={cy} r={r} />
         </clipPath>
       </defs>
-      <circle cx={cx} cy={cy} r={r} fill="#0f172a" stroke="#334155" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={r} fill={chart.surface} stroke={chart.grid} strokeWidth={1} />
       <image
         href={FEB_LOGO(teamId)}
         x={cx - r} y={cy - r}
@@ -84,7 +86,7 @@ function CustomTooltip({
   const d = payload[0].payload
   const teamId = d.team_id
   return (
-    <div className="bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-xs shadow-lg min-w-[140px]">
+    <div className="bg-surface border border-line rounded-lg px-3 py-2 text-xs shadow-lg min-w-[140px]">
       <div className="flex items-center gap-2 mb-2">
         {teamId && (
           <img
@@ -94,21 +96,21 @@ function CustomTooltip({
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           />
         )}
-        <p className="font-semibold text-ink-primary leading-tight">{d.team_name}</p>
+        <p className="font-semibold text-ink leading-tight">{d.team_name}</p>
       </div>
       {mode === 'pace' ? (
         <>
-          <p className="text-ink-secondary">Ritmo: <span className="text-ink-primary">{fmt(d.pace)}</span></p>
-          <p className="text-ink-secondary">OER: <span className="text-ink-primary">{fmt(d.oer)}</span></p>
-          <p className="text-ink-secondary">DER: <span className="text-ink-primary">{fmt(d.der)}</span></p>
-          <p className="text-ink-secondary">Net: <span className="text-ink-primary">{fmt(d.net_rating)}</span></p>
+          <p className="text-ink-muted">Ritmo: <span className="text-ink">{fmt(d.pace)}</span></p>
+          <p className="text-ink-muted">OER: <span className="text-ink">{fmt(d.oer)}</span></p>
+          <p className="text-ink-muted">DER: <span className="text-ink">{fmt(d.der)}</span></p>
+          <p className="text-ink-muted">Net: <span className="text-ink">{fmt(d.net_rating)}</span></p>
         </>
       ) : (
         <>
-          <p className="text-ink-secondary">% Rápidas: <span className="text-ink-primary">{d.pct_fast != null ? fmt(d.pct_fast) + '%' : '—'}</span></p>
-          <p className="text-ink-secondary">OER Rápidas: <span className="text-ink-primary">{d.oer_fast != null ? fmt(d.oer_fast) : '—'}</span></p>
-          <p className="text-ink-secondary">% Medias: <span className="text-ink-primary">{d.pct_medium != null ? fmt(d.pct_medium) + '%' : '—'}</span></p>
-          <p className="text-ink-secondary">% Lentas: <span className="text-ink-primary">{d.pct_slow != null ? fmt(d.pct_slow) + '%' : '—'}</span></p>
+          <p className="text-ink-muted">% Rápidas: <span className="text-ink">{d.pct_fast != null ? fmt(d.pct_fast) + '%' : '—'}</span></p>
+          <p className="text-ink-muted">OER Rápidas: <span className="text-ink">{d.oer_fast != null ? fmt(d.oer_fast) : '—'}</span></p>
+          <p className="text-ink-muted">% Medias: <span className="text-ink">{d.pct_medium != null ? fmt(d.pct_medium) + '%' : '—'}</span></p>
+          <p className="text-ink-muted">% Lentas: <span className="text-ink">{d.pct_slow != null ? fmt(d.pct_slow) + '%' : '—'}</span></p>
         </>
       )}
     </div>
@@ -128,6 +130,7 @@ interface ScatterCardProps {
 }
 
 export default function ScatterCard({ xKey, yKey, xLabel, yLabel, description, data, mode }: ScatterCardProps) {
+  const chart = useChartTheme()
   const xVals = useMemo(
     () => data.map(d => d[xKey] as number).filter(v => v != null && !Number.isNaN(v)),
     [data, xKey],
@@ -141,34 +144,34 @@ export default function ScatterCard({ xKey, yKey, xLabel, yLabel, description, d
 
   return (
     <div className="card p-4">
-      <p className="text-sm text-ink-secondary mb-4">{description}</p>
+      <p className="text-sm text-ink-muted mb-4">{description}</p>
       <div className="grid grid-cols-2 gap-1 text-xs mb-3 max-w-sm ml-auto mr-0">
-        <span className="text-right text-yellow-500">Rápido + Eficiente →</span>
-        <span className="text-green-500">← Rápido – Ineficiente</span>
-        <span className="text-red-400">Lento + Eficiente →</span>
-        <span className="text-ink-secondary">← Lento – Ineficiente</span>
+        <span className="text-right text-warn">Rápido + Eficiente →</span>
+        <span className="text-ok">← Rápido – Ineficiente</span>
+        <span className="text-bad">Lento + Eficiente →</span>
+        <span className="text-ink-muted">← Lento – Ineficiente</span>
       </div>
       <ResponsiveContainer width="100%" height={420}>
         <ScatterChart margin={{ top: 10, right: 30, bottom: 30, left: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} strokeOpacity={0.6} />
           <XAxis
             type="number" dataKey={xKey as string} name={xLabel}
             domain={['auto', 'auto']}
-            tick={{ fontSize: 11, fill: '#6b7280' }}
+            tick={{ fontSize: 11, fill: chart.axis }}
           >
-            <Label value={xLabel} position="insideBottom" offset={-15} fontSize={11} fill="#6b7280" />
+            <Label value={xLabel} position="insideBottom" offset={-15} fontSize={11} fill={chart.axis} />
           </XAxis>
           <YAxis
             type="number" dataKey={yKey as string} name={yLabel}
             domain={['auto', 'auto']}
-            tick={{ fontSize: 11, fill: '#6b7280' }}
+            tick={{ fontSize: 11, fill: chart.axis }}
             width={45}
           >
-            <Label value={yLabel} angle={-90} position="insideLeft" fontSize={11} fill="#6b7280" />
+            <Label value={yLabel} angle={-90} position="insideLeft" fontSize={11} fill={chart.axis} />
           </YAxis>
           <Tooltip content={<CustomTooltip mode={mode} />} />
-          {medX > 0 && <ReferenceLine x={medX} stroke="#555" strokeDasharray="5 4" />}
-          {medY > 0 && <ReferenceLine y={medY} stroke="#555" strokeDasharray="5 4" />}
+          {medX > 0 && <ReferenceLine x={medX} stroke={chart.reference} strokeDasharray="5 4" />}
+          {medY > 0 && <ReferenceLine y={medY} stroke={chart.reference} strokeDasharray="5 4" />}
           <Scatter
             data={data}
             shape={(props: DotProps) => <TeamLogoDot {...props} />}

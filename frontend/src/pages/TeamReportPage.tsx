@@ -62,24 +62,24 @@ export default function TeamReportPage() {
     <PageTransition>
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary">Informe de equipo</h1>
-          <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+          <h1 className="text-2xl font-bold text-ink">Informe de equipo</h1>
+          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
         </div>
 
         {!collection ? (
           <div className="card p-10 flex flex-col items-center gap-2 text-center">
             <ClipboardList className="w-8 h-8 text-warn opacity-40" />
-            <p className="text-ink-secondary text-sm">Selecciona una colección para generar informes.</p>
+            <p className="text-ink-muted text-sm">Selecciona una colección para generar informes.</p>
           </div>
         ) : (
           <>
             <div className="card p-4 flex flex-wrap items-end gap-4">
-              <label className="flex flex-col gap-1 text-xs text-ink-secondary">
+              <label className="flex flex-col gap-1 text-xs text-ink-muted">
                 Equipo
                 <select
                   value={teamId}
                   onChange={e => setTeamId(e.target.value)}
-                  className="bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  className="bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
                 >
                   <option value="">— Selecciona equipo —</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -100,17 +100,17 @@ export default function TeamReportPage() {
               </button>
             </div>
 
-            {pdfError && <p className="text-sm text-down">{pdfError}</p>}
+            {pdfError && <p className="text-sm text-bad">{pdfError}</p>}
             {isFetching && (
-              <p className="text-sm text-ink-secondary flex items-center gap-2">
+              <p className="text-sm text-ink-muted flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" /> Generando informe…
               </p>
             )}
-            {error && <p className="text-sm text-down">{(error as Error).message}</p>}
-            {!teamId && <p className="text-sm text-ink-secondary">Elige un equipo para generar el informe.</p>}
+            {error && <p className="text-sm text-bad">{(error as Error).message}</p>}
+            {!teamId && <p className="text-sm text-ink-muted">Elige un equipo para generar el informe.</p>}
             {report && !isFetching && (
               <>
-                <h2 className="text-lg font-semibold text-ink-primary">
+                <h2 className="text-lg font-semibold text-ink">
                   {mode === 'rival' ? 'Scouting rival' : 'Análisis de equipo'}: {report.team}
                 </h2>
                 <TeamReportView report={report} />

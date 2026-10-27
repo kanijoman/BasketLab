@@ -47,6 +47,28 @@
   --pace-fast: #f59e0b;
   --pace-slow: #60a5fa;
 
+  /* web (#188): channels of existing colours, more text and data tones, quartiles, charts and depth */
+  --surface-raised-rgb: 28 33 40;
+  --text-muted-rgb: 139 148 158;
+  --focus-rgb: 253 186 116;
+  --ok-rgb: 63 185 80;
+  --text-faint: #6e7681;    --text-faint-rgb: 110 118 129;
+  --accent-text: #fb923c;   --accent-text-rgb: 251 146 60;
+  --accent-solid: #f97316;
+  --accent-hover: #fb923c;
+  --secondary: #3b82f6;     --secondary-rgb: 59 130 246;
+  --secondary-text: #60a5fa;--secondary-text-rgb: 96 165 250;
+  --secondary-hover: #2563eb;
+  --bad: #f85149;           --bad-rgb: 248 81 73;
+  --warn: #d29922;          --warn-rgb: 210 153 34;
+  --q1-bg: #14532d; --q1-text: #4ade80;  --q2-bg: #5a3e00; --q2-text: #fde047;
+  --q3-bg: #3d2000; --q3-text: #fb923c;  --q4-bg: #500000; --q4-text: #f87171;
+  --chart-1: #f97316; --chart-2: #58a6ff; --chart-3: #3fb950; --chart-4: #d29922;
+  --chart-5: #a78bfa; --chart-6: #f472b6; --chart-7: #2dd4bf; --chart-8: #f85149;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, .4), 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-panel: 0 4px 24px rgba(0, 0, 0, .5);
+  --shadow-glow: 0 0 12px rgba(249, 115, 22, .25);
+
   /* shape and rhythm */
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -60,8 +82,9 @@
   --touch: 44px;            /* minimum touch target */
 
   /* type */
-  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-display: 'Space Grotesk Variable', 'Space Grotesk', var(--font-sans);   /* titles and key figures (web) */
   --text-xs: 0.75rem;
   --text-sm: 0.85rem;
   --text-md: 1rem;
@@ -97,6 +120,27 @@
     --cat-probabilidad: #4338ca;
     --pace-fast: #b45309;
     --pace-slow: #1d4ed8;
+    /* web (#188): channels of existing colours, more text and data tones, quartiles, charts and depth */
+    --surface-raised-rgb: 240 243 246;
+    --text-muted-rgb: 89 99 110;
+    --focus-rgb: 194 65 12;
+    --ok-rgb: 26 127 55;
+    --text-faint: #6e7781;  --text-faint-rgb: 110 119 129;
+    --accent-text: #c2410c; --accent-text-rgb: 194 65 12;
+    --accent-solid: #c2410c;
+    --accent-hover: #9a3412;
+    --secondary: #0969da;   --secondary-rgb: 9 105 218;
+    --secondary-text: #0969da;--secondary-text-rgb: 9 105 218;
+    --secondary-hover: #0550ae;
+    --bad: #cf222e;         --bad-rgb: 207 34 46;
+    --warn: #9a6700;        --warn-rgb: 154 103 0;
+    --q1-bg: #dafbe1; --q1-text: #116329;  --q2-bg: #fff8c5; --q2-text: #7d4e00;
+    --q3-bg: #ffe2cc; --q3-text: #9a3412;  --q4-bg: #ffebe9; --q4-text: #a40e26;
+    --chart-1: #ea580c; --chart-2: #0969da; --chart-3: #1a7f37; --chart-4: #9a6700;
+    --chart-5: #6639ba; --chart-6: #bf3989; --chart-7: #0f766e; --chart-8: #cf222e;
+    --shadow-card: 0 1px 3px rgba(31, 35, 40, .12), 0 1px 2px rgba(31, 35, 40, .08);
+    --shadow-panel: 0 8px 24px rgba(31, 35, 40, .12);
+    --shadow-glow: 0 0 12px rgba(234, 88, 12, .2);
   }
 }
 
@@ -127,4 +171,25 @@
   --cat-probabilidad: #4338ca;
   --pace-fast: #b45309;
   --pace-slow: #1d4ed8;
+  /* web (#188): channels of existing colours, more text and data tones, quartiles, charts and depth */
+  --surface-raised-rgb: 240 243 246;
+  --text-muted-rgb: 89 99 110;
+  --focus-rgb: 194 65 12;
+  --ok-rgb: 26 127 55;
+  --text-faint: #6e7781;    --text-faint-rgb: 110 119 129;
+  --accent-text: #c2410c;   --accent-text-rgb: 194 65 12;
+  --accent-solid: #c2410c;
+  --accent-hover: #9a3412;
+  --secondary: #0969da;     --secondary-rgb: 9 105 218;
+  --secondary-text: #0969da;--secondary-text-rgb: 9 105 218;
+  --secondary-hover: #0550ae;
+  --bad: #cf222e;           --bad-rgb: 207 34 46;
+  --warn: #9a6700;          --warn-rgb: 154 103 0;
+  --q1-bg: #dafbe1; --q1-text: #116329;  --q2-bg: #fff8c5; --q2-text: #7d4e00;
+  --q3-bg: #ffe2cc; --q3-text: #9a3412;  --q4-bg: #ffebe9; --q4-text: #a40e26;
+  --chart-1: #ea580c; --chart-2: #0969da; --chart-3: #1a7f37; --chart-4: #9a6700;
+  --chart-5: #6639ba; --chart-6: #bf3989; --chart-7: #0f766e; --chart-8: #cf222e;
+  --shadow-card: 0 1px 3px rgba(31, 35, 40, .12), 0 1px 2px rgba(31, 35, 40, .08);
+  --shadow-panel: 0 8px 24px rgba(31, 35, 40, .12);
+  --shadow-glow: 0 0 12px rgba(234, 88, 12, .2);
 }

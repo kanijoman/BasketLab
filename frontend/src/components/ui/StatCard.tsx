@@ -21,11 +21,11 @@ interface Props {
 }
 
 const ACCENT_CLASSES: Record<NonNullable<Props['accent']>, string> = {
-  green:   'border-brand-600/40 bg-brand-600/5',
-  blue:    'border-accent-600/40 bg-accent-600/5',
+  green:   'border-ok/40 bg-ok/5',
+  blue:    'border-secondary/40 bg-secondary/5',
   amber:   'border-warn/40 bg-warn/5',
-  red:     'border-down/40 bg-down/5',
-  default: 'border-surface-border',
+  red:     'border-bad/40 bg-bad/5',
+  default: 'border-line',
 }
 
 export default function StatCard({
@@ -45,19 +45,19 @@ export default function StatCard({
       className={cn(
         'card p-4 flex flex-col gap-1 select-none',
         ACCENT_CLASSES[accent],
-        onClick && 'cursor-pointer hover:border-brand-600/60 hover:bg-surface-hover transition-colors',
+        onClick && 'cursor-pointer hover:border-accent/60 hover:bg-surface-raised transition-colors',
         className,
       )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <span className="text-xs text-ink-secondary uppercase tracking-wide truncate">
+      <span className="text-xs text-ink-muted uppercase tracking-wide truncate">
         {label}
       </span>
 
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold text-ink-primary tabular-nums">
+        <span className="text-2xl font-bold text-ink tabular-nums">
           {value}
         </span>
 
@@ -65,7 +65,7 @@ export default function StatCard({
           <span
             className={cn(
               'text-xs font-medium tabular-nums',
-              deltaPositive ? 'text-brand-400' : deltaNeutral ? 'text-ink-muted' : 'text-down',
+              deltaPositive ? 'text-ok' : deltaNeutral ? 'text-ink-faint' : 'text-bad',
             )}
           >
             {deltaPositive ? '+' : ''}{delta.toFixed(1)}
@@ -74,7 +74,7 @@ export default function StatCard({
       </div>
 
       {sub && (
-        <span className="text-xs text-ink-muted">{sub}</span>
+        <span className="text-xs text-ink-faint">{sub}</span>
       )}
     </div>
   )

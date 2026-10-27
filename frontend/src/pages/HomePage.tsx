@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Clock, ChevronRight, Database, Settings, RefreshCw } from 'lucide-react'
 import { getCollectionList, type CollectionInfo } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import BrandLogo from '@/components/BrandLogo'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
 
 // ── Grouping helpers ──────────────────────────────────────────────────────────
@@ -61,25 +62,25 @@ function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-3.5 rounded-card border border-surface-border
-                 bg-surface-raised hover:border-brand-600/40 hover:bg-surface-hover
+      className="w-full text-left p-3.5 rounded-card border border-line
+                 bg-surface hover:border-accent/40 hover:bg-surface-raised
                  transition-all group flex items-center justify-between gap-2"
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <span className={`text-xs px-2 py-0.5 rounded-pill font-medium shrink-0 ${
           isFbcyl
-            ? 'bg-accent-600/20 text-accent-400'
-            : 'bg-brand-600/20 text-brand-400'
+            ? 'bg-secondary/20 text-secondary-text'
+            : 'bg-accent/20 text-accent-text'
         }`}>
           {col.group ? `Grupo ${col.group}` : col.season}
         </span>
-        <span className="text-sm text-ink-primary font-medium truncate">
+        <span className="text-sm text-ink font-medium truncate">
           {col.competition} {col.season}{col.group ? ` – ${col.group}` : ''}
         </span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-xs text-ink-muted">{col.game_count} partidos</span>
-        <ChevronRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-ink-primary transition-colors" />
+        <span className="text-xs text-ink-faint">{col.game_count} partidos</span>
+        <ChevronRight className="w-3.5 h-3.5 text-ink-faint group-hover:text-ink transition-colors" />
       </div>
     </button>
   )
@@ -101,23 +102,23 @@ function LeagueSection({
     <section className="space-y-4">
       <div className="flex items-center gap-2">
         <span className={`text-xs px-2.5 py-1 rounded-pill font-semibold ${
-          isFbcyl ? 'bg-accent-600/20 text-accent-400' : 'bg-brand-600/20 text-brand-400'
+          isFbcyl ? 'bg-secondary/20 text-secondary-text' : 'bg-accent/20 text-accent-text'
         }`}>
           {group.league}
         </span>
-        <span className="text-xs text-ink-muted">{total} colecciones</span>
+        <span className="text-xs text-ink-faint">{total} colecciones</span>
       </div>
 
       <div className="space-y-5">
         {group.competitions.map(comp => (
           <div key={comp.competition} className="space-y-2">
-            <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">
+            <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
               {comp.competition}
             </p>
             {comp.seasons.map(s => (
               <div key={s.season} className="space-y-1.5">
                 {s.collections.length > 1 && (
-                  <p className="text-xs text-ink-muted ml-1">Temporada {s.season}</p>
+                  <p className="text-xs text-ink-faint ml-1">Temporada {s.season}</p>
                 )}
                 {s.collections.map(col => (
                   <CollectionCard key={col.name} col={col} onClick={() => onNavigate(col)} />
@@ -170,16 +171,10 @@ export default function HomePage() {
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <img
-                src="/logo.png"
-                alt="BasketLab"
-                className="h-12 w-12 rounded-xl shadow-card"
-                onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-              <h1 className="text-3xl font-bold text-ink-primary tracking-tight">BasketLab</h1>
-            </div>
-            <p className="text-ink-secondary text-sm">
+            <h1 className="flex items-center justify-center mb-4">
+              <BrandLogo size="lg" />
+            </h1>
+            <p className="text-ink-muted text-sm">
               Análisis estadístico de baloncesto · Ligas españolas FEB / FBCYL
             </p>
           </div>
@@ -187,7 +182,7 @@ export default function HomePage() {
           {/* Recent collections */}
           {recents.length > 0 && (
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+              <div className="flex items-center gap-1.5 text-xs text-ink-faint">
                 <Clock className="w-3.5 h-3.5" />
                 Accesos recientes
               </div>
@@ -197,21 +192,21 @@ export default function HomePage() {
                     key={r.name}
                     onClick={() => navigate(`/${encodeURIComponent(r.name)}`)}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg
-                               bg-surface-raised border border-surface-border
-                               hover:border-brand-600/40 hover:bg-surface-hover
+                               bg-surface border border-line
+                               hover:border-accent/40 hover:bg-surface-raised
                                transition-colors text-left group"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${
                         r.isFbcyl
-                          ? 'bg-accent-600/20 text-accent-400'
-                          : 'bg-brand-600/20 text-brand-400'
+                          ? 'bg-secondary/20 text-secondary-text'
+                          : 'bg-accent/20 text-accent-text'
                       }`}>
                         {r.isFbcyl ? 'FBCYL' : 'FEB'}
                       </span>
-                      <span className="text-sm text-ink-primary truncate">{r.label}</span>
+                      <span className="text-sm text-ink truncate">{r.label}</span>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-ink-muted group-hover:text-ink-primary transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-ink-faint group-hover:text-ink transition-colors shrink-0" />
                   </button>
                 ))}
               </div>
@@ -221,23 +216,23 @@ export default function HomePage() {
           {/* Collections list */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+              <div className="flex items-center gap-1.5 text-xs text-ink-faint">
                 <Database className="w-3.5 h-3.5" />
                 Competiciones disponibles
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => refetch()}
-                  className="p-1.5 rounded-lg hover:bg-surface-hover text-ink-muted
-                             hover:text-ink-primary transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-faint
+                             hover:text-ink transition-colors"
                   title="Actualizar lista"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
                 <Link
                   to="/admin"
-                  className="flex items-center gap-1 text-xs text-ink-muted
-                             hover:text-ink-primary transition-colors"
+                  className="flex items-center gap-1 text-xs text-ink-faint
+                             hover:text-ink transition-colors"
                 >
                   <Settings className="w-3.5 h-3.5" />
                   Administrar
@@ -248,14 +243,14 @@ export default function HomePage() {
             {isLoading && (
               <div className="space-y-2">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="h-12 rounded-card bg-surface-border/40 animate-pulse" />
+                  <div key={i} className="h-12 rounded-card bg-line/40 animate-pulse" />
                 ))}
               </div>
             )}
 
             {isError && (
               <div className="card p-6 text-center space-y-3">
-                <p className="text-sm text-down">No se pudo conectar con el servidor.</p>
+                <p className="text-sm text-bad">No se pudo conectar con el servidor.</p>
                 <button onClick={() => refetch()} className="btn-secondary text-xs">
                   Reintentar
                 </button>
@@ -264,10 +259,10 @@ export default function HomePage() {
 
             {!isLoading && !isError && collections?.length === 0 && (
               <div className="card p-8 flex flex-col items-center gap-3 text-center">
-                <Database className="w-8 h-8 text-ink-muted opacity-50" />
+                <Database className="w-8 h-8 text-ink-faint opacity-50" />
                 <div>
-                  <p className="text-sm font-medium text-ink-primary">Base de datos vacía</p>
-                  <p className="text-xs text-ink-secondary mt-1">
+                  <p className="text-sm font-medium text-ink">Base de datos vacía</p>
+                  <p className="text-xs text-ink-muted mt-1">
                     Descarga una competición desde el panel de administración.
                   </p>
                 </div>

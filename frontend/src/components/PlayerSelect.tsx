@@ -39,26 +39,26 @@ export default function PlayerSelect({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs text-ink-secondary font-medium uppercase tracking-wide">{label}</label>
+      <label className="text-xs text-ink-muted font-medium uppercase tracking-wide">{label}</label>
       <div className="flex gap-2">
         <input
           type="text"
           placeholder="Buscar nombre…"
           value={nameFilter}
           onChange={e => setNameFilter(e.target.value)}
-          className="min-w-0 flex-1 bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary placeholder-ink-muted focus:outline-none focus:ring-2 focus:ring-accent-400"
+          className="min-w-0 flex-1 bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-focus"
         />
         <select
           value={teamFilter}
           onChange={e => setTeamFilter(e.target.value)}
-          className="min-w-0 max-w-[50%] bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+          className="min-w-0 max-w-[50%] bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
         >
           <option value="">Todos los equipos</option>
           {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
       <select value={value} onChange={e => onChange(e.target.value)}
-        className="w-full min-w-0 bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400">
+        className="w-full min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus">
         <option value="">— Selecciona jugador —</option>
         {filtered.map((p, idx) => (
           <option key={`${p.player_id}_${(p.team_name ?? '').trim()}_${idx}`} value={p.player_id}>

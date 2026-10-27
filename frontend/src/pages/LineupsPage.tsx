@@ -5,6 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
+import { useChartTheme } from '@/lib/chartTheme'
 import { useCollection } from '@/context/CollectionContext'
 import PageTransition from '@/components/ui/PageTransition'
 import ExportButton from '@/components/ui/ExportButton'
@@ -54,7 +55,7 @@ function InitialsChip({ name, exportOnly = false }: { name: string; exportOnly?:
         display: exportOnly ? 'none' : 'inline-flex',
         width: 28, height: 28, fontSize: 10,
         background: `hsl(${nameHue(name)},55%,45%)`,
-        border: '2px solid rgba(255,255,255,0.25)',
+        border: '2px solid rgb(var(--surface-rgb) / 0.4)',
       }}
     >
       {initials(name)}
@@ -74,7 +75,7 @@ function PlayerAvatar({ name, photoUrl }: { name: string; photoUrl?: string }) {
         <span
           title={name}
           {...{ [EXPORT_HIDE_ATTR]: '' }}
-          className="inline-flex items-center justify-center rounded-full overflow-hidden flex-shrink-0 cursor-default border-2 border-surface-border"
+          className="inline-flex items-center justify-center rounded-full overflow-hidden flex-shrink-0 cursor-default border-2 border-line"
           style={{ width: 28, height: 28 }}
         >
           <img
@@ -108,8 +109,8 @@ function fmtDiff(diff: number, key: string): string {
 }
 
 const selectCls =
-  'appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-1.5 text-sm ' +
-  'text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400'
+  'appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 text-sm ' +
+  'text-ink focus:outline-none focus:ring-2 focus:ring-focus'
 
 /** Empty-state text that reflects the minimums actually applied (0 = no minimum). */
 function emptyMessage(minMinutes: number, minGames: number): string {
@@ -133,6 +134,7 @@ interface AnalysisParams {
  * for any selected lineup.
  */
 export default function LineupsPage() {
+  const chart = useChartTheme()
   const { collection } = useCollection()
 
   // Form state
@@ -322,20 +324,20 @@ export default function LineupsPage() {
     const diff = rowDiff(val, ref)
     const diffNum = val != null && ref != null ? val - ref : null
     const diffCls = diffNum == null ? ''
-      : diffNum > 0 ? 'text-green-700 dark:text-green-400'
-      : diffNum < 0 ? 'text-red-600 dark:text-red-400'
-      : 'text-ink-secondary'
+      : diffNum > 0 ? 'text-ok'
+      : diffNum < 0 ? 'text-bad'
+      : 'text-ink-muted'
     const rowCls = group === 'top'
-      ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40'
-      : 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40'
+      ? 'bg-ok/10 hover:bg-ok/15'
+      : 'bg-bad/10 hover:bg-bad/15'
 
     return (
       <tr
         key={compositeIdx}
         onClick={() => setSelectedIdx(isSelected ? null : compositeIdx)}
-        className={`cursor-pointer transition-colors ${rowCls} ${isSelected ? 'outline outline-2 outline-accent-400' : ''}`}
+        className={`cursor-pointer transition-colors ${rowCls} ${isSelected ? 'outline outline-2 outline-focus' : ''}`}
       >
-        <td className="px-3 py-2 font-medium text-ink-primary text-xs">
+        <td className="px-3 py-2 font-medium text-ink text-xs">
           <div className="flex flex-wrap items-center gap-1">
             {(row.players as string[]).map((name, i) => (
               <PlayerAvatar
@@ -346,8 +348,8 @@ export default function LineupsPage() {
             ))}
           </div>
         </td>
-        <td className="px-3 py-2 text-center text-ink-secondary">{row.minutes?.toFixed(1)}</td>
-        <td className="px-3 py-2 text-center text-ink-secondary">{row.games_played ?? '\u2014'}</td>
+        <td className="px-3 py-2 text-center text-ink-muted">{row.minutes?.toFixed(1)}</td>
+        <td className="px-3 py-2 text-center text-ink-muted">{row.games_played ?? '\u2014'}</td>
         <td className="px-3 py-2 text-center">{row.points_for}</td>
         <td className="px-3 py-2 text-center">{row.points_against}</td>
         <td className="px-3 py-2 text-center font-semibold">
@@ -368,8 +370,8 @@ export default function LineupsPage() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-ink-primary">{`An\u00e1lisis de Combinaciones`}</h1>
-            <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+            <h1 className="text-2xl font-bold text-ink">{`An\u00e1lisis de Combinaciones`}</h1>
+            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
           </div>
           {lineups.length > 0 && (
             <ExportButton
@@ -385,7 +387,7 @@ export default function LineupsPage() {
         {/* Controls */}
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">Equipo</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">Equipo</label>
             <select
               value={selectedTeam?.id ?? ''}
               onChange={e => setSelectedTeam(teams.find(t => t.id === e.target.value) ?? null)}
@@ -396,14 +398,14 @@ export default function LineupsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">Jugadores</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">Jugadores</label>
             <select value={size} onChange={e => setSize(Number(e.target.value))} className={selectCls}>
               {[2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">{`Estad\u00edstica`}</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">{`Estad\u00edstica`}</label>
             <select value={stat} onChange={e => setStat(e.target.value)} className={selectCls}>
               {LINEUP_STAT_GROUPS.map(g => (
                 <optgroup key={g.label} label={g.label}>
@@ -414,14 +416,14 @@ export default function LineupsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">{`Per\u00edodo`}</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">{`Per\u00edodo`}</label>
             <select value={period} onChange={e => setPeriod(Number(e.target.value))} className={selectCls}>
               {LINEUP_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">Top / Bottom N</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">Top / Bottom N</label>
             <input
               type="number" min={1} max={20} value={topN}
               onChange={e => setTopN(Math.max(1, Math.min(20, Number(e.target.value))))}
@@ -430,7 +432,7 @@ export default function LineupsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">{`Mín. minutos`}</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">{`Mín. minutos`}</label>
             <input
               type="number" min={0} step={1} value={minMinutes}
               title="0 = sin m&iacute;nimo"
@@ -440,7 +442,7 @@ export default function LineupsPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink-secondary mb-1">{`Mín. partidos`}</label>
+            <label className="block text-xs font-medium text-ink-muted mb-1">{`Mín. partidos`}</label>
             <input
               type="number" min={0} step={1} value={minGames}
               title="0 = sin m&iacute;nimo"
@@ -454,7 +456,7 @@ export default function LineupsPage() {
             onClick={() => { setMinMinutes(0); setMinGames(0) }}
             disabled={minMinutes === 0 && minGames === 0}
             title={`Mostrar todas las combinaciones, sin mínimos`}
-            className="border border-surface-border text-ink-secondary hover:bg-surface-hover disabled:opacity-50 text-sm rounded-lg px-3 py-1.5 transition-colors"
+            className="border border-line text-ink-muted hover:bg-surface-raised disabled:opacity-50 text-sm rounded-lg px-3 py-1.5 transition-colors"
           >
             {`Sin mínimos`}
           </button>
@@ -462,7 +464,7 @@ export default function LineupsPage() {
           <button
             type="submit"
             disabled={isFetching || !selectedTeam}
-            className="bg-accent-600 hover:bg-accent-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
+            className="bg-secondary hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
           >
             {isFetching ? 'Analizando\u2026' : 'Analizar'}
           </button>
@@ -470,25 +472,25 @@ export default function LineupsPage() {
 
         {/* Error */}
         {error && (
-          <p className="text-red-600 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 rounded-lg p-3">
+          <p className="text-bad text-sm bg-bad/10 border border-bad/30 rounded-lg p-3">
             {error instanceof Error ? error.message : 'Error al analizar combinaciones'}
           </p>
         )}
 
         {/* Loading indicator with progress bar */}
         {isFetching && (
-          <div className="flex flex-col gap-2 card p-4 text-ink-secondary text-sm">
+          <div className="flex flex-col gap-2 card p-4 text-ink-muted text-sm">
             <div className="flex items-center gap-3">
-              <span className="inline-block w-4 h-4 border-2 border-accent-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+              <span className="inline-block w-4 h-4 border-2 border-secondary-text border-t-transparent rounded-full animate-spin flex-shrink-0" />
               {`Analizando partidos\u2026`}
               {progress != null && (
-                <span className="ml-auto text-xs text-ink-muted font-mono">{progress}%</span>
+                <span className="ml-auto text-xs text-ink-faint font-mono">{progress}%</span>
               )}
             </div>
             {progress != null && (
-              <div className="h-1.5 bg-surface-hover rounded-full overflow-hidden">
+              <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-accent-500 rounded-full transition-all duration-300"
+                  className="h-full bg-secondary rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -500,7 +502,7 @@ export default function LineupsPage() {
         {!isFetching && lineups.length > 0 && (
           <div ref={exportRef} className="space-y-4">
 
-            <p className="text-ink-secondary text-xs">
+            <p className="text-ink-muted text-xs">
               {lineups.length}{` combinaciones encontradas \u00b7 m\u00edn. 15 min totales / 5 partidos \u00b7`}
               top/bottom <strong>{n}</strong> por <strong>{statLabel}</strong>
               {isReverse ? ' (menor = mejor)' : ' (mayor = mejor)'}
@@ -508,9 +510,9 @@ export default function LineupsPage() {
             </p>
 
             {/* Main table */}
-            <div className="overflow-x-auto rounded-xl border border-surface-border shadow-sm">
+            <div className="overflow-x-auto rounded-xl border border-line shadow-sm">
               <table className="w-full text-sm">
-                <thead className="bg-court-950 text-white">
+                <thead className="bg-canvas text-ink">
                   <tr>
                     <th className="px-3 py-2 text-left font-semibold">{`Combinaci\u00f3n`}</th>
                     <th className="px-3 py-2 text-center font-semibold w-14">MIN</th>
@@ -521,9 +523,9 @@ export default function LineupsPage() {
                     <th className="px-3 py-2 text-center font-semibold w-14">Dif.</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-surface-border">
+                <tbody className="divide-y divide-line">
                   {topRows.map((row, i) => renderRow(row, i, 'top'))}
-                  <tr aria-hidden="true"><td colSpan={7} className="h-1.5 bg-gray-300 dark:bg-gray-600" /></tr>
+                  <tr aria-hidden="true"><td colSpan={7} className="h-1.5 bg-line" /></tr>
                   {bottomRows.map((row, i) => renderRow(row, i, 'bottom'))}
                 </tbody>
               </table>
@@ -534,7 +536,7 @@ export default function LineupsPage() {
               <div className="card p-4 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs text-ink-secondary uppercase tracking-wide mb-0.5">{`Evoluci\u00f3n por partido`}</p>
+                    <p className="text-xs text-ink-muted uppercase tracking-wide mb-0.5">{`Evoluci\u00f3n por partido`}</p>
                     <div className="flex flex-wrap items-center gap-1 mt-1">
                       {(selectedLineup.players as string[]).map((name, i) => (
                         <PlayerAvatar
@@ -547,7 +549,7 @@ export default function LineupsPage() {
                   </div>
                   <button
                     onClick={() => setSelectedIdx(null)}
-                    className="text-ink-secondary hover:text-ink-primary transition-colors flex-shrink-0"
+                    className="text-ink-muted hover:text-ink transition-colors flex-shrink-0"
                     aria-label="Cerrar panel"
                   >
                     <X size={18} />
@@ -555,29 +557,30 @@ export default function LineupsPage() {
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={gameLog} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(156,163,175,0.3)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
-                    <YAxis tick={{ fontSize: 10 }} width={38} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} strokeOpacity={0.6} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: chart.axis }} tickFormatter={d => d.slice(5)} />
+                    <YAxis tick={{ fontSize: 10, fill: chart.axis }} width={38} />
                     <Tooltip
+                      contentStyle={chart.tooltip}
                       labelFormatter={d => `Partido: ${d}`}
                       formatter={(v: number) => [fmtStat(v, activeStat), '']}
                     />
-                    <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="2 2" />
+                    <ReferenceLine y={0} stroke={chart.reference} strokeDasharray="2 2" />
                     <Line
                       type="monotone" dataKey={activeStat}
-                      stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} name={statLabel}
+                      stroke={chart.series[0]} strokeWidth={2} dot={{ r: 3 }} name={statLabel}
                     />
                     <Line
                       type="monotone" dataKey="cumulative_avg"
-                      stroke="#6366f1" strokeWidth={1.5} strokeDasharray="4 2"
+                      stroke={chart.series[1]} strokeWidth={1.5} strokeDasharray="4 2"
                       dot={false} name="Media acum."
                     />
                   </LineChart>
                 </ResponsiveContainer>
-                <p className="text-xs text-ink-secondary text-center">
-                  <span className="inline-block w-5 border-t-2 border-orange-400 mr-1.5 align-middle" />Valor por partido
+                <p className="text-xs text-ink-muted text-center">
+                  <span className="inline-block w-5 border-t-2 border-chart-1 mr-1.5 align-middle" />Valor por partido
                   &nbsp;&middot;&nbsp;
-                  <span className="inline-block w-5 border-t-2 border-dashed border-indigo-500 mr-1.5 align-middle" />Media acumulada
+                  <span className="inline-block w-5 border-t-2 border-dashed border-chart-2 mr-1.5 align-middle" />Media acumulada
                 </p>
               </div>
             )}
@@ -585,12 +588,12 @@ export default function LineupsPage() {
             {/* Player frequency table */}
             {playerFrequency.length > 0 && (
               <div className="card p-4">
-                <h3 className="text-sm font-semibold text-ink-primary mb-3">
+                <h3 className="text-sm font-semibold text-ink mb-3">
                   Frecuencia de jugadores en top / bottom {n}
                 </h3>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs text-ink-secondary border-b border-surface-border">
+                    <tr className="text-xs text-ink-muted border-b border-line">
                       <th className="text-left pb-2 font-medium">Jugador</th>
                       <th className="text-right pb-2 font-medium w-8 pr-2">Top</th>
                       <th className="pb-2 w-36" />
@@ -598,28 +601,28 @@ export default function LineupsPage() {
                       <th className="pb-2 w-36" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-border">
+                  <tbody className="divide-y divide-line">
                     {playerFrequency.map(([player, freq]) => (
-                      <tr key={player} className="hover:bg-surface-hover transition-colors">
-                        <td className="py-1.5 pr-3 text-ink-primary">{player}</td>
-                        <td className="py-1.5 text-right text-xs font-semibold text-green-700 dark:text-green-400 pr-2">
+                      <tr key={player} className="hover:bg-surface-raised transition-colors">
+                        <td className="py-1.5 pr-3 text-ink">{player}</td>
+                        <td className="py-1.5 text-right text-xs font-semibold text-ok pr-2">
                           {freq.top}/{n}
                         </td>
                         <td className="py-1.5 pr-3">
-                          <div className="w-full bg-surface-border rounded-full h-2.5 overflow-hidden">
+                          <div className="w-full bg-line rounded-full h-2.5 overflow-hidden">
                             <div
-                              className="h-full bg-green-400 rounded-full transition-all"
+                              className="h-full bg-ok rounded-full transition-all"
                               style={{ width: `${(freq.top / n) * 100}%` }}
                             />
                           </div>
                         </td>
-                        <td className="py-1.5 text-right text-xs font-semibold text-red-600 dark:text-red-400 pr-2">
+                        <td className="py-1.5 text-right text-xs font-semibold text-bad pr-2">
                           {freq.bottom}/{n}
                         </td>
                         <td className="py-1.5">
-                          <div className="w-full bg-surface-border rounded-full h-2.5 overflow-hidden">
+                          <div className="w-full bg-line rounded-full h-2.5 overflow-hidden">
                             <div
-                              className="h-full bg-red-400 rounded-full transition-all"
+                              className="h-full bg-bad rounded-full transition-all"
                               style={{ width: `${(freq.bottom / n) * 100}%` }}
                             />
                           </div>
@@ -635,12 +638,12 @@ export default function LineupsPage() {
 
         {/* Empty states */}
         {!isFetching && lineups.length === 0 && analysisParams && !error && (
-          <p className="text-ink-secondary text-sm text-center mt-8">
+          <p className="text-ink-muted text-sm text-center mt-8">
             {emptyMessage(analysisParams.minMinutes, analysisParams.minGames)}
           </p>
         )}
         {!analysisParams && !isFetching && (
-          <p className="text-ink-secondary text-sm text-center mt-8">
+          <p className="text-ink-muted text-sm text-center mt-8">
             {`Selecciona un equipo y pulsa \u00abAnalizar\u00bb para ver las combinaciones.`}
           </p>
         )}

@@ -3,7 +3,14 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
+import { applyStoredTheme } from './lib/theme'
+import '@design/tokens.css'
+import '@fontsource-variable/inter'
+import '@fontsource-variable/space-grotesk'
+import '@fontsource-variable/jetbrains-mono'
 import './index.css'
+
+applyStoredTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {

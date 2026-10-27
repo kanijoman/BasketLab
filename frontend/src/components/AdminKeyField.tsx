@@ -20,7 +20,7 @@ export default function AdminKeyField() {
 
   return (
     <div className="card p-4 flex flex-wrap items-end gap-3">
-      <label className="flex flex-col gap-1 text-xs text-ink-secondary flex-1 min-w-[220px]">
+      <label className="flex flex-col gap-1 text-xs text-ink-muted flex-1 min-w-[220px]">
         <span className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" /> Clave de administración</span>
         <input
           type="password"
@@ -28,13 +28,13 @@ export default function AdminKeyField() {
           onChange={e => setValue(e.target.value)}
           autoComplete="off"
           placeholder={saved ? '••••••••' : 'Necesaria para borrar, descargar datos y entrenar modelos'}
-          className="bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+          className="bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
         />
       </label>
       <button className="btn-secondary" onClick={save} disabled={!value.trim()}>Guardar</button>
       {saved && (
         <>
-          <span className="text-xs text-up">Clave guardada (solo esta sesión del navegador)</span>
+          <span className="text-xs text-ok">Clave guardada (solo esta sesión del navegador)</span>
           <button className="btn-secondary" onClick={remove}>Quitar</button>
         </>
       )}

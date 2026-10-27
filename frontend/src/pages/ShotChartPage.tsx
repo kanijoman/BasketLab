@@ -128,8 +128,8 @@ export default function ShotChartPage() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h1 className="text-2xl font-bold text-ink-primary">Gráficos de Tiro</h1>
-            <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+            <h1 className="text-2xl font-bold text-ink">Gráficos de Tiro</h1>
+            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
           </div>
           <ExportButton
             filename={`tiros_${exportLabel}_${collection?.name ?? ''}`}
@@ -143,15 +143,15 @@ export default function ShotChartPage() {
         {/* Controls */}
         <div className="card p-4 flex flex-wrap gap-3 items-center">
           {/* View mode */}
-          <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm">
+          <div className="flex rounded-lg overflow-hidden border border-line text-sm">
             {(['team', 'player'] as const).map(mode => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`px-4 py-1.5 font-medium transition-colors ${
                   viewMode === mode
-                    ? 'bg-accent-500 text-white'
-                    : 'text-ink-secondary hover:bg-surface-hover'
+                    ? 'bg-secondary text-white'
+                    : 'text-ink-muted hover:bg-surface-raised'
                 }`}
               >
                 {mode === 'team' ? 'Equipo' : 'Jugador'}
@@ -164,23 +164,23 @@ export default function ShotChartPage() {
             <select
               value={selectedTeam}
               onChange={e => { setSelectedTeam(e.target.value); setSelectedPlayer('') }}
-              className="appearance-none bg-surface-base border border-surface-border rounded-lg px-3 py-1.5 pr-8 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400"
+              className="appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
             >
               <option value="">— Selecciona equipo —</option>
               {teamList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-secondary" />
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
           </div>
 
           {/* Active player chip — shown in player mode once a player is picked from the table */}
           {viewMode === 'player' && selectedPlayer && (() => {
             const p = playerList.find(pl => pl.player_id === selectedPlayer)
             return p ? (
-              <span className="flex items-center gap-1.5 bg-accent-500/20 text-accent-300 text-xs font-medium px-2.5 py-1 rounded-full">
+              <span className="flex items-center gap-1.5 bg-secondary/20 text-secondary-text text-xs font-medium px-2.5 py-1 rounded-full">
                 {p.player_name}
                 <button
                   onClick={() => setSelectedPlayer('')}
-                  className="hover:text-white transition-colors leading-none ml-0.5"
+                  className="hover:text-ink transition-colors leading-none ml-0.5"
                   aria-label="Quitar selección de jugador"
                 >✕</button>
               </span>
@@ -188,15 +188,15 @@ export default function ShotChartPage() {
           })()}
 
           {/* Visualization mode toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm ml-auto">
+          <div className="flex rounded-lg overflow-hidden border border-line text-sm ml-auto">
             {(['zones', 'scatter', 'heatmap'] as const).map(mode => (
               <button
                 key={mode}
                 onClick={() => setVizMode(mode)}
                 className={`px-3 py-1.5 font-medium transition-colors ${
                   vizMode === mode
-                    ? 'bg-accent-500 text-white'
-                    : 'text-ink-secondary hover:bg-surface-hover'
+                    ? 'bg-secondary text-white'
+                    : 'text-ink-muted hover:bg-surface-raised'
                 }`}
               >
                 {mode === 'zones' ? 'Zonas' : mode === 'scatter' ? 'Scatter' : 'Calor'}
@@ -206,20 +206,20 @@ export default function ShotChartPage() {
 
           {/* Shot result filter — scatter and heatmap only */}
           {vizMode !== 'zones' && (
-            <div className="flex rounded-lg overflow-hidden border border-surface-border text-sm">
+            <div className="flex rounded-lg overflow-hidden border border-line text-sm">
               {(['all', 'made', 'missed'] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setShotFilter(f)}
                   className={`px-3 py-1.5 font-medium transition-colors flex items-center gap-1.5 ${
                     shotFilter === f
-                      ? 'bg-accent-500 text-white'
-                      : 'text-ink-secondary hover:bg-surface-hover'
+                      ? 'bg-secondary text-white'
+                      : 'text-ink-muted hover:bg-surface-raised'
                   }`}
                 >
                   {f !== 'all' && (
                     <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${
-                      f === 'made' ? 'bg-green-400' : 'bg-red-400'
+                      f === 'made' ? 'bg-ok' : 'bg-bad'
                     }`} />
                   )}
                   {f === 'all' ? 'Todos' : f === 'made' ? 'Aciertos' : 'Fallos'}
@@ -235,7 +235,7 @@ export default function ShotChartPage() {
           <div className="card p-4 flex flex-col items-center gap-2">
             {anyLoading ? (
               <div className="w-[450px] h-[420px] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-secondary-text border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <FibaCourtSVG
@@ -249,37 +249,37 @@ export default function ShotChartPage() {
             )}
             {/* Legend */}
             {vizMode === 'zones' ? (
-              <div className="flex items-center gap-4 mt-1 text-xs text-ink-secondary">
+              <div className="flex items-center gap-4 mt-1 text-xs text-ink-muted">
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-red-500 opacity-80" />
+                  <span className="w-3 h-3 rounded-full inline-block bg-bad opacity-80" />
                   Bajo (&lt;25%)
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-yellow-400 opacity-80" />
+                  <span className="w-3 h-3 rounded-full inline-block bg-warn opacity-80" />
                   Medio (25–35%)
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-green-500 opacity-80" />
+                  <span className="w-3 h-3 rounded-full inline-block bg-ok opacity-80" />
                   Alto (&gt;35%)
                 </span>
                 <span className="ml-2 italic">Tamaño = volumen</span>
               </div>
             ) : vizMode === 'scatter' ? (
-              <div className="flex items-center gap-4 mt-1 text-xs text-ink-secondary">
+              <div className="flex items-center gap-4 mt-1 text-xs text-ink-muted">
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-green-400 opacity-80" />
+                  <span className="w-3 h-3 rounded-full inline-block bg-ok opacity-80" />
                   Acierto
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-red-400 opacity-80" />
+                  <span className="w-3 h-3 rounded-full inline-block bg-bad opacity-80" />
                   Fallo
                 </span>
                 <span className="ml-2 italic">{filteredShots.length} tiros</span>
               </div>
             ) : (
-              <div className="flex items-center gap-4 mt-1 text-xs text-ink-secondary">
+              <div className="flex items-center gap-4 mt-1 text-xs text-ink-muted">
                 <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-orange-400 opacity-80" />
+                  <span className="w-3 h-3 rounded-full inline-block bg-chart-1 opacity-80" />
                   Densidad de tiros
                 </span>
                 <span className="ml-2 italic">{filteredShots.length} tiros</span>
@@ -292,19 +292,19 @@ export default function ShotChartPage() {
             {/* Player picker — visible in player mode once a team is selected */}
             {viewMode === 'player' && selectedTeam && (
               <div className="card p-0 overflow-hidden">
-                <div className="p-3 border-b border-surface-border">
-                  <p className="text-sm font-medium text-ink-primary">Jugadores — {selectedTeam}</p>
-                  <p className="text-xs text-ink-secondary mt-0.5">Clic en una fila para ver el mapa de tiro individual</p>
+                <div className="p-3 border-b border-line">
+                  <p className="text-sm font-medium text-ink">Jugadores — {selectedTeam}</p>
+                  <p className="text-xs text-ink-muted mt-0.5">Clic en una fila para ver el mapa de tiro individual</p>
                 </div>
                 {teamPlayers.length === 0 ? (
                   <div className="p-6 flex justify-center">
-                    <div className="w-5 h-5 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-secondary-text border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : (
                   <div className="overflow-y-auto max-h-56">
                     <table className="w-full text-sm">
-                      <thead className="sticky top-0 bg-surface-base z-10">
-                        <tr className="text-xs text-ink-secondary uppercase tracking-wide border-b border-surface-border/50">
+                      <thead className="sticky top-0 bg-canvas z-10">
+                        <tr className="text-xs text-ink-muted uppercase tracking-wide border-b border-line/50">
                           <th className="px-3 py-2 text-left font-medium">Jugador</th>
                           <th className="px-3 py-2 text-right font-medium">Min</th>
                           <th className="px-3 py-2 text-right font-medium">Pts</th>
@@ -317,28 +317,28 @@ export default function ShotChartPage() {
                           <tr
                             key={p.player_id}
                             onClick={() => setSelectedPlayer(prev => prev === p.player_id ? '' : p.player_id)}
-                            className={`border-t border-surface-border/50 cursor-pointer transition-colors ${
+                            className={`border-t border-line/50 cursor-pointer transition-colors ${
                               selectedPlayer === p.player_id
-                                ? 'bg-accent-500/15'
-                                : 'hover:bg-surface-hover/50'
+                                ? 'bg-secondary/15'
+                                : 'hover:bg-surface-raised/50'
                             }`}
                           >
                             <td className={`px-3 py-2 font-medium ${
-                              selectedPlayer === p.player_id ? 'text-accent-300' : 'text-ink-primary'
+                              selectedPlayer === p.player_id ? 'text-secondary-text' : 'text-ink'
                             }`}>{p.player_name}</td>
-                            <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">
+                            <td className="px-3 py-2 text-right tabular-nums text-ink-muted">
                               {p.minutes_per_game.toFixed(0)}
                             </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">
+                            <td className="px-3 py-2 text-right tabular-nums text-ink-muted">
                               {p.points_per_game.toFixed(1)}
                             </td>
                             <td className={`px-3 py-2 text-right tabular-nums font-medium ${
-                              p.fg2_percentage != null ? ratingTextClass(ratingFromQuartiles(p.fg2_percentage, playerQuartiles?.fg2_percentage)) : 'text-ink-secondary'
+                              p.fg2_percentage != null ? ratingTextClass(ratingFromQuartiles(p.fg2_percentage, playerQuartiles?.fg2_percentage)) : 'text-ink-muted'
                             }`}>
                               {p.fg2_percentage != null ? `${p.fg2_percentage.toFixed(0)}%` : '—'}
                             </td>
                             <td className={`px-3 py-2 text-right tabular-nums font-medium ${
-                              p.fg3_percentage != null ? ratingTextClass(ratingFromQuartiles(p.fg3_percentage, playerQuartiles?.fg3_percentage)) : 'text-ink-secondary'
+                              p.fg3_percentage != null ? ratingTextClass(ratingFromQuartiles(p.fg3_percentage, playerQuartiles?.fg3_percentage)) : 'text-ink-muted'
                             }`}>
                               {p.fg3_percentage != null ? `${p.fg3_percentage.toFixed(0)}%` : '—'}
                             </td>
@@ -353,16 +353,16 @@ export default function ShotChartPage() {
 
             {/* Zone stats */}
             <div className="card p-0 overflow-hidden">
-              <div className="p-3 border-b border-surface-border">
-                <p className="text-sm font-medium text-ink-primary">Estadísticas por Zona</p>
+              <div className="p-3 border-b border-line">
+                <p className="text-sm font-medium text-ink">Estadísticas por Zona</p>
                 {totalFga > 0 && (
-                  <p className="text-xs text-ink-secondary mt-0.5">
+                  <p className="text-xs text-ink-muted mt-0.5">
                     Total: {totalFgm}/{totalFga} ({(totalFgm / totalFga * 100).toFixed(1)}%)
                   </p>
                 )}
               </div>
               {!hasFilter ? (
-                <div className="p-8 text-center text-ink-secondary text-sm">
+                <div className="p-8 text-center text-ink-muted text-sm">
                   {viewMode === 'player' && selectedTeam
                     ? 'Selecciona un jugador de la tabla para ver su mapa de tiro'
                     : viewMode === 'player'
@@ -371,16 +371,16 @@ export default function ShotChartPage() {
                 </div>
               ) : anyLoading ? (
                 <div className="p-8 flex justify-center">
-                  <div className="w-6 h-6 border-2 border-accent-400 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-secondary-text border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : !hasAnyData ? (
-                <div className="p-8 text-center text-ink-secondary text-sm">
+                <div className="p-8 text-center text-ink-muted text-sm">
                   No se encontraron datos de lanzamiento para esta selección.
                 </div>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs text-ink-secondary uppercase tracking-wide">
+                    <tr className="text-xs text-ink-muted uppercase tracking-wide">
                       <th className="px-3 py-2 text-left font-medium">Zona</th>
                       <th className="px-3 py-2 text-right font-medium">
                         <Tooltip text={`${STAT_LABELS['T.I.'].label}: ${STAT_LABELS['T.I.'].description}`}>T.I.</Tooltip>
@@ -404,31 +404,31 @@ export default function ShotChartPage() {
                       <tr
                         key={z.zone}
                         onClick={() => setHighlightZone(prev => prev === z.zone ? null : z.zone)}
-                        className={`border-t border-surface-border/50 cursor-pointer transition-colors ${
-                          highlightZone === z.zone ? 'bg-surface-hover' : 'hover:bg-surface-hover/50'
+                        className={`border-t border-line/50 cursor-pointer transition-colors ${
+                          highlightZone === z.zone ? 'bg-surface-raised' : 'hover:bg-surface-raised/50'
                         }`}
                       >
-                        <td className="px-3 py-2 text-ink-primary">
+                        <td className="px-3 py-2 text-ink">
                           <span className="flex items-center gap-1.5">
                             <span
                               className="w-2 h-2 rounded-full inline-block flex-shrink-0"
-                              style={{ backgroundColor: z.fga > 0 ? ratingColor(z.rating) : '#444' }}
+                              style={{ backgroundColor: z.fga > 0 ? ratingColor(z.rating) : ratingColor('none') }}
                             />
                             {z.zone_label}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">{z.fgm}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">{z.fga}</td>
-                        <td className={`px-3 py-2 text-right tabular-nums font-medium ${z.fga > 0 ? ratingTextClass(z.rating) : 'text-ink-secondary'}`}>
+                        <td className="px-3 py-2 text-right tabular-nums text-ink-muted">{z.fgm}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-ink-muted">{z.fga}</td>
+                        <td className={`px-3 py-2 text-right tabular-nums font-medium ${z.fga > 0 ? ratingTextClass(z.rating) : 'text-ink-muted'}`}>
                           {z.fga > 0 ? `${z.fg_pct.toFixed(1)}%` : '—'}
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-ink-secondary"
+                        <td className="px-3 py-2 text-right tabular-nums text-ink-muted"
                             title={z.low_sample ? 'Muestra pequeña: valoración poco fiable' : undefined}>
                           {z.delta_pp != null && z.fga > 0
                             ? `${z.delta_pp > 0 ? '+' : ''}${z.delta_pp.toFixed(1)} pp${z.low_sample ? ' *' : ''}`
                             : '—'}
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-ink-secondary">
+                        <td className="px-3 py-2 text-right tabular-nums text-ink-muted">
                           {z.points === 3 ? '3P' : '2P'}
                         </td>
                       </tr>

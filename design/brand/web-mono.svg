@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="BasketLab">
+  <!-- one colour (currentColor): print, watermarks, embossing -->
+  <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round">
+    <circle cx="50" cy="50" r="38"/>
+    <path d="M 20.9 25.6 Q 34 50 20.9 74.4"/>
+    <path d="M 79.1 25.6 Q 66 50 79.1 74.4"/>
+  </g>
+  <g fill="currentColor">
+    <rect x="27" y="52" width="12" height="20" rx="2"/>
+    <rect x="44" y="40" width="12" height="32" rx="2"/>
+    <rect x="61" y="27" width="12" height="45" rx="2"/>
+  </g>
+</svg>

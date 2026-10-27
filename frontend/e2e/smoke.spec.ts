@@ -11,7 +11,30 @@ function collectErrors(page: Page): string[] {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => localStorage.clear())
+  // a clean start once per test: a reload keeps what the test stored (the theme chosen)
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('e2e-started')) { localStorage.clear(); sessionStorage.setItem('e2e-started', '1') }
+  })
+})
+
+test('opens in the light theme even on a dark device, keeps the one chosen and paints it before the app runs (#188)', async ({ page }) => {
+  const errors = collectErrors(page)
+  const background = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  expect(await background()).toBe('rgb(246, 248, 250)')
+
+  await page.getByRole('radiogroup', { name: 'Tema' }).getByRole('radio', { name: 'Oscuro' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  expect(await background()).toBe('rgb(13, 17, 23)')
+
+  // without the scripts of the app the page is still dark: the first script of index.html chose it before anything painted
+  await page.route('**/*.{js,tsx,ts}', route => route.abort())
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  expect(await background()).toBe('rgb(13, 17, 23)')
+  expect(errors).toEqual([])
 })
 
 test('home lists the competition, hides the internal collection and opens it', async ({ page }) => {

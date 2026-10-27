@@ -56,13 +56,13 @@ export default function Tooltip({ text, children, className }: TooltipProps) {
           }}
           className={[
             'pointer-events-none w-max max-w-[240px] rounded-md px-2.5 py-1.5',
-            'bg-gray-900 text-gray-100 text-[11px] leading-snug font-normal',
-            'shadow-xl whitespace-normal text-center border border-gray-700',
+            'bg-ink text-canvas text-[11px] leading-snug font-normal',
+            'shadow-xl whitespace-normal text-center',
           ].join(' ')}
         >
           {text}
           {/* Downward caret */}
-          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink" />
         </span>,
         document.body,
       )}

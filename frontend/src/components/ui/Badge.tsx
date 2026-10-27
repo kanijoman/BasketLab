@@ -15,12 +15,12 @@ interface Props {
 }
 
 const VARIANTS: Record<Variant, string> = {
-  default: 'bg-surface-border text-ink-secondary',
-  brand:   'bg-brand-600/20 text-brand-400 border border-brand-600/30',
-  blue:    'bg-accent-600/20 text-accent-400 border border-accent-600/30',
+  default: 'bg-line text-ink-muted',
+  brand:   'bg-accent/20 text-accent-text border border-accent/30',
+  blue:    'bg-secondary/20 text-secondary-text border border-secondary/30',
   amber:   'bg-warn/20 text-warn border border-warn/30',
-  red:     'bg-down/20 text-down border border-down/30',
-  outline: 'border border-surface-border text-ink-secondary',
+  red:     'bg-bad/20 text-bad border border-bad/30',
+  outline: 'border border-line text-ink-muted',
 }
 
 export default function Badge({ children, variant = 'default', className }: Props) {

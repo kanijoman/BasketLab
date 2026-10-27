@@ -88,7 +88,7 @@ function teamNameCol(): ColumnDef<TeamStat, unknown> {
     size: 150,
     header: 'Equipo',
     cell: ({ getValue }) => (
-      <span className="font-medium text-ink-primary whitespace-nowrap">
+      <span className="font-medium text-ink whitespace-nowrap">
         {getValue() as string}
       </span>
     ),
@@ -126,7 +126,7 @@ function playerNameCol(): ColumnDef<PlayerStat, unknown> {
     size: 160,
     header: 'Jugador',
     cell: ({ getValue }) => (
-      <span className="font-medium text-ink-primary whitespace-nowrap">
+      <span className="font-medium text-ink whitespace-nowrap">
         {getValue() as string}
       </span>
     ),
@@ -141,7 +141,7 @@ function playerTeamCol(): ColumnDef<PlayerStat, unknown> {
     size: 130,
     header: 'Equipo',
     cell: ({ getValue }) => (
-      <span className="text-ink-secondary whitespace-nowrap text-xs">
+      <span className="text-ink-muted whitespace-nowrap text-xs">
         {getValue() as string}
       </span>
     ),
@@ -284,8 +284,8 @@ function CollectionPicker({
           onClick={() => toggle(name)}
           className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
             selected.includes(name)
-              ? 'bg-brand-600/20 border-brand-500/60 text-brand-400'
-              : 'border-surface-border text-ink-muted hover:text-ink-primary hover:border-surface-border/80'
+              ? 'bg-accent/20 border-accent/60 text-accent-text'
+              : 'border-line text-ink-faint hover:text-ink hover:border-line/80'
           }`}
         >
           {name.split('_').slice(-1)[0] ?? name}
@@ -369,7 +369,7 @@ export default function MultiPhaseStatsPage() {
   if (!collection) {
     return (
       <PageTransition>
-        <p className="text-center text-ink-muted mt-16">
+        <p className="text-center text-ink-faint mt-16">
           Selecciona una colección para continuar.
         </p>
       </PageTransition>
@@ -382,23 +382,23 @@ export default function MultiPhaseStatsPage() {
 
         {/* Page header */}
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-brand-400 shrink-0" />
+          <Layers className="w-5 h-5 text-accent-text shrink-0" />
           <div>
-            <h1 className="text-xl font-bold text-ink-primary">Estadísticas Multifase</h1>
-            <p className="text-xs text-ink-muted mt-0.5">Totales acumulados entre fases seleccionadas</p>
+            <h1 className="text-xl font-bold text-ink">Estadísticas Multifase</h1>
+            <p className="text-xs text-ink-faint mt-0.5">Totales acumulados entre fases seleccionadas</p>
           </div>
         </div>
 
         {/* Phase selector */}
         {loadingSiblings ? (
-          <div className="h-8 rounded-full bg-surface-border/40 w-48 animate-pulse" />
+          <div className="h-8 rounded-full bg-line/40 w-48 animate-pulse" />
         ) : siblings.length === 0 ? (
-          <p className="text-sm text-ink-secondary">
+          <p className="text-sm text-ink-muted">
             No se encontraron colecciones hermanas para <strong>{collection.name}</strong>.
           </p>
         ) : (
           <div className="card p-4 space-y-2">
-            <p className="text-xs text-ink-muted font-medium uppercase tracking-wide">Fases a combinar</p>
+            <p className="text-xs text-ink-faint font-medium uppercase tracking-wide">Fases a combinar</p>
             <CollectionPicker
               all={siblings}
               selected={selectedCollections}
@@ -409,8 +409,8 @@ export default function MultiPhaseStatsPage() {
 
         {selectedCollections.length === 0 && (
           <div className="card p-10 text-center">
-            <Layers className="w-8 h-8 text-ink-muted opacity-40 mx-auto mb-2" />
-            <p className="text-sm text-ink-secondary">
+            <Layers className="w-8 h-8 text-ink-faint opacity-40 mx-auto mb-2" />
+            <p className="text-sm text-ink-muted">
               Selecciona al menos una fase para ver estadísticas combinadas.
             </p>
           </div>
@@ -419,15 +419,15 @@ export default function MultiPhaseStatsPage() {
         {selectedCollections.length > 0 && (
           <>
             {/* Entity tabs: Equipos | Jugadores */}
-            <div className="flex items-center gap-1 border-b border-surface-border">
+            <div className="flex items-center gap-1 border-b border-line">
               {ENTITY_TABS.map(({ id, label }) => (
                 <button
                   key={id}
                   onClick={() => setEntityTab(id as EntityTab)}
                   className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
                     entityTab === id
-                      ? 'border-brand-500 text-brand-400'
-                      : 'border-transparent text-ink-muted hover:text-ink-primary'
+                      ? 'border-accent text-accent-text'
+                      : 'border-transparent text-ink-faint hover:text-ink'
                   }`}
                 >
                   {label}
@@ -436,7 +436,7 @@ export default function MultiPhaseStatsPage() {
             </div>
 
             {/* Stat sub-tabs */}
-            <div className="flex items-center gap-1 border-b border-surface-border/50">
+            <div className="flex items-center gap-1 border-b border-line/50">
               {STAT_TABS.map(({ id, label, Icon }) => {
                 const active = entityTab === 'equipos' ? statTab === id : playerStatTab === id
                 return (
@@ -445,8 +445,8 @@ export default function MultiPhaseStatsPage() {
                     onClick={() => entityTab === 'equipos' ? setStatTab(id as StatTab) : setPlayerStatTab(id as StatTab)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors -mb-px ${
                       active
-                        ? 'border-brand-500/70 text-brand-400'
-                        : 'border-transparent text-ink-muted hover:text-ink-primary'
+                        ? 'border-accent/70 text-accent-text'
+                        : 'border-transparent text-ink-faint hover:text-ink'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -460,7 +460,7 @@ export default function MultiPhaseStatsPage() {
             {isLoading && (
               <div className="space-y-2">
                 {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="h-9 rounded bg-surface-border/40 animate-pulse" />
+                  <div key={i} className="h-9 rounded bg-line/40 animate-pulse" />
                 ))}
               </div>
             )}
@@ -478,7 +478,7 @@ export default function MultiPhaseStatsPage() {
                   exportOptions={{ filename: 'multifase_equipos' }}
                 />
               ) : (
-                <p className="text-sm text-ink-secondary text-center py-8">
+                <p className="text-sm text-ink-muted text-center py-8">
                   No hay datos de equipo disponibles.
                 </p>
               )
@@ -497,7 +497,7 @@ export default function MultiPhaseStatsPage() {
                   exportOptions={{ filename: `multifase_jugadores_${playerStatTab}` }}
                 />
               ) : (
-                <p className="text-sm text-ink-secondary text-center py-8">
+                <p className="text-sm text-ink-muted text-center py-8">
                   No hay datos de jugadores disponibles.
                 </p>
               )

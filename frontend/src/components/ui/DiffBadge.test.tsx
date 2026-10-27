@@ -35,21 +35,21 @@ describe('DiffBadge (issue #608)', () => {
 
   it('is good when it rises and bad when it falls', () => {
     const { rerender } = render(<DiffBadge recent={80} season={70} />)
-    expect(screen.getByText('+10.0').className).toMatch(/text-brand/)
+    expect(screen.getByText('+10.0').className).toMatch(/text-ok/)
     rerender(<DiffBadge recent={60} season={70} />)
-    expect(screen.getByText('-10.0').className).toMatch(/text-down/)
+    expect(screen.getByText('-10.0').className).toMatch(/text-bad/)
   })
 
   it('is the other way round where less is better (turnovers, defensive rating)', () => {
     const { rerender } = render(<DiffBadge recent={10} season={14} reverse />)
-    expect(screen.getByText('-4.0').className).toMatch(/text-brand/)
+    expect(screen.getByText('-4.0').className).toMatch(/text-ok/)
     rerender(<DiffBadge recent={16} season={14} reverse />)
-    expect(screen.getByText('+2.0').className).toMatch(/text-down/)
+    expect(screen.getByText('+2.0').className).toMatch(/text-bad/)
   })
 
   it('a difference that is nothing is neither good nor bad', () => {
     render(<DiffBadge recent={5} season={5} />)
-    expect(screen.getByText('0.0').className).toMatch(/text-ink-secondary/)
+    expect(screen.getByText('0.0').className).toMatch(/text-ink-muted/)
   })
 
   it('says both figures in the tooltip and renders nothing without them', () => {

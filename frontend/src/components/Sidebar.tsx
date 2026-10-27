@@ -81,16 +81,16 @@ export default function Sidebar() {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-      'focus-visible:ring-2 focus-visible:ring-brand-500',
+      'focus-visible:ring-2 focus-visible:ring-focus',
       isActive
-        ? 'bg-brand-600/20 text-brand-400 border border-brand-600/30'
-        : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+        ? 'bg-accent/20 text-accent-text border border-accent/30'
+        : 'text-ink-muted hover:bg-surface-raised hover:text-ink',
     )
 
   return (
     <aside
       className={cn(
-        'flex flex-col h-full bg-surface-raised border-r border-surface-border',
+        'flex flex-col h-full bg-surface border-r border-line',
         'transition-[width] duration-200 ease-in-out overflow-hidden',
         collapsed ? 'w-14' : 'w-56',
       )}
@@ -114,7 +114,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Admin link + collapse toggle */}
-      <div className="px-2 pb-3 space-y-0.5 border-t border-surface-border pt-3">
+      <div className="px-2 pb-3 space-y-0.5 border-t border-line pt-3">
         <NavLink
           to="/admin"
           className={linkClass}
@@ -127,7 +127,7 @@ export default function Sidebar() {
         <button
           onClick={() => setCollapsed(c => !c)}
           className="w-full flex items-center justify-center px-3 py-2 rounded-lg
-                     text-ink-muted hover:text-ink-secondary hover:bg-surface-hover
+                     text-ink-faint hover:text-ink-muted hover:bg-surface-raised
                      transition-colors"
           title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
         >

@@ -45,8 +45,8 @@ interface ToggleGroupProps<T extends string> {
 function ToggleGroup<T extends string>({ label, value, options, onChange }: ToggleGroupProps<T>) {
   return (
     <div className="flex items-center gap-1">
-      <span className="text-xs text-ink-muted mr-1 hidden sm:block">{label}</span>
-      <div className="flex rounded-lg overflow-hidden border border-surface-border">
+      <span className="text-xs text-ink-faint mr-1 hidden sm:block">{label}</span>
+      <div className="flex rounded-lg overflow-hidden border border-line">
         {options.map(opt => (
           <button
             key={opt.value}
@@ -54,8 +54,8 @@ function ToggleGroup<T extends string>({ label, value, options, onChange }: Togg
             className={cn(
               'px-2.5 py-1 text-xs font-medium transition-colors',
               value === opt.value
-                ? 'bg-brand-600/30 text-brand-400 border-brand-600/40'
-                : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                ? 'bg-accent/30 text-accent-text border-accent/40'
+                : 'text-ink-muted hover:bg-surface-raised hover:text-ink',
             )}
           >
             {opt.label}
@@ -91,7 +91,7 @@ export default function FilterBar({ showDate = true, className }: Props) {
 
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
-      <Filter className="w-3.5 h-3.5 text-ink-muted shrink-0" />
+      <Filter className="w-3.5 h-3.5 text-ink-faint shrink-0" />
 
       <ToggleGroup
         label="Campo"
@@ -133,8 +133,8 @@ export default function FilterBar({ showDate = true, className }: Props) {
                 className={cn(
                   'px-2 py-0.5 rounded text-xs border transition-colors',
                   active7
-                    ? 'bg-brand-600/30 text-brand-400 border-brand-600/40'
-                    : 'border-surface-border text-ink-secondary hover:text-ink-primary',
+                    ? 'bg-accent/30 text-accent-text border-accent/40'
+                    : 'border-line text-ink-muted hover:text-ink',
                 )}
               >
                 {n}d
@@ -149,7 +149,7 @@ export default function FilterBar({ showDate = true, className }: Props) {
             aria-label="Desde"
             title="Desde"
           />
-          <span className="text-ink-muted text-xs">–</span>
+          <span className="text-ink-faint text-xs">–</span>
           <input
             type="date"
             value={to}
@@ -164,7 +164,7 @@ export default function FilterBar({ showDate = true, className }: Props) {
       {active && (
         <button
           onClick={clearAll}
-          className="btn-ghost text-xs text-ink-muted"
+          className="btn-ghost text-xs text-ink-faint"
           title="Borrar filtros"
         >
           <X className="w-3 h-3" /> Borrar

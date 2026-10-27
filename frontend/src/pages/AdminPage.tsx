@@ -61,7 +61,7 @@ function ProgressPanel({ jobId, onDone }: { jobId: string; onDone: () => void })
 
   if (!job) {
     return (
-      <div className="flex items-center gap-2 text-sm text-ink-secondary p-4">
+      <div className="flex items-center gap-2 text-sm text-ink-muted p-4">
         <Loader2 className="w-4 h-4 animate-spin" /> Iniciando descarga…
       </div>
     )
@@ -72,39 +72,39 @@ function ProgressPanel({ jobId, onDone }: { jobId: string; onDone: () => void })
   const isError = job.status === 'error'
 
   return (
-    <div className="space-y-3 p-4 rounded-card border border-surface-border bg-surface-raised">
+    <div className="space-y-3 p-4 rounded-card border border-line bg-surface">
       <div className="flex items-center gap-2 text-sm">
-        {isDone  && <CheckCircle2 className="w-4 h-4 text-up shrink-0" />}
-        {isError && <AlertCircle  className="w-4 h-4 text-down shrink-0" />}
-        {!isDone && !isError && <Loader2 className="w-4 h-4 animate-spin text-brand-400 shrink-0" />}
-        <span className={isDone ? 'text-up' : isError ? 'text-down' : 'text-ink-primary'}>
+        {isDone  && <CheckCircle2 className="w-4 h-4 text-ok shrink-0" />}
+        {isError && <AlertCircle  className="w-4 h-4 text-bad shrink-0" />}
+        {!isDone && !isError && <Loader2 className="w-4 h-4 animate-spin text-accent-text shrink-0" />}
+        <span className={isDone ? 'text-ok' : isError ? 'text-bad' : 'text-ink'}>
           {isDone  ? `Descarga completada — ${job.done} partidos` :
            isError ? 'Error durante la descarga' :
                      `Descargando… ${job.done} / ${job.total ?? '?'}`}
         </span>
         {job.collection && (
-          <span className="ml-auto text-xs text-ink-muted font-mono truncate max-w-[14rem]">
+          <span className="ml-auto text-xs text-ink-faint font-mono truncate max-w-[14rem]">
             {job.collection}
           </span>
         )}
       </div>
       {!isError && (
-        <div className="h-2 rounded-full bg-surface-border overflow-hidden">
+        <div className="h-2 rounded-full bg-line overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-up' : 'bg-brand-500'}`}
+            className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-ok' : 'bg-accent-solid'}`}
             style={{ width: isDone ? '100%' : `${pct}%` }}
           />
         </div>
       )}
       {job.current_match && !isDone && (
-        <p className="text-xs text-ink-muted font-mono truncate">Partido: {job.current_match}</p>
+        <p className="text-xs text-ink-faint font-mono truncate">Partido: {job.current_match}</p>
       )}
       {job.errors.length > 0 && (
         <details className="text-xs">
-          <summary className="text-down cursor-pointer">
+          <summary className="text-bad cursor-pointer">
             {job.errors.length} error{job.errors.length > 1 ? 'es' : ''}
           </summary>
-          <ul className="mt-1 space-y-0.5 pl-3 text-ink-secondary max-h-28 overflow-y-auto">
+          <ul className="mt-1 space-y-0.5 pl-3 text-ink-muted max-h-28 overflow-y-auto">
             {job.errors.map((e, i) => <li key={i}>{e}</li>)}
           </ul>
         </details>
@@ -139,49 +139,49 @@ function CollectionsTab({ onOpen }: { onOpen: (name: string) => void }) {
 
   if (isLoading) return (
     <div className="space-y-2 mt-4">
-      {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-card bg-surface-border/40 animate-pulse" />)}
+      {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-card bg-line/40 animate-pulse" />)}
     </div>
   )
 
   if (isError) return (
     <div className="mt-4 card p-6 text-center space-y-3">
-      <p className="text-sm text-down">Error al cargar colecciones.</p>
+      <p className="text-sm text-bad">Error al cargar colecciones.</p>
       <button onClick={() => refetch()} className="btn-secondary text-xs">Reintentar</button>
     </div>
   )
 
   if (!data?.length) return (
     <div className="mt-4 card p-8 flex flex-col items-center gap-2 text-center">
-      <Database className="w-8 h-8 text-ink-muted opacity-50" />
-      <p className="text-sm text-ink-secondary">No hay colecciones en la base de datos.</p>
+      <Database className="w-8 h-8 text-ink-faint opacity-50" />
+      <p className="text-sm text-ink-muted">No hay colecciones en la base de datos.</p>
     </div>
   )
 
   return (
     <div className="mt-4 space-y-2">
       <div className="flex justify-end">
-        <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink-primary transition-colors">
+        <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink transition-colors">
           <RefreshCw className="w-3 h-3" /> Actualizar
         </button>
       </div>
       {data.map((col: CollectionInfo) => (
-        <div key={col.name} className="flex items-center justify-between px-3.5 py-3 rounded-card border border-surface-border bg-surface-raised gap-3">
+        <div key={col.name} className="flex items-center justify-between px-3.5 py-3 rounded-card border border-line bg-surface gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className={`text-xs px-2 py-0.5 rounded-pill font-medium shrink-0 ${col.league === 'FBCYL' ? 'bg-accent-600/20 text-accent-400' : 'bg-brand-600/20 text-brand-400'}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-pill font-medium shrink-0 ${col.league === 'FBCYL' ? 'bg-secondary/20 text-secondary-text' : 'bg-accent/20 text-accent-text'}`}>
               {col.league}
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-ink-primary truncate">{col.name}</p>
-              <p className="text-xs text-ink-muted">
+              <p className="text-sm font-medium text-ink truncate">{col.name}</p>
+              <p className="text-xs text-ink-faint">
                 {col.competition} · {col.season}{col.group ? ` · Grupo ${col.group}` : ''} · {col.game_count} partidos
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => onOpen(col.name)} className="p-1.5 rounded-lg hover:bg-surface-hover text-ink-muted hover:text-brand-400 transition-colors" title="Abrir">
+            <button onClick={() => onOpen(col.name)} className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-faint hover:text-accent-text transition-colors" title="Abrir">
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => handleDelete(col.name)} disabled={deleting === col.name} className="p-1.5 rounded-lg hover:bg-surface-hover text-ink-muted hover:text-down transition-colors disabled:opacity-40" title="Eliminar">
+            <button onClick={() => handleDelete(col.name)} disabled={deleting === col.name} className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-faint hover:text-bad transition-colors disabled:opacity-40" title="Eliminar">
               {deleting === col.name ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             </button>
           </div>
@@ -199,9 +199,9 @@ function CascadeSelect({ label, options, value, onChange, loading, disabled, pla
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-ink-secondary flex items-center gap-1">
+      <label className="text-xs font-medium text-ink-muted flex items-center gap-1">
         {label}
-        {loading && <Loader2 className="w-3 h-3 animate-spin text-ink-muted" />}
+        {loading && <Loader2 className="w-3 h-3 animate-spin text-ink-faint" />}
       </label>
       <select
         value={value}
@@ -276,7 +276,7 @@ function FEBDownloadTab() {
       <CascadeSelect label="Grupo" options={groups ?? []} value={group} onChange={handleGroupChange}
         loading={loadingGroups} disabled={!season} placeholder="Seleccionar grupo…" />
       {error && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-down/10 border border-down/20 text-down text-sm">
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-bad/10 border border-bad/20 text-bad text-sm">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
         </div>
       )}
@@ -348,7 +348,7 @@ function FBCYLDownloadTab() {
       <CascadeSelect label="Categoría"   options={categories ?? []}        value={category}  onChange={handleCategoryChange}  loading={loadingCats}  disabled={!season}    placeholder="Seleccionar categoría…" />
       <CascadeSelect label="Competición" options={competitions ?? []}       value={compId}    onChange={handleCompChange}      loading={loadingComps} disabled={!category}  placeholder="Seleccionar competición…" />
       {error && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-down/10 border border-down/20 text-down text-sm">
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-bad/10 border border-bad/20 text-bad text-sm">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
         </div>
       )}
@@ -385,42 +385,42 @@ function HistoricalProgressPanel({ jobId }: { jobId: string }) {
     return () => clearInterval(intervalRef.current!)
   }, [jobId])
 
-  if (!job) return <div className="flex items-center gap-2 text-sm text-ink-secondary p-4"><Loader2 className="w-4 h-4 animate-spin" /> Iniciando…</div>
+  if (!job) return <div className="flex items-center gap-2 text-sm text-ink-muted p-4"><Loader2 className="w-4 h-4 animate-spin" /> Iniciando…</div>
 
   const pct = job.total > 0 ? Math.round((job.done / job.total) * 100) : 0
   const isDone  = job.status === 'done'
   const isError = job.status === 'error'
 
   return (
-    <div className="space-y-3 p-4 rounded-card border border-surface-border bg-surface-raised">
+    <div className="space-y-3 p-4 rounded-card border border-line bg-surface">
       <div className="flex items-center gap-2 text-sm">
-        {isDone  && <CheckCircle2 className="w-4 h-4 text-up shrink-0" />}
-        {isError && <AlertCircle  className="w-4 h-4 text-down shrink-0" />}
-        {!isDone && !isError && <Loader2 className="w-4 h-4 animate-spin text-brand-400 shrink-0" />}
-        <span className={isDone ? 'text-up' : isError ? 'text-down' : 'text-ink-primary'}>
+        {isDone  && <CheckCircle2 className="w-4 h-4 text-ok shrink-0" />}
+        {isError && <AlertCircle  className="w-4 h-4 text-bad shrink-0" />}
+        {!isDone && !isError && <Loader2 className="w-4 h-4 animate-spin text-accent-text shrink-0" />}
+        <span className={isDone ? 'text-ok' : isError ? 'text-bad' : 'text-ink'}>
           {isDone  ? `Ingesta completada — ${job.done} partidos procesados` :
            isError ? 'Error durante la ingesta' :
                      `Procesando… ${job.done} / ${job.total ?? '?'}`}
         </span>
       </div>
       {job.current_season && !isDone && (
-        <p className="text-xs text-ink-muted">Temporada activa: <span className="font-medium">{job.current_season}</span></p>
+        <p className="text-xs text-ink-faint">Temporada activa: <span className="font-medium">{job.current_season}</span></p>
       )}
       {!isError && (
-        <div className="h-2 rounded-full bg-surface-border overflow-hidden">
+        <div className="h-2 rounded-full bg-line overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-up' : 'bg-brand-500'}`}
+            className={`h-full rounded-full transition-all duration-500 ${isDone ? 'bg-ok' : 'bg-accent-solid'}`}
             style={{ width: isDone ? '100%' : `${pct}%` }}
           />
         </div>
       )}
       {job.current_match && !isDone && (
-        <p className="text-xs text-ink-muted font-mono truncate">Partido: {job.current_match}</p>
+        <p className="text-xs text-ink-faint font-mono truncate">Partido: {job.current_match}</p>
       )}
       {job.errors.length > 0 && (
         <details className="text-xs">
-          <summary className="text-down cursor-pointer">{job.errors.length} error{job.errors.length > 1 ? 'es' : ''}</summary>
-          <ul className="mt-1 space-y-0.5 pl-3 text-ink-secondary max-h-28 overflow-y-auto">
+          <summary className="text-bad cursor-pointer">{job.errors.length} error{job.errors.length > 1 ? 'es' : ''}</summary>
+          <ul className="mt-1 space-y-0.5 pl-3 text-ink-muted max-h-28 overflow-y-auto">
             {job.errors.map((e, i) => <li key={i}>{e}</li>)}
           </ul>
         </details>
@@ -496,26 +496,26 @@ function HistoricalTab() {
       {/* Summary table */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink-primary">Contenido actual de HISTORICAL</h3>
-          <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink-primary transition-colors">
+          <h3 className="text-sm font-semibold text-ink">Contenido actual de HISTORICAL</h3>
+          <button onClick={() => refetch()} className="flex items-center gap-1 text-xs text-ink-faint hover:text-ink transition-colors">
             <RefreshCw className="w-3 h-3" /> Actualizar
           </button>
         </div>
-        {loadingSummary && <div className="h-8 rounded-card bg-surface-border/40 animate-pulse" />}
+        {loadingSummary && <div className="h-8 rounded-card bg-line/40 animate-pulse" />}
         {!loadingSummary && (!summary || summary.length === 0) && (
-          <p className="text-sm text-ink-secondary">Sin datos históricos todavía.</p>
+          <p className="text-sm text-ink-muted">Sin datos históricos todavía.</p>
         )}
         {summary && summary.length > 0 && (
-          <div className="rounded-card border border-surface-border overflow-hidden">
+          <div className="rounded-card border border-line overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-surface-raised">
+              <thead className="bg-surface">
                 <tr>{['Liga', 'Competición', 'Temporada', 'Grupo', 'Partidos'].map(h => (
-                  <th key={h} className="px-3 py-2 text-left font-medium text-ink-secondary">{h}</th>
+                  <th key={h} className="px-3 py-2 text-left font-medium text-ink-muted">{h}</th>
                 ))}</tr>
               </thead>
               <tbody>
                 {summary.map((row: HistoricalSummaryEntry, i: number) => (
-                  <tr key={i} className="border-t border-surface-border hover:bg-surface-hover/50">
+                  <tr key={i} className="border-t border-line hover:bg-surface-raised/50">
                     <td className="px-3 py-2">{row.league}</td>
                     <td className="px-3 py-2">{row.competition}</td>
                     <td className="px-3 py-2">{row.season}</td>
@@ -531,7 +531,7 @@ function HistoricalTab() {
 
       {/* Download form */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-ink-primary">Descargar temporadas FEB → HISTORICAL</h3>
+        <h3 className="text-sm font-semibold text-ink">Descargar temporadas FEB → HISTORICAL</h3>
 
         <CascadeSelect
           label="Competición"
@@ -545,18 +545,18 @@ function HistoricalTab() {
         {compUrl && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-ink-secondary">Temporadas disponibles</span>
+              <span className="text-xs font-medium text-ink-muted">Temporadas disponibles</span>
               {allValues.length > 0 && (
                 <div className="flex gap-3 text-xs">
                   <button
                     onClick={() => setChecked(new Set(allValues))}
-                    className="text-brand-400 hover:text-brand-300 transition-colors"
+                    className="text-accent-text hover:text-accent-text transition-colors"
                   >
                     Todas
                   </button>
                   <button
                     onClick={() => setChecked(new Set())}
-                    className="text-ink-muted hover:text-ink-primary transition-colors"
+                    className="text-ink-faint hover:text-ink transition-colors"
                   >
                     Ninguna
                   </button>
@@ -567,38 +567,38 @@ function HistoricalTab() {
             {loadingSeasons && (
               <div className="space-y-1">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="h-9 rounded bg-surface-border/40 animate-pulse" />
+                  <div key={i} className="h-9 rounded bg-line/40 animate-pulse" />
                 ))}
               </div>
             )}
 
             {!loadingSeasons && seasons && seasons.length > 0 && (
-              <div className="rounded-card border border-surface-border divide-y divide-surface-border max-h-56 overflow-y-auto">
+              <div className="rounded-card border border-line divide-y divide-line max-h-56 overflow-y-auto">
                 {seasons.map(s => (
                   <label
                     key={s.value}
-                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-surface-hover/60 transition-colors select-none"
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-surface-raised/60 transition-colors select-none"
                   >
                     <input
                       type="checkbox"
                       checked={checked.has(s.value)}
                       onChange={() => toggleSeason(s.value)}
-                      className="w-4 h-4 accent-brand-400 cursor-pointer"
+                      className="w-4 h-4 accent-accent cursor-pointer"
                     />
-                    <span className="text-sm text-ink-primary">{s.text}</span>
+                    <span className="text-sm text-ink">{s.text}</span>
                   </label>
                 ))}
               </div>
             )}
 
             {!loadingSeasons && seasons && seasons.length === 0 && (
-              <p className="text-sm text-ink-secondary">No se encontraron temporadas para esta competición.</p>
+              <p className="text-sm text-ink-muted">No se encontraron temporadas para esta competición.</p>
             )}
           </div>
         )}
 
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-down/10 border border-down/20 text-down text-sm">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-bad/10 border border-bad/20 text-bad text-sm">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
           </div>
         )}
@@ -629,22 +629,22 @@ function ModelsTab() {
   const [subTab, setSubTab] = useState<'elasticity' | 'validation'>('elasticity')
   return (
     <div className="mt-4 space-y-4">
-      <div className="flex gap-2 border-b border-surface-border pb-2">
+      <div className="flex gap-2 border-b border-line pb-2">
         {(['elasticity', 'validation'] as const).map(id => (
           <button
             key={id}
             onClick={() => setSubTab(id)}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               subTab === id
-                ? 'bg-brand-600 text-white'
-                : 'text-ink-muted hover:text-ink-primary'
+                ? 'bg-accent-solid text-white'
+                : 'text-ink-faint hover:text-ink'
             }`}
           >
             {id === 'elasticity' ? 'Elasticidades' : 'Validación'}
           </button>
         ))}
       </div>
-      <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6">
+      <div className="bg-canvas/50 rounded-xl border border-line/50 p-6">
         {subTab === 'elasticity' && <ElasticityTab />}
         {subTab === 'validation' && <ValidationTab />}
       </div>
@@ -662,20 +662,20 @@ export default function AdminPage() {
     <PageTransition>
       <div className="space-y-6 max-w-3xl mx-auto">
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary">Administración</h1>
-          <p className="text-ink-secondary text-sm mt-1">Gestión de colecciones y descarga de datos</p>
+          <h1 className="text-2xl font-bold text-ink">Administración</h1>
+          <p className="text-ink-muted text-sm mt-1">Gestión de colecciones y descarga de datos</p>
         </div>
 
         <AdminKeyField />
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-surface-border">
+        <div className="flex gap-1 border-b border-line">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
-                  ? 'border-brand-500 text-brand-400'
-                  : 'border-transparent text-ink-muted hover:text-ink-primary'
+                  ? 'border-accent text-accent-text'
+                  : 'border-transparent text-ink-faint hover:text-ink'
               }`}>
               {tab.label}
             </button>
@@ -690,7 +690,7 @@ export default function AdminPage() {
           {activeTab === 'models'      && <ModelsTab />}
         </div>
 
-        <div className="pt-4 border-t border-surface-border text-xs text-ink-muted space-y-1">
+        <div className="pt-4 border-t border-line text-xs text-ink-faint space-y-1">
           <p><span className="font-medium">FEB:</span> Descarga partidos de las ligas nacionales FEB (L.F.2, EBA, etc.).</p>
           <p><span className="font-medium">FBCYL:</span> Descarga partidos de las ligas de Castilla y León.</p>
           <p><span className="font-medium">Histórico:</span> Descarga temporadas pasadas en la colección unificada HISTORICAL para modelos predictivos.</p>

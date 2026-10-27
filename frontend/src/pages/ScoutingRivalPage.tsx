@@ -30,17 +30,17 @@ function saveBlob(blob: Blob, filename: string) {
 }
 
 const fmt = (n: number, digits = 1) => n.toFixed(digits).replace('.', ',')
-const ADVANTAGE_CLASS = { own: 'text-up', rival: 'text-down', even: 'text-ink-secondary', neutral: 'text-ink-secondary' } as const
+const ADVANTAGE_CLASS = { own: 'text-ok', rival: 'text-bad', even: 'text-ink-muted', neutral: 'text-ink-muted' } as const
 
 const delta = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v)} %`)
 /** Colour of a gap against the league: green when it favours the scouted team (more of its own, less conceded), red when not; small gaps are plain. */
 const deltaClass = (v: number | null, goodHigh: boolean) =>
-  v == null || Math.abs(v) < 10 ? 'text-ink-secondary' : (v > 0) === goodHigh ? 'text-up' : 'text-down'
+  v == null || Math.abs(v) < 10 ? 'text-ink-muted' : (v > 0) === goodHigh ? 'text-ok' : 'text-bad'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-1.5">
-      <h3 className="text-sm font-semibold text-ink-primary">{title}</h3>
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
       {children}
     </section>
   )
@@ -52,8 +52,8 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
     <div className="card p-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-ink-primary">{report.team.name}</h2>
-          <p className="text-xs text-ink-secondary">
+          <h2 className="text-xl font-bold text-ink">{report.team.name}</h2>
+          <p className="text-xs text-ink-muted">
             {report.sample_games} partidos analizados · balance {record.wins}-{record.losses} · {fmt(record.avg_for)} a favor, {fmt(record.avg_against)} en contra
           </p>
         </div>
@@ -67,22 +67,22 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
 
       {report.profile.length > 0 && (
         <Section title="Perfil">
-          <ul className="text-sm text-ink-secondary list-disc pl-5">{report.profile.map(p => <li key={p}>{p}</li>)}</ul>
+          <ul className="text-sm text-ink-muted list-disc pl-5">{report.profile.map(p => <li key={p}>{p}</li>)}</ul>
         </Section>
       )}
       {report.keys.length > 0 && (
         <Section title="Claves tácticas">
-          <ul className="text-sm text-ink-secondary list-disc pl-5 space-y-0.5">{report.keys.map(k => <li key={k.text}>{k.text}</li>)}</ul>
+          <ul className="text-sm text-ink-muted list-disc pl-5 space-y-0.5">{report.keys.map(k => <li key={k.text}>{k.text}</li>)}</ul>
         </Section>
       )}
       {(report.plan.neutralize.length > 0 || report.plan.exploit.length > 0) && (
         <Section title="Plan de partido">
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
-            {([['Peligros a neutralizar', report.plan.neutralize, 'text-down'], ['Debilidades a explotar', report.plan.exploit, 'text-up']] as const).map(([title, items, cls]) => (
+            {([['Peligros a neutralizar', report.plan.neutralize, 'text-bad'], ['Debilidades a explotar', report.plan.exploit, 'text-ok']] as const).map(([title, items, cls]) => (
               items.length > 0 && (
                 <div key={title}>
                   <p className={`font-medium ${cls}`}>{title}</p>
-                  <ul className="text-ink-secondary list-disc pl-5 space-y-0.5">{items.map(i => <li key={i.text}>{i.text}</li>)}</ul>
+                  <ul className="text-ink-muted list-disc pl-5 space-y-0.5">{items.map(i => <li key={i.text}>{i.text}</li>)}</ul>
                 </div>
               )
             ))}
@@ -92,11 +92,11 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
       {report.players.length > 0 && (
         <Section title={report.gender === 'F' ? 'Jugadoras clave' : 'Jugadores clave'}>
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs text-ink-secondary"><th>{report.gender === 'F' ? 'Jugadora' : 'Jugador'}</th><th className="text-right">PJ</th><th className="text-right">Pts/p</th><th className="text-right">% puntos</th><th className="text-right">Pts cierre</th></tr></thead>
+            <thead><tr className="text-left text-xs text-ink-muted"><th>{report.gender === 'F' ? 'Jugadora' : 'Jugador'}</th><th className="text-right">PJ</th><th className="text-right">Pts/p</th><th className="text-right">% puntos</th><th className="text-right">Pts cierre</th></tr></thead>
             <tbody>
               {report.players.map(p => (
-                <tr key={p.id} className="border-t border-surface-border text-ink-secondary">
-                  <td className="py-1 text-ink-primary">{p.name}</td><td className="text-right">{p.games}</td>
+                <tr key={p.id} className="border-t border-line text-ink-muted">
+                  <td className="py-1 text-ink">{p.name}</td><td className="text-right">{p.games}</td>
                   <td className="text-right">{fmt(p.pts_per_game)}</td><td className="text-right">{Math.round(p.share * 100)} %</td><td className="text-right">{p.clutch.pts}</td>
                 </tr>
               ))}
@@ -106,13 +106,13 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
       )}
       {(report.origin?.length ?? 0) > 0 && (
         <Section title="Origen de los puntos">
-          <p className="text-xs text-ink-secondary">Por partido, frente a la liga (definición por posesión). «Concede» = lo que anotan sus rivales.</p>
+          <p className="text-xs text-ink-muted">Por partido, frente a la liga (definición por posesión). «Concede» = lo que anotan sus rivales.</p>
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs text-ink-secondary"><th></th><th className="text-right">Propio</th><th className="text-right">Liga</th><th className="text-right">Dif.</th><th className="text-right">Concede</th><th className="text-right">Dif.</th></tr></thead>
+            <thead><tr className="text-left text-xs text-ink-muted"><th></th><th className="text-right">Propio</th><th className="text-right">Liga</th><th className="text-right">Dif.</th><th className="text-right">Concede</th><th className="text-right">Dif.</th></tr></thead>
             <tbody>
               {report.origin.map(r => (
-                <tr key={r.key} className="border-t border-surface-border text-ink-secondary">
-                  <td className="py-1 text-ink-primary">{r.label}</td>
+                <tr key={r.key} className="border-t border-line text-ink-muted">
+                  <td className="py-1 text-ink">{r.label}</td>
                   <td className="text-right">{r.own == null ? '—' : fmt(r.own)}</td>
                   <td className="text-right">{r.league == null ? '—' : fmt(r.league)}</td>
                   <td className={`text-right ${deltaClass(r.own_delta_pct, true)}`}>{delta(r.own_delta_pct)}</td>
@@ -126,26 +126,26 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
       )}
       {report.alerts.length > 0 && (
         <Section title="Alertas del motor sobre este equipo">
-          <ul className="text-sm text-ink-secondary list-disc pl-5">{report.alerts.map(a => <li key={a.id}>{a.text}</li>)}</ul>
+          <ul className="text-sm text-ink-muted list-disc pl-5">{report.alerts.map(a => <li key={a.id}>{a.text}</li>)}</ul>
         </Section>
       )}
       {report.comparison.length > 0 && (
         <Section title={`Comparativa: ${report.own_team?.name ?? 'nuestro equipo'} frente a ${report.team.name}`}>
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs text-ink-secondary"><th>Estadística</th><th className="text-right">Propio</th><th className="text-right">Rival</th></tr></thead>
+            <thead><tr className="text-left text-xs text-ink-muted"><th>Estadística</th><th className="text-right">Propio</th><th className="text-right">Rival</th></tr></thead>
             <tbody>
               {report.comparison.filter(c => c.advantage !== 'neutral').slice(0, 14).map(c => (
-                <tr key={c.key} className="border-t border-surface-border">
-                  <td className="py-1 text-ink-primary">{c.label}</td>
-                  <td className={`text-right ${c.advantage === 'own' ? ADVANTAGE_CLASS.own : 'text-ink-secondary'}`}>{c.own_text}</td>
-                  <td className={`text-right ${c.advantage === 'rival' ? ADVANTAGE_CLASS.rival : 'text-ink-secondary'}`}>{c.rival_text}</td>
+                <tr key={c.key} className="border-t border-line">
+                  <td className="py-1 text-ink">{c.label}</td>
+                  <td className={`text-right ${c.advantage === 'own' ? ADVANTAGE_CLASS.own : 'text-ink-muted'}`}>{c.own_text}</td>
+                  <td className={`text-right ${c.advantage === 'rival' ? ADVANTAGE_CLASS.rival : 'text-ink-muted'}`}>{c.rival_text}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Section>
       )}
-      <p className="text-xs text-ink-secondary">El PDF incluye además las zonas de tiro, los quintetos, los cuartos y la lista de partidos.</p>
+      <p className="text-xs text-ink-muted">El PDF incluye además las zonas de tiro, los quintetos, los cuartos y la lista de partidos.</p>
     </div>
   )
 }
@@ -211,39 +211,39 @@ export default function ScoutingRivalPage() {
     }
   }
 
-  const select = 'bg-surface-base border border-surface-border rounded-lg px-3 py-2 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-accent-400'
+  const select = 'bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus'
 
   return (
     <PageTransition>
       <div className="space-y-4 max-w-3xl">
         <div>
-          <h1 className="text-2xl font-bold text-ink-primary">Scouting del rival</h1>
-          <p className="text-ink-secondary text-sm mt-0.5">{collection?.label}</p>
+          <h1 className="text-2xl font-bold text-ink">Scouting del rival</h1>
+          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
         </div>
 
         {!collection ? (
-          <p className="text-sm text-ink-secondary">Selecciona una colección.</p>
+          <p className="text-sm text-ink-muted">Selecciona una colección.</p>
         ) : collection.isFbcyl ? (
           <div className="card p-6 flex items-start gap-3">
             <FileSearch className="w-5 h-5 text-warn mt-0.5" />
-            <p className="text-sm text-ink-secondary">El scouting del rival está disponible solo para competiciones FEB por ahora.</p>
+            <p className="text-sm text-ink-muted">El scouting del rival está disponible solo para competiciones FEB por ahora.</p>
           </div>
         ) : (
           <>
             <div className="card p-5 space-y-4">
-              <p className="text-sm text-ink-secondary">
+              <p className="text-sm text-ink-muted">
                 Elige el equipo a analizar (cualquiera de la competición): se reproducen sus partidos como en directo con el motor
                 y se genera un informe con sus claves tácticas, jugadores, quintetos, zonas y plan de partido. Puede tardar un poco.
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
-                <label className="flex flex-col gap-1 text-xs text-ink-secondary">
+                <label className="flex flex-col gap-1 text-xs text-ink-muted">
                   Equipo a analizar
                   <select value={rival} onChange={e => setRival(e.target.value)} className={select} disabled={running}>
                     <option value="">— Selecciona —</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1 text-xs text-ink-secondary">
+                <label className="flex flex-col gap-1 text-xs text-ink-muted">
                   Nuestro equipo (opcional, para la comparativa)
                   <select value={own} onChange={e => setOwn(e.target.value)} className={select} disabled={running}>
                     <option value="">— Sin comparativa —</option>
@@ -259,7 +259,7 @@ export default function ScoutingRivalPage() {
 
               {phase.kind === 'running' && (
                 <div className="space-y-1">
-                  <p className="text-sm text-ink-secondary">
+                  <p className="text-sm text-ink-muted">
                     {phase.progress && phase.progress.total > 0
                       ? `Procesando… ${phase.progress.current} de ${phase.progress.total} partidos`
                       : 'Iniciando…'}
@@ -267,14 +267,14 @@ export default function ScoutingRivalPage() {
                   {phase.progress && phase.progress.total > 0 && (
                     <div role="progressbar" aria-label="Progreso del informe" aria-valuemin={0}
                       aria-valuenow={phase.progress.current} aria-valuemax={phase.progress.total}
-                      className="h-2 rounded-full bg-surface-border overflow-hidden">
-                      <div className="h-full bg-accent-400 transition-all"
+                      className="h-2 rounded-full bg-line overflow-hidden">
+                      <div className="h-full bg-secondary-text transition-all"
                         style={{ width: `${Math.round((phase.progress.current / phase.progress.total) * 100)}%` }} />
                     </div>
                   )}
                 </div>
               )}
-              {phase.kind === 'error' && <p className="text-sm text-down">{phase.message}</p>}
+              {phase.kind === 'error' && <p className="text-sm text-bad">{phase.message}</p>}
             </div>
 
             {phase.kind === 'done' && (
