@@ -15,6 +15,7 @@ Sin LLMs externos (eliminados): los informes automáticos serán por reglas, ver
 | [docs/TESTING.md](docs/TESTING.md) | escribes/ejecutas tests, CI, cobertura, checklist manual |
 | [docs/OPERATIONS.md](docs/OPERATIONS.md) | Render/Vercel, variables de entorno, `ADMIN_API_KEY` (guía para activarla), errores 401/503 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | fases, pendientes, deuda técnica, límites conocidos |
+| [docs/UI.md](docs/UI.md) | toques la UI de la web: componentes base, vocabulario de color, tema |
 
 ## ❌ TDD ES OBLIGATORIO — NUNCA SALTAR ESTE PASO
 > **Si modificas código sin haber escrito antes el test que falla → PARA. Escribe el test primero.**
@@ -97,6 +98,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | `import src.x` y `import x` mezclados | usa siempre `src.…` |
 | texto de UI en inglés | UI en español |
 | color suelto en la web (`#hex`, `gray-500`, `text-white` sobre superficie, `dark:`) | vocabulario del preset de `design/` (`canvas`, `surface`, `ink`, `accent`, `ok`/`bad`/`warn`…; gráficos con `useChartTheme`): tema claro por defecto, lo vigila `designTokens.test.ts` (#188) |
+| `<button>`/`<select>`/`<input>`/`<h1>` a mano en una página | componentes de `components/ui` (docs/UI.md); `rawControls.test.ts` no deja sumar más (#190) |
 | pantalla/lista nueva de la app sin comprobar su maquetación | añadirla a `apps/live-android/e2e/layout.spec.ts` (412 y 320 px, nombres largos): nada sale de la pantalla ni se superpone (#508) |
 | leer `min`/`sec` de FBCYL como tiempo transcurrido | es tiempo **restante** (#370) |
 

@@ -1,4 +1,5 @@
 ﻿import { useState, useRef, useMemo, useEffect, type FormEvent } from 'react'
+import { Input, Select } from '@/components/ui/Field'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import {
@@ -108,9 +109,6 @@ function fmtDiff(diff: number, key: string): string {
   return '0'
 }
 
-const selectCls =
-  'appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 text-sm ' +
-  'text-ink focus:outline-none focus:ring-2 focus:ring-focus'
 
 /** Empty-state text that reflects the minimums actually applied (0 = no minimum). */
 function emptyMessage(minMinutes: number, minGames: number): string {
@@ -388,66 +386,66 @@ export default function LineupsPage() {
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Equipo</label>
-            <select
+            <Select
               value={selectedTeam?.id ?? ''}
               onChange={e => setSelectedTeam(teams.find(t => t.id === e.target.value) ?? null)}
-              className={selectCls}
+             
             >
               {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Jugadores</label>
-            <select value={size} onChange={e => setSize(Number(e.target.value))} className={selectCls}>
+            <Select value={size} onChange={e => setSize(Number(e.target.value))}>
               {[2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Estad\u00edstica`}</label>
-            <select value={stat} onChange={e => setStat(e.target.value)} className={selectCls}>
+            <Select value={stat} onChange={e => setStat(e.target.value)}>
               {LINEUP_STAT_GROUPS.map(g => (
                 <optgroup key={g.label} label={g.label}>
                   {g.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
                 </optgroup>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Per\u00edodo`}</label>
-            <select value={period} onChange={e => setPeriod(Number(e.target.value))} className={selectCls}>
+            <Select value={period} onChange={e => setPeriod(Number(e.target.value))}>
               {LINEUP_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Top / Bottom N</label>
-            <input
+            <Input
               type="number" min={1} max={20} value={topN}
               onChange={e => setTopN(Math.max(1, Math.min(20, Number(e.target.value))))}
-              className={`${selectCls} w-20`}
+              className="w-20"
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Mín. minutos`}</label>
-            <input
+            <Input
               type="number" min={0} step={1} value={minMinutes}
               title="0 = sin m&iacute;nimo"
               onChange={e => setMinMinutes(Math.max(0, Number(e.target.value) || 0))}
-              className={`${selectCls} w-20`}
+              className="w-20"
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Mín. partidos`}</label>
-            <input
+            <Input
               type="number" min={0} step={1} value={minGames}
               title="0 = sin m&iacute;nimo"
               onChange={e => setMinGames(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
-              className={`${selectCls} w-20`}
+              className="w-20"
             />
           </div>
 

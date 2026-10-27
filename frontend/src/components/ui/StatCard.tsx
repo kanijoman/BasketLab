@@ -5,6 +5,7 @@
  *   <StatCard label="Puntos/partido" value={82.4} delta={+1.2} />
  */
 import { cn } from '@/lib/utils'
+import { TONE_PANEL, type Tone } from './tone'
 
 interface Props {
   label: string
@@ -13,19 +14,11 @@ interface Props {
   delta?: number
   /** Caption under the value */
   sub?: string
-  /** Accent color variant */
-  accent?: 'green' | 'blue' | 'amber' | 'red' | 'default'
+  /** The tone of the card (issue #190: the tones of the system) */
+  tone?: Tone
   className?: string
   /** Optional click handler */
   onClick?: () => void
-}
-
-const ACCENT_CLASSES: Record<NonNullable<Props['accent']>, string> = {
-  green:   'border-ok/40 bg-ok/5',
-  blue:    'border-secondary/40 bg-secondary/5',
-  amber:   'border-warn/40 bg-warn/5',
-  red:     'border-bad/40 bg-bad/5',
-  default: 'border-line',
 }
 
 export default function StatCard({
@@ -33,7 +26,7 @@ export default function StatCard({
   value,
   delta,
   sub,
-  accent = 'default',
+  tone = 'neutral',
   className,
   onClick,
 }: Props) {
@@ -44,7 +37,7 @@ export default function StatCard({
     <div
       className={cn(
         'card p-4 flex flex-col gap-1 select-none',
-        ACCENT_CLASSES[accent],
+        TONE_PANEL[tone],
         onClick && 'cursor-pointer hover:border-accent/60 hover:bg-surface-raised transition-colors',
         className,
       )}

@@ -29,13 +29,13 @@ function Empty() {
   return <p className="text-sm text-ink-muted">{EMPTY}</p>
 }
 
-function Findings({ rows, variant }: { rows: ReportFinding[]; variant: 'brand' | 'red' }) {
+function Findings({ rows, tone }: { rows: ReportFinding[]; tone: 'ok' | 'bad' }) {
   if (!rows.length) return <Empty />
   return (
     <ul className="space-y-2">
       {rows.map(f => (
         <li key={f.key} className="text-sm text-ink-muted">
-          <Badge variant={variant} className="mr-2">Q{f.quartile}</Badge>
+          <Badge tone={tone} className="mr-2">Q{f.quartile}</Badge>
           <span className="font-medium text-ink">{f.label}: {f.formatted}</span>
           {f.diff_pct != null && <span className="ml-1 text-xs">({f.diff_pct > 0 ? '+' : ''}{f.diff_pct.toFixed(1)}% vs mediana)</span>}
           <p className="mt-0.5">{f.text}</p>
@@ -53,7 +53,7 @@ function Zones({ rows }: { rows: ReportZone[] }) {
     <ul className="space-y-2">
       {rows.map(z => (
         <li key={z.zone} className="text-sm text-ink-muted">
-          <Badge variant={z.kind === 'hot' ? 'brand' : 'red'} className="mr-2">{z.kind === 'hot' ? 'Caliente' : 'Fría'}</Badge>
+          <Badge tone={z.kind === 'hot' ? 'ok' : 'bad'} className="mr-2">{z.kind === 'hot' ? 'Caliente' : 'Fría'}</Badge>
           <span className="font-medium text-ink">{z.label}: {z.fg_pct?.toFixed(0)}% en {z.fga} tiros</span>
           <span className="ml-1 text-xs">
             (liga {z.league_pct?.toFixed(0)}%, {(z.delta_pp ?? 0) > 0 ? '+' : ''}{z.delta_pp?.toFixed(1)} pp)
@@ -73,7 +73,7 @@ function Actions({ rows }: { rows: ReportAction[] }) {
       {rows.map(a => (
         <li key={`${a.key}-${a.area}`} className="text-sm text-ink-muted">
           {a.priority != null && <span className="mr-2 font-mono text-ink">{a.priority}.</span>}
-          <Badge variant="blue" className="mr-2">{a.area}</Badge>
+          <Badge tone="secondary" className="mr-2">{a.area}</Badge>
           <span className="font-medium text-ink">{KIND_LABEL[a.kind]} · {a.label}</span>
           <p className="mt-0.5">{a.text}</p>
         </li>
@@ -100,14 +100,14 @@ export default function TeamReportView({ report }: { report: TeamReport }) {
           ? <ul className="list-disc ml-5 text-sm text-ink-muted space-y-1">{report.profile.map(p => <li key={p}>{p}</li>)}</ul>
           : <Empty />}
       </Section>
-      <Section title={t.strengths}><Findings rows={report.strengths} variant="brand" /></Section>
-      <Section title={t.weaknesses}><Findings rows={report.weaknesses} variant="red" /></Section>
+      <Section title={t.strengths}><Findings rows={report.strengths} tone="ok" /></Section>
+      <Section title={t.weaknesses}><Findings rows={report.weaknesses} tone="bad" /></Section>
       <Section title="Análisis diferencial vs liga">
         {report.differentials.length ? (
           <ul className="space-y-1 text-sm text-ink-muted">
             {report.differentials.map(d => (
               <li key={d.key}>
-                <Badge variant={d.advantage ? 'brand' : 'red'} className="mr-2">{d.advantage ? 'Ventaja' : 'Desventaja'}</Badge>
+                <Badge tone={d.advantage ? 'ok' : 'bad'} className="mr-2">{d.advantage ? 'Ventaja' : 'Desventaja'}</Badge>
                 {d.label}: {d.formatted} ({d.diff_pct > 0 ? '+' : ''}{d.diff_pct.toFixed(1)}%)
               </li>
             ))}
@@ -120,7 +120,7 @@ export default function TeamReportView({ report }: { report: TeamReport }) {
           <ul className="space-y-1 text-sm text-ink-muted">
             {report.consistency.map(c => (
               <li key={c.key}>
-                <Badge variant={c.status === 'inconsistent' ? 'amber' : 'brand'} className="mr-2">
+                <Badge tone={c.status === 'inconsistent' ? 'warn' : 'ok'} className="mr-2">
                   {c.status === 'inconsistent' ? 'Inconsistente' : 'Consistente'}
                 </Badge>
                 {c.label} (CV {c.cv.toFixed(0)}%). {c.text}
