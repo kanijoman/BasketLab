@@ -31,16 +31,23 @@ class TestFromTheDocument:
         assert boxed and all(snap["players"][pid]["no"] == no for pid, no in boxed.items() if pid in snap["players"])
         assert snap["players"]["2361369"]["no"] == "04"                            # the zero of «04» is not lost
 
-    def test_a_player_the_box_score_does_not_number_has_none(self, feb_doc):
+    def test_a_player_the_box_score_does_not_number_has_none_unless_the_shot_chart_says_it(self, feb_doc):
         doc = copy.deepcopy(feb_doc)
         for team in doc["BOXSCORE"]["TEAM"]:
             for p in team["PLAYER"]:
                 p.pop("no", None)
+        doc["SHOTCHART"]["SHOTS"] = []
         assert all(p["no"] is None for p in LiveEngine().update(doc)["players"].values())
+        # with the shot chart the numbers of the ones who shot are read from it (jerseys.py) and they are the ones the box score had
+        snap = LiveEngine().update({**doc, "SHOTCHART": feb_doc["SHOTCHART"]})
+        said = {p["id"]: p["no"] for team in feb_doc["BOXSCORE"]["TEAM"] for p in team["PLAYER"]}
+        read = {pid: p["no"] for pid, p in snap["players"].items() if p["no"] is not None}
+        assert len(read) >= 10 and all(str(int(no)) == str(int(said[pid])) for pid, no in read.items())
 
     def test_a_player_who_only_shows_up_in_the_play_by_play_has_none(self, feb_doc):
         doc = copy.deepcopy(feb_doc)
         doc["BOXSCORE"]["TEAM"][0]["PLAYER"] = [p for p in doc["BOXSCORE"]["TEAM"][0]["PLAYER"] if p["id"] != "2817524"]
+        doc["SHOTCHART"]["SHOTS"] = []
         assert LiveEngine().update(doc)["players"]["2817524"]["no"] is None
 
     def test_a_fbcyl_player_has_his_dorsal_through_the_adapter(self):
@@ -76,3 +83,33 @@ class TestFromTheRoster:
     def test_the_engine_hands_the_roster_over(self):
         box = engine(roster={"p1": {"dorsal": 9}}).analyze(self.snapshot())["boxscore"]
         assert box["p1"]["no"] == "9"
+
+
+class TestFromTheLastMatch:
+    """The package says, per player, the number he wore in his last match of the season (``tables.players[*].dorsal``): it reaches who is not in the roster (a player of the
+    reserve team who goes up). The roster, FEB's current one, goes before it: a player changes his number between matches in 1.3 % of the cases and the roster is the newer."""
+
+    def snapshot(self):
+        return Match().lineup(OWN, ["p1"], at=0).score(OWN, 2, at=30, player="p1").snapshot()
+
+    def number(self, baselines, roster=None):
+        return build(self.snapshot(), baselines, CFG, roster)["p1"]["no"]
+
+    def test_the_number_of_the_last_match_is_used_when_nothing_else_says_it(self):
+        assert self.number({"p1": {"dorsal": "11"}}) == "11"
+
+    def test_the_roster_goes_before_the_last_match(self):
+        assert self.number({"p1": {"dorsal": "11"}}, {"p1": {"dorsal": 9}}) == "9"
+
+    def test_the_document_goes_before_both(self):
+        snap = self.snapshot()
+        snap["players"]["p1"]["no"] = "4"
+        assert build(snap, {"p1": {"dorsal": "11"}}, CFG, {"p1": {"dorsal": 9}})["p1"]["no"] == "4"
+
+    @pytest.mark.parametrize("baselines", [{}, {"p1": {}}, {"p1": {"dorsal": None}}, {"p1": {"dorsal": ""}}])
+    def test_without_it_there_is_no_number(self, baselines):
+        assert self.number(baselines) is None
+
+    def test_the_engine_hands_the_baselines_over(self):
+        box = engine(baselines={"p1": {"dorsal": "11", "z": {}}}).analyze(self.snapshot())["boxscore"]
+        assert box["p1"]["no"] == "11"
