@@ -1,9 +1,8 @@
 /**
- * StatCard — displays a single metric with optional delta and trend.
+ * StatCard — displays a single metric with an optional delta (the real difference with what it is compared with, issue #608).
  *
  * Usage:
  *   <StatCard label="Puntos/partido" value={82.4} delta={+1.2} />
- *   <StatCard label="OER" value={107.3} trend="⇈" trendClass="trend-great" />
  */
 import { cn } from '@/lib/utils'
 
@@ -12,10 +11,6 @@ interface Props {
   value: string | number
   /** Numeric delta (e.g. +1.2) shown with +/- sign */
   delta?: number
-  /** Pre-formatted trend symbol (⇈ ↑ ≈ ↓ ⇊) */
-  trend?: string
-  /** CSS class for the trend (trend-great, trend-good, trend-flat, trend-bad, trend-poor) */
-  trendClass?: string
   /** Caption under the value */
   sub?: string
   /** Accent color variant */
@@ -37,8 +32,6 @@ export default function StatCard({
   label,
   value,
   delta,
-  trend,
-  trendClass,
   sub,
   accent = 'default',
   className,
@@ -67,12 +60,6 @@ export default function StatCard({
         <span className="text-2xl font-bold text-ink-primary tabular-nums">
           {value}
         </span>
-
-        {trend && (
-          <span className={cn('text-base font-bold', trendClass)}>
-            {trend}
-          </span>
-        )}
 
         {delta !== undefined && (
           <span

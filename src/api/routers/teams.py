@@ -1,12 +1,13 @@
 """Teams router — season statistics for all teams in a collection."""
 
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Literal, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.deps import get_db
 from src.services import TeamStatsService, EvolutionService, EVOLUTION_STAT_KEYS
+from src.services.team_comparison_service import TeamComparisonService
 
 router = APIRouter()
 
@@ -50,6 +51,23 @@ def get_team_stats(
         venue_filter=venue_filter,
         result_filter=result,
     )
+
+
+@router.get("/{collection}/compare", summary="Comparative reports: home vs away, won vs lost, a stretch vs the rest of the season")
+def compare_teams(
+    collection: str,
+    by: Literal["venue", "result", "period"] = Query(..., description="venue | result | period"),
+    from_date: Optional[str] = Query(None, description="Start of the stretch YYYY-MM-DD (period)"),
+    to_date: Optional[str] = Query(None, description="End of the stretch YYYY-MM-DD (period)"),
+    db=Depends(get_db),
+) -> Dict[str, Any]:
+    """Both groups of the comparison per team, the real difference between them and the same for what the rivals did against each team (issue #607)."""
+    try:
+        date_from = datetime.fromisoformat(from_date) if from_date else None
+        date_to = datetime.fromisoformat(to_date) if to_date else None
+        return TeamComparisonService(db).compare(collection, by, date_from, date_to)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 
 @router.get("/{collection}/quartiles", summary="Get league-wide stat quartiles")

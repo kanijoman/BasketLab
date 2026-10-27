@@ -30,29 +30,6 @@ export function fmtPct(
   return `${v.toFixed(decimals)}%`
 }
 
-/** Return a trend symbol and CSS class based on percentage delta. */
-export interface TrendResult {
-  symbol: string
-  className: string
-  label: string
-}
-
-export function getTrend(
-  recent: number,
-  season: number,
-  reverse = false,
-): TrendResult {
-  if (season === 0) return { symbol: '≈', className: 'trend-flat', label: 'Sin cambio' }
-  const pct = ((recent - season) / Math.abs(season)) * 100
-  const effectivePct = reverse ? -pct : pct
-
-  if (effectivePct > 10)  return { symbol: '⇈', className: 'trend-great', label: `+${pct.toFixed(1)}%` }
-  if (effectivePct > 5)   return { symbol: '↑', className: 'trend-good',  label: `+${pct.toFixed(1)}%` }
-  if (effectivePct > -5)  return { symbol: '≈', className: 'trend-flat',  label: `${pct.toFixed(1)}%` }
-  if (effectivePct > -10) return { symbol: '↓', className: 'trend-bad',   label: `${pct.toFixed(1)}%` }
-  return                         { symbol: '⇊', className: 'trend-poor',  label: `${pct.toFixed(1)}%` }
-}
-
 /** Return Tailwind class for quartile coloring (Q1 best by default). */
 export function quartileClass(
   value: number,

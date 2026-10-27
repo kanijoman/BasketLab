@@ -20,7 +20,7 @@ import PageTransition from '@/components/ui/PageTransition'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import SlideDrawer from '@/components/ui/SlideDrawer'
-import TrendBadge from '@/components/ui/TrendBadge'
+import DiffBadge from '@/components/ui/DiffBadge'
 import CVBadge from '@/components/ui/CVBadge'
 import { tippedHeader } from '@/components/ui/Tooltip'
 
@@ -560,7 +560,7 @@ export default function PlayerStatsPage() {
                         return (
                           <span key={String(key)} className="inline-flex items-center gap-0.5">
                             <span className="text-[10px] text-ink-muted font-medium">{opt.label}</span>
-                            <TrendBadge
+                            <DiffBadge
                               recent={p[key] as number}
                               season={s[key] as number}
                               reverse={opt.reverse}

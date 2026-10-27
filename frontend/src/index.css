@@ -50,13 +50,6 @@
     @apply bg-surface-raised border border-surface-border rounded-card shadow-card;
   }
 
-  /* ── Trend badges ───────────────────────────────────────────────── */
-  .trend-great  { @apply text-brand-400 font-bold; }
-  .trend-good   { @apply text-brand-500; }
-  .trend-flat   { @apply text-ink-secondary; }
-  .trend-bad    { @apply text-warn; }
-  .trend-poor   { @apply text-down; }
-
   /* ── Button variants ─────────────────────────────────────────────── */
   .btn-primary {
     @apply inline-flex items-center gap-2 px-4 py-2 rounded bg-brand-600 [&:not(:disabled)]:hover:bg-brand-500

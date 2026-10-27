@@ -23,6 +23,19 @@ from datetime import datetime, time
 from .fbcyl_possession_expr import team_possessions
 
 
+def _start_of_day(date_filter: Dict) -> Dict:
+    """The dates of a filter of dates at 00:00:00, also inside a ``$not`` (the rest of a stretch of the season, issue #607)."""
+    normalized: Dict = {}
+    for operator, value in date_filter.items():
+        if isinstance(value, datetime):
+            normalized[operator] = datetime.combine(value.date(), time.min)
+        elif isinstance(value, dict):
+            normalized[operator] = _start_of_day(value)
+        else:
+            normalized[operator] = value
+    return normalized
+
+
 class FBCYLPipelineBuilder:
     """Builds MongoDB aggregation pipeline for FBCYL team statistics."""
 
@@ -80,13 +93,7 @@ class FBCYLPipelineBuilder:
         # Phase 0: Add date conversion and filter if provided
         if date_filter:
             # Normalize the date_filter to start of day (remove time component)
-            normalized_filter = {}
-            for operator, dt_value in date_filter.items():
-                if isinstance(dt_value, datetime):
-                    # Convert to start of day (00:00:00)
-                    normalized_filter[operator] = datetime.combine(dt_value.date(), time.min)
-                else:
-                    normalized_filter[operator] = dt_value
+            normalized_filter = _start_of_day(date_filter)
 
             # First, add a field that converts the string date to a date object
             # FBCYL uses "stats.time" field with format "Oct 4, 2025 7:00:00 PM"
@@ -563,13 +570,7 @@ class FBCYLPipelineBuilder:
         # Phase 0: Add date conversion and filter if provided
         if date_filter:
             # Normalize the date_filter to start of day (remove time component)
-            normalized_filter = {}
-            for operator, dt_value in date_filter.items():
-                if isinstance(dt_value, datetime):
-                    # Convert to start of day (00:00:00)
-                    normalized_filter[operator] = datetime.combine(dt_value.date(), time.min)
-                else:
-                    normalized_filter[operator] = dt_value
+            normalized_filter = _start_of_day(date_filter)
 
             # First, add a field that converts the string date to a date object
             # FBCYL uses "stats.time" field with format "Oct 4, 2025 7:00:00 PM"
