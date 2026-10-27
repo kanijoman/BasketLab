@@ -52,7 +52,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
 
 function buildColumns(defs: ColDef[], byName: Record<string, ComparisonRow>, rivals: boolean): ColumnDef<Flat, unknown>[] {
   const cols: ColumnDef<Flat, unknown>[] = [
-    { id: 'team_name', accessorKey: 'team_name', header: 'Equipo', size: 150, cell: ({ getValue }) => <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span> },
+    { id: 'team_name', accessorKey: 'team_name', header: 'Equipo', size: 230, cell: ({ getValue }) => <span className="font-medium text-ink-primary whitespace-nowrap">{getValue() as string}</span> },
     { id: 'games', accessorKey: 'games', header: tippedHeader('PJ'), size: 60 },
   ]
   for (const def of defs.filter(d => !d.count)) {
