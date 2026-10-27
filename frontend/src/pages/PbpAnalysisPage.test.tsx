@@ -73,27 +73,26 @@ describe('PbpAnalysisPage', () => {
     expect(screen.getByText('Tras pérdida')).toBeTruthy()
   })
 
-  it('has the turnovers without the steals and the fast break visible next to them, per game by default (#602, #603)', () => {
+  it('has the turnovers without the steals, and the fast break and the paint per 100 possessions next to them (#602, #603)', () => {
     renderPage()
     expect(screen.getByText('Tras pérdida')).toBeTruthy()
     expect(screen.getByText('Tras robo')).toBeTruthy()
     expect(screen.getByText('6.0')).toBeTruthy()           // pts_off_loss_per_game: not the 14 that added the steals
     expect(screen.queryByText('14.0')).toBeNull()
+    expect(screen.getByText('9.1')).toBeTruthy()           // pts_fastbreak_per_100
+    expect(screen.getByText('47.5')).toBeTruthy()          // pts_paint_per_100
+    expect(screen.getByText('35.2')).toBeTruthy()          // pts_bench_per_100
+    expect(screen.queryByText('34.0')).toBeNull()          // the paint per game is gone: it depended on the pace
+    expect(screen.queryByText('41.0')).toBeNull()          // and so is the efficiency of the fast break, which was not one
     const groups = screen.getAllByRole('columnheader').map(h => h.textContent ?? '')
     expect(groups.indexOf('Contraataque (est.)')).toBeGreaterThan(-1)
-    expect(groups.indexOf('Contraataque (est.)')).toBeLessThan(groups.indexOf('Banquillo') + 3)          // not hidden at the end of a very wide table
+    expect(groups.indexOf('Contraataque (est.)')).toBeLessThan(groups.indexOf('Banquillo'))              // next to the turnovers, not at the end of a wide table
   })
 
-  it('shows every origin per 100 possessions of the team when it is asked for, own and conceded (#603)', () => {
+  it('has no selector of the basis: the figures are already by possessions', () => {
     renderPage()
-    expect(screen.getByRole('button', { name: 'Por partido' }).getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(screen.getByRole('button', { name: 'Por 100 posesiones' }))
-    expect(screen.getByRole('button', { name: 'Por 100 posesiones' }).getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText('47.5')).toBeTruthy()          // pts_paint_per_100
-    expect(screen.getByText('9.1')).toBeTruthy()           // pts_fastbreak_per_100
-    expect(screen.queryByText('34.0')).toBeNull()          // the per-game figure is gone in this view
-    fireEvent.click(screen.getByRole('button', { name: 'Concedidos (rival)' }))
-    expect(screen.getByText('44.0')).toBeTruthy()          // opp_pts_paint_per_100
+    expect(screen.queryByRole('button', { name: 'Por 100 posesiones' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Por partido' })).toBeNull()
   })
 
   it('switches the origins to what the rivals score against the team', () => {
@@ -103,7 +102,7 @@ describe('PbpAnalysisPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Concedidos (rival)' }))
 
     expect(screen.getByRole('button', { name: 'Concedidos (rival)' }).getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByText('31.0')).toBeTruthy()          // opp_pts_paint_per_game
+    expect(screen.getByText('44.0')).toBeTruthy()          // opp_pts_paint_per_100
   })
 
   it('shows the period figures and lets the user pick the quarter; the overtime only lists the teams that played one', () => {

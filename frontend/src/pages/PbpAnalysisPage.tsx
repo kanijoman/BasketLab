@@ -12,15 +12,15 @@ import PageTransition from '@/components/ui/PageTransition'
 import { useCollection } from '@/context/CollectionContext'
 import { computeQuartileMap } from '@/lib/quartiles'
 import {
-  NUMERIC_COLUMN_SIZE, ORIGIN_BASES, ORIGIN_KEYS, ORIGIN_REVERSE, ORIGIN_VIEWS, PERIODS, PERIOD_KEYS, PERIOD_REVERSE, SITUATION_KEYS, SITUATION_REVERSE,
+  NUMERIC_COLUMN_SIZE, ORIGIN_KEYS, ORIGIN_REVERSE, ORIGIN_VIEWS, PERIODS, PERIOD_KEYS, PERIOD_REVERSE, SITUATION_KEYS, SITUATION_REVERSE,
   TIMEOUT_KEYS, TIMEOUT_REVERSE, flattenPeriod, flattenSituations, flattenTimeouts, originColumns, periodColumns, situationColumns,
-  timeoutColumns, type OriginBasis, type OriginView,
+  timeoutColumns, type OriginView,
 } from './pbpAnalysis/columns'
 
 type Tab = 'origin' | 'period' | 'situations' | 'timeouts'
 
 const TABS: [Tab, string, string][] = [
-  ['origin', 'Por origen', 'Puntos según cómo empezó la posesión, del banquillo y en la pintura, por partido o por 100 posesiones del equipo (los puntos por partido dependen del ritmo; la OER de cada origen es siempre por 100 posesiones que empezaron así). «Tras pérdida» no incluye los robos, que tienen su propio grupo. Definición por posesión: más generosa que la que usa la FEB en su PDF (que no se puede reproducir desde el play-by-play). El contraataque es una estimación propia (canasta en ≤ 6 s tras pérdida rival, con o sin robo, o rebote defensivo): se queda de media 0,6 puntos por debajo de la FEB.'],
+  ['origin', 'Por origen', 'Puntos según cómo empezó la posesión. Tras pérdida, tras robo y 2ª oportunidad son clases de posesión: la OER es el rendimiento de las posesiones que empezaron así (puntos por 100) y Pts/P el total por partido; «Tras pérdida» no incluye los robos. Banquillo, pintura y contraataque son puntos, no una clase de posesión: van por 100 posesiones del equipo. Definición por posesión: más generosa que la que usa la FEB en su PDF (que no se puede reproducir desde el play-by-play). El contraataque es una estimación propia (canasta en ≤ 6 s tras pérdida rival, con o sin robo, o rebote defensivo): se queda de media 0,6 puntos por debajo de la FEB.'],
   ['period', 'Por cuarto', 'Puntos, posesiones, ratings, ritmo y factores por equipo y periodo (la prórroga agrupa todas).'],
   ['situations', 'Situaciones', 'Puntos por posesión tras un tiempo muerto propio o del rival, en la primera posesión de cada periodo, y el rating neto en los primeros y últimos 2:00 frente al resto del periodo.'],
   ['timeouts', 'Tiempos muertos', 'Rating neto en las 5 posesiones de cada equipo antes y después de cada tiempo muerto, y % tras los que mejora quien lo pidió. Quedan fuera los del último minuto del periodo (umbrales provisionales).'],
@@ -77,7 +77,6 @@ export default function PbpAnalysisPage() {
   const name = collection?.name
   const [tab, setTab] = useState<Tab>('origin')
   const [originView, setOriginView] = useState<OriginView>('own')
-  const [originBasis, setOriginBasis] = useState<OriginBasis>('game')
   const [period, setPeriod] = useState('1')
 
   const origin = usePointsByOrigin(name)
@@ -89,11 +88,11 @@ export default function PbpAnalysisPage() {
   const periodRows = useMemo(() => flattenPeriod(periods.data ?? [], period), [periods.data, period])
   const situationRows = useMemo(() => flattenSituations(situations.data ?? []), [situations.data])
   const timeoutRows = useMemo(() => flattenTimeouts(timeouts.data ?? []), [timeouts.data])
-  const originCols = useMemo(() => originColumns(originView, originBasis), [originView, originBasis])
+  const originCols = useMemo(() => originColumns(originView), [originView])
   const periodCols = useMemo(() => periodColumns(), [])
   const situationCols = useMemo(() => situationColumns(), [])
   const timeoutCols = useMemo(() => timeoutColumns(), [])
-  const originKeys = useMemo(() => ORIGIN_KEYS(originView, originBasis), [originView, originBasis])
+  const originKeys = useMemo(() => ORIGIN_KEYS(originView), [originView])
 
   let body: React.ReactNode
   if (current.isLoading) {
@@ -110,10 +109,7 @@ export default function PbpAnalysisPage() {
   } else if (tab === 'origin') {
     body = (
       <div className="space-y-3">
-        <div className="flex flex-wrap gap-3">
-          <Pills items={ORIGIN_VIEWS} value={originView} onChange={setOriginView} label="Puntos propios o concedidos" />
-          <Pills items={ORIGIN_BASES} value={originBasis} onChange={setOriginBasis} label="Por partido o por 100 posesiones" />
-        </div>
+        <Pills items={ORIGIN_VIEWS} value={originView} onChange={setOriginView} label="Puntos propios o concedidos" />
         <Table data={origin.data!} columns={originCols} keys={originKeys} reverse={ORIGIN_REVERSE[originView]} filename={`pbp_origen_${collection?.name}`} />
       </div>
     )
