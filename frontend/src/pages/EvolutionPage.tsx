@@ -16,6 +16,7 @@ import {
   Brush,
 } from 'recharts'
 import { useChartTheme } from '@/lib/chartTheme'
+import { seriesLabel } from '@/lib/evolutionLabels'
 import { TrendingUp, X, ChevronDown } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
@@ -348,23 +349,10 @@ export default function EvolutionPage() {
                   <Tooltip
                     contentStyle={chart.tooltip}
                     labelFormatter={v => `Jornada ${v}`}
-                    formatter={(value: number, name: string) => {
-                      if (name === 'comp_rolling')    return [typeof value === 'number' ? value.toFixed(1) : value, `Liga media ${rollingWindow}J`]
-                      if (name === 'comp_cumulative') return [typeof value === 'number' ? value.toFixed(1) : value, 'Liga acumulado']
-                      if (name.endsWith('_avg'))      return [typeof value === 'number' ? value.toFixed(1) : value, `Media ${rollingWindow}J`]
-                      if (name.endsWith('_cum'))      return [typeof value === 'number' ? value.toFixed(1) : value, 'Acumulado']
-                      return [typeof value === 'number' ? value.toFixed(1) : value, 'Por partido']
-                    }}
+                    formatter={(value: number, name: string) => [typeof value === 'number' ? value.toFixed(1) : value, seriesLabel(name, teamName, rollingWindow)]}
                   />
                   <Legend
-                    formatter={name => {
-                      if (name === 'comp_rolling')    return `Liga (media ${rollingWindow}J)`
-                      if (name === 'comp_cumulative') return 'Liga (acumulado)'
-                      const team = name.replace(/_raw$|_avg$|_cum$/, '')
-                      if (name.endsWith('_avg')) return `${team} (media ${rollingWindow}J)`
-                      if (name.endsWith('_cum')) return `${team} (acumulado)`
-                      return team
-                    }}
+                    formatter={name => seriesLabel(String(name), teamName, rollingWindow)}
                     wrapperStyle={{ fontSize: 11 }}
                   />
                   <Brush dataKey="game" height={20} stroke={chart.grid} fill={chart.surface} travellerWidth={6} />
