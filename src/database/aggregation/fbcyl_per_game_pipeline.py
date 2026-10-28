@@ -300,3 +300,44 @@ def enrich_fbcyl_player_row(row: Dict) -> Dict:
     row["tov_pct_game"] = _pct(row.get("to", 0), fga + 0.44 * p1a + (row.get("to") or 0))
 
     return row
+
+
+def build_fbcyl_season_rows_pipeline() -> List[Dict]:
+    """One document per (team, game) with exactly what the FBCYL season ``$group`` reads, in the row shape of FEB's ``build_season_rows_pipeline``.
+
+    The contract of the local-first team tables (#327): the client sums these rows whatever the league. ``starttime`` is FBCYL's own text
+    (``Oct 4, 2025 7:00:00 PM``), ``tied`` marks the third result FBCYL has and ``total_rebounds`` / ``fouls`` are the box totals this league reports.
+    The possessions are the stored count of ``DERIVED`` or the box estimate, as in the season pipeline.
+    """
+    from .fbcyl_possession_expr import team_possessions
+
+    def box(side: str, field: str) -> str:
+        return f"${side}.data.{field}"
+
+    own, rival = "teams", "opponent"
+    return [
+        {"$match": {"stats.teams": {"$exists": True, "$ne": None}}},
+        {"$addFields": {"teams": "$stats.teams", "original_teams": "$stats.teams"}},
+        {"$unwind": {"path": "$teams", "includeArrayIndex": "teamIndex"}},
+        {"$addFields": {"opponent": {"$arrayElemAt": ["$original_teams", {"$cond": [{"$eq": ["$teamIndex", 0]}, 1, 0]}]}}},
+        {"$project": {
+            "_id": 0, "match_id": "$_id", "team_id": "$teams.teamIdExtern", "team_name": "$teams.name", "starttime": "$stats.time",
+            "is_local": {"$eq": ["$teamIndex", 0]},
+            "won": {"$gt": [box(own, "score"), box(rival, "score")]}, "tied": {"$eq": [box(own, "score"), box(rival, "score")]},
+            "points": box(own, "score"), "opponent_points": box(rival, "score"),
+            "fg2_made": box(own, "shotsOfTwoSuccessful"), "fg2_attempts": box(own, "shotsOfTwoAttempted"),
+            "fg3_made": box(own, "shotsOfThreeSuccessful"), "fg3_attempts": box(own, "shotsOfThreeAttempted"),
+            "ft_made": box(own, "shotsOfOneSuccessful"), "ft_attempts": box(own, "shotsOfOneAttempted"),
+            "def_rebounds": box(own, "defensiveRebound"), "off_rebounds": box(own, "offensiveRebound"), "total_rebounds": box(own, "rebounds"),
+            "assists": box(own, "assists"), "steals": box(own, "steals"), "turnovers": box(own, "lost"), "blocks": box(own, "block"),
+            "fouls": box(own, "faults"),
+            "opponent_fg2_made": box(rival, "shotsOfTwoSuccessful"), "opponent_fg2_attempts": box(rival, "shotsOfTwoAttempted"),
+            "opponent_fg3_made": box(rival, "shotsOfThreeSuccessful"), "opponent_fg3_attempts": box(rival, "shotsOfThreeAttempted"),
+            "opponent_ft_made": box(rival, "shotsOfOneSuccessful"), "opponent_ft_attempts": box(rival, "shotsOfOneAttempted"),
+            "opponent_def_rebounds": box(rival, "defensiveRebound"), "opponent_off_rebounds": box(rival, "offensiveRebound"),
+            "opponent_total_rebounds": box(rival, "rebounds"), "opponent_assists": box(rival, "assists"), "opponent_steals": box(rival, "steals"),
+            "opponent_turnovers": box(rival, "lost"), "opponent_blocks": box(rival, "block"), "opponent_fouls": box(rival, "faults"),
+            "possessions": team_possessions("$teamIndex", "$teams"),
+            "opponent_possessions": team_possessions({"$subtract": [1, "$teamIndex"]}, "$opponent"),
+        }},
+    ]

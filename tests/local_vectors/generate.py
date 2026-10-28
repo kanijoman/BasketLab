@@ -15,15 +15,19 @@ import mongomock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(Path(__file__).resolve().parent)]
 
+from fbcyl_games import build_games as build_fbcyl_games  # noqa: E402
 from games import build_games, for_mongomock  # noqa: E402
 
 from src.database.aggregation import AggregationPipelineBuilder as Pipelines  # noqa: E402
+from src.database.aggregation.fbcyl_per_game_pipeline import build_fbcyl_season_rows_pipeline  # noqa: E402
+from src.database.aggregation.fbcyl_pipeline import FBCYLPipelineBuilder  # noqa: E402
 from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
 from src.services.player_stats_service import PlayerStatsService  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "team_stats_feb.json"
 PLAYERS_OUT = Path(__file__).resolve().parent / "players_feb.json"
+FBCYL_OUT = Path(__file__).resolve().parent / "team_stats_fbcyl.json"
 FILTERS = [
     {"name": "all"},
     {"name": "home", "venue": "home"},
@@ -124,6 +128,35 @@ def build_player_vectors() -> dict:
     return {"rows": rows, "cases": cases}
 
 
+def _fbcyl_day(doc: dict) -> datetime:
+    """FBCYL's date is a day: ``Oct 4, 2025 7:00:00 PM`` -> 2025-10-04 (the pipeline keeps only month, day and year)."""
+    return datetime.strptime(" ".join(doc["stats"]["time"].split(" ")[:3]), "%b %d, %Y")
+
+
+def _fbcyl_in_range(doc: dict, filt: dict) -> bool:
+    """Both bounds are inclusive days in FBCYL (unlike FEB's midnight bound, issue #643)."""
+    day = _fbcyl_day(doc)
+    return ("from" not in filt or day >= datetime.fromisoformat(filt["from"])) and ("to" not in filt or day <= datetime.fromisoformat(filt["to"]))
+
+
+def build_fbcyl_vectors() -> dict:
+    """The FBCYL team tables. Only ``team_stats``: FBCYL's ``opponent_stats`` is the team's own table (bug #642), so it is no reference."""
+    col = mongomock.MongoClient()["v"]["FBCYL_LEAGUE"]
+    col.insert_many(build_fbcyl_games())
+    rows = list(col.aggregate(build_fbcyl_season_rows_pipeline()))
+    cases = []
+    for filt in FILTERS:
+        subset = mongomock.MongoClient()["v"]["FBCYL_LEAGUE"]
+        games = [g for g in build_fbcyl_games() if _fbcyl_in_range(g, filt)]
+        if games:
+            subset.insert_many(games)
+        venue = {"home": True, "away": False}.get(filt.get("venue"))
+        stats = list(subset.aggregate(FBCYLPipelineBuilder.build_team_stats_pipeline(None, venue, filt.get("result"))))
+        cases.append({"filter": {k: v for k, v in filt.items() if k != "name"}, "name": filt["name"],
+                      "team_stats": [{k: v for k, v in row.items() if k != "_id"} for row in stats]})
+    return {"rows": rows, "cases": cases}
+
+
 def _write(path: Path, vectors: dict) -> None:
     path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -131,7 +164,8 @@ def _write(path: Path, vectors: dict) -> None:
 def main() -> None:
     _write(OUT, build_vectors())
     _write(PLAYERS_OUT, build_player_vectors())
-    print("wrote", OUT, PLAYERS_OUT)
+    _write(FBCYL_OUT, build_fbcyl_vectors())
+    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT)
 
 
 if __name__ == "__main__":

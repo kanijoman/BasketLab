@@ -53,3 +53,21 @@ def test_the_player_filters_tell_something_apart(player_vectors):
     assert {p["team_name"] for p in by_name["one team"]} == {"BRAVO"} and by_name["unknown team"] == []
     assert all("usage_pct" in p and "pie" in p for p in by_name["all"])                  # enriched from the whole season even when filtered
     assert any(p["player_name"].endswith("RENAMED") for p in by_name["all"])             # the same id under another name is another row
+
+
+@pytest.fixture(scope="module")
+def fbcyl_vectors():
+    return generate.build_fbcyl_vectors()
+
+
+def test_the_stored_fbcyl_vectors_are_the_current_reference(fbcyl_vectors):
+    stored = json.loads(generate.FBCYL_OUT.read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(fbcyl_vectors, sort_keys=True)) == stored
+
+
+def test_the_fbcyl_filters_tell_something_apart_and_the_day_bound_is_inclusive(fbcyl_vectors):
+    by_name = {c["name"]: c["team_stats"] for c in fbcyl_vectors["cases"]}
+    games = lambda case: sum(t["total_games"] for t in case)  # noqa: E731
+    assert games(by_name["all"]) == 24 and games(by_name["empty range"]) == 0
+    assert games(by_name["won"]) + games(by_name["lost"]) == 22                         # the tied game is in neither
+    assert games(by_name["to date (the last day's games are left out: midnight bound)"]) > 0
