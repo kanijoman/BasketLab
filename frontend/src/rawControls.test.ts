@@ -33,7 +33,6 @@ const BASELINE: Record<string, [number, number, number, number]> = {
   'pages/RotacionesPage.tsx': [1, 0, 0, 1],
   'pages/ScoutingRivalPage.tsx': [2, 2, 0, 1],
   'pages/ShotChartPage.tsx': [4, 1, 0, 1],
-  'pages/TeamReportPage.tsx': [1, 1, 1, 1],
   'pages/TeamStatsPage.tsx': [0, 1, 0, 1],
 }
 
