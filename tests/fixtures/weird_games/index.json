@@ -1,0 +1,167 @@
+{
+  "about": "Catalogue of the real games with an oddity the engine once got wrong (issue #546, B3 of the testing strategy #540). The games are the recordings of tests/recordings (not copied); this file says what is odd about each, from which incident, and the probe that keeps the oddity in the fixture. Read tests/fixtures/weird_games/README.md.",
+  "games": [
+    {
+      "id": "zamora-leon",
+      "code": "2524470",
+      "match": "Recoletas Zamora - Mipelletymas B.F. León (LF Challenge 2026/27)",
+      "oddities": [
+        {
+          "probe": "feed_gaps",
+          "at_least": 1,
+          "issues": [
+            "#219",
+            "#220"
+          ],
+          "what": "FEB answers nothing (a real 404) for a few polls in the middle of the match: the app must not update, nor repeat what it said (7 polls of 10 s; how many fall in the gap depends on the cadence)"
+        },
+        {
+          "probe": "log_lag_s",
+          "at_least": 50,
+          "issues": [
+            "#564"
+          ],
+          "what": "the play-by-play goes about a minute behind the scoreboard (55 s at worst: no logged event for that long is not normal in a game; the other games stay under 40 s): the rules of recent actions wait"
+        },
+        {
+          "probe": "alternation_breaks",
+          "at_least": 8,
+          "issues": [
+            "#390",
+            "#393"
+          ],
+          "what": "annotation errors of the feed (a rebound credited to a player of the other team, 10 flagged): the possession tracker marks them"
+        }
+      ]
+    },
+    {
+      "id": "cultural-melilla",
+      "code": "2536133",
+      "match": "Cultural y Deportiva Leonesa - Melilla Ciudad del Deporte (2.ª FEB)",
+      "oddities": [],
+      "regression_only": "the game of the 0.4.2 feedback (a streak across the 2nd quarter, the 2nd foul of A. Reyes); it has no structural oddity: it is here so the fixes of those alerts are checked against a whole real game"
+    },
+    {
+      "id": "llíria-sant-antoni",
+      "code": "2536311",
+      "match": "Class Basquet Sant Antoni - CE Bàsquet Llíria (LF Challenge)",
+      "oddities": [
+        {
+          "probe": "alternation_breaks",
+          "at_least": 4,
+          "issues": [
+            "#390",
+            "#519",
+            "#594"
+          ],
+          "what": "5 annotation errors of the feed flagged by the possession tracker (the average is about 2 per game); the teams of the report of #519 (a game FEB logged late) and the game where the +/- of the engine differs from the PDF (#594)"
+        }
+      ]
+    },
+    {
+      "id": "gijon-rdl",
+      "code": "2536851",
+      "match": "Oktícket Círculo Gijón - Caja Rural RDL (2.ª FEB)",
+      "oddities": [
+        {
+          "probe": "alternation_breaks",
+          "at_least": 4,
+          "issues": [
+            "#557"
+          ],
+          "what": "5 annotation errors flagged by the tracker; the game of the bug of the wrong package when switching match (its own package, polled by one engine)"
+        }
+      ]
+    },
+    {
+      "id": "somos-hijolusa-unileon",
+      "code": "264803",
+      "match": "Somos Hijolusa - Unileon B.F. León",
+      "oddities": [
+        {
+          "probe": "short_recording",
+          "at_least": 1,
+          "issues": [
+            "#445"
+          ],
+          "what": "a recording compressed to 2410 s for a 2400-second game: the clock of the feed and the clock of the recorder differ"
+        }
+      ]
+    },
+    {
+      "id": "getafe-cultural-overtime",
+      "code": "2536139",
+      "periods": 5,
+      "match": "C.B. Getafe - Cultural y Deportiva Leonesa (2.ª FEB, 24/10/2026)",
+      "source": "The finished game downloaded from FEB (28/10/2026) and cut every 10 game-seconds as the app's replay does: real data, but the cadence is synthetic (no feed gaps and no lag of the log). Package rebuilt with tests/recordings/make_package.py.",
+      "oddities": [
+        {
+          "probe": "max_period",
+          "at_least": 5,
+          "issues": [
+            "#561"
+          ],
+          "what": "an OVERTIME: the game lasts 2700 s, the 5th period has 5 minutes and its closing line is at 2700 s; every rule that thinks in 4 quarters (windows, fouls of the second half, the summary of the quarter) meets a period 5"
+        }
+      ]
+    },
+    {
+      "id": "cultural-oviedo-copa",
+      "code": "2543136",
+      "source": "The finished game downloaded from FEB (28/10/2026), cut every 10 game-seconds as the app's replay does: real data, synthetic cadence (no feed gaps, no log lag). Package rebuilt with make_package from the games of 2.ª FEB A before the match.",
+      "match": "Cultural y Deportiva Leonesa - Alimerka Oviedo Baloncesto (Copa de España, 21/10/2026)",
+      "oddities": [
+        {
+          "probe": "no_rival_tables",
+          "at_least": 1,
+          "issues": [
+            "#561",
+            "#481",
+            "#518",
+            "#464"
+          ],
+          "what": "a CUP game between categories: Oviedo is 1ª FEB and has no season in the 2.ª FEB competition of the package, so the rival has no tables (no player baselines, no formation minimum); the game ends with the closing line 'Fin del Cuarto 4' at 40:00, read once as an overtime at 300x"
+        }
+      ]
+    },
+    {
+      "id": "oses-joventut",
+      "code": "2524483",
+      "source": "The finished game downloaded from FEB (28/10/2026), cut every 10 game-seconds: real data, synthetic cadence, so the 40 s lag of the log of the report #564 is NOT reproduced (Zamora-León is the game with a real lag). Package rebuilt with make_package; the own team is Oses (the report does not say which side the staff followed).",
+      "match": "Oses Construcción - Club Joventut Badalona (LF Challenge, 25/10/2026)",
+      "oddities": [
+        {
+          "probe": "alert_count",
+          "alert": "cold_3p_streak",
+          "at_least": 1,
+          "issues": [
+            "#564",
+            "#563",
+            "#565"
+          ],
+          "what": "the game of the report of cold threes said right after a made one, of a timeout without a clear reason and of a run of -19 without origin: it has a cold-threes alert and 7 annotation errors"
+        },
+        {
+          "probe": "alternation_breaks",
+          "at_least": 6,
+          "issues": [
+            "#390"
+          ],
+          "what": "7 annotation errors of the feed flagged by the tracker"
+        }
+      ]
+    }
+  ],
+  "pending": [
+    {
+      "issues": [
+        "#560"
+      ],
+      "what": "a game whose table was corrected after the fact (header score different from the log's)"
+    },
+    {
+      "issues": [],
+      "what": "a 0-0 by points format, FBCYL with the remaining clock (#370), ids that change between seasons"
+    }
+  ]
+}
