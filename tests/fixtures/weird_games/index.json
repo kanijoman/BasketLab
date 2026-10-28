@@ -1,0 +1,134 @@
+{
+  "about": "Catalogue of the real games with an oddity the engine once got wrong (issue #546, B3 of the testing strategy #540). The games are the recordings of tests/recordings (not copied); this file says what is odd about each, from which incident, and the probe that keeps the oddity in the fixture. Read tests/fixtures/weird_games/README.md.",
+  "games": [
+    {
+      "id": "zamora-leon",
+      "code": "2524470",
+      "match": "Recoletas Zamora - Mipelletymas B.F. León (LF Challenge 2026/27)",
+      "oddities": [
+        {
+          "probe": "feed_gaps",
+          "at_least": 1,
+          "issues": [
+            "#219",
+            "#220"
+          ],
+          "what": "FEB answers nothing (a real 404) for a few polls in the middle of the match: the app must not update, nor repeat what it said (7 polls of 10 s; how many fall in the gap depends on the cadence)"
+        },
+        {
+          "probe": "log_lag_s",
+          "at_least": 50,
+          "issues": [
+            "#564"
+          ],
+          "what": "the play-by-play goes about a minute behind the scoreboard (55 s at worst): the rules of recent actions wait"
+        },
+        {
+          "probe": "alternation_breaks",
+          "at_least": 8,
+          "issues": [
+            "#390",
+            "#393"
+          ],
+          "what": "annotation errors of the feed (a rebound credited to a player of the other team, 10 flagged): the possession tracker marks them"
+        }
+      ]
+    },
+    {
+      "id": "cultural-melilla",
+      "code": "2536133",
+      "match": "Cultural y Deportiva Leonesa - Melilla Ciudad del Deporte (2.ª FEB)",
+      "oddities": [
+        {
+          "probe": "log_lag_s",
+          "at_least": 20,
+          "issues": [
+            "#517",
+            "#564",
+            "#621",
+            "#622"
+          ],
+          "what": "the game of the 0.4.2 feedback (a streak across the 2nd quarter, the 2nd foul of A. Reyes) with its own package; its log is up to 26 s behind the scoreboard"
+        }
+      ]
+    },
+    {
+      "id": "llíria-sant-antoni",
+      "code": "2536311",
+      "match": "Class Basquet Sant Antoni - CE Bàsquet Llíria (LF Challenge)",
+      "oddities": [
+        {
+          "probe": "log_lag_s",
+          "at_least": 30,
+          "issues": [
+            "#519",
+            "#594"
+          ],
+          "what": "the teams of the report of #519 (a game that FEB logged late): the recording has the last quarter, with the log up to 37 s behind; also the game where the +/- of the engine differs from the PDF when a substitution and free throws share a second (#594)"
+        },
+        {
+          "probe": "alternation_breaks",
+          "at_least": 4,
+          "issues": [
+            "#390"
+          ],
+          "what": "5 annotation errors of the feed flagged by the possession tracker"
+        }
+      ]
+    },
+    {
+      "id": "gijon-rdl",
+      "code": "2536851",
+      "match": "Oktícket Círculo Gijón - Caja Rural RDL (2.ª FEB)",
+      "oddities": [
+        {
+          "probe": "log_lag_s",
+          "at_least": 30,
+          "issues": [
+            "#557"
+          ],
+          "what": "a game of the bug of the wrong package when switching match: its own package, polled by one engine; log up to 36 s behind"
+        }
+      ]
+    },
+    {
+      "id": "somos-hijolusa-unileon",
+      "code": "264803",
+      "match": "Somos Hijolusa - Unileon B.F. León",
+      "oddities": [
+        {
+          "probe": "short_recording",
+          "at_least": 1,
+          "issues": [
+            "#445"
+          ],
+          "what": "a recording compressed to 2410 s for a 2400-second game: the clock of the feed and the clock of the recorder differ"
+        }
+      ]
+    }
+  ],
+  "pending": [
+    {
+      "issues": [
+        "#561"
+      ],
+      "what": "Cultural - Oviedo (a closing line 'Fin del Cuarto 4' read as an overtime at 300x). The invariant of the duration is checked on every game here and in test_live_core_properties; the real game is not in the repository yet"
+    },
+    {
+      "issues": [
+        "#564"
+      ],
+      "what": "Oses - Joventut (cold threes said right after a made one, the log 40 s behind)"
+    },
+    {
+      "issues": [
+        "#560"
+      ],
+      "what": "a game whose table was corrected after the fact (header score different from the log's)"
+    },
+    {
+      "issues": [],
+      "what": "an overtime, a 0-0 by points format, FBCYL with the remaining clock (#370), ids that change between seasons"
+    }
+  ]
+}
