@@ -3,6 +3,40 @@
 from typing import List, Dict, Optional
 
 
+def player_game_fields() -> Dict:
+    """The ``$project`` of a player in a game (id, team, date, minutes in seconds and the box-score counting stats, all as integers).
+
+    Shared by the season pipeline and by the rows of the local-first contract (``build_season_player_rows_pipeline``, issue #327).
+    """
+    return {
+        "player_id": "$BOXSCORE.TEAM.PLAYER.id",
+        "player_name": "$BOXSCORE.TEAM.PLAYER.name",
+        "team_name": "$BOXSCORE.TEAM.TOTAL.name",
+        "team_id": "$BOXSCORE.TEAM.TOTAL.id",
+        "date": "$parsedDate",
+        # minutes: keep raw seconds from FEB min field; conversion happens in Stage 7
+        "minutes": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.min", "0"]}},
+        "pllss": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pllss", "0"]}},
+        "p1m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1m", "0"]}},
+        "p1a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1a", "0"]}},
+        "p2m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2m", "0"]}},
+        "p2a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2a", "0"]}},
+        "p3m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3m", "0"]}},
+        "p3a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3a", "0"]}},
+        "pts": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pts", "0"]}},
+        "assist": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.assist", "0"]}},
+        "ro": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.ro", "0"]}},
+        "rd": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rd", "0"]}},
+        "rt": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rt", "0"]}},
+        "st": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.st", "0"]}},
+        "to": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.to", "0"]}},
+        "bs": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.bs", "0"]}},
+        "pf": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pf", "0"]}},
+        "rf": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rf", "0"]}},
+        "val": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.val", "0"]}}
+    }
+
+
 class PlayerStatsPipelineMixin:
     """Mixin providing player stats and FBCYL timeline pipeline builders."""
     @staticmethod
@@ -107,33 +141,7 @@ class PlayerStatsPipelineMixin:
             },
             # Stage 4: Extract player data and filter players with minutes > 0
             {
-                "$project": {
-                    "player_id": "$BOXSCORE.TEAM.PLAYER.id",
-                    "player_name": "$BOXSCORE.TEAM.PLAYER.name",
-                    "team_name": "$BOXSCORE.TEAM.TOTAL.name",
-                    "team_id": "$BOXSCORE.TEAM.TOTAL.id",
-                    "date": "$parsedDate",
-                    # minutes: keep raw seconds from FEB min field; conversion happens in Stage 7
-                    "minutes": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.min", "0"]}},
-                    "pllss": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pllss", "0"]}},
-                    "p1m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1m", "0"]}},
-                    "p1a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p1a", "0"]}},
-                    "p2m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2m", "0"]}},
-                    "p2a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p2a", "0"]}},
-                    "p3m": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3m", "0"]}},
-                    "p3a": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.p3a", "0"]}},
-                    "pts": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pts", "0"]}},
-                    "assist": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.assist", "0"]}},
-                    "ro": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.ro", "0"]}},
-                    "rd": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rd", "0"]}},
-                    "rt": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rt", "0"]}},
-                    "st": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.st", "0"]}},
-                    "to": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.to", "0"]}},
-                    "bs": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.bs", "0"]}},
-                    "pf": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.pf", "0"]}},
-                    "rf": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.rf", "0"]}},
-                    "val": {"$toInt": {"$ifNull": ["$BOXSCORE.TEAM.PLAYER.val", "0"]}}
-                }
+                "$project": player_game_fields()
             },
             # Stage 5: Filter players who actually played (minutes > 0)
             {

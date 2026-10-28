@@ -8,18 +8,22 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import mongomock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(Path(__file__).resolve().parent)]
 
-from games import build_games  # noqa: E402
+from games import build_games, for_mongomock  # noqa: E402
 
 from src.database.aggregation import AggregationPipelineBuilder as Pipelines  # noqa: E402
+from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
+from src.services.player_stats_service import PlayerStatsService  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "team_stats_feb.json"
+PLAYERS_OUT = Path(__file__).resolve().parent / "players_feb.json"
 FILTERS = [
     {"name": "all"},
     {"name": "home", "venue": "home"},
@@ -73,9 +77,61 @@ def build_vectors() -> dict:
     return {"games": len(games), "rows": rows, "cases": cases}
 
 
+PLAYER_FILTERS = FILTERS + [
+    {"name": "one team", "team": "BRAVO"},
+    {"name": "one team away won", "team": "CHARLIE", "venue": "away", "result": "won"},
+    {"name": "unknown team", "team": "NOBODY"},
+]
+
+
+class _Mongomock:
+    """A collection whose pipelines are run without ``$dateFromString`` (see ``for_mongomock``)."""
+
+    def __init__(self, col):
+        self._col = col
+
+    def aggregate(self, pipeline, **kwargs):
+        return self._col.aggregate(for_mongomock(pipeline), **kwargs)
+
+
+def _repository(games: list) -> BasketballRepository:
+    col = mongomock.MongoClient()["v"]["LEAGUE"]
+    if games:
+        col.insert_many(games)
+    conn = MagicMock()
+    conn.is_connected.return_value = True
+    conn.get_collection.side_effect = lambda name: _Mongomock(col)
+    return BasketballRepository(conn)
+
+
+def _players(games: list, filt: dict) -> list:
+    """What ``GET /players/{collection}`` answers: the players of the games in range, their advanced figures from the season-wide team context."""
+    venue = {"home": True, "away": False}.get(filt.get("venue"))
+    players = _repository(games).get_player_stats("LEAGUE", None, venue, filt.get("result"), team_filter=filt.get("team")) or []
+    if players:
+        everything = _repository(build_games())
+        handler = type("Handler", (), {"get_team_stats": everything.get_team_stats, "get_opponent_stats": everything.get_opponent_stats})()
+        PlayerStatsService(handler)._enrich_with_advanced_stats("LEAGUE", players)
+    return players
+
+
+def build_player_vectors() -> dict:
+    col = mongomock.MongoClient()["v"]["LEAGUE"]
+    col.insert_many(build_games())
+    rows = list(_Mongomock(col).aggregate(Pipelines.build_season_player_rows_pipeline()))
+    cases = [{"filter": {k: v for k, v in f.items() if k != "name"}, "name": f["name"],
+              "players": _players([g for g in build_games() if _in_range(g, f)], f)} for f in PLAYER_FILTERS]
+    return {"rows": rows, "cases": cases}
+
+
+def _write(path: Path, vectors: dict) -> None:
+    path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def main() -> None:
-    OUT.write_text(json.dumps(build_vectors(), ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    print("wrote", OUT)
+    _write(OUT, build_vectors())
+    _write(PLAYERS_OUT, build_player_vectors())
+    print("wrote", OUT, PLAYERS_OUT)
 
 
 if __name__ == "__main__":

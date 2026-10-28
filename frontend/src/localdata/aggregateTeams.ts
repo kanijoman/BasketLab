@@ -88,7 +88,8 @@ export function parsePlayed(starttime: string | null | undefined): number | null
 /** The bound `YYYY-MM-DD` (or ISO datetime) as UTC milliseconds, as Python's `datetime.fromisoformat` + pymongo give it. */
 const bound = (iso: string) => Date.parse(/T|\s/.test(iso) ? iso : `${iso}T00:00:00Z`)
 
-function keep(r: GameRow, f: TeamTableFilter): boolean {
+/** Whether a game (a team's or a player's row) passes the venue, result and date filters. */
+export function matchesFilters(r: Pick<GameRow, 'is_local' | 'won' | 'starttime'>, f: TeamTableFilter): boolean {
   if (f.venue && r.is_local !== (f.venue === 'home')) return false
   if (f.result && r.won !== (f.result === 'won')) return false
   if (f.from || f.to) {
@@ -142,6 +143,6 @@ function table(rows: GameRow[], side: (r: GameRow) => Side): LocalTeamStat[] {
 
 /** `{team_stats, opponent_stats}` of the rows that pass the filter: the answer of `GET /teams/{collection}` without a server. */
 export function aggregateTeams(rows: GameRow[], filter: TeamTableFilter): TeamTables {
-  const kept = rows.filter(r => keep(r, filter))
+  const kept = rows.filter(r => matchesFilters(r, filter))
   return { team_stats: table(kept, own), opponent_stats: table(kept, rival) }
 }

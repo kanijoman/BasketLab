@@ -2,6 +2,8 @@
 
 from typing import List, Dict
 
+from .pipeline_player_stats import player_game_fields
+
 
 class PlayerPerGamePipelineMixin:
     """Mixin providing a pipeline that returns one document per player per game.
@@ -9,6 +11,29 @@ class PlayerPerGamePipelineMixin:
     Used by PlayerStatsService.get_consistency() to compute intra-player std dev
     and CV game-to-game.  Only valid for FEB collections.
     """
+
+    @staticmethod
+    def build_season_player_rows_pipeline() -> List[Dict]:
+        """One document per player per game played (minutes > 0) with exactly what the season ``$group`` reads, plus venue, result, date and match.
+
+        The contract of the local-first player tables (#327): the client sums these rows, applying the venue, result, date and team filters itself.
+        The stages of ``build_player_stats_pipeline`` without its filters; ``minutes`` stay in seconds and ``starttime`` is ``dd-mm-yyyy - hh:mm``.
+        """
+        fields = player_game_fields()
+        del fields["date"]
+        fields.update({"match_id": "$_id", "starttime": "$HEADER.starttime", "is_local": 1, "won": 1})
+        return [
+            {"$addFields": {"localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
+                            "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}}}},
+            {"$unwind": {"path": "$BOXSCORE.TEAM", "includeArrayIndex": "teamIndex"}},
+            {"$addFields": {"is_local": {"$eq": ["$teamIndex", 0]},
+                            "teamPoints": {"$cond": {"if": {"$eq": ["$teamIndex", 0]}, "then": "$localPoints", "else": "$awayPoints"}},
+                            "opponentPoints": {"$cond": {"if": {"$eq": ["$teamIndex", 0]}, "then": "$awayPoints", "else": "$localPoints"}}}},
+            {"$addFields": {"won": {"$gt": ["$teamPoints", "$opponentPoints"]}}},
+            {"$unwind": {"path": "$BOXSCORE.TEAM.PLAYER", "preserveNullAndEmptyArrays": False}},
+            {"$project": {**fields, "_id": 0}},
+            {"$match": {"minutes": {"$gt": 0}}},
+        ]
 
     @staticmethod
     def build_per_player_per_game_pipeline() -> List[Dict]:
