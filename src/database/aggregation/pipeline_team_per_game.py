@@ -10,6 +10,18 @@ class TeamPerGamePipelineMixin:
     """Per-game raw team pipeline (one document per team per match)."""
 
     @staticmethod
+    def build_season_rows_pipeline() -> List[Dict]:
+        """One document per team per match with exactly what the season ``$group`` reads, plus the match date.
+
+        The contract of the local-first data (#327): the client sums these rows (filtering by venue, result or date) and derives the ratios
+        itself, so the figures of the team tables no longer need the server. Phases 1-3 of ``build_team_stats_pipeline`` with ``starttime``
+        (``dd-mm-yyyy - hh:mm``, as FEB writes it) added.
+        """
+        project = TeamStatsPipelineMixin._project_match_data()
+        project["$project"]["starttime"] = "$HEADER.starttime"
+        return [TeamStatsPipelineMixin._add_match_level_fields(), TeamStatsPipelineMixin._unwind_teams(), project]
+
+    @staticmethod
     def build_per_game_raw_pipeline() -> List[Dict]:
         """Return one document per team per game with raw counting stats.
 
