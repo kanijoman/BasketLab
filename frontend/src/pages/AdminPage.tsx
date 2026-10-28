@@ -636,7 +636,7 @@ function ModelsTab() {
             onClick={() => setSubTab(id)}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               subTab === id
-                ? 'bg-accent-solid text-white'
+                ? 'bg-accent-solid text-accent-ink'
                 : 'text-ink-faint hover:text-ink'
             }`}
           >

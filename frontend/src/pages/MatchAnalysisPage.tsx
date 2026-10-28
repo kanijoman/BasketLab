@@ -180,7 +180,7 @@ function TeamFilter({
 }) {
   return (
     <div className="relative">
-      <select
+      <select aria-label="Equipo"
         className="w-full appearance-none bg-canvas border border-line rounded-lg
                    px-3 py-2 pr-8 text-sm text-ink
                    focus:outline-none focus:ring-2 focus:ring-focus"
@@ -208,7 +208,7 @@ function MatchSelector({
 }) {
   return (
     <div className="relative">
-      <select
+      <select aria-label="Partido"
         className="w-full appearance-none bg-canvas border border-line rounded-lg
                    px-3 py-2 pr-8 text-sm text-ink
                    focus:outline-none focus:ring-2 focus:ring-focus"

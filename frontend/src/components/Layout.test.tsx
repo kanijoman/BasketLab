@@ -43,6 +43,16 @@ describe('Layout shell (issue #191)', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
+  // Issue #197 (U7): the keyboard reaches the page without crossing the whole menu
+  it('has a first link that skips the navigation to the content of the page', () => {
+    phone(false)
+    shell('/LF2/teams')
+    const skip = screen.getByRole('link', { name: 'Saltar al contenido' })
+    expect(skip).toHaveAttribute('href', '#contenido')
+    expect(document.querySelector('main#contenido')).not.toBeNull()
+    expect(document.body.querySelector('a, button')).toBe(skip)                       // the first thing the Tab key finds
+  })
+
   it('outside a competition there is no navigation to open', () => {
     phone(true)
     shell('/')

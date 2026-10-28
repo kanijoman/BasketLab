@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MotionConfig } from 'framer-motion'
 import App from './App'
 import { applyStoredTheme } from './lib/theme'
 import '@design/tokens.css'
@@ -24,9 +25,12 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      {/* framer-motion follows the system's request for reduced motion (issue #197) */}
+      <MotionConfig reducedMotion="user">
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </MotionConfig>
     </QueryClientProvider>
   </React.StrictMode>,
 )

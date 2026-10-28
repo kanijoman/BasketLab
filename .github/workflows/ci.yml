@@ -124,6 +124,16 @@ jobs:
         working-directory: frontend
         run: npm run e2e:ci
 
+      # captures of the key pages in both themes and three widths (issue #197): not compared yet, kept to review a change of look in the pull request
+      - name: Upload the captures of the pages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-visual-captures
+          path: frontend/test-results/**/*.png
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: Upload the report on failure
         if: failure()
         uses: actions/upload-artifact@v4

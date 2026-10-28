@@ -152,7 +152,7 @@ export default function ShotChartPage() {
                 onClick={() => setViewMode(mode)}
                 className={`px-4 py-1.5 font-medium transition-colors ${
                   viewMode === mode
-                    ? 'bg-secondary text-white'
+                    ? 'bg-secondary-solid text-white'
                     : 'text-ink-muted hover:bg-surface-raised'
                 }`}
               >
@@ -163,7 +163,7 @@ export default function ShotChartPage() {
 
           {/* Team selector — shared between both modes */}
           <div className="relative">
-            <select
+            <select aria-label="Equipo"
               value={selectedTeam}
               onChange={e => { setSelectedTeam(e.target.value); setSelectedPlayer('') }}
               className="appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
@@ -197,7 +197,7 @@ export default function ShotChartPage() {
                 onClick={() => setVizMode(mode)}
                 className={`px-3 py-1.5 font-medium transition-colors ${
                   vizMode === mode
-                    ? 'bg-secondary text-white'
+                    ? 'bg-secondary-solid text-white'
                     : 'text-ink-muted hover:bg-surface-raised'
                 }`}
               >
@@ -215,7 +215,7 @@ export default function ShotChartPage() {
                   onClick={() => setShotFilter(f)}
                   className={`px-3 py-1.5 font-medium transition-colors flex items-center gap-1.5 ${
                     shotFilter === f
-                      ? 'bg-secondary text-white'
+                      ? 'bg-secondary-solid text-white'
                       : 'text-ink-muted hover:bg-surface-raised'
                   }`}
                 >

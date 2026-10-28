@@ -108,7 +108,7 @@ export default function ReportPage() {
             >
               <div className="flex flex-col gap-2">
                 <div className="relative">
-                  <select
+                  <select aria-label="Equipo propio (A)"
                     value={weeklyTeamA}
                     onChange={e => setWeeklyTeamA(e.target.value)}
                     className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
@@ -119,7 +119,7 @@ export default function ReportPage() {
                   <ChevronDownIcon />
                 </div>
                 <div className="relative">
-                  <select
+                  <select aria-label="Equipo rival (B)"
                     value={weeklyTeamB}
                     onChange={e => setWeeklyTeamB(e.target.value)}
                     className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
@@ -175,7 +175,7 @@ export default function ReportPage() {
                       setWeeklyLoading(false)
                     }
                   }}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary-solid text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
@@ -209,7 +209,7 @@ export default function ReportPage() {
             >
               <div className="flex flex-col gap-2">
                 <div className="relative">
-                  <select
+                  <select aria-label="Equipo a analizar"
                     value={scoutTeam}
                     onChange={e => setScoutTeam(e.target.value)}
                     className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
@@ -238,7 +238,7 @@ export default function ReportPage() {
                       setScoutLoading(false)
                     }
                   }}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary-solid text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   {scoutLoading ? 'Generando documento…' : 'Descargar DOCX'}

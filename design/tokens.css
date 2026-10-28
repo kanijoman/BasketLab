@@ -52,13 +52,14 @@
   --text-muted-rgb: 139 148 158;
   --focus-rgb: 253 186 116;
   --ok-rgb: 63 185 80;
-  --text-faint: #6e7681;    --text-faint-rgb: 110 118 129;
-  --accent-text: #fb923c;   --accent-text-rgb: 251 146 60;
+  --text-faint: #8b949e;    --text-faint-rgb: 139 148 158;     /* AA on every surface (#197); equal to the muted text of the dark theme */
+  --accent-text: #fdba74;   --accent-text-rgb: 253 186 116;
   --accent-solid: #f97316;
   --accent-hover: #fb923c;
   --secondary: #3b82f6;     --secondary-rgb: 59 130 246;
   --secondary-text: #60a5fa;--secondary-text-rgb: 96 165 250;
-  --secondary-hover: #2563eb;
+  --secondary-solid: #2563eb;    /* the blue of a filled button: white text on it is AA (#197) */
+  --secondary-hover: #1d4ed8;
   --bad: #f85149;           --bad-rgb: 248 81 73;
   --warn: #d29922;          --warn-rgb: 210 153 34;
   --q1-bg: #14532d; --q1-text: #4ade80;  --q2-bg: #5a3e00; --q2-text: #fde047;
@@ -126,12 +127,13 @@
     --text-muted-rgb: 89 99 110;
     --focus-rgb: 194 65 12;
     --ok-rgb: 26 127 55;
-    --text-faint: #6e7781;  --text-faint-rgb: 110 119 129;
-    --accent-text: #c2410c; --accent-text-rgb: 194 65 12;
+    --text-faint: #5d6670;  --text-faint-rgb: 93 102 112;
+    --accent-text: #9a3412; --accent-text-rgb: 154 52 18;
     --accent-solid: #c2410c;
     --accent-hover: #9a3412;
     --secondary: #0969da;   --secondary-rgb: 9 105 218;
     --secondary-text: #0969da;--secondary-text-rgb: 9 105 218;
+    --secondary-solid: #0969da;
     --secondary-hover: #0550ae;
     --bad: #cf222e;         --bad-rgb: 207 34 46;
     --warn: #9a6700;        --warn-rgb: 154 103 0;
@@ -178,12 +180,13 @@
   --text-muted-rgb: 89 99 110;
   --focus-rgb: 194 65 12;
   --ok-rgb: 26 127 55;
-  --text-faint: #6e7781;    --text-faint-rgb: 110 119 129;
-  --accent-text: #c2410c;   --accent-text-rgb: 194 65 12;
+  --text-faint: #5d6670;    --text-faint-rgb: 93 102 112;
+  --accent-text: #9a3412;   --accent-text-rgb: 154 52 18;
   --accent-solid: #c2410c;
   --accent-hover: #9a3412;
   --secondary: #0969da;     --secondary-rgb: 9 105 218;
   --secondary-text: #0969da;--secondary-text-rgb: 9 105 218;
+  --secondary-solid: #0969da;
   --secondary-hover: #0550ae;
   --bad: #cf222e;           --bad-rgb: 207 34 46;
   --warn: #9a6700;          --warn-rgb: 154 103 0;

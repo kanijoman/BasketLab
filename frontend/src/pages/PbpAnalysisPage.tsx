@@ -34,7 +34,7 @@ function Pills<T extends string>({ items, value, onChange, label }: { items: { k
           key={i.key}
           onClick={() => onChange(i.key)}
           aria-pressed={value === i.key}
-          className={`px-4 py-1.5 font-medium transition-colors ${value === i.key ? 'bg-secondary text-white' : 'text-ink-muted hover:bg-surface-raised'}`}
+          className={`px-4 py-1.5 font-medium transition-colors ${value === i.key ? 'bg-secondary-solid text-white' : 'text-ink-muted hover:bg-surface-raised'}`}
         >
           {i.label}
         </button>

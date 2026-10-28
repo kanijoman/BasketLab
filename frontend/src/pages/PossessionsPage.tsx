@@ -90,7 +90,7 @@ export default function PossessionsPage() {
                 key={key}
                 onClick={() => setTab(key)}
                 className={`px-4 py-1.5 font-medium transition-colors ${
-                  tab === key ? 'bg-secondary text-white' : 'text-ink-muted hover:bg-surface-raised'
+                  tab === key ? 'bg-secondary-solid text-white' : 'text-ink-muted hover:bg-surface-raised'
                 }`}
               >
                 {lbl}
@@ -118,7 +118,7 @@ export default function PossessionsPage() {
                   onClick={() => setView(v.key)}
                   aria-pressed={view === v.key}
                   className={`px-4 py-1.5 font-medium transition-colors ${
-                    view === v.key ? 'bg-secondary text-white' : 'text-ink-muted hover:bg-surface-raised'
+                    view === v.key ? 'bg-secondary-solid text-white' : 'text-ink-muted hover:bg-surface-raised'
                   }`}
                 >
                   {v.label}

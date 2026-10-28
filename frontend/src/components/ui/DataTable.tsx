@@ -60,6 +60,8 @@ interface Props<TData> {
   density?: keyof typeof DENSITY
   /** What to say when no row is left (under «Sin resultados») */
   emptyMessage?: string
+  /** Name of the table for the screen reader (it is a scrollable region) */
+  ariaLabel?: string
   className?: string
 }
 
@@ -111,6 +113,7 @@ export default function DataTable<TData>({
   defaultColumnSize = 80,
   density = 'normal',
   emptyMessage = 'Ningún dato coincide con los filtros aplicados.',
+  ariaLabel = 'Tabla de datos',
   className,
 }: Props<TData>) {
   const phone = useMediaQuery(PHONE)
@@ -176,7 +179,8 @@ export default function DataTable<TData>({
       {phone && !loading && !empty && <DataTableCards table={table} cellClass={cellClass} onRowClick={onRowClick} />}
 
       {/* Table wrapper */}
-      {!(phone && !loading && !empty) && <div className="overflow-x-auto rounded-card border border-line">
+      {/* a region that scrolls sideways takes the focus, so the keyboard can scroll it (issue #197) */}
+      {!(phone && !loading && !empty) && <div role="region" tabIndex={0} aria-label={ariaLabel} className="overflow-x-auto rounded-card border border-line">
         <table
           ref={tableRef}
           className="text-sm border-collapse"

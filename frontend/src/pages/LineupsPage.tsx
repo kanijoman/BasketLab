@@ -386,7 +386,7 @@ export default function LineupsPage() {
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Equipo</label>
-            <Select
+            <Select aria-label="Equipo"
               value={selectedTeam?.id ?? ''}
               onChange={e => setSelectedTeam(teams.find(t => t.id === e.target.value) ?? null)}
              
@@ -397,14 +397,14 @@ export default function LineupsPage() {
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Jugadores</label>
-            <Select value={size} onChange={e => setSize(Number(e.target.value))}>
+            <Select aria-label="Jugadores" value={size} onChange={e => setSize(Number(e.target.value))}>
               {[2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
             </Select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Estad\u00edstica`}</label>
-            <Select value={stat} onChange={e => setStat(e.target.value)}>
+            <Select aria-label="Estadística" value={stat} onChange={e => setStat(e.target.value)}>
               {LINEUP_STAT_GROUPS.map(g => (
                 <optgroup key={g.label} label={g.label}>
                   {g.options.map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
@@ -415,14 +415,14 @@ export default function LineupsPage() {
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Per\u00edodo`}</label>
-            <Select value={period} onChange={e => setPeriod(Number(e.target.value))}>
+            <Select aria-label="Período" value={period} onChange={e => setPeriod(Number(e.target.value))}>
               {LINEUP_PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </Select>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Top / Bottom N</label>
-            <Input
+            <Input aria-label="Top / Bottom N"
               type="number" min={1} max={20} value={topN}
               onChange={e => setTopN(Math.max(1, Math.min(20, Number(e.target.value))))}
               className="w-20"
@@ -431,7 +431,7 @@ export default function LineupsPage() {
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Mín. minutos`}</label>
-            <Input
+            <Input aria-label="Mín. minutos"
               type="number" min={0} step={1} value={minMinutes}
               title="0 = sin m&iacute;nimo"
               onChange={e => setMinMinutes(Math.max(0, Number(e.target.value) || 0))}
@@ -441,7 +441,7 @@ export default function LineupsPage() {
 
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">{`Mín. partidos`}</label>
-            <Input
+            <Input aria-label="Mín. partidos"
               type="number" min={0} step={1} value={minGames}
               title="0 = sin m&iacute;nimo"
               onChange={e => setMinGames(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
@@ -462,7 +462,7 @@ export default function LineupsPage() {
           <button
             type="submit"
             disabled={isFetching || !selectedTeam}
-            className="bg-secondary hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
+            className="bg-secondary-solid hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
           >
             {isFetching ? 'Analizando\u2026' : 'Analizar'}
           </button>
