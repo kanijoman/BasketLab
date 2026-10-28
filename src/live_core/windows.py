@@ -114,10 +114,10 @@ def scores_after_timeouts(log: Iterable[Sequence[Any]], team_id: str, window_s: 
     return counted, followed
 
 
-def player_form(log: Iterable[Sequence[Any]], team_id: str, player_id: str, now: int, window_s: int) -> Dict[str, int]:
-    """How a player is doing in the last ``window_s`` seconds: ``pts`` and ``made_in_row`` (field goals made in a row at the
-    end of his attempts of the window; a miss breaks the row)."""
-    start, pts, shots = now - window_s, 0, []
+def player_form(log: Iterable[Sequence[Any]], team_id: str, player_id: str, now: int, window_s: int, since: int = 0) -> Dict[str, int]:
+    """How a player is doing in the last ``window_s`` seconds, not before ``since`` (the start of the quarter in play: a streak does not cross the change of
+    quarter, 0.4.2): ``pts`` and ``made_in_row`` (field goals made in a row at the end of his attempts of the window; a miss breaks the row)."""
+    start, pts, shots = max(now - window_s, since), 0, []
     for e in log:
         if e[1] != team_id or player_of(e) != player_id or not start <= e[0] <= now:
             continue
