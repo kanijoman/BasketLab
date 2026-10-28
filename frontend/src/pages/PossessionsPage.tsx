@@ -64,7 +64,7 @@ export default function PossessionsPage() {
             <h1 className="text-2xl font-bold text-ink">Análisis de Posesiones</h1>
             <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {collection && (
               <>
                 <a

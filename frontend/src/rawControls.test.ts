@@ -16,7 +16,6 @@ const BASELINE: Record<string, [number, number, number, number]> = {
   'components/PlayerSelect.tsx': [0, 2, 1, 0],
   'components/Sidebar.tsx': [1, 0, 0, 0],
   'pages/AdminPage.tsx': [12, 1, 1, 1],
-  'pages/CollectionHub.tsx': [2, 0, 0, 1],
   'pages/ComparativasPage.tsx': [3, 0, 2, 1],
   'pages/EvolutionPage.tsx': [3, 1, 5, 1],
   'pages/HomePage.tsx': [4, 0, 0, 1],

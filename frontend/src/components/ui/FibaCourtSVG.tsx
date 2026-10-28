@@ -113,7 +113,7 @@ export default function FibaCourtSVG({
       viewBox={`0 0 ${CW} ${CH}`}
       width={width}
       height={height}
-      className="select-none"
+      className="select-none max-w-full h-auto"          // the court shrinks with the phone (viewBox keeps its shape, #191)
       style={{ background: '#1a1a2e' }}
     >
       {/* Half-court line */}

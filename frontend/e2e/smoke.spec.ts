@@ -88,6 +88,40 @@ test('on a phone a table is a list of cards and no value leaves its card (#184)'
   expect(errors).toEqual([])
 })
 
+test('on a phone the navigation is a menu, it reaches every group and no page scrolls sideways (#191)', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`/${COLLECTION}`)
+  await expect(page.getByRole('navigation', { name: 'Páginas de la competición' })).toHaveCount(0)      // no fixed sidebar on a phone
+  await page.getByRole('button', { name: 'Abrir menú' }).click()
+  const menu = page.getByRole('dialog', { name: 'Menú de navegación' })
+  for (const group of ['Equipos', 'Jugadores', 'Partido', 'Live', 'Informes']) await expect(menu.getByRole('heading', { name: group })).toBeVisible()
+  await menu.getByRole('link', { name: 'Posesiones' }).click()
+  await expect(page).toHaveURL(new RegExp(`/${COLLECTION}/possessions$`))
+  await expect(menu).toHaveCount(0)                                                                         // choosing a page closes the menu
+
+  // the whole page fits 390 px: the document and the scrolling area of the page do not grow sideways
+  const overflow = async () => page.evaluate(() => {
+    const main = document.querySelector('main') as HTMLElement
+    return { document: document.documentElement.scrollWidth - window.innerWidth, main: main.scrollWidth - main.clientWidth }
+  })
+  for (const path of ['', '/teams', '/possessions', '/players', '/lineups', '/comparativas', '/report', '/shots', '/predictive']) {
+    await page.goto(`/${COLLECTION}${path}`)
+    await page.waitForLoadState('networkidle')
+    const { document: d, main } = await overflow()
+    expect(d, `${path || 'resumen'}: the document grows sideways`).toBeLessThanOrEqual(0)
+    expect(main, `${path || 'resumen'}: the page grows sideways`).toBeLessThanOrEqual(0)
+  }
+  expect(errors).toEqual([])
+})
+
+test('on a wide screen the competition can be changed from the header and the pages are in groups (#191)', async ({ page }) => {
+  await page.goto(`/${COLLECTION}/teams`)
+  const nav = page.getByRole('navigation', { name: 'Páginas de la competición' })
+  await expect(nav.getByRole('heading', { name: 'Equipos' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Abrir menú' })).toHaveCount(0)
+})
+
 test('the API behind the page is healthy', async ({ request }) => {
   const live = await request.get('/api/v1/health')
   expect(await live.json()).toMatchObject({ status: 'ok' })
