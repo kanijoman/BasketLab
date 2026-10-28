@@ -105,15 +105,26 @@
           "what": "a recording compressed to 2410 s for a 2400-second game: the clock of the feed and the clock of the recorder differ"
         }
       ]
+    },
+    {
+      "id": "getafe-cultural-overtime",
+      "code": "2536139",
+      "periods": 5,
+      "match": "C.B. Getafe - Cultural y Deportiva Leonesa (2.ª FEB, 24/10/2026)",
+      "source": "The finished game downloaded from FEB (28/10/2026) and cut every 10 game-seconds as the app's replay does: real data, but the cadence is synthetic (no feed gaps and no lag of the log). Package rebuilt with tests/recordings/make_package.py.",
+      "oddities": [
+        {
+          "probe": "max_period",
+          "at_least": 5,
+          "issues": [
+            "#561"
+          ],
+          "what": "an OVERTIME: the game lasts 2700 s, the 5th period has 5 minutes and its closing line is at 2700 s; every rule that thinks in 4 quarters (windows, fouls of the second half, the summary of the quarter) meets a period 5"
+        }
+      ]
     }
   ],
   "pending": [
-    {
-      "issues": [
-        "#561"
-      ],
-      "what": "Cultural - Oviedo (a closing line 'Fin del Cuarto 4' read as an overtime at 300x). The invariant of the duration is checked on every game here and in test_live_core_properties; the real game is not in the repository yet"
-    },
     {
       "issues": [
         "#564"
@@ -128,7 +139,7 @@
     },
     {
       "issues": [],
-      "what": "an overtime, a 0-0 by points format, FBCYL with the remaining clock (#370), ids that change between seasons"
+      "what": "a 0-0 by points format, FBCYL with the remaining clock (#370), ids that change between seasons"
     }
   ]
 }

@@ -4,7 +4,8 @@ Partidos **reales** con una rareza que el motor llegó a tratar mal. Cada incide
 
 - `index.json` es el catálogo: por partido, qué tiene de raro, de qué incidente viene y la **sonda** (`probe`) que mide esa rareza (`feed_gaps`, `log_lag_s`, `alternation_breaks`, `short_recording`). Si un fixture pierde su rareza, `test_live_core_weird_games.py` falla: un fixture sin su rareza no prueba nada.
 - Los partidos son los grabados de `tests/recordings/` (`<código>.rec.json.gz` + su `<código>.package.json`); **no se copian**. Cada entrada del catálogo apunta a su código.
-- `pending` lista lo que falta por conseguir (Oviedo #561, Oses–Joventut #564, un partido con la tabla corregida #560, una prórroga, un 0-0 por formato de puntos, FBCYL con reloj restante #370, ids que cambian de temporada).
+- Un partido puede no venir de una grabación en directo: el de la **prórroga** (Getafe–Cultural, `2536139`) es el documento terminado que sirve FEB, cortado cada 10 s de partido como hace la reproducción de la app (`RecordingBuilder` + `truncate_doc`); es dato real con cadencia sintética (sin huecos ni retraso del log), y su entrada lo dice en `source`. `periods` indica cuántos periodos tuvo (por defecto 4).
+- `pending` lista lo que falta por conseguir (Oviedo #561, Oses–Joventut #564, un partido con la tabla corregida #560, un 0-0 por formato de puntos, FBCYL con reloj restante #370, ids que cambian de temporada).
 
 ## Qué se comprueba de cada partido (`tests/test_live_core_weird_games.py`)
 Se reproduce como lo vive la tablet: UN motor con SU paquete, consultado cada 30 s de la grabación.

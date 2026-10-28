@@ -84,7 +84,11 @@ def probe_short_recording(r: Replay) -> float:
     return 1 if r.duration < 3600 else 0
 
 
-PROBES = {"feed_gaps": probe_feed_gaps, "log_lag_s": probe_log_lag_s, "alternation_breaks": probe_alternation_breaks, "short_recording": probe_short_recording}
+def probe_max_period(r: Replay) -> float:
+    return max(snap["period"] for snap, _ in r.polls)
+
+
+PROBES = {"max_period": probe_max_period, "feed_gaps": probe_feed_gaps, "log_lag_s": probe_log_lag_s, "alternation_breaks": probe_alternation_breaks, "short_recording": probe_short_recording}
 GAMES = [pytest.param(g, id=g["id"]) for g in CATALOGUE["games"]]
 
 
@@ -111,12 +115,12 @@ def test_a_real_game_replays_the_same_and_says_each_alert_once(game):
 
 @pytest.mark.parametrize("game", GAMES)
 def test_the_duration_of_a_finished_real_game_is_what_was_played_issue_561(game):
-    """Every recorded game ends with ``Fin del Cuarto 4`` at 40:00, which is also the start of the 5th period: the review is 2400 s, not 2700."""
+    """A game that ends with ``Fin del Cuarto 4`` at 40:00, also the start of the 5th period, lasts 2400 s, not 2700; one that played an overtime lasts 2700 s."""
     from src.live_core.recorded_feed import RecordedFeed
 
     feed = RecordedFeed.loads(gzip.open(RECORDINGS / f"{game['code']}.rec.json.gz").read().decode())
     session = LiveSession((RECORDINGS / f"{game['code']}.package.json").read_text(encoding="utf-8"))
-    assert session.load_replay(feed.document_at(10**9))["duration"] == 2400
+    assert session.load_replay(feed.document_at(10**9))["duration"] == 2400 + 300 * (game.get("periods", 4) - 4)
 
 
 # --- every oddity is still there ---------------------------------------------------------------------------------------------------------------
@@ -136,3 +140,11 @@ def test_the_catalogue_names_real_files_and_known_probes():
             assert (RECORDINGS / name).is_file(), name
         for oddity in game["oddities"]:
             assert oddity["probe"] in PROBES and oddity["issues"] and oddity["what"], oddity
+
+
+def test_an_overtime_is_played_to_its_end_and_the_engine_keeps_saying_things():
+    """The game with an overtime (Getafe - Cultural): the last poll is in the 5th period at its 0:00, and the 5th period has polls with alerts evaluated."""
+    r = replay("2536139")
+    last_snap, _ = r.polls[-1]
+    assert last_snap["period"] == 5 and last_snap["elapsed"] == 2700
+    assert sum(1 for snap, _ in r.polls if snap["period"] == 5) >= 8             # every 30 s of a 5-minute period
