@@ -84,3 +84,13 @@
     @apply input appearance-none cursor-pointer;
   }
 }
+
+/* Reduced motion (issue #197): whoever asks the system for less motion gets none that lasts: spinners, transitions and page changes end at once */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

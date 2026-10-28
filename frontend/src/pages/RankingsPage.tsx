@@ -185,7 +185,7 @@ export default function RankingsPage() {
               className={[
                 'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
                 i === groupIdx
-                  ? 'bg-accent/40 text-accent-text border border-accent/50'
+                  ? 'bg-accent/30 text-accent-text border border-accent/50'
                   : 'bg-surface text-ink-muted border border-line hover:text-ink',
               ].join(' ')}
             >
@@ -248,7 +248,7 @@ export default function RankingsPage() {
 
           {/* Team filter */}
           <div className="relative">
-            <select
+            <select aria-label="Filtrar por equipo"
               value={teamFilter}
               onChange={e => setTeamFilter(e.target.value)}
               className="select pr-8 pl-3 py-1.5 text-xs appearance-none"

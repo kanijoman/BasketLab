@@ -552,7 +552,7 @@ export default function PlayerStatsPage() {
         <div className="flex flex-wrap items-center gap-3">
           {/* Team filter */}
           <div className="relative">
-            <select
+            <select aria-label="Filtrar por equipo"
               value={teamFilter}
               onChange={e => setTeamFilter(e.target.value)}
               className="select pr-8 pl-3 py-1.5 text-sm appearance-none"

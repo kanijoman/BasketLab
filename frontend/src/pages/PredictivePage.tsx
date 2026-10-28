@@ -78,7 +78,7 @@ function TeamPicker({
           : seasons.length === 0
             ? <p className="text-xs text-ink-muted italic">Sin datos en HISTORICAL</p>
             : (
-              <select
+              <select aria-label="Temporada"
                 className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-32"
                 value={season}
                 onChange={e => onSeasonChange(e.target.value)}
@@ -95,7 +95,7 @@ function TeamPicker({
           : teams.length === 0
             ? <p className="text-xs text-ink-muted italic">Sin equipos para esta temporada</p>
             : (
-              <select
+              <select aria-label="Equipo"
                 className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
                 value={teamId}
                 onChange={e => onTeamChange(e.target.value)}
@@ -306,7 +306,7 @@ export function ElasticityTab() {
                 : liveTeams.length === 0
                   ? <p className="text-xs text-ink-muted italic">Sin equipos en esta colección</p>
                   : (
-                    <select
+                    <select aria-label="Equipo (temporada actual)"
                       className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
                       value={liveTeam}
                       onChange={e => setLiveTeam(e.target.value)}
@@ -337,7 +337,7 @@ export function ElasticityTab() {
                   onClick={() => setIsHome(v)}
                   className={`px-3 py-1.5 rounded text-xs font-medium transition-colors border ${
                     isHome === v
-                      ? 'bg-accent-solid border-accent text-white'
+                      ? 'bg-accent-solid border-accent text-accent-ink'
                       : 'bg-surface-raised border-line text-ink hover:bg-line'
                   }`}
                 >
@@ -348,7 +348,7 @@ export function ElasticityTab() {
           </div>
           <div>
             <label className="block text-xs text-ink-muted mb-1">Net Rating rival <span className="text-ink-muted">(opcional)</span></label>
-            <input
+            <input aria-label="Net rating del rival"
               type="number"
               step="0.1"
               placeholder="p.ej. -2.5"
@@ -487,7 +487,7 @@ function MonteCarloTab() {
                 onClick={() => handleSourceChange(s)}
                 className={`px-4 py-1.5 transition-colors ${
                   source === s
-                    ? 'bg-accent-solid text-white font-medium'
+                    ? 'bg-accent-solid text-accent-ink font-medium'
                     : 'bg-surface text-ink hover:bg-surface-raised'
                 }`}
               >
@@ -518,7 +518,7 @@ function MonteCarloTab() {
                 : liveTeams.length === 0
                   ? <p className="text-xs text-ink-muted italic">Sin equipos en esta colección</p>
                   : (
-                    <select
+                    <select aria-label="Equipo (temporada actual)"
                       className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-56"
                       value={liveTeam}
                       onChange={e => setLiveTeam(e.target.value)}
@@ -533,7 +533,7 @@ function MonteCarloTab() {
 
           <div>
             <label className="block text-xs text-ink-muted mb-1">Partidos a proyectar</label>
-            <input
+            <input aria-label="Partidos a proyectar"
               type="number" min={1} max={10}
               className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink w-20"
               value={nGames}
@@ -542,7 +542,7 @@ function MonteCarloTab() {
           </div>
           <div>
             <label className="block text-xs text-ink-muted mb-1">Simulaciones</label>
-            <select
+            <select aria-label="Simulaciones"
               className="bg-surface-raised border border-line rounded px-3 py-1.5 text-sm text-ink"
               value={nSims}
               onChange={e => setNSims(Number(e.target.value))}
@@ -726,7 +726,7 @@ function GamePredictionTab() {
             onClick={() => { setMode(m); setResult(null); setError(null) }}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               mode === m
-                ? 'bg-accent-solid text-white'
+                ? 'bg-accent-solid text-accent-ink'
                 : 'bg-surface-raised text-ink hover:bg-line'
             }`}
           >
@@ -741,13 +741,13 @@ function GamePredictionTab() {
           <>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Temporada</label>
-              <Select value={season} onChange={e => setSeason(e.target.value)}>
+              <Select aria-label="Temporada" value={season} onChange={e => setSeason(e.target.value)}>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
               </Select>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Equipo</label>
-              <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
+              <Select aria-label="Equipo" value={teamId} onChange={e => setTeamId(e.target.value)}>
                 {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
               </Select>
             </div>
@@ -776,7 +776,7 @@ function GamePredictionTab() {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Net Rtg rival</label>
-          <Input
+          <Input aria-label="Net Rtg rival"
             type="number"
             className="w-28"
             placeholder="0.0"
@@ -787,7 +787,7 @@ function GamePredictionTab() {
         <button
           onClick={run}
           disabled={loading || (mode === 'historical' ? !teamId : !liveTeam)}
-          className="flex items-center gap-2 px-4 py-2 bg-accent-solid hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-solid hover:bg-accent-hover disabled:opacity-50 text-accent-ink text-sm font-medium rounded-lg transition-colors"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           {loading ? 'Calculando…' : 'Predecir'}
@@ -962,7 +962,7 @@ export function ValidationTab() {
             onClick={() => { setMode(m); setResult(null) }}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               mode === m
-                ? 'bg-accent-solid text-white'
+                ? 'bg-accent-solid text-accent-ink'
                 : 'bg-surface text-ink-muted hover:text-ink border border-line'
             }`}
           >
@@ -977,13 +977,13 @@ export function ValidationTab() {
           <>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Temporada</label>
-              <Select value={season} onChange={e => setSeason(e.target.value)}>
+              <Select aria-label="Temporada" value={season} onChange={e => setSeason(e.target.value)}>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
               </Select>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-ink-muted">Equipo</label>
-              <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
+              <Select aria-label="Equipo" value={teamId} onChange={e => setTeamId(e.target.value)}>
                 {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
               </Select>
             </div>
@@ -999,7 +999,7 @@ export function ValidationTab() {
         <button
           onClick={run}
           disabled={loading || (mode === 'historical' ? !teamId : !liveTeam)}
-          className="flex items-center gap-2 px-4 py-2 bg-accent-solid hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-accent-solid hover:bg-accent-hover disabled:opacity-50 text-accent-ink text-sm font-medium rounded-lg transition-colors"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           {loading ? 'Calculando…' : 'Ejecutar backtesting'}
@@ -1130,7 +1130,7 @@ function SeasonProjectionTab() {
         <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-ink-muted">Partidos/temporada</label>
-            <input
+            <input aria-label="Partidos/temporada"
               type="number"
               value={seasonLength}
               onChange={e => setSeasonLength(Number(e.target.value))}
@@ -1142,7 +1142,7 @@ function SeasonProjectionTab() {
           <button
             type="submit"
             disabled={isFetching}
-            className="px-5 py-1.5 bg-accent-solid hover:bg-accent-hover text-white text-sm rounded disabled:opacity-50"
+            className="px-5 py-1.5 bg-accent-solid hover:bg-accent-hover text-accent-ink text-sm rounded disabled:opacity-50"
           >
             {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Proyectar'}
           </button>
@@ -1274,7 +1274,7 @@ function PlayerPredictionTab() {
         {/* Team filter */}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Equipo</label>
-          <select
+          <select aria-label="Equipo"
             value={teamFilter}
             onChange={e => handleTeamFilter(e.target.value)}
             className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink w-48"
@@ -1287,7 +1287,7 @@ function PlayerPredictionTab() {
         {/* Player selector */}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Jugador</label>
-          <select
+          <select aria-label="Jugador"
             value={playerId}
             onChange={e => {
               const found = filteredPlayers.find(p => p.player_id === e.target.value)
@@ -1306,7 +1306,7 @@ function PlayerPredictionTab() {
         {/* Home/Away */}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Local / Visitante</label>
-          <select
+          <select aria-label="Local / Visitante"
             value={isHome ? 'home' : 'away'}
             onChange={e => setIsHome(e.target.value === 'home')}
             className="bg-surface border border-line rounded px-3 py-1.5 text-sm text-ink"
@@ -1319,7 +1319,7 @@ function PlayerPredictionTab() {
         {/* Opponent net rating */}
         <div className="flex flex-col gap-1">
           <label className="text-xs text-ink-muted">Net Rtg rival</label>
-          <input
+          <input aria-label="Net Rtg rival"
             type="number"
             value={oppNetRtg}
             onChange={e => setOppNetRtg(e.target.value)}
@@ -1331,7 +1331,7 @@ function PlayerPredictionTab() {
         <button
           type="submit"
           disabled={!playerId || isFetching}
-          className="px-5 py-1.5 bg-accent-solid hover:bg-accent-hover text-white text-sm rounded disabled:opacity-50"
+          className="px-5 py-1.5 bg-accent-solid hover:bg-accent-hover text-accent-ink text-sm rounded disabled:opacity-50"
         >
           {isFetching ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Predecir'}
         </button>
@@ -1400,7 +1400,7 @@ export default function PredictivePage() {
               onClick={() => setTab(id)}
               className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 tab === id
-                  ? 'bg-accent-solid text-white'
+                  ? 'bg-accent-solid text-accent-ink'
                   : 'text-ink-muted hover:text-ink hover:bg-surface-raised/50'
               }`}
             >

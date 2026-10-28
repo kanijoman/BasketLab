@@ -221,7 +221,7 @@ export default function EvolutionPage() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-ink-muted font-medium uppercase tracking-wide">Métrica</span>
             <div className="relative">
-              <select
+              <select aria-label="Métrica"
                 value={stat}
                 onChange={e => setStat(e.target.value)}
                 className="appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
@@ -248,7 +248,7 @@ export default function EvolutionPage() {
                   onClick={() => setRollingWindow(w)}
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     rollingWindow === w
-                      ? 'bg-secondary text-white'
+                      ? 'bg-secondary-solid text-white'
                       : 'bg-canvas border border-line text-ink-muted hover:bg-surface-raised'
                   }`}
                 >

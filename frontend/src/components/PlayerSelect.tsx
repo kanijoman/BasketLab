@@ -43,12 +43,14 @@ export default function PlayerSelect({
       <div className="flex gap-2">
         <input
           type="text"
+          aria-label={`${label}: buscar por nombre`}
           placeholder="Buscar nombre…"
           value={nameFilter}
           onChange={e => setNameFilter(e.target.value)}
           className="min-w-0 flex-1 bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-faint focus:outline-none focus:ring-2 focus:ring-focus"
         />
         <select
+          aria-label={`${label}: filtrar por equipo`}
           value={teamFilter}
           onChange={e => setTeamFilter(e.target.value)}
           className="min-w-0 max-w-[50%] bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
@@ -57,7 +59,7 @@ export default function PlayerSelect({
           {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
-      <select value={value} onChange={e => onChange(e.target.value)}
+      <select aria-label={label} value={value} onChange={e => onChange(e.target.value)}
         className="w-full min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus">
         <option value="">— Selecciona jugador —</option>
         {filtered.map((p, idx) => (

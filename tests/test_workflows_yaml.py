@@ -497,3 +497,20 @@ class TestFbcylRecordWorkflow:
         assert "matrix" in data["jobs"]["record"]["concurrency"]["group"]
         triggers = data.get("on") or data[True]
         assert "schedule" in triggers and "workflow_dispatch" in triggers
+
+
+class TestWebVisualCaptures:
+    """Issue #197 (U7): the e2e job of the web keeps the captures of the key pages (both themes, three widths) as an artifact, also when everything passes,
+    so a change of look can be reviewed in the pull request."""
+
+    def _job(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]["e2e-web"]
+
+    def test_the_captures_are_uploaded_even_when_the_tests_pass(self):
+        steps = [s for s in self._job()["steps"] if "upload-artifact" in s.get("uses", "") and s.get("with", {}).get("name") == "web-visual-captures"]
+        assert len(steps) == 1
+        assert steps[0]["if"] == "always()" and "*.png" in steps[0]["with"]["path"]
+
+    def test_the_failure_report_is_still_uploaded_on_failure_only(self):
+        reports = [s for s in self._job()["steps"] if s.get("with", {}).get("name") == "web-e2e-results"]
+        assert len(reports) == 1 and reports[0]["if"] == "failure()"

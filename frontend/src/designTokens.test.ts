@@ -57,7 +57,7 @@ describe('colours of the web (issue #188)', () => {
 
   // White text was right on the dark surfaces only: in the light theme it vanished (the title of Análisis Predictivo).
   it('puts white text only on a coloured fill', () => {
-    const FILL = /(?<![\w-])bg-(?:accent-solid|accent-hover|bad|ok|warn|secondary|secondary-hover|chart-\d)(?![\w/-])/
+    const FILL = /(?<![\w-])bg-(?:accent-solid|accent-hover|bad|ok|warn|secondary|secondary-solid|secondary-hover|chart-\d)(?![\w/-])/
     const OWN_FILL = /backgroundColor|background:/                // a chip painted with its own colour (team, player)
     const white = files.flatMap(([name, file]) => stripComments(readFileSync(file, 'utf8')).split('\n')
       .map((line, i, lines) => ({ line, around: lines.slice(Math.max(0, i - 1), i + 7).join('\n') }))
@@ -72,7 +72,7 @@ describe('colours of the web (issue #188)', () => {
     const FAMILIES = 'canvas|surface|line|ink|accent|secondary|focus|ok|bad|warn|chart|q[1-4]'
     const NAME = new RegExp(`(?<![\\w-])(?:[\\w\\[\\]&:().-]+:)*(?:bg|text|border(?:-[trblxy])?|ring(?:-offset)?|from|via|to|fill|stroke|divide|outline|placeholder|decoration|caret|shadow)-((?:${FAMILIES})(?:-[a-z0-9]+)?)(?:/\\d+)?(?![\\w-])`, 'g')
     const known = new Set(['canvas', 'surface', 'surface-raised', 'line', 'ink', 'ink-muted', 'ink-faint', 'accent', 'accent-ink', 'accent-text',
-      'accent-solid', 'accent-hover', 'secondary', 'secondary-text', 'secondary-hover', 'focus', 'ok', 'bad', 'warn',
+      'accent-solid', 'accent-hover', 'secondary', 'secondary-text', 'secondary-solid', 'secondary-hover', 'focus', 'ok', 'bad', 'warn',
       ...[1, 2, 3, 4, 5, 6, 7, 8].map(i => `chart-${i}`), ...[1, 2, 3, 4].flatMap(q => [`q${q}-bg`, `q${q}-text`])])
     const unknown = files.flatMap(([name, file]) => [...stripComments(readFileSync(file, 'utf8')).matchAll(NAME)]
       .filter(m => !known.has(m[1])).map(m => `${name} → ${m[0]}`))
@@ -129,6 +129,41 @@ describe('design/tokens.css (issue #188)', () => {
   it.each(['dark', 'lightForced'] as const)('the ink over data colours reads on good, borderline and bad in the %s theme (AA)', theme => {
     const block = themes[theme]
     for (const tone of ['--ok', '--warn', '--bad']) expect(contrast(block.get('--on-data')!, block.get(tone)!), tone).toBeGreaterThanOrEqual(4.5)
+  })
+
+  // Issue #197 (U7): the text of the system reads on every surface it is drawn on, in both themes (WCAG AA 4.5). The pairs are the ones axe found failing in the
+  // audit of 28/10/2026: the faint text on the page, the cards, the hover rows and the badges; the orange text on the tint of the active link; white on the blue button.
+  const hexOf = (c: string) => c.trim()
+  const mix = (fg: string, bg: string, alpha: number) => {
+    const f = [1, 3, 5].map(i => parseInt(hexOf(fg).slice(i, i + 2), 16)), b = [1, 3, 5].map(i => parseInt(hexOf(bg).slice(i, i + 2), 16))
+    return '#' + f.map((v, i) => Math.round(v * alpha + b[i] * (1 - alpha)).toString(16).padStart(2, '0')).join('')
+  }
+  const THEMES = ['dark', 'lightForced'] as const
+  const surfaces = (b: Map<string, string>) => [b.get('--bg')!, b.get('--surface')!, b.get('--surface-raised')!,
+    mix(b.get('--line')!, b.get('--surface')!, 0.6),               // a badge: bg-line/60 over a card
+    mix(b.get('--line')!, b.get('--bg')!, 0.6)]
+
+  it.each(THEMES)('the muted and faint text read on the page, the cards, the hover rows and the badges (%s)', theme => {
+    const b = themes[theme]
+    for (const token of ['--text', '--text-muted', '--text-faint']) {
+      for (const bg of surfaces(b)) expect(contrast(b.get(token)!, bg), `${token} on ${bg}`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it.each(THEMES)('the orange text reads on the tint of the active link and the selected tab (%s)', theme => {
+    const b = themes[theme]
+    for (const base of [b.get('--surface')!, b.get('--bg')!]) {
+      for (const alpha of [0.2, 0.3]) {
+        const tint = mix(b.get('--accent')!, base, alpha)
+        expect(contrast(b.get('--accent-text')!, tint), `accent-text on accent/${alpha * 100} over ${base}`).toBeGreaterThanOrEqual(4.5)
+      }
+    }
+  })
+
+  it.each(THEMES)('a filled button keeps its label readable: ink over accent-solid, white over secondary-solid (%s)', theme => {
+    const b = themes[theme]
+    expect(contrast(b.get('--accent-ink')!, b.get('--accent-solid')!)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast('#ffffff', b.get('--secondary-solid')!)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('every token the Tailwind preset uses exists', () => {

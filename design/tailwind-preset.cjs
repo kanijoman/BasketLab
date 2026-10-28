@@ -23,7 +23,7 @@ module.exports = {
           DEFAULT: channel('accent'), ink: 'var(--accent-ink)', text: channel('accent-text'),
           solid: 'var(--accent-solid)', hover: 'var(--accent-hover)',
         },
-        secondary: { DEFAULT: channel('secondary'), text: channel('secondary-text'), hover: 'var(--secondary-hover)' },
+        secondary: { DEFAULT: channel('secondary'), text: channel('secondary-text'), solid: 'var(--secondary-solid)', hover: 'var(--secondary-hover)' },
         focus: channel('focus'),
         ok: channel('ok'),
         bad: channel('bad'),

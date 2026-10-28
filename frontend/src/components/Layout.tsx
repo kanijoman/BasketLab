@@ -98,6 +98,7 @@ function Shell() {
 
   return (
     <div className="flex flex-col h-full">
+      <a href="#contenido" className="sr-only rounded-lg bg-surface px-3 py-2 text-sm font-medium text-ink shadow-panel focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50">Saltar al contenido</a>
       <Header onOpenMenu={hasCollection && phone ? () => setMenuOpen(true) : undefined} />
 
       <div className="flex flex-1 min-h-0">
@@ -106,7 +107,7 @@ function Shell() {
         {hasCollection && phone && <MobileNav open={menuOpen} onClose={() => setMenuOpen(false)} />}
 
         {/* Page content */}
-        <main className="flex-1 min-w-0 overflow-y-auto">
+        <main id="contenido" tabIndex={-1} className="flex-1 min-w-0 overflow-y-auto focus:outline-none">
           <div className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-full">
             <PageErrorBoundary>
               <Outlet />

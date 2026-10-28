@@ -229,7 +229,7 @@ export default function RotacionesPage() {
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
           <div>
             <label className="block text-xs font-medium text-ink-muted mb-1">Equipo</label>
-            <Select
+            <Select aria-label="Equipo"
               value={pendingTeam?.id ?? ''}
               onChange={e => setPendingTeam(teams.find(t => t.id === e.target.value) ?? null)}
              
@@ -241,7 +241,7 @@ export default function RotacionesPage() {
           <button
             type="submit"
             disabled={isFetching || !pendingTeam}
-            className="bg-secondary hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
+            className="bg-secondary-solid hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
           >
             {isFetching ? 'Analizando…' : 'Analizar'}
           </button>

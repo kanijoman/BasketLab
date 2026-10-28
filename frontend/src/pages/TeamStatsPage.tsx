@@ -149,7 +149,7 @@ function RivalAdjPanel() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <label className="text-sm font-medium text-ink-muted">Estadística:</label>
-        <select
+        <select aria-label="Estadística:"
           className="bg-canvas border border-line rounded px-3 py-1.5 text-sm text-ink"
           value={statKey}
           onChange={e => setStatKey(e.target.value)}
