@@ -32,8 +32,8 @@ POLL_S = 30
 class Replay:
     """One pass over a recording: ``polls`` are ``(snapshot, alerts)`` of every poll that answered; ``gaps`` the polls FEB did not answer."""
 
-    def __init__(self, polls: List[Tuple[Dict[str, Any], List[Advice]]], gaps: int, duration: float, own: str, rival: str, quality: Dict[str, Any]) -> None:
-        self.polls, self.gaps, self.duration, self.own, self.rival, self.quality = polls, gaps, duration, own, rival, quality
+    def __init__(self, polls: List[Tuple[Dict[str, Any], List[Advice]]], gaps: int, duration: float, own: str, rival: str, quality: Dict[str, Any], rival_tables: int) -> None:
+        self.polls, self.gaps, self.duration, self.own, self.rival, self.quality, self.rival_tables = polls, gaps, duration, own, rival, quality, rival_tables
 
 
 def play_through(code: str) -> Replay:
@@ -55,7 +55,7 @@ def play_through(code: str) -> Replay:
         out = answer["output"]
         polls.append((out["snapshot"], [Advice(**a) for a in out["alerts"]]))
         quality = (out["snapshot"].get("possessions") or {}).get("quality") or quality
-    return Replay(polls, gaps, session._feed.duration, str(info.team["id"]), str(info.rival["id"]), quality)
+    return Replay(polls, gaps, session._feed.duration, str(info.team["id"]), str(info.rival["id"]), quality, len((info.tables or {}).get("rival_players") or {}))
 
 
 @lru_cache(maxsize=None)
@@ -66,29 +66,38 @@ def replay(code: str) -> Replay:
 
 # --- the probes: the number that proves each oddity is still in the game ---------------------------------------------------------------------
 
-def probe_feed_gaps(r: Replay) -> float:
+def probe_feed_gaps(r: Replay, oddity: Dict[str, Any]) -> float:
     return r.gaps
 
 
-def probe_log_lag_s(r: Replay) -> float:
+def probe_log_lag_s(r: Replay, oddity: Dict[str, Any]) -> float:
     """The most the scoreboard clock was ahead of the last event of the log at a poll."""
     return max(snap["elapsed"] - max((e[0] for e in snap["log"]), default=0) for snap, _ in r.polls)
 
 
-def probe_alternation_breaks(r: Replay) -> float:
+def probe_alternation_breaks(r: Replay, oddity: Dict[str, Any]) -> float:
     return r.quality.get("breaks_raw", 0)
 
 
-def probe_short_recording(r: Replay) -> float:
+def probe_short_recording(r: Replay, oddity: Dict[str, Any]) -> float:
     """1 when the recording lasts less than the real game would (it was compressed)."""
     return 1 if r.duration < 3600 else 0
 
 
-def probe_max_period(r: Replay) -> float:
+def probe_no_rival_tables(r: Replay, oddity: Dict[str, Any]) -> float:
+    """1 when the package has no table of the rival's players: the rival comes from another category (a cup game) and its season is not in the competition."""
+    return 1 if r.rival_tables == 0 else 0
+
+
+def probe_alert_count(r: Replay, oddity: Dict[str, Any]) -> float:
+    return sum(1 for _, alerts in r.polls for a in alerts if a.id == oddity["alert"])
+
+
+def probe_max_period(r: Replay, oddity: Dict[str, Any]) -> float:
     return max(snap["period"] for snap, _ in r.polls)
 
 
-PROBES = {"max_period": probe_max_period, "feed_gaps": probe_feed_gaps, "log_lag_s": probe_log_lag_s, "alternation_breaks": probe_alternation_breaks, "short_recording": probe_short_recording}
+PROBES = {"no_rival_tables": probe_no_rival_tables, "alert_count": probe_alert_count, "max_period": probe_max_period, "feed_gaps": probe_feed_gaps, "log_lag_s": probe_log_lag_s, "alternation_breaks": probe_alternation_breaks, "short_recording": probe_short_recording}
 GAMES = [pytest.param(g, id=g["id"]) for g in CATALOGUE["games"]]
 
 
@@ -130,7 +139,7 @@ ODDITIES = [pytest.param(g, o, id=f"{g['id']}-{o['probe']}") for g in CATALOGUE[
 
 @pytest.mark.parametrize("game, oddity", ODDITIES)
 def test_the_fixture_still_has_the_oddity_it_is_kept_for(game, oddity):
-    measured = PROBES[oddity["probe"]](replay(game["code"]))
+    measured = PROBES[oddity["probe"]](replay(game["code"]), oddity)
     assert measured >= oddity["at_least"], f"{game['id']}: {oddity['probe']} = {measured} (< {oddity['at_least']}): «{oddity['what']}» is not in this game any more"
 
 
@@ -140,6 +149,7 @@ def test_the_catalogue_names_real_files_and_known_probes():
             assert (RECORDINGS / name).is_file(), name
         for oddity in game["oddities"]:
             assert oddity["probe"] in PROBES and oddity["issues"] and oddity["what"], oddity
+        assert game["oddities"] or game.get("regression_only"), f"{game['id']}: no oddity: say why it is here (regression_only)"
 
 
 def test_an_overtime_is_played_to_its_end_and_the_engine_keeps_saying_things():
