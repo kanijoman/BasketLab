@@ -52,3 +52,29 @@ def test_message_is_in_spanish_and_has_evidence():
     alert = evaluate_player_fouls("p1", "Ana", 3, 3)
     assert "Ana" in alert.message and "3" in alert.message
     assert "faltas" in alert.message.lower()
+
+
+# Issue #622 (feedback 0.4.2, Cultural–Melilla): the staff expected the notice of the 2nd foul before the 3rd in the first half. Decision of the user (28/10/2026):
+# own players get an info at the 2nd foul in the 1st and 2nd quarters; the recommender keeps asking without it (a player with two fouls is still a swap).
+@pytest.mark.parametrize("period, severity", [(1, "info"), (2, "info"), (3, None), (4, None), (5, None)])
+def test_the_second_foul_is_an_info_of_the_first_half_when_asked(period, severity):
+    alert = evaluate_player_fouls("p1", "Ana", 2, period, early_notice=True)
+    assert (alert.severity if alert else None) == severity
+    if alert:
+        assert alert.pf == 2 and "2 faltas" in alert.message
+
+
+@pytest.mark.parametrize("period", [1, 2, 3, 4])
+def test_without_asking_two_fouls_still_say_nothing_so_the_recommender_is_unchanged(period):
+    assert evaluate_player_fouls("p1", "Ana", 2, period) is None
+
+
+def test_an_own_player_with_two_fouls_in_the_first_quarter_gets_the_info_before_the_third_regression():
+    from tests.builders import OWN, RIVAL, Match
+
+    m = Match().lineup(OWN, ["p1", "p2"], at=0).lineup(RIVAL, ["r1"], at=0)
+    m.foul(OWN, "p1", at=120, drawn_by="r1").foul(OWN, "p1", at=300, drawn_by="r1")
+    [alert] = [a for a in m.evaluate() if a.id == "foul_trouble"]
+    assert alert.severity == "info" and alert.evidence["pf"] == 2
+    m.foul(OWN, "p1", at=420, drawn_by="r1")
+    assert [a.evidence["pf"] for a in m.evaluate() if a.id == "foul_trouble"] == [3]       # each count is new: the 3rd one is said as before

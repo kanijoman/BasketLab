@@ -8,6 +8,7 @@ from .advice_types import Advice, RuleContext
 from .config import RuleConfig
 from .game_context import game_phase
 from .rules_players import orb_dominant
+from .clock import period_start
 from .windows import player_form, run_start, window_stats
 
 GAME_SECONDS = 2400
@@ -89,7 +90,7 @@ def _reason_to_keep(snap: Dict[str, Any], ctx: RuleContext, pid: str) -> Optiona
     net = window_stats(log, own, start, now)["pts"] - (window_stats(log, rival, start, now)["pts"] if rival else 0)
     if net >= cfg.own_run_net:
         return "parcial a favor"
-    form = player_form(log, own, pid, now, cfg.hot_player_window_s)
+    form = player_form(log, own, pid, now, cfg.hot_player_window_s, period_start(snap.get("period", 1)))
     if form["pts"] >= cfg.hot_player_pts or form["made_in_row"] >= cfg.hot_player_row:
         return "está en racha"
     if orb_dominant(snap["players"][pid], ctx.baselines.get(pid), cfg):

@@ -1,8 +1,8 @@
 """Player foul alerts.
 
 A player is eliminated with 5 fouls, so alerting on the 5th is useless. Warnings fire
-early enough to act: ``min(period + 1, 3)`` fouls; 4 fouls (one from elimination) is
-critical. Messages are shown to the coaching staff, hence Spanish.
+early enough to act: ``min(period + 1, 3)`` fouls for the rival (``warn_threshold``); for the own players
+the 2nd foul is an info of the first half (#622) and the 3rd comes as before; 4 fouls (one from elimination) is critical. Messages are shown to the coaching staff, hence Spanish.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ FOUL_OUT = 5
 WARNING_CAP = 3
 CRITICAL_PF = FOUL_OUT - 1
 SECOND_HALF_FIRST_PERIOD = 3
+EARLY_PF = 2          # the second foul: an info of the first half for the own players (#622)
 
 
 @dataclass(frozen=True)
@@ -44,13 +45,16 @@ def evaluate_player_fouls(
     last_alerted_pf: int = 0,
     seconds_left: Optional[int] = None,
     min_left_s: int = 360,
+    early_notice: bool = False,
 ) -> Optional[FoulAlert]:
     """Return an alert for this player's foul count, or None (issue #241, R4: risk of elimination).
 
     ``last_alerted_pf`` is the foul count already alerted: the same count never repeats. Four fouls (one from elimination)
     is always critical. Three fouls is a risk only while more than ``min_left_s`` of the game is left (with less the player
     will most likely finish): information in the first half, where the coach already changes the player (89 % within two
-    minutes), a warning in the second. Two fouls never alert. ``seconds_left=None`` (no clock at hand) counts as plenty.
+    minutes), a warning in the second. Two fouls alert only with ``early_notice`` and only in the first half, as information (#622: the staff
+    expected it before the third); the recommender does not ask for it, so a player with two fouls is still a swap. ``seconds_left=None``
+    (no clock at hand) counts as plenty.
     """
     if pf >= FOUL_OUT or pf <= last_alerted_pf:
         return None
@@ -59,6 +63,8 @@ def evaluate_player_fouls(
             player_id, pf, "critical",
             f"{name}: {pf} faltas personales, a una de la eliminación. Gestionar sus minutos.",
         )
+    if early_notice and pf == EARLY_PF and period < SECOND_HALF_FIRST_PERIOD:
+        return FoulAlert(player_id, pf, "info", f"{name}: {pf} faltas personales en el periodo {period}. Ojo con la siguiente.")
     if pf >= WARNING_CAP and (seconds_left is None or seconds_left > min_left_s):
         return FoulAlert(
             player_id, pf, "warning" if period >= SECOND_HALF_FIRST_PERIOD else "info",

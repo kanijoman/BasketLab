@@ -20,7 +20,7 @@ def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         if p["team_id"] != ctx.own_team_id:
             continue
         alert = evaluate_player_fouls(pid, p["name"], p["pf"], period, seconds_left=left,
-                                      min_left_s=ctx.config.foul_min_left_s)
+                                      min_left_s=ctx.config.foul_min_left_s, early_notice=True)
         if alert:
             out.append(Advice(
                 key=f"foul:{pid}:{p['pf']}", id="foul_trouble", severity=alert.severity,

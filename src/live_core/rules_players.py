@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 from .advice_types import Advice, RuleContext
 from .lexicon import jugador, object_pronoun
 from .proposals import tactic_proposal
+from .clock import period_start
 from .windows import player_form
 
 GAME_SECONDS = 2400
@@ -72,7 +73,7 @@ def rival_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     for pid, p in snap["players"].items():
         if p["team_id"] != rival:
             continue
-        form = player_form(log, rival, pid, now, cfg.hot_player_window_s)
+        form = player_form(log, rival, pid, now, cfg.hot_player_window_s, period_start(period))
         if p["on_court"] and is_hot(form, cfg):
             out.append(Advice(
                 key=f"rival_hot:{pid}:{period}", id="rival_hot_run", severity="warning", category="rival",
@@ -111,7 +112,7 @@ def own_player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id or not p["on_court"]:
             continue
-        form = player_form(log, ctx.own_team_id, pid, now, cfg.hot_player_window_s)
+        form = player_form(log, ctx.own_team_id, pid, now, cfg.hot_player_window_s, period_start(period))
         if is_hot(form, cfg):
             out.append(Advice(
                 key=f"own_hot:{pid}:{period}", id="own_hot_player", severity="info", category="four_factors",
