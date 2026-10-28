@@ -17,7 +17,12 @@ export interface ChartTheme {
   reference: string         // reference and median lines
   surface: string
   ok: string
+  warn: string
   bad: string
+  text: string
+  faint: string
+  floor: string             // the floor of the court: a raised surface
+  onData: string            // ink over a bubble of data colour
   tooltip: { backgroundColor: string; border: string; borderRadius: number; fontSize: number; color: string }
 }
 
@@ -32,7 +37,12 @@ function readChartTheme(theme: Theme): ChartTheme {
     reference: cssColour('--text-faint') || cssColour('--text-muted'),
     surface,
     ok: cssColour('--ok'),
+    warn: cssColour('--warn'),
     bad: cssColour('--bad'),
+    text: cssColour('--text'),
+    faint: cssColour('--text-faint'),
+    floor: cssColour('--surface-raised'),
+    onData: cssColour('--on-data'),
     tooltip: { backgroundColor: surface, border: `1px solid ${cssColour('--line')}`, borderRadius: 8, fontSize: 12, color: cssColour('--text') },
   }
 }

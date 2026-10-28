@@ -15,7 +15,8 @@
  */
 import { useMemo, type RefObject } from 'react'
 import type { ShotZoneData, ShotRawData } from '@/api/client'
-import { RATING_COLOR, RATING_LABEL, ratingColor } from '@/lib/zoneRating'
+import { useChartTheme } from '@/lib/chartTheme'
+import { RATING_LABEL, ratingColor, zoneColours } from '@/lib/zoneRating'
 
 // ---------------------------------------------------------------------------
 // Court geometry (all measurements in SVG pixels, 1 px = 1/30 m)
@@ -83,7 +84,6 @@ interface Props {
   rawShots?: ShotRawData[]
 }
 
-const LINE = '#cccccc'
 const LINE_W = 2
 
 export default function FibaCourtSVG({
@@ -96,6 +96,10 @@ export default function FibaCourtSVG({
   vizMode = 'zones',
   rawShots,
 }: Props) {
+  // Every colour is a token of the theme in use (issue #196): the court is the page's, light or dark, and an export copies what is drawn
+  const theme = useChartTheme()
+  const line = theme.axis
+  const [heatHot, heatCool] = [theme.series[0], theme.series[1]]
   // Normalise zone data keyed by zone id
   const zoneMap = useMemo(() => {
     const m: Record<string, ShotZoneData> = {}
@@ -114,63 +118,61 @@ export default function FibaCourtSVG({
       width={width}
       height={height}
       className="select-none max-w-full h-auto"          // the court shrinks with the phone (viewBox keeps its shape, #191)
-      style={{ background: '#1a1a2e' }}
+      style={{ background: theme.floor }}
     >
       {/* Half-court line */}
-      <line x1={0} y1={0} x2={CW} y2={0} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={0} y1={0} x2={CW} y2={0} stroke={line} strokeWidth={LINE_W} />
       {/* Side lines */}
-      <line x1={0}  y1={0} x2={0}  y2={CH} stroke={LINE} strokeWidth={LINE_W} />
-      <line x1={CW} y1={0} x2={CW} y2={CH} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={0}  y1={0} x2={0}  y2={CH} stroke={line} strokeWidth={LINE_W} />
+      <line x1={CW} y1={0} x2={CW} y2={CH} stroke={line} strokeWidth={LINE_W} />
       {/* Baseline */}
-      <line x1={0} y1={CH} x2={CW} y2={CH} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={0} y1={CH} x2={CW} y2={CH} stroke={line} strokeWidth={LINE_W} />
 
       {/* Key (paint rectangle) */}
       <rect x={KL} y={KT} width={KR - KL} height={CH - KT}
-        fill="rgba(59,130,246,0.06)" stroke={LINE} strokeWidth={LINE_W} />
+        fill={heatCool} fillOpacity={0.08} stroke={line} strokeWidth={LINE_W} />
 
       {/* Free-throw semi-circles — centred on basket x with correct radius */}
       {/* Top half (solid) — faces midcourt */}
       <path
         d={`M ${BX - FTR},${KT} A ${FTR},${FTR} 0 0,1 ${BX + FTR},${KT}`}
-        fill="none" stroke={LINE} strokeWidth={LINE_W}
+        fill="none" stroke={line} strokeWidth={LINE_W}
       />
       {/* Bottom half (dashed) — faces basket */}
       <path
         d={`M ${BX - FTR},${KT} A ${FTR},${FTR} 0 0,0 ${BX + FTR},${KT}`}
-        fill="none" stroke={LINE} strokeWidth={LINE_W} strokeDasharray="5,4"
+        fill="none" stroke={line} strokeWidth={LINE_W} strokeDasharray="5,4"
       />
 
       {/* 3-point line */}
       {/* Left straight segment */}
-      <line x1={CL} y1={CH} x2={CL} y2={BRK} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={CL} y1={CH} x2={CL} y2={BRK} stroke={line} strokeWidth={LINE_W} />
       {/* Right straight segment */}
-      <line x1={CR} y1={CH} x2={CR} y2={BRK} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={CR} y1={CH} x2={CR} y2={BRK} stroke={line} strokeWidth={LINE_W} />
       {/* Arc from left break to right break */}
       <path
         d={`M ${CL},${BRK} A ${TR},${TR} 0 0,1 ${CR},${BRK}`}
-        fill="none" stroke={LINE} strokeWidth={LINE_W}
+        fill="none" stroke={line} strokeWidth={LINE_W}
       />
 
       {/* Restricted area */}
       {/* Left vertical line: arc end down to baseline */}
-      <line x1={BX - RR} y1={BY} x2={BX - RR} y2={CH} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={BX - RR} y1={BY} x2={BX - RR} y2={CH} stroke={line} strokeWidth={LINE_W} />
       {/* Arc — semicircle open toward baseline (curving toward midcourt) */}
       <path
         d={`M ${BX - RR},${BY} A ${RR},${RR} 0 0,1 ${BX + RR},${BY}`}
-        fill="none" stroke={LINE} strokeWidth={LINE_W}
+        fill="none" stroke={line} strokeWidth={LINE_W}
       />
       {/* Right vertical line: arc end down to baseline */}
-      <line x1={BX + RR} y1={BY} x2={BX + RR} y2={CH} stroke={LINE} strokeWidth={LINE_W} />
+      <line x1={BX + RR} y1={BY} x2={BX + RR} y2={CH} stroke={line} strokeWidth={LINE_W} />
 
       {/* Backboard */}
-      <line x1={BX - 27} y1={BBY} x2={BX + 27} y2={BBY} stroke={LINE} strokeWidth={LINE_W + 1} />
+      <line x1={BX - 27} y1={BBY} x2={BX + 27} y2={BBY} stroke={line} strokeWidth={LINE_W + 1} />
 
       {/* Hoop */}
-      <circle cx={BX} cy={BY} r={6.75} fill="none" stroke="#ff8c00" strokeWidth={2} />
+      <circle cx={BX} cy={BY} r={6.75} fill="none" stroke={heatHot} strokeWidth={2} />
 
-      {/* ── Heatmap overlay — two-layer screen-blend for wide contrast ── */}
-      {/* screen() on a dark background compounds additively: sparse zones stay  */}
-      {/* cool-blue, medium zones turn orange, dense zones saturate to yellow.  */}
+      {/* ── Heatmap overlay — two layers (wide cool, tight hot) of translucent dots: they add up where shots pile up, on a light or a dark floor ── */}
       {vizMode === 'heatmap' && rawShots && rawShots.length > 0 && (
         <>
           <defs>
@@ -184,17 +186,17 @@ export default function FibaCourtSVG({
             </filter>
           </defs>
           {/* Cool layer — blue, wide, shows general density shape */}
-          <g filter="url(#heat-wide)" style={{ mixBlendMode: 'screen' }}>
+          <g filter="url(#heat-wide)">
             {rawShots.map((s, i) => (
               <circle key={`hw${i}`} cx={s.x * S} cy={(14 - s.y) * S} r={20}
-                fill="rgba(40,90,255,0.22)" />
+                fill={heatCool} fillOpacity={0.22} />
             ))}
           </g>
           {/* Hot layer — orange/yellow, tight, marks high-density spots */}
-          <g filter="url(#heat-tight)" style={{ mixBlendMode: 'screen' }}>
+          <g filter="url(#heat-tight)">
             {rawShots.map((s, i) => (
               <circle key={`hh${i}`} cx={s.x * S} cy={(14 - s.y) * S} r={15}
-                fill="rgba(255,160,0,0.32)" />
+                fill={heatHot} fillOpacity={0.32} />
             ))}
           </g>
         </>
@@ -208,7 +210,7 @@ export default function FibaCourtSVG({
             cx={s.x * S}
             cy={(14 - s.y) * S}
             r={4}
-            fill={s.made ? '#4ade80' : '#f87171'}
+            fill={s.made ? theme.ok : theme.bad}
             fillOpacity={0.65}
           />
         ))
@@ -220,7 +222,7 @@ export default function FibaCourtSVG({
         if (!zData || zData.fga === 0) return null
 
         const r  = bubbleRadius(zData.fga, maxFga)
-        const color = ratingColor(zData.rating)
+        const color = ratingColor(zData.rating, theme)
         const isHighlighted = highlightZone === zoneKey
 
         return (
@@ -233,14 +235,14 @@ export default function FibaCourtSVG({
               cx={center.x} cy={center.y} r={r}
               fill={color} fillOpacity={zData.low_sample ? 0.5 : 0.82}
               strokeDasharray={zData.low_sample ? '3 2' : undefined}
-              stroke={isHighlighted ? '#fff' : 'rgba(255,255,255,0.15)'}
+              stroke={isHighlighted ? theme.text : theme.floor}
               strokeWidth={isHighlighted ? 2.5 : 1}
             />
-            <text x={center.x} y={center.y - 4} textAnchor="middle" fill="#fff"
+            <text x={center.x} y={center.y - 4} textAnchor="middle" fill={theme.onData}
               fontSize={11} fontWeight="bold">
               {zData.fg_pct.toFixed(0)}%
             </text>
-            <text x={center.x} y={center.y + 9} textAnchor="middle" fill="rgba(255,255,255,0.7)"
+            <text x={center.x} y={center.y + 9} textAnchor="middle" fill={theme.onData} fillOpacity={0.8}
               fontSize={9}>
               {zData.fga}T
             </text>
@@ -250,10 +252,10 @@ export default function FibaCourtSVG({
 
       {/* Legend: rating against the league average of each zone */}
       {vizMode === 'zones' && zones && zones.length > 0 && (
-        <g fontSize={9} fill="rgba(255,255,255,0.8)">
+        <g fontSize={9} fill={theme.axis}>
           {(['above', 'average', 'below'] as const).map((k, i) => (
             <g key={k} transform={`translate(${8 + i * 142}, 14)`}>
-              <circle cx={4} cy={0} r={4} fill={RATING_COLOR[k]} />
+              <circle cx={4} cy={0} r={4} fill={zoneColours(theme)[k]} />
               <text x={12} y={3}>{RATING_LABEL[k]}</text>
             </g>
           ))}
@@ -263,7 +265,7 @@ export default function FibaCourtSVG({
       {/* Empty-state zone placeholders — only in 'zones' mode when no data */}
       {vizMode === 'zones' && (!zones || zones.length === 0) && Object.entries(ZONE_CENTERS).map(([key, c]) => (
         <circle key={key} cx={c.x} cy={c.y} r={10}
-          fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" strokeWidth={1}
+          fill={theme.axis} fillOpacity={0.08} stroke={theme.axis} strokeOpacity={0.2} strokeWidth={1}
         />
       ))}
     </svg>
