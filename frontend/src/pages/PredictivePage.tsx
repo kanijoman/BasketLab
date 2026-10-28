@@ -1393,12 +1393,12 @@ export default function PredictivePage() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-surface/60 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 bg-surface/60 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 tab === id
                   ? 'bg-accent-solid text-white'
                   : 'text-ink-muted hover:text-ink hover:bg-surface-raised/50'

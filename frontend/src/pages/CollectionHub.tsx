@@ -2,45 +2,19 @@
  * CollectionHub — dashboard overview for a loaded collection.
  *
  * Shows key highlights (top scorer, best OER, best record, pace)
- * and a quick-access grid to all analysis modules.
+ * and a card for EVERY page of the competition, in the groups of the menu (lib/nav.ts, issue #191).
  */
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  BarChart2, Users, TrendingUp, Target, Trophy,
-  FileText, Activity, ArrowLeftRight, Users2, Loader2, BrainCircuit, ClipboardList, Radio, FileSearch, Scale,
-} from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getPlayerStats, type TeamStat, type PlayerStat } from '@/api/client'
 import StatCard from '@/components/ui/StatCard'
+import Button from '@/components/ui/Button'
+import PageHeader from '@/components/ui/PageHeader'
 import PageTransition from '@/components/ui/PageTransition'
+import { NAV_GROUPS } from '@/lib/nav'
 import { fmt } from '@/lib/utils'
-
-// ── Module card definition ────────────────────────────────────────────────────
-interface Module {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  description: string
-  subPath: string
-  accent: string
-}
-
-const MODULES: Module[] = [
-  { icon: BarChart2,      label: 'Estadísticas de Equipo',     description: 'Básicas y avanzadas con cuartiles y tendencias',  subPath: 'teams',       accent: 'text-accent-text' },
-  { icon: Scale,          label: 'Comparativas',               description: 'Local vs visitante, ganados vs perdidos y un tramo vs el resto', subPath: 'comparativas', accent: 'text-accent-text' },
-  { icon: Users,          label: 'Estadísticas Individuales',  description: 'Jugadores con radar, comparativa y trends',        subPath: 'players',     accent: 'text-accent-text' },
-  { icon: TrendingUp,     label: 'Evolución Temporal',         description: 'Progresión de métricas a lo largo de la temporada', subPath: 'evolution',   accent: 'text-secondary-text' },
-  { icon: Target,         label: 'Gráficos de Tiro',           description: 'Mapa de calor FIBA interactivo por zonas',         subPath: 'shots',       accent: 'text-secondary-text' },
-  { icon: Trophy,         label: 'Rankings',                   description: 'Clasificación de jugadores por cualquier métrica', subPath: 'rankings',    accent: 'text-warn' },
-  { icon: Activity,       label: 'Posesiones',                 description: 'Ritmo, OER/DER y análisis de posesiones',          subPath: 'possessions', accent: 'text-secondary-text' },
-  { icon: ArrowLeftRight, label: 'IN/OUT',                     description: 'Impacto por jugador dentro/fuera de la cancha',    subPath: 'inout',       accent: 'text-accent-text' },
-  { icon: Users2,         label: 'Combinaciones',              description: 'Mejores y peores combinaciones de jugadores por estadística',    subPath: 'lineups',     accent: 'text-accent-text' },
-  { icon: FileText,       label: 'Informe Semanal',            description: 'Report builder con PDF/DOCX exportable',           subPath: 'report',      accent: 'text-warn' },
-  { icon: ClipboardList,  label: 'Informe de Equipo',          description: 'Análisis propio y scouting rival por reglas · PDF', subPath: 'team-report', accent: 'text-warn' },
-  { icon: FileSearch,     label: 'Scouting del rival',         description: 'PDF de cualquier equipo con lo que ve el motor: claves, jugadoras, zonas y plan', subPath: 'scouting-rival', accent: 'text-warn' },
-  { icon: Radio,          label: 'Preparación live',           description: 'Paquete cifrado para la app BasketLab Live (equipo + rival)', subPath: 'live-prep', accent: 'text-secondary-text' },
-  { icon: BrainCircuit,   label: 'Análisis Predictivo',        description: 'Elasticidades Ridge · Monte Carlo · Predicción partido',   subPath: 'predictive',  accent: 'text-accent-text' },
-]
 
 // ── Highlights derived from data ──────────────────────────────────────────────
 interface Highlights {
@@ -93,9 +67,7 @@ export default function CollectionHub() {
   if (!collection) {
     return (
       <div className="flex items-center justify-center h-64">
-        <button className="btn-primary" onClick={() => navigate('/')}>
-          Seleccionar colección
-        </button>
+        <Button onClick={() => navigate('/')}>Seleccionar colección</Button>
       </div>
     )
   }
@@ -104,12 +76,7 @@ export default function CollectionHub() {
     <PageTransition>
       <div className="space-y-8">
         {/* Title */}
-        <div>
-          <h1 className="text-2xl font-bold text-ink">{collection.label}</h1>
-          <p className="text-ink-muted text-sm mt-1">
-            {collection.isFbcyl ? 'FBCYL — Castilla y León' : 'FEB — Liga Nacional'}
-          </p>
-        </div>
+        <PageHeader title={collection.label} subtitle={collection.isFbcyl ? 'FBCYL — Castilla y León' : 'FEB — Liga Nacional'} />
 
         {/* Highlight stats */}
         {loading ? (
@@ -155,26 +122,25 @@ export default function CollectionHub() {
           </div>
         )}
 
-        {/* Module grid */}
-        <div>
-          <h2 className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-3">
-            Módulos de análisis
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {MODULES.map(({ icon: Icon, label, description, subPath, accent }) => (
-              <button
-                key={subPath}
-                onClick={() => goTo(subPath)}
-                className="card p-4 text-left hover:border-surface-raised hover:bg-surface-raised
-                           transition-colors group cursor-pointer"
-              >
-                <Icon className={`w-5 h-5 mb-3 ${accent} group-hover:scale-110 transition-transform`} />
-                <p className="text-sm font-medium text-ink mb-1">{label}</p>
-                <p className="text-xs text-ink-muted leading-relaxed">{description}</p>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* A card for every page, in the groups of the menu */}
+        {NAV_GROUPS.map(group => (
+          <section key={group.label} aria-labelledby={`hub-${group.label}`}>
+            <h2 id={`hub-${group.label}`} className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-3">{group.label}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {group.items.map(({ icon: Icon, label, title, description, subPath }) => (
+                <Link
+                  key={subPath}
+                  to={`/${encodeURIComponent(collection.name)}/${subPath}`}
+                  className="card group p-4 transition-colors hover:border-accent/40 hover:bg-surface-raised"
+                >
+                  <Icon className="mb-3 h-5 w-5 text-accent-text transition-transform group-hover:scale-110" />
+                  <p className="mb-1 text-sm font-medium text-ink">{title ?? label}</p>
+                  <p className="text-xs leading-relaxed text-ink-muted">{description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     </PageTransition>
   )

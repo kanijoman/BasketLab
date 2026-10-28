@@ -11,10 +11,13 @@
  *
  * The sidebar is only visible when a collection is active (URL has /:collection).
  */
-import { Component, type ReactNode } from 'react'
+import { Component, useState, type ReactNode } from 'react'
 import { Outlet, Link, useParams, useNavigate } from 'react-router-dom'
-import { ChevronRight, Home, ExternalLink } from 'lucide-react'
-import Sidebar from '@/components/Sidebar'
+import { ChevronRight, Home, ExternalLink, Menu } from 'lucide-react'
+import Sidebar, { MobileNav } from '@/components/Sidebar'
+import CollectionSwitcher from '@/components/CollectionSwitcher'
+import { IconButton } from '@/components/ui/Button'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import ThemeControl from '@/components/ThemeControl'
 import BrandLogo from '@/components/BrandLogo'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
@@ -34,12 +37,19 @@ class PageErrorBoundary extends Component<{ children: ReactNode }, { error: Erro
   }
 }
 
-function Header() {
+const PHONE = '(max-width: 767px)'
+
+function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { collection } = useCollection()
   const navigate = useNavigate()
 
   return (
-    <header className="h-14 bg-surface border-b border-line flex items-center px-4 gap-4 shrink-0 z-20">
+    <header className="h-14 bg-surface border-b border-line flex items-center px-3 sm:px-4 gap-2 sm:gap-4 shrink-0 z-20">
+      {/* Menu of the phone (the sidebar is not fixed there, issue #191) */}
+      {onOpenMenu && (
+        <IconButton icon={Menu} label="Abrir menú" onClick={onOpenMenu} className="-ml-1 shrink-0" />
+      )}
+
       {/* Logo */}
       <Link to="/" aria-label="BasketLab — inicio" className="shrink-0 rounded-md transition-opacity hover:opacity-80">
         <BrandLogo nameClassName="hidden sm:inline" />
@@ -47,7 +57,7 @@ function Header() {
 
       {/* Breadcrumb */}
       {collection && (
-        <nav className="flex items-center gap-1 text-xs text-ink-muted min-w-0">
+        <nav aria-label="Ruta" className="flex items-center gap-1 text-xs text-ink-muted min-w-0">
           <button
             onClick={() => navigate('/')}
             className="hover:text-ink transition-colors"
@@ -56,12 +66,13 @@ function Header() {
             <Home className="w-3.5 h-3.5" />
           </button>
           <ChevronRight className="w-3 h-3 opacity-40 shrink-0" />
-          <span className="text-ink font-medium truncate">{collection.label}</span>
+          <span className="text-ink font-medium truncate hidden md:inline">{collection.label}</span>
           <span className="ml-1 px-1.5 py-0.5 bg-line/60 rounded text-ink-faint shrink-0">
             {collection.isFbcyl ? 'FBCYL' : 'FEB'}
           </span>
         </nav>
       )}
+      {collection && <div className="min-w-0 hidden md:block"><CollectionSwitcher /></div>}
 
       {/* Right side — future: user avatar / auth */}
       <div className="ml-auto flex items-center gap-2">
@@ -82,18 +93,21 @@ function Header() {
 function Shell() {
   const { collection: collectionParam } = useParams<{ collection?: string }>()
   const hasCollection = Boolean(collectionParam)
+  const phone = useMediaQuery(PHONE)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="flex flex-col h-full">
-      <Header />
+      <Header onOpenMenu={hasCollection && phone ? () => setMenuOpen(true) : undefined} />
 
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar — only when inside a collection */}
-        {hasCollection && <Sidebar />}
+        {/* Sidebar — only inside a collection; on a phone it is the menu over the page */}
+        {hasCollection && !phone && <Sidebar />}
+        {hasCollection && phone && <MobileNav open={menuOpen} onClose={() => setMenuOpen(false)} />}
 
         {/* Page content */}
         <main className="flex-1 min-w-0 overflow-y-auto">
-          <div className="p-5 max-w-[1600px] mx-auto min-h-full">
+          <div className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-full">
             <PageErrorBoundary>
               <Outlet />
             </PageErrorBoundary>

@@ -170,8 +170,8 @@ export default function HomePage() {
         <div className="w-full max-w-2xl space-y-8">
 
           {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="flex items-center justify-center mb-4">
+          <div className="space-y-2 rounded-lg bg-gradient-to-b from-accent/10 via-accent/5 to-transparent px-4 pb-6 pt-8 text-center">
+            <h1 className="mb-4 flex items-center justify-center">
               <BrandLogo size="lg" />
             </h1>
             <p className="text-ink-muted text-sm">
