@@ -19,6 +19,7 @@ from src.services import TeamStatsService
 from src.services.possession_export_service import PossessionExportService
 from src.services.pbp_quality_service import PBPQualityService
 from src.services.pbp_extended_stats_service import PBPExtendedStatsService
+from src.services.derived_coverage_service import DerivedCoverageService
 from src.services.pbp_situation_stats_service import PBPSituationStatsService
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,12 @@ def get_possession_stats(
     svc = TeamStatsService(db)
     logger.info("possessions: collection_name=%r", collection)
     return svc.get_possession_stats(collection)
+
+
+@router.get("/{collection}/derived-coverage", summary="Games of the collection that lack the DERIVED field the pbp tables need")
+def get_derived_coverage(collection: str, db=Depends(get_db)) -> Dict[str, Any]:
+    """``total``, ``pending`` and the first games pending (code and teams): they are left out of the pbp tables until ``run_backfill_derived.py`` fills them (#630)."""
+    return DerivedCoverageService(db).get(collection)
 
 
 @router.get("/{collection}/points-by-origin", summary="Season points by origin, bench and paint per team")

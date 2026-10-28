@@ -352,3 +352,28 @@ class TestSeniorCompetitions:
         assert "only" in wf[True]["workflow_dispatch"]["inputs"]
         run = [s for s in wf["jobs"]["refresh"]["steps"] if "run_atlas_refresh.py" in s.get("run", "")][0]
         assert "ONLY" in run["env"] and "$ONLY" in run["run"] and "${{" not in run["run"]
+
+
+class TestRefreshFillsDerived:
+    """Issue #630: the Atlas workflow ran the backfill as a second step but the local refresh did not, so 167 games of the local database had no ``DERIVED``.
+    The refresh itself now fills it in every collection it touches (idempotent: a game that has it is skipped)."""
+
+    def _with_a_game_without_derived(self, feb_game_doc):
+        db = _db()
+        collection = db.repository.connection.get_collection.return_value
+        collection.insert_one({**feb_game_doc, "_id": 99})
+        return db, collection
+
+    def test_a_stored_game_without_derived_gets_it_after_the_refresh_regression(self, feb_game_doc):
+        db, collection = self._with_a_game_without_derived(feb_game_doc)
+        assert "DERIVED" not in collection.find_one({"_id": 99})
+        refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=TestRefreshAll._freshness(None, []))
+        assert collection.find_one({"_id": 99})["DERIVED"]["v"]
+
+    def test_a_failing_backfill_never_turns_a_refresh_into_an_error(self, feb_game_doc, monkeypatch):
+        import src.services.derived_backfill as backfill
+
+        monkeypatch.setattr(backfill, "backfill_collection", MagicMock(side_effect=RuntimeError("cursor lost")))
+        db, _ = self._with_a_game_without_derived(feb_game_doc)
+        report = refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=TestRefreshAll._freshness(None, []))
+        assert report[0]["fatal"] is None

@@ -9,6 +9,7 @@ const hooks = vi.hoisted(() => ({
   useByPeriod: vi.fn(),
   useSituations: vi.fn(),
   useTimeoutEffects: vi.fn(),
+  useDerivedCoverage: vi.fn(),
 }))
 vi.mock('@/api/pbpExtended', () => hooks)
 
@@ -60,6 +61,29 @@ describe('PbpAnalysisPage', () => {
     hooks.useByPeriod.mockReset().mockReturnValue(ok([PERIOD]))
     hooks.useSituations.mockReset().mockReturnValue(ok([SITUATION]))
     hooks.useTimeoutEffects.mockReset().mockReturnValue(ok([TIMEOUT]))
+    hooks.useDerivedCoverage.mockReset().mockReturnValue({ data: { total: 4, pending: 0, pending_games: [] } })
+  })
+
+  // Issue #630: the tab counted only the games that carry DERIVED and said nothing about the rest (3 games here, 4 in the other tabs)
+  it('says how many games are left out because they are not processed yet, and which', async () => {
+    hooks.useDerivedCoverage.mockReturnValue({
+      data: { total: 31, pending: 2, pending_games: [{ code: '2524485', teams: ['VALENCIA BASKET', 'LA LAGUNA TOYOTA'] }, { code: '2524486', teams: ['RECOLETAS ZAMORA', 'FUSTECMA NBF'] }] },
+    })
+    renderPage()
+    const notice = await screen.findByRole('status')
+    expect(notice.textContent).toMatch(/2 de 31 partidos sin procesar/)
+    expect(notice.textContent).toMatch(/no cuentan en estas tablas/i)
+    expect(notice.textContent).toMatch(/VALENCIA BASKET - LA LAGUNA TOYOTA/)
+    expect(notice.textContent).toMatch(/run_backfill_derived\.py/)
+  })
+
+  it('says nothing when every game is processed, or while the coverage has not loaded', async () => {
+    renderPage()
+    await screen.findByText(NAME)
+    expect(screen.queryByRole('status')).toBeNull()
+    hooks.useDerivedCoverage.mockReturnValue({ data: undefined })
+    renderPage()
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('opens on the points by origin with the full team name, the games left out and the explanation of the figures', async () => {
