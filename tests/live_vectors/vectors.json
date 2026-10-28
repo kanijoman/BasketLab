@@ -107,6 +107,8 @@
     {
      "alerts": [
       "rival_hot:1949844:2",
+      "foul:2212271:2",
+      "foul:2817526:2",
       "bonus:982047:2",
       "lever:ftr:1:1",
       "rival_dependence:1949844:1",
@@ -116,7 +118,7 @@
       "timeout_review:981204:1195"
      ],
      "digests": {
-      "alerts": "8523ebf6f9486713d592278dfc8b07f3ed2d33a03f0e0ab77ea57ef83c4a2605",
+      "alerts": "18e8db30703343664aa9d05d52285b05d8c2499279e115d00eb7ee859938fb3f",
       "analysis": "d2afc0df2de3ef4df24766ec4416716ca023eb4449fb73f54ab2502b56ea8a1d",
       "snapshot": "1058244c590f3291d16510e0a587a14986f8c2dea711d026be83baea3f029d95"
      },
@@ -2764,7 +2766,24 @@
       "severity": "warning"
      }
     ],
-    [],
+    [
+     {
+      "category": "faltas",
+      "confirm": 1,
+      "evidence": {
+       "period": 1,
+       "pf": 2,
+       "player_id": "x",
+       "team_id": "T1"
+      },
+      "id": "foul_trouble",
+      "key": "foul:x:2",
+      "message": "Ana: 2 faltas personales en el periodo 1. Ojo con la siguiente.",
+      "proposal": [],
+      "rearm_s": null,
+      "severity": "info"
+     }
+    ],
     [],
     [
      {

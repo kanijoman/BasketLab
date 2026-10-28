@@ -31,9 +31,16 @@ def foul_snap(pf, period, remaining, pid="p1"):
 
 # --- R4: own fouls by risk of elimination -------------------------------------------------
 
-@pytest.mark.parametrize("period", [1, 2, 3, 4])
-def test_r4_two_fouls_never_raise_an_alert(period):
+@pytest.mark.parametrize("period", [3, 4])
+def test_r4_two_fouls_do_not_raise_an_alert_in_the_second_half(period):
     assert not by_id(engine().evaluate(foul_snap(2, period, 400)), "foul_trouble")
+
+
+@pytest.mark.parametrize("period", [1, 2])
+def test_r4_two_fouls_are_an_info_in_the_first_half_issue_622(period):
+    """Decision of the user (28/10/2026, feedback 0.4.2): the notice before the 3rd foul in the first half; it was «2 fouls never alert» (#241)."""
+    [alert] = by_id(engine().evaluate(foul_snap(2, period, 400)), "foul_trouble")
+    assert alert.severity == "info" and alert.evidence["pf"] == 2
 
 
 def test_r4_three_fouls_in_the_first_half_is_information_the_coach_usually_already_acts_on():

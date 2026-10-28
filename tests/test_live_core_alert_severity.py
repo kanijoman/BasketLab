@@ -69,7 +69,7 @@ def test_only_the_fourth_foul_and_the_rival_run_are_critical():
 REAL_MATCH_TABLE = {
     ("cold_3p_streak", "info"): 2, ("cold_3p_volume", "info"): 3, ("comeback_plan", "info"): 1,
     ("fatigue_high", "critical"): 3, ("fatigue_high", "warning"): 4, ("fg_drought", "warning"): 2,
-    ("first_half_timeouts", "info"): 1, ("foul_trouble", "warning"): 1,
+    ("first_half_timeouts", "info"): 1, ("foul_trouble", "info"): 3, ("foul_trouble", "warning"): 1,
     ("four_factors_lever", "info"): 5, ("lineup_net", "warning"): 2, ("long_run", "warning"): 2,
     ("own_cold_player", "info"): 2, ("own_drought", "critical"): 1, ("own_drought", "warning"): 2,
     ("own_zone_cold", "info"): 2, ("paint_battle", "warning"): 2, ("period_edge_deficit", "info"): 2,

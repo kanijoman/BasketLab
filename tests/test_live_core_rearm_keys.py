@@ -50,5 +50,5 @@ def test_every_alert_key_of_the_real_match_is_unique_regression():
         result = session.play(t)
         if result["output"]:
             keys += [a["key"] for a in result["output"]["alerts"]]
-    assert len(keys) == 80   # the table is in test_live_core_alert_severity.py (#316/#320 changed it; 22/10/2026: the lever waits 300 s, 8 -> 5; 23/10: runs do not cross quarters and flow windows count only new events, 77 -> 75; 23/10 timeout review +5 (3 reviews, 2 follow-ups): 75 -> 80: fatigue credit for timeouts, decided game; #426/#427: calibrated thresholds; #479: fatigue floors and minimum sample)
+    assert len(keys) == 83   # 28/10/2026 (#622): the 2nd foul of an own player is an info in the 1st half, 80 -> 83 (3 players); the table is in test_live_core_alert_severity.py (#316/#320 changed it; 22/10/2026: the lever waits 300 s, 8 -> 5; 23/10: runs do not cross quarters and flow windows count only new events, 77 -> 75; 23/10 timeout review +5 (3 reviews, 2 follow-ups): 75 -> 80: fatigue credit for timeouts, decided game; #426/#427: calibrated thresholds; #479: fatigue floors and minimum sample)
     assert len(set(keys)) == len(keys), "the app would hide every alert whose key repeats"
