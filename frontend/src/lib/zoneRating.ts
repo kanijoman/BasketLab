@@ -1,11 +1,11 @@
+import type { ChartTheme } from './chartTheme'
+
 /** League-relative rating of a shooting zone: above / around / below the league average. */
 export type ZoneRating = 'above' | 'average' | 'below' | 'none' | 'unknown'
 
-export const RATING_COLOR: Record<'above' | 'average' | 'below', string> = {
-  above: '#2E9E4F',
-  average: '#E0A800',
-  below: '#D64545',
-}
+/** The colour of each rating in the theme in use: the data tones (good, borderline, bad) of design/tokens.css (issue #196). */
+export const zoneColours = (theme: ChartTheme): Record<'above' | 'average' | 'below', string> =>
+  ({ above: theme.ok, average: theme.warn, below: theme.bad })
 
 export const RATING_LABEL: Record<'above' | 'average' | 'below', string> = {
   above: 'Por encima de la liga',
@@ -13,10 +13,8 @@ export const RATING_LABEL: Record<'above' | 'average' | 'below', string> = {
   below: 'Por debajo de la liga',
 }
 
-const NO_DATA = '#6b7280'
-
-export function ratingColor(rating?: ZoneRating): string {
-  return rating === 'above' || rating === 'average' || rating === 'below' ? RATING_COLOR[rating] : NO_DATA
+export function ratingColor(rating: ZoneRating | undefined, theme: ChartTheme): string {
+  return rating === 'above' || rating === 'average' || rating === 'below' ? zoneColours(theme)[rating] : theme.faint
 }
 
 export function ratingTextClass(rating?: ZoneRating): string {

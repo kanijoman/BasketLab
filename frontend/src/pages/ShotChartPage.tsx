@@ -14,6 +14,7 @@ import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
 import ExportButton from '@/components/ui/ExportButton'
 import Tooltip from '@/components/ui/Tooltip'
 import { STAT_LABELS } from '@/lib/statLabels'
+import { useChartTheme } from '@/lib/chartTheme'
 import { ratingColor, ratingFromQuartiles, ratingTextClass } from '@/lib/zoneRating'
 
 // -- Helpers ------------------------------------------------------------------
@@ -21,6 +22,7 @@ import { ratingColor, ratingFromQuartiles, ratingTextClass } from '@/lib/zoneRat
 // -- Component ----------------------------------------------------------------
 
 export default function ShotChartPage() {
+  const chart = useChartTheme()
   const { collection } = useCollection()
 
   const [viewMode, setViewMode] = useState<'team' | 'player'>('team')
@@ -412,7 +414,7 @@ export default function ShotChartPage() {
                           <span className="flex items-center gap-1.5">
                             <span
                               className="w-2 h-2 rounded-full inline-block flex-shrink-0"
-                              style={{ backgroundColor: z.fga > 0 ? ratingColor(z.rating) : ratingColor('none') }}
+                              style={{ backgroundColor: z.fga > 0 ? ratingColor(z.rating, chart) : ratingColor('none', chart) }}
                             />
                             {z.zone_label}
                           </span>

@@ -12,8 +12,6 @@ const preset = readFileSync(join(DESIGN, 'tailwind-preset.cjs'), 'utf8')
 
 /** Files that may still carry their own colours, and why. The list only shrinks. */
 const EXCEPTIONS: Record<string, string> = {
-  'components/ui/FibaCourtSVG.tsx': 'the court is drawn dark on purpose in both themes until U6 (#196) gives it its own tokens',
-  'lib/zoneRating.ts': 'the colours of the zones are those of the court (dark in both themes) and of its legend, until U6 (#196)',
 }
 
 const PALETTE = 'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
@@ -119,6 +117,18 @@ describe('design/tokens.css (issue #188)', () => {
     const colours = [...themes.dark].filter(([, v]) => isColour(v)).map(([n]) => n).sort()
     expect([...themes.lightSystem.keys()].sort()).toEqual(colours)
     expect([...themes.lightForced].sort()).toEqual([...themes.lightSystem].sort())
+  })
+
+  // Issue #196 (U6): the bubbles of the court (and any figure over a data colour) are readable in both themes (WCAG AA for text: 4.5)
+  const luminance = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const contrast = (a: string, b: string) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05) }
+
+  it.each(['dark', 'lightForced'] as const)('the ink over data colours reads on good, borderline and bad in the %s theme (AA)', theme => {
+    const block = themes[theme]
+    for (const tone of ['--ok', '--warn', '--bad']) expect(contrast(block.get('--on-data')!, block.get(tone)!), tone).toBeGreaterThanOrEqual(4.5)
   })
 
   it('every token the Tailwind preset uses exists', () => {
