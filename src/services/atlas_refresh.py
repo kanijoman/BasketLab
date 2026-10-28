@@ -134,6 +134,18 @@ def _ensure_team_index(db: Any, collection: str) -> None:
     IndexManager(db.repository.connection).ensure_team_index(collection)
 
 
+def _fill_derived(db: Any, collection: str) -> None:
+    """``DERIVED`` of the games of the collection that lack it (issue #630): the Atlas workflow ran this as a second step, the local refresh did not and left games out of the
+    pbp tables. Idempotent (a game that has the current version is skipped); it never turns a refresh into an error."""
+    try:
+        from src.services.derived_backfill import backfill_collection
+        from src.services.collection_service import CollectionService
+
+        backfill_collection(db.repository.connection.get_collection(collection), fbcyl=bool(CollectionService._FBCYL_PREFIX.match(collection)))
+    except Exception:  # noqa: BLE001 - the next refresh (or run_backfill_derived.py) retries it
+        pass
+
+
 def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]]) -> Dict[str, Any]:
     from src.services.feb_match_ingest import scrape_feb_collection
 
@@ -143,6 +155,7 @@ def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Ca
         job = scrape_feb_collection(db, entry, scraper)
         item.update(collection=job["collection"], job=job)
         _ensure_team_index(db, job["collection"])
+        _fill_derived(db, job["collection"])
         item["freshness"] = check(job["collection"])
     except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
         item["fatal"] = f"{type(exc).__name__}: {exc}"

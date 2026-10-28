@@ -6,7 +6,7 @@
 import { useMemo, useState } from 'react'
 import { Microscope } from 'lucide-react'
 
-import { useByPeriod, usePointsByOrigin, useSituations, useTimeoutEffects } from '@/api/pbpExtended'
+import { useByPeriod, useDerivedCoverage, usePointsByOrigin, useSituations, useTimeoutEffects } from '@/api/pbpExtended'
 import DataTable from '@/components/ui/DataTable'
 import PageTransition from '@/components/ui/PageTransition'
 import { useCollection } from '@/context/CollectionContext'
@@ -80,6 +80,7 @@ export default function PbpAnalysisPage() {
   const [period, setPeriod] = useState('1')
 
   const origin = usePointsByOrigin(name)
+  const coverage = useDerivedCoverage(name)
   const periods = useByPeriod(name)
   const situations = useSituations(name)
   const timeouts = useTimeoutEffects(name)
@@ -143,6 +144,14 @@ export default function PbpAnalysisPage() {
           <p className="text-ink-muted text-sm max-w-4xl">
             <strong>FBCYL (experimental):</strong> el play-by-play lo anotan los clubes y tiene más errores que el de FEB (sin rebotes de equipo, a veces sin pérdidas ni
             robos); los partidos poco fiables se dejan fuera (columna «Excl.»). Sin pintura: el feed no trae el mapa de tiros.
+          </p>
+        )}
+        {coverage.data && coverage.data.pending > 0 && (
+          // issue #630: the tables only count the games that carry DERIVED; saying how many are left out is what tells «3 games here, 4 in the other tabs» is not an error
+          <p role="status" className="max-w-4xl rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-sm text-ink">
+            <strong>{coverage.data.pending} de {coverage.data.total} partidos sin procesar</strong>: no cuentan en estas tablas
+            {coverage.data.pending_games.length > 0 && ` (${coverage.data.pending_games.slice(0, 4).map(g => g.teams.join(' - ') || g.code).join('; ')}${coverage.data.pending > 4 ? '…' : ''})`}.
+            {' '}Se rellenan solos tras cada actualización de datos, o con <code>python run_backfill_derived.py --collection {name}</code> en local.
           </p>
         )}
         {body}

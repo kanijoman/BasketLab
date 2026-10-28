@@ -1,5 +1,6 @@
 ﻿"""Repository for basketball data operations."""
 
+import logging
 from typing import Dict, List, Optional, FrozenSet
 from pymongo.errors import PyMongoError
 
@@ -15,16 +16,22 @@ from .repository_possession import PossessionRepositoryMixin
 from .repository_lineup import LineupRepositoryMixin
 
 
+_log = logging.getLogger("src.database.repository")
+
+
 def _attach_derived_fields(game: Dict) -> None:
     """Store the exact possessions and validated rebounds of the game (``DERIVED``, #372, FBCYL #373); never fails the insert."""
     try:
         from src.pbp.game_derived import derive_game_fields
 
         derived = derive_game_fields(game)
-    except Exception:  # noqa: BLE001 - the season pipelines fall back to the box score without it
+    except Exception as exc:  # noqa: BLE001 - the season pipelines fall back to the box score without it
+        _log.warning("DERIVED not computed for game %s (%s: %s); run_backfill_derived.py fills it later", game.get("_id"), type(exc).__name__, exc)
         return
     if derived:
         game["DERIVED"] = derived
+    else:
+        _log.warning("DERIVED not computed for game %s (unreadable play-by-play or box score); run_backfill_derived.py retries it later", game.get("_id"))
 
 
 class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, PossessionRepositoryMixin, LineupRepositoryMixin):

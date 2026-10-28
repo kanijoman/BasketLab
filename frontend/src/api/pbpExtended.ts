@@ -116,6 +116,24 @@ function useRows<T>(key: string, collection: string | undefined, fetcher: (c: st
   })
 }
 
+/** `GET /possessions/{collection}/derived-coverage` (#630): the games without the DERIVED these tables need, which are left out of them. */
+export interface DerivedCoverage {
+  total: number
+  pending: number
+  /** The first ones (up to 50); `pending` is the whole count. */
+  pending_games: { code: string; teams: string[] }[]
+}
+
+export const getDerivedCoverage = (collection: string) => get<DerivedCoverage>(collection, 'derived-coverage')
+
+export const useDerivedCoverage = (collection?: string) =>
+  useQuery<DerivedCoverage>({
+    queryKey: ['pbp-derived-coverage', collection],            // its own key: one shape per key (#605)
+    queryFn: () => getDerivedCoverage(collection!),
+    enabled: Boolean(collection),
+    staleTime: STALE,
+  })
+
 export const usePointsByOrigin = (collection?: string) => useRows('origin', collection, getPointsByOrigin)
 export const useByPeriod = (collection?: string) => useRows('period', collection, getByPeriod)
 export const useSituations = (collection?: string) => useRows('situations', collection, getSituations)
