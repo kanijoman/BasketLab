@@ -61,12 +61,30 @@ def _write_if_changed(path: Path, data: bytes) -> None:
         path.write_bytes(data)
 
 
-def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] = None, only: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+def _refuse_shrinking(db: Any, out_dir: Path, names: List[str], whole: bool) -> None:
+    """Raise before writing anything if the archive already in ``out_dir`` has a collection that ``db`` no longer has (``whole`` only) or holds with fewer games."""
+    if not (out_dir / MANIFEST).is_file():
+        return
+    for entry in json.loads((out_dir / MANIFEST).read_text(encoding="utf-8"))["collections"]:
+        name = entry["name"]
+        if name in names:
+            now = db[name].count_documents({})
+            if now < entry["games"]:
+                raise ValueError(f"{name} has fewer games ({now}) than the archive ({entry['games']}): not overwriting it")
+        elif whole:
+            raise ValueError(f"{name} is in the archive and no longer in the database (fewer games): not overwriting it")
+
+
+def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] = None, only: Optional[Iterable[str]] = None,
+                 allow_shrink: bool = True) -> Dict[str, Any]:
     """Write the file of every games collection and ``archive.json`` (returned); ``light(name)`` says which are kept without play-by-play
-    (default: the ones outside the working set). With ``only`` the other files and entries are kept. Files of collections gone are removed."""
+    (default: the ones outside the working set). With ``only`` the other files and entries are kept. Files of collections gone are removed.
+    ``allow_shrink=False`` (what a refresh uses) refuses, before touching anything, to replace the archive with fewer games."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     names = _games_collections(db)
+    if not allow_shrink:
+        _refuse_shrinking(db, out_dir, [n for n in names if only is None or n in set(only)], whole=only is None)
     if light is None:
         in_set = working_set(names)
         light = lambda name: not in_set(name)  # noqa: E731

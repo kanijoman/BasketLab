@@ -144,3 +144,25 @@ def test_the_entry_point_refuses_to_replace_without_the_flag(tmp_path, capsys):
 
     assert run_archive.main(["load", "--src", str(tmp_path)]) == 2
     assert "--replace" in capsys.readouterr().err
+
+
+def test_a_refresh_that_lost_games_does_not_overwrite_the_archive_regression(db, tmp_path):
+    """The archive is rewritten from the ephemeral Mongo at the end of a refresh: a restore that failed halfway, or a scrape that dropped a
+    collection, must stop there instead of replacing the only copy of the games with fewer."""
+    dump_archive(db, tmp_path, light=lambda name: False)
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    db[NAMES[1]].delete_one({"_id": 1})
+    with pytest.raises(ValueError, match="fewer games"):
+        dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
+    db.drop_collection(NAMES[1])
+    with pytest.raises(ValueError, match="fewer games"):
+        dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == before          # nothing was touched
+
+
+def test_new_games_and_new_collections_are_not_shrinking(db, tmp_path):
+    dump_archive(db, tmp_path, light=lambda name: False)
+    db[NAMES[1]].insert_one(_game(3))
+    db["PRIMERA_FEB_2027_2028_Liga_Regular_\u00danico"].insert_one(_game(1))
+    manifest = dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
+    assert sum(c["games"] for c in manifest["collections"]) == 8 + 1 + 1
