@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MotionConfig } from 'framer-motion'
 import App from './App'
 import { applyStoredTheme } from './lib/theme'
+import { consumeInviteFromUrl } from './webdata/invite'
 import '@design/tokens.css'
 import '@fontsource-variable/inter'
 import '@fontsource-variable/space-grotesk'
@@ -12,6 +13,7 @@ import '@fontsource-variable/jetbrains-mono'
 import './index.css'
 
 applyStoredTheme()
+consumeInviteFromUrl()                                   // an invitation link (#invite=bl1.…) keeps its key in this browser and leaves the address (#639)
 
 const queryClient = new QueryClient({
   defaultOptions: {

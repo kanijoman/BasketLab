@@ -11,8 +11,9 @@ import { useQuery } from '@tanstack/react-query'
 import { ClipboardList, FileDown, FileSearch, Loader2 } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getLiveTeamNames, type TeamEntry } from '@/api/client'
-import { downloadTeamReportPdf, getTeamReport, type ReportMode } from '@/api/teamReport'
+import type { TeamEntry } from '@/api/client'
+import { downloadTeamReportPdf, getReportTeams, getTeamReport, type ReportMode } from '@/api/teamReport'
+import { ScopedAccessError } from '@live-package/crypto'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -20,6 +21,7 @@ import { Field, Select } from '@/components/ui/Field'
 import SegmentedControl from '@/components/ui/SegmentedControl'
 import EmptyState from '@/components/ui/EmptyState'
 import TeamReportView from '@/components/TeamReportView'
+import AccessPanel from '@/components/AccessPanel'
 
 const MODES: { key: ReportMode; label: string; desc: string }[] = [
   { key: 'own',   label: 'Propio equipo',  desc: 'Análisis de rendimiento propio' },
@@ -38,18 +40,20 @@ export default function TeamReportPage() {
   const mode: ReportMode = hasRivalMode ? chosenMode : 'own'
 
   const { data: teams = [] } = useQuery<TeamEntry[]>({
-    queryKey: ['team-list', col],
-    queryFn: () => getLiveTeamNames(col),
+    queryKey: ['report-team-list', col],                       // not 'team-list': that key holds the API's list, this one may come from web-data (#605)
+    queryFn: () => getReportTeams(col),
     enabled: Boolean(col),
     staleTime: 10 * 60_000,
   })
 
-  const { data: report, isFetching, error } = useQuery({
+  const { data: report, isFetching, error, refetch } = useQuery({
     queryKey: ['team-report', col, teamId, mode],
     queryFn: () => getTeamReport(col, teamId, mode),
     enabled: Boolean(col && teamId),
     staleTime: 5 * 60_000,
+    retry: (count, e) => !(e instanceof ScopedAccessError) && count < 1,           // no key: asking again does not help
   })
+  const needsKey = error instanceof ScopedAccessError
 
   async function handlePdf() {
     setPdfLoading(true)
@@ -116,7 +120,8 @@ export default function TeamReportPage() {
                 <Loader2 className="w-4 h-4 animate-spin" /> Generando informe…
               </p>
             )}
-            {error && <p className="text-sm text-bad">{(error as Error).message}</p>}
+            {needsKey && <AccessPanel onUnlocked={() => void refetch()} />}
+            {error && !needsKey && <p className="text-sm text-bad">{(error as Error).message}</p>}
             {!teamId && <p className="text-sm text-ink-muted">Elige un equipo para generar el informe.</p>}
             {report && !isFetching && (
               <>

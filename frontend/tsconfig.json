@@ -18,7 +18,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@design/*": ["../design/*"]
+      "@design/*": ["../design/*"],
+      "@live-package/*": ["../apps/live-android/src/package/*"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
