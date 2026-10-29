@@ -166,6 +166,9 @@ def main() -> None:
     _write(PLAYERS_OUT, build_player_vectors())
     _write(FBCYL_OUT, build_fbcyl_vectors())
     print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT)
+    import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
+
+    generate_fbcyl_players.main()
 
 
 if __name__ == "__main__":

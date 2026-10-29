@@ -53,11 +53,11 @@ function season(games: PlayerGameRow[]): PlayerStat {
 }
 
 // What the service gives a player whose team it finds no context for (`_default_adv`): zeros under the keys of the normal path (#647).
-const ZERO_ADVANCED = {
+export const ZERO_ADVANCED = {
   usage_pct: 0, orating: 0, drating: 0, net_rtg: 0, ast_pct: 0, tov_pct_adv: 0, stl_pct: 0, blk_pct: 0, drb_pct: 0, orb_pct: 0, pie: 0,
 }
 
-function advancedFigures(p: PlayerStat, team: LocalTeamStat, opp: LocalTeamStat) {
+export function advancedFigures(p: PlayerStat, team: LocalTeamStat, opp: LocalTeamStat) {
   const totals = p as unknown as Record<string, number>
   const t = team as unknown as Record<string, number>
   const o = opp as unknown as Record<string, number>
