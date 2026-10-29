@@ -65,8 +65,21 @@ def build_reports(handler: Any, collection: str) -> Iterator[Tuple[str, str, str
                 continue                                              # listed in a game but without stats: nothing to say about it
 
 
+FLOAT_DIGITS = 9                                                  # the sums of a season differ in the 14th decimal with the order of the games
+
+
+def _rounded(value: Any) -> Any:
+    if isinstance(value, float):
+        return round(value, FLOAT_DIGITS)
+    if isinstance(value, dict):
+        return {k: _rounded(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_rounded(v) for v in value]
+    return value
+
+
 def _dump(report: Dict[str, Any]) -> str:
-    return json.dumps(report, ensure_ascii=False, separators=(",", ":"), sort_keys=True, default=str)
+    return json.dumps(_rounded(report), ensure_ascii=False, separators=(",", ":"), sort_keys=True, default=str)
 
 
 def publish_reports(handler: Any, collections: Sequence[str], out_dir: Path, sealer: Sealer, previous: Optional[Dict[str, Any]] = None,

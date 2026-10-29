@@ -18,7 +18,7 @@ import fbcyl_games  # noqa: E402
 import games  # noqa: E402
 from src.live_prep.package_scopes import open_sealed, scope_key  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
-from src.local_data.team_reports import build_reports, publish_reports, report_scopes  # noqa: E402
+from src.local_data.team_reports import _dump, build_reports, publish_reports, report_scopes  # noqa: E402
 
 FEB = "L_F_-2_2025_2026_Liga_Regular_B"
 FBCYL = "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
@@ -117,3 +117,15 @@ def test_fbcyl_competitions_get_their_reports_too(handler, tmp_path):
     assert {(e["mode"]) for e in index["reports"]} == {"own", "rival"} and len(index["reports"]) == 8
     entry = next(e for e in index["reports"] if e["mode"] == "rival")
     assert _open(tmp_path, entry, f"competicion:{FBCYL}")["mode"] == "rival"
+
+
+@pytest.mark.parametrize("name, build", [(FEB, games.build_games), (FBCYL, fbcyl_games.build_games)])
+def test_reports_do_not_depend_on_the_order_the_games_were_stored_in_regression(handler, name, build):
+    """The archive restores the games sorted by ``_id``: summing the same floats in another order differs in the 14th decimal, and a report that
+    changed with it would be republished (and its cache invalidated) by every refresh."""
+    db = handler.connection.client["BASKETBALL"]
+    forward = {(t, m): _dump(r) for t, _n, m, r in build_reports(handler, name)}
+    db[name].drop()
+    db[name].insert_many(list(reversed(build())))
+    backward = {(t, m): _dump(r) for t, _n, m, r in build_reports(handler, name)}
+    assert forward == backward and forward
