@@ -33,6 +33,14 @@ class MongoDBHandler:
         """Insert a boxscore document."""
         return self.repository.insert_boxscore(collection_name, match_code, boxscore)
 
+    def get_match_for_recheck(self, collection_name: str, match_code: int) -> dict:
+        """The parts of a stored game that a correction can change (issue #646)."""
+        return self.repository.get_match_for_recheck(collection_name, match_code)
+
+    def replace_boxscore(self, collection_name: str, match_code: str, boxscore: dict) -> bool:
+        """Replace a stored game by its corrected download (issue #646)."""
+        return self.repository.replace_boxscore(collection_name, match_code, boxscore)
+
     def insert_fbcyl_match(self, collection_name: str, match_uuid: str, match_data: dict) -> bool:
         """Insert a FBCYL match document with complete data (moves + stats)."""
         return self.repository.insert_fbcyl_match(collection_name, match_uuid, match_data)
