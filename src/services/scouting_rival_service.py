@@ -11,9 +11,10 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
-from src.live_prep.scouting_collect import scout_team
+from src.live_prep.scouting_collect import ALL, LEAGUE, scout_team, scout_team_scopes
 from src.live_prep.scouting_compare import compare_teams
 from src.live_prep.scouting_report import build_scouting_report
+from src.live_prep.scouting_scopes import cup_games, team_levels
 from src.services.team_report_service import PBP_KEYS, TeamNotFoundError, TeamReportService
 from src.utils.collection_utils import is_fbcyl
 
@@ -41,8 +42,11 @@ def _catalog_gender(db: Any, collection: str) -> str:
 
 class ScoutingRivalService:
     def __init__(self, db: Any, stats: Any = None, report_service: Any = None, games: Callable[[Any, str], Iterable[Dict[str, Any]]] = _games_from_mongo,
-                 pbp: Optional[Callable[[str], List[Dict[str, Any]]]] = None, gender_of: Optional[Callable[[str], str]] = None) -> None:
+                 pbp: Optional[Callable[[str], List[Dict[str, Any]]]] = None, gender_of: Optional[Callable[[str], str]] = None,
+                 extra_games: Callable[[Any, str, str], Dict[str, Iterable[Dict[str, Any]]]] = cup_games,
+                 levels_of: Callable[[Any, str], Dict[str, int]] = team_levels) -> None:
         self._db = db
+        self._extra_games, self._levels_of = extra_games, levels_of
         self._pbp = pbp or (lambda collection: _pbp_from_db(db, collection))
         if stats is None:
             from src.services.team_stats_service import TeamStatsService
@@ -52,6 +56,10 @@ class ScoutingRivalService:
         self._report_service = report_service or TeamReportService(db, stats=stats)
         self._games = games
         self._gender_of = gender_of or (lambda collection: _catalog_gender(db, collection))
+
+    def teams(self, collection: str) -> Dict[str, str]:
+        """``{team id: name}`` of the teams of the competition (the ones that can be scouted)."""
+        return self._names(collection)
 
     def _names(self, collection: str) -> Dict[str, str]:
         return {str(t["id"]): t.get("name") or str(t["id"]) for t in (self._stats.get_teams_with_ids(collection) or [])}
@@ -97,6 +105,29 @@ class ScoutingRivalService:
         report["own_team"] = {"id": own_team_id, "name": names[own_team_id]} if own_team_id else None
         return report
 
+    def build_scopes(self, collection: str, team_id: str, progress: Optional[Progress] = None) -> Dict[str, Dict[str, Any]]:
+        """The scouting report by scope (issue #638): ``liga`` (the collection), ``copa`` (the team's games in the cups of the season) and ``todo`` (both),
+        the last two only when the team has cup games. The engine replays every game once; the league context and the rule-based report are the league's.
+        No matchup with our team here: it depends on a pair of teams and is computed from two profiles where it is read."""
+        team_id = str(team_id)
+        if is_fbcyl(collection):
+            raise ValueError("El scouting del rival solo está disponible para colecciones FEB por ahora")
+        if team_id not in self._names(collection):
+            raise TeamNotFoundError(team_id)
+        total = self._total_games(collection)
+        data = scout_team_scopes(self._games(self._db, collection), team_id, collection,
+                                 progress=(lambda done: progress(done, max(total, done))) if progress else None,
+                                 extra=self._extra_games(self._db, collection, team_id), levels=self._levels_of(self._db, collection) or None)
+        team_report, notices = self._team_report(collection, team_id)
+        reports = {}
+        for scope, scoped in data.items():
+            of_the_league = scope in (LEAGUE, ALL)
+            report = build_scouting_report(scoped, team_report=team_report if of_the_league else None, comparison=[], gender=self._gender(collection))
+            report["notices"] += _scope_notices(scope, scoped) + (notices if of_the_league else [])
+            report.update(scope=scope, collection=collection, own_team=None)
+            reports[scope] = report
+        return reports
+
     def _gender(self, collection: str) -> str:
         """``F``/``M`` of the competition in the catalog of the publisher; empty when it does not say (the report is then in the neutral)."""
         try:
@@ -109,3 +140,17 @@ class ScoutingRivalService:
             return self._report_service.build(collection, team_id, "rival"), []
         except Exception:  # noqa: BLE001 - an enrichment: the scouting does not depend on it
             return None, ["No se pudo añadir el informe por reglas del equipo; el plan se basa solo en lo que ve el motor."]
+
+
+def _scope_notices(scope: str, data: Dict[str, Any]) -> List[str]:
+    """What a scope is made of and what in it is not like the rest: the cup games, and the games against a team of another category."""
+    games = data["games"]
+    cup, other = sum(1 for g in games if g.get("competition") not in (None, LEAGUE)), sum(1 for g in games if g.get("other_level"))
+    notices = []
+    if scope == ALL:
+        notices.append(f"Agrupa la liga y la copa: {len(games) - cup} partidos de liga y {cup} de copa.")
+    elif scope != LEAGUE:
+        notices.append(f"Solo partidos de Copa: {len(games)} con jugada a jugada.")
+    if other and scope != LEAGUE:
+        notices.append(f"{other} de estos partidos son contra rivales de otra categoría: sus cifras no son comparables con las de la liga.")
+    return notices

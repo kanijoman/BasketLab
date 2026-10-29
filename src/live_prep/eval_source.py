@@ -79,8 +79,8 @@ def _fbcyl_games(mongo: Any) -> Iterator[Dict[str, Any]]:
             yield FBCYL.adapt(stored)
 
 
-def games_from_mongo(handler: Any, collection: str) -> Iterator[Dict[str, Any]]:
-    """The games of a FEB collection with play-by-play, in date order, one document in memory at a time.
+def games_from_mongo(handler: Any, collection: str, team_id: Optional[str] = None) -> Iterator[Dict[str, Any]]:
+    """The games of a FEB collection with play-by-play, in date order, one document in memory at a time; only those of ``team_id`` if given (#638).
 
     A first aggregation sorts only ids and dates (``HEADER.starttime`` is text, so it is parsed on the server);
     each game is then fetched with the replay projection (header, roster, play-by-play and shot chart).
@@ -90,7 +90,7 @@ def games_from_mongo(handler: Any, collection: str) -> Iterator[Dict[str, Any]]:
         yield from _fbcyl_games(mongo)
         return
     pipeline = [
-        {"$match": _WITH_PBP},
+        {"$match": {**_WITH_PBP, **({"HEADER.TEAM.id": str(team_id)} if team_id is not None else {})}},
         {"$project": {"start": {"$dateFromString": {"dateString": "$HEADER.starttime", "format": "%d-%m-%Y - %H:%M",
                                                     "onError": None, "onNull": None}}}},
         {"$sort": {"start": 1, "_id": 1}},

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadWebReport, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebScouting, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -126,5 +126,38 @@ describe('a manifest that was replaced while the page was open', () => {
     requested.length = 0
     await loadWebReport(FEB, '101', 'own').catch(() => undefined)
     expect(requested.filter(f => f === 'index.json').length).toBe(1)        // asked again, once
+  })
+})
+
+// The full scouting of the rival (issue #638): one sealed file per team and scope — Liga, Copa or both («Agrupado») — read like a report.
+describe('the scouting of web-data', () => {
+  it('lists the scopes a team has, the league first (a team without cup games has only the league)', async () => {
+    expect(await loadScoutingScopes(FEB, '101')).toEqual(['liga', 'copa', 'todo'])
+    expect(await loadScoutingScopes(FEB, '999')).toEqual([])
+    expect(await loadScoutingScopes(FBCYL, '34001')).toEqual([])                           // FBCYL has no scouting
+  })
+
+  it('opens each scope with what it counts: the league, the cup, both', async () => {
+    const [liga, copa, todo] = await Promise.all((['liga', 'copa', 'todo'] as const).map(scope => loadWebScouting(FEB, '101', scope)))
+    expect([liga.scope, copa.scope, todo.scope]).toEqual(['liga', 'copa', 'todo'])
+    expect([liga.sample_games, copa.sample_games, todo.sample_games]).toEqual([2, 1, 3])
+    expect(todo.games.map(g => g.competition)).toEqual(['liga', 'copa', 'liga'])
+  })
+
+  it('a scope the team does not have is unavailable, not an access problem', async () => {
+    await expect(loadWebScouting(FEB, '999', 'liga')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('the staff of any club of the competition opens it, a reader without keys is asked for an invitation', async () => {
+    withoutOpenKey()
+    await expect(loadWebScouting(FEB, '101', 'liga')).rejects.toBeInstanceOf(ScopedAccessError)
+    addRight(await invitation('club:102'))
+    expect((await loadWebScouting(FEB, '101', 'liga')).team.id).toBe('101')                 // a rival report: it is for the clubs that will face the team
+  })
+
+  it('the own analysis of a club is still its own: the scouting key does not change that', async () => {
+    withoutOpenKey()
+    addRight(await invitation('club:102'))
+    await expect(loadWebReport(FEB, '101', 'own')).rejects.toBeInstanceOf(ScopedAccessError)
   })
 })

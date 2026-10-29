@@ -54,10 +54,22 @@ def test_the_sealed_rows_say_what_the_exporter_says_today(handler):
 def test_the_sealed_reports_say_what_the_service_says_today(handler):
     for manifest_entry in _manifest()["reports"]:
         index = json.loads((OUT / manifest_entry["file"]).read_text(encoding="utf-8"))
-        fresh = {(tid, mode): _dump(report) for tid, _name, mode, report in build_reports(handler, manifest_entry["collection"])}
-        assert {(e["team_id"], e["mode"]) for e in index["reports"]} == set(fresh)
+        fresh = {(tid, mode, None): _dump(report) for tid, _name, mode, report in build_reports(handler, manifest_entry["collection"])}
         for entry in index["reports"]:
-            assert _open(entry) == fresh[(entry["team_id"], entry["mode"])]
+            if entry["mode"] == "scouting":
+                service = vectors.fixture_scouting_service(handler)
+                fresh[(entry["team_id"], "scouting", entry["scope"])] = _dump(service.build_scopes(manifest_entry["collection"], entry["team_id"])[entry["scope"]])
+        assert {(e["team_id"], e["mode"], e.get("scope")) for e in index["reports"]} == set(fresh)
+        for entry in index["reports"]:
+            assert _open(entry) == fresh[(entry["team_id"], entry["mode"], entry.get("scope"))]
+
+
+def test_the_published_scouting_has_the_scopes_of_a_team_with_cup_games():
+    index = json.loads((OUT / next(e["file"] for e in _manifest()["reports"] if e["collection"] == vectors.FEB)).read_text(encoding="utf-8"))
+    scouting = [e for e in index["reports"] if e["mode"] == "scouting"]
+    assert sorted((e["team_id"], e["scope"]) for e in scouting) == sorted((t, s) for t in ("101", "102") for s in ("liga", "copa", "todo"))
+    assert {s: _open(next(e for e in scouting if e["team_id"] == "101" and e["scope"] == s)) and json.loads(_open(next(e for e in scouting if e["team_id"] == "101" and e["scope"] == s)))["sample_games"]
+            for s in ("liga", "copa", "todo")} == {"liga": 2, "copa": 1, "todo": 3}
 
 
 def test_every_file_of_the_publication_is_referenced_and_named_by_its_hash():

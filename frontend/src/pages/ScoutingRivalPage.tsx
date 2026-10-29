@@ -10,16 +10,22 @@ import { Download, FileSearch, Loader2 } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
 import {
-  downloadScoutingPdf, getScoutingProgress, getScoutingReport, startScouting,
-  type ScoutingProgress, type ScoutingReport,
+  downloadScoutingPdf, getPublishedScouting, getScoutingProgress, getScoutingReport, getScoutingScopes, startScouting,
+  type ScoutingProgress, type ScoutingReport, type ScoutingScope,
 } from '@/api/scoutingRival'
+import { ScopedAccessError } from '@live-package/crypto'
+import AccessPanel from '@/components/AccessPanel'
 import PageTransition from '@/components/ui/PageTransition'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 
 type Phase =
   | { kind: 'idle' }
   | { kind: 'running'; progress: ScoutingProgress | null }
-  | { kind: 'done'; jobId: string; report: ScoutingReport }
+  | { kind: 'done'; jobId: string | null; report: ScoutingReport }      // `jobId` null: the report was published (no PDF to download from a job)
+  | { kind: 'locked' }                                                   // published, sealed, and this browser has no key for it
   | { kind: 'error'; message: string }
+
+const SCOPE_LABEL: Record<ScoutingScope, string> = { liga: 'Liga', copa: 'Copa', todo: 'Agrupado' }
 
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -46,7 +52,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf: () => void; downloading: boolean }) {
+function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf?: () => void; downloading: boolean }) {
   const { record } = report
   return (
     <div className="card p-5 space-y-4">
@@ -57,10 +63,12 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
             {report.sample_games} partidos analizados · balance {record.wins}-{record.losses} · {fmt(record.avg_for)} a favor, {fmt(record.avg_against)} en contra
           </p>
         </div>
-        <button className="btn-secondary" onClick={onPdf} disabled={downloading}>
-          {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-          Descargar PDF
-        </button>
+        {onPdf && (
+          <button className="btn-secondary" onClick={onPdf} disabled={downloading}>
+            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            Descargar PDF
+          </button>
+        )}
       </div>
 
       {report.notices.map(n => <p key={n} className="text-sm text-warn">{n}</p>)}
@@ -156,6 +164,9 @@ export default function ScoutingRivalPage() {
   const [rival, setRival] = useState('')
   const [own, setOwn] = useState('')
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
+  const [scopes, setScopes] = useState<ScoutingScope[]>([])          // what is published for the rival chosen (none: the report is generated)
+  const [scope, setScope] = useState<ScoutingScope>('liga')
+  const [scopesOf, setScopesOf] = useState('')                          // the rival the scopes above belong to: until it is the chosen one, nothing is known yet
   const [downloading, setDownloading] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -168,8 +179,18 @@ export default function ScoutingRivalPage() {
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
 
+  // What is published for the rival (issue #638): Liga, Copa or both. Without it (dataset off, nothing published, no cup games) the page works as always.
+  useEffect(() => {
+    let current = true
+    setScopes([])
+    setScope('liga')
+    const known = (found: ScoutingScope[]) => { if (current) { setScopes(found); setScopesOf(rival) } }
+    if (col && rival) getScoutingScopes(col, rival).then(known, () => known([]))
+    return () => { current = false }
+  }, [col, rival])
+
   const sameTeam = rival !== '' && rival === own
-  const ready = Boolean(rival) && !sameTeam
+  const ready = Boolean(rival) && !sameTeam && scopesOf === rival                // it waits to know whether the scouting is published (instant when it is off)
   const running = phase.kind === 'running'
 
   async function poll(jobId: string) {
@@ -190,13 +211,24 @@ export default function ScoutingRivalPage() {
     }
   }
 
-  async function generate() {
+  // Published scouting has no matchup (it depends on a pair of teams): with «Nuestro equipo» chosen the report is generated as always.
+  const published = scopes.length > 0 && !own
+
+  async function generate(chosen: ScoutingScope = scope) {
     setPhase({ kind: 'running', progress: null })
     try {
+      if (published) {
+        const report = await getPublishedScouting(col, rival, chosen)
+        if (report) {
+          setPhase({ kind: 'done', jobId: null, report })
+          return
+        }
+      }
       const { job_id } = await startScouting({ collection: col, team_id: rival, ...(own ? { own_team_id: own } : {}) })
       void poll(job_id)
     } catch (e) {
-      setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
+      if (e instanceof ScopedAccessError) setPhase({ kind: 'locked' })
+      else setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     }
   }
 
@@ -252,6 +284,14 @@ export default function ScoutingRivalPage() {
                 </label>
               </div>
               {sameTeam && <p className="text-xs text-warn">El equipo a analizar y el nuestro deben ser distintos.</p>}
+              {scopes.length > 1 && !own && (
+                <SegmentedControl label="Partidos a analizar" size="md" value={scope}
+                  onChange={next => { if (running) return; setScope(next); if (phase.kind === 'done' && phase.jobId === null) void generate(next) }}
+                  options={scopes.map(s => ({ value: s, label: SCOPE_LABEL[s] }))} />
+              )}
+              {scopes.length > 0 && own && (
+                <p className="text-xs text-ink-muted">Con «Nuestro equipo» elegido el informe se genera en el servidor, con la comparativa.</p>
+              )}
               <button className="btn-secondary" disabled={!ready || running} onClick={() => void generate()}>
                 {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSearch className="w-3.5 h-3.5" />}
                 Generar informe
@@ -275,10 +315,12 @@ export default function ScoutingRivalPage() {
                 </div>
               )}
               {phase.kind === 'error' && <p className="text-sm text-bad">{phase.message}</p>}
+              {phase.kind === 'locked' && <AccessPanel onUnlocked={() => void generate()} />}
             </div>
 
             {phase.kind === 'done' && (
-              <Preview report={phase.report} downloading={downloading} onPdf={() => void downloadPdf(phase.jobId, phase.report.team.name)} />
+              <Preview report={phase.report} downloading={downloading}
+                onPdf={phase.jobId ? () => void downloadPdf(phase.jobId as string, phase.report.team.name) : undefined} />
             )}
           </>
         )}

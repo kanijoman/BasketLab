@@ -20,7 +20,7 @@ from src.local_data.export import export_collection, file_name
 from src.local_data.team_reports import seal_file, seal_reports
 
 INDEX = "index.json"
-ROWS, REPORTS = "rows/", "reports/"
+ROWS, REPORTS, SCOUTING = "rows/", "reports/", "scouting/"
 
 
 def _json(value: Any) -> str:
@@ -50,7 +50,7 @@ def _previous_reports(out_dir: Path, manifest: Optional[Dict[str, Any]]) -> Dict
         except (OSError, ValueError):
             continue
         for report in index.get("reports", []):
-            old[(entry["collection"], report["team_id"], report["mode"])] = {**report, "collection": entry["collection"]}
+            old[(entry["collection"], report["team_id"], report["mode"], report.get("scope"))] = {**report, "collection": entry["collection"]}
     return old
 
 
@@ -60,9 +60,15 @@ def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept:
     return {"collection": collection, "league": payload["league"], "games": payload["games"], **fields}
 
 
-def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: Sealer, old: Dict[Any, Dict[str, Any]]) -> Dict[str, Any]:
-    """Seal the reports of a competition and write their index (plain: the wraps are not secret), named after its hash."""
-    reports = [{k: v for k, v in e.items() if k != "collection"} for e in seal_reports(handler, collection, out_dir, sealer, old, REPORTS)]
+def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: Sealer, old: Dict[Any, Dict[str, Any]], scout: bool = False,
+                          scouting_service: Optional[Callable[[Any], Any]] = None) -> Dict[str, Any]:
+    """Seal the reports of a competition (and its scouting, when asked) and write their index (plain: the wraps are not secret), named after its hash."""
+    entries = seal_reports(handler, collection, out_dir, sealer, old, REPORTS)
+    if scout:
+        from src.local_data.scouting_export import seal_scouting
+
+        entries += seal_scouting(handler, collection, out_dir, sealer, old, SCOUTING, scouting_service)
+    reports = [{k: v for k, v in e.items() if k != "collection"} for e in entries]
     data = (_json({"collection": collection, "reports": reports}) + "\n").encode("utf-8")
     sha = hashlib.sha256(data).hexdigest()
     file = REPORTS + file_name(f"{collection}|index|{sha[:12]}")
@@ -81,13 +87,15 @@ def _referenced(out_dir: Path, manifest: Dict[str, Any]) -> set:
 
 
 def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: Iterable[str], keep_others: bool = False,
-                     on_collection: Optional[Callable[[str], None]] = None) -> Dict[str, Any]:
+                     on_collection: Optional[Callable[[str], None]] = None, scouting: Optional[Iterable[str]] = None,
+                     scouting_service: Optional[Callable[[Any], Any]] = None) -> Dict[str, Any]:
     """Write the artifacts of ``collections`` and the manifest (returned). With ``keep_others`` the competitions of the previous publication that are
-    not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``."""
+    not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``. ``scouting`` lists the
+    collections whose teams also get their full scouting by scope (``scouting_export``; ``scouting_service`` builds the service, for tests)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     db = handler.connection.client["BASKETBALL"]
-    names = list(collections)
+    names, scouted = list(collections), set(scouting or [])
     previous = _read(out_dir / INDEX)
     old_reports = _previous_reports(out_dir, previous)
     rows = {e["collection"]: e for e in (previous or {}).get("rows", []) if keep_others and e["collection"] not in names}
@@ -95,7 +103,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     kept_rows = {e["collection"]: e for e in (previous or {}).get("rows", [])}
     for name in names:
         rows[name] = _publish_rows(db, name, out_dir, sealer, kept_rows.get(name))
-        reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports)
+        reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports, name in scouted, scouting_service)
         if on_collection:
             on_collection(name)
     manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(),
@@ -103,7 +111,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))
     _write_if_changed(out_dir / INDEX, (_json(manifest) + "\n").encode("utf-8"))
     keep = _referenced(out_dir, manifest)
-    for folder in (ROWS, REPORTS):
+    for folder in (ROWS, REPORTS, SCOUTING):
         for stale in (out_dir / folder).glob("*.json"):
             if f"{folder}{stale.name}" not in keep:
                 stale.unlink()

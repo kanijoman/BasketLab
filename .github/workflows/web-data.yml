@@ -22,6 +22,8 @@ on:
       - "run_web_data.py"
       - "run_archive.py"
       - "src/local_data/**"
+      - "src/live_prep/scouting_*.py"
+      - "src/services/scouting_rival_service.py"
       - "config/local_refresh.json"
       - ".github/workflows/web-data.yml"
 
