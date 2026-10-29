@@ -46,14 +46,16 @@ export interface WebDataManifest {
   reports: ReportIndexEntry[]
 }
 
-/** One sealed report: its team, its mode and the wraps of its key. */
+/** One sealed report: its team, its mode and the wraps of its key. ``scouting`` is the full scouting of the rival (#638) and then ``scope`` says which
+    games it counts: ``liga`` (the league), ``copa`` (the cups of the season) or ``todo`` (both). */
 export interface ReportEntry {
   file: string
   bytes: number
   sha256: string
   team_id: string
   team: string
-  mode: 'own' | 'rival'
+  mode: 'own' | 'rival' | 'scouting'
+  scope?: 'liga' | 'copa' | 'todo'
   wraps: Wrap[]
 }
 

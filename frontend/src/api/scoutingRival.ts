@@ -1,5 +1,7 @@
 /** Rival scouting report (issue #299): start the report of any team (background job), poll it, read it and download the PDF. */
 import { API_BASE } from './client'
+import { fromSource } from '@/datasource/resolve'
+import { loadScoutingScopes, loadWebScouting } from '@/webdata/client'
 
 export interface ScoutingRequest {
   collection: string
@@ -32,6 +34,25 @@ export interface ScoutingOriginRow {
   conceded_delta_pct: number | null
 }
 
+/** What a published scouting counts (issue #638): the league, the cups of the season, or both. */
+export type ScoutingScope = 'liga' | 'copa' | 'todo'
+
+/** A game of the scouted team; the competition and the category of the rival are there when the scouting spans several competitions. */
+export interface ScoutingGame {
+  code: string
+  date: string
+  opponent_id: string
+  opponent: string
+  home: boolean
+  score_for: number
+  score_against: number
+  margin: number
+  competition?: string
+  /** The rival's category minus the team's, and whether it is another one. */
+  level_gap?: number
+  other_level?: boolean
+}
+
 export interface ScoutingReport {
   team: { id: string; name: string }
   own_team: { id: string; name: string } | null
@@ -39,6 +60,9 @@ export interface ScoutingReport {
   /** `F` / `M` of the competition (the words agree with it, #495); absent or empty = masculine. */
   gender?: string
   sample_games: number
+  /** Which games it counts (published scouting only; the one of the API is the league's). */
+  scope?: ScoutingScope
+  games: ScoutingGame[]
   low_sample: boolean
   notices: string[]
   record: { wins: number; losses: number; avg_for: number; avg_against: number; avg_margin: number }
@@ -90,3 +114,14 @@ export async function downloadScoutingPdf(jobId: string): Promise<Blob> {
   if (!res.ok) throw await failure(res)
   return res.blob()
 }
+
+/**
+ * The scopes the scouting of a team is published for (`liga`, `copa`, `todo`), with the dataset `scouting` on (`?data=local`, issue #638); none when it is
+ * off or the publication cannot say, so that the page keeps its job-based flow. An access error (no key) reaches the page.
+ */
+export const getScoutingScopes = (collection: string, teamId: string): Promise<ScoutingScope[]> =>
+  fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), async () => [])
+
+/** The published scouting of a team for a scope, or `null` when it is off or cannot be had (the page then generates it as always). */
+export const getPublishedScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport | null> =>
+  fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), async () => null)

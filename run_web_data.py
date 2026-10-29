@@ -18,11 +18,14 @@ def main(argv=None) -> int:
     parser.add_argument("--out", required=True)
     parser.add_argument("--collection", action="append", help="only this collection (repeatable); the rest of the previous publication is kept")
     parser.add_argument("--closed", action="store_true", help="do not wrap for the open scope")
+    parser.add_argument("--scouting", action="append", help="also scout the teams of this collection (repeatable); default: the competitions where a club of interest plays")
+    parser.add_argument("--no-scouting", action="store_true", help="do not publish the full scouting of the rival (it takes about ten seconds per team)")
     args = parser.parse_args(argv)
 
     from src.api.deps import _create_handler
     from src.live_prep.package_sealing import make_sealer
     from src.local_data.web_data import publish_web_data
+    from src.local_data.scouting_export import interest_clubs, scouting_collections
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
 
     handler = _create_handler()
@@ -33,8 +36,9 @@ def main(argv=None) -> int:
     except ValueError as error:
         print(error, file=sys.stderr)
         return 2
+    scouting = [] if args.no_scouting else (args.scouting or [n for n in scouting_collections(handler, interest_clubs()) if n in names])
     started = time.time()
-    manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection),
+    manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection), scouting=scouting,
                                 on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"))
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")

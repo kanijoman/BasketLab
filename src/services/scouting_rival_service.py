@@ -57,6 +57,10 @@ class ScoutingRivalService:
         self._games = games
         self._gender_of = gender_of or (lambda collection: _catalog_gender(db, collection))
 
+    def teams(self, collection: str) -> Dict[str, str]:
+        """``{team id: name}`` of the teams of the competition (the ones that can be scouted)."""
+        return self._names(collection)
+
     def _names(self, collection: str) -> Dict[str, str]:
         return {str(t["id"]): t.get("name") or str(t["id"]) for t in (self._stats.get_teams_with_ids(collection) or [])}
 

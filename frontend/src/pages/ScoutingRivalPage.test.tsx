@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({ getLiveTeamNames: vi.fn() }))
 const scouting = vi.hoisted(() => ({
+  getScoutingScopes: vi.fn(),
+  getPublishedScouting: vi.fn(),
   startScouting: vi.fn(),
   getScoutingProgress: vi.fn(),
   getScoutingReport: vi.fn(),
@@ -16,6 +18,8 @@ vi.mock('@/api/scoutingRival', () => scouting)
 vi.mock('@/context/CollectionContext', () => ({ useCollection: () => ({ collection: collectionState.value }) }))
 
 import ScoutingRivalPage from './ScoutingRivalPage'
+import { ScopedAccessError } from '@live-package/crypto'
+import { loadRights } from '@live-package/rights'
 
 const REPORT = {
   team: { id: '2', name: 'Equipo B' }, own_team: { id: '1', name: 'Equipo A' }, sample_games: 6, low_sample: false, notices: [],
@@ -48,6 +52,8 @@ async function choose(rival = '2', own = '1') {
   await screen.findAllByRole('option', { name: 'Equipo B' })
   fireEvent.change(screen.getByLabelText(/equipo a analizar/i), { target: { value: rival } })
   if (own) fireEvent.change(screen.getByLabelText(/nuestro equipo/i), { target: { value: own } })
+  // the page first learns what is published for the rival (the button waits for it; instant when the scouting is not published)
+  if (rival !== own) await waitFor(() => expect(screen.getByRole('button', { name: /generar informe/i })).not.toBeDisabled())
 }
 
 beforeEach(() => {
@@ -55,6 +61,8 @@ beforeEach(() => {
   Object.values({ ...api, ...scouting }).forEach(f => f.mockReset())
   collectionState.value = { name: 'FEB_X', label: 'FEB X', isFbcyl: false }
   api.getLiveTeamNames.mockResolvedValue([{ id: '1', name: 'Equipo A' }, { id: '2', name: 'Equipo B' }, { id: '3', name: 'Equipo C' }])
+  scouting.getScoutingScopes.mockResolvedValue([])                            // nothing published: the page works as always
+  scouting.getPublishedScouting.mockResolvedValue(null)
   scouting.startScouting.mockResolvedValue({ job_id: 'j1' })
   scouting.getScoutingProgress
     .mockResolvedValueOnce({ status: 'running', current: 4, total: 16, team: 'Equipo B', own_team: 'Equipo A', error: null })
@@ -63,9 +71,10 @@ beforeEach(() => {
   scouting.downloadScoutingPdf.mockResolvedValue(new Blob(['%PDF']))
   vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() })
 })
+const realUrl = URL
 afterEach(() => {
   vi.useRealTimers()
-  vi.unstubAllGlobals()
+  vi.stubGlobal('URL', realUrl)                      // not unstubAllGlobals: it would drop the in-memory localStorage of the setup (rights are kept there)
 })
 
 describe('ScoutingRivalPage (issue #299)', () => {
@@ -184,5 +193,93 @@ describe('ScoutingRivalPage (issue #299)', () => {
     renderPage()
     expect(screen.getByText(/solo para competiciones FEB/i)).toBeTruthy()
     expect(screen.queryByRole('button', { name: /generar informe/i })).toBeNull()
+  })
+})
+
+// Issue #638: with the scouting published (dataset `scouting`) the user chooses what to see of the rival — only the league, only the cup or both — like the
+// phases of Multifase. The published report has no matchup and no PDF job: with our team chosen, or when nothing is published, the report is generated.
+const PUBLISHED = (scope: string, games: number) => ({ ...REPORT, own_team: null, comparison: [], scope, sample_games: games, notices: [`Alcance ${scope}`] })
+const invitation = (scope: string) => `bl1.${btoa(JSON.stringify({ s: scope, k: btoa(String.fromCharCode(...new Uint8Array(32).fill(5))), e: null })).replace(/=+$/, '')}`
+
+describe('ScoutingRivalPage: published scouting by scope (issue #638)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    scouting.getScoutingScopes.mockResolvedValue(['liga', 'copa', 'todo'])
+    scouting.getPublishedScouting.mockImplementation(async (_c: string, _t: string, scope: string) => PUBLISHED(scope, scope === 'liga' ? 30 : scope === 'copa' ? 3 : 33))
+  })
+
+  it('offers Liga, Copa and Agrupado, starts on the league and reads the published report without generating anything', async () => {
+    renderPage()
+    await choose('2', '')
+    const control = await screen.findByRole('radiogroup', { name: 'Partidos a analizar' })
+    expect(control).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Liga' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getAllByRole('radio').map(r => r.textContent)).toEqual(['Liga', 'Copa', 'Agrupado'])
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
+    expect(scouting.getPublishedScouting).toHaveBeenCalledWith('FEB_X', '2', 'liga')
+    expect(scouting.startScouting).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: /descargar pdf/i })).toBeNull()                 // a published report has no job to take the PDF from
+  })
+
+  it('changing the scope shows that scope of the same rival at once', async () => {
+    renderPage()
+    await choose('2', '')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await screen.findByText('Alcance liga')
+    fireEvent.click(await screen.findByRole('radio', { name: 'Copa' }))
+    expect(await screen.findByText('Alcance copa')).toBeInTheDocument()
+    expect(scouting.getPublishedScouting).toHaveBeenLastCalledWith('FEB_X', '2', 'copa')
+    fireEvent.click(screen.getByRole('radio', { name: 'Agrupado' }))
+    expect(await screen.findByText('Alcance todo')).toBeInTheDocument()
+  })
+
+  it('a rival without cup games has no selector: only the league is published', async () => {
+    scouting.getScoutingScopes.mockResolvedValue(['liga'])
+    renderPage()
+    await choose('2', '')
+    await waitFor(() => expect(scouting.getScoutingScopes).toHaveBeenCalledWith('FEB_X', '2'))
+    expect(screen.queryByRole('radiogroup', { name: 'Partidos a analizar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
+  })
+
+  it('with our team chosen the report is generated as always (the matchup needs a pair of teams) and the page says so', async () => {
+    renderPage()
+    await choose('2', '1')
+    expect(await screen.findByText(/se genera en el servidor, con la comparativa/i)).toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Partidos a analizar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await waitFor(() => expect(scouting.startScouting).toHaveBeenCalled())
+    expect(scouting.getPublishedScouting).not.toHaveBeenCalled()
+  })
+
+  it('when the publication cannot give the report, it is generated as always', async () => {
+    scouting.getPublishedScouting.mockResolvedValue(null)
+    renderPage()
+    await choose('2', '')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await waitFor(() => expect(scouting.startScouting).toHaveBeenCalled())
+  })
+
+  it('without a key it asks for an invitation, and the one pasted unlocks it without leaving the page', async () => {
+    scouting.getPublishedScouting.mockRejectedValueOnce(new ScopedAccessError('No tienes acceso.'))
+    renderPage()
+    await choose('2', '')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await screen.findByText(/necesita una invitación/i)
+    fireEvent.change(screen.getByLabelText('Invitación'), { target: { value: invitation('club:1') } })
+    fireEvent.click(screen.getByRole('button', { name: 'Desbloquear' }))
+    expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
+    expect(loadRights().map(r => r.scope)).toEqual(['club:1'])
+  })
+
+  it('choosing another rival forgets the scopes of the previous one', async () => {
+    scouting.getScoutingScopes.mockImplementation(async (_c: string, team: string) => (team === '2' ? ['liga', 'copa', 'todo'] : []))
+    renderPage()
+    await choose('2', '')
+    await screen.findByRole('radiogroup', { name: 'Partidos a analizar' })
+    fireEvent.change(screen.getByLabelText(/equipo a analizar/i), { target: { value: '3' } })
+    await waitFor(() => expect(screen.queryByRole('radiogroup', { name: 'Partidos a analizar' })).toBeNull())
   })
 })

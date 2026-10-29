@@ -105,7 +105,7 @@ def seal_reports(handler: Any, collection: str, out_dir: Path, sealer: Sealer, o
     entries = []
     for team_id, name, mode, report in built:
         fields = seal_file(out_dir, f"{collection}|{mode}|{team_id}", _dump(report), report_scopes(mode, team_id, team_ids, collection), sealer,
-                           old.get((collection, team_id, mode)), subdir)
+                           old.get((collection, team_id, mode, None)), subdir)
         entries.append({"collection": collection, "team_id": team_id, "team": name, "mode": mode, **fields})
     return entries
 
@@ -118,7 +118,7 @@ def publish_reports(handler: Any, collections: Sequence[str], out_dir: Path, sea
     out_dir.mkdir(parents=True, exist_ok=True)
     if previous is None and (out_dir / INDEX).is_file():
         previous = json.loads((out_dir / INDEX).read_text(encoding="utf-8"))
-    old = {(e["collection"], e["team_id"], e["mode"]): e for e in (previous or {}).get("reports", [])}
+    old = {(e["collection"], e["team_id"], e["mode"], e.get("scope")): e for e in (previous or {}).get("reports", [])}
     entries: List[Dict[str, Any]] = []
     for collection in collections:
         built = seal_reports(handler, collection, out_dir, sealer, old)

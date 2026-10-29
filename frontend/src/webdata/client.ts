@@ -7,6 +7,7 @@
 import { decryptScoped, PackageDecryptError, ScopedAccessError } from '@live-package/crypto'
 import { loadRights, scopeKeys } from '@live-package/rights'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
+import type { ScoutingReport, ScoutingScope } from '@/api/scoutingRival'
 import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -94,37 +95,55 @@ export async function loadReportTeams(collection: string): Promise<Array<{ id: s
   return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-async function sealedReport(collection: string, teamId: string, mode: ReportMode): Promise<{ manifest: WebDataManifest; entry: ReportEntry; text: string }> {
+/** The sealed file of the first report of the competition that `find` accepts, with the manifest it came from. */
+async function sealedFile(collection: string, find: (entry: ReportEntry) => boolean): Promise<{ manifest: WebDataManifest; entry: ReportEntry; text: string }> {
   const { manifest, index } = await reportIndexOf(collection)
-  const entry = index.reports.find(r => r.team_id === teamId && r.mode === mode)
+  const entry = index.reports.find(find)
   if (!entry) throw new WebDataUnavailable('Este informe no está publicado.')
   return { manifest, entry, text: await fetchText(entry.file) }
 }
 
 /**
- * The report of a team, opened with the open key and the rights of the reader. A file that is gone (the publication moved on while the page was
- * open) makes it read the manifest again, once.
+ * Opens a sealed report of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
+ * page was open) makes it read the manifest again, once.
  * @throws ScopedAccessError the reader has no key that opens it (ask for an invitation)
  * @throws WebDataUnavailable it cannot be had from the publication (use the API)
  */
-export async function loadWebReport(collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> {
+async function openSealed<T>(collection: string, find: (entry: ReportEntry) => boolean): Promise<T> {
   let sealed
   try {
-    sealed = await sealedReport(collection, teamId, mode)
+    sealed = await sealedFile(collection, find)
   } catch (error) {
     if (!(error instanceof Gone)) throw error
     resetWebData()
     try {
-      sealed = await sealedReport(collection, teamId, mode)
+      sealed = await sealedFile(collection, find)
     } catch (again) {
       throw again instanceof Gone ? new WebDataUnavailable('Los datos publicados han cambiado: recarga la página.') : again
     }
   }
   try {
-    return JSON.parse(await decryptScoped(sealed.text, sealed.entry.wraps, scopeKeys(sealed.manifest, loadRights()))) as TeamReport
+    return JSON.parse(await decryptScoped(sealed.text, sealed.entry.wraps, scopeKeys(sealed.manifest, loadRights()))) as T
   } catch (error) {
     if (error instanceof ScopedAccessError) throw error
     if (error instanceof PackageDecryptError || error instanceof SyntaxError) throw new WebDataUnavailable('El informe publicado está dañado.')
     throw error
   }
+}
+
+/** The report of a team (its own analysis or the rule-based report of a rival). */
+export const loadWebReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
+  openSealed<TeamReport>(collection, r => r.team_id === teamId && r.mode === mode)
+
+/** The full scouting of a rival for a scope: `liga`, `copa` (the cups of the season) or `todo` (both), issue #638. */
+export const loadWebScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport> =>
+  openSealed<ScoutingReport>(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope)
+
+const SCOPE_ORDER: ScoutingScope[] = ['liga', 'copa', 'todo']
+
+/** The scopes the scouting of a team is published for, the league first; none if the team has no scouting (FBCYL, or no play-by-play). */
+export async function loadScoutingScopes(collection: string, teamId: string): Promise<ScoutingScope[]> {
+  const { index } = await reportIndexOf(collection)
+  const have = new Set(index.reports.filter(r => r.team_id === teamId && r.mode === 'scouting' && r.scope).map(r => r.scope as ScoutingScope))
+  return SCOPE_ORDER.filter(scope => have.has(scope))
 }
