@@ -109,3 +109,4 @@ frontend/playwright-report/
 
 # Games downloaded for local calibration (issue #301)
 data/historical_games/
+frontend/public/local-data/

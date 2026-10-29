@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Layout from './Layout'
@@ -57,5 +57,18 @@ describe('Layout shell (issue #191)', () => {
     phone(true)
     shell('/')
     expect(screen.queryByRole('button', { name: 'Abrir menú' })).toBeNull()
+  })
+})
+
+// Issue #327 (step 2): while the tables come from the local files the header says so, so nobody takes them for the API's.
+describe('Layout local data tag (issue #327)', () => {
+  it('shows «Datos locales» only when the local data source is on', () => {
+    phone(false)
+    shell('/LF2/teams')
+    expect(screen.queryByText('Datos locales')).toBeNull()
+    cleanup()
+    localStorage.setItem('basketlab.data', 'local')
+    shell('/LF2/teams')
+    expect(screen.getByText('Datos locales')).toBeInTheDocument()
   })
 })

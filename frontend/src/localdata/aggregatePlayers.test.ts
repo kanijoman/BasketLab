@@ -27,9 +27,11 @@ describe('aggregatePlayers: the player tables from the rows of the contract (iss
     expect(aggregatePlayers([], teamRows, {})).toEqual([])
   })
 
-  it('a team the context does not know gets zero advanced figures, as the service does', () => {
+  it('a team the context does not know gets the zero defaults of the API, with their own keys (parity, bug in the API)', () => {
+    // `_default_adv` of the service: other names than the figures of the normal path, so `usage_pct` stays undefined (issue #647)
     const lone = playerRows.filter(r => r.team_id === playerRows[0].team_id)
-    const [player] = aggregatePlayers(lone, [], {})
-    expect([player.usage_pct, player.orating, player.pie]).toEqual([0, 0, 0])
+    const [player] = aggregatePlayers(lone, [], {}) as unknown as Array<Record<string, unknown>>
+    expect([player.usage, player.orating, player.pie, player.tov_pct, player.ftr_adv]).toEqual([0, 0, 0, 0, 0])
+    expect(player.usage_pct).toBeUndefined()
   })
 })

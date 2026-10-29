@@ -8,6 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
+import { localPlayerStats, localTeamStats } from '@/localdata/source'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 /** For API modules split out of this (already oversized) file. */
@@ -117,7 +118,9 @@ function buildTeamQs(params?: TeamFilters): string {
   return qs.toString() ? `?${qs}` : ''
 }
 
-export const getTeamStats = (collection: string, params?: TeamFilters) =>
+// With the local data source on (`?data=local`, issue #327) the tables are computed from the exported files; `null` = ask the API as always.
+export const getTeamStats = async (collection: string, params?: TeamFilters) =>
+  (await localTeamStats(collection, params ?? {})) ??
   get<{ team_stats: TeamStat[]; opponent_stats: TeamStat[] }>(
     `/teams/${encodeURIComponent(collection)}${buildTeamQs(params)}`,
   )
@@ -198,7 +201,9 @@ export const getCompetitionEvolution = (
 
 // ── Players ───────────────────────────────────────────────────────────────────
 
-export const getPlayerStats = (collection: string, params?: TeamFilters) => {
+export const getPlayerStats = async (collection: string, params?: TeamFilters) => {
+  const local = await localPlayerStats(collection, params ?? {})
+  if (local) return local
   const qs = new URLSearchParams()
   if (params?.venue)  qs.set('venue', params.venue)
   if (params?.result) qs.set('result', params.result)

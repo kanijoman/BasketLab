@@ -52,7 +52,12 @@ function season(games: PlayerGameRow[]): PlayerStat {
   } as unknown as PlayerStat
 }
 
-const ZERO_ADVANCED = { usage_pct: 0, orating: 0, drating: 0, net_rtg: 0, ast_pct: 0, tov_pct_adv: 0, stl_pct: 0, blk_pct: 0, drb_pct: 0, orb_pct: 0, pie: 0 }
+// What the service gives a player whose team it finds no context for (`_default_adv`): zeros under keys that are NOT those of the normal path, so
+// the figures the web reads (`usage_pct`, `tov_pct_adv`) stay undefined. Kept as is for parity; the bug is #647.
+const ZERO_ADVANCED = {
+  usage: 0, orating: 0, drating: 0, net_rtg: 0, ftr_adv: 0, three_pr_adv: 0, efg_adv: 0, ts_adv: 0,
+  ast_pct: 0, tov_pct: 0, stl_pct: 0, blk_pct: 0, drb_pct: 0, orb_pct: 0, pie: 0,
+}
 
 function advancedFigures(p: PlayerStat, team: LocalTeamStat, opp: LocalTeamStat) {
   const totals = p as unknown as Record<string, number>
