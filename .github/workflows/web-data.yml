@@ -4,8 +4,12 @@ name: Web data
 # credentials): the rows of the contract and the team reports of every competition, sealed by scope, plus the manifest `index.json`
 # (`run_web_data.py`, `src/local_data/web_data.py`). Starts from the previous publication so that what did not change keeps its bytes
 # (sealing is random; a file never changes in place). The branch is rewritten with a single commit (no history growth) and only when something changed.
-# Runs after each Atlas refresh and by hand. Needs the secrets ATLAS_READ_URI (ATLAS_WRITE_URI as fallback) and PACKAGE_MASTER_KEY
-# (or PACKAGE_PASSWORD, >= 8 characters). See docs/OPERATIONS.md.
+#
+# Source of the games (issue #646): with the secret ARCHIVE_DEPLOY_KEY the job downloads the private archive (repository `basketlab-archive`),
+# restores it into an ephemeral Mongo (service container), scrapes what is new from FEB (`config/local_refresh.json`: every competition,
+# 3a FEB complete), builds the artifacts from there and saves the archive back. Without the secret it reads Atlas as before.
+# Runs after each Atlas refresh and by hand. Needs ATLAS_READ_URI (ATLAS_WRITE_URI as fallback; only without the archive) and
+# PACKAGE_MASTER_KEY (or PACKAGE_PASSWORD, >= 8 characters). See docs/OPERATIONS.md.
 
 on:
   workflow_run:
@@ -16,7 +20,9 @@ on:
   pull_request:
     paths:
       - "run_web_data.py"
+      - "run_archive.py"
       - "src/local_data/**"
+      - "config/local_refresh.json"
       - ".github/workflows/web-data.yml"
 
 permissions:
@@ -33,6 +39,13 @@ jobs:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
@@ -41,9 +54,49 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
-      - name: Validate the entry point (pull requests)
+      - name: Validate the entry points (pull requests)
         if: github.event_name == 'pull_request'
-        run: python -c "import run_web_data; from src.local_data.web_data import publish_web_data; print('ok')"
+        run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.atlas_refresh import load_config; print(len(load_config('config/local_refresh.json')), 'competitions')"
+      - name: Choose the source of the games
+        id: source
+        if: github.event_name != 'pull_request'
+        env:
+          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+        run: |
+          if [ -n "$ARCHIVE_DEPLOY_KEY" ]; then echo "archive=true" >> "$GITHUB_OUTPUT"; else echo "archive=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Download the archive
+        id: pull
+        if: steps.source.outputs.archive == 'true'
+        env:
+          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$ARCHIVE_DEPLOY_KEY" > ~/.ssh/archive_key
+          chmod 600 ~/.ssh/archive_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          echo "GIT_SSH_COMMAND=ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes" >> "$GITHUB_ENV"
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+          python run_archive.py pull --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive
+      - name: Restore the archive into the ephemeral Mongo
+        id: restore
+        if: steps.pull.outcome == 'success'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: python run_archive.py load --src archive --replace
+      # Only what FEB has played since the archive: the games stored are skipped. A red report (missing matches) does not stop the data.
+      - name: Scrape the new games into the ephemeral Mongo
+        id: scrape
+        if: steps.restore.outcome == 'success'
+        continue-on-error: true
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: python run_atlas_refresh.py --config config/local_refresh.json --require-env
+      - name: Fill DERIVED in the new games
+        if: steps.restore.outcome == 'success'
+        continue-on-error: true
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: python run_backfill_derived.py --require-env
       - name: Start from the previous publication
         if: github.event_name != 'pull_request'
         run: |
@@ -51,7 +104,7 @@ jobs:
       - name: Build the artifacts
         if: github.event_name != 'pull_request'
         env:
-          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
+          MONGODB_CONNECTION_STRING: ${{ steps.source.outputs.archive == 'true' && env.EPHEMERAL_MONGO || secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
           PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY || secrets.PACKAGE_PASSWORD }}
         run: python run_web_data.py --out web-out
       - name: Publish to the web-data branch
@@ -69,3 +122,13 @@ jobs:
           git checkout -q --orphan publish
           git commit -q -m "Web data $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" publish:web-data
+      # The archive is saved even if the build failed (the new games are worth keeping), but only after a complete restore and never with fewer
+      # games than it had (`--no-shrink`): the last versions stay tagged in the repository.
+      - name: Save the archive
+        if: ${{ !cancelled() && steps.restore.outcome == 'success' }}
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+          python run_archive.py dump --out archive --no-shrink
+          python run_archive.py push --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive --message "Archive $(date -u +%Y-%m-%dT%H:%MZ)"
