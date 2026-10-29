@@ -19,6 +19,7 @@ import CollectionSwitcher from '@/components/CollectionSwitcher'
 import { IconButton } from '@/components/ui/Button'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import ThemeControl from '@/components/ThemeControl'
+import { localDataEnabled } from '@/localdata/source'
 import BrandLogo from '@/components/BrandLogo'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
 
@@ -75,7 +76,10 @@ function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
       {collection && <div className="min-w-0 hidden md:block"><CollectionSwitcher /></div>}
 
       {/* Right side — future: user avatar / auth */}
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-2">
+        {localDataEnabled() && (
+          <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent-text text-xs" title="Las tablas se calculan en el navegador con los ficheros exportados (?data=api para volver a la API)">Datos locales</span>
+        )}
         <ThemeControl />
         <a
           href="/docs"
