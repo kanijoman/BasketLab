@@ -71,7 +71,7 @@ def _refuse_shrinking(db: Any, out_dir: Path, names: List[str], whole: bool) -> 
             now = db[name].count_documents({})
             if now < entry["games"]:
                 raise ValueError(f"{name} has fewer games ({now}) than the archive ({entry['games']}): not overwriting it")
-        elif whole:
+        elif whole and entry["games"] > 0:               # a collection without games that is gone loses nothing
             raise ValueError(f"{name} is in the archive and no longer in the database (fewer games): not overwriting it")
 
 
@@ -124,8 +124,6 @@ def load_archive(src_dir: Path, db: Any, only: Optional[Iterable[str]] = None) -
         name = entry["name"]
         db.drop_collection(name)
         collection, batch, count = db[name], [], 0
-        if not blobs[name]:
-            db.create_collection(name)
         for line in gzip.decompress(blobs[name]).splitlines():
             batch.append(json_util.loads(line, json_options=_OPTIONS))
             if len(batch) >= BATCH:
@@ -134,5 +132,7 @@ def load_archive(src_dir: Path, db: Any, only: Optional[Iterable[str]] = None) -
         if batch:
             collection.insert_many(batch, ordered=False)
             count += len(batch)
+        if count == 0:
+            db.create_collection(name)                  # Mongo creates a collection with its first document: an empty one would be missing otherwise
         loaded[name] = count
     return loaded

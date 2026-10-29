@@ -166,3 +166,28 @@ def test_new_games_and_new_collections_are_not_shrinking(db, tmp_path):
     db["PRIMERA_FEB_2027_2028_Liga_Regular_\u00danico"].insert_one(_game(1))
     manifest = dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
     assert sum(c["games"] for c in manifest["collections"]) == 8 + 1 + 1
+
+
+def test_an_empty_collection_survives_a_restore_and_the_next_dump_regression(tmp_path):
+    """Run 40862376952: the archive held ``COPA_ESPA\u00d1A_2024_2025_PLAYOFFS_Final`` with 0 games; Mongo does not create a collection until its
+    first document, so the restore left it out and the refresh's own safeguard took it for lost games and refused to save the archive."""
+    db = new_mock_db("with_empty")
+    db[NAMES[0]].insert_one(_game(1))
+    db.create_collection(NAMES[1])
+    dump_archive(db, tmp_path, light=lambda name: False)
+    restored = new_mock_db("restored")
+    load_archive(tmp_path, restored)
+    assert set(restored.list_collection_names()) == {NAMES[0], NAMES[1]}
+    manifest = dump_archive(restored, tmp_path, light=lambda name: False, allow_shrink=False)
+    assert {c["name"]: c["games"] for c in manifest["collections"]} == {NAMES[0]: 1, NAMES[1]: 0}
+
+
+def test_an_empty_collection_that_is_gone_is_not_lost_games(tmp_path):
+    """Defence in depth: nothing was lost with a collection that had no game."""
+    db = new_mock_db("with_empty")
+    db[NAMES[0]].insert_one(_game(1))
+    db.create_collection(NAMES[1])
+    dump_archive(db, tmp_path, light=lambda name: False)
+    db.drop_collection(NAMES[1])
+    manifest = dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
+    assert [c["name"] for c in manifest["collections"]] == [NAMES[0]]
