@@ -9,13 +9,17 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, Trophy, Medal, Award, Search } from 'lucide-react'
+import { Trophy, Medal, Award } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getPlayerStats, type PlayerStat } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import Tabs from '@/components/ui/Tabs'
+import { Field, Input, Select } from '@/components/ui/Field'
 
 // -- Stat definitions ----------------------------------------------------------
 
@@ -171,45 +175,31 @@ export default function RankingsPage() {
       <div className="space-y-4">
 
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-ink">Rankings de Jugadores</h1>
-          <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
-        </div>
+        <PageHeader title="Rankings de Jugadores" subtitle={collection.label} />
 
         {/* Group tabs (Básicas / Tiro / Avanzadas) */}
-        <div className="flex gap-2">
-          {STAT_GROUPS.map((g, i) => (
-            <button
-              key={g.label}
-              onClick={() => { setGroupIdx(i); setStatIdx(0) }}
-              className={[
-                'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
-                i === groupIdx
-                  ? 'bg-accent/30 text-accent-text border border-accent/50'
-                  : 'bg-surface text-ink-muted border border-line hover:text-ink',
-              ].join(' ')}
-            >
-              {g.label}
-            </button>
-          ))}
-        </div>
+        <Tabs label="Grupos de estadísticas" tabs={STAT_GROUPS.map((g, i) => ({ id: String(i), label: g.label }))} value={String(groupIdx)}
+          onChange={id => { setGroupIdx(Number(id)); setStatIdx(0) }} />
 
         {/* Stat tabs within the active group (scrollable on mobile) */}
         <div className="overflow-x-auto pb-1">
           <div className="flex gap-2 min-w-max">
             {group.stats.map((s, i) => (
-              <button
+              <Button
                 key={s.key as string}
+                variant="ghost"
+                size="sm"
+                aria-pressed={i === safeStatIdx}
                 onClick={() => setStatIdx(i)}
                 className={[
-                  'px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                  'rounded-full border font-medium whitespace-nowrap',
                   i === safeStatIdx
-                    ? 'bg-accent/30 text-accent-text border border-accent/40'
-                    : 'bg-surface text-ink-muted border border-line hover:text-ink',
+                    ? 'bg-accent/30 text-accent-text border-accent/40'
+                    : 'bg-surface text-ink-muted border-line hover:text-ink',
                 ].join(' ')}
               >
                 {s.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -219,14 +209,14 @@ export default function RankingsPage() {
           {/* Min minutes */}
           <label className="flex items-center gap-2 text-xs text-ink-faint" title="Solo entran en el ranking los jugadores con al menos estos minutos por partido">
             MIN &ge;
-            <input
+            <Input
               type="number"
               min={0}
               max={40}
               step={1}
               value={minMin}
               onChange={e => setMinMin(Number(e.target.value))}
-              className="input w-16 py-1 text-xs text-center"
+              className="w-16 py-1 text-xs text-center"
             />
             min/partido
           </label>
@@ -234,42 +224,28 @@ export default function RankingsPage() {
           {/* Min games */}
           <label className="flex items-center gap-2 text-xs text-ink-faint">
             PJ &ge;
-            <input
+            <Input
               type="number"
               min={1}
               max={40}
               step={1}
               value={minGames}
               onChange={e => setMinGames(Math.max(1, Number(e.target.value)))}
-              className="input w-14 py-1 text-xs text-center"
+              className="w-14 py-1 text-xs text-center"
             />
             partidos
           </label>
 
           {/* Team filter */}
-          <div className="relative">
-            <select aria-label="Filtrar por equipo"
-              value={teamFilter}
-              onChange={e => setTeamFilter(e.target.value)}
-              className="select pr-8 pl-3 py-1.5 text-xs appearance-none"
-            >
-              <option value="">Todos los equipos</option>
-              {teamOptions.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-faint pointer-events-none" />
-          </div>
+          <Field label="Filtrar por equipo" className="min-w-[12rem]">
+            <Select value={teamFilter} onChange={e => setTeamFilter(e.target.value)} className="py-1.5 text-xs"
+              options={[{ value: '', label: 'Todos los equipos' }, ...teamOptions.map(t => ({ value: t, label: t }))]} />
+          </Field>
 
           {/* Player search */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-ink-faint pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Buscar jugador…"
-              value={playerSearch}
-              onChange={e => setPlayerSearch(e.target.value)}
-              className="input pl-7 pr-3 py-1.5 text-xs w-44"
-            />
-          </div>
+          <Field label="Buscar jugador" className="w-48">
+            <Input type="text" placeholder="Buscar jugador…" value={playerSearch} onChange={e => setPlayerSearch(e.target.value)} className="py-1.5 text-xs" />
+          </Field>
 
           <span className="text-xs text-ink-faint ml-auto">{filteredRanked.length} jugadores</span>
         </div>

@@ -9,7 +9,7 @@
  */
 import { useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Swords, ChevronDown } from 'lucide-react'
+import { Swords } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import {
@@ -19,6 +19,8 @@ import {
   type ComparisonRow,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import { Field, Select } from '@/components/ui/Field'
 import ExportButton from '@/components/ui/ExportButton'
 
 // ---------------------------------------------------------------------------
@@ -179,21 +181,10 @@ function TeamFilter({
   onChange: (t: string) => void
 }) {
   return (
-    <div className="relative">
-      <select aria-label="Equipo"
-        className="w-full appearance-none bg-canvas border border-line rounded-lg
-                   px-3 py-2 pr-8 text-sm text-ink
-                   focus:outline-none focus:ring-2 focus:ring-focus"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      >
-        <option value="">Todos los equipos</option>
-        {teams.map(t => (
-          <option key={t} value={t}>{t}</option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-    </div>
+    <Field label="Equipo">
+      <Select value={value} onChange={e => onChange(e.target.value)}
+        options={[{ value: '', label: 'Todos los equipos' }, ...teams.map(t => ({ value: t, label: t }))]} />
+    </Field>
   )
 }
 
@@ -207,29 +198,20 @@ function MatchSelector({
   onSelect: (id: string | number) => void
 }) {
   return (
-    <div className="relative">
-      <select aria-label="Partido"
-        className="w-full appearance-none bg-canvas border border-line rounded-lg
-                   px-3 py-2 pr-8 text-sm text-ink
-                   focus:outline-none focus:ring-2 focus:ring-focus"
+    <Field label="Partido">
+      <Select
         value={selectedId ?? ''}
         onChange={e => {
           const raw = e.target.value
           const asNum = Number(raw)
           onSelect(Number.isNaN(asNum) ? raw : asNum)
         }}
-      >
-        <option value="">— Selecciona un partido —</option>
-        {matches.map(m => (
-          <option key={String(m.match_id)} value={String(m.match_id)}>
-            {formatDate(m.date)}
-            {' · '}
-            {m.home_team} {m.home_score}–{m.away_score} {m.away_team}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-    </div>
+        options={[
+          { value: '', label: '— Selecciona un partido —' },
+          ...matches.map(m => ({ value: String(m.match_id), label: `${formatDate(m.date)} · ${m.home_team} ${m.home_score}–${m.away_score} ${m.away_team}` })),
+        ]}
+      />
+    </Field>
   )
 }
 
@@ -279,15 +261,8 @@ export default function MatchAnalysisPage() {
     <PageTransition>
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Swords className="w-5 h-5 text-accent-text shrink-0" />
-            <div>
-              <h1 className="text-xl font-bold text-ink">Análisis de Partido</h1>
-              <p className="text-xs text-ink-faint mt-0.5">{collection?.label}</p>
-            </div>
-          </div>
-          {analysis && (
+        <PageHeader title="Análisis de Partido" subtitle={collection?.label} icon={Swords}
+          actions={analysis && (
             <ExportButton
               filename={`analisis_partido_${selected ? `${selected.home_team}_vs_${selected.away_team}` : selectedId}`}
               csvData={analysis.comparison.map(r => ({ stat: r.label, [analysis.home.team_name]: r.home_value, [analysis.away.team_name]: r.away_value }))}
@@ -299,8 +274,7 @@ export default function MatchAnalysisPage() {
               captureRef={exportRef}
               pdfTitle={selected ? `${selected.home_team} ${selected.home_score}–${selected.away_score} ${selected.away_team}` : 'Análisis de Partido'}
             />
-          )}
-        </div>
+          )} />
 
         {/* Collection guard */}
         {!collection && (

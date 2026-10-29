@@ -64,7 +64,7 @@ test('possessions: summary by default, grouped fast/medium/slow in the own-style
   await expect(page.getByRole('columnheader', { name: 'DER' })).toBeVisible()
   await expect(page.getByRole('columnheader', { name: 'Rápidas' })).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Estilo propio' }).click()
+  await page.getByRole('radio', { name: 'Estilo propio' }).click()
   await expect(page.getByRole('columnheader', { name: 'Rápidas' })).toBeVisible()
   await expect(page.getByRole('columnheader', { name: 'DER' })).toHaveCount(0)
 

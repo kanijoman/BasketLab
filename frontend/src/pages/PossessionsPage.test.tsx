@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -52,20 +52,55 @@ describe('PossessionsPage table', () => {
   it('switches to the own-style view (grouped fast/medium/slow) and to the rival one', async () => {
     renderPage()
     await screen.findByText(NAME)
-    fireEvent.click(screen.getByRole('button', { name: 'Estilo propio' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Estilo propio' }))
     expect(screen.getByText('Rápidas')).toBeTruthy()
     expect(screen.getByText('Lentas')).toBeTruthy()
     expect(screen.queryByText('DER')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Rival' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Rival' }))
     expect(screen.getByText('Rápidas')).toBeTruthy()
     expect(document.body.textContent).toContain('0.6')
   })
 
-  it('every view is a real tab that can be pressed again to get back to the summary', async () => {
+  it('the views of the table are a group of radios: choosing the summary again gets back to it', async () => {
     renderPage()
     await screen.findByText(NAME)
-    fireEvent.click(screen.getByRole('button', { name: 'Estilo propio' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Resumen' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Estilo propio' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Resumen' }))
     expect(screen.getByText('DER')).toBeTruthy()
+  })
+})
+
+// Issue #192 (U5a): the page on the base components — one h1, the three parts of the analysis as tabs, the views of the table a named group.
+describe('PossessionsPage on the base components (issue #192)', () => {
+  beforeEach(() => {
+    api.getPossessionStats.mockReset().mockResolvedValue([STAT])
+    api.getTeamConsistency.mockReset().mockResolvedValue({ own: {} })
+  })
+
+  it('has one h1 with the competition as its subtitle and the two exports as links', async () => {
+    renderPage()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Análisis de Posesiones' })).toBeInTheDocument()
+    expect(screen.getByText('LF Challenge')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Exportar CSV' })).toHaveAttribute('href', '/export.csv')
+    expect(screen.getByRole('link', { name: 'Calidad PBP CSV' })).toHaveAttribute('href', '/quality.csv')
+  })
+
+  it('the table and the two scatters are tabs, the table open, and the arrows move between them', async () => {
+    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} })           // the scatter is drawn by recharts; jsdom has no ResizeObserver
+    renderPage()
+    await screen.findByText(NAME)
+    const tabs = within(screen.getByRole('tablist', { name: /partes del análisis/i })).getAllByRole('tab')
+    expect(tabs.map(t => t.textContent)).toEqual(['Tabla', 'Scatter Ritmo × OER', 'Scatter % Rápidas × OER'])
+    expect(screen.getByRole('tab', { name: 'Tabla' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Tabla' }), { key: 'ArrowRight' })
+    expect(screen.getByRole('tab', { name: 'Scatter Ritmo × OER' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('the views of the table are a named group of three options, the summary chosen', async () => {
+    renderPage()
+    await screen.findByText(NAME)
+    const group = screen.getByRole('radiogroup', { name: 'Vista de la tabla' })
+    expect(within(group).getAllByRole('radio').map(r => r.textContent)).toEqual(['Resumen', 'Estilo propio', 'Rival'])
+    expect(within(group).getByRole('radio', { name: 'Resumen' })).toHaveAttribute('aria-checked', 'true')
   })
 })

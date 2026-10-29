@@ -12,12 +12,16 @@ import { teamColumn } from '@/components/ui/TeamCell'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
-import { Users, ChevronDown, Info } from 'lucide-react'
+import { Users, Info } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getPlayerStats, getTeamsInCollection, getPlayerConsistency, type PlayerStat, type TeamFilters, type ConsistencyMap } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import Tabs from '@/components/ui/Tabs'
+import { Field, Select } from '@/components/ui/Field'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import SlideDrawer from '@/components/ui/SlideDrawer'
@@ -462,13 +466,7 @@ export default function PlayerStatsPage() {
       <div className="space-y-4">
 
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-ink">Estadísticas de Jugadores</h1>
-            <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
-          </div>
-          <FilterBar showDate />
-        </div>
+        <PageHeader title="Estadísticas de Jugadores" subtitle={collection.label} actions={<FilterBar showDate />} />
 
         {/* Trend comparison panel — visible only when a date filter is active */}
         {hasDateFilter && trendDisplay.length > 0 && (
@@ -484,8 +482,11 @@ export default function PlayerStatsPage() {
                   {options.map(opt => {
                     const active = trendStats.includes(opt.key)
                     return (
-                      <button
+                      <Button
                         key={String(opt.key)}
+                        variant="ghost"
+                        size="sm"
+                        aria-pressed={active}
                         onClick={() =>
                           setTrendStats(prev =>
                             prev.includes(opt.key)
@@ -494,14 +495,14 @@ export default function PlayerStatsPage() {
                           )
                         }
                         className={[
-                          'px-2 py-0.5 rounded text-[11px] font-medium border transition-colors',
+                          'border px-2 py-0.5 text-[11px] font-medium',
                           active
                             ? 'bg-accent/20 border-accent/50 text-accent-text'
                             : 'bg-surface-raised border-line text-ink-faint hover:text-ink',
                         ].join(' ')}
                       >
                         {opt.label}
-                      </button>
+                      </Button>
                     )
                   })}
                 </div>
@@ -551,17 +552,10 @@ export default function PlayerStatsPage() {
         {/* Controls row */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Team filter */}
-          <div className="relative">
-            <select aria-label="Filtrar por equipo"
-              value={teamFilter}
-              onChange={e => setTeamFilter(e.target.value)}
-              className="select pr-8 pl-3 py-1.5 text-sm appearance-none"
-            >
-              <option value="">Todos los equipos</option>
-              {teamList.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-ink-faint pointer-events-none" />
-          </div>
+          <Field label="Filtrar por equipo" className="min-w-[14rem]">
+            <Select value={teamFilter} onChange={e => setTeamFilter(e.target.value)}
+              options={[{ value: '', label: 'Todos los equipos' }, ...teamList.map(t => ({ value: t, label: t }))]} />
+          </Field>
 
           <span className="text-xs text-ink-faint ml-auto">
             <Users className="inline w-3.5 h-3.5 mr-1" />
@@ -579,22 +573,7 @@ export default function PlayerStatsPage() {
 
         {/* Tabs */}
         {teamFilter && (
-        <div className="flex gap-1 border-b border-line">
-          {TABS.map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={[
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
-                tab === id
-                  ? 'border-accent text-accent-text'
-                  : 'border-transparent text-ink-faint hover:text-ink',
-              ].join(' ')}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Tabs label="Vistas de estadísticas de jugadores" tabs={TABS.map(({ id, label }) => ({ id, label }))} value={tab} onChange={setTab} />
         )}
 
         {/* Projection methodology banner */}

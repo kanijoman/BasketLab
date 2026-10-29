@@ -23,6 +23,9 @@ import {
 } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import Tabs from '@/components/ui/Tabs'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import { tippedHeader } from '@/components/ui/Tooltip'
 
@@ -250,17 +253,20 @@ function CollectionPicker({
   return (
     <div className="flex flex-wrap gap-2">
       {all.map(name => (
-        <button
+        <Button
           key={name}
+          variant="ghost"
+          size="sm"
+          aria-pressed={selected.includes(name)}
           onClick={() => toggle(name)}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+          className={`rounded-full border font-medium ${
             selected.includes(name)
               ? 'bg-accent/20 border-accent/60 text-accent-text'
               : 'border-line text-ink-faint hover:text-ink hover:border-line/80'
           }`}
         >
           {name.split('_').slice(-1)[0] ?? name}
-        </button>
+        </Button>
       ))}
     </div>
   )
@@ -352,13 +358,7 @@ export default function MultiPhaseStatsPage() {
       <div className="space-y-4">
 
         {/* Page header */}
-        <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-accent-text shrink-0" />
-          <div>
-            <h1 className="text-xl font-bold text-ink">Estadísticas Multifase</h1>
-            <p className="text-xs text-ink-faint mt-0.5">Totales acumulados entre fases seleccionadas</p>
-          </div>
-        </div>
+        <PageHeader title="Estadísticas Multifase" subtitle="Totales acumulados entre fases seleccionadas" icon={Layers} />
 
         {/* Phase selector */}
         {loadingSiblings ? (
@@ -390,42 +390,11 @@ export default function MultiPhaseStatsPage() {
         {selectedCollections.length > 0 && (
           <>
             {/* Entity tabs: Equipos | Jugadores */}
-            <div className="flex items-center gap-1 border-b border-line">
-              {ENTITY_TABS.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setEntityTab(id as EntityTab)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                    entityTab === id
-                      ? 'border-accent text-accent-text'
-                      : 'border-transparent text-ink-faint hover:text-ink'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Tabs label="Equipos o jugadores" tabs={ENTITY_TABS.map(({ id, label }) => ({ id, label }))} value={entityTab} onChange={setEntityTab} />
 
             {/* Stat sub-tabs */}
-            <div className="flex items-center gap-1 border-b border-line/50">
-              {STAT_TABS.map(({ id, label, Icon }) => {
-                const active = entityTab === 'equipos' ? statTab === id : playerStatTab === id
-                return (
-                  <button
-                    key={id}
-                    onClick={() => entityTab === 'equipos' ? setStatTab(id as StatTab) : setPlayerStatTab(id as StatTab)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border-b-2 transition-colors -mb-px ${
-                      active
-                        ? 'border-accent/70 text-accent-text'
-                        : 'border-transparent text-ink-faint hover:text-ink'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
+            <Tabs label="Tipo de estadística" tabs={STAT_TABS.map(({ id, label, Icon }) => ({ id, label, icon: Icon }))}
+              value={entityTab === 'equipos' ? statTab : playerStatTab} onChange={entityTab === 'equipos' ? setStatTab : setPlayerStatTab} />
 
             {/* Loading skeleton */}
             {isLoading && (
