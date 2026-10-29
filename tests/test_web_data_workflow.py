@@ -39,3 +39,12 @@ def test_the_ephemeral_mongo_is_a_service_container_and_nothing_scrapes_atlas():
     assert WORKFLOW["jobs"]["publish"]["services"]["mongo"]["image"].startswith("mongo:")
     for name in ("Scrape the new games into the ephemeral Mongo", "Fill DERIVED in the new games", "Restore the archive into the ephemeral Mongo"):
         assert "EPHEMERAL_MONGO" in STEPS[name]["env"]["MONGODB_CONNECTION_STRING"]
+
+
+def test_the_deploy_key_is_normalised_and_checked_before_it_is_used_regression():
+    """A key saved from Windows (PowerShell) reaches the secret with CRLF line endings or a BOM and OpenSSH refuses it with the opaque
+    ``error in libcrypto``: the step must strip both and fail with a message that names the secret."""
+    run = STEPS["Download the archive"]["run"]
+    assert "tr -d '\r'" in run and "\xEF\xBB\xBF" in run
+    assert "ssh-keygen -y -f" in run and "ARCHIVE_DEPLOY_KEY" in run.split("ssh-keygen -y -f", 1)[1]
+    assert run.index("ssh-keygen -y -f") < run.index("run_archive.py pull")

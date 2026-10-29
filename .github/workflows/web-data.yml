@@ -71,8 +71,10 @@ jobs:
           ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$ARCHIVE_DEPLOY_KEY" > ~/.ssh/archive_key
+          # A key saved from Windows reaches the secret with CRLF line endings or a BOM, which OpenSSH rejects ("error in libcrypto")
+          printf '%s\n' "$ARCHIVE_DEPLOY_KEY" | tr -d '\r' | sed '1s/^\xEF\xBB\xBF//' > ~/.ssh/archive_key
           chmod 600 ~/.ssh/archive_key
+          ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY is not a valid OpenSSH private key (re-save the secret from the file as is)"; exit 1; }
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
           echo "GIT_SSH_COMMAND=ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes" >> "$GITHUB_ENV"
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
