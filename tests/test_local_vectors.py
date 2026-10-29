@@ -52,7 +52,8 @@ def test_the_player_filters_tell_something_apart(player_vectors):
     assert games(by_name["won"]) + games(by_name["lost"]) == games(by_name["all"])
     assert {p["team_name"] for p in by_name["one team"]} == {"BRAVO"} and by_name["unknown team"] == []
     assert all("usage_pct" in p and "pie" in p for p in by_name["all"])                  # enriched from the whole season even when filtered
-    assert any(p["player_name"].endswith("RENAMED") for p in by_name["all"])             # the same id under another name is another row
+    ids = [(p["team_id"], p["player_id"]) for p in by_name["all"]]
+    assert len(ids) == len(set(ids))                                                       # one row per player within his team, whatever name he was written under (#652)
 
 
 @pytest.fixture(scope="module")

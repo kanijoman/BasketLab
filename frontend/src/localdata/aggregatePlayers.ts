@@ -3,7 +3,7 @@
 // (`PlayerStatsService._enrich_with_advanced_stats`: from the WHOLE season's team context, whatever the filter). Parity with the API is enforced
 // by `aggregatePlayers.test.ts` against `tests/local_vectors/players_feb.json`.
 import type { PlayerStat } from '@/api/client'
-import { aggregateTeams, matchesFilters, type GameRow, type LocalTeamStat, type TeamTableFilter } from './aggregateTeams'
+import { aggregateTeams, matchesFilters, parsePlayed, type GameRow, type LocalTeamStat, type TeamTableFilter } from './aggregateTeams'
 import * as adv from './advancedStats'
 import { pyRound } from './pyMath'
 
@@ -28,15 +28,19 @@ const perGame = (n: number, games: number) => (games > 0 ? n / games : 0)
 /** The shooting rates are `null` (not 0) when there are no field-goal attempts, as in the pipeline. */
 const rate = (n: number, d: number) => (d > 0 ? (n / d) * 100 : null)
 
-function season(games: PlayerGameRow[]): PlayerStat {
-  const [first] = games
+/** The rows of a player in play order (a game whose date cannot be read goes first, as in the pipeline's sort); ties keep the order of the rows. */
+const chronological = (games: PlayerGameRow[]) => [...games].sort((a, b) => (parsePlayed(a.starttime) ?? -Infinity) - (parsePlayed(b.starttime) ?? -Infinity))
+
+function season(unsorted: PlayerGameRow[]): PlayerStat {
+  const games = chronological(unsorted)
+  const last = games[games.length - 1]                       // the name and the team name shown are those of his LAST game (#652)
   const sums = Object.fromEntries(SUMMED.map(k => [k, games.reduce((n, g) => n + g[k], 0)])) as Record<(typeof SUMMED)[number], number>
   const seconds = games.reduce((n, g) => n + g.minutes, 0)
   const n = games.length
   const fgAtt = sums.p2a + sums.p3a
   const tsaDen = fgAtt + 0.44 * sums.p1a
   return {
-    player_id: first.player_id, player_name: first.player_name, team_name: first.team_name, team_id: first.team_id,
+    player_id: last.player_id, player_name: last.player_name, team_name: last.team_name, team_id: last.team_id,
     games_played: n, total_minutes: seconds > 0 ? seconds / 60 : 0, minutes_per_game: n > 0 ? seconds / 60 / n : 0,
     total_p1m: sums.p1m, total_p1a: sums.p1a, total_p2m: sums.p2m, total_p2a: sums.p2a, total_p3m: sums.p3m, total_p3a: sums.p3a,
     total_pts: sums.pts, total_assist: sums.assist, total_ro: sums.ro, total_rd: sums.rd, total_rt: sums.rt, total_st: sums.st,
@@ -80,7 +84,7 @@ export function aggregatePlayers(rows: PlayerGameRow[], teamRows: GameRow[], fil
   const groups = new Map<string, PlayerGameRow[]>()
   for (const r of rows) {
     if (!matchesFilters(r, filter) || (filter.team !== undefined && r.team_name !== filter.team)) continue
-    const key = JSON.stringify([r.player_id, r.player_name, r.team_name, r.team_id])
+    const key = JSON.stringify([r.player_id, r.team_id])                      // the identity: the player within the team; names are not part of it (#652)
     groups.set(key, [...(groups.get(key) ?? []), r])
   }
   const players = [...groups.values()].map(season)
