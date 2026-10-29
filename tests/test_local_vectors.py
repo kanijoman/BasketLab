@@ -32,7 +32,7 @@ def test_the_filters_tell_something_apart(vectors):
     assert games(by_name["won"]) == games(by_name["lost"]) == 12
     assert 0 < games(by_name["date range"]) < 24
     assert games(by_name["empty range"]) == 0
-    assert games(by_name["to date (the last day's games are left out: midnight bound)"]) < games(by_name["all"])
+    assert 0 < games(by_name["to date (the games of the last day are in)"]) < games(by_name["all"])
 
 
 @pytest.fixture(scope="module")
@@ -70,7 +70,7 @@ def test_the_fbcyl_filters_tell_something_apart_and_the_day_bound_is_inclusive(f
     games = lambda case: sum(t["total_games"] for t in case)  # noqa: E731
     assert games(by_name["all"]) == 24 and games(by_name["empty range"]) == 0
     assert games(by_name["won"]) + games(by_name["lost"]) == 22                         # the tied game is in neither
-    assert games(by_name["to date (the last day's games are left out: midnight bound)"]) > 0
+    assert games(by_name["to date (the games of the last day are in)"]) > 0
 
 
 # FBCYL players (#644): the rows are regenerated everywhere (the exporter runs on mongomock); the API side of the vectors needs the real season

@@ -1866,9 +1866,9 @@
   },
   {
    "filter": {
-    "to": "2025-11-12"
+    "to": "2025-11-13"
    },
-   "name": "to date (the last day's games are left out: midnight bound)",
+   "name": "to date (the games of the last day are in)",
    "team_stats": [
     {
      "assist_fg_rate": 63.0,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aggregateTeams, type GameRow, type TeamTableFilter } from './aggregateTeams'
+import { aggregateTeams, matchesFilters, type GameRow, type TeamTableFilter } from './aggregateTeams'
 import vectors from '../../../tests/local_vectors/team_stats_feb.json'
 
 // Parity of the local team tables (issue #327): the rows of the contract summed on the device must give what the API answered for the same filter.
@@ -43,5 +43,28 @@ describe('aggregateTeams: the team tables from the rows of the contract (issue #
     const total = (f: TeamTableFilter) => aggregateTeams(bad, f).team_stats.reduce((n, t) => n + t.total_games, 0)
     expect(total({})).toBe(24)
     expect(total({ from: '2000-01-01' })).toBe(23)
+  })
+})
+
+// Bug #643: the upper bound of a range of dates is the END of its last day, in both leagues (FEB writes the game with its time).
+describe('matchesFilters: the last day of a range is in (issue #643)', () => {
+  const game = (starttime: string) => ({ is_local: true, won: true, tied: false, starttime })
+  it.each([
+    ['FEB, 20:30 of the last day', '13-11-2025 - 20:30', true],
+    ['FEB, 23:59 of the last day', '13-11-2025 - 23:59', true],
+    ['FEB, midnight of the next day', '14-11-2025 - 00:00', false],
+    ['FBCYL, the last day (it keeps only the day)', 'Nov 13, 2025 7:00:00 PM', true],
+    ['FBCYL, the next day', 'Nov 14, 2025 7:00:00 PM', false],
+  ])('to 2025-11-13 — %s', (_name, starttime, expected) => {
+    expect(matchesFilters(game(starttime), { to: '2025-11-13' })).toBe(expected)
+  })
+
+  it('the start of the first day is in, the evening before is out', () => {
+    expect(matchesFilters(game('13-11-2025 - 00:00'), { from: '2025-11-13' })).toBe(true)
+    expect(matchesFilters(game('12-11-2025 - 23:59'), { from: '2025-11-13' })).toBe(false)
+  })
+
+  it('a single day (from = to) holds all of its games', () => {
+    expect(matchesFilters(game('13-11-2025 - 20:30'), { from: '2025-11-13', to: '2025-11-13' })).toBe(true)
   })
 })

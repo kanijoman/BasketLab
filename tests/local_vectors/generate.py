@@ -24,6 +24,7 @@ from src.database.aggregation.fbcyl_pipeline import FBCYLPipelineBuilder  # noqa
 from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
 from src.services.player_stats_service import PlayerStatsService  # noqa: E402
+from src.utils.time_utils import end_of_day  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "team_stats_feb.json"
 PLAYERS_OUT = Path(__file__).resolve().parent / "players_feb.json"
@@ -36,7 +37,7 @@ FILTERS = [
     {"name": "lost", "result": "lost"},
     {"name": "home won", "venue": "home", "result": "won"},
     {"name": "from date", "from": "2025-11-01"},
-    {"name": "to date (the last day's games are left out: midnight bound)", "to": "2025-11-12"},
+    {"name": "to date (the games of the last day are in)", "to": "2025-11-13"},
     {"name": "date range", "from": "2025-10-20", "to": "2025-11-25"},
     {"name": "date range away lost", "from": "2025-10-20", "to": "2025-11-25", "venue": "away", "result": "lost"},
     {"name": "empty range", "from": "2030-01-01"},
@@ -59,9 +60,9 @@ def _run(games: list, filt: dict) -> dict:
 
 
 def _in_range(doc: dict, filt: dict) -> bool:
-    """The API turns ``YYYY-MM-DD`` into midnight and compares inclusively: a game played on the ``to`` day is out."""
+    """The API turns ``from`` into the start of its day and ``to`` into the END of its day (``end_of_day``, bug #643): a game played on the ``to`` day is in."""
     played = _played(doc)
-    return ("from" not in filt or played >= datetime.fromisoformat(filt["from"])) and ("to" not in filt or played <= datetime.fromisoformat(filt["to"]))
+    return ("from" not in filt or played >= datetime.fromisoformat(filt["from"])) and ("to" not in filt or played <= end_of_day(filt["to"]))
 
 
 def _clean(rows: list) -> list:
