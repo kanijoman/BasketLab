@@ -10,7 +10,9 @@ here is specific to any team. Games arrive in date order, one at a time (memory)
 
 from __future__ import annotations
 
+import heapq
 from collections import Counter
+from datetime import datetime
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from src.live_core.advice import AdviceEngine
@@ -95,7 +97,7 @@ class _Agg:
         self.alerts: Dict[str, Dict[str, Any]] = {}
 
     def add(self, game: Dict[str, Any], opp: str, snap: Dict[str, Any], alerts: List[Dict[str, Any]],
-            derived: Optional[Tuple[Dict[str, Any], Dict[str, Any]]] = None) -> None:
+            derived: Optional[Tuple[Dict[str, Any], Dict[str, Any]]] = None, note: Optional[Dict[str, Any]] = None) -> None:
         mine, theirs = snap["teams"][self.team], snap["teams"][opp]
         self.name = mine.get("name") or self.team
         score_for, score_against = snap["score"][self.team], snap["score"][opp]
@@ -103,7 +105,7 @@ class _Agg:
         self.games.append({
             "code": game_code(game), "date": start.isoformat() if start else "", "opponent_id": opp,
             "opponent": theirs.get("name") or opp, "home": snap.get("home_id") == self.team,
-            "score_for": score_for, "score_against": score_against, "margin": score_for - score_against})
+            "score_for": score_for, "score_against": score_against, "margin": score_for - score_against, **(note or {})})
         self._factors_and_pace(mine["stats"], theirs["stats"], snap["elapsed"])
         self._players(snap)
         self._lineups(snap)
@@ -231,31 +233,79 @@ def _replay(game: Dict[str, Any], acc: SeasonAccumulator, team: str, opp: str, c
     return (snap, alerts) if snap is not None else None
 
 
+LEAGUE, ALL = "liga", "todo"        # the scope of the league's games and the one that groups every competition; a cup (or any other) scope has its own name
+
+
+def _start_key(game: Dict[str, Any]) -> datetime:
+    return parse_starttime(game) or datetime.min
+
+
+def scout_team_scopes(games: Iterable[Dict[str, Any]], team_id: str, collection: str = "FEB", poll_s: float = 30.0,
+                      progress: Optional[Callable[[int], None]] = None, extra: Optional[Dict[str, Iterable[Dict[str, Any]]]] = None,
+                      levels: Optional[Dict[str, int]] = None) -> Dict[str, Dict[str, Any]]:
+    """The scouting data of ``team_id`` over its league and its other competitions, by scope (issue #638): ``liga``, one per key of ``extra`` and ``todo``.
+
+    ``games`` is the league (every game of the competition, in date order): it feeds the season (the priors of the engine and the league's zones and
+    origin figures) exactly as ``scout_team`` always did. ``extra`` maps a scope name (``copa``) to the games of the team in another competition: they are
+    replayed from its side with what the league had taught the engine up to their date but they never feed the season, so a cup game against a team
+    of another division does not move the league context. Each game is replayed once and counted in its own scope and in ``todo`` (which is only there
+    when at least two scopes have games). ``levels`` (team id -> category) marks the games against a team of another category (``other_level``,
+    ``level_gap``: the rival's category minus the team's). Raises ``ValueError`` when the team has no game at all.
+    """
+    team_id, extra = str(team_id), extra or {}
+    if any(name in (LEAGUE, ALL) for name in extra):
+        raise ValueError(f"Los nombres de alcance {LEAGUE!r} y {ALL!r} están reservados")
+    scope_of: Dict[str, str] = {}
+    others: List[Dict[str, Any]] = []
+    for name, items in extra.items():
+        for game in items:
+            scope_of[game_code(game)] = name
+            others.append(game)
+    merged = heapq.merge(games, sorted(others, key=_start_key), key=_start_key) if others else games
+    acc, league, aggs, done = SeasonAccumulator(), _League(), {}, 0
+    for group in same_start_groups(merged):
+        for game in group:       # all of them before any is learned: games that start together do not see each other
+            scope = scope_of.get(game_code(game))                        # None: a game of the league
+            ids = [str(t["id"]) for t in (game.get("HEADER") or {}).get("TEAM", [])]
+            derived = _reliable_teams(game) if len(ids) == 2 else None
+            if derived and scope is None:
+                league.add(derived)
+            if len(ids) == 2 and team_id in ids:
+                opp = ids[1] if ids[0] == team_id else ids[0]
+                replayed = _replay(game, acc, team_id, opp, collection, poll_s)
+                if replayed:
+                    note = _note(scope or LEAGUE, team_id, opp, levels) if (others or levels) else None
+                    for name in {scope or LEAGUE, ALL}:
+                        aggs.setdefault(name, _Agg(team_id)).add(game, opp, *replayed, derived=derived, note=note)
+        for game in group:
+            if game_code(game) not in scope_of:                          # only the league teaches the season
+                acc.add_game(game)
+        done += len(group)
+        if progress:
+            progress(done)
+    if not aggs:
+        raise ValueError(f"El equipo {team_id} no tiene partidos con jugada a jugada en la colección")
+    if sum(1 for name in aggs if name != ALL) < 2:
+        aggs.pop(ALL, None)                                              # the grouped scope would repeat the only one
+    context = (acc.zone_league, league.result() if league.team_games else None)
+    return {name: agg.result(*context) for name, agg in aggs.items()}
+
+
+def _note(scope: str, team: str, opp: str, levels: Optional[Dict[str, int]]) -> Dict[str, Any]:
+    """What a game says of its competition and, when both categories are known, whether the rival is of another one."""
+    note: Dict[str, Any] = {"competition": scope}
+    if levels and team in levels and opp in levels:
+        note["level_gap"] = levels[opp] - levels[team]
+        note["other_level"] = note["level_gap"] != 0
+    return note
+
+
 def scout_team(games: Iterable[Dict[str, Any]], team_id: str, collection: str = "FEB", poll_s: float = 30.0,
                progress: Optional[Callable[[int], None]] = None) -> Dict[str, Any]:
-    """The scouting data of ``team_id`` over ``games`` (every game of the competition, in date order).
+    """The scouting data of ``team_id`` over ``games`` (every game of the competition, in date order): the ``liga`` scope of ``scout_team_scopes``.
 
     Every game feeds the season (priors and league zones) but only those of the team are replayed. ``poll_s`` is the replay's
     step in seconds (30 is enough for the report and three times cheaper than the app's 10). ``progress(done)`` is called
     after each group of games that start together. Raises ``ValueError`` when the team has no game.
     """
-    team_id = str(team_id)
-    acc, agg, league, done = SeasonAccumulator(), _Agg(team_id), _League(), 0
-    for group in same_start_groups(games):
-        for game in group:       # all of them before any is learned: games that start together do not see each other
-            ids = [str(t["id"]) for t in (game.get("HEADER") or {}).get("TEAM", [])]
-            derived = _reliable_teams(game) if len(ids) == 2 else None
-            if derived:
-                league.add(derived)
-            if len(ids) == 2 and team_id in ids:
-                replayed = _replay(game, acc, team_id, ids[1] if ids[0] == team_id else ids[0], collection, poll_s)
-                if replayed:
-                    agg.add(game, ids[1] if ids[0] == team_id else ids[0], *replayed, derived=derived)
-        for game in group:
-            acc.add_game(game)
-        done += len(group)
-        if progress:
-            progress(done)
-    if not agg.games:
-        raise ValueError(f"El equipo {team_id} no tiene partidos con jugada a jugada en la colección")
-    return agg.result(acc.zone_league, league.result() if league.team_games else None)
+    return scout_team_scopes(games, team_id, collection, poll_s, progress)[LEAGUE]
