@@ -23,17 +23,12 @@ const BASELINE: Record<string, [number, number, number, number]> = {
   'pages/LineupsPage.tsx': [3, 0, 0, 1],
   'pages/LivePrepPage.tsx': [2, 2, 3, 1],
   'pages/MatchAnalysisPage.tsx': [0, 2, 0, 1],
-  'pages/MultiPhaseStatsPage.tsx': [3, 0, 0, 1],
   'pages/PbpAnalysisPage.tsx': [1, 0, 0, 1],
-  'pages/PlayerStatsPage.tsx': [2, 1, 0, 1],
-  'pages/PossessionsPage.tsx': [2, 0, 0, 1],
   'pages/PredictivePage.tsx': [12, 8, 4, 1],
-  'pages/RankingsPage.tsx': [2, 1, 3, 1],
   'pages/ReportPage.tsx': [2, 3, 0, 1],
   'pages/RotacionesPage.tsx': [1, 0, 0, 1],
   'pages/ScoutingRivalPage.tsx': [2, 2, 0, 1],
   'pages/ShotChartPage.tsx': [4, 1, 0, 1],
-  'pages/TeamStatsPage.tsx': [0, 1, 0, 1],
 }
 
 function sources(dir: string): string[] {

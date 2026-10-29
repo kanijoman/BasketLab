@@ -5,7 +5,7 @@ Guía de la épica #187 para la web (`frontend/`). Tokens, marca y tema son de l
 ## Principios
 - **Tema claro por defecto**, oscuro o del sistema (selector en la cabecera). Todo se prueba en los dos.
 - **Ningún color suelto**: solo el vocabulario del preset. Lo vigila `frontend/src/designTokens.test.ts` (hex, `rgb()`, paleta de Tailwind, nombres que no existen, `dark:`, texto blanco sin relleno de color).
-- **Ningún control a mano** en una página nueva: los componentes de abajo. Lo vigila `frontend/src/rawControls.test.ts` (trinquete: ningún fichero suma `<button>`, `<select>`, `<input>` ni `<h1>` crudos; al migrar una página, se baja su línea base).
+- **Ningún control a mano** en una página nueva: los componentes de abajo. Lo vigila `frontend/src/rawControls.test.ts` (trinquete: ningún fichero suma `<button>`, `<select>`, `<input>` ni `<h1>` crudos; al migrar una página, se baja su línea base). **Migradas (U5a, #192)**: Estadísticas de equipo, de jugadores, Rankings, Posesiones y Multifase, sin ningún control crudo: `PageHeader` (su única `h1`), `Tabs` para las vistas (con el teclado), `SegmentedControl` para elegir una opción de pocas, `Field`+`Select`/`Input` para los filtros con nombre y `Button` con `aria-pressed` para lo que se activa y desactiva (fases a combinar, estadísticas de la tendencia, la del ranking).
 - Textos en español; código y comentarios en inglés.
 
 ## Vocabulario de color (preset de `design/`)

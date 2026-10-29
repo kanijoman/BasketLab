@@ -19,6 +19,8 @@ import { useCollection } from '@/context/CollectionContext'
 import { getTeamStats, getTeamConsistency, getRivalAdjusted, type TeamStat, type TeamFilters, type CVMap, type CVEntry, type RivalAdjustedResult } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import { Field, Select } from '@/components/ui/Field'
 import FilterBar, { useFilters } from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import { computeQuartileMap } from '@/lib/quartiles'
@@ -147,17 +149,11 @@ function RivalAdjPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-ink-muted">Estadística:</label>
-        <select aria-label="Estadística:"
-          className="bg-canvas border border-line rounded px-3 py-1.5 text-sm text-ink"
-          value={statKey}
-          onChange={e => setStatKey(e.target.value)}
-        >
-          {Object.entries(RIVAL_STAT_LABELS).map(([k, l]) => (
-            <option key={k} value={k}>{l}</option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="Estadística:" className="min-w-[14rem]">
+          <Select value={statKey} onChange={e => setStatKey(e.target.value)}
+            options={Object.entries(RIVAL_STAT_LABELS).map(([value, label]) => ({ value, label }))} />
+        </Field>
         {tableData.length > 0 && (
           <ExportButton
             className="ml-auto"
@@ -342,13 +338,7 @@ export default function TeamStatsPage() {
       <div className="space-y-4">
 
         {/* Page header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-ink">Estadísticas de Equipo</h1>
-            <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
-          </div>
-          <FilterBar showDate />
-        </div>
+        <PageHeader title="Estadísticas de Equipo" subtitle={collection.label} actions={<FilterBar showDate />} />
 
         {/* Highlight stat cards — show trend vs full season when date filter active */}
         <div className="grid grid-cols-3 gap-3">

@@ -48,3 +48,50 @@ describe('RankingsPage minutes', () => {
     expect(order()).toEqual(['Titular', 'Anotador'])
   })
 })
+
+// Issue #192 (U5a): Rankings on the base components. The groups are tabs, the stats of the open group toggle buttons that say which is on, the filters
+// have names a screen reader reads, and the page has one h1.
+describe('RankingsPage on the base components (issue #192)', () => {
+  beforeEach(() => api.getPlayerStats.mockReset().mockResolvedValue(PLAYERS))
+
+  it('has one h1 with the competition as its subtitle', async () => {
+    renderPage()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Rankings de Jugadores' })).toBeInTheDocument()
+    expect(screen.getByText('LF Challenge')).toBeInTheDocument()
+  })
+
+  it('the groups of stats are tabs: Básicas, Tiro and Avanzadas, the open one selected, and choosing one starts on its first stat', async () => {
+    renderPage()
+    await screen.findByText('Anotador')
+    const tabs = within(screen.getByRole('tablist', { name: /grupos de estadísticas/i })).getAllByRole('tab')
+    expect(tabs.map(t => t.textContent)).toEqual(['Básicas', 'Tiro', 'Avanzadas'])
+    expect(screen.getByRole('tab', { name: 'Básicas' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.click(screen.getByRole('tab', { name: 'Tiro' }))
+    expect(screen.getByRole('tab', { name: 'Tiro' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('button', { name: '% TL' })).toHaveAttribute('aria-pressed', 'true')       // the first of the group
+  })
+
+  it('the stat chosen says so, and choosing another moves it', async () => {
+    renderPage()
+    await screen.findByText('Anotador')
+    expect(screen.getByRole('button', { name: 'Puntos' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Minutos' }))
+    expect(screen.getByRole('button', { name: 'Minutos' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Puntos' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('every filter has a name: minutes, games, team and the search of a player', async () => {
+    renderPage()
+    await screen.findByText('Anotador')
+    expect(screen.getByLabelText('Filtrar por equipo')).toBeInTheDocument()
+    expect(screen.getByLabelText('Buscar jugador')).toBeInTheDocument()
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(2)
+  })
+
+  it('the search narrows the ranking to the players that match', async () => {
+    renderPage()
+    await screen.findByText('Anotador')
+    fireEvent.change(screen.getByLabelText('Buscar jugador'), { target: { value: 'titular' } })
+    expect(order()).toEqual(['Titular'])
+  })
+})

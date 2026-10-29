@@ -10,6 +10,9 @@ import { Activity } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getPossessionQualityExportUrl, getPossessionStats, getPossessionsExportUrl, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Tabs from '@/components/ui/Tabs'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 import DataTable from '@/components/ui/DataTable'
 import ScatterCard from './possessions/ScatterCard'
 import {
@@ -59,46 +62,20 @@ export default function PossessionsPage() {
   return (
     <PageTransition>
       <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Análisis de Posesiones</h1>
-            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {collection && (
-              <>
-                <a
-                  href={getPossessionsExportUrl(collection.name)}
-                  download
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors"
-                >
-                  Exportar CSV
-                </a>
-                <a
-                  href={getPossessionQualityExportUrl(collection.name)}
-                  download
-                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors"
-                >
-                  Calidad PBP CSV
-                </a>
-              </>
-            )}
-          {/* Tab toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-line text-sm">
-            {TABS.map(([key, lbl]) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={`px-4 py-1.5 font-medium transition-colors ${
-                  tab === key ? 'bg-secondary-solid text-white' : 'text-ink-muted hover:bg-surface-raised'
-                }`}
-              >
-                {lbl}
-              </button>
-            ))}
-          </div>
-          </div>
-        </div>
+        <PageHeader title="Análisis de Posesiones" subtitle={collection?.label}
+          actions={collection && (
+            <>
+              <a href={getPossessionsExportUrl(collection.name)} download
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors">
+                Exportar CSV
+              </a>
+              <a href={getPossessionQualityExportUrl(collection.name)} download
+                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors">
+                Calidad PBP CSV
+              </a>
+            </>
+          )} />
+        <Tabs label="Partes del análisis de posesiones" tabs={TABS.map(([id, label]) => ({ id, label }))} value={tab} onChange={setTab} />
 
         {isLoading ? (
           <div className="card p-16 flex justify-center">
@@ -111,20 +88,8 @@ export default function PossessionsPage() {
           </div>
         ) : tab === 'table' ? (
           <div className="space-y-3">
-            <div role="group" aria-label="Vista de la tabla" className="inline-flex rounded-lg overflow-hidden border border-line text-sm">
-              {VIEWS.map(v => (
-                <button
-                  key={v.key}
-                  onClick={() => setView(v.key)}
-                  aria-pressed={view === v.key}
-                  className={`px-4 py-1.5 font-medium transition-colors ${
-                    view === v.key ? 'bg-secondary-solid text-white' : 'text-ink-muted hover:bg-surface-raised'
-                  }`}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl label="Vista de la tabla" size="md" value={view} onChange={setView}
+              options={VIEWS.map(v => ({ value: v.key, label: v.label }))} />
             <DataTable
               columns={cols}
               data={stats}
