@@ -1,7 +1,7 @@
 """Export of the rows of the local-first contract: one file per competition plus an index (#327, step 2).
 
 A file holds what the season pipelines read, one row per team and game and (FEB) one per player and game; ``frontend/src/localdata`` sums
-them on the device. Files carry no timestamp and keep the order of the pipelines, so a refresh that brings no new game changes no byte.
+them on the device. Files carry no timestamp and are sorted by game, team and player, so a refresh that brings no new game changes no byte.
 ``player_rows`` is ``None`` for FBCYL (its player table still comes from the API, issue #644).
 """
 from __future__ import annotations
@@ -19,8 +19,14 @@ FORMAT = 1
 INDEX = "index.json"
 
 
+def _order(row: Dict) -> tuple:
+    return tuple(str(row.get(k, "")) for k in ("match_id", "team_id", "player_id"))
+
+
 def _rows(collection: Any, pipeline: List[Dict]) -> List[Dict]:
-    return [{k: v for k, v in row.items() if k != "_id"} for row in collection.aggregate(pipeline, allowDiskUse=True)]
+    """The rows of a pipeline in a fixed order: Mongo returns the games as they were stored (the scraper's order, the archive's ``_id`` order),
+    and the file must not depend on it."""
+    return sorted(({k: v for k, v in row.items() if k != "_id"} for row in collection.aggregate(pipeline, allowDiskUse=True)), key=_order)
 
 
 def export_collection(collection: Any, name: str) -> Dict[str, Any]:

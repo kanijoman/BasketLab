@@ -65,8 +65,49 @@ def build_reports(handler: Any, collection: str) -> Iterator[Tuple[str, str, str
                 continue                                              # listed in a game but without stats: nothing to say about it
 
 
+FLOAT_DIGITS = 9                                                  # the sums of a season differ in the 14th decimal with the order of the games
+
+
+def _rounded(value: Any) -> Any:
+    if isinstance(value, float):
+        return round(value, FLOAT_DIGITS)
+    if isinstance(value, dict):
+        return {k: _rounded(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_rounded(v) for v in value]
+    return value
+
+
 def _dump(report: Dict[str, Any]) -> str:
-    return json.dumps(report, ensure_ascii=False, separators=(",", ":"), sort_keys=True, default=str)
+    return json.dumps(_rounded(report), ensure_ascii=False, separators=(",", ":"), sort_keys=True, default=str)
+
+
+def seal_file(out_dir: Path, stem: str, plain: str, scopes: Sequence[str], sealer: Sealer, kept: Optional[Dict[str, Any]], subdir: str = "") -> Dict[str, Any]:
+    """Seal ``plain`` into ``<stem>.<sha256 of plain>.json`` for ``scopes`` and return the index fields of the file (``file``, ``bytes``,
+    ``sha256``, the wraps). The name carries the hash of the content, so it never changes in place; ``kept`` (the entry of the previous publication)
+    keeps the same bytes when nothing changed, because sealing is random and rewriting it would invalidate every cache."""
+    sha = hashlib.sha256(plain.encode("utf-8")).hexdigest()
+    file = subdir + file_name(f"{stem}|{sha[:12]}")                  # relative to ``out_dir``; ``subdir`` ends with "/"
+    wanted = sealer.scopes_for(scopes) if hasattr(sealer, "scopes_for") else []
+    if kept and kept["sha256"] == sha and kept["file"] == file and (out_dir / file).is_file() and [w["scope"] for w in kept.get("wraps", [])] == wanted:
+        return {k: kept[k] for k in ("file", "bytes", "sha256", "wraps") if k in kept}
+    envelope, extra = sealer.seal(plain, scopes, compress=True)
+    data = json.dumps(envelope, separators=(",", ":")).encode("utf-8")
+    (out_dir / file).parent.mkdir(parents=True, exist_ok=True)
+    (out_dir / file).write_bytes(data)
+    return {"file": file, "bytes": len(data), "sha256": sha, **extra}
+
+
+def seal_reports(handler: Any, collection: str, out_dir: Path, sealer: Sealer, old: Dict[Any, Dict[str, Any]], subdir: str = "") -> List[Dict[str, Any]]:
+    """The sealed files of every report of one competition (``old``: the previous entries by ``(collection, team_id, mode)``) and their entries."""
+    built = list(build_reports(handler, collection))
+    team_ids = sorted({tid for tid, _n, _m, _r in built})
+    entries = []
+    for team_id, name, mode, report in built:
+        fields = seal_file(out_dir, f"{collection}|{mode}|{team_id}", _dump(report), report_scopes(mode, team_id, team_ids, collection), sealer,
+                           old.get((collection, team_id, mode)), subdir)
+        entries.append({"collection": collection, "team_id": team_id, "team": name, "mode": mode, **fields})
+    return entries
 
 
 def publish_reports(handler: Any, collections: Sequence[str], out_dir: Path, sealer: Sealer, previous: Optional[Dict[str, Any]] = None,
@@ -80,21 +121,8 @@ def publish_reports(handler: Any, collections: Sequence[str], out_dir: Path, sea
     old = {(e["collection"], e["team_id"], e["mode"]): e for e in (previous or {}).get("reports", [])}
     entries: List[Dict[str, Any]] = []
     for collection in collections:
-        built = list(build_reports(handler, collection))
-        team_ids = sorted({tid for tid, _n, _m, _r in built})
-        for team_id, name, mode, report in built:
-            plain = _dump(report)
-            sha = hashlib.sha256(plain.encode("utf-8")).hexdigest()
-            scopes = sealer.scopes_for(report_scopes(mode, team_id, team_ids, collection)) if hasattr(sealer, "scopes_for") else []
-            file = file_name(f"{collection}|{mode}|{team_id}")
-            kept = old.get((collection, team_id, mode))
-            if kept and kept["sha256"] == sha and (out_dir / kept["file"]).is_file() and [w["scope"] for w in kept.get("wraps", [])] == scopes:
-                entries.append(kept)
-                continue
-            envelope, extra = sealer.seal(plain, report_scopes(mode, team_id, team_ids, collection), compress=True)
-            data = json.dumps(envelope, separators=(",", ":")).encode("utf-8")
-            (out_dir / file).write_bytes(data)
-            entries.append({"collection": collection, "team_id": team_id, "team": name, "mode": mode, "file": file, "bytes": len(data), "sha256": sha, **extra})
+        built = seal_reports(handler, collection, out_dir, sealer, old)
+        entries.extend(built)
         if on_collection:
             on_collection(collection, len(built))
     index = {"v": sealer.index_version, **sealer.index_extra(), "reports": entries}

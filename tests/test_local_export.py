@@ -85,3 +85,13 @@ def test_a_competition_that_no_longer_exists_leaves_no_stale_file(db, tmp_path):
     index = export_all(db, tmp_path)
     assert [c["name"] for c in index["collections"]] == [FEB]
     assert sorted(p.name for p in tmp_path.iterdir()) == sorted(["index.json", index["collections"][0]["file"]])
+
+
+@pytest.mark.parametrize("name, build", [(FEB, games.build_games), (FBCYL, fbcyl_games.build_games)])
+def test_rows_do_not_depend_on_the_order_the_games_were_stored_in_regression(name, build):
+    """The archive restores the games sorted by ``_id`` and the scraper inserts them as they finish: the file must be the same bytes either way,
+    or every refresh would republish every competition."""
+    forward, backward = new_mock_db("forward"), new_mock_db("backward")
+    forward[name].insert_many(build())
+    backward[name].insert_many(list(reversed(build())))
+    assert export_collection(forward[name], name) == export_collection(backward[name], name)
