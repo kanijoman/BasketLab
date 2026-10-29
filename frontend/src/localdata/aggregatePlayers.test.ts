@@ -27,11 +27,17 @@ describe('aggregatePlayers: the player tables from the rows of the contract (iss
     expect(aggregatePlayers([], teamRows, {})).toEqual([])
   })
 
-  it('a team the context does not know gets the zero defaults of the API, with their own keys (parity, bug in the API)', () => {
-    // `_default_adv` of the service: other names than the figures of the normal path, so `usage_pct` stays undefined (issue #647)
+  it('a team the context does not know gets the zero defaults, under the keys of the normal path', () => {
     const lone = playerRows.filter(r => r.team_id === playerRows[0].team_id)
     const [player] = aggregatePlayers(lone, [], {}) as unknown as Array<Record<string, unknown>>
-    expect([player.usage, player.orating, player.pie, player.tov_pct, player.ftr_adv]).toEqual([0, 0, 0, 0, 0])
-    expect(player.usage_pct).toBeUndefined()
+    expect([player.usage_pct, player.orating, player.pie, player.tov_pct_adv, player.net_rtg]).toEqual([0, 0, 0, 0, 0])
+  })
+
+  it('a team written with another spelling in some games keeps its context: it is looked up by the team id (issue #647 regression)', () => {
+    const id = playerRows[0].team_id
+    const respelled = playerRows.map(r => (r.team_id === id ? { ...r, team_name: `${r.team_name} ` } : r))
+    const mine = (aggregatePlayers(respelled, teamRows, {}) as unknown as Row[]).filter(p => p.team_id === id)
+    expect(mine.length).toBeGreaterThan(0)
+    for (const p of mine) if ((p.total_minutes as number) > 0) expect(p.usage_pct, String(p.player_id)).toBeGreaterThan(0)
   })
 })

@@ -33,6 +33,14 @@ def _cache_key(
     return (collection_name, venue_filter, result_filter, team_filter, date_key)
 
 
+def _team_key(row: Dict) -> str:
+    """The stable key of a team on a player or team row: its id (``_id`` is the id in the FEB team pipelines, a dict in FBCYL's), else its name."""
+    ident = row.get('team_id') or row.get('_id')
+    if ident and not isinstance(ident, (dict, list)):
+        return f"id:{ident}"
+    return f"name:{row['team_name']}" if row.get('team_name') else ""
+
+
 def _accumulate_cv_by_player(
     rows: List[Dict], field_map: Dict[str, str]
 ) -> Dict[str, Dict[str, Any]]:
@@ -216,30 +224,27 @@ class PlayerStatsService:
         except ImportError:
             return players
 
-        # Collect unique team names
-        unique_teams = {p.get('team_name') for p in players if p.get('team_name')}
-        if not unique_teams:
+        if not any(_team_key(p) for p in players):
             return players
 
         all_team_stats, all_opp_stats = self._fetch_team_context(collection_name)
 
         team_context: Dict[str, Dict] = {}
-        for team_name in unique_teams:
-            ts = all_team_stats.get(team_name)
-            os_ = all_opp_stats.get(team_name)
+        for key in {_team_key(p) for p in players if _team_key(p)}:
+            ts = all_team_stats.get(key)
+            os_ = all_opp_stats.get(key)
             if ts and os_:
-                team_context[team_name] = {'team_stats': ts, 'opp_stats': os_}
+                team_context[key] = {'team_stats': ts, 'opp_stats': os_}
 
+        # Same keys as the normal path below (#647: the defaults used other names and the web showed "-" / 0.0)
         _default_adv = {
-            'usage': 0.0, 'orating': 0.0, 'drating': 0.0, 'net_rtg': 0.0,
-            'ftr_adv': 0.0, 'three_pr_adv': 0.0, 'efg_adv': 0.0, 'ts_adv': 0.0,
-            'ast_pct': 0.0, 'tov_pct': 0.0, 'stl_pct': 0.0, 'blk_pct': 0.0,
+            'usage_pct': 0.0, 'orating': 0.0, 'drating': 0.0, 'net_rtg': 0.0,
+            'ast_pct': 0.0, 'tov_pct_adv': 0.0, 'stl_pct': 0.0, 'blk_pct': 0.0,
             'drb_pct': 0.0, 'orb_pct': 0.0, 'pie': 0.0,
         }
 
         for player in players:
-            team_name = player.get('team_name', '')
-            ctx = team_context.get(team_name)
+            ctx = team_context.get(_team_key(player))
             if not ctx:
                 player.update(_default_adv)
                 continue
@@ -270,18 +275,18 @@ class PlayerStatsService:
         """Fetch team and opponent stats in exactly 2 DB calls.
 
         Returns:
-            Tuple of (all_team_stats, all_opp_stats) keyed by team_name.
+            Tuple of (all_team_stats, all_opp_stats) keyed by team id (the name only when a row has no id).
         """
         try:
             all_team_stats = {
-                t['team_name']: t
+                _team_key(t): t
                 for t in (self._db.get_team_stats(collection_name) or [])
-                if t.get('team_name')
+                if _team_key(t)
             }
             all_opp_stats = {
-                t['team_name']: t
+                _team_key(t): t
                 for t in (self._db.get_opponent_stats(collection_name) or [])
-                if t.get('team_name')
+                if _team_key(t)
             }
         except Exception:
             all_team_stats = {}
