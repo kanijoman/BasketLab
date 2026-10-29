@@ -152,7 +152,7 @@ function derive(id: string, name: string, games: number, home: number, matches: 
 }
 
 /** What only FBCYL's team table has: fouls, wins and losses, the rival's shooting as `opp_*` and the names it gives the rebounds per game. */
-function fbcylExtras(rows: GameRow[], s: Sums): Record<string, number> {
+function fbcylExtras(rows: GameRow[], s: Sums, rival: boolean): Record<string, number> {
   const sum = (pick: (r: GameRow) => number | undefined) => rows.reduce((n, r) => n + (pick(r) ?? 0), 0)
   const games = rows.length
   const won = rows.filter(r => r.won).length
@@ -160,9 +160,10 @@ function fbcylExtras(rows: GameRow[], s: Sums): Record<string, number> {
     fouls: s.fouls, games_played: games, games_won: won, games_lost: rows.filter(r => !r.won && !r.tied).length, win_pct: pct(won, games),
     fg_percentage: pct(s.fg2m + s.fg3m, s.fg2a + s.fg3a), pace: s.possessions / games,
     def_rebounds_per_game: s.def / games, off_rebounds_per_game: s.off / games,
-    opp_fg2_made: sum(r => r.opponent_fg2_made), opp_fg2_attempted: sum(r => r.opponent_fg2_attempts),
-    opp_fg3_made: sum(r => r.opponent_fg3_made), opp_fg3_attempted: sum(r => r.opponent_fg3_attempts),
-    opp_ft_attempted: sum(r => r.opponent_ft_attempts), opp_turnovers: sum(r => r.opponent_turnovers),
+    // `opp_*` are the references of the table: the rival's figures in the team's table and the team's own in the rival's (#642)
+    opp_fg2_made: sum(r => (rival ? r.fg2_made : r.opponent_fg2_made)), opp_fg2_attempted: sum(r => (rival ? r.fg2_attempts : r.opponent_fg2_attempts)),
+    opp_fg3_made: sum(r => (rival ? r.fg3_made : r.opponent_fg3_made)), opp_fg3_attempted: sum(r => (rival ? r.fg3_attempts : r.opponent_fg3_attempts)),
+    opp_ft_attempted: sum(r => (rival ? r.ft_attempts : r.opponent_ft_attempts)), opp_turnovers: sum(r => (rival ? r.turnovers : r.opponent_turnovers)),
   }
 }
 
@@ -174,7 +175,7 @@ function table(rows: GameRow[], side: (r: GameRow) => Side): LocalTeamStat[] {
     for (const g of games) for (const k of SUMMED) sums[k] += side(g)[k]
     const fbcyl = games[0].fouls !== undefined
     const stat = derive(id, games[0].team_name, games.length, games.filter(g => g.is_local).length, games.map(g => g.match_id), sums, fbcyl)
-    return fbcyl ? { ...stat, ...fbcylExtras(games, sums) } : stat
+    return fbcyl ? { ...stat, ...fbcylExtras(games, sums, side === rival) } : stat
   })
   return out.sort((a, b) => (b.points_per_game as number) - (a.points_per_game as number))
 }

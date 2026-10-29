@@ -56,8 +56,8 @@ function season(games: FbcylPlayerGameRow[]): PlayerStat {
 
 /**
  * The answer of `GET /players/{collection}` for an FBCYL competition without a server. `teamRows` are the games of the whole season (the context of
- * the advanced figures never depends on the filter); the order is team name, then points, as the pipeline sorts. The API builds that context from
- * the opponent table it repeats from the team's own (bug #642), and so does this: the advanced figures keep parity with what the API shows today.
+ * the advanced figures never depends on the filter); the order is team name, then points, as the pipeline sorts. The context is the team's table and
+ * its REAL rival table (the API repeated the team's own as the rival until #642).
  */
 export function aggregatePlayersFbcyl(rows: FbcylPlayerGameRow[], teamRows: GameRow[], filter: PlayerTableFilter): PlayerStat[] {
   const groups = new Map<string, FbcylPlayerGameRow[]>()
@@ -68,11 +68,13 @@ export function aggregatePlayersFbcyl(rows: FbcylPlayerGameRow[], teamRows: Game
   }
   const players = [...groups.values()].map(season)
   if (players.length) {
-    const tables = aggregateTeams(teamRows, {}).team_stats
-    const byId = new Map(tables.map(t => [String(t.team_id), t]))
+    const tables = aggregateTeams(teamRows, {})
+    const teams = new Map(tables.team_stats.map(t => [String(t.team_id), t]))
+    const rivals = new Map(tables.opponent_stats.map(t => [String(t.team_id), t]))
     for (const p of players) {
-      const team = byId.get(String(p.team_id))
-      Object.assign(p, team ? advancedFigures(p, team, team) : ZERO_ADVANCED)
+      const team = teams.get(String(p.team_id))
+      const rival = rivals.get(String(p.team_id))
+      Object.assign(p, team && rival ? advancedFigures(p, team, rival) : ZERO_ADVANCED)
     }
   }
   return players.sort((a, b) => (a.team_name < b.team_name ? -1 : a.team_name > b.team_name ? 1 : (b.total_pts as number) - (a.total_pts as number)))

@@ -22,7 +22,21 @@ describe('aggregateTeams with FBCYL rows (issue #327)', () => {
     }
   })
 
-  it.each(vectors.cases.map(c => [c.name, c] as const))('%s: the rival table is the real rival (the API repeats the own table, #642)', (_name, c) => {
+  it.each(vectors.cases.map(c => [c.name, c] as const))('%s: the rival table equals the API (it used to repeat the own table, #642)', (_name, c) => {
+    const got = aggregateTeams(rows, c.filter as TeamTableFilter).opponent_stats as unknown as Row[]
+    const want = c.opponent_stats as unknown as Row[]
+    expect(got.map(r => r.team_name).sort()).toEqual(want.map(r => r.team_name).sort())
+    for (const expected of want) {
+      const team = got.find(r => r.team_id === expected.team_id) as Row
+      expect(team, `team ${String(expected.team_id)}`).toBeDefined()
+      for (const [key, value] of Object.entries(expected)) {
+        if (typeof value === 'number') expect(team[key] as number, key).toBeCloseTo(value, 9)
+        else expect(team[key], key).toEqual(value)
+      }
+    }
+  })
+
+  it.each(vectors.cases.map(c => [c.name, c] as const))('%s: the rival table is the real rival: what we receive is what they score', (_name, c) => {
     const { team_stats: own, opponent_stats: rival } = aggregateTeams(rows, c.filter as TeamTableFilter)
     for (const team of own) {
       const against = rival.find(r => r.team_id === team.team_id)!

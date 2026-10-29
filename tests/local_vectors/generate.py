@@ -141,7 +141,7 @@ def _fbcyl_in_range(doc: dict, filt: dict) -> bool:
 
 
 def build_fbcyl_vectors() -> dict:
-    """The FBCYL team tables. Only ``team_stats``: FBCYL's ``opponent_stats`` is the team's own table (bug #642), so it is no reference."""
+    """The FBCYL team tables: ``team_stats`` and ``opponent_stats`` (the rivals' figures, since #642; it used to repeat the team's own table)."""
     col = mongomock.MongoClient()["v"]["FBCYL_LEAGUE"]
     col.insert_many(build_fbcyl_games())
     rows = list(col.aggregate(build_fbcyl_season_rows_pipeline()))
@@ -153,8 +153,10 @@ def build_fbcyl_vectors() -> dict:
             subset.insert_many(games)
         venue = {"home": True, "away": False}.get(filt.get("venue"))
         stats = list(subset.aggregate(FBCYLPipelineBuilder.build_team_stats_pipeline(None, venue, filt.get("result"))))
+        rivals = list(subset.aggregate(FBCYLPipelineBuilder.build_opponent_stats_pipeline(None, venue, filt.get("result"))))
         cases.append({"filter": {k: v for k, v in filt.items() if k != "name"}, "name": filt["name"],
-                      "team_stats": [{k: v for k, v in row.items() if k != "_id"} for row in stats]})
+                      "team_stats": [{k: v for k, v in row.items() if k != "_id"} for row in stats],
+                      "opponent_stats": [{k: v for k, v in row.items() if k != "_id"} for row in rivals]})
     return {"rows": rows, "cases": cases}
 
 
