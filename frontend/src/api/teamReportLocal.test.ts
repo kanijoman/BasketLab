@@ -52,6 +52,17 @@ describe('getTeamReport with the local data source', () => {
   })
 })
 
+describe('only the datasets that are on read web-data (issue #329)', () => {
+  it('with `local:report-teams` the team list is local and the report still comes from the API', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:report-teams')
+    const report = vi.spyOn(web, 'loadWebReport').mockResolvedValue(PUBLISHED as never)
+    vi.spyOn(web, 'loadReportTeams').mockResolvedValue([{ id: '101', name: 'ALPHA' }])
+    expect(await getReportTeams(FEB)).toEqual([{ id: '101', name: 'ALPHA' }])
+    expect(await getTeamReport(FEB, '101', 'own')).toEqual(FROM_API)
+    expect(report).not.toHaveBeenCalled()
+  })
+})
+
 describe('getReportTeams with the local data source', () => {
   it('off: the teams of the API, as the page always had them', async () => {
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '10', name: 'Zamora' }] as never)

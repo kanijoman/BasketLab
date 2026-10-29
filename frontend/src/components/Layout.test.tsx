@@ -71,4 +71,13 @@ describe('Layout local data tag (issue #327)', () => {
     shell('/LF2/teams')
     expect(screen.getByText('Datos locales')).toBeInTheDocument()
   })
+
+  // Issue #329: with only some datasets on, the tag says which, so a table from the API is not taken for a local one.
+  it('says which datasets are local when only some are (the others still come from the API)', () => {
+    phone(false)
+    localStorage.setItem('basketlab.data', 'local:team-report')
+    shell('/LF2/team-report')
+    expect(screen.getByText('Datos locales')).toHaveAttribute('title', expect.stringContaining('team-report'))
+    expect(screen.getByText('Datos locales').getAttribute('title')).not.toContain('team-stats')
+  })
 })

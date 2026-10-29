@@ -1,12 +1,14 @@
 // The local data source (issue #327, step 2): the tables of the web computed from the files `run_local_export.py` writes, instead of the API.
-// Off by default; `?data=local` turns it on (and remembers it), `?data=api` off. Every function answers `null` when it cannot (switch off,
+// Which datasets read it is the switch of `datasource/switch` (`?data=local`, `?data=local:team-stats,…`, `?data=api`). Every function answers `null` when it cannot (switch off,
 // competition not exported, no player rows, file missing or of another format) so that the caller falls back to the API.
 import type { PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
 import { aggregateTeams, type GameRow, type TeamTableFilter, type TeamTables } from './aggregateTeams'
+import { dataSourceOf } from '@/datasource/switch'
 
-export const DATA_FLAG_KEY = 'basketlab.data'
+// the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
+export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
 const FORMAT = 1
 
 interface IndexEntry { name: string; file: string; league: 'feb' | 'fbcyl'; games: number; bytes: number }
@@ -19,18 +21,6 @@ const competitions = new Map<string, Promise<Competition | null>>()
 export function resetLocalData(): void {
   indexLoad = null
   competitions.clear()
-}
-
-/** Whether the tables come from the local files. `?data=local` / `?data=api` in the address set it; the choice survives in `localStorage`. */
-export function localDataEnabled(): boolean {
-  try {
-    const asked = new URLSearchParams(window.location.search).get('data')
-    if (asked === 'local') localStorage.setItem(DATA_FLAG_KEY, 'local')
-    else if (asked === 'api') localStorage.removeItem(DATA_FLAG_KEY)
-    return localStorage.getItem(DATA_FLAG_KEY) === 'local'
-  } catch {
-    return false                                                  // private window or blocked storage: the API
-  }
 }
 
 const url = (file: string) => `${import.meta.env.BASE_URL}local-data/${encodeURI(file)}`
@@ -68,14 +58,14 @@ function loadCompetition(name: string): Promise<Competition | null> {
 
 /** `{team_stats, opponent_stats}` of the competition with the filters, or `null` to use the API. */
 export async function localTeamStats(collection: string, filters: TeamTableFilter): Promise<TeamTables | null> {
-  if (!localDataEnabled()) return null
+  if (dataSourceOf('team-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   return data ? aggregateTeams(data.team_rows, filters) : null
 }
 
 /** The player table of the competition with the filters (each league has its own table), or `null` to use the API (a competition exported without player rows). */
 export async function localPlayerStats(collection: string, filters: PlayerTableFilter): Promise<PlayerStat[] | null> {
-  if (!localDataEnabled()) return null
+  if (dataSourceOf('player-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   if (!data?.player_rows) return null
   return data.league === 'fbcyl'
