@@ -141,7 +141,7 @@ class PlayerStatsPipelineMixin:
             },
             # Stage 4: Extract player data and filter players with minutes > 0
             {
-                "$project": player_game_fields()
+                "$project": {**player_game_fields(), "starttime": "$HEADER.starttime"}
             },
             # Stage 5: Filter players who actually played (minutes > 0)
             {
@@ -149,15 +149,27 @@ class PlayerStatsPipelineMixin:
                     "minutes": {"$gt": 0}
                 }
             },
-            # Stage 6: Group by player
+            # Stage 5b: Chronological order, so that the name and the team name kept below are those of his LAST game (#652). ``dd-mm-yyyy - hh:mm`` is
+            # put in year-first order with string operators (not ``parsedDate``: it is the same on every engine and a game without a readable date still sorts).
+            {
+                "$addFields": {
+                    "played": {"$concat": [
+                        {"$substr": ["$starttime", 6, 4]}, {"$substr": ["$starttime", 3, 2]},
+                        {"$substr": ["$starttime", 0, 2]}, {"$substr": ["$starttime", 13, 5]},
+                    ]}
+                }
+            },
+            {"$sort": {"played": 1}},
+            # Stage 6: Group by player: the identity is the player id within the team id. The names are NOT part of it: a team written with another
+            # spelling in some games, or a corrected name, made the same person two rows with the games and totals split (#652).
             {
                 "$group": {
                     "_id": {
                         "player_id": "$player_id",
-                        "player_name": "$player_name",
-                        "team_name": "$team_name",
                         "team_id": "$team_id"
                     },
+                    "player_name": {"$last": "$player_name"},
+                    "team_name": {"$last": "$team_name"},
                     "games_played": {"$sum": 1},
                     "total_minutes": {"$sum": "$minutes"},
                     "total_p1m": {"$sum": "$p1m"},
@@ -185,8 +197,8 @@ class PlayerStatsPipelineMixin:
                 "$project": {
                     "_id": 0,
                     "player_id": "$_id.player_id",
-                    "player_name": "$_id.player_name",
-                    "team_name": "$_id.team_name",
+                    "player_name": "$player_name",
+                    "team_name": "$team_name",
                     "team_id": "$_id.team_id",
                     "games_played": "$games_played",
                     # total_minutes: raw sum is in seconds → convert to minutes here

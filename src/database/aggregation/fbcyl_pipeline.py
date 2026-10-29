@@ -63,7 +63,7 @@ class FBCYLPipelineBuilder:
     """Builds MongoDB aggregation pipeline for FBCYL team statistics."""
 
     @staticmethod
-    def build_team_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
+    def build_team_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None, as_opponent: bool = False) -> List[Dict]:
         """
         Build aggregation pipeline for FBCYL team statistics.
 
@@ -107,6 +107,8 @@ class FBCYLPipelineBuilder:
             date_filter: Optional date filter (not applicable for FBCYL yet)
             venue_filter: Optional venue filter (True=home, False=away, None=all)
             result_filter: Optional result filter ('won', 'lost', None=all)
+            as_opponent: the table of what each team's OPPONENTS did against it (``build_opponent_stats_pipeline``, #642): same stages, but the figures
+                that are summed are the rival's and the team's own are the references; the identity, the venue and the result stay the team's.
 
         Returns:
             List of pipeline stages
@@ -238,6 +240,15 @@ class FBCYLPipelineBuilder:
 
         if match_conditions:
             pipeline.append({"$match": {"$and": match_conditions}})
+
+        if as_opponent:
+            # What is summed below is read from ``teams`` (the figures measured) and ``opponent_score`` (the references): swapped, the rivals' figures are the
+            # measured ones. Identity, venue and result were taken above and stay the team's; the points received are the team's own score, the index of
+            # the side is the rival's (the possessions read the box of the side it names).
+            pipeline.append({"$addFields": {
+                "teams": "$opponent_score", "opponent_score": "$teams",
+                "opponent_score_value": "$team_score", "teamIndex": {"$subtract": [1, "$teamIndex"]},
+            }})
 
         # Stage 7: Group by team and aggregate statistics
         pipeline.append({
@@ -534,7 +545,7 @@ class FBCYLPipelineBuilder:
     @staticmethod
     def build_opponent_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
         """
-        Build aggregation pipeline for opponent statistics (similar to team stats but inverted).
+        Build aggregation pipeline for opponent statistics: what each team's opponents did against it (the team stats pipeline with the perspective inverted).
 
         Args:
             date_filter: Optional date filter
@@ -544,8 +555,8 @@ class FBCYLPipelineBuilder:
         Returns:
             List of pipeline stages
         """
-        # For now, return same as team stats - can be customized later
-        return FBCYLPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter)
+        # The same stages as the team table with the sides swapped (#642: it used to return the team table as it was)
+        return FBCYLPipelineBuilder.build_team_stats_pipeline(date_filter, venue_filter, result_filter, as_opponent=True)
 
     @staticmethod
     def build_player_stats_pipeline(date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None, team_filter: str = None) -> List[Dict]:

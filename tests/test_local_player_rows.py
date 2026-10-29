@@ -46,8 +46,7 @@ def test_summing_the_rows_gives_the_season_pipeline_totals(collection):
     """Nothing is lost between the rows and the ``$group`` of the season."""
     rows = _rows(collection)
     for player in collection.aggregate(for_mongomock(AggregationPipelineBuilder.build_player_stats_pipeline())):
-        mine = [r for r in rows if (r["player_id"], r["player_name"], r["team_name"], r["team_id"]) ==
-                (player["player_id"], player["player_name"], player["team_name"], player["team_id"])]
+        mine = [r for r in rows if (r["player_id"], r["team_id"]) == (player["player_id"], player["team_id"])]      # the identity: the player within his team (#652)
         assert player["games_played"] == len(mine)
         assert player["total_pts"] == sum(r["pts"] for r in mine)
         assert player["total_minutes"] == pytest.approx(sum(r["minutes"] for r in mine) / 60)

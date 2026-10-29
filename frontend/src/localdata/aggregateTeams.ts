@@ -28,7 +28,7 @@ export interface GameRow {
   total_rebounds?: number; fouls?: number; opponent_total_rebounds?: number; opponent_fouls?: number
 }
 
-/** The filters of `GET /teams/{collection}`; `from` / `to` are `YYYY-MM-DD` (midnight, both bounds inclusive: a game of the `to` day is out). */
+/** The filters of `GET /teams/{collection}`; `from` / `to` are `YYYY-MM-DD`: from the start of the first day to the END of the last one (a game of the `to` day is in, #643). */
 export interface TeamTableFilter {
   venue?: 'home' | 'away'
   result?: 'won' | 'lost'
@@ -85,7 +85,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 /**
  * The date of a game as UTC milliseconds, or `null` if it cannot be read (`onError: null`). FEB writes `dd-mm-yyyy - hh:mm` (to the minute);
- * FBCYL writes `Oct 4, 2025 7:00:00 PM` and its pipelines keep only the day (midnight), so a game of the `to` day is in there and not in FEB.
+ * FBCYL writes `Oct 4, 2025 7:00:00 PM` and its pipelines keep only the day (midnight); the `to` day is in for both leagues (#643).
  */
 export function parsePlayed(starttime: string | null | undefined): number | null {
   const text = starttime ?? ''
@@ -103,6 +103,9 @@ export function parsePlayed(starttime: string | null | undefined): number | null
 /** The bound `YYYY-MM-DD` (or ISO datetime) as UTC milliseconds, as Python's `datetime.fromisoformat` + pymongo give it. */
 const bound = (iso: string) => Date.parse(/T|\s/.test(iso) ? iso : `${iso}T00:00:00Z`)
 
+/** The first instant AFTER the day `to` (`YYYY-MM-DD`): the API's upper bound is the end of that day (bug #643); a bound with a time is used as given. */
+const endOfDay = (to: string) => (/T|\s/.test(to) ? bound(to) + 1 : bound(to) + 86_400_000)
+
 /** Whether a game (a team's or a player's row) passes the venue, result and date filters. */
 export function matchesFilters(r: Pick<GameRow, 'is_local' | 'won' | 'starttime' | 'tied'>, f: TeamTableFilter): boolean {
   if (f.venue && r.is_local !== (f.venue === 'home')) return false
@@ -112,7 +115,7 @@ export function matchesFilters(r: Pick<GameRow, 'is_local' | 'won' | 'starttime'
     const t = parsePlayed(r.starttime)
     if (t === null) return false                                  // a null date matches no range in Mongo
     if (f.from && t < bound(f.from)) return false
-    if (f.to && t > bound(f.to)) return false
+    if (f.to && t >= endOfDay(f.to)) return false
   }
   return true
 }
@@ -149,7 +152,7 @@ function derive(id: string, name: string, games: number, home: number, matches: 
 }
 
 /** What only FBCYL's team table has: fouls, wins and losses, the rival's shooting as `opp_*` and the names it gives the rebounds per game. */
-function fbcylExtras(rows: GameRow[], s: Sums): Record<string, number> {
+function fbcylExtras(rows: GameRow[], s: Sums, rival: boolean): Record<string, number> {
   const sum = (pick: (r: GameRow) => number | undefined) => rows.reduce((n, r) => n + (pick(r) ?? 0), 0)
   const games = rows.length
   const won = rows.filter(r => r.won).length
@@ -157,9 +160,10 @@ function fbcylExtras(rows: GameRow[], s: Sums): Record<string, number> {
     fouls: s.fouls, games_played: games, games_won: won, games_lost: rows.filter(r => !r.won && !r.tied).length, win_pct: pct(won, games),
     fg_percentage: pct(s.fg2m + s.fg3m, s.fg2a + s.fg3a), pace: s.possessions / games,
     def_rebounds_per_game: s.def / games, off_rebounds_per_game: s.off / games,
-    opp_fg2_made: sum(r => r.opponent_fg2_made), opp_fg2_attempted: sum(r => r.opponent_fg2_attempts),
-    opp_fg3_made: sum(r => r.opponent_fg3_made), opp_fg3_attempted: sum(r => r.opponent_fg3_attempts),
-    opp_ft_attempted: sum(r => r.opponent_ft_attempts), opp_turnovers: sum(r => r.opponent_turnovers),
+    // `opp_*` are the references of the table: the rival's figures in the team's table and the team's own in the rival's (#642)
+    opp_fg2_made: sum(r => (rival ? r.fg2_made : r.opponent_fg2_made)), opp_fg2_attempted: sum(r => (rival ? r.fg2_attempts : r.opponent_fg2_attempts)),
+    opp_fg3_made: sum(r => (rival ? r.fg3_made : r.opponent_fg3_made)), opp_fg3_attempted: sum(r => (rival ? r.fg3_attempts : r.opponent_fg3_attempts)),
+    opp_ft_attempted: sum(r => (rival ? r.ft_attempts : r.opponent_ft_attempts)), opp_turnovers: sum(r => (rival ? r.turnovers : r.opponent_turnovers)),
   }
 }
 
@@ -171,7 +175,7 @@ function table(rows: GameRow[], side: (r: GameRow) => Side): LocalTeamStat[] {
     for (const g of games) for (const k of SUMMED) sums[k] += side(g)[k]
     const fbcyl = games[0].fouls !== undefined
     const stat = derive(id, games[0].team_name, games.length, games.filter(g => g.is_local).length, games.map(g => g.match_id), sums, fbcyl)
-    return fbcyl ? { ...stat, ...fbcylExtras(games, sums) } : stat
+    return fbcyl ? { ...stat, ...fbcylExtras(games, sums, side === rival) } : stat
   })
   return out.sort((a, b) => (b.points_per_game as number) - (a.points_per_game as number))
 }

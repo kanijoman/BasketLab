@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from src.api.deps import get_db
 from src.pbp.game_possessions import estimate_possessions
 from src.services import PlayerStatsService
+from src.utils.time_utils import end_of_day
 
 router = APIRouter()
 
@@ -127,7 +128,7 @@ def get_player_stats(
         if from_date:
             date_filter["$gte"] = datetime.fromisoformat(from_date)
         if to_date:
-            date_filter["$lte"] = datetime.fromisoformat(to_date)
+            date_filter["$lte"] = end_of_day(to_date)
     return svc.load_season_data(
         collection,
         date_filter=date_filter,

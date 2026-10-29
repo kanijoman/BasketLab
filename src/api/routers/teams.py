@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from src.api.deps import get_db
 from src.services import TeamStatsService, EvolutionService, EVOLUTION_STAT_KEYS
 from src.services.team_comparison_service import TeamComparisonService
+from src.utils.time_utils import end_of_day
 
 router = APIRouter()
 
@@ -44,7 +45,7 @@ def get_team_stats(
         if from_date:
             date_filter["$gte"] = datetime.fromisoformat(from_date)
         if to_date:
-            date_filter["$lte"] = datetime.fromisoformat(to_date)
+            date_filter["$lte"] = end_of_day(to_date)
     return svc.load_season_data(
         collection,
         date_filter=date_filter,
@@ -64,7 +65,7 @@ def compare_teams(
     """Both groups of the comparison per team, the real difference between them and the same for what the rivals did against each team (issue #607)."""
     try:
         date_from = datetime.fromisoformat(from_date) if from_date else None
-        date_to = datetime.fromisoformat(to_date) if to_date else None
+        date_to = end_of_day(to_date) if to_date else None
         return TeamComparisonService(db).compare(collection, by, date_from, date_to)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

@@ -58,9 +58,10 @@ def _respell(games, team_id, spelling):
 
 
 def test_a_team_with_two_spellings_keeps_the_advanced_figures_of_its_players_regression():
-    """Every row of the team, under either spelling, is enriched with the context of the team id (the pipeline groups by name too, so a player may have two rows)."""
+    """Every row of the team, whatever spelling it shows, is enriched with the context of the team id."""
     rows = [p for p in _players(_respell(build_games(), "101", "ALPHA ")) if p["team_id"] == "101"]
-    assert {p["team_name"] for p in rows} == {"ALPHA", "ALPHA "}
+    assert {p["team_name"] for p in rows} == {"ALPHA "}                               # the spelling of each player's LAST game (#652: one row per player)
+    assert len({p["player_id"] for p in rows}) == len(rows)
     played = [p for p in rows if p["total_minutes"] > 0]
     assert played
     for player in played:
