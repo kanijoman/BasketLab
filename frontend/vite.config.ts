@@ -10,6 +10,8 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
       // design/ is shared with the live app: tokens, Tailwind preset and theme store (issue #188)
       '@design': path.resolve(__dirname, '../design'),
+      // the unlocking of scoped files (decryption, invitations, rights) is the live app's: one implementation until the shared interface (#330)
+      '@live-package': path.resolve(__dirname, '../apps/live-android/src/package'),
     },
   },
   server: {
