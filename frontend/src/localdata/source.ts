@@ -3,13 +3,14 @@
 // competition not exported, no player rows, file missing or of another format) so that the caller falls back to the API.
 import type { PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
+import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
 import { aggregateTeams, type GameRow, type TeamTableFilter, type TeamTables } from './aggregateTeams'
 
 export const DATA_FLAG_KEY = 'basketlab.data'
 const FORMAT = 1
 
 interface IndexEntry { name: string; file: string; league: 'feb' | 'fbcyl'; games: number; bytes: number }
-interface Competition { format: number; collection: string; league: 'feb' | 'fbcyl'; games: number; team_rows: GameRow[]; player_rows: PlayerGameRow[] | null }
+interface Competition { format: number; collection: string; league: 'feb' | 'fbcyl'; games: number; team_rows: GameRow[]; player_rows: PlayerGameRow[] | FbcylPlayerGameRow[] | null }
 
 let indexLoad: Promise<IndexEntry[] | null> | null = null
 const competitions = new Map<string, Promise<Competition | null>>()
@@ -72,9 +73,12 @@ export async function localTeamStats(collection: string, filters: TeamTableFilte
   return data ? aggregateTeams(data.team_rows, filters) : null
 }
 
-/** The player table of the competition with the filters, or `null` to use the API (FBCYL has no player rows yet, #644). */
+/** The player table of the competition with the filters (each league has its own table), or `null` to use the API (a competition exported without player rows). */
 export async function localPlayerStats(collection: string, filters: PlayerTableFilter): Promise<PlayerStat[] | null> {
   if (!localDataEnabled()) return null
   const data = await loadCompetition(collection)
-  return data?.player_rows ? aggregatePlayers(data.player_rows, data.team_rows, filters) : null
+  if (!data?.player_rows) return null
+  return data.league === 'fbcyl'
+    ? aggregatePlayersFbcyl(data.player_rows as FbcylPlayerGameRow[], data.team_rows, filters)
+    : aggregatePlayers(data.player_rows as PlayerGameRow[], data.team_rows, filters)
 }

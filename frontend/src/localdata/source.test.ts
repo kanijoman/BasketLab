@@ -2,16 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DATA_FLAG_KEY, localDataEnabled, localPlayerStats, localTeamStats, resetLocalData } from './source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
+import fbcylTeams from '../../../tests/local_vectors/team_stats_fbcyl.json'
+import fbcylPlayers from '../../../tests/local_vectors/players_fbcyl.json'
 
 // The local data source (issue #327, step 2): the web reads the exported files instead of the API when `?data=local` is on, and says so
 // (null) whenever it cannot answer, so that the caller falls back to the API instead of showing an empty table.
 const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
 const FBCYL = 'FBCYL_1ª_FASE-GRUPO_A-1_2026_'
-const INDEX = { format: 1, collections: [{ name: FEB, file: 'feb.json', league: 'feb', games: 12, bytes: 1 }, { name: FBCYL, file: 'fb.json', league: 'fbcyl', games: 0, bytes: 1 }] }
+const INDEX = { format: 1, collections: [{ name: FEB, file: 'feb.json', league: 'feb', games: 12, bytes: 1 }, { name: FBCYL, file: 'fb.json', league: 'fbcyl', games: 12, bytes: 1 }] }
 const FILES: Record<string, unknown> = {
   'index.json': INDEX,
   'feb.json': { format: 1, collection: FEB, league: 'feb', games: 12, team_rows: teams.rows, player_rows: players.rows },
-  'fb.json': { format: 1, collection: FBCYL, league: 'fbcyl', games: 0, team_rows: [], player_rows: null },
+  'fb.json': { format: 1, collection: FBCYL, league: 'fbcyl', games: 12, team_rows: fbcylTeams.rows, player_rows: fbcylPlayers.rows },
 }
 
 let fetched: string[]
@@ -75,8 +77,18 @@ describe('local tables', () => {
     expect(await localTeamStats('L_F_-2_2025_2026_Nope', {})).toBeNull()
   })
 
-  it('answers null for the players of FBCYL (no player rows yet, #644) but not for its teams', async () => {
+  it('the players of FBCYL are summed with the FBCYL table, not the FEB one (#644)', async () => {
     serve(); turnOn()
+    const table = (await localPlayerStats(FBCYL, {})) as unknown as Array<Record<string, number | string>>
+    expect(table.length).toBeGreaterThan(0)
+    expect(table.every(p => p.player_uuid && p.total_minutes === Number(p.minutes_per_game) * Number(p.games_played))).toBe(true)   // whole minutes, not seconds / 60
+    const one = await localPlayerStats(FBCYL, { team: 'BRAVO' })
+    expect(one?.length).toBeGreaterThan(0)
+    expect(one?.every(p => p.team_name === 'BRAVO')).toBe(true)
+  })
+
+  it('an FBCYL competition exported before the player rows existed (null) still falls back to the API for its players', async () => {
+    serve({ ...FILES, 'fb.json': { format: 1, collection: FBCYL, league: 'fbcyl', games: 0, team_rows: [], player_rows: null } }); turnOn()
     expect(await localPlayerStats(FBCYL, {})).toBeNull()
     expect(await localTeamStats(FBCYL, {})).toEqual({ team_stats: [], opponent_stats: [] })
   })

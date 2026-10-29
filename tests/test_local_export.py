@@ -39,10 +39,10 @@ def test_a_feb_competition_exports_its_team_and_player_rows(db):
     json.dumps(payload)                                                   # plain JSON, nothing from Mongo left in it
 
 
-def test_an_fbcyl_competition_has_team_rows_and_says_it_has_no_player_rows_yet(db):
+def test_an_fbcyl_competition_has_team_rows_and_player_rows_with_the_identity_resolved(db):
     payload = export_collection(db[FBCYL], FBCYL)
     assert payload["league"] == "fbcyl" and len(payload["team_rows"]) == 24
-    assert payload["player_rows"] is None                                 # null = "ask the API", not "no players" (#644)
+    assert payload["player_rows"] and all(r["player_uuid"] and "uuid" not in r for r in payload["player_rows"])   # #644
 
 
 def test_an_empty_competition_exports_empty_tables_not_an_error(db):

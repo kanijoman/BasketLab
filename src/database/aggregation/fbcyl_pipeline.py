@@ -36,6 +36,29 @@ def _start_of_day(date_filter: Dict) -> Dict:
     return normalized
 
 
+# The players that count in the season tables (after ``$unwind`` of ``stats.teams.players``): the ones with playing time, without the phantoms
+# (inscribed but never played: FBCYL gives them timePlayed=40 while every activity stat stays zero). ``$nor`` excludes a player with
+# timePlayed==40 AND every listed stat zero or absent. Shared with the rows of the local-first contract (``fbcyl_player_rows``, #644).
+PLAYED_PLAYER_STAGE: Dict = {
+    "$match": {
+        "stats.teams.players.timePlayed": {"$gt": 0},
+        "$nor": [{
+            "stats.teams.players.timePlayed": 40,
+            "stats.teams.players.data.score":               {"$in": [0, None]},
+            "stats.teams.players.data.shotsOfTwoAttempted":   {"$in": [0, None]},
+            "stats.teams.players.data.shotsOfThreeAttempted": {"$in": [0, None]},
+            "stats.teams.players.data.shotsOfOneAttempted":   {"$in": [0, None]},
+            "stats.teams.players.data.offensiveRebound":      {"$in": [0, None]},
+            "stats.teams.players.data.defensiveRebound":      {"$in": [0, None]},
+            "stats.teams.players.data.assists":               {"$in": [0, None]},
+            "stats.teams.players.data.lost":                  {"$in": [0, None]},
+            "stats.teams.players.data.block":                 {"$in": [0, None]},
+            "stats.teams.players.data.steals":                {"$in": [0, None]},
+        }],
+    }
+}
+
+
 class FBCYLPipelineBuilder:
     """Builds MongoDB aggregation pipeline for FBCYL team statistics."""
 
@@ -701,24 +724,7 @@ class FBCYLPipelineBuilder:
         # activity stat remains zero.
         # $nor excludes any player where timePlayed==40 AND every listed stat
         # is zero or absent.
-        pipeline.append({
-            "$match": {
-                "stats.teams.players.timePlayed": {"$gt": 0},
-                "$nor": [{
-                    "stats.teams.players.timePlayed": 40,
-                    "stats.teams.players.data.score":               {"$in": [0, None]},
-                    "stats.teams.players.data.shotsOfTwoAttempted":   {"$in": [0, None]},
-                    "stats.teams.players.data.shotsOfThreeAttempted": {"$in": [0, None]},
-                    "stats.teams.players.data.shotsOfOneAttempted":   {"$in": [0, None]},
-                    "stats.teams.players.data.offensiveRebound":      {"$in": [0, None]},
-                    "stats.teams.players.data.defensiveRebound":      {"$in": [0, None]},
-                    "stats.teams.players.data.assists":               {"$in": [0, None]},
-                    "stats.teams.players.data.lost":                  {"$in": [0, None]},
-                    "stats.teams.players.data.block":                 {"$in": [0, None]},
-                    "stats.teams.players.data.steals":                {"$in": [0, None]},
-                }],
-            }
-        })
+        pipeline.append(PLAYED_PLAYER_STAGE)
 
         # Stage 6: Project player data and create normalized name for matching
         pipeline.append({
