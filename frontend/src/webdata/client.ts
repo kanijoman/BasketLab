@@ -7,12 +7,13 @@
 import { decryptScoped, PackageDecryptError, ScopedAccessError, type Wrap } from '@live-package/crypto'
 import { loadRights, scopeKeys } from '@live-package/rights'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
+import { DataUnavailable } from '@/datasource/resolve'
 
 export const SCHEMA = 1
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
 
 /** The data cannot be had from `web-data`: the caller falls back to the API. */
-export class WebDataUnavailable extends Error {}
+export class WebDataUnavailable extends DataUnavailable {}
 
 /** A file of the publication: where it is, how big, the hash of its content and (sealed files) the wraps of its key by scope. */
 export interface FileEntry { file: string; bytes: number; sha256: string; wraps?: Wrap[] }

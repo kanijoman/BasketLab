@@ -9,6 +9,7 @@
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 import { localPlayerStats, localTeamStats } from '@/localdata/source'
+import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 /** For API modules split out of this (already oversized) file. */
@@ -118,11 +119,12 @@ function buildTeamQs(params?: TeamFilters): string {
   return qs.toString() ? `?${qs}` : ''
 }
 
-// With the local data source on (`?data=local`, issue #327) the tables are computed from the exported files; `null` = ask the API as always.
-export const getTeamStats = async (collection: string, params?: TeamFilters) =>
-  (await localTeamStats(collection, params ?? {})) ??
-  get<{ team_stats: TeamStat[]; opponent_stats: TeamStat[] }>(
-    `/teams/${encodeURIComponent(collection)}${buildTeamQs(params)}`,
+// With the dataset `team-stats` on (`?data=local`, issues #327, #329) the tables are computed from the exported files; if they cannot answer, the API as always.
+export const getTeamStats = (collection: string, params?: TeamFilters) =>
+  fromSource(
+    'team-stats',
+    () => localTeamStats(collection, params ?? {}),
+    () => get<{ team_stats: TeamStat[]; opponent_stats: TeamStat[] }>(`/teams/${encodeURIComponent(collection)}${buildTeamQs(params)}`),
   )
 
 /** Comparative reports of the teams (issue #607): home vs away, won vs lost, a stretch of dates vs the rest of the season. */
@@ -201,18 +203,21 @@ export const getCompetitionEvolution = (
 
 // ── Players ───────────────────────────────────────────────────────────────────
 
-export const getPlayerStats = async (collection: string, params?: TeamFilters) => {
-  const local = await localPlayerStats(collection, params ?? {})
-  if (local) return local
-  const qs = new URLSearchParams()
-  if (params?.venue)  qs.set('venue', params.venue)
-  if (params?.result) qs.set('result', params.result)
-  if (params?.from)   qs.set('from_date', params.from)
-  if (params?.to)     qs.set('to_date', params.to)
-  if (params?.team)   qs.set('team', params.team)
-  const query = qs.toString() ? `?${qs}` : ''
-  return get<PlayerStat[]>(`/players/${encodeURIComponent(collection)}${query}`)
-}
+export const getPlayerStats = (collection: string, params?: TeamFilters) =>
+  fromSource(
+    'player-stats',
+    () => localPlayerStats(collection, params ?? {}),
+    () => {
+      const qs = new URLSearchParams()
+      if (params?.venue)  qs.set('venue', params.venue)
+      if (params?.result) qs.set('result', params.result)
+      if (params?.from)   qs.set('from_date', params.from)
+      if (params?.to)     qs.set('to_date', params.to)
+      if (params?.team)   qs.set('team', params.team)
+      const query = qs.toString() ? `?${qs}` : ''
+      return get<PlayerStat[]>(`/players/${encodeURIComponent(collection)}${query}`)
+    },
+  )
 
 export const getPlayerQuartiles = (collection: string) =>
   get<Record<string, Record<string, number>>>(

@@ -1,7 +1,7 @@
 /** Rule-based team report (own-team analysis / rival scouting). */
 import { API_BASE, getLiveTeamNames, type TeamEntry } from './client'
-import { localDataEnabled } from '@/localdata/source'
-import { loadReportTeams, loadWebReport, WebDataUnavailable } from '@/webdata/client'
+import { fromSource } from '@/datasource/resolve'
+import { loadReportTeams, loadWebReport } from '@/webdata/client'
 
 export type ReportMode = 'own' | 'rival'
 
@@ -82,34 +82,20 @@ async function failure(res: Response): Promise<Error> {
 }
 
 /**
- * The report of a team. With the local data source on (`?data=local`) it is the one published in `web-data`, opened with the open key of the beta or the
- * invitations of the reader (issue #639); when that cannot answer it asks the API as always. An access error (`ScopedAccessError`) is NOT answered by
- * the API: the page must tell the reader to unlock, otherwise the keys would mean nothing while the server still serves everything.
+ * The report of a team. With the dataset `team-report` on (`?data=local`) it is the one published in `web-data`, opened with the open key of the beta or
+ * the invitations of the reader (issue #639); when that cannot answer it asks the API as always. An access error (`ScopedAccessError`) is NOT answered
+ * by the API (`fromSource`): the page must tell the reader to unlock, otherwise the keys would mean nothing while the server still serves everything.
  */
-export async function getTeamReport(collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> {
-  if (localDataEnabled()) {
-    try {
-      return await loadWebReport(collection, teamId, mode)
-    } catch (error) {
-      if (!(error instanceof WebDataUnavailable)) throw error
-    }
-  }
-  const res = await fetch(url(collection, teamId, mode))
-  if (!res.ok) throw await failure(res)
-  return res.json() as Promise<TeamReport>
-}
+export const getTeamReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
+  fromSource('team-report', () => loadWebReport(collection, teamId, mode), async () => {
+    const res = await fetch(url(collection, teamId, mode))
+    if (!res.ok) throw await failure(res)
+    return res.json() as Promise<TeamReport>
+  })
 
-/** The teams to choose from: the ones with a published report with the local data source on (the API's list if it cannot answer), else the API's. */
-export async function getReportTeams(collection: string): Promise<TeamEntry[]> {
-  if (localDataEnabled()) {
-    try {
-      return await loadReportTeams(collection)
-    } catch (error) {
-      if (!(error instanceof WebDataUnavailable)) throw error
-    }
-  }
-  return getLiveTeamNames(collection)
-}
+/** The teams to choose from: the ones with a published report with the dataset `report-teams` on (the API's list if it cannot answer), else the API's. */
+export const getReportTeams = (collection: string): Promise<TeamEntry[]> =>
+  fromSource('report-teams', () => loadReportTeams(collection), () => getLiveTeamNames(collection))
 
 export async function downloadTeamReportPdf(collection: string, teamId: string, mode: ReportMode): Promise<Blob> {
   const res = await fetch(url(collection, teamId, mode, '/pdf'))
