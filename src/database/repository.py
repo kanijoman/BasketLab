@@ -97,6 +97,27 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
         except PyMongoError as e:
             return False
 
+    def get_match_for_recheck(self, collection_name: str, match_code) -> Optional[Dict]:
+        """The parts of a stored FEB game that a correction can change (``HEADER``, ``BOXSCORE``, ``PLAYBYPLAY``, ``SHOTCHART``), or ``None`` (issue #646)."""
+        if not self.connection.is_connected():
+            return None
+        try:
+            return self.connection.get_collection(collection_name).find_one(
+                {"_id": int(match_code)}, {"HEADER": 1, "BOXSCORE": 1, "PLAYBYPLAY": 1, "SHOTCHART": 1})
+        except PyMongoError:
+            return None
+
+    def replace_boxscore(self, collection_name: str, match_code: str, boxscore: Dict) -> bool:
+        """Replace a stored FEB game by its corrected download, by match code: the same ``_id`` (never a duplicate), ``DERIVED`` recomputed (issue #646)."""
+        if not self.connection.is_connected():
+            return False
+        try:
+            boxscore["_id"] = int(match_code)
+            _attach_derived_fields(boxscore)
+            return self.connection.get_collection(collection_name).replace_one({"_id": boxscore["_id"]}, boxscore).matched_count == 1
+        except PyMongoError:
+            return False
+
     def insert_fbcyl_match(self, collection_name: str, match_uuid: str, match_data: Dict) -> bool:
         """
         Insert a FBCYL match document with complete data (moves + stats).

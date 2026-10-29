@@ -39,6 +39,7 @@ class RefreshEntry:
     year: str = "2025"
     groups: str = ""
     group_filter: List[str] = field(default_factory=list)
+    recheck_days: int = 0                                            # >0: stored games of the last N days are downloaded again and replaced if FEB corrected them (#646)
 
 
 def load_config(path: Any = DEFAULT_CONFIG) -> List[RefreshEntry]:
@@ -57,6 +58,9 @@ def _parse_entry(position: int, raw: Dict[str, Any], names: Any) -> RefreshEntry
     group_fields = ("group_value", "group_label")
     if whole == ALL_GROUPS and any(raw.get(k) for k in group_fields):
         raise ValueError(f"scrapes entry #{position}: groups \"{ALL_GROUPS}\" excludes {' and '.join(group_fields)}")
+    days = raw.get("recheck_days", 0)
+    if isinstance(days, bool) or not isinstance(days, int) or days < 0:
+        raise ValueError(f"scrapes entry #{position}: recheck_days must be a whole number of days, 0 or more, not {days!r}")
     required = ["competition_url", "season_value", "competition_label", "season_label"]
     required += [] if whole == ALL_GROUPS else list(group_fields)
     missing = [k for k in required if not raw.get(k)]
@@ -194,6 +198,8 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
         stored = job["done"] - job["skipped"] - len(job["errors"])
         out.append(f"- Partidos en FEB: {job['total']} · nuevos guardados: {stored} · ya existentes o en juego: "
                    f"{job['skipped']} · errores: {len(job['errors'])}")
+        if job.get("rechecked"):
+            out.append(f"- Revisados de nuevo (últimos días): {job['rechecked']} · corregidos: {job.get('corrected', 0)}")
         out.append(f"- En la base de datos: {fresh.get('games_in_db')} · último partido: {fresh.get('last_game')}")
         if fresh.get("up_to_date") is False:
             out.append(f"- **Faltan {len(fresh['missing_codes'])} partidos jugados**: {', '.join(fresh['missing_codes'])}")

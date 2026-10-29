@@ -15,10 +15,10 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src.live_prep.package_sealing import Sealer
 from src.live_prep.publisher import VERCEL_GUARD
+from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, file_name
 from src.local_data.team_reports import seal_file, seal_reports
 
-SCHEMA = 1
 INDEX = "index.json"
 ROWS, REPORTS = "rows/", "reports/"
 

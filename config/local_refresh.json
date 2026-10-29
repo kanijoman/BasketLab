@@ -6,7 +6,8 @@
       "year": "2026",
       "competition_label": "LF ENDESA",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=1&t=2026&nm=primerafeb",
@@ -14,7 +15,8 @@
       "year": "2026",
       "competition_label": "PRIMERA FEB",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=67&t=2026&nm=lfchallenge",
@@ -22,7 +24,8 @@
       "year": "2026",
       "competition_label": "LF CHALLENGE",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb",
@@ -30,7 +33,8 @@
       "year": "2026",
       "competition_label": "SEGUNDA FEB",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2026&nm=lf2",
@@ -38,7 +42,8 @@
       "year": "2026",
       "competition_label": "L.F.-2",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=74&t=2026&nm=ligau",
@@ -46,7 +51,8 @@
       "year": "2026",
       "competition_label": "LIGA U",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=73&t=2026&nm=copaespaa",
@@ -54,7 +60,8 @@
       "year": "2026",
       "competition_label": "COPA ESPAÑA",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     },
     {
       "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=3&t=2026&nm=tercerafeb",
@@ -62,7 +69,8 @@
       "year": "2026",
       "competition_label": "TERCERA FEB",
       "season_label": "2026/2027",
-      "groups": "all"
+      "groups": "all",
+      "recheck_days": 3
     }
   ]
 }
