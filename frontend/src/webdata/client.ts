@@ -4,26 +4,20 @@
 // (rights) of the reader. Unlocking is the live app's (`@live-package`): one implementation until the shared interface (#330).
 // Everything here answers `WebDataUnavailable` when the data cannot be had (host down, schema unknown, not published) so that the caller falls back
 // to the API, and lets `ScopedAccessError` through: «you have no key for this» is not «try the API».
-import { decryptScoped, PackageDecryptError, ScopedAccessError, type Wrap } from '@live-package/crypto'
+import { decryptScoped, PackageDecryptError, ScopedAccessError } from '@live-package/crypto'
 import { loadRights, scopeKeys } from '@live-package/rights'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
+import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
 
-export const SCHEMA = 1
+export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
 
 /** The data cannot be had from `web-data`: the caller falls back to the API. */
 export class WebDataUnavailable extends DataUnavailable {}
 
-/** A file of the publication: where it is, how big, the hash of its content and (sealed files) the wraps of its key by scope. */
-export interface FileEntry { file: string; bytes: number; sha256: string; wraps?: Wrap[] }
-export interface RowsEntry extends FileEntry { collection: string; league: 'feb' | 'fbcyl'; games: number; wraps: Wrap[] }
-export interface ReportIndexEntry extends FileEntry { collection: string; teams: number }
-/** `index.json`: `v` and `open_key` are those of the live packages' index (the key of the `abierto` scope, published while the beta is open). */
-export interface WebDataManifest { schema: number; v: number; open_key?: string; rows: RowsEntry[]; reports: ReportIndexEntry[] }
-/** One sealed report of a competition's index. */
-export interface ReportEntry extends FileEntry { team_id: string; team: string; mode: ReportMode; wraps: Wrap[] }
-export interface ReportIndex { collection: string; reports: ReportEntry[] }
+// The shape of the manifest and of the report indexes is generated from the Python contract (`src/local_data/contract.py`, issue #328)
+export type { FileEntry, ReportEntry, ReportIndex, ReportIndexEntry, RowsEntry, Wrap, WebDataManifest } from './contract.generated'
 
 let base: string = (import.meta.env.VITE_DATA_BASE as string | undefined) || DEFAULT_BASE
 let manifestLoad: Promise<WebDataManifest> | null = null
