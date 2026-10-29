@@ -18,17 +18,9 @@ import {
   type TeamEntry,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
-
-// ---------------------------------------------------------------------------
-
-function ChevronDownIcon() {
-  return (
-    <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted"
-      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-    </svg>
-  )
-}
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import { Field, Select } from '@/components/ui/Field'
 
 // ---------------------------------------------------------------------------
 
@@ -85,10 +77,7 @@ export default function ReportPage() {
     <PageTransition>
       <div className="space-y-4">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Informes</h1>
-          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-        </div>
+        <PageHeader title="Informes" subtitle={collection?.label} />
 
         {!collection && (
           <div className="card p-10 flex flex-col items-center gap-2 text-center">
@@ -107,38 +96,22 @@ export default function ReportPage() {
               badge="ZIP"
             >
               <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <select aria-label="Equipo propio (A)"
-                    value={weeklyTeamA}
-                    onChange={e => setWeeklyTeamA(e.target.value)}
-                    className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
-                  >
-                    <option value="">— Equipo propio (A) —</option>
-                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <ChevronDownIcon />
-                </div>
-                <div className="relative">
-                  <select aria-label="Equipo rival (B)"
-                    value={weeklyTeamB}
-                    onChange={e => setWeeklyTeamB(e.target.value)}
-                    className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
-                  >
-                    <option value="">— Equipo rival (B) —</option>
-                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <ChevronDownIcon />
-                </div>
+                <Field label="Equipo propio (A)">
+                  <Select value={weeklyTeamA} onChange={e => setWeeklyTeamA(e.target.value)}
+                    options={[{ value: '', label: '— Equipo propio (A) —' }, ...teams.map(t => ({ value: t.id, label: t.name }))]} />
+                </Field>
+                <Field label="Equipo rival (B)">
+                  <Select value={weeklyTeamB} onChange={e => setWeeklyTeamB(e.target.value)}
+                    options={[{ value: '', label: '— Equipo rival (B) —' }, ...teams.map(t => ({ value: t.id, label: t.name }))]} />
+                </Field>
                 {weeklyTeamA && weeklyTeamB && weeklyTeamA === weeklyTeamB && (
                   <p className="text-xs text-warn">Los equipos A y B deben ser diferentes.</p>
                 )}
-                <button
-                  disabled={
-                    !weeklyTeamA ||
-                    !weeklyTeamB ||
-                    weeklyTeamA === weeklyTeamB ||
-                    weeklyLoading
-                  }
+                <Button
+                  variant="secondary"
+                  icon={Download}
+                  loading={weeklyLoading}
+                  disabled={!weeklyTeamA || !weeklyTeamB || weeklyTeamA === weeklyTeamB}
                   onClick={async () => {
                     setWeeklyLoading(true)
                     setWeeklyProgress({ status: 'running', step: 0, total: 5, message: 'Iniciando…', error: null })
@@ -175,11 +148,10 @@ export default function ReportPage() {
                       setWeeklyLoading(false)
                     }
                   }}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary-solid text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full justify-center"
                 >
-                  <Download className="w-4 h-4" />
                   {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
-                </button>
+                </Button>
                 {weeklyLoading && weeklyProgress && (
                   <div className="flex flex-col gap-1">
                     <div className="w-full h-1.5 rounded-full bg-surface-raised overflow-hidden">
@@ -208,19 +180,15 @@ export default function ReportPage() {
               badge="DOCX"
             >
               <div className="flex flex-col gap-2">
-                <div className="relative">
-                  <select aria-label="Equipo a analizar"
-                    value={scoutTeam}
-                    onChange={e => setScoutTeam(e.target.value)}
-                    className="w-full appearance-none bg-canvas border border-line rounded-lg px-3 py-2 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
-                  >
-                    <option value="">— Equipo —</option>
-                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <ChevronDownIcon />
-                </div>
-                <button
-                  disabled={!scoutTeam || scoutLoading}
+                <Field label="Equipo a analizar">
+                  <Select value={scoutTeam} onChange={e => setScoutTeam(e.target.value)}
+                    options={[{ value: '', label: '— Equipo —' }, ...teams.map(t => ({ value: t.id, label: t.name }))]} />
+                </Field>
+                <Button
+                  variant="secondary"
+                  icon={Download}
+                  loading={scoutLoading}
+                  disabled={!scoutTeam}
                   onClick={async () => {
                     setScoutLoading(true)
                     setScoutError(null)
@@ -238,11 +206,10 @@ export default function ReportPage() {
                       setScoutLoading(false)
                     }
                   }}
-                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-secondary-solid text-white text-sm font-medium hover:bg-secondary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="w-full justify-center"
                 >
-                  <Download className="w-4 h-4" />
                   {scoutLoading ? 'Generando documento…' : 'Descargar DOCX'}
-                </button>
+                </Button>
                 {scoutError && <p className="text-xs text-warn">{scoutError}</p>}
               </div>
             </ReportCard>

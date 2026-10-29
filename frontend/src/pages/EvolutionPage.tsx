@@ -17,11 +17,16 @@ import {
 } from 'recharts'
 import { useChartTheme } from '@/lib/chartTheme'
 import { seriesLabel } from '@/lib/evolutionLabels'
-import { TrendingUp, X, ChevronDown } from 'lucide-react'
+import { TrendingUp, X } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, getTeamEvolution, getCompetitionEvolution, type EvolutionPoint, type CompetitionEvolutionPoint } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button, { IconButton } from '@/components/ui/Button'
+import Checkbox from '@/components/ui/Checkbox'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import { Field, Select } from '@/components/ui/Field'
 import ExportButton from '@/components/ui/ExportButton'
 
 // -- Helpers ------------------------------------------------------------------
@@ -201,83 +206,44 @@ export default function EvolutionPage() {
     <PageTransition>
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Evolución Temporal</h1>
-            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          <ExportButton
-            filename={`evolucion_${stat}_${collection?.name ?? ''}`}
-            captureRef={chartRef}
-            pdfTitle={`Evolución Temporal — ${statLabel} — ${collection?.label ?? ''}`}
-            csvData={chartData}
-            csvHeaders={csvHeaders}
-          />
-        </div>
+        <PageHeader title="Evolución Temporal" subtitle={collection?.label}
+          actions={
+            <ExportButton
+              filename={`evolucion_${stat}_${collection?.name ?? ''}`}
+              captureRef={chartRef}
+              pdfTitle={`Evolución Temporal — ${statLabel} — ${collection?.label ?? ''}`}
+              csvData={chartData}
+              csvHeaders={csvHeaders}
+            />
+          } />
 
         {/* Controls */}
         <div className="card p-4 flex flex-wrap gap-3 items-center">
           {/* Stat selector with optgroups */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-ink-muted font-medium uppercase tracking-wide">Métrica</span>
-            <div className="relative">
-              <select aria-label="Métrica"
-                value={stat}
-                onChange={e => setStat(e.target.value)}
-                className="appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
-              >
-                {STAT_GROUPS.map(group => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.options.map(o => (
-                      <option key={o.key} value={o.key}>{o.label}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-            </div>
-          </div>
+          <Field label="Métrica" className="min-w-[14rem]">
+            <Select value={stat} onChange={e => setStat(e.target.value)}>
+              {STAT_GROUPS.map(group => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map(o => (
+                    <option key={o.key} value={o.key}>{o.label}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </Select>
+          </Field>
 
           {/* Rolling window */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-ink-muted font-medium uppercase tracking-wide">Media móvil</span>
-            <div className="flex gap-1">
-              {WINDOW_OPTIONS.map(w => (
-                <button
-                  key={w}
-                  onClick={() => setRollingWindow(w)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    rollingWindow === w
-                      ? 'bg-secondary-solid text-white'
-                      : 'bg-canvas border border-line text-ink-muted hover:bg-surface-raised'
-                  }`}
-                >
-                  {w}J
-                </button>
-              ))}
-            </div>
-          </div>
+          <SegmentedControl label="Media móvil" value={String(rollingWindow)} onChange={w => setRollingWindow(Number(w))}
+            options={WINDOW_OPTIONS.map(w => ({ value: String(w), label: `${w}J` }))} />
 
           {/* Series toggles */}
           <div className="flex items-center gap-3 ml-auto flex-wrap">
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
-              <input type="checkbox" checked={showRaw}    onChange={e => setShowRaw(e.target.checked)}    className="rounded" /> Por partido
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
-              <input type="checkbox" checked={showRolling} onChange={e => setShowRolling(e.target.checked)} className="rounded" /> Media móvil
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
-              <input type="checkbox" checked={showCumulative} onChange={e => setShowCumulative(e.target.checked)} className="rounded" /> Promedio acumulado
-            </label>
+            <Checkbox label="Por partido" checked={showRaw} onChange={e => setShowRaw(e.target.checked)} />
+            <Checkbox label="Media móvil" checked={showRolling} onChange={e => setShowRolling(e.target.checked)} />
+            <Checkbox label="Promedio acumulado" checked={showCumulative} onChange={e => setShowCumulative(e.target.checked)} />
             <span className="text-ink-faint text-xs select-none">|</span>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
-              <input type="checkbox" checked={showCompetitionRolling} onChange={e => setShowCompetitionRolling(e.target.checked)} className="rounded" />
-              <span>Liga media móvil{competitionQuery.isFetching ? ' …' : ''}</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-ink-muted">
-              <input type="checkbox" checked={showCompetitionCumulative} onChange={e => setShowCompetitionCumulative(e.target.checked)} className="rounded" />
-              <span>Liga acumulado{competitionQuery.isFetching ? ' …' : ''}</span>
-            </label>
+            <Checkbox label={`Liga media móvil${competitionQuery.isFetching ? ' …' : ''}`} checked={showCompetitionRolling} onChange={e => setShowCompetitionRolling(e.target.checked)} />
+            <Checkbox label={`Liga acumulado${competitionQuery.isFetching ? ' …' : ''}`} checked={showCompetitionCumulative} onChange={e => setShowCompetitionCumulative(e.target.checked)} />
           </div>
         </div>
 
@@ -294,9 +260,7 @@ export default function EvolutionPage() {
                 style={{ backgroundColor: TEAM_COLORS[idx % TEAM_COLORS.length] }}
               >
                 {teamName(team)}
-                <button onClick={() => toggleTeam(team)} className="hover:opacity-70">
-                  <X className="w-3 h-3" />
-                </button>
+                <IconButton icon={X} label={`Quitar ${teamName(team)}`} size="sm" onClick={() => toggleTeam(team)} className="p-0 text-current hover:opacity-70" />
               </span>
             ))}
             {selectedTeams.length === 0 && (
@@ -309,13 +273,15 @@ export default function EvolutionPage() {
           {teamList.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2 border-t border-line pt-2">
               {teamList.filter(t => !selectedTeams.includes(t.id)).map(team => (
-                <button
+                <Button
                   key={team.id}
+                  variant="ghost"
+                  size="sm"
                   onClick={() => toggleTeam(team.id)}
-                  className="px-2 py-0.5 rounded text-xs border border-line text-ink-muted hover:border-secondary-text hover:text-secondary-text transition-colors"
+                  className="border border-line px-2 py-0.5 text-ink-muted hover:border-secondary-text hover:text-secondary-text"
                 >
                   + {team.name}
-                </button>
+                </Button>
               ))}
             </div>
           )}
