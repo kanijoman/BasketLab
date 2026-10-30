@@ -18,6 +18,12 @@ describe('page parts (issue #190)', () => {
     expect(screen.getByRole('button', { name: 'Exportar' })).toBeInTheDocument()
   })
 
+  it('PageHeader centred is the hero of the home: the title and the subtitle in the middle (issue #666)', () => {
+    render(<PageHeader align="center" title="BasketLab" subtitle="Análisis" />)
+    expect(screen.getByRole('heading', { level: 1, name: 'BasketLab' })).toHaveClass('justify-center')
+    expect(screen.getByText('Análisis')).toHaveClass('text-center')
+  })
+
   it('Card: a panel with an optional title and actions', () => {
     const { container } = render(<Card title="Estadísticas por zona" actions={<button>Ver</button>}>contenido</Card>)
     expect(container.firstChild).toHaveClass('card')

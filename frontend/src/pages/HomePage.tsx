@@ -6,11 +6,13 @@
  * If the database is empty, directs the user to the Admin panel.
  */
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Clock, ChevronRight, Database, Settings, RefreshCw } from 'lucide-react'
 import { getCollectionList, type CollectionInfo } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button, { IconButton } from '@/components/ui/Button'
 import BrandLogo from '@/components/BrandLogo'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
 
@@ -60,7 +62,8 @@ function groupCollections(list: CollectionInfo[]): GroupedLeague[] {
 function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => void }) {
   const isFbcyl = col.league === 'FBCYL'
   return (
-    <button
+    <Link
+      to={`/${encodeURIComponent(col.name)}`}
       onClick={onClick}
       className="w-full text-left p-3.5 rounded-card border border-line
                  bg-surface hover:border-accent/40 hover:bg-surface-raised
@@ -82,7 +85,7 @@ function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => 
         <span className="text-xs text-ink-faint">{col.game_count} partidos</span>
         <ChevronRight className="w-3.5 h-3.5 text-ink-faint group-hover:text-ink transition-colors" />
       </div>
-    </button>
+    </Link>
   )
 }
 
@@ -135,7 +138,6 @@ function LeagueSection({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const navigate = useNavigate()
   const [recents, setRecents] = useState<RecentCollection[]>([])
 
   useEffect(() => {
@@ -157,9 +159,9 @@ export default function HomePage() {
     setRecents(kept)
   }, [collections])
 
+  /** The link takes you to the competition; this remembers it for the recents. */
   function handleNavigate(col: CollectionInfo) {
     saveRecent(col.name, col.league === 'FBCYL')
-    navigate(`/${encodeURIComponent(col.name)}`)
   }
 
   const grouped = collections ? groupCollections(collections) : []
@@ -170,14 +172,8 @@ export default function HomePage() {
         <div className="w-full max-w-2xl space-y-8">
 
           {/* Header */}
-          <div className="space-y-2 rounded-lg bg-gradient-to-b from-accent/10 via-accent/5 to-transparent px-4 pb-6 pt-8 text-center">
-            <h1 className="mb-4 flex items-center justify-center">
-              <BrandLogo size="lg" />
-            </h1>
-            <p className="text-ink-muted text-sm">
-              Análisis estadístico de baloncesto · Ligas españolas FEB / FBCYL
-            </p>
-          </div>
+          <PageHeader align="center" title={<BrandLogo size="lg" />} subtitle="Análisis estadístico de baloncesto · Ligas españolas FEB / FBCYL"
+            className="rounded-lg bg-gradient-to-b from-accent/10 via-accent/5 to-transparent px-4 pb-6 pt-8 [&_h1]:mb-4" />
 
           {/* Recent collections */}
           {recents.length > 0 && (
@@ -188,9 +184,9 @@ export default function HomePage() {
               </div>
               <div className="space-y-1">
                 {recents.map(r => (
-                  <button
+                  <Link
                     key={r.name}
-                    onClick={() => navigate(`/${encodeURIComponent(r.name)}`)}
+                    to={`/${encodeURIComponent(r.name)}`}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg
                                bg-surface border border-line
                                hover:border-accent/40 hover:bg-surface-raised
@@ -207,7 +203,7 @@ export default function HomePage() {
                       <span className="text-sm text-ink truncate">{r.label}</span>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-ink-faint group-hover:text-ink transition-colors shrink-0" />
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -221,14 +217,7 @@ export default function HomePage() {
                 Competiciones disponibles
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => refetch()}
-                  className="p-1.5 rounded-lg hover:bg-surface-raised text-ink-faint
-                             hover:text-ink transition-colors"
-                  title="Actualizar lista"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
+                <IconButton icon={RefreshCw} size="sm" label="Actualizar lista" onClick={() => refetch()} />
                 <Link
                   to="/admin"
                   className="flex items-center gap-1 text-xs text-ink-faint
@@ -251,9 +240,7 @@ export default function HomePage() {
             {isError && (
               <div className="card p-6 text-center space-y-3">
                 <p className="text-sm text-bad">No se pudo conectar con el servidor.</p>
-                <button onClick={() => refetch()} className="btn-secondary text-xs">
-                  Reintentar
-                </button>
+                <Button variant="secondary" size="sm" onClick={() => refetch()}>Reintentar</Button>
               </div>
             )}
 

@@ -53,6 +53,13 @@ describe('Layout shell (issue #191)', () => {
     expect(document.body.querySelector('a, button')).toBe(skip)                       // the first thing the Tab key finds
   })
 
+  // Issue #666 (U5e): going home is a link (it goes to a page), not a button that navigates
+  it('in a competition the breadcrumb has a link home', () => {
+    phone(false)
+    shell('/LF2/teams')
+    expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByRole('link', { name: 'Inicio' })).toHaveAttribute('href', '/')
+  })
+
   it('outside a competition there is no navigation to open', () => {
     phone(true)
     shell('/')

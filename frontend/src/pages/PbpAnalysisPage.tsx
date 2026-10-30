@@ -9,6 +9,9 @@ import { Microscope } from 'lucide-react'
 import { useByPeriod, useDerivedCoverage, usePointsByOrigin, useSituations, useTimeoutEffects } from '@/api/pbpExtended'
 import DataTable from '@/components/ui/DataTable'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import Tabs from '@/components/ui/Tabs'
 import { useCollection } from '@/context/CollectionContext'
 import { computeQuartileMap } from '@/lib/quartiles'
 import {
@@ -26,21 +29,9 @@ const TABS: [Tab, string, string][] = [
   ['timeouts', 'Tiempos muertos', 'Rating neto en las 5 posesiones de cada equipo antes y después de cada tiempo muerto, y % tras los que mejora quien lo pidió. Quedan fuera los del último minuto del periodo (umbrales provisionales).'],
 ]
 
+/** SegmentedControl over options written as {key, label}. */
 function Pills<T extends string>({ items, value, onChange, label }: { items: { key: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
-  return (
-    <div role="group" aria-label={label} className="inline-flex rounded-lg overflow-hidden border border-line text-sm">
-      {items.map(i => (
-        <button
-          key={i.key}
-          onClick={() => onChange(i.key)}
-          aria-pressed={value === i.key}
-          className={`px-4 py-1.5 font-medium transition-colors ${value === i.key ? 'bg-secondary-solid text-white' : 'text-ink-muted hover:bg-surface-raised'}`}
-        >
-          {i.label}
-        </button>
-      ))}
-    </div>
-  )
+  return <SegmentedControl label={label} size="md" value={value} onChange={onChange} options={items.map(i => ({ value: i.key, label: i.label }))} />
 }
 
 function Notice({ children }: { children: React.ReactNode }) {
@@ -132,13 +123,8 @@ export default function PbpAnalysisPage() {
   return (
     <PageTransition>
       <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Análisis pbp</h1>
-            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          <Pills items={TABS.map(([key, label]) => ({ key, label }))} value={tab} onChange={setTab} label="Sección" />
-        </div>
+        <PageHeader title="Análisis pbp" subtitle={collection?.label} />
+        <Tabs label="Secciones del análisis pbp" tabs={TABS.map(([id, label]) => ({ id, label }))} value={tab} onChange={setTab} />
         <p className="text-ink-muted text-sm max-w-4xl">{TABS.find(([key]) => key === tab)![2]}</p>
         {collection?.isFbcyl && (
           <p className="text-ink-muted text-sm max-w-4xl">
