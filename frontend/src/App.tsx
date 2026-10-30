@@ -12,7 +12,6 @@
  *   /:collection/rankings     → RankingsPage
  *   /:collection/report       → ReportPage
  *   /:collection/team-report  → TeamReportPage
- *   /:collection/live-prep    → LivePrepPage
  *   /:collection/possessions  → PossessionsPage
  *   /:collection/pbp          → PbpAnalysisPage
  *   /:collection/inout        → InOutPage
@@ -40,7 +39,6 @@ import ShotChartPage from '@/pages/ShotChartPage'
 import RankingsPage from '@/pages/RankingsPage'
 import ReportPage from '@/pages/ReportPage'
 import TeamReportPage from '@/pages/TeamReportPage'
-import LivePrepPage from '@/pages/LivePrepPage'
 import ScoutingRivalPage from '@/pages/ScoutingRivalPage'
 import PossessionsPage from '@/pages/PossessionsPage'
 import PbpAnalysisPage from '@/pages/PbpAnalysisPage'
@@ -73,7 +71,6 @@ export default function App() {
               <Route path="rankings"    element={<RankingsPage />} />
               <Route path="report"      element={<ReportPage />} />
               <Route path="team-report" element={<TeamReportPage />} />
-              <Route path="live-prep"   element={<LivePrepPage />} />
               <Route path="scouting-rival" element={<ScoutingRivalPage />} />
               <Route path="possessions" element={<PossessionsPage />} />
               <Route path="pbp"         element={<PbpAnalysisPage />} />

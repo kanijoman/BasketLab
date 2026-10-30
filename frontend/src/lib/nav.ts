@@ -5,7 +5,7 @@
  */
 import type { ComponentType } from 'react'
 import {
-  Activity, ArrowLeftRight, BarChart2, BrainCircuit, ClipboardList, FileSearch, FileText, Layers, LayoutDashboard, Microscope, Radio, RotateCcw,
+  Activity, ArrowLeftRight, BarChart2, BrainCircuit, ClipboardList, FileSearch, FileText, Layers, LayoutDashboard, Microscope, RotateCcw,
   Scale, Swords, Target, TrendingUp, Trophy, Users, Users2,
 } from 'lucide-react'
 
@@ -50,7 +50,6 @@ export const NAV_GROUPS: NavGroup[] = [
     { subPath: 'predictive', label: 'Análisis predictivo', description: 'Elasticidades Ridge, Monte Carlo y predicción de partido', icon: BrainCircuit },
   ] },
   { label: 'Live', items: [
-    { subPath: 'live-prep', label: 'Preparación live', description: 'Paquete cifrado para la app BasketLab Live (equipo + rival)', icon: Radio },
     { subPath: 'scouting-rival', label: 'Scouting del rival', description: 'PDF de cualquier equipo con lo que ve el motor: claves, jugadoras, zonas y plan', icon: FileSearch },
   ] },
   { label: 'Informes', items: [

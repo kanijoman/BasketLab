@@ -19,6 +19,11 @@ describe('navigation of a collection (issue #191)', () => {
     expect(new Set(paths).size).toBe(paths.length)                      // a page is in ONE group
   })
 
+  it('the live package is made by the app, not by a page of the web: no live-prep route or entry (issue #667)', () => {
+    expect(routes).not.toContain('live-prep')
+    expect(NAV_ITEMS.map(i => i.subPath)).not.toContain('live-prep')
+  })
+
   it('every entry says what it is for (the card of the hub)', () => {
     for (const item of NAV_ITEMS) expect(item.description.length, item.subPath || 'resumen').toBeGreaterThan(10)
   })
