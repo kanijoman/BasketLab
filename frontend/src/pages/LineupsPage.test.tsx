@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,8 +7,10 @@ const api = vi.hoisted(() => ({
   getTeamStats: vi.fn(), streamLineupAnalysis: vi.fn(), getPlayerStats: vi.fn(), getInOutAnalysis: vi.fn(),
 }))
 vi.mock('@/api/client', async () => ({ ...(await vi.importActual<object>('@/api/client')), ...api }))
+// one collection object for every render: the page analyses again whenever it changes, so a new one per render would never settle
+const collectionState = vi.hoisted(() => ({ value: { name: 'LF', label: 'LF Challenge', isFbcyl: false } }))
 vi.mock('@/context/CollectionContext', () => ({
-  useCollection: () => ({ collection: { name: 'LF', label: 'LF Challenge', isFbcyl: false } }),
+  useCollection: () => ({ collection: collectionState.value }),
 }))
 
 import InOutPage from './InOutPage'
@@ -46,5 +48,37 @@ describe('LineupsPage: the teams to choose from are there when the page opens (i
     page(client, <LineupsPage />)
     expect(await screen.findByRole('option', { name: 'Alfa' })).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Bravo' })).toBeTruthy()
+  })
+})
+
+// Issue #194 (U5c): Combinaciones on the base components — one h1, the buttons of the form are Buttons (the analysis says it is working).
+describe('LineupsPage on the base components (issue #194)', () => {
+  beforeEach(() => {
+    api.getTeamStats.mockReset().mockResolvedValue({ team_stats: [{ team_name: 'Alfa', team_id: 1 }], opponent_stats: [] })
+    api.streamLineupAnalysis.mockReset().mockReturnValue(new Promise(() => undefined))
+    api.getPlayerStats.mockReset().mockResolvedValue([])
+    api.getInOutAnalysis.mockReset().mockResolvedValue(null)
+  })
+
+  it('has one h1 with the competition as its subtitle', () => {
+    page(new QueryClient(), <LineupsPage />)
+    expect(screen.getByRole('heading', { level: 1, name: 'Análisis de Combinaciones' })).toBeTruthy()
+    expect(screen.getByText('LF Challenge')).toBeTruthy()
+  })
+
+  it('"Sin mínimos" waits for a minimum to clear and the analysis button says it is working while it runs', async () => {
+    page(new QueryClient(), <LineupsPage />)
+    await screen.findByRole('option', { name: 'Alfa' })
+    fireEvent.change(screen.getByLabelText('Mín. minutos'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Mín. partidos'), { target: { value: '0' } })
+    expect(screen.getByRole('button', { name: 'Sin mínimos' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Mín. partidos'), { target: { value: '3' } })
+    expect(screen.getByRole('button', { name: 'Sin mínimos' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Sin mínimos' }))
+    expect(screen.getByLabelText('Mín. partidos')).toHaveValue(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar' }))
+    const working = await screen.findByRole('button', { name: /Analizando/ })
+    expect(working).toHaveAttribute('aria-busy', 'true')
+    expect(working).toBeDisabled()
   })
 })

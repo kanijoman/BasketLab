@@ -201,3 +201,37 @@ describe('LivePrepPage', () => {
     })
   })
 })
+
+// Issue #195 (U5d): Preparación live on the base components — one h1, the fields labelled by Field, the button that says it is working while the package is
+// made, the matches a named group of radios.
+describe('LivePrepPage on the base components (issue #195)', () => {
+  it('has one h1 with the competition as its subtitle', async () => {
+    renderPage()
+    expect(screen.getByRole('heading', { level: 1, name: 'Preparación live' })).toBeTruthy()
+    expect(screen.getByText('FEB X')).toBeTruthy()
+    await screen.findAllByRole('option', { name: 'Equipo A' })
+  })
+
+  it('while the package is made the button says it is working and nothing can be changed', async () => {
+    pkg.getLivePackageProgress.mockReset().mockResolvedValue({ status: 'running', current: 1, total: 5, team: 'Equipo A', rival: 'Equipo B', error: null })
+    renderPage()
+    await fill()
+    fireEvent.click(screen.getByRole('button', { name: /generar paquete/i }))
+    const working = await screen.findByRole('button', { name: /generar paquete/i })
+    await waitFor(() => expect(working).toHaveAttribute('aria-busy', 'true'))
+    expect(working).toBeDisabled()
+    expect(screen.getByLabelText(/equipo propio/i)).toBeDisabled()
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeDisabled()
+  })
+
+  it('the upcoming matches are radios of a group named by its legend', async () => {
+    pkg.getLiveMatches.mockResolvedValue({
+      matches: [{ code: 'm1', status: 'scheduled', start: '2026-11-07T18:00:00', is_home: true, round: 5, opponent: { id: '2', name: 'Equipo B' } }],
+      calendar_url: 'u', warning: null,
+    })
+    renderPage()
+    await fill()
+    const group = await screen.findByRole('radiogroup', { name: /próximos partidos/i })
+    expect(group.querySelectorAll('input[type="radio"]')).toHaveLength(1)
+  })
+})

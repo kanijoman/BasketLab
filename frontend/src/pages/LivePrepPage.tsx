@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Download, Loader2, Radio } from 'lucide-react'
+import { Download, Radio as RadioIcon } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
@@ -14,6 +14,10 @@ import {
   type LiveMatch, type LivePackageProgress,
 } from '@/api/livePackage'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import Radio from '@/components/ui/Radio'
+import { Field, Input, Select } from '@/components/ui/Field'
 
 const MIN_PASSPHRASE = 8
 
@@ -113,21 +117,16 @@ export default function LivePrepPage() {
     }
   }
 
-  const select = 'bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus'
-
   return (
     <PageTransition>
       <div className="space-y-4 max-w-2xl">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Preparación live</h1>
-          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-        </div>
+        <PageHeader title="Preparación live" subtitle={collection?.label} />
 
         {!collection ? (
           <p className="text-sm text-ink-muted">Selecciona una colección.</p>
         ) : collection.isFbcyl ? (
           <div className="card p-6 flex items-start gap-3">
-            <Radio className="w-5 h-5 text-warn mt-0.5" />
+            <RadioIcon className="w-5 h-5 text-warn mt-0.5" />
             <p className="text-sm text-ink-muted">
               Los paquetes de preparación live están disponibles solo para competiciones FEB por ahora.
             </p>
@@ -139,44 +138,36 @@ export default function LivePrepPage() {
               BasketLab Live. Se procesan todos los partidos de la competición, puede tardar un poco.
             </p>
             <div className="grid sm:grid-cols-2 gap-4">
-              <label className="flex flex-col gap-1 text-xs text-ink-muted">
-                Equipo propio
-                <select value={team} onChange={e => chooseTeam(e.target.value)} className={select} disabled={running}>
+              <Field label="Equipo propio">
+                <Select value={team} onChange={e => chooseTeam(e.target.value)} disabled={running}>
                   <option value="">— Selecciona —</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-ink-muted">
-                Rival
-                <select value={rival} onChange={e => chooseRival(e.target.value)} className={select} disabled={running}>
+                </Select>
+              </Field>
+              <Field label="Rival">
+                <Select value={rival} onChange={e => chooseRival(e.target.value)} disabled={running}>
                   <option value="">— Selecciona —</option>
                   {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-ink-muted">
-                Contraseña
-                <input type="password" value={pass} onChange={e => setPass(e.target.value)} className={select}
-                  autoComplete="new-password" disabled={running} />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-ink-muted">
-                Repetir contraseña
-                <input type="password" value={repeat} onChange={e => setRepeat(e.target.value)} className={select}
-                  autoComplete="new-password" disabled={running} />
-              </label>
+                </Select>
+              </Field>
+              <Field label="Contraseña">
+                <Input type="password" value={pass} onChange={e => setPass(e.target.value)} autoComplete="new-password" disabled={running} />
+              </Field>
+              <Field label="Repetir contraseña">
+                <Input type="password" value={repeat} onChange={e => setRepeat(e.target.value)} autoComplete="new-password" disabled={running} />
+              </Field>
             </div>
             {team && schedule && (
-              <fieldset className="space-y-2" disabled={running}>
+              <fieldset role="radiogroup" className="space-y-2" disabled={running}>
                 <legend className="text-xs text-ink-muted">Próximos partidos de este equipo (opcional: fija el rival y el partido)</legend>
                 {schedule.warning && <p className="text-xs text-warn">{schedule.warning}</p>}
                 {schedule.matches.map(m => (
-                  <label key={m.code} data-match className="flex items-center gap-2 text-sm text-ink-muted cursor-pointer">
-                    <input type="radio" name="live-match" checked={matchCode === m.code} onChange={() => chooseMatch(m)} />
-                    <span>
+                  <Radio key={m.code} data-match name="live-match" checked={matchCode === m.code} onChange={() => chooseMatch(m)}
+                    label={<>
                       {m.status === 'live' ? <strong className="text-ok">En directo</strong> : formatStart(m.start)}
                       {' · '}{m.is_home ? 'vs' : '@'} <strong className="text-ink">{m.opponent?.name.trim()}</strong>
                       {' '}(jornada {m.round})
-                    </span>
-                  </label>
+                    </>} />
                 ))}
               </fieldset>
             )}
@@ -184,10 +175,9 @@ export default function LivePrepPage() {
             {shortPass && <p className="text-xs text-warn">La contraseña debe tener al menos {MIN_PASSPHRASE} caracteres.</p>}
             {mismatch && <p className="text-xs text-warn">Las contraseñas no coinciden.</p>}
 
-            <button className="btn-secondary" disabled={!ready || running} onClick={() => void generate()}>
-              {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            <Button variant="secondary" icon={Download} loading={running} disabled={!ready} onClick={() => void generate()}>
               Generar paquete
-            </button>
+            </Button>
 
             {phase.kind === 'running' && (
               <div className="space-y-1">
@@ -210,10 +200,9 @@ export default function LivePrepPage() {
             {phase.kind === 'done' && (
               <div className="text-sm text-ink-muted space-y-1">
                 <p className="text-ok">Paquete descargado: {phase.file}</p>
-                <button className="btn-secondary" onClick={() => saveBlob(phase.blob, phase.file)}>
-                  <Download className="w-3.5 h-3.5" />
+                <Button variant="secondary" icon={Download} onClick={() => saveBlob(phase.blob, phase.file)}>
                   Descargar paquete de nuevo
-                </button>
+                </Button>
                 <p>Impórtalo en la app BasketLab Live con la misma contraseña.
                   <strong className="text-ink"> Guarda la contraseña: no se puede recuperar.</strong></p>
               </div>

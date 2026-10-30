@@ -8,6 +8,8 @@ import {
 import { useChartTheme } from '@/lib/chartTheme'
 import { useCollection } from '@/context/CollectionContext'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
 import ExportButton from '@/components/ui/ExportButton'
 import {
   getTeamStats, streamRotacionesAnalysis,
@@ -209,12 +211,8 @@ export default function RotacionesPage() {
       <div className="space-y-4">
 
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Análisis de Rotaciones</h1>
-            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          {result && (
+        <PageHeader title="Análisis de Rotaciones" subtitle={collection?.label}
+          actions={result && (
             <ExportButton
               filename={`rotaciones_${selectedTeam?.name ?? ''}_${collection?.name ?? ''}`}
               captureRef={exportRef}
@@ -223,7 +221,7 @@ export default function RotacionesPage() {
               csvHeaders={csvHeaders}
             />
           )}
-        </div>
+        />
 
         {/* Controls */}
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
@@ -238,13 +236,9 @@ export default function RotacionesPage() {
             </Select>
           </div>
 
-          <button
-            type="submit"
-            disabled={isFetching || !pendingTeam}
-            className="bg-secondary-solid hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
-          >
+          <Button type="submit" loading={isFetching} disabled={!pendingTeam}>
             {isFetching ? 'Analizando…' : 'Analizar'}
-          </button>
+          </Button>
         </form>
 
         {/* Error */}

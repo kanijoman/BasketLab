@@ -5,11 +5,15 @@
  */
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown } from 'lucide-react'
+import { X } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, getShotZones, getShotRaw, getPlayerStats, getPlayerQuartiles, type ShotZoneData, type PlayerStat, type ShotRawData, type TeamEntry } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import { IconButton } from '@/components/ui/Button'
+import { Select } from '@/components/ui/Field'
 import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
 import ExportButton from '@/components/ui/ExportButton'
 import Tooltip from '@/components/ui/Tooltip'
@@ -128,106 +132,51 @@ export default function ShotChartPage() {
     <PageTransition>
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">Gráficos de Tiro</h1>
-            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          <ExportButton
-            filename={`tiros_${exportLabel}_${collection?.name ?? ''}`}
-            captureRef={courtRef as unknown as import('react').RefObject<HTMLElement>}
-            pdfTitle={`Gráfico de Tiro — ${exportLabel || 'selección'} — ${collection?.label ?? ''}`}
-            csvData={zones.map(z => ({ ...z, points: z.points === 3 ? '3P' : '2P' }))}
-            csvHeaders={zonesCsvHeaders}
-          />
-        </div>
+        <PageHeader title="Gráficos de Tiro" subtitle={collection?.label}
+          actions={
+            <ExportButton
+              filename={`tiros_${exportLabel}_${collection?.name ?? ''}`}
+              captureRef={courtRef as unknown as import('react').RefObject<HTMLElement>}
+              pdfTitle={`Gráfico de Tiro — ${exportLabel || 'selección'} — ${collection?.label ?? ''}`}
+              csvData={zones.map(z => ({ ...z, points: z.points === 3 ? '3P' : '2P' }))}
+              csvHeaders={zonesCsvHeaders}
+            />
+          }
+        />
 
         {/* Controls */}
         <div className="card p-4 flex flex-wrap gap-3 items-center">
-          {/* View mode */}
-          <div className="flex rounded-lg overflow-hidden border border-line text-sm">
-            {(['team', 'player'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-4 py-1.5 font-medium transition-colors ${
-                  viewMode === mode
-                    ? 'bg-secondary-solid text-white'
-                    : 'text-ink-muted hover:bg-surface-raised'
-                }`}
-              >
-                {mode === 'team' ? 'Equipo' : 'Jugador'}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl label="Ver por" size="md" value={viewMode} onChange={setViewMode}
+            options={[{ value: 'team', label: 'Equipo' }, { value: 'player', label: 'Jugador' }]} />
 
           {/* Team selector — shared between both modes */}
-          <div className="relative">
-            <select aria-label="Equipo"
-              value={selectedTeam}
-              onChange={e => { setSelectedTeam(e.target.value); setSelectedPlayer('') }}
-              className="appearance-none bg-canvas border border-line rounded-lg px-3 py-1.5 pr-8 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
-            >
+          <div className="w-56">
+            <Select aria-label="Equipo" value={selectedTeam}
+              onChange={e => { setSelectedTeam(e.target.value); setSelectedPlayer('') }}>
               <option value="">— Selecciona equipo —</option>
               {teamList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
+            </Select>
           </div>
 
           {/* Active player chip — shown in player mode once a player is picked from the table */}
           {viewMode === 'player' && selectedPlayer && (() => {
             const p = playerList.find(pl => pl.player_id === selectedPlayer)
             return p ? (
-              <span className="flex items-center gap-1.5 bg-secondary/20 text-secondary-text text-xs font-medium px-2.5 py-1 rounded-full">
+              <span className="flex items-center gap-1.5 bg-secondary/20 text-secondary-text text-xs font-medium pl-2.5 pr-1 py-0.5 rounded-full">
                 {p.player_name}
-                <button
-                  onClick={() => setSelectedPlayer('')}
-                  className="hover:text-ink transition-colors leading-none ml-0.5"
-                  aria-label="Quitar selección de jugador"
-                >✕</button>
+                <IconButton icon={X} size="sm" label="Quitar selección de jugador" onClick={() => setSelectedPlayer('')} />
               </span>
             ) : null
           })()}
 
           {/* Visualization mode toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-line text-sm ml-auto">
-            {(['zones', 'scatter', 'heatmap'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setVizMode(mode)}
-                className={`px-3 py-1.5 font-medium transition-colors ${
-                  vizMode === mode
-                    ? 'bg-secondary-solid text-white'
-                    : 'text-ink-muted hover:bg-surface-raised'
-                }`}
-              >
-                {mode === 'zones' ? 'Zonas' : mode === 'scatter' ? 'Scatter' : 'Calor'}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl label="Visualización" size="md" value={vizMode} onChange={setVizMode} className="ml-auto"
+            options={[{ value: 'zones', label: 'Zonas' }, { value: 'scatter', label: 'Scatter' }, { value: 'heatmap', label: 'Calor' }]} />
 
           {/* Shot result filter — scatter and heatmap only */}
           {vizMode !== 'zones' && (
-            <div className="flex rounded-lg overflow-hidden border border-line text-sm">
-              {(['all', 'made', 'missed'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setShotFilter(f)}
-                  className={`px-3 py-1.5 font-medium transition-colors flex items-center gap-1.5 ${
-                    shotFilter === f
-                      ? 'bg-secondary-solid text-white'
-                      : 'text-ink-muted hover:bg-surface-raised'
-                  }`}
-                >
-                  {f !== 'all' && (
-                    <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${
-                      f === 'made' ? 'bg-ok' : 'bg-bad'
-                    }`} />
-                  )}
-                  {f === 'all' ? 'Todos' : f === 'made' ? 'Aciertos' : 'Fallos'}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl label="Resultado del tiro" size="md" value={shotFilter} onChange={setShotFilter}
+              options={[{ value: 'all', label: 'Todos' }, { value: 'made', label: 'Aciertos' }, { value: 'missed', label: 'Fallos' }]} />
           )}
         </div>
 
