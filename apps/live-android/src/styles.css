@@ -53,7 +53,7 @@ body {
 .segmented { display: flex; flex: 1 1 13rem; min-width: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .segment { flex: 1 1 0; min-width: 0; border: 0; border-radius: 0; padding: 0 4px; background: var(--card); color: var(--text); font-variant-numeric: tabular-nums; }
 .segment + .segment { border-left: 1px solid var(--line); }
-.segment.selected { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.segment.selected { background: var(--accent-solid); color: var(--accent-ink); font-weight: 700; }
 .timeline { display: flex; align-items: center; gap: 10px; }
 .timeline input[type='range'] { flex: 1 1 auto; min-width: 0; min-height: 44px; accent-color: var(--accent);
   touch-action: pan-y; /* a vertical swipe over it scrolls the page instead of dragging the thumb (#309) */ }
@@ -65,8 +65,7 @@ button {
   min-height: 44px; /* touch target */
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--accent-solid); color: var(--accent-ink);
   font: inherit;
   padding: 0 16px;
 }
@@ -121,7 +120,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
   padding-bottom: env(safe-area-inset-bottom); }
 .tab { flex: 1 1 0; min-width: 0; min-height: 56px; border: 0; border-radius: 0; background: transparent; color: var(--muted);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 0.75rem; }
-.tab.active { color: var(--accent); font-weight: 700; }
+.tab.active { color: var(--accent-text); font-weight: 700; }
 .notice { margin: 12px 0; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
 .notice.warn { border-style: solid; border-color: var(--sev-warning); color: var(--text); } /* a package of another match (#417) */
 .link-button { margin-top: 6px; }
@@ -173,7 +172,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
   background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); color: var(--text); font-size: 1rem; }
 .select-list li { padding: 12px; border-radius: 8px; overflow-wrap: anywhere; cursor: pointer; }
 .select-list li.active { background: var(--bg); }
-.select-list li[aria-selected='true'] { color: var(--accent); font-weight: 700; }
+.select-list li[aria-selected='true'] { color: var(--accent-text); font-weight: 700; }
 .round-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 10px; margin: 8px 0 12px; align-items: end; }
 .round-filters label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 0.85rem; }
 .round-filters input:not([type='checkbox']) { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); padding: 0 12px; font: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
@@ -206,7 +205,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 /* Feedback of the staff on each alert (issue #235) */
 .verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .verdict { flex: 1 1 0; min-width: 88px; padding: 0 10px; font-size: 0.85rem; }
-.verdict[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.verdict[aria-pressed='true'] { background: var(--accent-solid); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
 .feedback-panel { display: grid; gap: 8px; }
 .feedback-panel h2 { margin: 0; }
 .feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -238,7 +237,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .wp-card { margin: 12px 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
 .wp-card h2 { margin: 0 0 8px; font-size: 1rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 6px;
-  border: 1px solid var(--accent); color: var(--accent); }
+  border: 1px solid var(--accent); color: var(--accent-text); }
 .wp-main { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
 .wp-value { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .wp-chart { width: 100%; height: 56px; margin: 8px 0 4px; display: block; }
@@ -259,12 +258,12 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 /* Brand (#311): the header of the screens, the loading splash and the logo of Acerca de */
 .brand-header { display: flex; align-items: center; gap: 10px; padding: 4px 0 10px; }
 .brand-name { font-size: 1.05rem; font-weight: 600; letter-spacing: 0.01em; }
-.brand-name strong { color: var(--accent); }
+.brand-name strong { color: var(--accent-text); }
 .about-logo { display: block; margin: 0 0 8px; }
 .splash { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
   background: var(--surface, var(--bg)); text-align: center; }
 .splash h1 { margin: 0; font-size: 1.6rem; }
-.splash h1 strong { color: var(--accent); }
+.splash h1 strong { color: var(--accent-text); }
 .splash p { margin: 0; color: var(--muted); }
 .splash-mark { animation: splash-breathe 2.4s ease-in-out infinite; }
 .splash-progress { width: 160px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
@@ -275,7 +274,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 /* Motion (#312): it says what changed and is short. A new alert enters with a highlight, the score flashes, a tab fades in and buttons
    answer to the touch. Everything stops for who asks for less motion. */
 @keyframes alert-in { from { opacity: 0; transform: translateY(-10px); box-shadow: 0 0 0 3px rgb(var(--accent-rgb, 232 101 26) / 0.55); } 60% { opacity: 1; transform: none; } to { box-shadow: 0 0 0 0 transparent; } }
-@keyframes score-bump { 0% { transform: scale(1); color: var(--accent); } 40% { transform: scale(1.22); color: var(--accent); } 100% { transform: scale(1); } }
+@keyframes score-bump { 0% { transform: scale(1); color: var(--accent-text); } 40% { transform: scale(1.22); color: var(--accent-text); } 100% { transform: scale(1); } }
 @keyframes tab-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .alert-new { animation: alert-in 0.45s ease-out; }
 .team .pts.bump { animation: score-bump 0.6s ease-out; display: inline-block; }
@@ -284,9 +283,11 @@ button { transition: transform 0.08s ease, background-color 0.15s ease, border-c
 button:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) {
   .alert-new, .pts.bump, .tab-fade { animation: none; }
-  button { transition: none; }
+  button, .team { transition: none; }
   button:active { transform: none; }
 }
+/* Where the keyboard (or the pad of a tablet) is (#633): the ring of the suite, drawn only when the browser says the focus is not from a tap. */
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* A little depth (#312): the cards were flat. A soft shadow, and the scoreboard with an accent edge that says what the screen is about. */
 .scoreboard, .panel, .alert, .pace-card, .wp-card { box-shadow: 0 1px 3px rgb(0 0 0 / 0.22); }
 .scoreboard { border-top: 3px solid var(--accent); background: linear-gradient(180deg, rgb(var(--accent-rgb, 232 101 26) / 0.07), var(--card) 55%); }
