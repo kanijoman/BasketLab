@@ -4,7 +4,7 @@
 // blocked) everything reads the API.
 
 /** What a page reads, by the answer it needs (the pages that share an answer share its switch). Which pages read what: docs/ARCHITECTURE.md. */
-export const DATASETS = ['team-stats', 'player-stats', 'team-comparison', 'multi-phase', 'evolution', 'pbp', 'shots', 'rotations', 'matches', 'possessions', 'team-report', 'report-teams', 'scouting'] as const
+export const DATASETS = ['team-stats', 'player-stats', 'team-comparison', 'multi-phase', 'evolution', 'pbp', 'shots', 'rotations', 'lineups', 'matches', 'possessions', 'team-report', 'report-teams', 'scouting'] as const
 export type Dataset = (typeof DATASETS)[number]
 
 export const DATA_FLAG_KEY = 'basketlab.data'

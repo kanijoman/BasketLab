@@ -42,3 +42,13 @@ Para una competición de 17 equipos y 271 partidos: rotaciones ~0,09 MB, tiros ~
 
 ## Reproducir
 Scripts de medida (no están en el repositorio: son de un solo uso) leyendo la base local con `MONGODB_CONNECTION_STRING=mongodb://localhost:27017`: `LineupService.get_lineup_analysis(..., min_minutes=0, min_games=0, include_game_log=True)`, `RotationService.get_rotation_analysis(...)` y `extract_shots` del router de tiros.
+
+## Resultado: Combinaciones publicadas (#686, opción B)
+Se implementó la opción B (todas las combinaciones, sin mínimos, con los contadores de cada partido; el navegador aplica tamaño, estadística, período, mínimos y último partido). Pesa **la mitad de lo estimado**: el spike midió la respuesta de la API (objetos con nombres de campo, nombres de jugador y `game_log` por combinación) y lo publicado son filas de 22 números por combinación y partido (`COLUMNS` de `lineups_export.py`), con los jugadores y sus nombres una sola vez por equipo. Medido con la base local, todos los tamaños 2–5:
+
+| Equipo | Partidos | Crudo | gz | Cálculo |
+|---|---|---|---|---|
+| FEB, PRIMERA FEB 2025-26 (2 equipos) | 31–32 | 482–580 KB | **118–141 KB** | ≈ 30 s |
+| FBCYL, 1ª fase grupo A (3 equipos) | 5–6 | 43–51 KB | **6–8 KB** | ≈ 5 s |
+
+Una competición de 17 equipos de FEB son **≈ 2–2,4 MB comprimidos** (frente a los ~4,5 MB estimados) y **≈ 8–9 min** al publicar (secuencial: como estimaba el spike, el tiempo lo pone el recorrido del play-by-play de cada partido en cada tamaño, no la forma de la salida). No hizo falta el suelo de minutos totales de la recomendación: se publican **todas** las combinaciones. Queda pendiente, si el tiempo molesta, no recalcular al publicar los equipos sin partidos nuevos (el publicador ya conserva los bytes de lo que no cambia, pero hoy calcula antes de comparar). Paridad exacta con la API: vectores con los partidos reales de las dos ligas y comprobación contra Mongo local (2 equipos de la temporada completa, 4 de otra de FEB y 3 de FBCYL, con los filtros de fechas de Mongo de verdad).

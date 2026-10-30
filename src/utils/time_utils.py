@@ -28,3 +28,16 @@ def fbcyl_game_day(raw_time) -> str:
         return datetime.strptime(f"{words[0]} {words[1]} {words[2].rstrip(',')}", "%b %d, %Y").strftime("%Y-%m-%d")
     except ValueError:
         return ""
+
+
+def fbcyl_game_instant(raw_time) -> str:
+    """The instant ``YYYY-MM-DDTHH:MM:SS`` of a FBCYL game from its ``stats.time`` (``Oct 3, 2026, 6:30:00 PM`` or the older ``Oct 4, 2025 7:00:00 PM``), or ``""``."""
+    day = fbcyl_game_day(raw_time)
+    words = str(raw_time or "").replace(" ", " ").split()
+    if not day or len(words) < 5:
+        return ""
+    try:
+        clock = datetime.strptime(f"{words[3]} {words[4]}", "%I:%M:%S %p")
+    except ValueError:
+        return ""
+    return f"{day}T{clock.strftime('%H:%M:%S')}"

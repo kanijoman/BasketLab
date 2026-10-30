@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -239,18 +239,28 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     expect(rotations.teams[0].analysis.games_with_playbyplay).toBeGreaterThan(0)
   })
 
+  it('opens the lineups of a competition: the per-game counters of every team, in the columns of the contract (issue #686)', async () => {
+    const lineups = await loadWebLineups(FEB)
+    expect(lineups.columns[0]).toBe('game')
+    expect(lineups.teams.length).toBeGreaterThan(0)
+    expect(requested.filter(f => f.startsWith('lineups/'))).toHaveLength(1)
+  })
+
   it('a competition with neither is unavailable (the caller falls back), not an access problem', async () => {
     await expect(loadWebShots('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
     await expect(loadWebRotations('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+    await expect(loadWebLineups('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
 
   it('once the beta is closed they ask for the key of the competition, like the rows', async () => {
     withoutOpenKey()
     await expect(loadWebShots(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
     await expect(loadWebRotations(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
+    await expect(loadWebLineups(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
     addRight(await invitation(`competicion:${FEB}`))
     expect((await loadWebShots(FEB)).shots.length).toBeGreaterThan(0)
     expect((await loadWebRotations(FEB)).teams.length).toBeGreaterThan(0)
+    expect((await loadWebLineups(FEB)).teams.length).toBeGreaterThan(0)
   })
 })
 

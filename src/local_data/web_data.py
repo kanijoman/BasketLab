@@ -17,6 +17,7 @@ from src.live_prep.package_sealing import Sealer
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
+from src.local_data.lineups_export import export_lineups
 from src.local_data.matches_export import export_matches
 from src.local_data.possessions_export import export_possession_csv, export_possessions
 from src.local_data.rotations_export import export_rotations
@@ -27,7 +28,7 @@ INDEX = "index.json"
 ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
-            "possessions": "possessions/", "possession_csv": "possession_csv/"}
+            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/"}
 
 
 def _json(value: Any) -> str:
@@ -68,7 +69,7 @@ def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept:
 
 
 def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Optional[Dict[str, Any]]:
-    """What a competition has for ``section``, or ``None`` when it has nothing to publish: no game with ``DERIVED`` or with shots, or no play-by-play to analyse the rotations."""
+    """What a competition has for ``section``, or ``None`` when it has nothing to publish: no game with ``DERIVED`` or with shots, or no play-by-play to analyse the rotations or the lineups."""
     if section == "derived":
         payload = export_derived(db[collection], collection)
         return payload if payload["rows"] else None
@@ -84,6 +85,9 @@ def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Op
     if section == "matches":
         payload = export_matches(handler, collection)
         return payload if payload["matches"] else None
+    if section == "lineups":
+        payload = export_lineups(handler, collection)
+        return payload if payload["teams"] else None
     payload = export_rotations(handler, collection)
     return payload if any(t["analysis"].get("games_with_playbyplay") for t in payload["teams"]) else None
 

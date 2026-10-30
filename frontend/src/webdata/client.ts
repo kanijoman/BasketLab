@@ -11,6 +11,7 @@ import type { ScoutingReport, ScoutingScope } from '@/api/scoutingRival'
 import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type Wrap, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
+import type { Lineups } from '@/localdata/lineups'
 import type { Derived } from '@/localdata/pbp'
 import type { Shots } from '@/localdata/shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse } from '@/api/client'
@@ -119,7 +120,7 @@ async function sealedRows(collection: string): Promise<Sealed> {
 }
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
@@ -197,6 +198,10 @@ export interface Rotations {
 }
 export const loadWebRotations = (collection: string): Promise<Rotations> =>
   openSealed<Rotations>(() => sealedSection('rotations', collection, 'Esta competición no tiene las rotaciones publicadas.'), 'El fichero')
+
+/** The per-game counters of the lineups of every team of a competition (`lineups/`), issue #686: the browser merges them into the tables of Combinaciones. */
+export const loadWebLineups = (collection: string): Promise<Lineups> =>
+  openSealed<Lineups>(() => sealedSection('lineups', collection, 'Esta competición no tiene las combinaciones publicadas.'), 'El fichero')
 
 /** The list of the matches of a competition, each with its analysis (computed when it was published), issue #677. */
 export interface PublishedMatches {

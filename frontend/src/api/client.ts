@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -305,6 +305,13 @@ function lineupQuery(
   return qs
 }
 
+/** The table of a team as the page asks for it, from the publication when the dataset `lineups` is on (issue #686; `null` to use the API). */
+const localLineupTable = (
+  collection: string, teamId: string, size: number, stat: string, period: number, includeGameLog: boolean, minMinutes: number, minGames: number,
+): Promise<LineupRow[] | null> => localLineups(collection, teamId, {
+  size, stat, period: period === LAST_GAME ? 0 : period, lastGame: period === LAST_GAME, includeGameLog, minMinutes, minGames,
+})
+
 export const getLineupAnalysis = (
   collection: string,
   teamId: string,
@@ -317,8 +324,10 @@ export const getLineupAnalysis = (
   minGames = 5,
 ) => {
   const qs = lineupQuery(teamName, size, stat, period, includeGameLog, minMinutes, minGames)
-  return get<LineupRow[]>(
-    `/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?${qs}`,
+  return fromSource(
+    'lineups',
+    () => localLineupTable(collection, teamId, size, stat, period, includeGameLog, minMinutes, minGames),
+    () => get<LineupRow[]>(`/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}?${qs}`),
   )
 }
 
@@ -326,6 +335,7 @@ export const getLineupAnalysis = (
  * Stream lineup analysis via SSE.
  * Calls `onProgress(pct, current, total)` for each progress event,
  * then resolves with the full LineupRow[] once the done event arrives.
+ * With the dataset `lineups` on (`?data=local`, issue #686) the table is merged on the device from the counters of the publication: it is there at once, no stream.
  */
 export function streamLineupAnalysis(
   collection: string,
@@ -337,6 +347,29 @@ export function streamLineupAnalysis(
   includeGameLog = false,
   minMinutes = 15,
   minGames = 5,
+  onProgress?: (pct: number, current: number, total: number) => void,
+): Promise<LineupRow[]> {
+  return fromSource(
+    'lineups',
+    async () => {
+      const table = await localLineupTable(collection, teamId, size, stat, period, includeGameLog, minMinutes, minGames)
+      if (table) onProgress?.(100, 1, 1)
+      return table
+    },
+    () => streamLineupsFromApi(collection, teamId, teamName, size, stat, period, includeGameLog, minMinutes, minGames, onProgress),
+  )
+}
+
+function streamLineupsFromApi(
+  collection: string,
+  teamId: string,
+  teamName: string,
+  size: number,
+  stat: string,
+  period: number,
+  includeGameLog: boolean,
+  minMinutes: number,
+  minGames: number,
   onProgress?: (pct: number, current: number, total: number) => void,
 ): Promise<LineupRow[]> {
   const qs = lineupQuery(teamName, size, stat, period, includeGameLog, minMinutes, minGames)
