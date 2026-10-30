@@ -35,9 +35,19 @@ def _fast_lineups(handler, name):
             "teams": [{"team_id": "1", "team_name": "A", "games": [], "players": {}, "sizes": {}}]}
 
 
+def _fast_inout(handler, name):
+    """One analysed player and one not, as the real exporter lists them (FBCYL has none: left to the API)."""
+    from src.local_data.export import FORMAT
+
+    fbcyl = "FBCYL" in name
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb",
+            "players": [] if fbcyl else [{"player_id": "1", "analysis": {"on": {"minutes": 1}, "off": {"minutes": 2}}}, {"player_id": "2", "analysis": {}}]}
+
+
 @pytest.fixture(autouse=True)
 def cheap_lineups(monkeypatch):
     monkeypatch.setattr("src.local_data.web_data.export_lineups", _fast_lineups)
+    monkeypatch.setattr("src.local_data.web_data.export_inout", _fast_inout)
 
 
 @pytest.fixture()
@@ -257,6 +267,18 @@ def test_the_lineups_are_published_for_a_competition_with_play_by_play_and_not_f
     db[without].insert_many([{k: v for k, v in g.items() if k != "PLAYBYPLAY"} for g in games.build_games()])
     publish_web_data(handler, tmp_path / "other", ScopedSealer(MASTER), [without])
     assert _manifest(tmp_path / "other").get("lineups", []) == []
+
+
+def test_the_inout_of_a_feb_competition_is_published_sealed_and_fbcyl_has_none(handler, tmp_path):
+    """#678: ``games`` counts the players; the real exporter is tested in ``test_local_inout_export.py`` (it plays every game for every player)."""
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    entries = _manifest(tmp_path)["inout"]
+    assert [e["collection"] for e in entries] == [FEB]
+    entry = entries[0]
+    assert entry["file"].startswith("inout/") and entry["games"] == 2
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(_fast_inout(handler, FEB), default=str))
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
 
 
 def test_the_files_of_a_competition_that_left_the_publication_are_removed_for_every_section(handler, tmp_path):

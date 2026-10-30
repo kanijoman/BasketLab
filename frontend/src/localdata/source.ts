@@ -1,7 +1,7 @@
 // The local data source (issue #327, step 2): the tables of the web computed from the files `run_local_export.py` writes, instead of the API.
 // Which datasets read it is the switch of `datasource/switch` (`?data=local`, `?data=local:team-stats,…`, `?data=api`). Every function answers `null` when it cannot (switch off,
 // competition not exported, no player rows, file missing or of another format) so that the caller falls back to the API.
-import type { LineupRow, PlayerStat } from '@/api/client'
+import type { InOutResult, LineupRow, PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
@@ -16,7 +16,7 @@ import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, 
 import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
-import { loadWebCollections, loadWebDerived, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
+import { loadWebCollections, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedInOut, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -30,6 +30,7 @@ const derivedLoads = new Map<string, Promise<Derived | null>>()
 const shotLoads = new Map<string, Promise<Shots | null>>()
 const rotationLoads = new Map<string, Promise<Rotations | null>>()
 const lineupLoads = new Map<string, Promise<Lineups | null>>()
+const inOutLoads = new Map<string, Promise<PublishedInOut | null>>()
 const matchLoads = new Map<string, Promise<PublishedMatches | null>>()
 const possessionLoads = new Map<string, Promise<PublishedPossessions | null>>()
 const possessionCsvLoads = new Map<string, Promise<PublishedPossessionCsv | null>>()
@@ -42,6 +43,7 @@ export function resetLocalData(): void {
   shotLoads.clear()
   rotationLoads.clear()
   lineupLoads.clear()
+  inOutLoads.clear()
   matchLoads.clear()
   possessionLoads.clear()
   possessionCsvLoads.clear()
@@ -242,6 +244,14 @@ export async function localLineups(collection: string, teamId: string, query: Li
   if (dataSourceOf('lineups') !== 'local') return null
   const published = await loadOnce(lineupLoads, collection, loadWebLineups)
   return published ? lineupAnalysis(published, teamId, query) : null
+}
+
+/** IN/OUT (issue #678): the analysis of a player as `GET /players/{collection}/inout/{player_id}` answers it, computed when the competition was published; `null` to use the API (it is
+ *  not published, FBCYL, or the player is not in it). */
+export async function localInOut(collection: string, playerId: string): Promise<InOutResult | null> {
+  if (dataSourceOf('inout') !== 'local') return null
+  const published = await loadOnce(inOutLoads, collection, loadWebInOut)
+  return (published?.players.find(p => p.player_id === String(playerId))?.analysis as InOutResult | undefined) ?? null
 }
 
 /** Partidos (issue #677): the list of the matches of a competition, as `GET /matches/{collection}`; `null` to use the API. */

@@ -14,7 +14,7 @@ import type { Competition } from '@/localdata/competition'
 import type { Lineups } from '@/localdata/lineups'
 import type { Derived } from '@/localdata/pbp'
 import type { Shots } from '@/localdata/shots'
-import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse } from '@/api/client'
+import type { InOutResult, MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse } from '@/api/client'
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
@@ -120,7 +120,7 @@ async function sealedRows(collection: string): Promise<Sealed> {
 }
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
@@ -202,6 +202,16 @@ export const loadWebRotations = (collection: string): Promise<Rotations> =>
 /** The per-game counters of the lineups of every team of a competition (`lineups/`), issue #686: the browser merges them into the tables of Combinaciones. */
 export const loadWebLineups = (collection: string): Promise<Lineups> =>
   openSealed<Lineups>(() => sealedSection('lineups', collection, 'Esta competición no tiene las combinaciones publicadas.'), 'El fichero')
+
+/** What `GET /players/{collection}/inout/{player_id}` answers for each player of a FEB competition (computed when it was published; `{}` for a player it cannot analyse), issue #678. */
+export interface PublishedInOut {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  players: { player_id: string; analysis: InOutResult | Record<string, never> }[]
+}
+export const loadWebInOut = (collection: string): Promise<PublishedInOut> =>
+  openSealed<PublishedInOut>(() => sealedSection('inout', collection, 'Esta competición no tiene el IN/OUT publicado.'), 'El fichero')
 
 /** The list of the matches of a competition, each with its analysis (computed when it was published), issue #677. */
 export interface PublishedMatches {
