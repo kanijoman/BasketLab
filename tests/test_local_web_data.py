@@ -118,7 +118,7 @@ def test_a_new_game_never_changes_a_file_in_place_and_leaves_no_orphans(handler,
     assert before.keys() - after.keys() and after.keys() - before.keys()                                         # what changed got a new name
     manifest = _manifest(tmp_path)
     reports = [e["file"] for r in manifest["reports"] for e in json.loads(after[r["file"]])["reports"]]
-    referenced = {e["file"] for e in manifest["rows"] + manifest["derived"] + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
+    referenced = {e["file"] for e in manifest["rows"] + manifest["derived"] + manifest["shots"] + manifest.get("rotations", []) + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
     assert set(after) == referenced
     untouched = [n for n in after if "FBCYL" in n and n in before]
     assert untouched                                                                                             # the other competition kept its files
@@ -191,3 +191,44 @@ def test_the_derived_of_a_competition_that_left_the_publication_are_removed(hand
     gone = next(d for d in _manifest(tmp_path)["derived"] if d["collection"] == FBCYL)["file"]
     publish_web_data(handler, tmp_path, sealer, [FEB])
     assert not (tmp_path / gone).exists()
+
+
+# Issues #684 and #685: the shots and the rotations of each competition, sealed by competition like the rows, in files of their own.
+def test_the_manifest_lists_the_shots_of_every_competition_that_has_them(handler, tmp_path):
+    from src.local_data.export import FORMAT
+    from src.local_data.shots_export import export_shots
+
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    manifest = _manifest(tmp_path)
+    assert sorted(s["collection"] for s in manifest["shots"]) == sorted([FEB, FBCYL])
+    assert all(e["file"].startswith("shots/") and e["sha256"][:12] in e["file"] and set(e) >= {"file", "bytes", "sha256", "wraps", "games", "league"} for e in manifest["shots"])
+    entry = next(s for s in manifest["shots"] if s["collection"] == FEB)
+    db = handler.connection.client["BASKETBALL"]
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(export_shots(db[FEB], FEB), default=str))
+    assert _open(tmp_path, entry, f"competicion:{FEB}")["format"] == FORMAT
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+
+
+def test_the_rotations_are_published_for_a_competition_with_play_by_play_and_not_for_one_without(handler, tmp_path):
+    from src.local_data.rotations_export import export_rotations
+
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB])
+    entry = _manifest(tmp_path)["rotations"][0]
+    assert entry["collection"] == FEB and entry["file"].startswith("rotations/") and entry["games"] == 4               # for rotations, ``games`` counts the teams
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(export_rotations(handler, FEB), default=str))
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+    db = handler.connection.client["BASKETBALL"]
+    without = "L_F_-2_2025_2026_Sin_Pbp"
+    db[without].insert_many([{k: v for k, v in g.items() if k != "PLAYBYPLAY"} for g in games.build_games()])
+    publish_web_data(handler, tmp_path / "other", ScopedSealer(MASTER), [without])
+    assert _manifest(tmp_path / "other").get("rotations", []) == []                 # nothing to analyse: no entry
+
+
+def test_the_files_of_a_competition_that_left_the_publication_are_removed_for_every_section(handler, tmp_path):
+    sealer = ScopedSealer(MASTER)
+    publish_web_data(handler, tmp_path, sealer, [FEB, FBCYL])
+    gone = [s["file"] for s in _manifest(tmp_path)["shots"] if s["collection"] == FBCYL]
+    publish_web_data(handler, tmp_path, sealer, [FEB])
+    assert gone and not any((tmp_path / f).exists() for f in gone)

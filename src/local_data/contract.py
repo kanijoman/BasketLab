@@ -27,7 +27,8 @@ class FileEntry(TypedDict):
 
 
 class RowsEntry(FileEntry):
-    """The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676): same entry, other content."""
+    """The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676), its shots (``shots/``, #685) or the rotation analysis of its teams
+    (``rotations/``, #684; ``games`` counts its teams): same entry, other content."""
     collection: str
     league: Literal["feb", "fbcyl"]
     games: int
@@ -47,6 +48,8 @@ class WebDataManifest(TypedDict):
     open_key: NotRequired[str]
     rows: List[RowsEntry]
     derived: NotRequired[List[RowsEntry]]
+    shots: NotRequired[List[RowsEntry]]
+    rotations: NotRequired[List[RowsEntry]]
     reports: List[ReportIndexEntry]
 
 

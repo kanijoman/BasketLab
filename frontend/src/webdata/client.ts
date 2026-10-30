@@ -12,6 +12,8 @@ import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEn
 import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
 import type { Derived } from '@/localdata/pbp'
+import type { Shots } from '@/localdata/shots'
+import type { RotationResult } from '@/api/client'
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
@@ -116,13 +118,15 @@ async function sealedRows(collection: string): Promise<Sealed> {
   return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
 }
 
-/** The sealed `DERIVED` of a competition (`derived/`), with the manifest it came from. */
-async function sealedDerived(collection: string): Promise<Sealed> {
+/** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
+async function sealedSection(section: 'derived' | 'shots' | 'rotations', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
-  const entry = (manifest.derived ?? []).find(r => r.collection === collection)
-  if (!entry) throw new WebDataUnavailable('Esta competición no tiene el análisis pbp publicado.')
+  const entry = (manifest[section] ?? []).find(r => r.collection === collection)
+  if (!entry) throw new WebDataUnavailable(missing)
   return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
 }
+
+const sealedDerived = (collection: string) => sealedSection('derived', collection, 'Esta competición no tiene el análisis pbp publicado.')
 
 /**
  * Opens a sealed file of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
@@ -179,3 +183,17 @@ export async function loadScoutingScopes(collection: string, teamId: string): Pr
 
 /** The `DERIVED` of each game of a competition (what the pbp tables are summed from on the device), issue #676. */
 export const loadWebDerived = (collection: string): Promise<Derived> => openSealed<Derived>(() => sealedDerived(collection), 'El fichero')
+
+/** The shots of a competition (the zones, their rating and the scatter are counted from them on the device), issue #685. */
+export const loadWebShots = (collection: string): Promise<Shots> =>
+  openSealed<Shots>(() => sealedSection('shots', collection, 'Esta competición no tiene los tiros publicados.'), 'El fichero')
+
+/** What `GET /rotaciones/{collection}/{team_id}` answers for each team of a competition (computed when it was published), issue #684. */
+export interface Rotations {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  teams: { team_id: string; team_name: string; analysis: RotationResult }[]
+}
+export const loadWebRotations = (collection: string): Promise<Rotations> =>
+  openSealed<Rotations>(() => sealedSection('rotations', collection, 'Esta competición no tiene las rotaciones publicadas.'), 'El fichero')

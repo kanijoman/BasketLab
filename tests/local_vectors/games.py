@@ -14,6 +14,10 @@ try:
     from pbp_derived import enrich
 except ImportError:                                           # imported as ``local_vectors.games`` (the tests) instead of from this folder
     from local_vectors.pbp_derived import enrich
+try:
+    from shot_fixtures import add_feb_shots
+except ImportError:
+    from local_vectors.shot_fixtures import add_feb_shots
 
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = ROOT / "src" / "JSON_samples" / "feb_game.json"
@@ -87,6 +91,7 @@ def build_games() -> list:
                 {"id": team_id, "possessions": round(60 + rng.random() * 25, 2), "orb": t["ro"] - 1, "drb": t["rd"], "tov": t["to"], "reliable": True}
                 for (team_id, _), t in zip((home, away), totals)]}
             doc["DERIVED"]["v"] = enrich(doc["DERIVED"]["TEAM"], n)                  # the pbp figures of #676 on top: the rows only read what was there
+        add_feb_shots(doc, n)                                                       # the shots of #685 on top: no row reads them
         games.append(doc)
     return games
 

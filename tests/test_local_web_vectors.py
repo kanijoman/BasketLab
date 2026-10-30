@@ -74,7 +74,7 @@ def test_the_published_scouting_has_the_scopes_of_a_team_with_cup_games():
 
 def test_every_file_of_the_publication_is_referenced_and_named_by_its_hash():
     manifest = _manifest()
-    files = {e["file"] for e in manifest["rows"] + manifest.get("derived", []) + manifest["reports"]}
+    files = {e["file"] for e in manifest["rows"] + manifest.get("derived", []) + manifest.get("shots", []) + manifest.get("rotations", []) + manifest["reports"]}
     for entry in manifest["reports"]:
         files |= {e["file"] for e in json.loads((OUT / entry["file"]).read_text(encoding="utf-8"))["reports"]}
     on_disk = {str(p.relative_to(OUT)).replace("\\", "/") for p in OUT.rglob("*") if p.is_file()}

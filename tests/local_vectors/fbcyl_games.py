@@ -1,7 +1,7 @@
 """A small FBCYL league as stored in Mongo: the games the FBCYL local-data parity vectors (#327) are built from.
 
 Deterministic variations of the committed FBCYL sample: four teams in a double round robin, some games with ``DERIVED`` (exact possessions),
-one tied game (FBCYL keeps unfinished games, so ``tied`` is a result), players with their own oddities (a ghost, one who did not play, a uuid left out in some games) and dates written as FBCYL writes them (``Oct 4, 2025 6:00:00 PM``).
+one tied game (FBCYL keeps unfinished games, so ``tied`` is a result), players with their own oddities (a ghost, one who did not play, a uuid left out in some games) and dates written as FBCYL writes them today (``Oct 4, 2025, 6:00:00 PM`` with a narrow no-break space before the meridiem).
 """
 import copy
 import json
@@ -13,6 +13,10 @@ try:
     from pbp_derived import enrich
 except ImportError:                                           # imported as ``local_vectors.games`` (the tests) instead of from this folder
     from local_vectors.pbp_derived import enrich
+try:
+    from shot_fixtures import add_fbcyl_shots
+except ImportError:
+    from local_vectors.shot_fixtures import add_fbcyl_shots
 
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = ROOT / "src" / "JSON_samples" / "fbcyl_game.json"
@@ -87,5 +91,6 @@ def build_games() -> list:
             doc["DERIVED"] = {"v": 6, "TEAM": [{"id": t["teamIdIntern"], "ext_id": t["teamIdExtern"], "possessions": round(60 + rng.random() * 25, 2), "reliable": True}
                                                 for t in doc["stats"]["teams"]]}
             doc["DERIVED"]["v"] = enrich(doc["DERIVED"]["TEAM"], n)                  # the pbp figures of #676 on top: the rows only read what was there
+        add_fbcyl_shots(doc, n)                                                     # the shots of #685 on top: no row reads them
         games.append(doc)
     return games
