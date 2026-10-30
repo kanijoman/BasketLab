@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCompetitionEvolution, localMatchAnalysis, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -175,9 +175,12 @@ export type CVMap = Record<string, Record<string, CVEntry>>
 /** Response from the team consistency endpoint: own stats + rival (opponent) stats */
 export interface TeamConsistencyResponse { own: CVMap; rival: CVMap }
 
+// With the dataset `possessions` on (`?data=local`, issue #679) the consistency comes from the same published file as the possessions table.
 export const getTeamConsistency = (collection: string) =>
-  get<TeamConsistencyResponse>(
-    `/teams/${encodeURIComponent(collection)}/consistency`,
+  fromSource(
+    'possessions',
+    () => localTeamConsistency(collection),
+    () => get<TeamConsistencyResponse>(`/teams/${encodeURIComponent(collection)}/consistency`),
   )
 
 /** Per-player intra-game consistency: {player_id: {stat_key: CVEntry}} */
@@ -498,16 +501,33 @@ export const getShotRaw = (
 
 // ── Possessions ───────────────────────────────────────────────────────────────
 
-export const getPossessionStats = (collection: string, params?: TeamFilters) =>
-  get<PossessionStat[]>(
-    `/possessions/${encodeURIComponent(collection)}${buildTeamQs(params)}`,
+export const getPossessionStats = (collection: string) =>
+  fromSource(
+    'possessions',
+    () => localPossessionStats(collection),
+    () => get<PossessionStat[]>(`/possessions/${encodeURIComponent(collection)}`),            // the endpoint takes no filter
   )
 
-export const getPossessionsExportUrl = (collection: string): string =>
-  `${BASE}/possessions/${encodeURIComponent(collection)}/export/csv`
+/** The BOM Excel needs to read a CSV as UTF-8: once, at the start of the file. */
+const BOM = '﻿'
 
-export const getPossessionQualityExportUrl = (collection: string): string =>
-  `${BASE}/possessions/${encodeURIComponent(collection)}/quality/csv`
+/** A CSV the page offers as a download: made here from the published text, or the API's file. */
+async function possessionCsv(collection: string, kind: 'possessions' | 'quality', api: string): Promise<Blob> {
+  return fromSource(
+    'possessions',
+    async () => {
+      const text = await localPossessionCsv(collection, kind)
+      return text === null ? null : new Blob([BOM, text], { type: 'text/csv;charset=utf-8' })
+    },
+    async () => downloadBlob(await fetch(`${BASE}/possessions/${encodeURIComponent(collection)}/${api}`), 'No se pudo descargar el fichero'),
+  )
+}
+
+/** One row per possession of every game of the competition (the file of «Exportar CSV»). */
+export const fetchPossessionsCsv = (collection: string): Promise<Blob> => possessionCsv(collection, 'possessions', 'export/csv')
+
+/** PBP against box score per team and game (the file of «Calidad PBP CSV»). */
+export const fetchPossessionQualityCsv = (collection: string): Promise<Blob> => possessionCsv(collection, 'quality', 'quality/csv')
 
 // ── Reports (DOCX / PDF) ──────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import csv
 import io
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from src.pbp.possession_core import count_quality_pbp_metrics
 
@@ -91,6 +91,23 @@ class PBPQualityService:
                 for metric in self._QUALITY_METRICS
             )
         return accuracies
+
+    @classmethod
+    def csv_chunks(cls, db_handler: Any, collection_name: str):
+        """The text of the quality CSV of a collection, game by game: the header once, in the first chunk, and no BOM (the file takes it once, at its start)."""
+        from src.services.possession_export_service import PossessionExportService
+
+        is_fbcyl = "FBCYL" in collection_name.upper()
+        header_sent = False
+        for game_doc in PossessionExportService.iter_collection(db_handler, collection_name, None):
+            rows = cls(game_doc, is_fbcyl, collection_name, PossessionExportService.game_id_of(game_doc)).compute()
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=cls.CSV_COLUMNS, extrasaction="ignore")
+            if not header_sent:
+                writer.writeheader()
+                header_sent = True
+            writer.writerows(rows)
+            yield buf.getvalue()
 
     def to_csv_bytes(self) -> bytes:
         rows = self.compute()

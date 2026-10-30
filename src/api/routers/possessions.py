@@ -102,6 +102,20 @@ def get_timeout_effects(collection: str, db=Depends(get_db)) -> List[Dict[str, A
     return PBPSituationStatsService(db).get_timeout_effects(collection)
 
 
+BOM = "﻿".encode("utf-8")
+
+
+def _csv_response(chunks, filename: str) -> StreamingResponse:
+    """A CSV download: the text of the chunks with the UTF-8 BOM Excel needs ONCE, at the start of the file."""
+    def _generate():
+        first = True
+        for text in chunks:
+            yield (BOM if first else b"") + text.encode("utf-8")
+            first = False
+
+    return StreamingResponse(_generate(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
 @router.get("/{collection}/export/csv", summary="Export per-possession data as CSV")
 def export_possessions_csv(
     collection: str,
@@ -110,40 +124,13 @@ def export_possessions_csv(
 ) -> StreamingResponse:
     """Stream a CSV file with one row per possession for every game in *collection*.
 
-    The CSV uses UTF-8 BOM encoding so it opens correctly in Excel.
+    The CSV uses a UTF-8 BOM (once, at its start) so it opens correctly in Excel.
 
     Columns: ID_Partido, Equipo, Equipo_ID, Rival, Rival_ID, Local_Visitante,
     Cuarto, Tiempo_de_juego, Timestamp_inicio, Diferencia_marcador,
     Origen_posesion, Duracion_posesion, Tipo_finalizacion, Puntos_obtenidos.
     """
-    is_fbcyl = "FBCYL" in collection.upper()
-
-    def _generate():
-        header_sent = False
-        for game_doc in PossessionExportService.iter_collection(db, collection, team_id):
-            raw_id = game_doc.get("_id", "")
-            if isinstance(raw_id, dict):
-                raw_id = raw_id.get("$numberInt") or raw_id.get("$oid") or str(raw_id)
-            game_id = str(raw_id)
-            svc = PossessionExportService(game_doc, is_fbcyl, game_id)
-            rows = svc.extract_possessions()
-            if not rows:
-                continue
-            import csv, io
-            buf = io.StringIO()
-            writer = csv.DictWriter(buf, fieldnames=PossessionExportService.CSV_COLUMNS, extrasaction="ignore")
-            if not header_sent:
-                writer.writeheader()
-                header_sent = True
-            writer.writerows(rows)
-            yield buf.getvalue().encode("utf-8-sig")
-
-    filename = f"posesiones_{collection}.csv"
-    return StreamingResponse(
-        _generate(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    return _csv_response(PossessionExportService.csv_chunks(db, collection, team_id), f"posesiones_{collection}.csv")
 
 
 @router.get("/{collection}/quality/csv", summary="Export PBP quality check CSV")
@@ -159,29 +146,4 @@ def export_quality_csv(
 
     Intended for research validation of PBP data quality.
     """
-    is_fbcyl = "FBCYL" in collection.upper()
-
-    def _generate():
-        header_sent = False
-        buf = None
-        for game_doc in PossessionExportService.iter_collection(db, collection, None):
-            raw_id = game_doc.get("_id", "")
-            if isinstance(raw_id, dict):
-                raw_id = raw_id.get("$numberInt") or raw_id.get("$oid") or str(raw_id)
-            game_id = str(raw_id)
-            svc = PBPQualityService(game_doc, is_fbcyl, collection, game_id)
-            rows = svc.compute()
-            buf = io.StringIO()
-            writer = csv.DictWriter(buf, fieldnames=PBPQualityService.CSV_COLUMNS, extrasaction="ignore")
-            if not header_sent:
-                writer.writeheader()
-                header_sent = True
-            writer.writerows(rows)
-            yield buf.getvalue().encode("utf-8-sig")
-
-    filename = f"calidad_pbp_{collection}.csv"
-    return StreamingResponse(
-        _generate(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    return _csv_response(PBPQualityService.csv_chunks(db, collection), f"calidad_pbp_{collection}.csv")

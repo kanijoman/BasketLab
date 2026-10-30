@@ -63,6 +63,7 @@ class GamesRepositoryMixin:
             MongoDB filter dict.
         """
         if is_fbcyl:
+            team_id = str(team_id)                                   # FBCYL's ``teamIdExtern`` is an integer: callers pass it as it is (#679)
             int_id = int(team_id) if team_id.isdigit() else team_id
             match_filter: Dict = {
                 "$or": [

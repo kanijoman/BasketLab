@@ -13,7 +13,7 @@ import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
 import type { Derived } from '@/localdata/pbp'
 import type { Shots } from '@/localdata/shots'
-import type { MatchAnalysis, MatchSummary, RotationResult } from '@/api/client'
+import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse } from '@/api/client'
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
@@ -119,7 +119,7 @@ async function sealedRows(collection: string): Promise<Sealed> {
 }
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
@@ -208,3 +208,21 @@ export interface PublishedMatches {
 }
 export const loadWebMatches = (collection: string): Promise<PublishedMatches> =>
   openSealed<PublishedMatches>(() => sealedSection('matches', collection, 'Esta competición no tiene los partidos publicados.'), 'El fichero')
+
+/** The possessions page of a competition as the endpoints answer it (computed when it was published), issue #679. */
+export interface PublishedPossessions {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  table: PossessionStat[]
+  consistency: TeamConsistencyResponse
+  /** The quality CSV, without the BOM (the download adds it once, at its start). */
+  quality_csv: string
+}
+export const loadWebPossessions = (collection: string): Promise<PublishedPossessions> =>
+  openSealed<PublishedPossessions>(() => sealedSection('possessions', collection, 'Esta competición no tiene las posesiones publicadas.'), 'El fichero')
+
+/** The per-possession CSV of a competition (the heavy file: it is read only when its button is pressed). */
+export interface PublishedPossessionCsv { format: number; collection: string; league: 'feb' | 'fbcyl'; games: number; csv: string }
+export const loadWebPossessionCsv = (collection: string): Promise<PublishedPossessionCsv> =>
+  openSealed<PublishedPossessionCsv>(() => sealedSection('possession_csv', collection, 'Esta competición no tiene el CSV de posesiones publicado.'), 'El fichero')

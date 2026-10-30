@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebMatches, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -275,5 +275,34 @@ describe('the matches of web-data, opened in the browser', () => {
     await expect(loadWebMatches(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
     addRight(await invitation(`competicion:${FEB}`))
     expect((await loadWebMatches(FEB)).matches).toHaveLength(12)
+  })
+})
+
+// Issue #679: the possessions page of a competition (table, consistency, quality CSV) and, apart, its per-possession CSV.
+describe('the possessions of web-data, opened in the browser', () => {
+  it('opens the table, the consistency and the quality CSV of a competition in one file', async () => {
+    const published = await loadWebPossessions(FEB)
+    expect(published.table.length).toBeGreaterThan(0)
+    expect(published.table[0]).toHaveProperty('team_name')
+    expect(Object.keys(published.consistency).sort()).toEqual(['own', 'rival'])
+    expect(published.quality_csv).toContain('ID_Partido')
+    expect(requested.filter(f => f.startsWith('possessions/'))).toHaveLength(1)
+    expect(requested.some(f => f.startsWith('possession_csv/'))).toBe(false)         // the heavy file is only read when the button is pressed
+  })
+
+  it('opens the FBCYL ones too', async () => {
+    expect((await loadWebPossessions(FBCYL)).table.length).toBeGreaterThan(0)
+  })
+
+  it('a competition with no per-possession CSV (no possessions to list) or not published is unavailable, not an access problem', async () => {
+    await expect(loadWebPossessionCsv(FEB)).rejects.toBeInstanceOf(WebDataUnavailable)
+    await expect(loadWebPossessions('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('once the beta is closed it asks for the key of the competition', async () => {
+    withoutOpenKey()
+    await expect(loadWebPossessions(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
+    addRight(await invitation(`competicion:${FEB}`))
+    expect((await loadWebPossessions(FEB)).table.length).toBeGreaterThan(0)
   })
 })

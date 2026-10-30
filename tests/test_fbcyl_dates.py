@@ -29,3 +29,13 @@ def test_the_lineup_repository_reads_the_current_writing_regression():
 
     parse = LineupRepositoryMixin._parse_fbcyl_date
     assert parse(None, CURRENT) == "2026-10-03" and parse(None, "Mar 1, 2026 1:00:00 PM") == "2026-03-01"
+
+
+def test_the_team_filter_of_a_fbcyl_collection_takes_the_integer_ids_fbcyl_teams_have_regression():
+    """Bug found when publishing the possessions page (#679): FBCYL's ``teamIdExtern`` is an integer and ``TeamStatsService.get_possession_stats`` passes it as it is, so the
+    filter called ``.isdigit()`` on an ``int``: ``GET /possessions/{collection}`` answered a 500 for every FBCYL competition."""
+    from src.database.repository_games import GamesRepositoryMixin
+
+    for team_id in (1234, "1234"):
+        match_filter = GamesRepositoryMixin._build_team_match_filter(team_id, True, False)
+        assert {"stats.teams.teamIdIntern": 1234} in match_filter["$or"] and {"stats.teams.teamIdIntern": "1234"} in match_filter["$or"]
