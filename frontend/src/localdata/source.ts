@@ -4,15 +4,16 @@
 import type { PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
-import { aggregateTeams, type GameRow, type TeamTableFilter, type TeamTables } from './aggregateTeams'
+import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
+import type { Competition } from './competition'
 import { dataSourceOf } from '@/datasource/switch'
+import { loadWebRows, WebDataUnavailable } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
 const FORMAT = 1
 
 interface IndexEntry { name: string; file: string; league: 'feb' | 'fbcyl'; games: number; bytes: number }
-interface Competition { format: number; collection: string; league: 'feb' | 'fbcyl'; games: number; team_rows: GameRow[]; player_rows: PlayerGameRow[] | FbcylPlayerGameRow[] | null }
 
 let indexLoad: Promise<IndexEntry[] | null> | null = null
 const competitions = new Map<string, Promise<Competition | null>>()
@@ -42,16 +43,32 @@ function loadIndex(): Promise<IndexEntry[] | null> {
   return indexLoad
 }
 
+/** The rows of the publication (`rows/` of web-data, sealed by competition: the open key of the beta or the invitations of the reader), issue #673. `null` if it is not
+ *  published; a reader without the key gets the access error (it is not «try elsewhere»). */
+async function publishedRows(name: string): Promise<Competition | null> {
+  try {
+    const data = await loadWebRows(name)
+    return data.format === FORMAT ? data : null
+  } catch (error) {
+    if (error instanceof WebDataUnavailable) return null
+    throw error
+  }
+}
+
+/** The manual export of development (`local-data/`, `run_local_export.py`). */
+async function exportedRows(name: string): Promise<Competition | null> {
+  const list = await loadIndex()
+  const entry = list?.find(c => c.name === name)
+  const data = entry ? await fetchJson<Competition>(entry.file) : null
+  return data?.format === FORMAT ? data : null
+}
+
 function loadCompetition(name: string): Promise<Competition | null> {
   let load = competitions.get(name)
   if (!load) {
-    load = loadIndex().then(async list => {
-      const entry = list?.find(c => c.name === name)
-      const data = entry ? await fetchJson<Competition>(entry.file) : null
-      return data?.format === FORMAT ? data : null
-    })
+    load = publishedRows(name).then(published => published ?? exportedRows(name))
     competitions.set(name, load)
-    load.then(data => { if (!data) competitions.delete(name) })
+    load.then(data => { if (!data) competitions.delete(name) }, () => competitions.delete(name))
   }
   return load
 }

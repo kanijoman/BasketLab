@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebScouting, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebRows, loadWebScouting, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -159,5 +159,34 @@ describe('the scouting of web-data', () => {
     withoutOpenKey()
     addRight(await invitation('club:102'))
     await expect(loadWebReport(FEB, '101', 'own')).rejects.toBeInstanceOf(ScopedAccessError)
+  })
+})
+
+// Issue #673 (P4): the rows of the contract (what the season tables are computed from on the device) come from the publication too, sealed by competition.
+describe('the rows of web-data, opened in the browser', () => {
+  it('opens the rows of a FEB competition with the open key of the beta: team rows and player rows, as the exporter wrote them', async () => {
+    const rows = await loadWebRows(FEB)
+    expect(rows.league).toBe('feb')
+    expect(rows.games).toBeGreaterThan(0)
+    expect(rows.team_rows.length).toBeGreaterThan(0)
+    expect(rows.player_rows?.length).toBeGreaterThan(0)
+    expect(requested.filter(f => f.startsWith('rows/'))).toHaveLength(1)
+  })
+
+  it('opens the rows of a FBCYL competition too', async () => {
+    const rows = await loadWebRows(FBCYL)
+    expect(rows.league).toBe('fbcyl')
+    expect(rows.team_rows.length).toBeGreaterThan(0)
+  })
+
+  it('a competition that is not published is unavailable (the caller falls back), not an access problem', async () => {
+    await expect(loadWebRows('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('once the beta is closed, a reader without the key of the competition is asked for an invitation, and the key of the competition opens them', async () => {
+    withoutOpenKey()
+    await expect(loadWebRows(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
+    addRight(await invitation(`competicion:${FEB}`))
+    expect((await loadWebRows(FEB)).team_rows.length).toBeGreaterThan(0)
   })
 })
