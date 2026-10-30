@@ -16,7 +16,7 @@ import {
   getMatchList,
   getMatchAnalysis,
   type MatchSummary,
-  type ComparisonRow,
+  type MatchComparisonRow,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
@@ -40,8 +40,8 @@ function fmtVal(v: number, key: string): string {
 
 const SECTION_ORDER = ['General', 'Tiro', 'Cuatro Factores', 'Posesiones', 'Avanzadas']
 
-function groupBySection(rows: ComparisonRow[]): Array<{ section: string; rows: ComparisonRow[] }> {
-  const map = new Map<string, ComparisonRow[]>()
+function groupBySection(rows: MatchComparisonRow[]): Array<{ section: string; rows: MatchComparisonRow[] }> {
+  const map = new Map<string, MatchComparisonRow[]>()
   for (const r of rows) {
     if (!map.has(r.section)) map.set(r.section, [])
     map.get(r.section)!.push(r)
@@ -99,7 +99,7 @@ function Scoreboard({
 
 function ComparisonTable({
   rows, homeName, awayName,
-}: { rows: ComparisonRow[]; homeName: string; awayName: string }) {
+}: { rows: MatchComparisonRow[]; homeName: string; awayName: string }) {
   const sections = groupBySection(rows)
 
   return (

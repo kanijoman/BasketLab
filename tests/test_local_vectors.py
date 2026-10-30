@@ -115,3 +115,27 @@ def test_the_stored_fbcyl_player_cases_are_what_the_real_pipeline_answers(stored
     if client is None:
         pytest.skip("needs a real mongod: FBCYL's player pipeline uses operators mongomock does not implement")
     assert json.loads(json.dumps(fbcyl_players.build_cases(client), sort_keys=True, default=str)) == stored_fbcyl_players["cases"]
+
+
+# Comparativas (#670): both groups of the season through ``TeamComparisonService``, the reference of ``frontend/src/localdata/comparison.test.ts``.
+@pytest.mark.parametrize("builder, path", [("build_comparison_vectors", "COMPARISON_OUT"), ("build_fbcyl_comparison_vectors", "COMPARISON_FBCYL_OUT")])
+def test_the_stored_comparison_vectors_are_the_current_reference(builder, path):
+    stored = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(getattr(generate, builder)(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("builder", ["build_comparison_vectors", "build_fbcyl_comparison_vectors"])
+def test_the_comparisons_tell_something_apart(builder):
+    cases = {c["name"]: c["expected"] for c in getattr(generate, builder)()["cases"]}
+    games = {row["team_name"]: row["games_a"] + row["games_b"] for row in cases["home vs away"]["team"]}
+    assert set(games.values()) == {6}
+    for name, comparison in cases.items():
+        for row in comparison["team"]:
+            both = row["games_a"] + row["games_b"]
+            if name == "won vs lost":
+                assert both <= games[row["team_name"]], name              # FBCYL: a tied game is neither won nor lost
+            else:
+                assert both == games[row["team_name"]], name              # every game is in one group or the other (the rest of a stretch is its complement)
+    empty = cases["stretch that holds no game"]["team"]
+    assert all(row["games_a"] == 0 and row["a"] is None and row["diff"] == {} for row in empty)      # a group with no game has no figures, so no difference
+    assert any(0 < row["games_a"] < 6 for row in cases["stretch between two dates"]["team"])

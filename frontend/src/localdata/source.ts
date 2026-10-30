@@ -5,7 +5,9 @@ import type { PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
+import { compareTeams } from './comparison'
 import type { Competition } from './competition'
+import type { ComparisonKind, TeamComparison } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { loadWebRows, WebDataUnavailable } from '@/webdata/client'
 
@@ -88,4 +90,12 @@ export async function localPlayerStats(collection: string, filters: PlayerTableF
   return data.league === 'fbcyl'
     ? aggregatePlayersFbcyl(data.player_rows as FbcylPlayerGameRow[], data.team_rows, filters)
     : aggregatePlayers(data.player_rows as PlayerGameRow[], data.team_rows, filters)
+}
+
+/** The comparison of the teams (home vs away, won vs lost, a stretch vs the rest, issue #670), or `null` to use the API (the dataset is off, the competition is not
+ *  published, or the comparison cannot be answered here: a stretch with no date). */
+export async function localTeamComparison(collection: string, by: ComparisonKind, range?: { from?: string; to?: string }): Promise<TeamComparison | null> {
+  if (dataSourceOf('team-comparison') !== 'local') return null
+  const data = await loadCompetition(collection)
+  return data ? compareTeams(data.team_rows, by, range) : null
 }

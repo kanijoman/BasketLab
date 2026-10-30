@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getPlayerStats, getTeamStats } from './client'
+import { getPlayerStats, getTeamComparison, getTeamStats } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
@@ -21,6 +21,7 @@ beforeEach(() => {
     calls.push(String(url))
     const file = String(url).split('/local-data/')[1]
     if (file) return file in FILES ? { ok: true, json: async () => FILES[file] } : { ok: false, json: async () => ({}) }
+    if (String(url).includes('/compare')) return { ok: true, json: async () => ({ by: 'venue', label_a: 'DE LA API', label_b: '', team: [], opponent: [] }) }
     return { ok: true, json: async () => (String(url).includes('/teams/') ? API_TEAMS : [{ player_name: 'DE LA API' }]) }
   }) as unknown as typeof fetch
 })
@@ -44,5 +45,30 @@ describe('data source switch in the API client', () => {
   it('on but the competition is not exported: falls back to the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local')
     expect((await getTeamStats('L_F_-2_2025_2026_Otra')).team_stats[0].team_name).toBe('DE LA API')
+  })
+})
+
+// Issue #670: Comparativas is its own dataset (`team-comparison`): on, the comparison is computed from the rows; off, the API answers.
+describe('data source switch: Comparativas', () => {
+  it('off: the API answers', async () => {
+    expect((await getTeamComparison(FEB, 'venue')).label_a).toBe('DE LA API')
+  })
+
+  it('on: computed from the files, and the API is not asked', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
+    const comparison = await getTeamComparison(FEB, 'venue')
+    expect([comparison.label_a, comparison.label_b]).toEqual(['Local', 'Visitante'])
+    expect(comparison.team.map(r => r.team_name)).toEqual(['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA'])
+    expect(calls.some(c => c.includes('/api/v1'))).toBe(false)
+  })
+
+  it('on, but a stretch with no date: the API says why (a 400), the device does not guess', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
+    expect((await getTeamComparison(FEB, 'period')).label_a).toBe('DE LA API')
+  })
+
+  it('only the dataset turned on reads the files: the tables stay on the API', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
+    expect((await getTeamStats(FEB)).team_stats[0].team_name).toBe('DE LA API')
   })
 })

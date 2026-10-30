@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localPlayerStats, localTeamStats } from '@/localdata/source'
+import { localPlayerStats, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -149,12 +149,17 @@ export interface TeamComparison {
   opponent: ComparisonRow[]
 }
 
-export const getTeamComparison = (collection: string, by: ComparisonKind, range?: { from?: string; to?: string }) => {
-  const qs = new URLSearchParams({ by })
-  if (range?.from) qs.set('from_date', range.from)
-  if (range?.to)   qs.set('to_date', range.to)
-  return get<TeamComparison>(`/teams/${encodeURIComponent(collection)}/compare?${qs}`)
-}
+export const getTeamComparison = (collection: string, by: ComparisonKind, range?: { from?: string; to?: string }) =>
+  fromSource(
+    'team-comparison',
+    () => localTeamComparison(collection, by, range),
+    () => {
+      const qs = new URLSearchParams({ by })
+      if (range?.from) qs.set('from_date', range.from)
+      if (range?.to)   qs.set('to_date', range.to)
+      return get<TeamComparison>(`/teams/${encodeURIComponent(collection)}/compare?${qs}`)
+    },
+  )
 
 export const getTeamQuartiles = (collection: string) =>
   get<Record<string, Record<string, number>>>(
@@ -529,7 +534,8 @@ export interface MatchSummary {
   away_score: number
 }
 
-export interface ComparisonRow {
+/** One statistic of the comparison of a game: its value for each team and who is better (Análisis de partido). */
+export interface MatchComparisonRow {
   stat_key: string
   label: string
   section: string
@@ -543,7 +549,7 @@ export interface ComparisonRow {
 export interface MatchAnalysis {
   home: { team_name: string; [key: string]: unknown }
   away: { team_name: string; [key: string]: unknown }
-  comparison: ComparisonRow[]
+  comparison: MatchComparisonRow[]
 }
 
 export const getMatchList = (collection: string, is_fbcyl = false) =>

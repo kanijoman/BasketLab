@@ -24,11 +24,14 @@ from src.database.aggregation.fbcyl_pipeline import FBCYLPipelineBuilder  # noqa
 from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
 from src.services.player_stats_service import PlayerStatsService  # noqa: E402
+from src.services.team_comparison_service import TeamComparisonService  # noqa: E402
 from src.utils.time_utils import end_of_day  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "team_stats_feb.json"
 PLAYERS_OUT = Path(__file__).resolve().parent / "players_feb.json"
 FBCYL_OUT = Path(__file__).resolve().parent / "team_stats_fbcyl.json"
+COMPARISON_OUT = Path(__file__).resolve().parent / "comparison_feb.json"
+COMPARISON_FBCYL_OUT = Path(__file__).resolve().parent / "comparison_fbcyl.json"
 FILTERS = [
     {"name": "all"},
     {"name": "home", "venue": "home"},
@@ -160,6 +163,69 @@ def build_fbcyl_vectors() -> dict:
     return {"rows": rows, "cases": cases}
 
 
+# The comparisons of the web (#607, #670): both groups of the season through ``TeamComparisonService`` over a handler that answers with the pipelines of each league.
+COMPARISONS = [
+    {"name": "home vs away", "by": "venue"},
+    {"name": "won vs lost", "by": "result"},
+    {"name": "stretch from a date", "by": "period", "from": "2025-11-01"},
+    {"name": "stretch up to a date (the games of the last day are in)", "by": "period", "to": "2025-11-13"},
+    {"name": "stretch between two dates", "by": "period", "from": "2025-10-20", "to": "2025-11-25"},
+    {"name": "stretch that holds no game", "by": "period", "from": "2030-01-01"},
+]
+
+
+def _in_stretch(played: datetime, stretch: dict) -> bool:
+    """What Mongo does with a stretch ``{"$gte": a, "$lte": b}`` and with its complement ``{"$not": stretch}`` (the rest of the season)."""
+    if "$not" in stretch:
+        return not _in_stretch(played, stretch["$not"])
+    return ("$gte" not in stretch or played >= stretch["$gte"]) and ("$lte" not in stretch or played <= stretch["$lte"])
+
+
+class _SeasonHandler:
+    """``get_team_stats`` / ``get_opponent_stats`` of a league for the filters the comparison asks: the games are chosen by date and the pipelines run on them."""
+
+    def __init__(self, games: list, played, run) -> None:
+        self._games, self._played, self._run = games, played, run
+
+    def _tables(self, date_filter, venue, result) -> dict:
+        chosen = [g for g in self._games if date_filter is None or _in_stretch(self._played(g), date_filter)]
+        return self._run(chosen, {"venue": {True: "home", False: "away"}.get(venue), "result": result})
+
+    def get_team_stats(self, collection, date_filter=None, venue_filter=None, result_filter=None):
+        return self._tables(date_filter, venue_filter, result_filter)["team_stats"]
+
+    def get_opponent_stats(self, collection, date_filter=None, venue_filter=None, result_filter=None):
+        return self._tables(date_filter, venue_filter, result_filter)["opponent_stats"]
+
+
+def _comparisons(handler: _SeasonHandler) -> list:
+    cases = []
+    for case in COMPARISONS:
+        date_from = datetime.fromisoformat(case["from"]) if "from" in case else None
+        date_to = end_of_day(case["to"]) if "to" in case else None             # as the router turns the dates
+        expected = TeamComparisonService(handler).compare("LEAGUE", case["by"], date_from, date_to)
+        cases.append({"name": case["name"], "by": case["by"], "range": {k: case[k] for k in ("from", "to") if k in case}, "expected": json.loads(json.dumps(expected))})
+    return cases
+
+
+def build_comparison_vectors() -> dict:
+    return {"cases": _comparisons(_SeasonHandler(build_games(), _played, _run))}
+
+
+def _fbcyl_run(games: list, filt: dict) -> dict:
+    subset = mongomock.MongoClient()["v"]["FBCYL_LEAGUE"]
+    if games:
+        subset.insert_many(games)
+    venue = {"home": True, "away": False}.get(filt.get("venue"))
+    return {"team_stats": with_team_id(list(subset.aggregate(FBCYLPipelineBuilder.build_team_stats_pipeline(None, venue, filt.get("result"))))),
+            "opponent_stats": with_team_id(list(subset.aggregate(FBCYLPipelineBuilder.build_opponent_stats_pipeline(None, venue, filt.get("result")))))}
+
+
+def build_fbcyl_comparison_vectors() -> dict:
+    """FBCYL keeps only the day of a game, so a stretch is a range of whole days (both ends inclusive) and so is the rest of the season."""
+    return {"cases": _comparisons(_SeasonHandler(build_fbcyl_games(), _fbcyl_day, _fbcyl_run))}
+
+
 def _write(path: Path, vectors: dict) -> None:
     path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -168,7 +234,9 @@ def main() -> None:
     _write(OUT, build_vectors())
     _write(PLAYERS_OUT, build_player_vectors())
     _write(FBCYL_OUT, build_fbcyl_vectors())
-    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT)
+    _write(COMPARISON_OUT, build_comparison_vectors())
+    _write(COMPARISON_FBCYL_OUT, build_fbcyl_comparison_vectors())
+    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT)
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()
