@@ -18,13 +18,9 @@ const BASELINE: Record<string, [number, number, number, number]> = {
   'pages/AdminPage.tsx': [12, 1, 1, 1],
   'pages/ComparativasPage.tsx': [3, 0, 2, 1],
   'pages/HomePage.tsx': [4, 0, 0, 1],
-  'pages/InOutPage.tsx': [1, 0, 0, 1],
-  'pages/LineupsPage.tsx': [3, 0, 0, 1],
   'pages/LivePrepPage.tsx': [2, 2, 3, 1],
   'pages/PbpAnalysisPage.tsx': [1, 0, 0, 1],
-  'pages/RotacionesPage.tsx': [1, 0, 0, 1],
   'pages/ScoutingRivalPage.tsx': [2, 2, 0, 1],
-  'pages/ShotChartPage.tsx': [4, 1, 0, 1],
 }
 
 function sources(dir: string): string[] {

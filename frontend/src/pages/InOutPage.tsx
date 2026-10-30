@@ -15,6 +15,8 @@ import {
   type PlayerStat,
 } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Tabs from '@/components/ui/Tabs'
 import PlayerSelect, { type TeamOption } from '@/components/PlayerSelect'
 
 // -- Helpers ------------------------------------------------------------------
@@ -174,25 +176,9 @@ export default function InOutPage() {
   return (
     <PageTransition>
       <div className="space-y-4">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Análisis IN/OUT</h1>
-          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-        </div>
+        <PageHeader title="Análisis IN/OUT" subtitle={collection?.label} />
 
-        {/* Tabs */}
-        <div className="flex border-b border-line">
-          {TABS.map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                tab === t
-                  ? 'border-secondary text-secondary-text'
-                  : 'border-transparent text-ink-muted hover:text-ink'
-              }`}>
-              {t}
-            </button>
-          ))}
-        </div>
+        <Tabs label="Vistas del análisis IN/OUT" tabs={TABS.map(t => ({ id: t, label: t }))} value={tab} onChange={setTab} />
 
         {/* IN/OUT Tab */}
         {tab === 'IN/OUT' && (

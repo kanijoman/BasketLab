@@ -9,6 +9,8 @@ import {
 import { useChartTheme } from '@/lib/chartTheme'
 import { useCollection } from '@/context/CollectionContext'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button, { IconButton } from '@/components/ui/Button'
 import ExportButton from '@/components/ui/ExportButton'
 import { EXPORT_HIDE_ATTR, EXPORT_ONLY_ATTR } from '@/lib/exportDom'
 import {
@@ -366,12 +368,8 @@ export default function LineupsPage() {
       <div className="space-y-4">
 
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-2xl font-bold text-ink">{`An\u00e1lisis de Combinaciones`}</h1>
-            <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-          </div>
-          {lineups.length > 0 && (
+        <PageHeader title="Análisis de Combinaciones" subtitle={collection?.label}
+          actions={lineups.length > 0 && (
             <ExportButton
               filename={`combinaciones_${activeStat}_${collection?.name ?? ''}`}
               captureRef={exportRef}
@@ -380,7 +378,7 @@ export default function LineupsPage() {
               csvHeaders={csvHeaders}
             />
           )}
-        </div>
+        />
 
         {/* Controls */}
         <form onSubmit={handleAnalyze} className="card p-4 flex flex-wrap gap-3 items-end">
@@ -449,23 +447,15 @@ export default function LineupsPage() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => { setMinMinutes(0); setMinGames(0) }}
+          <Button variant="secondary" onClick={() => { setMinMinutes(0); setMinGames(0) }}
             disabled={minMinutes === 0 && minGames === 0}
-            title={`Mostrar todas las combinaciones, sin mínimos`}
-            className="border border-line text-ink-muted hover:bg-surface-raised disabled:opacity-50 text-sm rounded-lg px-3 py-1.5 transition-colors"
-          >
-            {`Sin mínimos`}
-          </button>
+            title="Mostrar todas las combinaciones, sin mínimos">
+            Sin mínimos
+          </Button>
 
-          <button
-            type="submit"
-            disabled={isFetching || !selectedTeam}
-            className="bg-secondary-solid hover:bg-secondary-hover disabled:opacity-60 text-white text-sm font-medium rounded-lg px-5 py-1.5 transition-colors"
-          >
-            {isFetching ? 'Analizando\u2026' : 'Analizar'}
-          </button>
+          <Button type="submit" loading={isFetching} disabled={!selectedTeam}>
+            {isFetching ? 'Analizando…' : 'Analizar'}
+          </Button>
         </form>
 
         {/* Error */}
@@ -545,13 +535,7 @@ export default function LineupsPage() {
                       ))}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedIdx(null)}
-                    className="text-ink-muted hover:text-ink transition-colors flex-shrink-0"
-                    aria-label="Cerrar panel"
-                  >
-                    <X size={18} />
-                  </button>
+                  <IconButton icon={X} label="Cerrar panel" onClick={() => setSelectedIdx(null)} className="shrink-0" />
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={gameLog} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
