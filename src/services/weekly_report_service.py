@@ -35,6 +35,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+from src.utils.time_utils import fbcyl_game_day
 from stats.stats_calculator import StatsCalculator
 from shotcharts import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
@@ -453,7 +454,7 @@ class WeeklyReportService:
                 sel_stats  = self._calc.calculate_single_match_stats(sel_raw, opp_raw)
                 opp_stats  = self._calc.calculate_single_match_stats(opp_raw, sel_raw)
                 opp_name   = opp_dict.get('name', '')
-                match_date = last['stats'].get('startDate', '')[:10]
+                match_date = (last['stats'].get('startDate') or '')[:10] or fbcyl_game_day(last['stats'].get('time'))
             else:
                 found = self._feb_last_match_stats(self._calc, last, None, team_name)
                 if found is None:

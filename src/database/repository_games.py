@@ -7,6 +7,8 @@ Provides methods that retrieve full game documents from MongoDB.
 from typing import Dict, Iterable, List, Optional
 from pymongo.errors import PyMongoError
 
+from .aggregation.fbcyl_date_expr import parse_datetime_stages
+
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
 # ---------------------------------------------------------------------------
@@ -284,18 +286,7 @@ class GamesRepositoryMixin:
     def _games_with_playbyplay_fbcyl(collection, date_filter: Optional[Dict]) -> Iterable[Dict]:
         if date_filter:
             pipeline = [
-                {
-                    "$addFields": {
-                        "parsedDate": {
-                            "$dateFromString": {
-                                "dateString": "$stats.time",
-                                "format": "%b %d, %Y %I:%M:%S %p",
-                                "onError": None,
-                                "onNull": None,
-                            }
-                        }
-                    }
-                },
+                *parse_datetime_stages("$stats.time", "parsedDate"),
                 {
                     "$match": {
                         "parsedDate": date_filter,
@@ -333,18 +324,7 @@ class GamesRepositoryMixin:
     @staticmethod
     def _last_match_pipeline_fbcyl(team_name: str) -> List[Dict]:
         return [
-            {
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$stats.startDate",
-                            "format": "%Y-%m-%dT%H:%M:%S.%LZ",
-                            "onError": None,
-                            "onNull": None,
-                        }
-                    }
-                }
-            },
+            *parse_datetime_stages("$stats.time", "parsedDate"),            # ``stats.startDate`` is not in the documents (#681)
             {"$match": {"stats.teams.name": team_name}},
             {"$sort": {"parsedDate": -1}},
             {"$limit": 1},
@@ -358,19 +338,15 @@ class GamesRepositoryMixin:
         dates, so they are parsed with ``$dateFromString``; unparseable ones become ``None``.
         """
         if is_fbcyl:
-            date_field = "$stats.time"
-            date_format = "%b %d, %Y %I:%M:%S %p"
-        else:
-            date_field = "$HEADER.starttime"
-            date_format = "%d-%m-%Y - %H:%M"
+            return [{"$match": team_match_filter}, *parse_datetime_stages("$stats.time", "_parsedDate")]
         return [
             {"$match": team_match_filter},
             {
                 "$addFields": {
                     "_parsedDate": {
                         "$dateFromString": {
-                            "dateString": date_field,
-                            "format": date_format,
+                            "dateString": "$HEADER.starttime",
+                            "format": "%d-%m-%Y - %H:%M",
                             "onError": None,
                             "onNull": None,
                         }
