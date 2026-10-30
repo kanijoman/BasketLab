@@ -79,6 +79,18 @@ def export_collection(collection: Any, name: str) -> Dict[str, Any]:
             "team_rows": team_rows, "player_rows": player_rows}
 
 
+def export_derived(collection: Any, name: str) -> Dict[str, Any]:
+    """The ``DERIVED`` of every game of a competition that has it (#676): one row per game with its version, the names of the two teams (the pipelines read them from
+    the header) and the two entries of ``DERIVED.TEAM`` in their order. The pbp tables of the web sum them per team; the rest of a game document is not needed."""
+    fbcyl = is_fbcyl(name)
+    rows = []
+    for doc in collection.find({"DERIVED": {"$exists": True}}, {"DERIVED": 1, "HEADER.TEAM.name": 1, "stats.teams.name": 1}):
+        names = [t.get("name") for t in (doc.get("stats", {}).get("teams") if fbcyl else doc.get("HEADER", {}).get("TEAM")) or []]
+        rows.append({"match_id": doc["_id"], "v": doc["DERIVED"].get("v"), "names": names, "teams": doc["DERIVED"].get("TEAM", [])})
+    rows.sort(key=lambda r: str(r["match_id"]))
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb", "games": len(rows), "rows": rows}
+
+
 def file_name(name: str) -> str:
     """An ASCII file name for a collection (names have accents, ``ª`` and ``º``): the percent-encoding with ``~`` for ``%`` (names have ``_``, not ``~``)."""
     return quote(name, safe="").replace("%", "~") + ".json"

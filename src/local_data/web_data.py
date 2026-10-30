@@ -16,11 +16,11 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 from src.live_prep.package_sealing import Sealer
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
-from src.local_data.export import export_collection, file_name
+from src.local_data.export import export_collection, export_derived, file_name
 from src.local_data.team_reports import seal_file, seal_reports
 
 INDEX = "index.json"
-ROWS, REPORTS, SCOUTING = "rows/", "reports/", "scouting/"
+ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
 
 
 def _json(value: Any) -> str:
@@ -60,6 +60,15 @@ def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept:
     return {"collection": collection, "league": payload["league"], "games": payload["games"], **fields}
 
 
+def _publish_derived(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The sealed ``DERIVED`` of the games of a competition (#676), or ``None`` if none of its games has it (nothing to publish)."""
+    payload = export_derived(db[collection], collection)
+    if not payload["rows"]:
+        return None
+    fields = seal_file(out_dir, f"{collection}", _json(payload), [f"competicion:{collection}"], sealer, kept, DERIVED)
+    return {"collection": collection, "league": payload["league"], "games": payload["games"], **fields}
+
+
 def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: Sealer, old: Dict[Any, Dict[str, Any]], scout: bool = False,
                           scouting_service: Optional[Callable[[Any], Any]] = None) -> Dict[str, Any]:
     """Seal the reports of a competition (and its scouting, when asked) and write their index (plain: the wraps are not secret), named after its hash."""
@@ -78,7 +87,7 @@ def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: 
 
 def _referenced(out_dir: Path, manifest: Dict[str, Any]) -> set:
     files = {INDEX, "frontend/vercel.json"}
-    for entry in manifest["rows"]:
+    for entry in manifest["rows"] + manifest.get("derived", []):
         files.add(entry["file"])
     for entry in manifest["reports"]:
         files.add(entry["file"])
@@ -101,17 +110,22 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     rows = {e["collection"]: e for e in (previous or {}).get("rows", []) if keep_others and e["collection"] not in names}
     reports = {e["collection"]: e for e in (previous or {}).get("reports", []) if keep_others and e["collection"] not in names}
     kept_rows = {e["collection"]: e for e in (previous or {}).get("rows", [])}
+    derived = {e["collection"]: e for e in (previous or {}).get("derived", []) if keep_others and e["collection"] not in names}
+    kept_derived = {e["collection"]: e for e in (previous or {}).get("derived", [])}
     for name in names:
         rows[name] = _publish_rows(db, name, out_dir, sealer, kept_rows.get(name))
+        entry = _publish_derived(db, name, out_dir, sealer, kept_derived.get(name))
+        if entry:
+            derived[name] = entry
         reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports, name in scouted, scouting_service)
         if on_collection:
             on_collection(name)
     manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(),
-                "rows": [rows[n] for n in sorted(rows)], "reports": [reports[n] for n in sorted(reports)]}
+                "rows": [rows[n] for n in sorted(rows)], "derived": [derived[n] for n in sorted(derived)], "reports": [reports[n] for n in sorted(reports)]}
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))
     _write_if_changed(out_dir / INDEX, (_json(manifest) + "\n").encode("utf-8"))
     keep = _referenced(out_dir, manifest)
-    for folder in (ROWS, REPORTS, SCOUTING):
+    for folder in (ROWS, DERIVED, REPORTS, SCOUTING):
         for stale in (out_dir / folder).glob("*.json"):
             if f"{folder}{stale.name}" not in keep:
                 stale.unlink()

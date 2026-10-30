@@ -118,7 +118,7 @@ def test_a_new_game_never_changes_a_file_in_place_and_leaves_no_orphans(handler,
     assert before.keys() - after.keys() and after.keys() - before.keys()                                         # what changed got a new name
     manifest = _manifest(tmp_path)
     reports = [e["file"] for r in manifest["reports"] for e in json.loads(after[r["file"]])["reports"]]
-    referenced = {e["file"] for e in manifest["rows"] + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
+    referenced = {e["file"] for e in manifest["rows"] + manifest["derived"] + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
     assert set(after) == referenced
     untouched = [n for n in after if "FBCYL" in n and n in before]
     assert untouched                                                                                             # the other competition kept its files
@@ -152,3 +152,42 @@ def test_the_entry_point_publishes_with_the_secret_of_the_environment_and_refuse
     monkeypatch.setenv("PACKAGE_MASTER_KEY", MASTER)
     assert run_web_data.main(["--out", str(tmp_path / "all"), "--collection", FEB]) == 0
     assert [r["collection"] for r in _manifest(tmp_path / "all")["rows"]] == [FEB]
+
+
+# Issue #676 (P4, block B): the ``DERIVED`` of each game, sealed by competition like the rows, in a file of its own (the team tables do not pay for it).
+def test_the_manifest_lists_the_derived_of_every_competition_that_has_it(handler, tmp_path):
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB, FBCYL])
+    manifest = _manifest(tmp_path)
+    assert sorted(d["collection"] for d in manifest["derived"]) == sorted([FEB, FBCYL])
+    assert all(set(e) >= {"file", "bytes", "sha256", "wraps", "games", "league"} and e["file"].startswith("derived/") for e in manifest["derived"])
+    assert all(e["sha256"][:12] in e["file"] for e in manifest["derived"])
+
+
+def test_the_derived_are_the_export_of_the_competition_sealed_for_its_scope(handler, tmp_path):
+    from src.local_data.export import export_derived
+
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB])
+    entry = _manifest(tmp_path)["derived"][0]
+    db = handler.connection.client["BASKETBALL"]
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(export_derived(db[FEB], FEB), default=str))
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+
+
+def test_a_competition_with_no_derived_has_no_entry_and_a_refresh_changes_no_byte(handler, tmp_path):
+    db = handler.connection.client["BASKETBALL"]
+    db["L_F_-2_2025_2026_Sin_Derived"].insert_many([{k: v for k, v in g.items() if k != "DERIVED"} for g in games.build_games()])
+    sealer = ScopedSealer(MASTER)
+    publish_web_data(handler, tmp_path, sealer, [FEB, "L_F_-2_2025_2026_Sin_Derived"])
+    assert [d["collection"] for d in _manifest(tmp_path)["derived"]] == [FEB]
+    before = _tree(tmp_path)
+    publish_web_data(handler, tmp_path, sealer, [FEB, "L_F_-2_2025_2026_Sin_Derived"])
+    assert _tree(tmp_path) == before
+
+
+def test_the_derived_of_a_competition_that_left_the_publication_are_removed(handler, tmp_path):
+    sealer = ScopedSealer(MASTER)
+    publish_web_data(handler, tmp_path, sealer, [FEB, FBCYL])
+    gone = next(d for d in _manifest(tmp_path)["derived"] if d["collection"] == FBCYL)["file"]
+    publish_web_data(handler, tmp_path, sealer, [FEB])
+    assert not (tmp_path / gone).exists()

@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
 import generate_web_data as vectors  # noqa: E402
 from src.live_prep.package_scopes import open_sealed, scope_key  # noqa: E402
-from src.local_data.export import export_collection  # noqa: E402
+from src.local_data.export import export_collection, export_derived  # noqa: E402
 from src.local_data.team_reports import _dump, build_reports  # noqa: E402
 from src.local_data.web_data import SCHEMA  # noqa: E402
 
@@ -74,8 +74,17 @@ def test_the_published_scouting_has_the_scopes_of_a_team_with_cup_games():
 
 def test_every_file_of_the_publication_is_referenced_and_named_by_its_hash():
     manifest = _manifest()
-    files = {e["file"] for e in manifest["rows"] + manifest["reports"]}
+    files = {e["file"] for e in manifest["rows"] + manifest.get("derived", []) + manifest["reports"]}
     for entry in manifest["reports"]:
         files |= {e["file"] for e in json.loads((OUT / entry["file"]).read_text(encoding="utf-8"))["reports"]}
     on_disk = {str(p.relative_to(OUT)).replace("\\", "/") for p in OUT.rglob("*") if p.is_file()}
     assert on_disk == files | {"index.json", "frontend/vercel.json"}
+
+
+def test_the_publication_has_the_derived_of_each_competition_and_they_say_what_the_exporter_says_today(handler):
+    manifest = _manifest()
+    assert sorted(d["collection"] for d in manifest["derived"]) == sorted(r["collection"] for r in manifest["rows"])
+    db = handler.connection.client["BASKETBALL"]
+    for entry in manifest["derived"]:
+        fresh = json.loads(json.dumps(export_derived(db[entry["collection"]], entry["collection"]), default=str))
+        assert json.loads(_open(entry)) == fresh, entry["collection"]
