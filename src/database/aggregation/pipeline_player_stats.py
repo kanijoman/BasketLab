@@ -2,6 +2,8 @@
 
 from typing import List, Dict, Optional
 
+from .fbcyl_date_expr import parse_day_stages
+
 
 def player_game_fields() -> Dict:
     """The ``$project`` of a player in a game (id, team, date, minutes in seconds and the box-score counting stats, all as integers).
@@ -433,40 +435,8 @@ class PlayerStatsPipelineMixin:
             ]
         """
         return [
-            # Stage 1: Parse date field (FBCYL uses 'time' field at root level)
-            # Format: "Oct 4, 2025 7:00:00 PM" - extract just the date part
-            {
-                "$addFields": {
-                    "timeParts": {"$split": ["$time", " "]}
-                }
-            },
-            # Stage 2: Build the date string from parts: month, day, year
-            {
-                "$addFields": {
-                    "dateString": {
-                        "$concat": [
-                            {"$arrayElemAt": ["$timeParts", 0]},  # Month (Oct)
-                            " ",
-                            {"$arrayElemAt": ["$timeParts", 1]},  # Day (4,)
-                            " ",
-                            {"$arrayElemAt": ["$timeParts", 2]}   # Year (2025)
-                        ]
-                    }
-                }
-            },
-            # Stage 3: Parse the date string to date object
-            {
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$dateString",
-                            "format": "%b %d, %Y",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    }
-                }
-            },
+            # Stages 1-3: the date of the game (the ``time`` field at the root level, both writings of FBCYL, #681)
+            *parse_day_stages("$time", "parsedDate"),
             # Stage 4: Filter matches where team participated
             {
                 "$match": {

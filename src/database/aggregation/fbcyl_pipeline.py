@@ -20,6 +20,7 @@ Summary:
 from typing import List, Dict, Optional
 from datetime import datetime, time
 
+from .fbcyl_date_expr import parse_day_stages
 from .fbcyl_possession_expr import team_possessions
 
 
@@ -120,44 +121,8 @@ class FBCYLPipelineBuilder:
             # Normalize the date_filter to start of day (remove time component)
             normalized_filter = _start_of_day(date_filter)
 
-            # First, add a field that converts the string date to a date object
-            # FBCYL uses "stats.time" field with format "Oct 4, 2025 7:00:00 PM"
-            # Extract just the date part "Oct 4, 2025" and parse it
-            pipeline.append({
-                "$addFields": {
-                    "timeParts": {"$split": ["$stats.time", " "]}
-                }
-            })
-
-            # Build the date string from parts: month, day, year
-            pipeline.append({
-                "$addFields": {
-                    "dateString": {
-                        "$concat": [
-                            {"$arrayElemAt": ["$timeParts", 0]},  # Month (Oct)
-                            " ",
-                            {"$arrayElemAt": ["$timeParts", 1]},  # Day (4,)
-                            " ",
-                            {"$arrayElemAt": ["$timeParts", 2]}   # Year (2025)
-                        ]
-                    }
-                }
-            })
-
-            # Parse the date string to date object
-            pipeline.append({
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$dateString",
-                            "format": "%b %d, %Y",
-                            "timezone": "UTC",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    }
-                }
-            })
+            # The date of the game (``stats.time``, both writings of FBCYL, #681) as a date object
+            pipeline.extend(parse_day_stages("$stats.time", "parsedDate", timezone="UTC"))
 
             # Apply the normalized date filter
             pipeline.append({"$match": {"parsedDate": normalized_filter}})
@@ -606,44 +571,8 @@ class FBCYLPipelineBuilder:
             # Normalize the date_filter to start of day (remove time component)
             normalized_filter = _start_of_day(date_filter)
 
-            # First, add a field that converts the string date to a date object
-            # FBCYL uses "stats.time" field with format "Oct 4, 2025 7:00:00 PM"
-            # Extract just the date part "Oct 4, 2025" and parse it
-            pipeline.append({
-                "$addFields": {
-                    "timeParts": {"$split": ["$stats.time", " "]}
-                }
-            })
-
-            # Build the date string from parts: month, day, year
-            pipeline.append({
-                "$addFields": {
-                    "dateString": {
-                        "$concat": [
-                            {"$arrayElemAt": ["$timeParts", 0]},  # Month (Oct)
-                            " ",
-                            {"$arrayElemAt": ["$timeParts", 1]},  # Day (4,)
-                            " ",
-                            {"$arrayElemAt": ["$timeParts", 2]}   # Year (2025)
-                        ]
-                    }
-                }
-            })
-
-            # Parse the date string to date object
-            pipeline.append({
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$dateString",
-                            "format": "%b %d, %Y",
-                            "timezone": "UTC",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    }
-                }
-            })
+            # The date of the game (``stats.time``, both writings of FBCYL, #681) as a date object
+            pipeline.extend(parse_day_stages("$stats.time", "parsedDate", timezone="UTC"))
 
             # Apply the normalized date filter
             pipeline.append({"$match": {"parsedDate": normalized_filter}})

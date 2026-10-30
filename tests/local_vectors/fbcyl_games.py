@@ -74,7 +74,7 @@ def build_games() -> list:
         doc["_id"] = f"{n:024x}"
         doc.pop("moves", None)
         doc["stats"].pop("moves", None)
-        doc["stats"]["time"] = f"{MONTHS[(n - 1) // 4]} {1 + (n * 3) % 27}, 2025 {rng.choice((6, 7, 8))}:00:00 PM"
+        doc["stats"]["time"] = f"{MONTHS[(n - 1) // 4]} {1 + (n * 3) % 27}, 2025, {rng.choice((6, 7, 8))}:00:00 PM"       # as FBCYL writes it today (#681)
         data = [_data(rng), _data(rng)]
         if n in TIED_GAMES:
             data[1]["score"] = data[0]["score"]
