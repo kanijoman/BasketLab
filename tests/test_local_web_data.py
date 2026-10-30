@@ -26,6 +26,20 @@ FBCYL = "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
 MASTER = "a-master-secret-for-the-tests"
 
 
+def _fast_lineups(handler, name):
+    """What the lineups of a competition cost (four sizes of every team over every game) is not what these tests are about: a payload as small as the real one is shaped."""
+    from src.local_data.export import FORMAT
+    from src.local_data.lineups_export import COLUMNS
+
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if "FBCYL" in name else "feb", "columns": list(COLUMNS),
+            "teams": [{"team_id": "1", "team_name": "A", "games": [], "players": {}, "sizes": {}}]}
+
+
+@pytest.fixture(autouse=True)
+def cheap_lineups(monkeypatch):
+    monkeypatch.setattr("src.local_data.web_data.export_lineups", _fast_lineups)
+
+
 @pytest.fixture()
 def handler(monkeypatch):
     from src.api import deps
@@ -224,6 +238,25 @@ def test_the_rotations_are_published_for_a_competition_with_play_by_play_and_not
     db[without].insert_many([{k: v for k, v in g.items() if k != "PLAYBYPLAY"} for g in games.build_games()])
     publish_web_data(handler, tmp_path / "other", ScopedSealer(MASTER), [without])
     assert _manifest(tmp_path / "other").get("rotations", []) == []                 # nothing to analyse: no entry
+
+
+def test_the_lineups_are_published_for_a_competition_with_play_by_play_and_not_for_one_without(handler, tmp_path, monkeypatch):
+    """#686: the real exporter (the others of this file run a cheap one) over the games of the fixture, sealed for the competition; ``games`` counts the teams."""
+    from src.local_data import lineups_export
+
+    monkeypatch.setattr("src.local_data.web_data.export_lineups", lineups_export.export_lineups)
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB])
+    entry = _manifest(tmp_path)["lineups"][0]
+    payload = _open(tmp_path, entry, f"competicion:{FEB}")
+    assert entry["collection"] == FEB and entry["file"].startswith("lineups/") and entry["games"] == len(payload["teams"]) > 0
+    assert payload == json.loads(json.dumps(lineups_export.export_lineups(handler, FEB), default=str))
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+    db = handler.connection.client["BASKETBALL"]
+    without = "L_F_-2_2025_2026_Sin_Pbp"
+    db[without].insert_many([{k: v for k, v in g.items() if k != "PLAYBYPLAY"} for g in games.build_games()])
+    publish_web_data(handler, tmp_path / "other", ScopedSealer(MASTER), [without])
+    assert _manifest(tmp_path / "other").get("lineups", []) == []
 
 
 def test_the_files_of_a_competition_that_left_the_publication_are_removed_for_every_section(handler, tmp_path):

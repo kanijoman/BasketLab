@@ -1,7 +1,7 @@
 // The local data source (issue #327, step 2): the tables of the web computed from the files `run_local_export.py` writes, instead of the API.
 // Which datasets read it is the switch of `datasource/switch` (`?data=local`, `?data=local:team-stats,…`, `?data=api`). Every function answers `null` when it cannot (switch off,
 // competition not exported, no player rows, file missing or of another format) so that the caller falls back to the API.
-import type { PlayerStat } from '@/api/client'
+import type { LineupRow, PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
@@ -10,12 +10,13 @@ import type { Competition } from './competition'
 import { competitionEvolution, EVOLUTION_STATS } from './evolution'
 import type { ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
+import { lineupAnalysis, type LineupQuery, type Lineups } from './lineups'
 import { mergeByKey, siblingCollections } from './multiPhase'
 import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, type Derived } from './pbp'
 import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
-import { loadWebCollections, loadWebDerived, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
+import { loadWebCollections, loadWebDerived, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -28,6 +29,7 @@ const competitions = new Map<string, Promise<Competition | null>>()
 const derivedLoads = new Map<string, Promise<Derived | null>>()
 const shotLoads = new Map<string, Promise<Shots | null>>()
 const rotationLoads = new Map<string, Promise<Rotations | null>>()
+const lineupLoads = new Map<string, Promise<Lineups | null>>()
 const matchLoads = new Map<string, Promise<PublishedMatches | null>>()
 const possessionLoads = new Map<string, Promise<PublishedPossessions | null>>()
 const possessionCsvLoads = new Map<string, Promise<PublishedPossessionCsv | null>>()
@@ -39,6 +41,7 @@ export function resetLocalData(): void {
   derivedLoads.clear()
   shotLoads.clear()
   rotationLoads.clear()
+  lineupLoads.clear()
   matchLoads.clear()
   possessionLoads.clear()
   possessionCsvLoads.clear()
@@ -231,6 +234,14 @@ export async function localRotation(collection: string, teamId: string): Promise
   if (dataSourceOf('rotations') !== 'local') return null
   const rotations = await loadOnce(rotationLoads, collection, loadWebRotations)
   return rotations?.teams.find(team => team.team_id === String(teamId))?.analysis ?? null
+}
+
+/** Combinaciones (issue #686): the table of a team as `GET /lineups/{collection}/{team_id}` answers it, merged on the device from the per-game counters of the publication; `null`
+ *  to use the API (it is not published, or the team is not in it). */
+export async function localLineups(collection: string, teamId: string, query: LineupQuery): Promise<LineupRow[] | null> {
+  if (dataSourceOf('lineups') !== 'local') return null
+  const published = await loadOnce(lineupLoads, collection, loadWebLineups)
+  return published ? lineupAnalysis(published, teamId, query) : null
 }
 
 /** Partidos (issue #677): the list of the matches of a competition, as `GET /matches/{collection}`; `null` to use the API. */

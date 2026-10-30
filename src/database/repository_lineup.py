@@ -92,41 +92,7 @@ class LineupRepositoryMixin:
                     if progress_callback:
                         progress_callback(game_idx + 1, total_games)
 
-                    # Extract game date once per game (used for game_log)
-                    if is_fbcyl:
-                        # Date is in stats.time: 'Mar 1, 2026 1:00:00 PM'
-                        # Convert to ISO YYYY-MM-DD for consistent sorting in the chart.
-                        raw_time = game.get('stats', {}).get('time', '')
-                        game_date = self._parse_fbcyl_date(raw_time)
-                    else:
-                        game_date = game.get('HEADER', {}).get('starttime', '').split(' - ')[0]
-
-                    # Initialize analyzers
-                    analyzer = PlayByPlayAnalyzer(game, is_fbcyl)
-                    extractor = LineupExtractor(analyzer)
-                    calculator = LineupStatsCalculator(analyzer)
-
-                    # FBCYL: moves use teamIdIntern, but team_id is teamIdExtern — resolve
-                    effective_team_id = (
-                        self._resolve_fbcyl_team_id(game, team_id) if is_fbcyl else team_id
-                    )
-
-                    # Get all lineup combinations for this game (NO minimum threshold per game)
-                    lineup_times = extractor.get_lineup_combinations(
-                        effective_team_id,
-                        combination_size,
-                        min_seconds=0  # Detect ALL lineups, filter later by total time
-                    )
-
-                    # Calculate stats for each lineup in this game
-                    for lineup_key, time_seconds in lineup_times.items():
-                        lineup_stats = calculator.calculate_lineup_stats_single_game(
-                            analyzer,
-                            extractor,
-                            effective_team_id,
-                            lineup_key
-                        )
-
+                    for lineup_key, lineup_stats, game_date in self.iter_game_lineups(game, team_id, combination_size, is_fbcyl):
                         # Build per-game log entry before merging (data would be lost after)
                         if include_game_log:
                             game_entry = {
@@ -208,6 +174,36 @@ class LineupRepositoryMixin:
         except PyMongoError as e:
             print(f"MongoDB error in get_lineup_analysis: {e}")
             return []
+
+    def iter_game_date(self, game: Dict, is_fbcyl: bool) -> str:
+        """The date a lineup game is logged with: FEB ``DD-MM-YYYY`` (``HEADER.starttime``) or FBCYL ISO day (``stats.time``: ``Oct 3, 2026, 6:30:00 PM`` or the older format)."""
+        if is_fbcyl:
+            return self._parse_fbcyl_date(game.get('stats', {}).get('time', ''))
+        return game.get('HEADER', {}).get('starttime', '').split(' - ')[0]
+
+    def iter_game_lineups(self, game: Dict, team_id: str, combination_size: int, is_fbcyl: bool):
+        """Yield ``(lineup_key, stats of that game, date of the game)`` for every combination of ``combination_size`` players of the team that shared the court in ``game``.
+
+        The loop of ``get_lineup_analysis``, apart so that the local-first publication (#686) reads the same games the same way. A game that fails midway raises from here,
+        where the caller decides what to do with it.
+        """
+        from .playbyplay_analyzer import PlayByPlayAnalyzer
+        from .lineup_extractor import LineupExtractor
+        from .lineup_stats_calculator import LineupStatsCalculator
+
+        game_date = self.iter_game_date(game, is_fbcyl)
+
+        analyzer = PlayByPlayAnalyzer(game, is_fbcyl)
+        extractor = LineupExtractor(analyzer)
+        calculator = LineupStatsCalculator(analyzer)
+
+        # FBCYL: moves use teamIdIntern, but team_id is teamIdExtern — resolve
+        effective_team_id = self._resolve_fbcyl_team_id(game, team_id) if is_fbcyl else team_id
+
+        # Get all lineup combinations for this game (NO minimum threshold per game)
+        lineup_times = extractor.get_lineup_combinations(effective_team_id, combination_size, min_seconds=0)
+        for lineup_key in lineup_times:
+            yield lineup_key, calculator.calculate_lineup_stats_single_game(analyzer, extractor, effective_team_id, lineup_key), game_date
 
     def _parse_fbcyl_date(self, raw_time: str) -> str:
         """The ISO day of a FBCYL ``stats.time`` (``Oct 3, 2026, 6:30:00 PM`` or the older ``Oct 4, 2025 7:00:00 PM``); ``''`` if it cannot be read (#681)."""
