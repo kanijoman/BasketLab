@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCompetitionEvolution, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localCompetitionEvolution, localMatchAnalysis, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -574,9 +574,12 @@ export interface MatchAnalysis {
   comparison: MatchComparisonRow[]
 }
 
+// With the dataset `matches` on (`?data=local`, issue #677) the list and the analysis of a match are the ones computed when the competition was published.
 export const getMatchList = (collection: string, is_fbcyl = false) =>
-  get<MatchSummary[]>(
-    `/matches/${encodeURIComponent(collection)}?is_fbcyl=${is_fbcyl}`,
+  fromSource(
+    'matches',
+    () => localMatchList(collection),
+    () => get<MatchSummary[]>(`/matches/${encodeURIComponent(collection)}?is_fbcyl=${is_fbcyl}`),
   )
 
 export const getMatchAnalysis = (
@@ -584,8 +587,10 @@ export const getMatchAnalysis = (
   matchId: string | number,
   is_fbcyl = false,
 ) =>
-  get<MatchAnalysis>(
-    `/matches/${encodeURIComponent(collection)}/${matchId}?is_fbcyl=${is_fbcyl}`,
+  fromSource(
+    'matches',
+    () => localMatchAnalysis(collection, matchId),
+    () => get<MatchAnalysis>(`/matches/${encodeURIComponent(collection)}/${matchId}?is_fbcyl=${is_fbcyl}`),
   )
 
 // ── Multi-phase ───────────────────────────────────────────────────────────────

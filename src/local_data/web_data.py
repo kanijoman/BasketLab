@@ -17,6 +17,7 @@ from src.live_prep.package_sealing import Sealer
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
+from src.local_data.matches_export import export_matches
 from src.local_data.rotations_export import export_rotations
 from src.local_data.shots_export import export_shots
 from src.local_data.team_reports import seal_file, seal_reports
@@ -24,7 +25,7 @@ from src.local_data.team_reports import seal_file, seal_reports
 INDEX = "index.json"
 ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
-SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/"}
+SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/"}
 
 
 def _json(value: Any) -> str:
@@ -72,6 +73,9 @@ def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Op
     if section == "shots":
         payload = export_shots(db[collection], collection)
         return payload if payload["shots"] else None
+    if section == "matches":
+        payload = export_matches(handler, collection)
+        return payload if payload["matches"] else None
     payload = export_rotations(handler, collection)
     return payload if any(t["analysis"].get("games_with_playbyplay") for t in payload["teams"]) else None
 

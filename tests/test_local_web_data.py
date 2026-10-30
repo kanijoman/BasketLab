@@ -19,7 +19,7 @@ import games  # noqa: E402
 from src.live_prep.package_scopes import open_sealed, scope_key  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.local_data.export import export_collection  # noqa: E402
-from src.local_data.web_data import SCHEMA, publish_web_data  # noqa: E402
+from src.local_data.web_data import SCHEMA, SECTIONS, publish_web_data  # noqa: E402
 
 FEB = "L_F_-2_2025_2026_Liga_Regular_B"
 FBCYL = "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
@@ -118,7 +118,7 @@ def test_a_new_game_never_changes_a_file_in_place_and_leaves_no_orphans(handler,
     assert before.keys() - after.keys() and after.keys() - before.keys()                                         # what changed got a new name
     manifest = _manifest(tmp_path)
     reports = [e["file"] for r in manifest["reports"] for e in json.loads(after[r["file"]])["reports"]]
-    referenced = {e["file"] for e in manifest["rows"] + manifest["derived"] + manifest["shots"] + manifest.get("rotations", []) + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
+    referenced = {e["file"] for e in manifest["rows"] + [x for section in SECTIONS for x in manifest.get(section, [])] + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
     assert set(after) == referenced
     untouched = [n for n in after if "FBCYL" in n and n in before]
     assert untouched                                                                                             # the other competition kept its files
@@ -232,3 +232,17 @@ def test_the_files_of_a_competition_that_left_the_publication_are_removed_for_ev
     gone = [s["file"] for s in _manifest(tmp_path)["shots"] if s["collection"] == FBCYL]
     publish_web_data(handler, tmp_path, sealer, [FEB])
     assert gone and not any((tmp_path / f).exists() for f in gone)
+
+
+# Issue #677: the match list and the analysis of every match, sealed by competition in a file of their own.
+def test_the_matches_of_every_competition_are_published_sealed_for_it(handler, tmp_path):
+    from src.local_data.matches_export import export_matches
+
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    manifest = _manifest(tmp_path)
+    assert sorted(m["collection"] for m in manifest["matches"]) == sorted([FEB, FBCYL])
+    entry = next(m for m in manifest["matches"] if m["collection"] == FEB)
+    assert entry["file"].startswith("matches/") and entry["sha256"][:12] in entry["file"] and entry["games"] == 12
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(export_matches(handler, FEB), default=str))
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")

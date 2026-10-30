@@ -14,8 +14,8 @@ import { mergeByKey, siblingCollections } from './multiPhase'
 import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, type Derived } from './pbp'
 import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
-import type { RotationResult, ShotRawData, ShotZoneData } from '@/api/client'
-import { loadWebCollections, loadWebDerived, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type Rotations } from '@/webdata/client'
+import type { MatchAnalysis, MatchSummary, RotationResult, ShotRawData, ShotZoneData } from '@/api/client'
+import { loadWebCollections, loadWebDerived, loadWebMatches, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedMatches, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -28,6 +28,7 @@ const competitions = new Map<string, Promise<Competition | null>>()
 const derivedLoads = new Map<string, Promise<Derived | null>>()
 const shotLoads = new Map<string, Promise<Shots | null>>()
 const rotationLoads = new Map<string, Promise<Rotations | null>>()
+const matchLoads = new Map<string, Promise<PublishedMatches | null>>()
 
 /** Forget what was loaded (tests, or after a new export). */
 export function resetLocalData(): void {
@@ -36,6 +37,7 @@ export function resetLocalData(): void {
   derivedLoads.clear()
   shotLoads.clear()
   rotationLoads.clear()
+  matchLoads.clear()
 }
 
 const url = (file: string) => `${import.meta.env.BASE_URL}local-data/${encodeURI(file)}`
@@ -225,4 +227,18 @@ export async function localRotation(collection: string, teamId: string): Promise
   if (dataSourceOf('rotations') !== 'local') return null
   const rotations = await loadOnce(rotationLoads, collection, loadWebRotations)
   return rotations?.teams.find(team => team.team_id === String(teamId))?.analysis ?? null
+}
+
+/** Partidos (issue #677): the list of the matches of a competition, as `GET /matches/{collection}`; `null` to use the API. */
+export async function localMatchList(collection: string): Promise<MatchSummary[] | null> {
+  if (dataSourceOf('matches') !== 'local') return null
+  const published = await loadOnce(matchLoads, collection, loadWebMatches)
+  return published ? published.matches.map(({ analysis: _analysis, ...summary }) => summary) : null
+}
+
+/** The analysis of a match, as `GET /matches/{collection}/{id}`; `null` to use the API (it is not published, or the match is not in the publication). */
+export async function localMatchAnalysis(collection: string, matchId: string | number): Promise<MatchAnalysis | null> {
+  if (dataSourceOf('matches') !== 'local') return null
+  const published = await loadOnce(matchLoads, collection, loadWebMatches)
+  return published?.matches.find(match => String(match.match_id) === String(matchId))?.analysis ?? null
 }

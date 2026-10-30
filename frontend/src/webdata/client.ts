@@ -13,7 +13,7 @@ import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
 import type { Derived } from '@/localdata/pbp'
 import type { Shots } from '@/localdata/shots'
-import type { RotationResult } from '@/api/client'
+import type { MatchAnalysis, MatchSummary, RotationResult } from '@/api/client'
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
@@ -119,7 +119,7 @@ async function sealedRows(collection: string): Promise<Sealed> {
 }
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
@@ -197,3 +197,14 @@ export interface Rotations {
 }
 export const loadWebRotations = (collection: string): Promise<Rotations> =>
   openSealed<Rotations>(() => sealedSection('rotations', collection, 'Esta competición no tiene las rotaciones publicadas.'), 'El fichero')
+
+/** The list of the matches of a competition, each with its analysis (computed when it was published), issue #677. */
+export interface PublishedMatches {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  games: number
+  matches: (MatchSummary & { analysis: MatchAnalysis | null })[]
+}
+export const loadWebMatches = (collection: string): Promise<PublishedMatches> =>
+  openSealed<PublishedMatches>(() => sealedSection('matches', collection, 'Esta competición no tiene los partidos publicados.'), 'El fichero')

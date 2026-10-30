@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebMatches, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -251,5 +251,29 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     addRight(await invitation(`competicion:${FEB}`))
     expect((await loadWebShots(FEB)).shots.length).toBeGreaterThan(0)
     expect((await loadWebRotations(FEB)).teams.length).toBeGreaterThan(0)
+  })
+})
+
+// Issue #677: the match list and the analysis of every match of a competition, in a sealed file of its own.
+describe('the matches of web-data, opened in the browser', () => {
+  it('opens the list and the analysis of every match of a FEB competition, in one file', async () => {
+    const published = await loadWebMatches(FEB)
+    expect(published.league).toBe('feb')
+    expect(published.matches).toHaveLength(12)
+    expect(published.matches[0].analysis?.comparison.length).toBeGreaterThan(0)
+    expect(published.matches[0].home_team).toBeTruthy()
+    expect(requested.filter(f => f.startsWith('matches/'))).toHaveLength(1)
+  })
+
+  it('opens the FBCYL matches too, and a competition that has none is unavailable, not an access problem', async () => {
+    expect((await loadWebMatches(FBCYL)).league).toBe('fbcyl')
+    await expect(loadWebMatches('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('once the beta is closed it asks for the key of the competition', async () => {
+    withoutOpenKey()
+    await expect(loadWebMatches(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
+    addRight(await invitation(`competicion:${FEB}`))
+    expect((await loadWebMatches(FEB)).matches).toHaveLength(12)
   })
 })
