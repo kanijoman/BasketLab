@@ -156,3 +156,13 @@ def test_endpoints_return_the_rows():
 
     assert situations.status_code == 200 and situations.json()[0]["ato_own"]["n"] == 1
     assert timeouts.status_code == 200 and timeouts.json()[0]["own"]["n"] == 1
+
+
+def test_a_team_whose_only_games_are_not_reliable_has_no_figures_instead_of_failing_regression():
+    """Bug found by the parity vectors of the web (#676): a team with games but none reliable has ``games == 0`` (they are only counted), and the first and last two
+    minutes divided by it: ``GET /possessions/{collection}/situations`` answered a 500 for the whole competition."""
+    rows = {r["team_name"]: r for r in _service(_game(1, {"reliable": False, "quality": "unreliable"}, {})).get_situations("G")}
+    local = rows["Local"]
+    assert (local["games"], local["games_unreliable"]) == (0, 1)
+    assert local["edges"]["start"]["pts_per_game"] is None and local["edges"]["end"]["pts_per_game"] is None and local["edges"]["rest"]["pts_per_game"] is None
+    assert rows["Visitante"]["games"] == 1                                                    # the rival of that game is fine

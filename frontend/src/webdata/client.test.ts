@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebRows, loadWebScouting, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebRows, loadWebScouting, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -188,5 +188,33 @@ describe('the rows of web-data, opened in the browser', () => {
     await expect(loadWebRows(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
     addRight(await invitation(`competicion:${FEB}`))
     expect((await loadWebRows(FEB)).team_rows.length).toBeGreaterThan(0)
+  })
+})
+
+// Issue #676 (P4, block B): the `DERIVED` of each game of a competition, in a sealed file of its own.
+describe('the DERIVED of web-data, opened in the browser', () => {
+  it('opens the DERIVED of a FEB competition with the open key of the beta: a row per game with its teams, and the coverage figures', async () => {
+    const derived = await loadWebDerived(FEB)
+    expect(derived.league).toBe('feb')
+    expect(derived.rows.length).toBeGreaterThan(0)
+    expect(derived.total).toBe(derived.games + derived.without_derived.length)
+    expect(derived.rows[0].teams).toHaveLength(2)
+    expect(requested.filter(f => f.startsWith('derived/'))).toHaveLength(1)
+    expect(requested.some(f => f.startsWith('rows/'))).toBe(false)                // the team tables do not pay for it, nor it for them
+  })
+
+  it('opens the DERIVED of a FBCYL competition too', async () => {
+    expect((await loadWebDerived(FBCYL)).league).toBe('fbcyl')
+  })
+
+  it('a competition with no DERIVED published is unavailable (the caller falls back), not an access problem', async () => {
+    await expect(loadWebDerived('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('once the beta is closed it asks for the key of the competition, like the rows', async () => {
+    withoutOpenKey()
+    await expect(loadWebDerived(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
+    addRight(await invitation(`competicion:${FEB}`))
+    expect((await loadWebDerived(FEB)).rows.length).toBeGreaterThan(0)
   })
 })

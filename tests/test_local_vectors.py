@@ -181,3 +181,22 @@ def test_the_evolution_vectors_cover_every_stat_and_tell_something(path):
     points = next(c for c in cases if c["stat"] == "points" and c["window"] == 3)["points"]
     assert [p["game_number"] for p in points] == list(range(1, len(points) + 1)) and len(points) > 3
     assert any(p["competition_rolling"] != p["competition_cumulative"] for p in points)          # the window matters once a team has played more games than it
+
+
+# Análisis PBP (#676): the five pbp tables as the real services answer them over the ``DERIVED`` of the fixture games, the reference of ``frontend/src/localdata/pbp.test.ts``.
+@pytest.mark.parametrize("builder, path", [("build_pbp_vectors", "PBP_OUT"), ("build_fbcyl_pbp_vectors", "PBP_FBCYL_OUT")])
+def test_the_stored_pbp_vectors_are_the_current_reference(builder, path):
+    stored = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(getattr(generate, builder)(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("path", ["PBP_OUT", "PBP_FBCYL_OUT"])
+def test_the_pbp_vectors_cover_the_branches_of_the_tables(path):
+    vectors = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    origin = vectors["expected"]["origin"]
+    assert any(r["games"] == 0 and r["games_unreliable"] > 0 for r in origin)               # a team whose only game is not reliable
+    assert any(r["games"] > 0 and r["games_paint"] < r["games"] for r in origin)             # a game without SHOTCHART: no paint points
+    assert {g["v"] for g in vectors["derived"]["rows"]} == {5, 6}                              # v5 is left out of the origin tables (they need v6) but not of the periods
+    assert any("OT" in t["periods"] for t in vectors["expected"]["periods"])                  # an overtime bucket
+    assert vectors["expected"]["coverage"]["pending"] == vectors["derived"]["total"] - 2 and vectors["derived"]["without_derived"]   # the v5 game is pending too
+    assert any(t["own"]["n"] == 0 for t in vectors["expected"]["timeouts"])                    # a team with no timeouts to analyse

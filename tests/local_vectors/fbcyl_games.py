@@ -9,6 +9,11 @@ import random
 from itertools import permutations
 from pathlib import Path
 
+try:
+    from pbp_derived import enrich
+except ImportError:                                           # imported as ``local_vectors.games`` (the tests) instead of from this folder
+    from local_vectors.pbp_derived import enrich
+
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLE = ROOT / "src" / "JSON_samples" / "fbcyl_game.json"
 TEAMS = [(34001, "ALFA"), (34002, "BRAVO"), (34003, "CARLOS"), (34004, "DELTA")]
@@ -81,5 +86,6 @@ def build_games() -> list:
         if n in DERIVED_GAMES:
             doc["DERIVED"] = {"v": 6, "TEAM": [{"id": t["teamIdIntern"], "ext_id": t["teamIdExtern"], "possessions": round(60 + rng.random() * 25, 2), "reliable": True}
                                                 for t in doc["stats"]["teams"]]}
+            doc["DERIVED"]["v"] = enrich(doc["DERIVED"]["TEAM"], n)                  # the pbp figures of #676 on top: the rows only read what was there
         games.append(doc)
     return games

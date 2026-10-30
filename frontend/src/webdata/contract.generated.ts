@@ -17,7 +17,7 @@ export interface FileEntry {
   sha256: string
 }
 
-/** The sealed rows of a competition (``rows/``). */
+/** The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676): same entry, other content. */
 export interface RowsEntry {
   file: string
   bytes: number
@@ -43,6 +43,7 @@ export interface WebDataManifest {
   v: number
   open_key?: string
   rows: RowsEntry[]
+  derived?: RowsEntry[]
   reports: ReportIndexEntry[]
 }
 

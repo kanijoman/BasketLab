@@ -95,3 +95,48 @@ def test_rows_do_not_depend_on_the_order_the_games_were_stored_in_regression(nam
     forward[name].insert_many(build())
     backward[name].insert_many(list(reversed(build())))
     assert export_collection(forward[name], name) == export_collection(backward[name], name)
+
+
+# Issue #676 (P4, block B): the ``DERIVED`` of each game, one row per game, for the pbp tables on the device (the pipelines of ``pbp_extended_stats_service`` and
+# ``pbp_situation_stats_service`` sum them per team).
+from src.local_data.export import export_derived  # noqa: E402
+
+
+def test_the_derived_rows_are_one_per_game_with_derived_with_the_names_of_the_teams(db):
+    payload = export_derived(db[FEB], FEB)
+    assert (payload["format"], payload["league"], payload["collection"]) == (FORMAT, "feb", FEB)
+    stored = [g for g in games.build_games() if "DERIVED" in g]
+    assert payload["games"] == len(stored) == len(payload["rows"]) > 0
+    first = payload["rows"][0]
+    doc = next(g for g in stored if g["_id"] == first["match_id"])
+    assert first["v"] == doc["DERIVED"]["v"] and first["teams"] == doc["DERIVED"]["TEAM"]
+    assert first["names"] == [t["name"] for t in doc["HEADER"]["TEAM"]]
+    assert [r["match_id"] for r in payload["rows"]] == sorted(r["match_id"] for r in payload["rows"])
+    json.dumps(payload)
+
+
+def test_the_derived_rows_of_fbcyl_take_the_names_from_stats_teams(db):
+    payload = export_derived(db[FBCYL], FBCYL)
+    stored = [g for g in fbcyl_games.build_games() if "DERIVED" in g]
+    assert payload["league"] == "fbcyl" and len(payload["rows"]) == len(stored) > 0
+    by_id = {str(g["_id"]): g for g in stored}
+    for row in payload["rows"]:
+        assert row["names"] == [t["name"] for t in by_id[str(row["match_id"])]["stats"]["teams"]]
+        assert "ext_id" in row["teams"][0]                              # FBCYL groups a season by the stable ext_id
+
+
+def test_a_competition_without_derived_has_no_rows(db):
+    db["NO_DERIVED"].insert_many([{k: v for k, v in g.items() if k != "DERIVED"} for g in games.build_games()])
+    assert export_derived(db["NO_DERIVED"], "NO_DERIVED")["rows"] == []
+
+
+def test_the_derived_payload_also_names_the_games_that_have_none_so_the_coverage_can_be_told(db):
+    """«Análisis pbp» says how many games it leaves out and which (``DerivedCoverageService``): that needs the games WITHOUT ``DERIVED`` too, and the total."""
+    payload = export_derived(db[FEB], FEB)
+    docs = games.build_games()
+    missing = [g for g in docs if "DERIVED" not in g]
+    assert payload["total"] == len(docs) == payload["games"] + len(payload["without_derived"])
+    assert {w["code"] for w in payload["without_derived"]} == {str(g["_id"]) for g in missing}
+    assert all(w["teams"] == [t["name"] for t in next(g for g in missing if str(g["_id"]) == w["code"])["HEADER"]["TEAM"]] for w in payload["without_derived"])
+    fb = export_derived(db[FBCYL], FBCYL)
+    assert fb["total"] == len(fbcyl_games.build_games()) and all(w["teams"] for w in fb["without_derived"])

@@ -26,8 +26,11 @@ from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
 from src.services.player_stats_service import PlayerStatsService  # noqa: E402
 from src.services.collection_service import CollectionService  # noqa: E402
+from src.services.derived_coverage_service import DerivedCoverageService  # noqa: E402
 from src.services.evolution_service import EVOLUTION_STAT_KEYS, EvolutionService  # noqa: E402
 from src.services.multi_phase_service import MultiPhaseService  # noqa: E402
+from src.services.pbp_extended_stats_service import PBPExtendedStatsService  # noqa: E402
+from src.services.pbp_situation_stats_service import PBPSituationStatsService  # noqa: E402
 from src.services.team_comparison_service import TeamComparisonService  # noqa: E402
 from src.utils.time_utils import end_of_day  # noqa: E402
 
@@ -38,6 +41,8 @@ COMPARISON_OUT = Path(__file__).resolve().parent / "comparison_feb.json"
 COMPARISON_FBCYL_OUT = Path(__file__).resolve().parent / "comparison_fbcyl.json"
 MULTI_OUT = Path(__file__).resolve().parent / "multi_phase.json"
 EVOLUTION_OUT = Path(__file__).resolve().parent / "evolution_feb.json"
+PBP_OUT = Path(__file__).resolve().parent / "pbp_feb.json"
+PBP_FBCYL_OUT = Path(__file__).resolve().parent / "pbp_fbcyl.json"
 EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 FILTERS = [
     {"name": "all"},
@@ -345,6 +350,35 @@ def build_fbcyl_evolution_vectors() -> dict:
     return _evolution_vectors(games, "FBCYL_LEAGUE", lambda docs: sorted({t["teamIdExtern"] for g in docs for t in g["stats"]["teams"]}))
 
 
+# Análisis PBP (#676): the five pbp tables of the web, as the real services answer them over the ``DERIVED`` of the fixture games, and the ``derived`` payload the exporter
+# makes of the same games (what the browser sums).
+def _pbp_vectors(games: list, collection: str) -> dict:
+    from unittest.mock import MagicMock
+
+    from src.local_data.export import export_derived
+    from src.services import pbp_extended_stats_service, pbp_situation_stats_service
+
+    col = mongomock.MongoClient()["v"][collection]
+    col.insert_many(games)
+    pbp_extended_stats_service.clear_cache()
+    pbp_situation_stats_service.clear_cache()
+    handler = MagicMock()
+    handler.repository.connection.get_collection.side_effect = lambda name: col
+    extended, situations = PBPExtendedStatsService(handler), PBPSituationStatsService(handler)
+    expected = {"origin": extended.get_points_by_origin(collection), "periods": extended.get_by_period(collection),
+                "situations": situations.get_situations(collection), "timeouts": situations.get_timeout_effects(collection),
+                "coverage": DerivedCoverageService(handler).get(collection)}
+    return {"derived": json.loads(json.dumps(export_derived(col, collection), default=str)), "expected": json.loads(json.dumps(expected, default=str))}
+
+
+def build_pbp_vectors() -> dict:
+    return _pbp_vectors(build_games(), "L_F_-2_2025_2026_Liga_Regular_B")
+
+
+def build_fbcyl_pbp_vectors() -> dict:
+    return _pbp_vectors(build_fbcyl_games(), "FBCYL_1ª_FASE-GRUPO_A-1_2026_")
+
+
 def _write(path: Path, vectors: dict) -> None:
     path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -358,7 +392,9 @@ def main() -> None:
     _write(MULTI_OUT, build_multi_vectors())
     _write(EVOLUTION_OUT, build_evolution_vectors())
     _write(EVOLUTION_FBCYL_OUT, build_fbcyl_evolution_vectors())
-    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT)
+    _write(PBP_OUT, build_pbp_vectors())
+    _write(PBP_FBCYL_OUT, build_fbcyl_pbp_vectors())
+    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT, PBP_OUT, PBP_FBCYL_OUT)
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()

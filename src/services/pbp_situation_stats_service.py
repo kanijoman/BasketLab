@@ -38,7 +38,7 @@ def _block(raw: Dict[str, Any], name: str) -> Dict[str, Any]:
 
 
 def _edge(raw: Dict[str, Any], values: Dict[str, float], games: int) -> Dict[str, Any]:
-    return {**{k: values[k] for k in EDGE_KEYS}, "pts_per_game": values["pts"] / games,
+    return {**{k: values[k] for k in EDGE_KEYS}, "pts_per_game": values["pts"] / games if games else None,
             "net_rating": _net(values["pts"], values["opp_pts"], values["poss"], values["opp_poss"]),
             "tov_pct": _ratio(values["tov"], values["poss"], 100.0), "opp_tov_pct": _ratio(values["opp_tov"], values["opp_poss"], 100.0)}
 
