@@ -16,6 +16,7 @@ import {
 import { ScopedAccessError } from '@live-package/crypto'
 import AccessPanel from '@/components/AccessPanel'
 import PageTransition from '@/components/ui/PageTransition'
+import { saveBlob } from '@/lib/download'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import { Field, Select } from '@/components/ui/Field'
@@ -29,14 +30,6 @@ type Phase =
   | { kind: 'error'; message: string }
 
 const SCOPE_LABEL: Record<ScoutingScope, string> = { liga: 'Liga', copa: 'Copa', todo: 'Agrupado' }
-
-function saveBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = Object.assign(document.createElement('a'), { href: url, download: filename })
-  a.click()
-  // Releasing the URL right after the click cancels the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 60_000)
-}
 
 const fmt = (n: number, digits = 1) => n.toFixed(digits).replace('.', ',')
 const ADVANTAGE_CLASS = { own: 'text-ok', rival: 'text-bad', even: 'text-ink-muted', neutral: 'text-ink-muted' } as const

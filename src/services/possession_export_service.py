@@ -34,6 +34,31 @@ class PossessionExportService:
         """
         return is_controversial_possession(duration, points)
 
+    @staticmethod
+    def game_id_of(game_doc: Dict) -> str:
+        """The id of a game document as text (an extended-JSON id keeps its inner value)."""
+        raw_id = game_doc.get("_id", "")
+        if isinstance(raw_id, dict):
+            raw_id = raw_id.get("$numberInt") or raw_id.get("$oid") or str(raw_id)
+        return str(raw_id)
+
+    @classmethod
+    def csv_chunks(cls, db_handler: Any, collection_name: str, team_id: Optional[str] = None) -> Iterator[str]:
+        """The text of the per-possession CSV of a collection, game by game: the header once, in the first chunk, and no BOM (the file takes it once, at its start)."""
+        is_fbcyl = "FBCYL" in collection_name.upper()
+        header_sent = False
+        for game_doc in cls.iter_collection(db_handler, collection_name, team_id):
+            rows = cls(game_doc, is_fbcyl, cls.game_id_of(game_doc)).extract_possessions()
+            if not rows:
+                continue
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=cls.CSV_COLUMNS, extrasaction="ignore")
+            if not header_sent:
+                writer.writeheader()
+                header_sent = True
+            writer.writerows(rows)
+            yield buf.getvalue()
+
     def __init__(self, game_data: Dict, is_fbcyl: bool, game_id: str):
         self.game_data = game_data
         self.is_fbcyl = is_fbcyl

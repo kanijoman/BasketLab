@@ -14,8 +14,8 @@ import { mergeByKey, siblingCollections } from './multiPhase'
 import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, type Derived } from './pbp'
 import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
-import type { MatchAnalysis, MatchSummary, RotationResult, ShotRawData, ShotZoneData } from '@/api/client'
-import { loadWebCollections, loadWebDerived, loadWebMatches, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedMatches, type Rotations } from '@/webdata/client'
+import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
+import { loadWebCollections, loadWebDerived, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -29,6 +29,8 @@ const derivedLoads = new Map<string, Promise<Derived | null>>()
 const shotLoads = new Map<string, Promise<Shots | null>>()
 const rotationLoads = new Map<string, Promise<Rotations | null>>()
 const matchLoads = new Map<string, Promise<PublishedMatches | null>>()
+const possessionLoads = new Map<string, Promise<PublishedPossessions | null>>()
+const possessionCsvLoads = new Map<string, Promise<PublishedPossessionCsv | null>>()
 
 /** Forget what was loaded (tests, or after a new export). */
 export function resetLocalData(): void {
@@ -38,6 +40,8 @@ export function resetLocalData(): void {
   shotLoads.clear()
   rotationLoads.clear()
   matchLoads.clear()
+  possessionLoads.clear()
+  possessionCsvLoads.clear()
 }
 
 const url = (file: string) => `${import.meta.env.BASE_URL}local-data/${encodeURI(file)}`
@@ -241,4 +245,24 @@ export async function localMatchAnalysis(collection: string, matchId: string | n
   if (dataSourceOf('matches') !== 'local') return null
   const published = await loadOnce(matchLoads, collection, loadWebMatches)
   return published?.matches.find(match => String(match.match_id) === String(matchId))?.analysis ?? null
+}
+
+/** Posesiones (issue #679): the table of the page, as `GET /possessions/{collection}`; `null` to use the API. */
+export async function localPossessionStats(collection: string): Promise<PossessionStat[] | null> {
+  if (dataSourceOf('possessions') !== 'local') return null
+  return (await loadOnce(possessionLoads, collection, loadWebPossessions))?.table ?? null
+}
+
+/** The consistency of the teams, as `GET /teams/{collection}/consistency`, from the same published file as the table; `null` to use the API. */
+export async function localTeamConsistency(collection: string): Promise<TeamConsistencyResponse | null> {
+  if (dataSourceOf('possessions') !== 'local') return null
+  return (await loadOnce(possessionLoads, collection, loadWebPossessions))?.consistency ?? null
+}
+
+/** The text of the CSV the page offers (`possessions`: one row per possession; `quality`: PBP against the box score), or `null` to use the API. The per-possession file is the
+ *  heavy one and is read only here, when its button is pressed. */
+export async function localPossessionCsv(collection: string, kind: 'possessions' | 'quality'): Promise<string | null> {
+  if (dataSourceOf('possessions') !== 'local') return null
+  if (kind === 'quality') return (await loadOnce(possessionLoads, collection, loadWebPossessions))?.quality_csv ?? null
+  return (await loadOnce(possessionCsvLoads, collection, loadWebPossessionCsv))?.csv ?? null
 }

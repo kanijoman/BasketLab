@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,8 +8,8 @@ const NAME = 'MIPELLETYMAS B.F. LEON CON UN NOMBRE MUY LARGO'
 const api = vi.hoisted(() => ({
   getPossessionStats: vi.fn(),
   getTeamConsistency: vi.fn(),
-  getPossessionsExportUrl: vi.fn(() => '/export.csv'),
-  getPossessionQualityExportUrl: vi.fn(() => '/quality.csv'),
+  fetchPossessionsCsv: vi.fn(),
+  fetchPossessionQualityCsv: vi.fn(),
 }))
 vi.mock('@/api/client', () => api)
 vi.mock('@/context/CollectionContext', () => ({
@@ -77,12 +77,12 @@ describe('PossessionsPage on the base components (issue #192)', () => {
     api.getTeamConsistency.mockReset().mockResolvedValue({ own: {} })
   })
 
-  it('has one h1 with the competition as its subtitle and the two exports as links', async () => {
+  it('has one h1 with the competition as its subtitle and the two exports as buttons (#679)', async () => {
     renderPage()
     expect(await screen.findByRole('heading', { level: 1, name: 'Análisis de Posesiones' })).toBeInTheDocument()
     expect(screen.getByText('LF Challenge')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Exportar CSV' })).toHaveAttribute('href', '/export.csv')
-    expect(screen.getByRole('link', { name: 'Calidad PBP CSV' })).toHaveAttribute('href', '/quality.csv')
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Calidad PBP CSV' })).toBeEnabled()
   })
 
   it('the table and the two scatters are tabs, the table open, and the arrows move between them', async () => {
@@ -102,5 +102,43 @@ describe('PossessionsPage on the base components (issue #192)', () => {
     const group = screen.getByRole('radiogroup', { name: 'Vista de la tabla' })
     expect(within(group).getAllByRole('radio').map(r => r.textContent)).toEqual(['Resumen', 'Estilo propio', 'Rival'])
     expect(within(group).getByRole('radio', { name: 'Resumen' })).toHaveAttribute('aria-checked', 'true')
+  })
+})
+
+// Issue #679: the two exports are buttons that make the file (from the published text or the API's file) instead of links to the API.
+describe('PossessionsPage exports', () => {
+  let downloads: { name: string; href: string }[]
+  beforeEach(() => {
+    api.getPossessionStats.mockReset().mockResolvedValue([STAT])
+    api.getTeamConsistency.mockReset().mockResolvedValue({ own: {} })
+    api.fetchPossessionsCsv.mockReset().mockResolvedValue(new Blob(['a,b\n1,2\n']))
+    api.fetchPossessionQualityCsv.mockReset().mockResolvedValue(new Blob(['q\n']))
+    downloads = []
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:csv')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { downloads.push({ name: this.download, href: this.href }) })
+  })
+
+  it('«Exportar CSV» and «Calidad PBP CSV» are buttons, and each downloads its file with the name of the competition', async () => {
+    renderPage()
+    await screen.findByText(NAME)
+    expect(screen.queryByRole('link', { name: 'Exportar CSV' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }))
+    await waitFor(() => expect(downloads).toEqual([{ name: 'posesiones_LF_CHALLENGE.csv', href: 'blob:csv' }]))
+    expect(api.fetchPossessionsCsv).toHaveBeenCalledWith('LF_CHALLENGE')
+    fireEvent.click(screen.getByRole('button', { name: 'Calidad PBP CSV' }))
+    await waitFor(() => expect(downloads.map(d => d.name)).toEqual(['posesiones_LF_CHALLENGE.csv', 'calidad_pbp_LF_CHALLENGE.csv']))
+  })
+
+  it('says so when the file cannot be made, and the button works again', async () => {
+    api.fetchPossessionsCsv.mockRejectedValueOnce(new Error('No se pudo descargar el fichero'))
+    renderPage()
+    await screen.findByText(NAME)
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }))
+    expect(await screen.findByText('No se pudo descargar el fichero')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }))
+    await waitFor(() => expect(downloads).toHaveLength(1))
+    expect(screen.queryByText('No se pudo descargar el fichero')).toBeNull()
   })
 })

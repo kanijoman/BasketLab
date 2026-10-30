@@ -246,3 +246,29 @@ def test_the_matches_of_every_competition_are_published_sealed_for_it(handler, t
     assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(export_matches(handler, FEB), default=str))
     with pytest.raises(Exception):
         _open(tmp_path, entry, "club:101")
+
+
+# Issue #679: the possessions page of each competition (table, consistency and quality CSV) and, apart, its per-possession CSV: sealed by competition like the rest.
+def test_the_possessions_of_every_competition_are_published_sealed_for_it(handler, tmp_path):
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    manifest = _manifest(tmp_path)
+    assert sorted(p["collection"] for p in manifest["possessions"]) == sorted([FEB, FBCYL])
+    entry = next(p for p in manifest["possessions"] if p["collection"] == FEB)
+    assert entry["file"].startswith("possessions/") and entry["sha256"][:12] in entry["file"]
+    payload = _open(tmp_path, entry, f"competicion:{FEB}")
+    assert set(payload) >= {"table", "consistency", "quality_csv"} and payload["table"]
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+
+
+def test_the_per_possession_csv_is_a_section_of_its_own_and_only_where_there_are_possessions(handler, tmp_path, monkeypatch):
+    from src.local_data import web_data
+
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB])
+    assert _manifest(tmp_path).get("possession_csv", []) == []                    # the fixture games have no possessions to list: nothing to publish
+
+    monkeypatch.setattr(web_data, "export_possession_csv", lambda _handler, name: {"format": 1, "collection": name, "league": "feb", "games": 2, "csv": "ID_Partido\n1\n"})
+    publish_web_data(handler, tmp_path / "with", ScopedSealer(MASTER, open_access=False), [FEB])
+    entry = _manifest(tmp_path / "with")["possession_csv"][0]
+    assert entry["file"].startswith("possession_csv/") and entry["games"] == 2
+    assert _open(tmp_path / "with", entry, f"competicion:{FEB}")["csv"].startswith("ID_Partido")

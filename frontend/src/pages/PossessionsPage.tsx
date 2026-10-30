@@ -8,9 +8,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Activity } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import { getPossessionQualityExportUrl, getPossessionStats, getPossessionsExportUrl, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
+import { fetchPossessionQualityCsv, fetchPossessionsCsv, getPossessionStats, getTeamConsistency, type PossessionStat, type CVMap } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import { saveBlob } from '@/lib/download'
 import Tabs from '@/components/ui/Tabs'
 import SegmentedControl from '@/components/ui/SegmentedControl'
 import DataTable from '@/components/ui/DataTable'
@@ -27,6 +29,22 @@ export default function PossessionsPage() {
   const { collection } = useCollection()
   const [tab, setTab] = useState<Tab>('table')
   const [view, setView] = useState<PossessionView>('summary')
+  const [exporting, setExporting] = useState<'possessions' | 'quality' | null>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  /** Makes one of the two CSV files (from the published text or the API's file) and hands it to the browser. */
+  async function exportCsv(kind: 'possessions' | 'quality') {
+    if (!collection) return
+    setExporting(kind); setExportError(null)
+    try {
+      const blob = await (kind === 'possessions' ? fetchPossessionsCsv : fetchPossessionQualityCsv)(collection.name)
+      saveBlob(blob, `${kind === 'possessions' ? 'posesiones' : 'calidad_pbp'}_${collection.name}.csv`)
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'No se pudo descargar el fichero')
+    } finally {
+      setExporting(null)
+    }
+  }
 
   const { data: stats = [], isLoading } = useQuery<PossessionStat[]>({
     queryKey: ['possessions', collection?.name],
@@ -65,16 +83,11 @@ export default function PossessionsPage() {
         <PageHeader title="Análisis de Posesiones" subtitle={collection?.label}
           actions={collection && (
             <>
-              <a href={getPossessionsExportUrl(collection.name)} download
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors">
-                Exportar CSV
-              </a>
-              <a href={getPossessionQualityExportUrl(collection.name)} download
-                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-line text-ink-muted hover:bg-surface-raised transition-colors">
-                Calidad PBP CSV
-              </a>
+              <Button variant="secondary" loading={exporting === 'possessions'} onClick={() => void exportCsv('possessions')}>Exportar CSV</Button>
+              <Button variant="secondary" loading={exporting === 'quality'} onClick={() => void exportCsv('quality')}>Calidad PBP CSV</Button>
             </>
           )} />
+        {exportError && <p role="alert" className="text-sm text-bad">{exportError}</p>}
         <Tabs label="Partes del análisis de posesiones" tabs={TABS.map(([id, label]) => ({ id, label }))} value={tab} onChange={setTab} />
 
         {isLoading ? (
