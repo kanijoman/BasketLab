@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCompetitionEvolution, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localCompetitionEvolution, localMatchAnalysis, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -423,6 +423,24 @@ export function streamRotacionesAnalysis(
   teamName: string,
   onProgress?: (pct: number, current: number, total: number) => void,
 ): Promise<RotationResult> {
+  // With the dataset `rotations` on (`?data=local`, issue #684) the analysis was computed when the competition was published: it is there at once, no stream.
+  return fromSource(
+    'rotations',
+    async () => {
+      const published = await localRotation(collection, teamId)
+      if (published) onProgress?.(100, 1, 1)
+      return published
+    },
+    () => streamRotationsFromApi(collection, teamId, teamName, onProgress),
+  )
+}
+
+function streamRotationsFromApi(
+  collection: string,
+  teamId: string,
+  teamName: string,
+  onProgress?: (pct: number, current: number, total: number) => void,
+): Promise<RotationResult> {
   const qs = new URLSearchParams({ team_name: teamName })
   const url = `${BASE}/rotaciones/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
 
@@ -464,7 +482,7 @@ export const getShotZones = (
   if (params.compare) qs.set('compare', params.compare)
   if (params.team_id) qs.set('team_id', params.team_id)
   if (params.player)  qs.set('player', params.player)
-  return get<ShotZoneData[]>(`/shots/${encodeURIComponent(collection)}?${qs}`)
+  return fromSource('shots', () => localShotZones(collection, params), () => get<ShotZoneData[]>(`/shots/${encodeURIComponent(collection)}?${qs}`))
 }
 
 export const getShotRaw = (
@@ -475,7 +493,7 @@ export const getShotRaw = (
   if (params.team_id) qs.set('team_id', params.team_id)
   if (params.player)  qs.set('player', params.player)
   if (params.limit)   qs.set('limit', String(params.limit))
-  return get<ShotRawData[]>(`/shots/${encodeURIComponent(collection)}/raw?${qs}`)
+  return fromSource('shots', () => localShotRaw(collection, params), () => get<ShotRawData[]>(`/shots/${encodeURIComponent(collection)}/raw?${qs}`))
 }
 
 // ── Possessions ───────────────────────────────────────────────────────────────
@@ -556,9 +574,12 @@ export interface MatchAnalysis {
   comparison: MatchComparisonRow[]
 }
 
+// With the dataset `matches` on (`?data=local`, issue #677) the list and the analysis of a match are the ones computed when the competition was published.
 export const getMatchList = (collection: string, is_fbcyl = false) =>
-  get<MatchSummary[]>(
-    `/matches/${encodeURIComponent(collection)}?is_fbcyl=${is_fbcyl}`,
+  fromSource(
+    'matches',
+    () => localMatchList(collection),
+    () => get<MatchSummary[]>(`/matches/${encodeURIComponent(collection)}?is_fbcyl=${is_fbcyl}`),
   )
 
 export const getMatchAnalysis = (
@@ -566,8 +587,10 @@ export const getMatchAnalysis = (
   matchId: string | number,
   is_fbcyl = false,
 ) =>
-  get<MatchAnalysis>(
-    `/matches/${encodeURIComponent(collection)}/${matchId}?is_fbcyl=${is_fbcyl}`,
+  fromSource(
+    'matches',
+    () => localMatchAnalysis(collection, matchId),
+    () => get<MatchAnalysis>(`/matches/${encodeURIComponent(collection)}/${matchId}?is_fbcyl=${is_fbcyl}`),
   )
 
 // ── Multi-phase ───────────────────────────────────────────────────────────────

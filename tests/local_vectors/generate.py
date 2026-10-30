@@ -43,6 +43,8 @@ MULTI_OUT = Path(__file__).resolve().parent / "multi_phase.json"
 EVOLUTION_OUT = Path(__file__).resolve().parent / "evolution_feb.json"
 PBP_OUT = Path(__file__).resolve().parent / "pbp_feb.json"
 PBP_FBCYL_OUT = Path(__file__).resolve().parent / "pbp_fbcyl.json"
+SHOTS_OUT = Path(__file__).resolve().parent / "shots_feb.json"
+SHOTS_FBCYL_OUT = Path(__file__).resolve().parent / "shots_fbcyl.json"
 EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 FILTERS = [
     {"name": "all"},
@@ -379,6 +381,40 @@ def build_fbcyl_pbp_vectors() -> dict:
     return _pbp_vectors(build_fbcyl_games(), "FBCYL_1ª_FASE-GRUPO_A-1_2026_")
 
 
+# Tiros (#685): the shots published for a competition and what the real endpoints answer for them (``get_shot_zones``, with and without the league, and ``get_shot_raw``).
+def _shots_vectors(games: list, collection: str) -> dict:
+    from unittest.mock import MagicMock
+
+    from src.api.routers.shots import get_shot_raw, get_shot_zones
+    from src.local_data.shots_export import export_shots
+
+    col = mongomock.MongoClient()["v"][collection]
+    col.insert_many(games)
+    db = MagicMock()
+    db.connection.get_collection.side_effect = lambda name: col
+    payload = json.loads(json.dumps(export_shots(col, collection), default=str))
+    rows = [dict(zip(payload["columns"], r)) for r in payload["shots"]]
+    teams = sorted({r["team_id"] for r in rows})
+    players = [next(r["player_id"] for r in rows if r["team_id"] == t and r["player_id"]) for t in teams]
+    filters = [{}] + [{"team_id": t} for t in teams] + [{"player": p} for p in players] + [{"team_id": teams[0], "player": players[0]}, {"team_id": "NOBODY"}]
+    cases = []
+    for flt in filters:
+        for compare in (None, "league"):
+            zones = get_shot_zones(collection, flt.get("team_id"), flt.get("player"), compare, db)
+            cases.append({"filter": flt, "compare": compare, "zones": json.loads(json.dumps(zones))})
+    raw = [{"filter": flt, "limit": limit, "shots": json.loads(json.dumps(get_shot_raw(collection, flt.get("team_id"), flt.get("player"), limit, db)))}
+           for flt in filters[:3] for limit in (5000, 7)]
+    return {"payload": payload, "zones": cases, "raw": raw}
+
+
+def build_shots_vectors() -> dict:
+    return _shots_vectors(build_games(), "L_F_-2_2025_2026_Liga_Regular_B")
+
+
+def build_fbcyl_shots_vectors() -> dict:
+    return _shots_vectors(build_fbcyl_games(), "FBCYL_1ª_FASE-GRUPO_A-1_2026_")
+
+
 def _write(path: Path, vectors: dict) -> None:
     path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -394,7 +430,9 @@ def main() -> None:
     _write(EVOLUTION_FBCYL_OUT, build_fbcyl_evolution_vectors())
     _write(PBP_OUT, build_pbp_vectors())
     _write(PBP_FBCYL_OUT, build_fbcyl_pbp_vectors())
-    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT, PBP_OUT, PBP_FBCYL_OUT)
+    _write(SHOTS_OUT, build_shots_vectors())
+    _write(SHOTS_FBCYL_OUT, build_fbcyl_shots_vectors())
+    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT, PBP_OUT, PBP_FBCYL_OUT, SHOTS_OUT, SHOTS_FBCYL_OUT)
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()

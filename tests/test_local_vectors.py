@@ -200,3 +200,22 @@ def test_the_pbp_vectors_cover_the_branches_of_the_tables(path):
     assert any("OT" in t["periods"] for t in vectors["expected"]["periods"])                  # an overtime bucket
     assert vectors["expected"]["coverage"]["pending"] == vectors["derived"]["total"] - 2 and vectors["derived"]["without_derived"]   # the v5 game is pending too
     assert any(t["own"]["n"] == 0 for t in vectors["expected"]["timeouts"])                    # a team with no timeouts to analyse
+
+
+# Tiros (#685): the published shots and what the real endpoints answer for them, the reference of ``frontend/src/localdata/shots.test.ts``.
+@pytest.mark.parametrize("builder, path", [("build_shots_vectors", "SHOTS_OUT"), ("build_fbcyl_shots_vectors", "SHOTS_FBCYL_OUT")])
+def test_the_stored_shot_vectors_are_the_current_reference(builder, path):
+    stored = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(getattr(generate, builder)(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("path", ["SHOTS_OUT", "SHOTS_FBCYL_OUT"])
+def test_the_shot_vectors_cover_the_branches_of_the_tables(path):
+    vectors = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    league = next(c for c in vectors["zones"] if c["filter"] == {} and c["compare"] is None)["zones"]
+    assert len(league) == 10 and sum(z["fga"] for z in league) == len(vectors["payload"]["shots"])
+    nobody = next(c for c in vectors["zones"] if c["filter"] == {"team_id": "NOBODY"} and c["compare"] == "league")["zones"]
+    assert all(z["fga"] == 0 and z["rating"] == "none" for z in nobody)                             # a team with no shot: every zone «none»
+    assert {z["rating"] for c in vectors["zones"] if c["compare"] for z in c["zones"]} >= {"average", "none"}
+    limited = next(c for c in vectors["raw"] if c["limit"] == 7 and c["filter"] == {})["shots"]
+    assert len(limited) == 7                                                                          # the first ones, in the order of the competition

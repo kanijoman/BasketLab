@@ -17,7 +17,8 @@ export interface FileEntry {
   sha256: string
 }
 
-/** The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676): same entry, other content. */
+/** The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676), its shots (``shots/``, #685) or the rotation analysis of its teams
+    (``rotations/``, #684; ``games`` counts its teams) or the list and analysis of its matches (``matches/``, #677): same entry, other content. */
 export interface RowsEntry {
   file: string
   bytes: number
@@ -44,6 +45,9 @@ export interface WebDataManifest {
   open_key?: string
   rows: RowsEntry[]
   derived?: RowsEntry[]
+  shots?: RowsEntry[]
+  rotations?: RowsEntry[]
+  matches?: RowsEntry[]
   reports: ReportIndexEntry[]
 }
 
