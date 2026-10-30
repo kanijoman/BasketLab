@@ -28,7 +28,7 @@
   --dev-bad: #f85149;       /* the red of a column below the player's own average (box score); the green is --ok */
 
   /* severity: how urgent an alert is */
-  --sev-critical: #f85149;  --sev-critical-rgb: 248 81 73;
+  --sev-critical: #f8564e;  --sev-critical-rgb: 248 86 78;
   --sev-warning: #d29922;   --sev-warning-rgb: 210 153 34;
   --sev-info: #58a6ff;      --sev-info-rgb: 88 166 255;
 
@@ -108,17 +108,17 @@
     --accent-ink: #ffffff;
     --ok: #1a7f37;
     --dev-bad: #cf222e;
-    --sev-critical: #cf222e; --sev-critical-rgb: 207 34 46;
-    --sev-warning: #9a6700;  --sev-warning-rgb: 154 103 0;
-    --sev-info: #0969da;     --sev-info-rgb: 9 105 218;
-    --cat-faltas: #bf3989;
+    --sev-critical: #be1f2a; --sev-critical-rgb: 190 31 42;
+    --sev-warning: #895c00;  --sev-warning-rgb: 137 92 0;
+    --sev-info: #0863cd;     --sev-info-rgb: 8 99 205;
+    --cat-faltas: #b0347e;
     --cat-rotacion: #6639ba;
-    --cat-rival: #bc4c00;
+    --cat-rival: #ad4600;
     --cat-juego: #0a69a8;
-    --cat-ritmo: #1a7f4b;
-    --cat-alineacion: #0f766e;
+    --cat-ritmo: #187545;
+    --cat-alineacion: #0f726b;
     --cat-descanso: #be185d;
-    --cat-resumen: #a16207;
+    --cat-resumen: #935906;
     --cat-probabilidad: #4338ca;
     --pace-fast: #b45309;
     --pace-slow: #1d4ed8;
@@ -161,17 +161,17 @@
   --accent-ink: #ffffff;
   --ok: #1a7f37;
   --dev-bad: #cf222e;
-  --sev-critical: #cf222e; --sev-critical-rgb: 207 34 46;
-  --sev-warning: #9a6700;  --sev-warning-rgb: 154 103 0;
-  --sev-info: #0969da;     --sev-info-rgb: 9 105 218;
-  --cat-faltas: #bf3989;
+  --sev-critical: #be1f2a; --sev-critical-rgb: 190 31 42;
+  --sev-warning: #895c00;  --sev-warning-rgb: 137 92 0;
+  --sev-info: #0863cd;     --sev-info-rgb: 8 99 205;
+  --cat-faltas: #b0347e;
   --cat-rotacion: #6639ba;
-  --cat-rival: #bc4c00;
+  --cat-rival: #ad4600;
   --cat-juego: #0a69a8;
-  --cat-ritmo: #1a7f4b;
-  --cat-alineacion: #0f766e;
+  --cat-ritmo: #187545;
+  --cat-alineacion: #0f726b;
   --cat-descanso: #be185d;
-  --cat-resumen: #a16207;
+  --cat-resumen: #935906;
   --cat-probabilidad: #4338ca;
   --pace-fast: #b45309;
   --pace-slow: #1d4ed8;
