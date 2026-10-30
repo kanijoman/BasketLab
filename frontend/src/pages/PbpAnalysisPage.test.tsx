@@ -113,6 +113,14 @@ describe('PbpAnalysisPage', () => {
     expect(groups.indexOf('Contraataque (est.)')).toBeLessThan(groups.indexOf('Banquillo'))              // next to the turnovers, not at the end of a wide table
   })
 
+  it('has one h1 and the four sections are tabs of a named list (issue #666)', () => {
+    renderPage()
+    expect(screen.getByRole('heading', { level: 1, name: 'Análisis pbp' })).toBeTruthy()
+    const tabs = screen.getByRole('tablist', { name: 'Secciones del análisis pbp' })
+    expect(tabs.querySelectorAll('[role="tab"]')).toHaveLength(4)
+    expect(screen.getByRole('tab', { name: 'Por origen' }).getAttribute('aria-selected')).toBe('true')
+  })
+
   it('has no selector of the basis: the figures are already by possessions', () => {
     renderPage()
     expect(screen.queryByRole('button', { name: 'Por 100 posesiones' })).toBeNull()
@@ -121,32 +129,32 @@ describe('PbpAnalysisPage', () => {
 
   it('switches the origins to what the rivals score against the team', () => {
     renderPage()
-    expect(screen.getByRole('button', { name: 'Propios' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('radio', { name: 'Propios' }).getAttribute('aria-checked')).toBe('true')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Concedidos (rival)' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Concedidos (rival)' }))
 
-    expect(screen.getByRole('button', { name: 'Concedidos (rival)' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('radio', { name: 'Concedidos (rival)' }).getAttribute('aria-checked')).toBe('true')
     expect(screen.getByText('44.0')).toBeTruthy()          // opp_pts_paint_per_100
   })
 
   it('shows the period figures and lets the user pick the quarter; the overtime only lists the teams that played one', () => {
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: 'Por cuarto' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Por cuarto' }))
 
     expect(screen.getByText('20.0')).toBeTruthy()          // 60 points over 3 games in Q1
-    fireEvent.click(screen.getByRole('button', { name: 'Prórroga' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Prórroga' }))
     expect(screen.getByText('3.0')).toBeTruthy()           // 9 points over 3 games
-    fireEvent.click(screen.getByRole('button', { name: 'Q3' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Q3' }))
     expect(screen.getByText(/ningún equipo/i)).toBeTruthy()
   })
 
   it('shows the situations and the timeouts', () => {
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: 'Situaciones' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Situaciones' }))
     expect(screen.getByText('Tras su tiempo muerto')).toBeTruthy()
     expect(screen.getByText('Primeros 2:00')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Tiempos muertos' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Tiempos muertos' }))
     expect(screen.getByText('Pedidos por el rival')).toBeTruthy()
     expect(screen.getByText('75%')).toBeTruthy()
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)       // the rival group has no analysable timeouts

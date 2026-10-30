@@ -56,7 +56,7 @@ describe('the keys of the cache of the queries (issue #605)', () => {
 
   it('finds the queries of the app (the check looks at something)', () => {
     expect(all.length).toBeGreaterThan(30)
-    expect(byName.get('team-list')?.length).toBeGreaterThanOrEqual(5)
+    expect(byName.get('team-list')?.length).toBeGreaterThanOrEqual(4)        // 5 until the page Preparación live was retired (#667)
   })
 
   it('every name of key is read with ONE function: the same key never holds two shapes', () => {

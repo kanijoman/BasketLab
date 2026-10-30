@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Download, FileSearch, Loader2 } from 'lucide-react'
+import { Download, FileSearch } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
@@ -16,6 +16,9 @@ import {
 import { ScopedAccessError } from '@live-package/crypto'
 import AccessPanel from '@/components/AccessPanel'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import Button from '@/components/ui/Button'
+import { Field, Select } from '@/components/ui/Field'
 import SegmentedControl from '@/components/ui/SegmentedControl'
 
 type Phase =
@@ -64,10 +67,7 @@ function Preview({ report, onPdf, downloading }: { report: ScoutingReport; onPdf
           </p>
         </div>
         {onPdf && (
-          <button className="btn-secondary" onClick={onPdf} disabled={downloading}>
-            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            Descargar PDF
-          </button>
+          <Button variant="secondary" icon={Download} loading={downloading} onClick={onPdf}>Descargar PDF</Button>
         )}
       </div>
 
@@ -243,15 +243,10 @@ export default function ScoutingRivalPage() {
     }
   }
 
-  const select = 'bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus'
-
   return (
     <PageTransition>
       <div className="space-y-4 max-w-3xl">
-        <div>
-          <h1 className="text-2xl font-bold text-ink">Scouting del rival</h1>
-          <p className="text-ink-muted text-sm mt-0.5">{collection?.label}</p>
-        </div>
+        <PageHeader title="Scouting del rival" subtitle={collection?.label} />
 
         {!collection ? (
           <p className="text-sm text-ink-muted">Selecciona una colección.</p>
@@ -268,20 +263,18 @@ export default function ScoutingRivalPage() {
                 y se genera un informe con sus claves tácticas, jugadores, quintetos, zonas y plan de partido. Puede tardar un poco.
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
-                <label className="flex flex-col gap-1 text-xs text-ink-muted">
-                  Equipo a analizar
-                  <select value={rival} onChange={e => setRival(e.target.value)} className={select} disabled={running}>
+                <Field label="Equipo a analizar">
+                  <Select value={rival} onChange={e => setRival(e.target.value)} disabled={running}>
                     <option value="">— Selecciona —</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-ink-muted">
-                  Nuestro equipo (opcional, para la comparativa)
-                  <select value={own} onChange={e => setOwn(e.target.value)} className={select} disabled={running}>
+                  </Select>
+                </Field>
+                <Field label="Nuestro equipo (opcional, para la comparativa)">
+                  <Select value={own} onChange={e => setOwn(e.target.value)} disabled={running}>
                     <option value="">— Sin comparativa —</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </label>
+                  </Select>
+                </Field>
               </div>
               {sameTeam && <p className="text-xs text-warn">El equipo a analizar y el nuestro deben ser distintos.</p>}
               {scopes.length > 1 && !own && (
@@ -292,10 +285,9 @@ export default function ScoutingRivalPage() {
               {scopes.length > 0 && own && (
                 <p className="text-xs text-ink-muted">Con «Nuestro equipo» elegido el informe se genera en el servidor, con la comparativa.</p>
               )}
-              <button className="btn-secondary" disabled={!ready || running} onClick={() => void generate()}>
-                {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSearch className="w-3.5 h-3.5" />}
+              <Button variant="secondary" icon={FileSearch} loading={running} disabled={!ready} onClick={() => void generate()}>
                 Generar informe
-              </button>
+              </Button>
 
               {phase.kind === 'running' && (
                 <div className="space-y-1">

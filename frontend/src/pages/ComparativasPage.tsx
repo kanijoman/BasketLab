@@ -11,10 +11,14 @@ import { type ColumnDef } from '@tanstack/react-table'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getTeamComparison, type ComparisonKind, type ComparisonRow, type TeamStat } from '@/api/client'
-import { fmt, fmtPct, cn } from '@/lib/utils'
+import { fmt, fmtPct } from '@/lib/utils'
 import { ADVANCED_COL_DEFS, BASIC_COL_DEFS, type ColDef } from '@/lib/teamColumns'
 import { computeQuartileMap } from '@/lib/quartiles'
 import PageTransition from '@/components/ui/PageTransition'
+import PageHeader from '@/components/ui/PageHeader'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import Button from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Field'
 import DataTable from '@/components/ui/DataTable'
 import DiffBadge from '@/components/ui/DiffBadge'
 import { tippedHeader } from '@/components/ui/Tooltip'
@@ -35,20 +39,9 @@ function isoDay(daysBack: number): string {
 
 type Flat = Partial<TeamStat> & { team_name: string; games: string }
 
-function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
-  return (
-    <div className="flex rounded-lg overflow-hidden border border-line">
-      {options.map(o => (
-        <button
-          key={o.id}
-          onClick={() => onChange(o.id)}
-          className={cn('px-3 py-1.5 text-sm font-medium transition-colors', value === o.id ? 'bg-accent/30 text-accent-text' : 'text-ink-muted hover:bg-surface-raised hover:text-ink')}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
+/** SegmentedControl over options written as {id, label} (the tables of this page keep them so). */
+function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
+  return <SegmentedControl label={label} size="md" value={value} onChange={onChange} options={options.map(o => ({ value: o.id, label: o.label }))} />
 }
 
 function buildColumns(defs: ColDef[], byName: Record<string, ComparisonRow>, rivals: boolean): ColumnDef<Flat, unknown>[] {
@@ -115,27 +108,20 @@ export default function ComparativasPage() {
   return (
     <PageTransition>
       <div className="space-y-4">
-        <div>
-          <h1 className="text-xl font-bold text-ink">Comparativas</h1>
-          <p className="text-sm text-ink-faint mt-0.5">{collection.label}</p>
-        </div>
+        <PageHeader title="Comparativas" subtitle={collection.label} />
 
         <div className="flex flex-wrap items-center gap-3">
-          <Segmented value={by} options={KINDS} onChange={setBy} />
-          <Segmented value={side} options={[{ id: 'team', label: 'Equipos' }, { id: 'opponent', label: 'Rivales' }]} onChange={setSide} />
-          <Segmented value={view} options={[{ id: 'basic', label: 'Básico' }, { id: 'advanced', label: 'Avanzado' }]} onChange={setView} />
+          <Choice label="Comparar por" value={by} options={KINDS} onChange={setBy} />
+          <Choice label="Lado" value={side} options={[{ id: 'team', label: 'Equipos' }, { id: 'opponent', label: 'Rivales' }]} onChange={setSide} />
+          <Choice label="Vista" value={view} options={[{ id: 'basic', label: 'Básico' }, { id: 'advanced', label: 'Avanzado' }]} onChange={setView} />
         </div>
 
         {by === 'period' && (
           <div className="flex flex-wrap items-end gap-3">
-            <label className="text-xs text-ink-muted flex flex-col gap-1">Desde
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="bg-canvas border border-line rounded px-2 py-1 text-sm text-ink" />
-            </label>
-            <label className="text-xs text-ink-muted flex flex-col gap-1">Hasta
-              <input type="date" value={to} onChange={e => setTo(e.target.value)} className="bg-canvas border border-line rounded px-2 py-1 text-sm text-ink" />
-            </label>
-            <button onClick={() => shortcut(30)} className="px-3 py-1.5 text-sm rounded border border-line text-ink-muted hover:bg-surface-raised">Últimos 30 días</button>
-            <button onClick={() => shortcut(15)} className="px-3 py-1.5 text-sm rounded border border-line text-ink-muted hover:bg-surface-raised">Últimos 15 días</button>
+            <Field label="Desde"><Input type="date" value={from} onChange={e => setFrom(e.target.value)} /></Field>
+            <Field label="Hasta"><Input type="date" value={to} onChange={e => setTo(e.target.value)} /></Field>
+            <Button variant="secondary" onClick={() => shortcut(30)}>Últimos 30 días</Button>
+            <Button variant="secondary" onClick={() => shortcut(15)}>Últimos 15 días</Button>
           </div>
         )}
 

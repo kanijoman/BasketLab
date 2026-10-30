@@ -72,15 +72,8 @@ export default function Sidebar() {
     <aside className={cn('flex h-full flex-col overflow-hidden border-r border-line bg-surface transition-[width] duration-200 ease-in-out', collapsed ? 'w-14' : 'w-56')}>
       <NavList base={`/${encodeURIComponent(collection)}`} compact={collapsed} />
       <div className="border-t border-line px-2 pb-3 pt-2">
-        <button
-          type="button"
-          onClick={() => setCollapsed(c => !c)}
-          className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-ink-faint transition-colors hover:bg-surface-raised hover:text-ink-muted"
-          aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-          title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+        <IconButton icon={collapsed ? ChevronRight : ChevronLeft} label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+          onClick={() => setCollapsed(c => !c)} className="w-full justify-center px-3 py-2" />
       </div>
     </aside>
   )

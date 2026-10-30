@@ -86,6 +86,17 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(screen.getByRole('button', { name: /generar informe/i })).not.toBeDisabled()
   })
 
+  it('has one h1 and, while the report is made, the button says it is working and nothing can be changed (issue #666)', async () => {
+    renderPage()
+    expect(screen.getByRole('heading', { level: 1, name: 'Scouting del rival' })).toBeTruthy()
+    await choose()
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    const working = await screen.findByRole('button', { name: /generar informe/i })
+    await waitFor(() => expect(working.getAttribute('aria-busy')).toBe('true'))
+    expect((working as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByLabelText(/equipo a analizar/i) as HTMLSelectElement).disabled).toBe(true)
+  })
+
   it('does not accept the same team as scouted and as ours', async () => {
     renderPage()
     await choose('2', '2')

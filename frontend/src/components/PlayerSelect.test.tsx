@@ -8,7 +8,7 @@ describe('PlayerSelect layout (regression: the team dropdown overflowed the card
       teams={[{ id: '1', name: 'MIPELLETYMAS B.F. LEON CON UN NOMBRE MUY LARGO' }]} />)
     const team = screen.getByDisplayValue('Todos los equipos')
     expect(team.className).toContain('min-w-0')
-    expect(team.className).toContain('max-w-[50%]')
+    expect(team.closest('div')?.className).toContain('max-w-[50%]')       // the box of the dropdown, which is the child of the row
     expect(screen.getByPlaceholderText(/buscar nombre/i).className).toContain('min-w-0')
     expect(screen.getByDisplayValue('— Selecciona jugador —').className).toContain('w-full')
   })

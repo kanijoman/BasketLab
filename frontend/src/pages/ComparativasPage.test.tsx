@@ -69,7 +69,7 @@ describe('ComparativasPage: the comparative reports of the weekly report, on the
   it('won vs lost asks for the other comparison', async () => {
     renderPage()
     await screen.findByText('Alfa')
-    fireEvent.click(screen.getByRole('button', { name: /Ganados vs perdidos/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /Ganados vs perdidos/ }))
     await waitFor(() => expect(api.getTeamComparison).toHaveBeenLastCalledWith('LF_CHALLENGE', 'result', undefined))
     expect(await screen.findByText(/Ganados frente a Perdidos/)).toBeInTheDocument()
   })
@@ -88,7 +88,7 @@ describe('ComparativasPage: the comparative reports of the weekly report, on the
   it('what the rivals did against each team is its own view, where the good and the bad are swapped', async () => {
     renderPage()
     await screen.findByText('Alfa')
-    fireEvent.click(screen.getByRole('button', { name: 'Rivales' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Rivales' }))
     // the rivals scored 5 more points against Alfa at home: that is bad for Alfa, so it is red
     expect(within(cellOf('Alfa', 'PPP')).getByText('+5.0').className).toContain('text-bad')
     expect(within(cellOf('Alfa', 'Perd')).getByText('-2.0').className).toContain('text-bad')
@@ -97,7 +97,7 @@ describe('ComparativasPage: the comparative reports of the weekly report, on the
   it('the advanced figures are one click away', async () => {
     renderPage()
     await screen.findByText('Alfa')
-    fireEvent.click(screen.getByRole('button', { name: 'Avanzado' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Avanzado' }))
     expect(cellOf('Alfa', 'OER').textContent).toContain('+6.0')
   })
 
@@ -133,7 +133,7 @@ describe('ComparativasPage: a stretch of dates against the rest of the season', 
 
   it('asks nothing until there is a date, and says what to do', async () => {
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: /Tramo vs resto/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /Tramo vs resto/ }))
     expect(await screen.findByText(/Elige un tramo/)).toBeInTheDocument()
     expect(api.getTeamComparison).not.toHaveBeenCalledWith(expect.anything(), 'period', expect.anything())
   })
@@ -141,7 +141,7 @@ describe('ComparativasPage: a stretch of dates against the rest of the season', 
   it('the shortcut of 30 days is the last 30 days, today included, like the weekly report', async () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-27T10:00:00') })
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: /Tramo vs resto/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /Tramo vs resto/ }))
     fireEvent.click(screen.getByRole('button', { name: /30 días/ }))
     await waitFor(() => expect(api.getTeamComparison).toHaveBeenCalledWith('LF_CHALLENGE', 'period', { from: '2026-09-28', to: '2026-10-27' }))
   })
@@ -149,7 +149,7 @@ describe('ComparativasPage: a stretch of dates against the rest of the season', 
   it('the shortcut of 15 days and the dates typed by hand ask for their own stretch', async () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-27T10:00:00') })
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: /Tramo vs resto/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /Tramo vs resto/ }))
     fireEvent.click(screen.getByRole('button', { name: /15 días/ }))
     await waitFor(() => expect(api.getTeamComparison).toHaveBeenCalledWith('LF_CHALLENGE', 'period', { from: '2026-10-13', to: '2026-10-27' }))
     fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-10-01' } })
@@ -159,8 +159,28 @@ describe('ComparativasPage: a stretch of dates against the rest of the season', 
 
   it('a stretch open on one side is a stretch too', async () => {
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: /Tramo vs resto/ }))
+    fireEvent.click(screen.getByRole('radio', { name: /Tramo vs resto/ }))
     fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-10-01' } })
     await waitFor(() => expect(api.getTeamComparison).toHaveBeenCalledWith('LF_CHALLENGE', 'period', { from: '2026-10-01' }))
+  })
+})
+
+// Issue #666 (U5e): Comparativas on the base components — one h1, what to compare, which side and which view named radio groups, the dates labelled fields and
+// the shortcuts buttons.
+describe('ComparativasPage on the base components (issue #666)', () => {
+  it('has one h1 with the competition as its subtitle and three named groups of options', async () => {
+    renderPage()
+    expect(screen.getByRole('heading', { level: 1, name: 'Comparativas' })).toBeInTheDocument()
+    for (const name of ['Comparar por', 'Lado', 'Vista']) expect(screen.getByRole('radiogroup', { name })).toBeInTheDocument()
+    expect(within(screen.getByRole('radiogroup', { name: 'Lado' })).getAllByRole('radio').map(r => r.textContent)).toEqual(['Equipos', 'Rivales'])
+    expect(within(screen.getByRole('radiogroup', { name: 'Vista' })).getByRole('radio', { name: 'Básico' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('the shortcuts of the period are buttons that fill both dates', async () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('radio', { name: /Tramo vs resto/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Últimos 15 días' }))
+    expect((screen.getByLabelText('Desde') as HTMLInputElement).value).not.toBe('')
+    expect((screen.getByLabelText('Hasta') as HTMLInputElement).value).not.toBe('')
   })
 })

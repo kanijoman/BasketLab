@@ -12,7 +12,7 @@
  * The sidebar is only visible when a collection is active (URL has /:collection).
  */
 import { Component, useState, type ReactNode } from 'react'
-import { Outlet, Link, useParams, useNavigate } from 'react-router-dom'
+import { Outlet, Link, useParams } from 'react-router-dom'
 import { ChevronRight, Home, ExternalLink, Menu } from 'lucide-react'
 import Sidebar, { MobileNav } from '@/components/Sidebar'
 import CollectionSwitcher from '@/components/CollectionSwitcher'
@@ -42,7 +42,6 @@ const PHONE = '(max-width: 767px)'
 
 function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { collection } = useCollection()
-  const navigate = useNavigate()
 
   return (
     <header className="h-14 bg-surface border-b border-line flex items-center px-3 sm:px-4 gap-2 sm:gap-4 shrink-0 z-20">
@@ -59,13 +58,9 @@ function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
       {/* Breadcrumb */}
       {collection && (
         <nav aria-label="Ruta" className="flex items-center gap-1 text-xs text-ink-muted min-w-0">
-          <button
-            onClick={() => navigate('/')}
-            className="hover:text-ink transition-colors"
-            aria-label="Inicio"
-          >
+          <Link to="/" className="hover:text-ink transition-colors" aria-label="Inicio">
             <Home className="w-3.5 h-3.5" />
-          </button>
+          </Link>
           <ChevronRight className="w-3 h-3 opacity-40 shrink-0" />
           <span className="text-ink font-medium truncate hidden md:inline">{collection.label}</span>
           <span className="ml-1 px-1.5 py-0.5 bg-line/60 rounded text-ink-faint shrink-0">
