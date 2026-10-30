@@ -7,9 +7,10 @@ import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlaye
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
 import { compareTeams } from './comparison'
 import type { Competition } from './competition'
-import type { ComparisonKind, TeamComparison } from '@/api/client'
+import type { ComparisonKind, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
-import { loadWebRows, WebDataUnavailable } from '@/webdata/client'
+import { mergeByKey, siblingCollections } from './multiPhase'
+import { loadWebCollections, loadWebRows, WebDataUnavailable } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -86,7 +87,12 @@ export async function localTeamStats(collection: string, filters: TeamTableFilte
 export async function localPlayerStats(collection: string, filters: PlayerTableFilter): Promise<PlayerStat[] | null> {
   if (dataSourceOf('player-stats') !== 'local') return null
   const data = await loadCompetition(collection)
-  if (!data?.player_rows) return null
+  return data ? playerTable(data, filters) : null
+}
+
+/** The player table of a competition's rows (each league has its own), or `null` if it was exported without player rows. */
+function playerTable(data: Competition, filters: PlayerTableFilter): PlayerStat[] | null {
+  if (!data.player_rows) return null
   return data.league === 'fbcyl'
     ? aggregatePlayersFbcyl(data.player_rows as FbcylPlayerGameRow[], data.team_rows, filters)
     : aggregatePlayers(data.player_rows as PlayerGameRow[], data.team_rows, filters)
@@ -98,4 +104,41 @@ export async function localTeamComparison(collection: string, by: ComparisonKind
   if (dataSourceOf('team-comparison') !== 'local') return null
   const data = await loadCompetition(collection)
   return data ? compareTeams(data.team_rows, by, range) : null
+}
+
+/** The rows of every collection, or `null` if one of them is not published (merging only some of the phases would be a wrong answer). */
+async function allCompetitions(collections: string[]): Promise<Competition[] | null> {
+  const loaded = await Promise.all(collections.map(loadCompetition))
+  return loaded.every(data => data !== null) ? (loaded as Competition[]) : null
+}
+
+/** Multifase (issue #671): one merged row per team over the phases, as `GET /multi/team-stats`, or `null` to use the API. */
+export async function localMultiTeamStats(collections: string[]): Promise<TeamStat[] | null> {
+  if (dataSourceOf('multi-phase') !== 'local') return null
+  const all = await allCompetitions(collections)
+  if (!all) return null
+  const tables = Object.fromEntries(all.map((data, i) => [collections[i], aggregateTeams(data.team_rows, {}).team_stats as unknown as Array<Record<string, unknown>>]))
+  return mergeByKey(tables, 'team_name') as unknown as TeamStat[]
+}
+
+/** One merged row per player over the phases, as `GET /multi/player-stats`, or `null` to use the API. */
+export async function localMultiPlayerStats(collections: string[]): Promise<PlayerStat[] | null> {
+  if (dataSourceOf('multi-phase') !== 'local') return null
+  const all = await allCompetitions(collections)
+  const tables = all?.map(data => playerTable(data, {}))
+  if (!all || !tables || tables.some(t => t === null)) return null
+  return mergeByKey(Object.fromEntries(tables.map((t, i) => [collections[i], t as unknown as Array<Record<string, unknown>>])), 'player_name') as unknown as PlayerStat[]
+}
+
+/** The phases of a competition among the published ones (the names of the manifest; the manual export in development), or `null` to use the API. */
+export async function localSiblingCollections(collection: string): Promise<string[] | null> {
+  if (dataSourceOf('multi-phase') !== 'local') return null
+  let names: string[] | null = null
+  try {
+    names = await loadWebCollections()
+  } catch (error) {
+    if (!(error instanceof WebDataUnavailable)) throw error
+    names = (await loadIndex())?.map(c => c.name) ?? null
+  }
+  return names ? siblingCollections(collection, names) : null
 }

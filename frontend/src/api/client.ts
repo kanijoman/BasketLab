@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localPlayerStats, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -569,13 +569,17 @@ export const getMatchAnalysis = (
 // ── Multi-phase ───────────────────────────────────────────────────────────────
 
 export const getMultiTeamStats = (collections: string[], is_fbcyl = false) =>
-  get<TeamStat[]>(
-    `/multi/team-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
+  fromSource(
+    'multi-phase',
+    () => localMultiTeamStats(collections),
+    () => get<TeamStat[]>(`/multi/team-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`),
   )
 
 export const getMultiPlayerStats = (collections: string[], is_fbcyl = false) =>
-  get<PlayerStat[]>(
-    `/multi/player-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
+  fromSource(
+    'multi-phase',
+    () => localMultiPlayerStats(collections),
+    () => get<PlayerStat[]>(`/multi/player-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`),
   )
 
 export const getMultiTeamStatsBreakdown = (collections: string[], is_fbcyl = false) =>
@@ -589,7 +593,11 @@ export const getMultiPlayerStatsBreakdown = (collections: string[], is_fbcyl = f
   )
 
 export const getSiblingCollections = (collection: string) =>
-  get<string[]>(`/multi/sibling-collections?collection=${encodeURIComponent(collection)}`)
+  fromSource(
+    'multi-phase',
+    () => localSiblingCollections(collection),
+    () => get<string[]>(`/multi/sibling-collections?collection=${encodeURIComponent(collection)}`),
+  )
 
 // ── Shared types ─────────────────────────────────────────────────────────────
 

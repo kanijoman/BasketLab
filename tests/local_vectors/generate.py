@@ -24,6 +24,8 @@ from src.database.aggregation.fbcyl_pipeline import FBCYLPipelineBuilder  # noqa
 from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
 from src.services.player_stats_service import PlayerStatsService  # noqa: E402
+from src.services.collection_service import CollectionService  # noqa: E402
+from src.services.multi_phase_service import MultiPhaseService  # noqa: E402
 from src.services.team_comparison_service import TeamComparisonService  # noqa: E402
 from src.utils.time_utils import end_of_day  # noqa: E402
 
@@ -32,6 +34,7 @@ PLAYERS_OUT = Path(__file__).resolve().parent / "players_feb.json"
 FBCYL_OUT = Path(__file__).resolve().parent / "team_stats_fbcyl.json"
 COMPARISON_OUT = Path(__file__).resolve().parent / "comparison_feb.json"
 COMPARISON_FBCYL_OUT = Path(__file__).resolve().parent / "comparison_fbcyl.json"
+MULTI_OUT = Path(__file__).resolve().parent / "multi_phase.json"
 FILTERS = [
     {"name": "all"},
     {"name": "home", "venue": "home"},
@@ -226,6 +229,49 @@ def build_fbcyl_comparison_vectors() -> dict:
     return {"cases": _comparisons(_SeasonHandler(build_fbcyl_games(), _fbcyl_day, _fbcyl_run))}
 
 
+# Multifase (#671): ``MultiPhaseService`` merges the tables of several collections. The two "phases" are the home games and the away games of each league's stored vectors
+# (every team is in both, as in a league with a regular season and a play-off); the reference tables are the stored ones (FBCYL's players came from a real mongod).
+SIBLING_NAMES = [
+    "L_F_-2_2025_2026_Liga_Regular_A", "L_F_-2_2025_2026_Liga_Regular_B", "L_F_-2_2025_2026_Play-offs", "L_F_-2_2024_2025_Liga_Regular_A",
+    "L_F_-2_2025_2026_ELIMINATORIAS", "PRIMERA_FEB_2025_2026_Liga_Regular_Unico", "PRIMERA_FEB_2025_2026_Play-offs", "3FEB_2025_2026_Liga_Regular_A", "3FEB_2025_2026_FASE_ASCENSO",
+    "FBCYL_1ª_FASE-GRUPO_A-1_2026_", "FBCYL_1ª_FASE-GRUPO_B-1_2026_", "FBCYL_2ª_FASE-GRUPO_A-1_2026_", "FBCYL_1A_2025", "sin_anio",
+]
+
+
+def _stored(name: str) -> dict:
+    return json.loads((Path(__file__).resolve().parent / name).read_text(encoding="utf-8"))
+
+
+class _PhasesHandler:
+    """What ``MultiPhaseService`` asks of its database: the table of each collection (a copy: the service renames fields in place)."""
+
+    def __init__(self, teams: dict, players: dict) -> None:
+        self._teams, self._players = teams, players
+
+    def get_team_stats(self, collection):
+        return json.loads(json.dumps(self._teams[collection]))
+
+    def get_player_stats(self, collection):
+        return json.loads(json.dumps(self._players[collection]))
+
+
+def _multi(teams_file: str, players_file: str, is_fbcyl: bool) -> dict:
+    teams = {c["name"]: c["team_stats"] for c in _stored(teams_file)["cases"]}
+    players = {c["name"]: c["players"] for c in _stored(players_file)["cases"]}
+    phases = {"PHASE_HOME": "home", "PHASE_AWAY": "away"}
+    handler = _PhasesHandler({k: teams[v] for k, v in phases.items()}, {k: players[v] for k, v in phases.items()})
+    service = MultiPhaseService(handler, list(phases))
+    return {"phases": {k: {"team_stats": teams[v], "players": players[v]} for k, v in phases.items()},
+            "team_stats": json.loads(json.dumps(service.get_combined_team_stats(is_fbcyl))), "players": json.loads(json.dumps(service.get_combined_player_stats(is_fbcyl)))}
+
+
+def build_multi_vectors() -> dict:
+    collections = CollectionService(MagicMock())
+    siblings = {name: collections.get_sibling_collections(name, SIBLING_NAMES) for name in SIBLING_NAMES + ["L_F_-2_2025_2026_Otra_Fase_C"]}
+    return {"siblings": {"names": SIBLING_NAMES, "expected": siblings},
+            "feb": _multi("team_stats_feb.json", "players_feb.json", False), "fbcyl": _multi("team_stats_fbcyl.json", "players_fbcyl.json", True)}
+
+
 def _write(path: Path, vectors: dict) -> None:
     path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -236,7 +282,8 @@ def main() -> None:
     _write(FBCYL_OUT, build_fbcyl_vectors())
     _write(COMPARISON_OUT, build_comparison_vectors())
     _write(COMPARISON_FBCYL_OUT, build_fbcyl_comparison_vectors())
-    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT)
+    _write(MULTI_OUT, build_multi_vectors())
+    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT)
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()

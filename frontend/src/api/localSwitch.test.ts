@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getPlayerStats, getTeamComparison, getTeamStats } from './client'
+import { getMultiPlayerStats, getMultiTeamStats, getPlayerStats, getSiblingCollections, getTeamComparison, getTeamStats } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
@@ -21,6 +21,8 @@ beforeEach(() => {
     calls.push(String(url))
     const file = String(url).split('/local-data/')[1]
     if (file) return file in FILES ? { ok: true, json: async () => FILES[file] } : { ok: false, json: async () => ({}) }
+    if (String(url).includes('/multi/sibling')) return { ok: true, json: async () => ['DE LA API'] }
+    if (String(url).includes('/multi/')) return { ok: true, json: async () => [{ team_name: 'DE LA API', player_name: 'DE LA API' }] }
     if (String(url).includes('/compare')) return { ok: true, json: async () => ({ by: 'venue', label_a: 'DE LA API', label_b: '', team: [], opponent: [] }) }
     return { ok: true, json: async () => (String(url).includes('/teams/') ? API_TEAMS : [{ player_name: 'DE LA API' }]) }
   }) as unknown as typeof fetch
@@ -69,6 +71,35 @@ describe('data source switch: Comparativas', () => {
 
   it('only the dataset turned on reads the files: the tables stay on the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
+    expect((await getTeamStats(FEB)).team_stats[0].team_name).toBe('DE LA API')
+  })
+})
+
+// Issue #671: Multifase is its own dataset (`multi-phase`): the phases of a competition from the names of the published ones, and their tables merged on the device.
+describe('data source switch: Multifase', () => {
+  it('off: the API answers (phases and both tables)', async () => {
+    expect(await getSiblingCollections(FEB)).toEqual(['DE LA API'])
+    expect((await getMultiTeamStats([FEB]))[0].team_name).toBe('DE LA API')
+    expect((await getMultiPlayerStats([FEB]))[0].player_name).toBe('DE LA API')
+  })
+
+  it('on: the phases come from the published names and the tables are merged from the rows, with no call to the API', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
+    expect(await getSiblingCollections(FEB)).toEqual([FEB])
+    const teams = await getMultiTeamStats([FEB])
+    expect(new Set(teams.map(t => t.team_name))).toEqual(new Set(['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA']))
+    expect(teams.every(t => (t.total_games as number) > 0)).toBe(true)
+    expect((await getMultiPlayerStats([FEB])).length).toBeGreaterThan(0)
+    expect(calls.some(c => c.includes('/api/v1'))).toBe(false)
+  })
+
+  it('on, but one of the collections is not published: the API merges them all (a half merge would be wrong)', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
+    expect((await getMultiTeamStats([FEB, 'L_F_-2_2025_2026_Otra']))[0].team_name).toBe('DE LA API')
+  })
+
+  it('only that dataset reads the files', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
     expect((await getTeamStats(FEB)).team_stats[0].team_name).toBe('DE LA API')
   })
 })

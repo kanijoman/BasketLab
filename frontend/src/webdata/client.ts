@@ -151,6 +151,11 @@ export const loadWebReport = (collection: string, teamId: string, mode: ReportMo
 export const loadWebScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport> =>
   openSealed<ScoutingReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope), 'El informe')
 
+/** The names of the competitions the publication has rows for (the phases of a competition are found among them), issue #671. */
+export async function loadWebCollections(): Promise<string[]> {
+  return (await loadManifest()).rows.map(r => r.collection)
+}
+
 /** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
 export const loadWebRows = (collection: string): Promise<Competition> => openSealed<Competition>(() => sealedRows(collection), 'El fichero')
 
