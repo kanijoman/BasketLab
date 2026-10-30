@@ -11,14 +11,11 @@ const RAW: [string, RegExp][] = [['button', /<button\b/g], ['select', /<select\b
 
 /** Raw controls of each file today (button / select / input / h1). */
 const BASELINE: Record<string, [number, number, number, number]> = {
-  'components/AdminKeyField.tsx': [2, 0, 1, 0],
   'components/Layout.tsx': [1, 0, 0, 0],
   'components/PlayerSelect.tsx': [0, 2, 1, 0],
   'components/Sidebar.tsx': [1, 0, 0, 0],
-  'pages/AdminPage.tsx': [12, 1, 1, 1],
   'pages/ComparativasPage.tsx': [3, 0, 2, 1],
   'pages/HomePage.tsx': [4, 0, 0, 1],
-  'pages/LivePrepPage.tsx': [2, 2, 3, 1],
   'pages/PbpAnalysisPage.tsx': [1, 0, 0, 1],
   'pages/ScoutingRivalPage.tsx': [2, 2, 0, 1],
 }

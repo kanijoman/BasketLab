@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { KeyRound } from 'lucide-react'
 import { clearAdminKey, getAdminKey, setAdminKey } from '@/lib/adminKey'
+import Button from '@/components/ui/Button'
+import { Field, Input } from '@/components/ui/Field'
 
 export default function AdminKeyField() {
   const [value, setValue] = useState('')
@@ -20,22 +22,20 @@ export default function AdminKeyField() {
 
   return (
     <div className="card p-4 flex flex-wrap items-end gap-3">
-      <label className="flex flex-col gap-1 text-xs text-ink-muted flex-1 min-w-[220px]">
-        <span className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" /> Clave de administración</span>
-        <input
+      <Field className="flex-1 min-w-[220px]" label={<span className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" aria-hidden="true" /> Clave de administración</span>}>
+        <Input
           type="password"
           value={value}
           onChange={e => setValue(e.target.value)}
           autoComplete="off"
           placeholder={saved ? '••••••••' : 'Necesaria para borrar, descargar datos y entrenar modelos'}
-          className="bg-canvas border border-line rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-focus"
         />
-      </label>
-      <button className="btn-secondary" onClick={save} disabled={!value.trim()}>Guardar</button>
+      </Field>
+      <Button variant="secondary" onClick={save} disabled={!value.trim()}>Guardar</Button>
       {saved && (
         <>
           <span className="text-xs text-ok">Clave guardada (solo esta sesión del navegador)</span>
-          <button className="btn-secondary" onClick={remove}>Quitar</button>
+          <Button variant="secondary" onClick={remove}>Quitar</Button>
         </>
       )}
     </div>
