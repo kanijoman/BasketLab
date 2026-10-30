@@ -7,8 +7,10 @@ const api = vi.hoisted(() => ({
   getTeamStats: vi.fn(), streamLineupAnalysis: vi.fn(), getPlayerStats: vi.fn(), getInOutAnalysis: vi.fn(),
 }))
 vi.mock('@/api/client', async () => ({ ...(await vi.importActual<object>('@/api/client')), ...api }))
+// one collection object for every render: the page analyses again whenever it changes, so a new one per render would never settle
+const collectionState = vi.hoisted(() => ({ value: { name: 'LF', label: 'LF Challenge', isFbcyl: false } }))
 vi.mock('@/context/CollectionContext', () => ({
-  useCollection: () => ({ collection: { name: 'LF', label: 'LF Challenge', isFbcyl: false } }),
+  useCollection: () => ({ collection: collectionState.value }),
 }))
 
 import InOutPage from './InOutPage'
