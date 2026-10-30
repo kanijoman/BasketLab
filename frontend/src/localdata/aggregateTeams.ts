@@ -18,6 +18,8 @@ export interface GameRow {
   def_rebounds: number; off_rebounds: number
   assists: number; steals: number; turnovers: number; blocks: number
   possessions: number
+  /** FEB: 40 plus 5 per overtime; the stored possessions are scaled to 40 minutes by it (rows published before #672 have none: 40) */
+  game_minutes?: number
   opponent_fg2_made: number; opponent_fg2_attempts: number; opponent_fg3_made: number; opponent_fg3_attempts: number
   opponent_ft_made: number; opponent_ft_attempts: number
   opponent_def_rebounds: number; opponent_off_rebounds: number

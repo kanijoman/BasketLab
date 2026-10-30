@@ -4,6 +4,7 @@ Python is the reference: the real season pipelines (team and rival) run on mongo
 file keeps the contract rows plus what the API answers. The web aggregates the rows on the device (``frontend/src/localdata``) and must give the
 same figures. Run ``python tests/local_vectors/generate.py`` and review the diff after changing the pipelines or ``games.py``.
 """
+import copy
 import json
 import sys
 from datetime import datetime
@@ -25,6 +26,7 @@ from src.database.repository import BasketballRepository  # noqa: E402
 from src.services._team_id import with_team_id  # noqa: E402
 from src.services.player_stats_service import PlayerStatsService  # noqa: E402
 from src.services.collection_service import CollectionService  # noqa: E402
+from src.services.evolution_service import EVOLUTION_STAT_KEYS, EvolutionService  # noqa: E402
 from src.services.multi_phase_service import MultiPhaseService  # noqa: E402
 from src.services.team_comparison_service import TeamComparisonService  # noqa: E402
 from src.utils.time_utils import end_of_day  # noqa: E402
@@ -35,6 +37,8 @@ FBCYL_OUT = Path(__file__).resolve().parent / "team_stats_fbcyl.json"
 COMPARISON_OUT = Path(__file__).resolve().parent / "comparison_feb.json"
 COMPARISON_FBCYL_OUT = Path(__file__).resolve().parent / "comparison_fbcyl.json"
 MULTI_OUT = Path(__file__).resolve().parent / "multi_phase.json"
+EVOLUTION_OUT = Path(__file__).resolve().parent / "evolution_feb.json"
+EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 FILTERS = [
     {"name": "all"},
     {"name": "home", "venue": "home"},
@@ -272,6 +276,75 @@ def build_multi_vectors() -> dict:
             "feb": _multi("team_stats_feb.json", "players_feb.json", False), "fbcyl": _multi("team_stats_fbcyl.json", "players_fbcyl.json", True)}
 
 
+# Evolución (#672): ``EvolutionService.get_competition_evolution`` over the real per-game pipelines of each league (FEB's and FBCYL's), for every stat and two windows.
+EVOLUTION_WINDOWS = (3, 5)
+
+
+def _evolution_pipeline(pipeline: list) -> list:
+    """The pipeline for mongomock: the date is stored on the documents (``parsedDate``) instead of parsed by ``$dateFromString``, and ``$dateToString`` has no ``onNull``
+    (every game of the fixtures has a date)."""
+    cleaned = []
+    for stage in for_mongomock(pipeline):
+        if stage == {"$addFields": {}}:
+            continue
+        stage = copy.deepcopy(stage)
+        project = stage.get("$project")
+        if project and "game_date" in project:
+            project["game_date"]["$dateToString"].pop("onNull", None)
+        cleaned.append(stage)
+    return cleaned
+
+
+def _evolution_vectors(games: list, collection: str, team_ids) -> dict:
+    col = mongomock.MongoClient()["v"][collection]
+    col.insert_many(games)
+
+    class _Col:
+        def aggregate(self, pipeline, **kwargs):
+            return col.aggregate(_evolution_pipeline(pipeline), **kwargs)
+
+    class _Handler:
+        class connection:  # noqa: N801 - the service reads ``db.connection.get_collection``
+            @staticmethod
+            def get_collection(name):
+                return _Col()
+
+        @staticmethod
+        def get_teams_with_ids(name):
+            return [{"id": str(team_id)} for team_id in team_ids(games)]
+
+    class _Cached(EvolutionService):
+        """The service as it is, but the per-game rows of a team are read once (every case asks for the same ones: only the stat and the window change)."""
+
+        def __init__(self, handler) -> None:
+            super().__init__(handler)
+            self._rows = {}
+
+        def _evolution_feb(self, coll, team_id):
+            return self._rows.setdefault(("feb", team_id), super()._evolution_feb(coll, team_id))
+
+        def _evolution_fbcyl(self, coll, team_id):
+            return self._rows.setdefault(("fbcyl", team_id), super()._evolution_fbcyl(coll, team_id))
+
+    service = _Cached(_Handler())
+    return {"cases": [{"stat": stat, "window": window, "points": service.get_competition_evolution(collection, stat=stat, rolling_window=window)}
+                      for stat in sorted(EVOLUTION_STAT_KEYS) for window in EVOLUTION_WINDOWS]}
+
+
+def build_evolution_vectors() -> dict:
+    games = build_games()
+    for game in games:
+        game["parsedDate"] = _played(game)
+    return _evolution_vectors(games, "LEAGUE", lambda docs: sorted({t["id"] for g in docs for t in g["HEADER"]["TEAM"]}))
+
+
+def build_fbcyl_evolution_vectors() -> dict:
+    games = build_fbcyl_games()
+    for game in games:
+        game["parsedDate"] = _fbcyl_day(game)
+    return _evolution_vectors(games, "FBCYL_LEAGUE", lambda docs: sorted({t["teamIdExtern"] for g in docs for t in g["stats"]["teams"]}))
+
+
 def _write(path: Path, vectors: dict) -> None:
     path.write_text(json.dumps(vectors, ensure_ascii=False, indent=1, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -283,7 +356,9 @@ def main() -> None:
     _write(COMPARISON_OUT, build_comparison_vectors())
     _write(COMPARISON_FBCYL_OUT, build_fbcyl_comparison_vectors())
     _write(MULTI_OUT, build_multi_vectors())
-    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT)
+    _write(EVOLUTION_OUT, build_evolution_vectors())
+    _write(EVOLUTION_FBCYL_OUT, build_fbcyl_evolution_vectors())
+    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT)
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()

@@ -56,3 +56,14 @@ def test_summing_the_rows_gives_the_season_pipeline_totals(collection):
         assert team["fg3_attempted"] == sum(r["fg3_attempts"] for r in mine)
         assert team["total_possessions"] == pytest.approx(sum(r["possessions"] for r in mine))
         assert team["opponent_possessions"] == pytest.approx(sum(r["opponent_possessions"] for r in mine))
+
+
+def test_each_row_carries_the_minutes_of_its_game_so_the_client_can_undo_the_per_40_scaling_of_the_possessions(collection):
+    """The stored possessions are scaled to 40 minutes (``possessions_per_40``): a game with overtime holds fewer per row than it counted. Evolución (#672) draws the raw
+    count, so the row keeps what the scaling used: 40 minutes plus 5 per overtime period."""
+    docs = build_games()
+    rows = list(collection.aggregate(AggregationPipelineBuilder.build_season_rows_pipeline()))
+    overtime = {d["_id"] for d in docs if len(d["HEADER"]["QUARTERS"]["QUARTER"]) > 4}
+    assert overtime and overtime != {d["_id"] for d in docs}                         # the fixture has both kinds of game
+    for row in rows:
+        assert row["game_minutes"] == (45 if row["match_id"] in overtime else 40), row["match_id"]

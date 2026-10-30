@@ -163,3 +163,21 @@ def test_the_siblings_of_a_collection_are_those_of_its_competition_and_season():
     assert siblings["L_F_-2_2024_2025_Liga_Regular_A"] == ["L_F_-2_2024_2025_Liga_Regular_A"]              # another season is not a phase
     assert "L_F_-2_2025_2026_Otra_Fase_C" in siblings["L_F_-2_2025_2026_Otra_Fase_C"]                    # a collection that is not in the pool is its own sibling
     assert "PRIMERA_FEB_2025_2026_Liga_Regular_Unico" not in siblings["L_F_-2_2025_2026_Liga_Regular_A"]     # another competition
+
+
+# Evolución (#672): ``EvolutionService.get_competition_evolution`` over the real per-game pipelines of each league, the reference of ``frontend/src/localdata/evolution.test.ts``.
+@pytest.mark.parametrize("builder, path", [("build_evolution_vectors", "EVOLUTION_OUT"), ("build_fbcyl_evolution_vectors", "EVOLUTION_FBCYL_OUT")])
+def test_the_stored_evolution_vectors_are_the_current_reference(builder, path):
+    stored = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(getattr(generate, builder)(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("path", ["EVOLUTION_OUT", "EVOLUTION_FBCYL_OUT"])
+def test_the_evolution_vectors_cover_every_stat_and_tell_something(path):
+    from src.services.evolution_service import EVOLUTION_STAT_KEYS
+
+    cases = json.loads(getattr(generate, path).read_text(encoding="utf-8"))["cases"]
+    assert {c["stat"] for c in cases} == set(EVOLUTION_STAT_KEYS)
+    points = next(c for c in cases if c["stat"] == "points" and c["window"] == 3)["points"]
+    assert [p["game_number"] for p in points] == list(range(1, len(points) + 1)) and len(points) > 3
+    assert any(p["competition_rolling"] != p["competition_cumulative"] for p in points)          # the window matters once a team has played more games than it

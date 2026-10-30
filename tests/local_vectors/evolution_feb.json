@@ -1,0 +1,2380 @@
+{
+ "cases": [
+  {
+   "points": [
+    {
+     "competition_cumulative": 48.2,
+     "competition_rolling": 48.2,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 45.65,
+     "competition_rolling": 45.65,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 48.61,
+     "competition_rolling": 48.61,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 54.78,
+     "competition_rolling": 56.97,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 53.56,
+     "competition_rolling": 58.83,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 54.89,
+     "competition_rolling": 61.17,
+     "game_number": 6
+    }
+   ],
+   "stat": "assist_fg_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 48.2,
+     "competition_rolling": 48.2,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 45.65,
+     "competition_rolling": 45.65,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 48.61,
+     "competition_rolling": 48.61,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 54.78,
+     "competition_rolling": 54.78,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 53.56,
+     "competition_rolling": 53.56,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 54.89,
+     "competition_rolling": 56.23,
+     "game_number": 6
+    }
+   ],
+   "stat": "assist_fg_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 18.24,
+     "competition_rolling": 18.24,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 17.03,
+     "competition_rolling": 17.03,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 18.0,
+     "competition_rolling": 18.0,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 19.72,
+     "competition_rolling": 20.22,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 18.97,
+     "competition_rolling": 20.26,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 20.33,
+     "competition_rolling": 22.67,
+     "game_number": 6
+    }
+   ],
+   "stat": "assist_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 18.24,
+     "competition_rolling": 18.24,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 17.03,
+     "competition_rolling": 17.03,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 18.0,
+     "competition_rolling": 18.0,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 19.72,
+     "competition_rolling": 19.72,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 18.97,
+     "competition_rolling": 18.97,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 20.33,
+     "competition_rolling": 20.75,
+     "game_number": 6
+    }
+   ],
+   "stat": "assist_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 14.75,
+     "competition_rolling": 14.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 13.25,
+     "competition_rolling": 13.25,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 14.17,
+     "competition_rolling": 14.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 15.06,
+     "competition_rolling": 15.17,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 14.35,
+     "competition_rolling": 15.08,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 15.42,
+     "competition_rolling": 16.67,
+     "game_number": 6
+    }
+   ],
+   "stat": "assists",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 14.75,
+     "competition_rolling": 14.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 13.25,
+     "competition_rolling": 13.25,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 14.17,
+     "competition_rolling": 14.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 15.06,
+     "competition_rolling": 15.06,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 14.35,
+     "competition_rolling": 14.35,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 15.42,
+     "competition_rolling": 15.55,
+     "game_number": 6
+    }
+   ],
+   "stat": "assists",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 4.74,
+     "competition_rolling": 4.74,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 4.2,
+     "competition_rolling": 4.2,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 4.56,
+     "competition_rolling": 4.56,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 4.01,
+     "competition_rolling": 3.76,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 4.45,
+     "competition_rolling": 4.62,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 4.35,
+     "competition_rolling": 4.15,
+     "game_number": 6
+    }
+   ],
+   "stat": "block_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 4.74,
+     "competition_rolling": 4.74,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 4.2,
+     "competition_rolling": 4.2,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 4.56,
+     "competition_rolling": 4.56,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 4.01,
+     "competition_rolling": 4.01,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 4.45,
+     "competition_rolling": 4.45,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 4.35,
+     "competition_rolling": 4.28,
+     "game_number": 6
+    }
+   ],
+   "stat": "block_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 3.5,
+     "competition_rolling": 3.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 3.0,
+     "competition_rolling": 3.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 3.42,
+     "competition_rolling": 3.42,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 3.0,
+     "competition_rolling": 2.83,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 3.35,
+     "competition_rolling": 3.58,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 3.25,
+     "competition_rolling": 3.08,
+     "game_number": 6
+    }
+   ],
+   "stat": "blocks",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 3.5,
+     "competition_rolling": 3.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 3.0,
+     "competition_rolling": 3.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 3.42,
+     "competition_rolling": 3.42,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 3.0,
+     "competition_rolling": 3.0,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 3.35,
+     "competition_rolling": 3.35,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 3.25,
+     "competition_rolling": 3.2,
+     "game_number": 6
+    }
+   ],
+   "stat": "blocks",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 69.84,
+     "competition_rolling": 69.84,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 68.1,
+     "competition_rolling": 68.1,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 70.65,
+     "competition_rolling": 70.65,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 70.72,
+     "competition_rolling": 71.02,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 71.26,
+     "competition_rolling": 73.37,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 71.48,
+     "competition_rolling": 72.3,
+     "game_number": 6
+    }
+   ],
+   "stat": "def_rebound_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 69.84,
+     "competition_rolling": 69.84,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 68.1,
+     "competition_rolling": 68.1,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 70.65,
+     "competition_rolling": 70.65,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 70.72,
+     "competition_rolling": 70.72,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 71.26,
+     "competition_rolling": 71.26,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 71.48,
+     "competition_rolling": 71.8,
+     "game_number": 6
+    }
+   ],
+   "stat": "def_rebound_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 24.5,
+     "competition_rolling": 24.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 24.88,
+     "competition_rolling": 24.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 24.92,
+     "competition_rolling": 24.92,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 25.12,
+     "competition_rolling": 25.33,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 25.7,
+     "competition_rolling": 26.25,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 25.37,
+     "competition_rolling": 25.83,
+     "game_number": 6
+    }
+   ],
+   "stat": "def_rebounds",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 24.5,
+     "competition_rolling": 24.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 24.88,
+     "competition_rolling": 24.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 24.92,
+     "competition_rolling": 24.92,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 25.12,
+     "competition_rolling": 25.12,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 25.7,
+     "competition_rolling": 25.7,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 25.37,
+     "competition_rolling": 25.55,
+     "game_number": 6
+    }
+   ],
+   "stat": "def_rebounds",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 109.55,
+     "competition_rolling": 109.55,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 103.83,
+     "competition_rolling": 103.83,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 100.02,
+     "competition_rolling": 100.02,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 102.46,
+     "competition_rolling": 100.09,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 101.11,
+     "competition_rolling": 99.29,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 103.35,
+     "competition_rolling": 106.68,
+     "game_number": 6
+    }
+   ],
+   "stat": "defensive_rating",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 109.55,
+     "competition_rolling": 109.55,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 103.83,
+     "competition_rolling": 103.83,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 100.02,
+     "competition_rolling": 100.02,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 102.46,
+     "competition_rolling": 102.46,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 101.11,
+     "competition_rolling": 101.11,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 103.35,
+     "competition_rolling": 102.11,
+     "game_number": 6
+    }
+   ],
+   "stat": "defensive_rating",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 61.81,
+     "competition_rolling": 61.81,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 54.65,
+     "competition_rolling": 54.65,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 53.54,
+     "competition_rolling": 53.54,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 51.62,
+     "competition_rolling": 48.23,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 51.36,
+     "competition_rolling": 49.17,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 52.89,
+     "competition_rolling": 52.23,
+     "game_number": 6
+    }
+   ],
+   "stat": "efg_percentage",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 61.81,
+     "competition_rolling": 61.81,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 54.65,
+     "competition_rolling": 54.65,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 53.54,
+     "competition_rolling": 53.54,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 51.62,
+     "competition_rolling": 51.62,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 51.36,
+     "competition_rolling": 51.36,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 52.89,
+     "competition_rolling": 51.1,
+     "game_number": 6
+    }
+   ],
+   "stat": "efg_percentage",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 38.5,
+     "competition_rolling": 38.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 41.5,
+     "competition_rolling": 41.5,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 41.17,
+     "competition_rolling": 41.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 40.25,
+     "competition_rolling": 40.83,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 39.6,
+     "competition_rolling": 38.33,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 40.54,
+     "competition_rolling": 39.92,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg2_attempts",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 38.5,
+     "competition_rolling": 38.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 41.5,
+     "competition_rolling": 41.5,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 41.17,
+     "competition_rolling": 41.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 40.25,
+     "competition_rolling": 40.25,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 39.6,
+     "competition_rolling": 39.6,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 40.54,
+     "competition_rolling": 40.95,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg2_attempts",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 26.75,
+     "competition_rolling": 26.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 24.88,
+     "competition_rolling": 24.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 23.33,
+     "competition_rolling": 23.33,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 21.25,
+     "competition_rolling": 19.42,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 20.3,
+     "competition_rolling": 17.25,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 21.25,
+     "competition_rolling": 19.17,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg2_made",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 26.75,
+     "competition_rolling": 26.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 24.88,
+     "competition_rolling": 24.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 23.33,
+     "competition_rolling": 23.33,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 21.25,
+     "competition_rolling": 21.25,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 20.3,
+     "competition_rolling": 20.3,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 21.25,
+     "competition_rolling": 20.15,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg2_made",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 67.05,
+     "competition_rolling": 67.05,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 59.78,
+     "competition_rolling": 59.78,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 56.02,
+     "competition_rolling": 56.02,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 52.21,
+     "competition_rolling": 47.26,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 51.0,
+     "competition_rolling": 45.15,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 52.35,
+     "competition_rolling": 48.68,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg2_percentage",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 67.05,
+     "competition_rolling": 67.05,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 59.78,
+     "competition_rolling": 59.78,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 56.02,
+     "competition_rolling": 56.02,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 52.21,
+     "competition_rolling": 52.21,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 51.0,
+     "competition_rolling": 51.0,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 52.35,
+     "competition_rolling": 49.41,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg2_percentage",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 24.75,
+     "competition_rolling": 24.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 24.0,
+     "competition_rolling": 24.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 25.17,
+     "competition_rolling": 25.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 25.38,
+     "competition_rolling": 25.58,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 24.45,
+     "competition_rolling": 24.75,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 24.04,
+     "competition_rolling": 22.92,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg3_attempts",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 24.75,
+     "competition_rolling": 24.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 24.0,
+     "competition_rolling": 24.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 25.17,
+     "competition_rolling": 25.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 25.38,
+     "competition_rolling": 25.38,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 24.45,
+     "competition_rolling": 24.45,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 24.04,
+     "competition_rolling": 23.9,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg3_attempts",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 8.75,
+     "competition_rolling": 8.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 7.5,
+     "competition_rolling": 7.5,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 8.25,
+     "competition_rolling": 8.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 8.5,
+     "competition_rolling": 8.42,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 8.45,
+     "competition_rolling": 9.08,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 8.54,
+     "competition_rolling": 8.83,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg3_made",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 8.75,
+     "competition_rolling": 8.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 7.5,
+     "competition_rolling": 7.5,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 8.25,
+     "competition_rolling": 8.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 8.5,
+     "competition_rolling": 8.5,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 8.45,
+     "competition_rolling": 8.45,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 8.54,
+     "competition_rolling": 8.5,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg3_made",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 35.18,
+     "competition_rolling": 35.18,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 31.45,
+     "competition_rolling": 31.45,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 33.05,
+     "competition_rolling": 33.05,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 33.66,
+     "competition_rolling": 33.15,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 35.17,
+     "competition_rolling": 37.64,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 36.38,
+     "competition_rolling": 39.72,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg3_percentage",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 35.18,
+     "competition_rolling": 35.18,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 31.45,
+     "competition_rolling": 31.45,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 33.05,
+     "competition_rolling": 33.05,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 33.66,
+     "competition_rolling": 33.66,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 35.17,
+     "competition_rolling": 35.17,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 36.38,
+     "competition_rolling": 36.63,
+     "game_number": 6
+    }
+   ],
+   "stat": "fg3_percentage",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 26.91,
+     "competition_rolling": 26.91,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 23.92,
+     "competition_rolling": 23.92,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 27.34,
+     "competition_rolling": 27.34,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 27.21,
+     "competition_rolling": 27.31,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 28.94,
+     "competition_rolling": 32.29,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 29.61,
+     "competition_rolling": 31.88,
+     "game_number": 6
+    }
+   ],
+   "stat": "free_throw_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 26.91,
+     "competition_rolling": 26.91,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 23.92,
+     "competition_rolling": 23.92,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 27.34,
+     "competition_rolling": 27.34,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 27.21,
+     "competition_rolling": 27.21,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 28.94,
+     "competition_rolling": 28.94,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 29.61,
+     "competition_rolling": 30.15,
+     "game_number": 6
+    }
+   ],
+   "stat": "free_throw_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 17.25,
+     "competition_rolling": 17.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 15.62,
+     "competition_rolling": 15.62,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 18.08,
+     "competition_rolling": 18.08,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 17.69,
+     "competition_rolling": 17.83,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 18.3,
+     "competition_rolling": 20.08,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 18.79,
+     "competition_rolling": 19.5,
+     "game_number": 6
+    }
+   ],
+   "stat": "ft_attempts",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 17.25,
+     "competition_rolling": 17.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 15.62,
+     "competition_rolling": 15.62,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 18.08,
+     "competition_rolling": 18.08,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 17.69,
+     "competition_rolling": 17.69,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 18.3,
+     "competition_rolling": 18.3,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 18.79,
+     "competition_rolling": 19.1,
+     "game_number": 6
+    }
+   ],
+   "stat": "ft_attempts",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 9.5,
+     "competition_rolling": 9.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 8.75,
+     "competition_rolling": 8.75,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 10.25,
+     "competition_rolling": 10.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 9.44,
+     "competition_rolling": 9.42,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 9.75,
+     "competition_rolling": 10.42,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 10.04,
+     "competition_rolling": 9.83,
+     "game_number": 6
+    }
+   ],
+   "stat": "ft_made",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 9.5,
+     "competition_rolling": 9.5,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 8.75,
+     "competition_rolling": 8.75,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 10.25,
+     "competition_rolling": 10.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 9.44,
+     "competition_rolling": 9.44,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 9.75,
+     "competition_rolling": 9.75,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 10.04,
+     "competition_rolling": 10.15,
+     "game_number": 6
+    }
+   ],
+   "stat": "ft_made",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 53.99,
+     "competition_rolling": 53.99,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 56.85,
+     "competition_rolling": 56.85,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 55.99,
+     "competition_rolling": 55.99,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 53.18,
+     "competition_rolling": 52.91,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 53.25,
+     "competition_rolling": 50.85,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 53.43,
+     "competition_rolling": 50.88,
+     "game_number": 6
+    }
+   ],
+   "stat": "ft_percentage",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 53.99,
+     "competition_rolling": 53.99,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 56.85,
+     "competition_rolling": 56.85,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 55.99,
+     "competition_rolling": 55.99,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 53.18,
+     "competition_rolling": 53.18,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 53.25,
+     "competition_rolling": 53.25,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 53.43,
+     "competition_rolling": 53.32,
+     "game_number": 6
+    }
+   ],
+   "stat": "ft_percentage",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 0.82,
+     "competition_rolling": 0.82,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 0.69,
+     "competition_rolling": 0.69,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 4.94,
+     "competition_rolling": 4.94,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": -1.41,
+     "competition_rolling": -2.16,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": -1.0,
+     "competition_rolling": -2.12,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": -0.0,
+     "competition_rolling": -4.94,
+     "game_number": 6
+    }
+   ],
+   "stat": "net_rating",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 0.82,
+     "competition_rolling": 0.82,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 0.69,
+     "competition_rolling": 0.69,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 4.94,
+     "competition_rolling": 4.94,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": -1.41,
+     "competition_rolling": -1.41,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": -1.0,
+     "competition_rolling": -1.0,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": -0.0,
+     "competition_rolling": -0.16,
+     "game_number": 6
+    }
+   ],
+   "stat": "net_rating",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 28.68,
+     "competition_rolling": 28.68,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 30.83,
+     "competition_rolling": 30.83,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 28.76,
+     "competition_rolling": 28.76,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 30.63,
+     "competition_rolling": 31.27,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 29.2,
+     "competition_rolling": 28.12,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 28.52,
+     "competition_rolling": 28.29,
+     "game_number": 6
+    }
+   ],
+   "stat": "off_rebound_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 28.68,
+     "competition_rolling": 28.68,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 30.83,
+     "competition_rolling": 30.83,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 28.76,
+     "competition_rolling": 28.76,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 30.63,
+     "competition_rolling": 30.63,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 29.2,
+     "competition_rolling": 29.2,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 28.52,
+     "competition_rolling": 28.49,
+     "game_number": 6
+    }
+   ],
+   "stat": "off_rebound_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 9.75,
+     "competition_rolling": 9.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 11.0,
+     "competition_rolling": 11.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 10.25,
+     "competition_rolling": 10.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 11.31,
+     "competition_rolling": 11.83,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 10.5,
+     "competition_rolling": 10.17,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 10.17,
+     "competition_rolling": 10.08,
+     "game_number": 6
+    }
+   ],
+   "stat": "off_rebounds",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 9.75,
+     "competition_rolling": 9.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 11.0,
+     "competition_rolling": 11.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 10.25,
+     "competition_rolling": 10.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 11.31,
+     "competition_rolling": 11.31,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 10.5,
+     "competition_rolling": 10.5,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 10.17,
+     "competition_rolling": 10.25,
+     "game_number": 6
+    }
+   ],
+   "stat": "off_rebounds",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 110.36,
+     "competition_rolling": 110.36,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 104.52,
+     "competition_rolling": 104.52,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 104.96,
+     "competition_rolling": 104.96,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 101.04,
+     "competition_rolling": 97.94,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 100.11,
+     "competition_rolling": 97.17,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 103.35,
+     "competition_rolling": 101.74,
+     "game_number": 6
+    }
+   ],
+   "stat": "offensive_rating",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 110.36,
+     "competition_rolling": 110.36,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 104.52,
+     "competition_rolling": 104.52,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 104.96,
+     "competition_rolling": 104.96,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 101.04,
+     "competition_rolling": 101.04,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 100.11,
+     "competition_rolling": 100.11,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 103.35,
+     "competition_rolling": 101.95,
+     "game_number": 6
+    }
+   ],
+   "stat": "offensive_rating",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 89.25,
+     "competition_rolling": 89.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 81.0,
+     "competition_rolling": 81.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 81.67,
+     "competition_rolling": 81.67,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 77.44,
+     "competition_rolling": 73.5,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 75.85,
+     "competition_rolling": 72.42,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 78.29,
+     "competition_rolling": 74.92,
+     "game_number": 6
+    }
+   ],
+   "stat": "points",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 89.25,
+     "competition_rolling": 89.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 81.0,
+     "competition_rolling": 81.0,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 81.67,
+     "competition_rolling": 81.67,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 77.44,
+     "competition_rolling": 77.44,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 75.85,
+     "competition_rolling": 75.85,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 78.29,
+     "competition_rolling": 76.1,
+     "game_number": 6
+    }
+   ],
+   "stat": "points",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 85.25,
+     "competition_rolling": 85.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 76.12,
+     "competition_rolling": 76.12,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 76.0,
+     "competition_rolling": 76.0,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 78.31,
+     "competition_rolling": 76.0,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 77.55,
+     "competition_rolling": 78.5,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 78.29,
+     "competition_rolling": 80.58,
+     "game_number": 6
+    }
+   ],
+   "stat": "points_allowed",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 85.25,
+     "competition_rolling": 85.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 76.12,
+     "competition_rolling": 76.12,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 76.0,
+     "competition_rolling": 76.0,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 78.31,
+     "competition_rolling": 78.31,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 77.55,
+     "competition_rolling": 77.55,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 78.29,
+     "competition_rolling": 76.9,
+     "game_number": 6
+    }
+   ],
+   "stat": "points_allowed",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 79.33,
+     "competition_rolling": 79.33,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 76.89,
+     "competition_rolling": 76.89,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 77.67,
+     "competition_rolling": 77.67,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 76.38,
+     "competition_rolling": 75.4,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 75.53,
+     "competition_rolling": 74.63,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 75.92,
+     "competition_rolling": 74.17,
+     "game_number": 6
+    }
+   ],
+   "stat": "possessions",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 79.33,
+     "competition_rolling": 79.33,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 76.89,
+     "competition_rolling": 76.89,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 77.67,
+     "competition_rolling": 77.67,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 76.38,
+     "competition_rolling": 76.38,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 75.53,
+     "competition_rolling": 75.53,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 75.92,
+     "competition_rolling": 75.24,
+     "game_number": 6
+    }
+   ],
+   "stat": "possessions",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 34.25,
+     "competition_rolling": 34.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 35.88,
+     "competition_rolling": 35.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 35.17,
+     "competition_rolling": 35.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 36.44,
+     "competition_rolling": 37.17,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 36.2,
+     "competition_rolling": 36.42,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 35.54,
+     "competition_rolling": 35.92,
+     "game_number": 6
+    }
+   ],
+   "stat": "rebounds",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 34.25,
+     "competition_rolling": 34.25,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 35.88,
+     "competition_rolling": 35.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 35.17,
+     "competition_rolling": 35.17,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 36.44,
+     "competition_rolling": 36.44,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 36.2,
+     "competition_rolling": 36.2,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 35.54,
+     "competition_rolling": 35.8,
+     "game_number": 6
+    }
+   ],
+   "stat": "rebounds",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 9.09,
+     "competition_rolling": 9.09,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 10.2,
+     "competition_rolling": 10.2,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 9.73,
+     "competition_rolling": 9.73,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 9.68,
+     "competition_rolling": 9.88,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 9.57,
+     "competition_rolling": 9.14,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 9.96,
+     "competition_rolling": 10.2,
+     "game_number": 6
+    }
+   ],
+   "stat": "steal_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 9.09,
+     "competition_rolling": 9.09,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 10.2,
+     "competition_rolling": 10.2,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 9.73,
+     "competition_rolling": 9.73,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 9.68,
+     "competition_rolling": 9.68,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 9.57,
+     "competition_rolling": 9.57,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 9.96,
+     "competition_rolling": 10.14,
+     "game_number": 6
+    }
+   ],
+   "stat": "steal_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 6.75,
+     "competition_rolling": 6.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 7.25,
+     "competition_rolling": 7.25,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 7.08,
+     "competition_rolling": 7.08,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 7.19,
+     "competition_rolling": 7.33,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 7.05,
+     "competition_rolling": 6.92,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 7.33,
+     "competition_rolling": 7.58,
+     "game_number": 6
+    }
+   ],
+   "stat": "steals",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 6.75,
+     "competition_rolling": 6.75,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 7.25,
+     "competition_rolling": 7.25,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 7.08,
+     "competition_rolling": 7.08,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 7.19,
+     "competition_rolling": 7.19,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 7.05,
+     "competition_rolling": 7.05,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 7.33,
+     "competition_rolling": 7.45,
+     "game_number": 6
+    }
+   ],
+   "stat": "steals",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 39.38,
+     "competition_rolling": 39.38,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 36.88,
+     "competition_rolling": 36.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 38.13,
+     "competition_rolling": 38.13,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 38.91,
+     "competition_rolling": 38.76,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 38.36,
+     "competition_rolling": 39.35,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 37.34,
+     "competition_rolling": 36.56,
+     "game_number": 6
+    }
+   ],
+   "stat": "three_point_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 39.38,
+     "competition_rolling": 39.38,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 36.88,
+     "competition_rolling": 36.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 38.13,
+     "competition_rolling": 38.13,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 38.91,
+     "competition_rolling": 38.91,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 38.36,
+     "competition_rolling": 38.36,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 37.34,
+     "competition_rolling": 36.94,
+     "game_number": 6
+    }
+   ],
+   "stat": "three_point_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 61.72,
+     "competition_rolling": 61.72,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 55.41,
+     "competition_rolling": 55.41,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 54.68,
+     "competition_rolling": 54.68,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 52.48,
+     "competition_rolling": 49.4,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 52.41,
+     "competition_rolling": 50.4,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 53.7,
+     "competition_rolling": 52.73,
+     "game_number": 6
+    }
+   ],
+   "stat": "true_shooting",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 61.72,
+     "competition_rolling": 61.72,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 55.41,
+     "competition_rolling": 55.41,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 54.68,
+     "competition_rolling": 54.68,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 52.48,
+     "competition_rolling": 52.48,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 52.41,
+     "competition_rolling": 52.41,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 53.7,
+     "competition_rolling": 52.1,
+     "game_number": 6
+    }
+   ],
+   "stat": "true_shooting",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 23.47,
+     "competition_rolling": 23.47,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 19.61,
+     "competition_rolling": 19.61,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 18.69,
+     "competition_rolling": 18.69,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 19.63,
+     "competition_rolling": 18.35,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 19.0,
+     "competition_rolling": 18.59,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 17.9,
+     "competition_rolling": 17.11,
+     "game_number": 6
+    }
+   ],
+   "stat": "turnover_rate",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 23.47,
+     "competition_rolling": 23.47,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 19.61,
+     "competition_rolling": 19.61,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 18.69,
+     "competition_rolling": 18.69,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 19.63,
+     "competition_rolling": 19.63,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 19.0,
+     "competition_rolling": 19.0,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 17.9,
+     "competition_rolling": 16.78,
+     "game_number": 6
+    }
+   ],
+   "stat": "turnover_rate",
+   "window": 5
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 18.0,
+     "competition_rolling": 18.0,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 14.88,
+     "competition_rolling": 14.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 14.25,
+     "competition_rolling": 14.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 14.75,
+     "competition_rolling": 13.67,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 14.15,
+     "competition_rolling": 13.67,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 13.42,
+     "competition_rolling": 12.58,
+     "game_number": 6
+    }
+   ],
+   "stat": "turnovers",
+   "window": 3
+  },
+  {
+   "points": [
+    {
+     "competition_cumulative": 18.0,
+     "competition_rolling": 18.0,
+     "game_number": 1
+    },
+    {
+     "competition_cumulative": 14.88,
+     "competition_rolling": 14.88,
+     "game_number": 2
+    },
+    {
+     "competition_cumulative": 14.25,
+     "competition_rolling": 14.25,
+     "game_number": 3
+    },
+    {
+     "competition_cumulative": 14.75,
+     "competition_rolling": 14.75,
+     "game_number": 4
+    },
+    {
+     "competition_cumulative": 14.15,
+     "competition_rolling": 14.15,
+     "game_number": 5
+    },
+    {
+     "competition_cumulative": 13.42,
+     "competition_rolling": 12.5,
+     "game_number": 6
+    }
+   ],
+   "stat": "turnovers",
+   "window": 5
+  }
+ ]
+}

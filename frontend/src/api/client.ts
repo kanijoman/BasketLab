@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localCompetitionEvolution, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -202,8 +202,12 @@ export const getCompetitionEvolution = (
   stat: string,
   window = 5,
 ) =>
-  get<CompetitionEvolutionPoint[]>(
-    `/teams/${encodeURIComponent(collection)}/competition-evolution?stat=${encodeURIComponent(stat)}&window=${window}`,
+  fromSource(
+    'evolution',
+    () => localCompetitionEvolution(collection, stat, window),
+    () => get<CompetitionEvolutionPoint[]>(
+      `/teams/${encodeURIComponent(collection)}/competition-evolution?stat=${encodeURIComponent(stat)}&window=${window}`,
+    ),
   )
 
 // ── Players ───────────────────────────────────────────────────────────────────

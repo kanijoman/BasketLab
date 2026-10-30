@@ -7,7 +7,8 @@ import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlaye
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
 import { compareTeams } from './comparison'
 import type { Competition } from './competition'
-import type { ComparisonKind, TeamComparison, TeamStat } from '@/api/client'
+import { competitionEvolution, EVOLUTION_STATS } from './evolution'
+import type { ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { mergeByKey, siblingCollections } from './multiPhase'
 import { loadWebCollections, loadWebRows, WebDataUnavailable } from '@/webdata/client'
@@ -141,4 +142,14 @@ export async function localSiblingCollections(collection: string): Promise<strin
     names = (await loadIndex())?.map(c => c.name) ?? null
   }
   return names ? siblingCollections(collection, names) : null
+}
+
+/** Evolución (issue #672): the competition-wide rolling and cumulative averages by game number, as `GET /teams/{collection}/competition-evolution`, or `null` to use the
+ *  API (the dataset is off, the competition is not published, or the window is one the API refuses: 2 to 15 games). */
+export async function localCompetitionEvolution(collection: string, stat: string, window: number): Promise<CompetitionEvolutionPoint[] | null> {
+  if (dataSourceOf('evolution') !== 'local') return null
+  if (!Number.isInteger(window) || window < 2 || window > 15) return null
+  const data = await loadCompetition(collection)
+  const known = (EVOLUTION_STATS as readonly string[]).includes(stat)
+  return data ? competitionEvolution(data.team_rows, known ? stat : 'points', window) : null           // the router reads an unknown stat as points
 }
