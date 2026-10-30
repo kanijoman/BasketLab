@@ -128,3 +128,15 @@ def test_the_derived_rows_of_fbcyl_take_the_names_from_stats_teams(db):
 def test_a_competition_without_derived_has_no_rows(db):
     db["NO_DERIVED"].insert_many([{k: v for k, v in g.items() if k != "DERIVED"} for g in games.build_games()])
     assert export_derived(db["NO_DERIVED"], "NO_DERIVED")["rows"] == []
+
+
+def test_the_derived_payload_also_names_the_games_that_have_none_so_the_coverage_can_be_told(db):
+    """«Análisis pbp» says how many games it leaves out and which (``DerivedCoverageService``): that needs the games WITHOUT ``DERIVED`` too, and the total."""
+    payload = export_derived(db[FEB], FEB)
+    docs = games.build_games()
+    missing = [g for g in docs if "DERIVED" not in g]
+    assert payload["total"] == len(docs) == payload["games"] + len(payload["without_derived"])
+    assert {w["code"] for w in payload["without_derived"]} == {str(g["_id"]) for g in missing}
+    assert all(w["teams"] == [t["name"] for t in next(g for g in missing if str(g["_id"]) == w["code"])["HEADER"]["TEAM"]] for w in payload["without_derived"])
+    fb = export_derived(db[FBCYL], FBCYL)
+    assert fb["total"] == len(fbcyl_games.build_games()) and all(w["teams"] for w in fb["without_derived"])

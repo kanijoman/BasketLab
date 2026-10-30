@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { API_BASE } from './client'
+import { fromSource } from '@/datasource/resolve'
+import { localByPeriod, localDerivedCoverage, localPointsByOrigin, localSituations, localTimeoutEffects } from '@/localdata/source'
 
 type Num = number | null
 
@@ -100,10 +102,11 @@ async function get<T>(collection: string, path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-export const getPointsByOrigin = (collection: string) => get<OriginRow[]>(collection, 'points-by-origin')
-export const getByPeriod = (collection: string) => get<PeriodRow[]>(collection, 'by-period')
-export const getSituations = (collection: string) => get<SituationRow[]>(collection, 'situations')
-export const getTimeoutEffects = (collection: string) => get<TimeoutRow[]>(collection, 'timeouts')
+// With the dataset `pbp` on (`?data=local`, issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, the API as always.
+export const getPointsByOrigin = (collection: string) => fromSource('pbp', () => localPointsByOrigin(collection), () => get<OriginRow[]>(collection, 'points-by-origin'))
+export const getByPeriod = (collection: string) => fromSource('pbp', () => localByPeriod(collection), () => get<PeriodRow[]>(collection, 'by-period'))
+export const getSituations = (collection: string) => fromSource('pbp', () => localSituations(collection), () => get<SituationRow[]>(collection, 'situations'))
+export const getTimeoutEffects = (collection: string) => fromSource('pbp', () => localTimeoutEffects(collection), () => get<TimeoutRow[]>(collection, 'timeouts'))
 
 const STALE = 5 * 60_000
 
@@ -124,7 +127,7 @@ export interface DerivedCoverage {
   pending_games: { code: string; teams: string[] }[]
 }
 
-export const getDerivedCoverage = (collection: string) => get<DerivedCoverage>(collection, 'derived-coverage')
+export const getDerivedCoverage = (collection: string) => fromSource('pbp', () => localDerivedCoverage(collection), () => get<DerivedCoverage>(collection, 'derived-coverage'))
 
 export const useDerivedCoverage = (collection?: string) =>
   useQuery<DerivedCoverage>({

@@ -11,6 +11,7 @@ import type { ScoutingReport, ScoutingScope } from '@/api/scoutingRival'
 import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type Wrap, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
+import type { Derived } from '@/localdata/pbp'
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
@@ -115,6 +116,14 @@ async function sealedRows(collection: string): Promise<Sealed> {
   return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
 }
 
+/** The sealed `DERIVED` of a competition (`derived/`), with the manifest it came from. */
+async function sealedDerived(collection: string): Promise<Sealed> {
+  const manifest = await loadManifest()
+  const entry = (manifest.derived ?? []).find(r => r.collection === collection)
+  if (!entry) throw new WebDataUnavailable('Esta competición no tiene el análisis pbp publicado.')
+  return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
+}
+
 /**
  * Opens a sealed file of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
  * page was open) makes it read the manifest again, once.
@@ -167,3 +176,6 @@ export async function loadScoutingScopes(collection: string, teamId: string): Pr
   const have = new Set(index.reports.filter(r => r.team_id === teamId && r.mode === 'scouting' && r.scope).map(r => r.scope as ScoutingScope))
   return SCOPE_ORDER.filter(scope => have.has(scope))
 }
+
+/** The `DERIVED` of each game of a competition (what the pbp tables are summed from on the device), issue #676. */
+export const loadWebDerived = (collection: string): Promise<Derived> => openSealed<Derived>(() => sealedDerived(collection), 'El fichero')

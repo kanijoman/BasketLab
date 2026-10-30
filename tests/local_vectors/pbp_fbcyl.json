@@ -1,0 +1,2276 @@
+{
+ "derived": {
+  "collection": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+  "format": 1,
+  "games": 3,
+  "league": "fbcyl",
+  "rows": [
+   {
+    "match_id": "000000000000000000000002",
+    "names": [
+     "ALFA",
+     "CARLOS"
+    ],
+    "teams": [
+     {
+      "ato_own": {
+       "n": 3,
+       "pts": 1
+      },
+      "ato_rival": {
+       "n": 0,
+       "pts": 7
+      },
+      "edges": {
+       "end": {
+        "opp_poss": 6,
+        "opp_pts": 8,
+        "opp_tov": 0,
+        "poss": 6,
+        "pts": 2,
+        "tov": 1
+       },
+       "start": {
+        "opp_poss": 4,
+        "opp_pts": 8,
+        "opp_tov": 1,
+        "poss": 5,
+        "pts": 4,
+        "tov": 2
+       }
+      },
+      "ext_id": 34001,
+      "first_poss": {
+       "n": 1,
+       "pts": 2
+      },
+      "id": 2001,
+      "periods": [
+       {
+        "drb": 5,
+        "fg3m": 4,
+        "fga": 20,
+        "fgm": 11,
+        "fouls": 2,
+        "fta": 6,
+        "ftm": 4,
+        "minutes": 10,
+        "opp_drb": 3,
+        "opp_fg3m": 3,
+        "opp_fga": 15,
+        "opp_fgm": 5,
+        "opp_fouls": 3,
+        "opp_fta": 8,
+        "opp_ftm": 1,
+        "opp_orb": 2,
+        "opp_poss": 22,
+        "opp_pts": 25,
+        "opp_tov": 6,
+        "orb": 1,
+        "p": 1,
+        "poss": 16,
+        "pts": 30,
+        "tov": 1
+       },
+       {
+        "drb": 3,
+        "fg3m": 2,
+        "fga": 17,
+        "fgm": 7,
+        "fouls": 7,
+        "fta": 6,
+        "ftm": 4,
+        "minutes": 10,
+        "opp_drb": 7,
+        "opp_fg3m": 0,
+        "opp_fga": 21,
+        "opp_fgm": 9,
+        "opp_fouls": 5,
+        "opp_fta": 6,
+        "opp_ftm": 5,
+        "opp_orb": 1,
+        "opp_poss": 22,
+        "opp_pts": 27,
+        "opp_tov": 3,
+        "orb": 1,
+        "p": 2,
+        "poss": 21,
+        "pts": 30,
+        "tov": 4
+       },
+       {
+        "drb": 7,
+        "fg3m": 1,
+        "fga": 17,
+        "fgm": 7,
+        "fouls": 6,
+        "fta": 8,
+        "ftm": 7,
+        "minutes": 10,
+        "opp_drb": 9,
+        "opp_fg3m": 2,
+        "opp_fga": 21,
+        "opp_fgm": 11,
+        "opp_fouls": 2,
+        "opp_fta": 6,
+        "opp_ftm": 1,
+        "opp_orb": 2,
+        "opp_poss": 20,
+        "opp_pts": 19,
+        "opp_tov": 1,
+        "orb": 3,
+        "p": 3,
+        "poss": 24,
+        "pts": 27,
+        "tov": 6
+       },
+       {
+        "drb": 7,
+        "fg3m": 2,
+        "fga": 21,
+        "fgm": 11,
+        "fouls": 5,
+        "fta": 6,
+        "ftm": 4,
+        "minutes": 10,
+        "opp_drb": 8,
+        "opp_fg3m": 4,
+        "opp_fga": 16,
+        "opp_fgm": 7,
+        "opp_fouls": 4,
+        "opp_fta": 7,
+        "opp_ftm": 6,
+        "opp_orb": 4,
+        "opp_poss": 16,
+        "opp_pts": 20,
+        "opp_tov": 5,
+        "orb": 5,
+        "p": 4,
+        "poss": 21,
+        "pts": 25,
+        "tov": 2
+       }
+      ],
+      "poss_off_steal": 4,
+      "poss_off_tov": 14,
+      "poss_second_chance": 12,
+      "poss_transition": 8,
+      "possessions": 60.12,
+      "pts": 112,
+      "pts_bench": 28,
+      "pts_by_origin": {
+       "def_rebound": 3,
+       "made_basket": 2,
+       "period_start": 3,
+       "steal": 10,
+       "team_def_rebound": 8,
+       "technical": 10,
+       "trip": 2,
+       "turnover": 13,
+       "unknown": 1
+      },
+      "pts_fastbreak": 8,
+      "pts_off_steal": 3,
+      "pts_off_tov": 11,
+      "pts_paint": 18,
+      "pts_second_chance": 7,
+      "quality_level": "ok",
+      "reliable": true,
+      "timeouts": [
+       {
+        "caller": "rival",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 4,
+         "poss": 5,
+         "pts": 3
+        },
+        "pre": {
+         "opp_poss": 4,
+         "opp_pts": 8,
+         "poss": 3,
+         "pts": 2
+        }
+       }
+      ],
+      "unknown_pts_pct": 2.0
+     },
+     {
+      "ato_own": {
+       "n": 3,
+       "pts": 1
+      },
+      "ato_rival": {
+       "n": 1,
+       "pts": 7
+      },
+      "edges": {
+       "end": {
+        "opp_poss": 6,
+        "opp_pts": 4,
+        "opp_tov": 1,
+        "poss": 4,
+        "pts": 4,
+        "tov": 0
+       },
+       "start": {
+        "opp_poss": 3,
+        "opp_pts": 8,
+        "opp_tov": 2,
+        "poss": 5,
+        "pts": 8,
+        "tov": 2
+       }
+      },
+      "ext_id": 34003,
+      "first_poss": {
+       "n": 4,
+       "pts": 4
+      },
+      "id": 2003,
+      "periods": [
+       {
+        "drb": 3,
+        "fg3m": 3,
+        "fga": 15,
+        "fgm": 5,
+        "fouls": 3,
+        "fta": 8,
+        "ftm": 1,
+        "minutes": 10,
+        "opp_drb": 5,
+        "opp_fg3m": 4,
+        "opp_fga": 20,
+        "opp_fgm": 11,
+        "opp_fouls": 2,
+        "opp_fta": 6,
+        "opp_ftm": 4,
+        "opp_orb": 1,
+        "opp_poss": 16,
+        "opp_pts": 30,
+        "opp_tov": 1,
+        "orb": 2,
+        "p": 1,
+        "poss": 22,
+        "pts": 25,
+        "tov": 6
+       },
+       {
+        "drb": 7,
+        "fg3m": 0,
+        "fga": 21,
+        "fgm": 9,
+        "fouls": 5,
+        "fta": 6,
+        "ftm": 5,
+        "minutes": 10,
+        "opp_drb": 3,
+        "opp_fg3m": 2,
+        "opp_fga": 17,
+        "opp_fgm": 7,
+        "opp_fouls": 7,
+        "opp_fta": 6,
+        "opp_ftm": 4,
+        "opp_orb": 1,
+        "opp_poss": 21,
+        "opp_pts": 30,
+        "opp_tov": 4,
+        "orb": 1,
+        "p": 2,
+        "poss": 22,
+        "pts": 27,
+        "tov": 3
+       },
+       {
+        "drb": 9,
+        "fg3m": 2,
+        "fga": 21,
+        "fgm": 11,
+        "fouls": 2,
+        "fta": 6,
+        "ftm": 1,
+        "minutes": 10,
+        "opp_drb": 7,
+        "opp_fg3m": 1,
+        "opp_fga": 17,
+        "opp_fgm": 7,
+        "opp_fouls": 6,
+        "opp_fta": 8,
+        "opp_ftm": 7,
+        "opp_orb": 3,
+        "opp_poss": 24,
+        "opp_pts": 27,
+        "opp_tov": 6,
+        "orb": 2,
+        "p": 3,
+        "poss": 20,
+        "pts": 19,
+        "tov": 1
+       },
+       {
+        "drb": 8,
+        "fg3m": 4,
+        "fga": 16,
+        "fgm": 7,
+        "fouls": 4,
+        "fta": 7,
+        "ftm": 6,
+        "minutes": 10,
+        "opp_drb": 7,
+        "opp_fg3m": 2,
+        "opp_fga": 21,
+        "opp_fgm": 11,
+        "opp_fouls": 5,
+        "opp_fta": 6,
+        "opp_ftm": 4,
+        "opp_orb": 5,
+        "opp_poss": 21,
+        "opp_pts": 25,
+        "opp_tov": 2,
+        "orb": 4,
+        "p": 4,
+        "poss": 16,
+        "pts": 20,
+        "tov": 5
+       }
+      ],
+      "poss_off_steal": 3,
+      "poss_off_tov": 8,
+      "poss_second_chance": 7,
+      "poss_transition": 5,
+      "possessions": 72.28,
+      "pts": 91,
+      "pts_bench": 23,
+      "pts_by_origin": {
+       "def_rebound": 1,
+       "made_basket": 12,
+       "period_start": 11,
+       "steal": 13,
+       "team_def_rebound": 14,
+       "technical": 0,
+       "trip": 11,
+       "turnover": 9,
+       "unknown": 4
+      },
+      "pts_fastbreak": 7,
+      "pts_off_steal": 3,
+      "pts_off_tov": 8,
+      "pts_paint": null,
+      "pts_second_chance": 10,
+      "quality_level": "ok",
+      "reliable": true,
+      "timeouts": [
+       {
+        "caller": "own",
+        "post": {
+         "opp_poss": 3,
+         "opp_pts": 5,
+         "poss": 4,
+         "pts": 6
+        },
+        "pre": {
+         "opp_poss": 5,
+         "opp_pts": 6,
+         "poss": 3,
+         "pts": 5
+        }
+       }
+      ],
+      "unknown_pts_pct": 2.0
+     }
+    ],
+    "v": 6
+   },
+   {
+    "match_id": "000000000000000000000005",
+    "names": [
+     "BRAVO",
+     "CARLOS"
+    ],
+    "teams": [
+     {
+      "ato_own": {
+       "n": 0,
+       "pts": 2
+      },
+      "ato_rival": {
+       "n": 3,
+       "pts": 0
+      },
+      "edges": {
+       "end": {
+        "opp_poss": 4,
+        "opp_pts": 8,
+        "opp_tov": 0,
+        "poss": 3,
+        "pts": 3,
+        "tov": 2
+       },
+       "start": {
+        "opp_poss": 4,
+        "opp_pts": 8,
+        "opp_tov": 1,
+        "poss": 3,
+        "pts": 9,
+        "tov": 0
+       }
+      },
+      "ext_id": 34002,
+      "first_poss": {
+       "n": 3,
+       "pts": 1
+      },
+      "id": 5002,
+      "periods": [
+       {
+        "drb": 5,
+        "fg3m": 0,
+        "fga": 18,
+        "fgm": 8,
+        "fouls": 4,
+        "fta": 3,
+        "ftm": 3,
+        "minutes": 10,
+        "opp_drb": 7,
+        "opp_fg3m": 2,
+        "opp_fga": 18,
+        "opp_fgm": 8,
+        "opp_fouls": 5,
+        "opp_fta": 9,
+        "opp_ftm": 7,
+        "opp_orb": 5,
+        "opp_poss": 20,
+        "opp_pts": 26,
+        "opp_tov": 1,
+        "orb": 3,
+        "p": 1,
+        "poss": 20,
+        "pts": 30,
+        "tov": 5
+       },
+       {
+        "drb": 5,
+        "fg3m": 2,
+        "fga": 14,
+        "fgm": 7,
+        "fouls": 5,
+        "fta": 9,
+        "ftm": 1,
+        "minutes": 10,
+        "opp_drb": 4,
+        "opp_fg3m": 3,
+        "opp_fga": 21,
+        "opp_fgm": 9,
+        "opp_fouls": 5,
+        "opp_fta": 5,
+        "opp_ftm": 5,
+        "opp_orb": 3,
+        "opp_poss": 21,
+        "opp_pts": 23,
+        "opp_tov": 1,
+        "orb": 2,
+        "p": 2,
+        "poss": 19,
+        "pts": 18,
+        "tov": 2
+       },
+       {
+        "drb": 9,
+        "fg3m": 3,
+        "fga": 14,
+        "fgm": 7,
+        "fouls": 3,
+        "fta": 6,
+        "ftm": 1,
+        "minutes": 10,
+        "opp_drb": 3,
+        "opp_fg3m": 3,
+        "opp_fga": 13,
+        "opp_fgm": 7,
+        "opp_fouls": 5,
+        "opp_fta": 2,
+        "opp_ftm": 2,
+        "opp_orb": 2,
+        "opp_poss": 17,
+        "opp_pts": 21,
+        "opp_tov": 4,
+        "orb": 2,
+        "p": 3,
+        "poss": 22,
+        "pts": 20,
+        "tov": 5
+       },
+       {
+        "drb": 7,
+        "fg3m": 1,
+        "fga": 14,
+        "fgm": 7,
+        "fouls": 7,
+        "fta": 7,
+        "ftm": 4,
+        "minutes": 10,
+        "opp_drb": 4,
+        "opp_fg3m": 4,
+        "opp_fga": 12,
+        "opp_fgm": 6,
+        "opp_fouls": 7,
+        "opp_fta": 9,
+        "opp_ftm": 1,
+        "opp_orb": 2,
+        "opp_poss": 18,
+        "opp_pts": 16,
+        "opp_tov": 5,
+        "orb": 3,
+        "p": 4,
+        "poss": 17,
+        "pts": 14,
+        "tov": 4
+       }
+      ],
+      "poss_off_steal": 5,
+      "poss_off_tov": 10,
+      "poss_second_chance": 6,
+      "poss_transition": 5,
+      "possessions": 81.56,
+      "pts": 82,
+      "pts_bench": 33,
+      "pts_by_origin": {
+       "def_rebound": 7,
+       "made_basket": 5,
+       "period_start": 7,
+       "steal": 2,
+       "team_def_rebound": 4,
+       "technical": 10,
+       "trip": 12,
+       "turnover": 3,
+       "unknown": 7
+      },
+      "pts_fastbreak": 10,
+      "pts_off_steal": 8,
+      "pts_off_tov": 12,
+      "pts_paint": 27,
+      "pts_second_chance": 9,
+      "quality_level": "unreliable",
+      "reliable": false,
+      "timeouts": [],
+      "unknown_pts_pct": 31.5
+     },
+     {
+      "ato_own": {
+       "n": 0,
+       "pts": 1
+      },
+      "ato_rival": {
+       "n": 1,
+       "pts": 5
+      },
+      "edges": {
+       "end": {
+        "opp_poss": 3,
+        "opp_pts": 3,
+        "opp_tov": 0,
+        "poss": 5,
+        "pts": 6,
+        "tov": 0
+       },
+       "start": {
+        "opp_poss": 4,
+        "opp_pts": 9,
+        "opp_tov": 1,
+        "poss": 4,
+        "pts": 5,
+        "tov": 2
+       }
+      },
+      "ext_id": 34003,
+      "first_poss": {
+       "n": 4,
+       "pts": 5
+      },
+      "id": 5003,
+      "periods": [
+       {
+        "drb": 7,
+        "fg3m": 2,
+        "fga": 18,
+        "fgm": 8,
+        "fouls": 5,
+        "fta": 9,
+        "ftm": 7,
+        "minutes": 10,
+        "opp_drb": 5,
+        "opp_fg3m": 0,
+        "opp_fga": 18,
+        "opp_fgm": 8,
+        "opp_fouls": 4,
+        "opp_fta": 3,
+        "opp_ftm": 3,
+        "opp_orb": 3,
+        "opp_poss": 20,
+        "opp_pts": 30,
+        "opp_tov": 5,
+        "orb": 5,
+        "p": 1,
+        "poss": 20,
+        "pts": 26,
+        "tov": 1
+       },
+       {
+        "drb": 4,
+        "fg3m": 3,
+        "fga": 21,
+        "fgm": 9,
+        "fouls": 5,
+        "fta": 5,
+        "ftm": 5,
+        "minutes": 10,
+        "opp_drb": 5,
+        "opp_fg3m": 2,
+        "opp_fga": 14,
+        "opp_fgm": 7,
+        "opp_fouls": 5,
+        "opp_fta": 9,
+        "opp_ftm": 1,
+        "opp_orb": 2,
+        "opp_poss": 19,
+        "opp_pts": 18,
+        "opp_tov": 2,
+        "orb": 3,
+        "p": 2,
+        "poss": 21,
+        "pts": 23,
+        "tov": 1
+       },
+       {
+        "drb": 3,
+        "fg3m": 3,
+        "fga": 13,
+        "fgm": 7,
+        "fouls": 5,
+        "fta": 2,
+        "ftm": 2,
+        "minutes": 10,
+        "opp_drb": 9,
+        "opp_fg3m": 3,
+        "opp_fga": 14,
+        "opp_fgm": 7,
+        "opp_fouls": 3,
+        "opp_fta": 6,
+        "opp_ftm": 1,
+        "opp_orb": 2,
+        "opp_poss": 22,
+        "opp_pts": 20,
+        "opp_tov": 5,
+        "orb": 2,
+        "p": 3,
+        "poss": 17,
+        "pts": 21,
+        "tov": 4
+       },
+       {
+        "drb": 4,
+        "fg3m": 4,
+        "fga": 12,
+        "fgm": 6,
+        "fouls": 7,
+        "fta": 9,
+        "ftm": 1,
+        "minutes": 10,
+        "opp_drb": 7,
+        "opp_fg3m": 1,
+        "opp_fga": 14,
+        "opp_fgm": 7,
+        "opp_fouls": 7,
+        "opp_fta": 7,
+        "opp_ftm": 4,
+        "opp_orb": 3,
+        "opp_poss": 17,
+        "opp_pts": 14,
+        "opp_tov": 4,
+        "orb": 2,
+        "p": 4,
+        "poss": 18,
+        "pts": 16,
+        "tov": 5
+       }
+      ],
+      "poss_off_steal": 5,
+      "poss_off_tov": 10,
+      "poss_second_chance": 12,
+      "poss_transition": 10,
+      "possessions": 75.49,
+      "pts": 86,
+      "pts_bench": 13,
+      "pts_by_origin": {
+       "def_rebound": 8,
+       "made_basket": 1,
+       "period_start": 3,
+       "steal": 14,
+       "team_def_rebound": 6,
+       "technical": 13,
+       "trip": 12,
+       "turnover": 8,
+       "unknown": 3
+      },
+      "pts_fastbreak": 5,
+      "pts_off_steal": 2,
+      "pts_off_tov": 11,
+      "pts_paint": 42,
+      "pts_second_chance": 7,
+      "quality_level": "unreliable",
+      "reliable": false,
+      "timeouts": [
+       {
+        "caller": "rival",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 2,
+         "poss": 3,
+         "pts": 7
+        },
+        "pre": {
+         "opp_poss": 3,
+         "opp_pts": 2,
+         "poss": 5,
+         "pts": 3
+        }
+       },
+       {
+        "caller": "own",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 3,
+         "poss": 5,
+         "pts": 2
+        },
+        "pre": {
+         "opp_poss": 4,
+         "opp_pts": 6,
+         "poss": 3,
+         "pts": 2
+        }
+       },
+       {
+        "caller": "rival",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 5,
+         "poss": 5,
+         "pts": 2
+        },
+        "pre": {
+         "opp_poss": 3,
+         "opp_pts": 5,
+         "poss": 5,
+         "pts": 4
+        }
+       }
+      ],
+      "unknown_pts_pct": 31.5
+     }
+    ],
+    "v": 6
+   },
+   {
+    "match_id": "000000000000000000000009",
+    "names": [
+     "CARLOS",
+     "DELTA"
+    ],
+    "teams": [
+     {
+      "ato_own": {
+       "n": 4,
+       "pts": 5
+      },
+      "ato_rival": {
+       "n": 1,
+       "pts": 6
+      },
+      "edges": {
+       "end": {
+        "opp_poss": 3,
+        "opp_pts": 9,
+        "opp_tov": 0,
+        "poss": 6,
+        "pts": 2,
+        "tov": 0
+       },
+       "start": {
+        "opp_poss": 4,
+        "opp_pts": 6,
+        "opp_tov": 2,
+        "poss": 6,
+        "pts": 7,
+        "tov": 1
+       }
+      },
+      "ext_id": 34003,
+      "first_poss": {
+       "n": 4,
+       "pts": 3
+      },
+      "id": 9003,
+      "periods": [
+       {
+        "drb": 8,
+        "fg3m": 4,
+        "fga": 17,
+        "fgm": 9,
+        "fouls": 5,
+        "fta": 6,
+        "ftm": 1,
+        "minutes": 10,
+        "opp_drb": 3,
+        "opp_fg3m": 1,
+        "opp_fga": 12,
+        "opp_fgm": 5,
+        "opp_fouls": 2,
+        "opp_fta": 6,
+        "opp_ftm": 7,
+        "opp_orb": 5,
+        "opp_poss": 18,
+        "opp_pts": 14,
+        "opp_tov": 5,
+        "orb": 4,
+        "p": 1,
+        "poss": 22,
+        "pts": 27,
+        "tov": 6
+       },
+       {
+        "drb": 8,
+        "fg3m": 2,
+        "fga": 22,
+        "fgm": 8,
+        "fouls": 4,
+        "fta": 7,
+        "ftm": 7,
+        "minutes": 10,
+        "opp_drb": 4,
+        "opp_fg3m": 1,
+        "opp_fga": 14,
+        "opp_fgm": 8,
+        "opp_fouls": 3,
+        "opp_fta": 2,
+        "opp_ftm": 5,
+        "opp_orb": 3,
+        "opp_poss": 24,
+        "opp_pts": 26,
+        "opp_tov": 5,
+        "orb": 4,
+        "p": 2,
+        "poss": 17,
+        "pts": 24,
+        "tov": 2
+       },
+       {
+        "drb": 8,
+        "fg3m": 2,
+        "fga": 22,
+        "fgm": 8,
+        "fouls": 2,
+        "fta": 2,
+        "ftm": 3,
+        "minutes": 10,
+        "opp_drb": 5,
+        "opp_fg3m": 1,
+        "opp_fga": 22,
+        "opp_fgm": 9,
+        "opp_fouls": 6,
+        "opp_fta": 3,
+        "opp_ftm": 4,
+        "opp_orb": 4,
+        "opp_poss": 16,
+        "opp_pts": 14,
+        "opp_tov": 4,
+        "orb": 1,
+        "p": 3,
+        "poss": 24,
+        "pts": 23,
+        "tov": 6
+       },
+       {
+        "drb": 3,
+        "fg3m": 3,
+        "fga": 12,
+        "fgm": 6,
+        "fouls": 2,
+        "fta": 2,
+        "ftm": 4,
+        "minutes": 10,
+        "opp_drb": 9,
+        "opp_fg3m": 1,
+        "opp_fga": 13,
+        "opp_fgm": 7,
+        "opp_fouls": 2,
+        "opp_fta": 3,
+        "opp_ftm": 6,
+        "opp_orb": 1,
+        "opp_poss": 21,
+        "opp_pts": 25,
+        "opp_tov": 1,
+        "orb": 3,
+        "p": 4,
+        "poss": 22,
+        "pts": 26,
+        "tov": 2
+       },
+       {
+        "drb": 4,
+        "fg3m": 0,
+        "fga": 8,
+        "fgm": 4,
+        "fouls": 3,
+        "fta": 2,
+        "ftm": 2,
+        "minutes": 5,
+        "opp_drb": 3,
+        "opp_fg3m": 2,
+        "opp_fga": 11,
+        "opp_fgm": 4,
+        "opp_fouls": 2,
+        "opp_fta": 1,
+        "opp_ftm": 1,
+        "opp_orb": 2,
+        "opp_poss": 11,
+        "opp_pts": 8,
+        "opp_tov": 3,
+        "orb": 2,
+        "p": 5,
+        "poss": 8,
+        "pts": 12,
+        "tov": 0
+       }
+      ],
+      "poss_off_steal": 2,
+      "poss_off_tov": 13,
+      "poss_second_chance": 6,
+      "possessions": 71.12,
+      "pts": 112,
+      "pts_bench": 33,
+      "pts_by_origin": {
+       "def_rebound": 7,
+       "made_basket": 10,
+       "period_start": 0,
+       "steal": 14,
+       "team_def_rebound": 14,
+       "technical": 8,
+       "trip": 14,
+       "turnover": 4,
+       "unknown": 6
+      },
+      "pts_off_steal": 3,
+      "pts_off_tov": 19,
+      "pts_paint": 24,
+      "pts_second_chance": 5,
+      "quality_level": "doubtful",
+      "reliable": true,
+      "timeouts": [
+       {
+        "caller": "rival",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 5,
+         "poss": 3,
+         "pts": 4
+        },
+        "pre": {
+         "opp_poss": 5,
+         "opp_pts": 3,
+         "poss": 4,
+         "pts": 3
+        }
+       },
+       {
+        "caller": "rival",
+        "post": {
+         "opp_poss": 4,
+         "opp_pts": 6,
+         "poss": 3,
+         "pts": 2
+        },
+        "pre": {
+         "opp_poss": 3,
+         "opp_pts": 2,
+         "poss": 5,
+         "pts": 7
+        }
+       },
+       {
+        "caller": "own",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 7,
+         "poss": 4,
+         "pts": 6
+        },
+        "pre": {
+         "opp_poss": 3,
+         "opp_pts": 3,
+         "poss": 5,
+         "pts": 4
+        }
+       }
+      ],
+      "unknown_pts_pct": 2.0
+     },
+     {
+      "ato_own": {
+       "n": 2,
+       "pts": 0
+      },
+      "ato_rival": {
+       "n": 0,
+       "pts": 7
+      },
+      "edges": {
+       "end": {
+        "opp_poss": 6,
+        "opp_pts": 7,
+        "opp_tov": 1,
+        "poss": 6,
+        "pts": 9,
+        "tov": 1
+       },
+       "start": {
+        "opp_poss": 4,
+        "opp_pts": 6,
+        "opp_tov": 2,
+        "poss": 6,
+        "pts": 8,
+        "tov": 2
+       }
+      },
+      "ext_id": 34004,
+      "first_poss": {
+       "n": 5,
+       "pts": 0
+      },
+      "id": 9004,
+      "periods": [
+       {
+        "drb": 3,
+        "fg3m": 1,
+        "fga": 12,
+        "fgm": 5,
+        "fouls": 2,
+        "fta": 6,
+        "ftm": 7,
+        "minutes": 10,
+        "opp_drb": 8,
+        "opp_fg3m": 4,
+        "opp_fga": 17,
+        "opp_fgm": 9,
+        "opp_fouls": 5,
+        "opp_fta": 6,
+        "opp_ftm": 1,
+        "opp_orb": 4,
+        "opp_poss": 22,
+        "opp_pts": 27,
+        "opp_tov": 6,
+        "orb": 5,
+        "p": 1,
+        "poss": 18,
+        "pts": 14,
+        "tov": 5
+       },
+       {
+        "drb": 4,
+        "fg3m": 1,
+        "fga": 14,
+        "fgm": 8,
+        "fouls": 3,
+        "fta": 2,
+        "ftm": 5,
+        "minutes": 10,
+        "opp_drb": 8,
+        "opp_fg3m": 2,
+        "opp_fga": 22,
+        "opp_fgm": 8,
+        "opp_fouls": 4,
+        "opp_fta": 7,
+        "opp_ftm": 7,
+        "opp_orb": 4,
+        "opp_poss": 17,
+        "opp_pts": 24,
+        "opp_tov": 2,
+        "orb": 3,
+        "p": 2,
+        "poss": 24,
+        "pts": 26,
+        "tov": 5
+       },
+       {
+        "drb": 5,
+        "fg3m": 1,
+        "fga": 22,
+        "fgm": 9,
+        "fouls": 6,
+        "fta": 3,
+        "ftm": 4,
+        "minutes": 10,
+        "opp_drb": 8,
+        "opp_fg3m": 2,
+        "opp_fga": 22,
+        "opp_fgm": 8,
+        "opp_fouls": 2,
+        "opp_fta": 2,
+        "opp_ftm": 3,
+        "opp_orb": 1,
+        "opp_poss": 24,
+        "opp_pts": 23,
+        "opp_tov": 6,
+        "orb": 4,
+        "p": 3,
+        "poss": 16,
+        "pts": 14,
+        "tov": 4
+       },
+       {
+        "drb": 9,
+        "fg3m": 1,
+        "fga": 13,
+        "fgm": 7,
+        "fouls": 2,
+        "fta": 3,
+        "ftm": 6,
+        "minutes": 10,
+        "opp_drb": 3,
+        "opp_fg3m": 3,
+        "opp_fga": 12,
+        "opp_fgm": 6,
+        "opp_fouls": 2,
+        "opp_fta": 2,
+        "opp_ftm": 4,
+        "opp_orb": 3,
+        "opp_poss": 22,
+        "opp_pts": 26,
+        "opp_tov": 2,
+        "orb": 1,
+        "p": 4,
+        "poss": 21,
+        "pts": 25,
+        "tov": 1
+       },
+       {
+        "drb": 3,
+        "fg3m": 2,
+        "fga": 11,
+        "fgm": 4,
+        "fouls": 2,
+        "fta": 1,
+        "ftm": 1,
+        "minutes": 5,
+        "opp_drb": 4,
+        "opp_fg3m": 0,
+        "opp_fga": 8,
+        "opp_fgm": 4,
+        "opp_fouls": 3,
+        "opp_fta": 2,
+        "opp_ftm": 2,
+        "opp_orb": 2,
+        "opp_poss": 8,
+        "opp_pts": 12,
+        "opp_tov": 0,
+        "orb": 2,
+        "p": 5,
+        "poss": 11,
+        "pts": 8,
+        "tov": 3
+       }
+      ],
+      "poss_off_steal": 5,
+      "poss_off_tov": 14,
+      "poss_second_chance": 9,
+      "possessions": 81.33,
+      "pts": 87,
+      "pts_bench": 11,
+      "pts_by_origin": {
+       "def_rebound": 1,
+       "made_basket": 8,
+       "period_start": 9,
+       "steal": 14,
+       "team_def_rebound": 13,
+       "technical": 12,
+       "trip": 2,
+       "turnover": 4,
+       "unknown": 1
+      },
+      "pts_off_steal": 5,
+      "pts_off_tov": 19,
+      "pts_paint": 43,
+      "pts_second_chance": 11,
+      "quality_level": "doubtful",
+      "reliable": true,
+      "timeouts": [
+       {
+        "caller": "rival",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 2,
+         "poss": 4,
+         "pts": 4
+        },
+        "pre": {
+         "opp_poss": 5,
+         "opp_pts": 4,
+         "poss": 4,
+         "pts": 5
+        }
+       },
+       {
+        "caller": "own",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 2,
+         "poss": 3,
+         "pts": 3
+        },
+        "pre": {
+         "opp_poss": 3,
+         "opp_pts": 3,
+         "poss": 3,
+         "pts": 7
+        }
+       },
+       {
+        "caller": "own",
+        "post": {
+         "opp_poss": 5,
+         "opp_pts": 8,
+         "poss": 3,
+         "pts": 4
+        },
+        "pre": {
+         "opp_poss": 4,
+         "opp_pts": 3,
+         "poss": 5,
+         "pts": 6
+        }
+       }
+      ],
+      "unknown_pts_pct": 2.0
+     }
+    ],
+    "v": 5
+   }
+  ],
+  "total": 12,
+  "without_derived": [
+   {
+    "code": "000000000000000000000001",
+    "teams": [
+     "ALFA",
+     "BRAVO"
+    ]
+   },
+   {
+    "code": "000000000000000000000003",
+    "teams": [
+     "ALFA",
+     "DELTA"
+    ]
+   },
+   {
+    "code": "000000000000000000000004",
+    "teams": [
+     "BRAVO",
+     "ALFA"
+    ]
+   },
+   {
+    "code": "000000000000000000000006",
+    "teams": [
+     "BRAVO",
+     "DELTA"
+    ]
+   },
+   {
+    "code": "000000000000000000000007",
+    "teams": [
+     "CARLOS",
+     "ALFA"
+    ]
+   },
+   {
+    "code": "000000000000000000000008",
+    "teams": [
+     "CARLOS",
+     "BRAVO"
+    ]
+   },
+   {
+    "code": "00000000000000000000000a",
+    "teams": [
+     "DELTA",
+     "ALFA"
+    ]
+   },
+   {
+    "code": "00000000000000000000000b",
+    "teams": [
+     "DELTA",
+     "BRAVO"
+    ]
+   },
+   {
+    "code": "00000000000000000000000c",
+    "teams": [
+     "DELTA",
+     "CARLOS"
+    ]
+   }
+  ]
+ },
+ "expected": {
+  "coverage": {
+   "collection": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+   "min_version": 6,
+   "pending": 10,
+   "pending_games": [
+    {
+     "code": "000000000000000000000001",
+     "teams": [
+      "ALFA",
+      "BRAVO"
+     ]
+    },
+    {
+     "code": "000000000000000000000003",
+     "teams": [
+      "ALFA",
+      "DELTA"
+     ]
+    },
+    {
+     "code": "000000000000000000000004",
+     "teams": [
+      "BRAVO",
+      "ALFA"
+     ]
+    },
+    {
+     "code": "000000000000000000000006",
+     "teams": [
+      "BRAVO",
+      "DELTA"
+     ]
+    },
+    {
+     "code": "000000000000000000000007",
+     "teams": [
+      "CARLOS",
+      "ALFA"
+     ]
+    },
+    {
+     "code": "000000000000000000000008",
+     "teams": [
+      "CARLOS",
+      "BRAVO"
+     ]
+    },
+    {
+     "code": "000000000000000000000009",
+     "teams": [
+      "CARLOS",
+      "DELTA"
+     ]
+    },
+    {
+     "code": "00000000000000000000000a",
+     "teams": [
+      "DELTA",
+      "ALFA"
+     ]
+    },
+    {
+     "code": "00000000000000000000000b",
+     "teams": [
+      "DELTA",
+      "BRAVO"
+     ]
+    },
+    {
+     "code": "00000000000000000000000c",
+     "teams": [
+      "DELTA",
+      "CARLOS"
+     ]
+    }
+   ],
+   "total": 12
+  },
+  "origin": [
+   {
+    "bench_pct": 25.0,
+    "games": 1,
+    "games_doubtful": 0,
+    "games_paint": 1,
+    "games_unreliable": 0,
+    "oer_fastbreak": 100.0,
+    "oer_off_loss": 80.0,
+    "oer_off_steal": 75.0,
+    "oer_off_tov": 78.57142857142857,
+    "oer_second_chance": 58.333333333333336,
+    "opp_bench_pct": 25.274725274725274,
+    "opp_oer_fastbreak": 140.0,
+    "opp_oer_off_loss": 100.0,
+    "opp_oer_off_steal": 100.0,
+    "opp_oer_off_tov": 100.0,
+    "opp_oer_second_chance": 142.85714285714286,
+    "opp_possessions": 72.28,
+    "opp_pts_bench": 23,
+    "opp_pts_bench_per_100": 31.820697288323185,
+    "opp_pts_bench_per_game": 23.0,
+    "opp_pts_fastbreak": 7,
+    "opp_pts_fastbreak_per_100": 9.684560044272274,
+    "opp_pts_fastbreak_per_game": 7.0,
+    "opp_pts_off_loss": 5,
+    "opp_pts_off_loss_per_100": 6.91754288876591,
+    "opp_pts_off_loss_per_game": 5.0,
+    "opp_pts_off_steal": 3,
+    "opp_pts_off_steal_per_100": 4.150525733259546,
+    "opp_pts_off_steal_per_game": 3.0,
+    "opp_pts_off_tov": 8,
+    "opp_pts_off_tov_per_game": 8.0,
+    "opp_pts_paint": 0,
+    "opp_pts_paint_per_100": 0.0,
+    "opp_pts_paint_per_game": 0.0,
+    "opp_pts_second_chance": 10,
+    "opp_pts_second_chance_per_100": 13.83508577753182,
+    "opp_pts_second_chance_per_game": 10.0,
+    "possessions": 60.12,
+    "pts_bench": 28,
+    "pts_bench_per_100": 46.57351962741185,
+    "pts_bench_per_game": 28.0,
+    "pts_fastbreak": 8,
+    "pts_fastbreak_per_100": 13.306719893546243,
+    "pts_fastbreak_per_game": 8.0,
+    "pts_off_loss": 8,
+    "pts_off_loss_per_100": 13.306719893546243,
+    "pts_off_loss_per_game": 8.0,
+    "pts_off_steal": 3,
+    "pts_off_steal_per_100": 4.990019960079841,
+    "pts_off_steal_per_game": 3.0,
+    "pts_off_tov": 11,
+    "pts_off_tov_per_game": 11.0,
+    "pts_paint": 18,
+    "pts_paint_per_100": 29.940119760479046,
+    "pts_paint_per_game": 18.0,
+    "pts_second_chance": 7,
+    "pts_second_chance_per_100": 11.643379906852962,
+    "pts_second_chance_per_game": 7.0,
+    "team_id": 34001,
+    "team_name": "ALFA"
+   },
+   {
+    "bench_pct": null,
+    "games": 0,
+    "games_doubtful": 0,
+    "games_paint": 0,
+    "games_unreliable": 1,
+    "oer_fastbreak": null,
+    "oer_off_loss": null,
+    "oer_off_steal": null,
+    "oer_off_tov": null,
+    "oer_second_chance": null,
+    "opp_bench_pct": null,
+    "opp_oer_fastbreak": null,
+    "opp_oer_off_loss": null,
+    "opp_oer_off_steal": null,
+    "opp_oer_off_tov": null,
+    "opp_oer_second_chance": null,
+    "opp_possessions": null,
+    "opp_pts_bench": null,
+    "opp_pts_bench_per_100": null,
+    "opp_pts_bench_per_game": null,
+    "opp_pts_fastbreak": null,
+    "opp_pts_fastbreak_per_100": null,
+    "opp_pts_fastbreak_per_game": null,
+    "opp_pts_off_loss": null,
+    "opp_pts_off_loss_per_100": null,
+    "opp_pts_off_loss_per_game": null,
+    "opp_pts_off_steal": null,
+    "opp_pts_off_steal_per_100": null,
+    "opp_pts_off_steal_per_game": null,
+    "opp_pts_off_tov": null,
+    "opp_pts_off_tov_per_game": null,
+    "opp_pts_paint": null,
+    "opp_pts_paint_per_100": null,
+    "opp_pts_paint_per_game": null,
+    "opp_pts_second_chance": null,
+    "opp_pts_second_chance_per_100": null,
+    "opp_pts_second_chance_per_game": null,
+    "possessions": null,
+    "pts_bench": null,
+    "pts_bench_per_100": null,
+    "pts_bench_per_game": null,
+    "pts_fastbreak": null,
+    "pts_fastbreak_per_100": null,
+    "pts_fastbreak_per_game": null,
+    "pts_off_loss": null,
+    "pts_off_loss_per_100": null,
+    "pts_off_loss_per_game": null,
+    "pts_off_steal": null,
+    "pts_off_steal_per_100": null,
+    "pts_off_steal_per_game": null,
+    "pts_off_tov": null,
+    "pts_off_tov_per_game": null,
+    "pts_paint": null,
+    "pts_paint_per_100": null,
+    "pts_paint_per_game": null,
+    "pts_second_chance": null,
+    "pts_second_chance_per_100": null,
+    "pts_second_chance_per_game": null,
+    "team_id": 34002,
+    "team_name": "BRAVO"
+   },
+   {
+    "bench_pct": 25.274725274725274,
+    "games": 1,
+    "games_doubtful": 0,
+    "games_paint": 0,
+    "games_unreliable": 1,
+    "oer_fastbreak": 140.0,
+    "oer_off_loss": 100.0,
+    "oer_off_steal": 100.0,
+    "oer_off_tov": 100.0,
+    "oer_second_chance": 142.85714285714286,
+    "opp_bench_pct": 25.0,
+    "opp_oer_fastbreak": 100.0,
+    "opp_oer_off_loss": 80.0,
+    "opp_oer_off_steal": 75.0,
+    "opp_oer_off_tov": 78.57142857142857,
+    "opp_oer_second_chance": 58.333333333333336,
+    "opp_possessions": 60.12,
+    "opp_pts_bench": 28,
+    "opp_pts_bench_per_100": 46.57351962741185,
+    "opp_pts_bench_per_game": 28.0,
+    "opp_pts_fastbreak": 8,
+    "opp_pts_fastbreak_per_100": 13.306719893546243,
+    "opp_pts_fastbreak_per_game": 8.0,
+    "opp_pts_off_loss": 8,
+    "opp_pts_off_loss_per_100": 13.306719893546243,
+    "opp_pts_off_loss_per_game": 8.0,
+    "opp_pts_off_steal": 3,
+    "opp_pts_off_steal_per_100": 4.990019960079841,
+    "opp_pts_off_steal_per_game": 3.0,
+    "opp_pts_off_tov": 11,
+    "opp_pts_off_tov_per_game": 11.0,
+    "opp_pts_paint": null,
+    "opp_pts_paint_per_100": null,
+    "opp_pts_paint_per_game": null,
+    "opp_pts_second_chance": 7,
+    "opp_pts_second_chance_per_100": 11.643379906852962,
+    "opp_pts_second_chance_per_game": 7.0,
+    "possessions": 72.28,
+    "pts_bench": 23,
+    "pts_bench_per_100": 31.820697288323185,
+    "pts_bench_per_game": 23.0,
+    "pts_fastbreak": 7,
+    "pts_fastbreak_per_100": 9.684560044272274,
+    "pts_fastbreak_per_game": 7.0,
+    "pts_off_loss": 5,
+    "pts_off_loss_per_100": 6.91754288876591,
+    "pts_off_loss_per_game": 5.0,
+    "pts_off_steal": 3,
+    "pts_off_steal_per_100": 4.150525733259546,
+    "pts_off_steal_per_game": 3.0,
+    "pts_off_tov": 8,
+    "pts_off_tov_per_game": 8.0,
+    "pts_paint": null,
+    "pts_paint_per_100": null,
+    "pts_paint_per_game": null,
+    "pts_second_chance": 10,
+    "pts_second_chance_per_100": 13.83508577753182,
+    "pts_second_chance_per_game": 10.0,
+    "team_id": 34003,
+    "team_name": "CARLOS"
+   }
+  ],
+  "periods": [
+   {
+    "games": 1,
+    "games_doubtful": 0,
+    "games_unreliable": 0,
+    "periods": {
+     "1": {
+      "drb_pct": 71.42857142857143,
+      "drtg": 113.63636363636364,
+      "efg_pct": 65.0,
+      "fouls_per_game": 2.0,
+      "ftr": 30.0,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": 73.86363636363636,
+      "opp_efg_pct": 43.333333333333336,
+      "opp_fouls_per_game": 3.0,
+      "opp_ftr": 53.333333333333336,
+      "opp_poss": 22,
+      "opp_pts": 25,
+      "opp_pts_per_game": 25.0,
+      "opp_tov_pct": 24.469820554649267,
+      "orb_pct": 25.0,
+      "ortg": 187.5,
+      "pace": 64.0,
+      "poss": 16,
+      "pts": 30,
+      "pts_per_game": 30.0,
+      "tov_pct": 4.230118443316413
+     },
+     "2": {
+      "drb_pct": 75.0,
+      "drtg": 122.72727272727273,
+      "efg_pct": 47.05882352941176,
+      "fouls_per_game": 7.0,
+      "ftr": 35.294117647058826,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": 20.12987012987013,
+      "opp_efg_pct": 42.857142857142854,
+      "opp_fouls_per_game": 5.0,
+      "opp_ftr": 28.57142857142857,
+      "opp_poss": 22,
+      "opp_pts": 27,
+      "opp_pts_per_game": 27.0,
+      "opp_tov_pct": 11.26126126126126,
+      "orb_pct": 12.5,
+      "ortg": 142.85714285714286,
+      "pace": 84.0,
+      "poss": 21,
+      "pts": 30,
+      "pts_per_game": 30.0,
+      "tov_pct": 16.920473773265652
+     },
+     "3": {
+      "drb_pct": 77.77777777777779,
+      "drtg": 95.0,
+      "efg_pct": 44.11764705882353,
+      "fouls_per_game": 6.0,
+      "ftr": 47.05882352941176,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": 17.500000000000004,
+      "opp_efg_pct": 57.14285714285714,
+      "opp_fouls_per_game": 2.0,
+      "opp_ftr": 28.57142857142857,
+      "opp_poss": 20,
+      "opp_pts": 19,
+      "opp_pts_per_game": 19.0,
+      "opp_tov_pct": 4.058441558441558,
+      "orb_pct": 25.0,
+      "ortg": 112.5,
+      "pace": 96.0,
+      "poss": 24,
+      "pts": 27,
+      "pts_per_game": 27.0,
+      "tov_pct": 22.624434389140273
+     },
+     "4": {
+      "drb_pct": 63.63636363636363,
+      "drtg": 125.0,
+      "efg_pct": 57.14285714285714,
+      "fouls_per_game": 5.0,
+      "ftr": 28.57142857142857,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": -5.952380952380953,
+      "opp_efg_pct": 56.25,
+      "opp_fouls_per_game": 4.0,
+      "opp_ftr": 43.75,
+      "opp_poss": 16,
+      "opp_pts": 20,
+      "opp_pts_per_game": 20.0,
+      "opp_tov_pct": 20.764119601328908,
+      "orb_pct": 38.46153846153847,
+      "ortg": 119.04761904761905,
+      "pace": 84.0,
+      "poss": 21,
+      "pts": 25,
+      "pts_per_game": 25.0,
+      "tov_pct": 7.800312012480499
+     }
+    },
+    "team_id": 34001,
+    "team_name": "ALFA"
+   },
+   {
+    "games": 0,
+    "games_doubtful": 0,
+    "games_unreliable": 1,
+    "periods": {},
+    "team_id": 34002,
+    "team_name": "BRAVO"
+   },
+   {
+    "games": 2,
+    "games_doubtful": 1,
+    "games_unreliable": 1,
+    "periods": {
+     "1": {
+      "drb_pct": 64.70588235294117,
+      "drtg": 129.41176470588235,
+      "efg_pct": 54.6875,
+      "fouls_per_game": 4.0,
+      "ftr": 43.75,
+      "games": 2,
+      "minutes": 20,
+      "net_rating": -11.229946524064172,
+      "opp_efg_pct": 57.8125,
+      "opp_fouls_per_game": 2.0,
+      "opp_ftr": 37.5,
+      "opp_poss": 34,
+      "opp_pts": 44,
+      "opp_pts_per_game": 22.0,
+      "opp_tov_pct": 13.863216266173753,
+      "orb_pct": 42.857142857142854,
+      "ortg": 118.18181818181819,
+      "pace": 88.0,
+      "poss": 44,
+      "pts": 52,
+      "pts_per_game": 26.0,
+      "tov_pct": 23.923444976076556
+     },
+     "2": {
+      "drb_pct": 78.94736842105263,
+      "drtg": 124.44444444444444,
+      "efg_pct": 41.86046511627907,
+      "fouls_per_game": 4.5,
+      "ftr": 30.23255813953488,
+      "games": 2,
+      "minutes": 20,
+      "net_rating": 6.3247863247863245,
+      "opp_efg_pct": 53.2258064516129,
+      "opp_fouls_per_game": 5.0,
+      "opp_ftr": 25.806451612903224,
+      "opp_poss": 45,
+      "opp_pts": 56,
+      "opp_pts_per_game": 28.0,
+      "opp_tov_pct": 20.68014705882353,
+      "orb_pct": 41.66666666666667,
+      "ortg": 130.76923076923077,
+      "pace": 78.0,
+      "poss": 39,
+      "pts": 51,
+      "pts_per_game": 25.5,
+      "tov_pct": 9.307520476545049
+     },
+     "3": {
+      "drb_pct": 70.83333333333334,
+      "drtg": 102.49999999999999,
+      "efg_pct": 48.837209302325576,
+      "fouls_per_game": 2.0,
+      "ftr": 18.6046511627907,
+      "games": 2,
+      "minutes": 20,
+      "net_rating": -7.0454545454545325,
+      "opp_efg_pct": 43.58974358974359,
+      "opp_fouls_per_game": 6.0,
+      "opp_ftr": 28.205128205128204,
+      "opp_poss": 40,
+      "opp_pts": 41,
+      "opp_pts_per_game": 20.5,
+      "opp_tov_pct": 18.573551263001484,
+      "orb_pct": 20.0,
+      "ortg": 95.45454545454545,
+      "pace": 88.0,
+      "poss": 44,
+      "pts": 42,
+      "pts_per_game": 21.0,
+      "tov_pct": 13.079222720478326
+     },
+     "4": {
+      "drb_pct": 64.70588235294117,
+      "drtg": 119.04761904761905,
+      "efg_pct": 58.92857142857143,
+      "fouls_per_game": 3.0,
+      "ftr": 32.142857142857146,
+      "games": 2,
+      "minutes": 20,
+      "net_rating": 2.0050125313283207,
+      "opp_efg_pct": 57.35294117647059,
+      "opp_fouls_per_game": 3.5,
+      "opp_ftr": 26.47058823529412,
+      "opp_poss": 42,
+      "opp_pts": 50,
+      "opp_pts_per_game": 25.0,
+      "opp_tov_pct": 7.32421875,
+      "orb_pct": 30.434782608695656,
+      "ortg": 121.05263157894737,
+      "pace": 76.0,
+      "poss": 38,
+      "pts": 46,
+      "pts_per_game": 23.0,
+      "tov_pct": 17.967145790554415
+     },
+     "OT": {
+      "drb_pct": 66.66666666666666,
+      "drtg": 72.72727272727273,
+      "efg_pct": 50.0,
+      "fouls_per_game": 3.0,
+      "ftr": 25.0,
+      "games": 1,
+      "minutes": 5,
+      "net_rating": 77.27272727272727,
+      "opp_efg_pct": 45.45454545454545,
+      "opp_fouls_per_game": 2.0,
+      "opp_ftr": 9.090909090909092,
+      "opp_poss": 11,
+      "opp_pts": 8,
+      "opp_pts_per_game": 8.0,
+      "opp_tov_pct": 20.775623268698062,
+      "orb_pct": 40.0,
+      "ortg": 150.0,
+      "pace": 64.0,
+      "poss": 8,
+      "pts": 12,
+      "pts_per_game": 12.0,
+      "tov_pct": 0.0
+     }
+    },
+    "team_id": 34003,
+    "team_name": "CARLOS"
+   },
+   {
+    "games": 1,
+    "games_doubtful": 1,
+    "games_unreliable": 0,
+    "periods": {
+     "1": {
+      "drb_pct": 42.857142857142854,
+      "drtg": 122.72727272727273,
+      "efg_pct": 45.83333333333333,
+      "fouls_per_game": 2.0,
+      "ftr": 50.0,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": -44.94949494949495,
+      "opp_efg_pct": 64.70588235294117,
+      "opp_fouls_per_game": 5.0,
+      "opp_ftr": 35.294117647058826,
+      "opp_poss": 22,
+      "opp_pts": 27,
+      "opp_pts_per_game": 27.0,
+      "opp_tov_pct": 23.400936037441497,
+      "orb_pct": 38.46153846153847,
+      "ortg": 77.77777777777779,
+      "pace": 72.0,
+      "poss": 18,
+      "pts": 14,
+      "pts_per_game": 14.0,
+      "tov_pct": 25.45824847250509
+     },
+     "2": {
+      "drb_pct": 50.0,
+      "drtg": 141.1764705882353,
+      "efg_pct": 60.71428571428571,
+      "fouls_per_game": 3.0,
+      "ftr": 14.285714285714285,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": -32.843137254901976,
+      "opp_efg_pct": 40.909090909090914,
+      "opp_fouls_per_game": 4.0,
+      "opp_ftr": 31.818181818181817,
+      "opp_poss": 17,
+      "opp_pts": 24,
+      "opp_pts_per_game": 24.0,
+      "opp_tov_pct": 7.385524372230429,
+      "orb_pct": 27.27272727272727,
+      "ortg": 108.33333333333333,
+      "pace": 96.0,
+      "poss": 24,
+      "pts": 26,
+      "pts_per_game": 26.0,
+      "tov_pct": 25.15090543259557
+     },
+     "3": {
+      "drb_pct": 83.33333333333334,
+      "drtg": 95.83333333333334,
+      "efg_pct": 43.18181818181818,
+      "fouls_per_game": 6.0,
+      "ftr": 13.636363636363635,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": -8.333333333333337,
+      "opp_efg_pct": 40.909090909090914,
+      "opp_fouls_per_game": 2.0,
+      "opp_ftr": 9.090909090909092,
+      "opp_poss": 24,
+      "opp_pts": 23,
+      "opp_pts_per_game": 23.0,
+      "opp_tov_pct": 20.775623268698062,
+      "orb_pct": 33.33333333333333,
+      "ortg": 87.5,
+      "pace": 64.0,
+      "poss": 16,
+      "pts": 14,
+      "pts_per_game": 14.0,
+      "tov_pct": 14.641288433382138
+     },
+     "4": {
+      "drb_pct": 75.0,
+      "drtg": 118.18181818181819,
+      "efg_pct": 57.692307692307686,
+      "fouls_per_game": 2.0,
+      "ftr": 23.076923076923077,
+      "games": 1,
+      "minutes": 10,
+      "net_rating": 0.8658008658008587,
+      "opp_efg_pct": 62.5,
+      "opp_fouls_per_game": 2.0,
+      "opp_ftr": 16.666666666666664,
+      "opp_poss": 22,
+      "opp_pts": 26,
+      "opp_pts_per_game": 26.0,
+      "opp_tov_pct": 13.440860215053762,
+      "orb_pct": 25.0,
+      "ortg": 119.04761904761905,
+      "pace": 84.0,
+      "poss": 21,
+      "pts": 25,
+      "pts_per_game": 25.0,
+      "tov_pct": 6.5274151436031325
+     },
+     "OT": {
+      "drb_pct": 60.0,
+      "drtg": 150.0,
+      "efg_pct": 45.45454545454545,
+      "fouls_per_game": 2.0,
+      "ftr": 9.090909090909092,
+      "games": 1,
+      "minutes": 5,
+      "net_rating": -77.27272727272727,
+      "opp_efg_pct": 50.0,
+      "opp_fouls_per_game": 3.0,
+      "opp_ftr": 25.0,
+      "opp_poss": 8,
+      "opp_pts": 12,
+      "opp_pts_per_game": 12.0,
+      "opp_tov_pct": 0.0,
+      "orb_pct": 33.33333333333333,
+      "ortg": 72.72727272727273,
+      "pace": 88.0,
+      "poss": 11,
+      "pts": 8,
+      "pts_per_game": 8.0,
+      "tov_pct": 20.775623268698062
+     }
+    },
+    "team_id": 34004,
+    "team_name": "DELTA"
+   }
+  ],
+  "situations": [
+   {
+    "ato_own": {
+     "n": 3,
+     "ppp": 0.3333333333333333,
+     "pts": 1
+    },
+    "ato_rival": {
+     "n": 0,
+     "ppp": null,
+     "pts": 7
+    },
+    "edges": {
+     "end": {
+      "net_rating": -100.0,
+      "opp_poss": 6,
+      "opp_pts": 8,
+      "opp_tov": 0,
+      "opp_tov_pct": 0.0,
+      "poss": 6,
+      "pts": 2,
+      "pts_per_game": 2.0,
+      "tov": 1,
+      "tov_pct": 16.666666666666664,
+      "vs_rest": -142.1529175050302
+     },
+     "rest": {
+      "net_rating": 42.15291750503019,
+      "opp_poss": 70,
+      "opp_pts": 75,
+      "opp_tov": 14,
+      "opp_tov_pct": 20.0,
+      "poss": 71,
+      "pts": 106,
+      "pts_per_game": 106.0,
+      "tov": 10,
+      "tov_pct": 14.084507042253522
+     },
+     "start": {
+      "net_rating": -120.0,
+      "opp_poss": 4,
+      "opp_pts": 8,
+      "opp_tov": 1,
+      "opp_tov_pct": 25.0,
+      "poss": 5,
+      "pts": 4,
+      "pts_per_game": 4.0,
+      "tov": 2,
+      "tov_pct": 40.0,
+      "vs_rest": -162.1529175050302
+     }
+    },
+    "first_poss": {
+     "n": 1,
+     "ppp": 2.0,
+     "pts": 2
+    },
+    "games": 1,
+    "games_doubtful": 0,
+    "games_unreliable": 0,
+    "team_id": 34001,
+    "team_name": "ALFA"
+   },
+   {
+    "ato_own": {
+     "n": 0,
+     "ppp": null,
+     "pts": 0
+    },
+    "ato_rival": {
+     "n": 0,
+     "ppp": null,
+     "pts": 0
+    },
+    "edges": {
+     "end": {
+      "net_rating": null,
+      "opp_poss": 0,
+      "opp_pts": 0,
+      "opp_tov": 0,
+      "opp_tov_pct": null,
+      "poss": 0,
+      "pts": 0,
+      "pts_per_game": null,
+      "tov": 0,
+      "tov_pct": null,
+      "vs_rest": null
+     },
+     "rest": {
+      "net_rating": null,
+      "opp_poss": 0,
+      "opp_pts": 0,
+      "opp_tov": 0,
+      "opp_tov_pct": null,
+      "poss": 0,
+      "pts": 0,
+      "pts_per_game": null,
+      "tov": 0,
+      "tov_pct": null
+     },
+     "start": {
+      "net_rating": null,
+      "opp_poss": 0,
+      "opp_pts": 0,
+      "opp_tov": 0,
+      "opp_tov_pct": null,
+      "poss": 0,
+      "pts": 0,
+      "pts_per_game": null,
+      "tov": 0,
+      "tov_pct": null,
+      "vs_rest": null
+     }
+    },
+    "first_poss": {
+     "n": 0,
+     "ppp": null,
+     "pts": 0
+    },
+    "games": 0,
+    "games_doubtful": 0,
+    "games_unreliable": 1,
+    "team_id": 34002,
+    "team_name": "BRAVO"
+   },
+   {
+    "ato_own": {
+     "n": 7,
+     "ppp": 0.8571428571428571,
+     "pts": 6
+    },
+    "ato_rival": {
+     "n": 2,
+     "ppp": 6.5,
+     "pts": 13
+    },
+    "edges": {
+     "end": {
+      "net_rating": -84.44444444444444,
+      "opp_poss": 9,
+      "opp_pts": 13,
+      "opp_tov": 1,
+      "opp_tov_pct": 11.11111111111111,
+      "poss": 10,
+      "pts": 6,
+      "pts_per_game": 3.0,
+      "tov": 0,
+      "tov_pct": 0.0,
+      "vs_rest": -93.92487629329734
+     },
+     "rest": {
+      "net_rating": 9.480431848852898,
+      "opp_poss": 156,
+      "opp_pts": 172,
+      "opp_tov": 26,
+      "opp_tov_pct": 16.666666666666664,
+      "poss": 152,
+      "pts": 182,
+      "pts_per_game": 91.0,
+      "tov": 28,
+      "tov_pct": 18.421052631578945
+     },
+     "start": {
+      "net_rating": -63.63636363636365,
+      "opp_poss": 7,
+      "opp_pts": 14,
+      "opp_tov": 4,
+      "opp_tov_pct": 57.14285714285714,
+      "poss": 11,
+      "pts": 15,
+      "pts_per_game": 7.5,
+      "tov": 3,
+      "tov_pct": 27.27272727272727,
+      "vs_rest": -73.11679548521654
+     }
+    },
+    "first_poss": {
+     "n": 8,
+     "ppp": 0.875,
+     "pts": 7
+    },
+    "games": 2,
+    "games_doubtful": 1,
+    "games_unreliable": 1,
+    "team_id": 34003,
+    "team_name": "CARLOS"
+   },
+   {
+    "ato_own": {
+     "n": 2,
+     "ppp": 0.0,
+     "pts": 0
+    },
+    "ato_rival": {
+     "n": 0,
+     "ppp": null,
+     "pts": 7
+    },
+    "edges": {
+     "end": {
+      "net_rating": 33.33333333333333,
+      "opp_poss": 6,
+      "opp_pts": 7,
+      "opp_tov": 1,
+      "opp_tov_pct": 16.666666666666664,
+      "poss": 6,
+      "pts": 9,
+      "pts_per_game": 9.0,
+      "tov": 1,
+      "tov_pct": 16.666666666666664,
+      "vs_rest": 62.866852023478515
+     },
+     "rest": {
+      "net_rating": -29.53351869014519,
+      "opp_poss": 83,
+      "opp_pts": 99,
+      "opp_tov": 13,
+      "opp_tov_pct": 15.66265060240964,
+      "poss": 78,
+      "pts": 70,
+      "pts_per_game": 70.0,
+      "tov": 15,
+      "tov_pct": 19.230769230769234
+     },
+     "start": {
+      "net_rating": -16.666666666666675,
+      "opp_poss": 4,
+      "opp_pts": 6,
+      "opp_tov": 2,
+      "opp_tov_pct": 50.0,
+      "poss": 6,
+      "pts": 8,
+      "pts_per_game": 8.0,
+      "tov": 2,
+      "tov_pct": 33.33333333333333,
+      "vs_rest": 12.866852023478515
+     }
+    },
+    "first_poss": {
+     "n": 5,
+     "ppp": 0.0,
+     "pts": 0
+    },
+    "games": 1,
+    "games_doubtful": 1,
+    "games_unreliable": 0,
+    "team_id": 34004,
+    "team_name": "DELTA"
+   }
+  ],
+  "timeouts": [
+   {
+    "games_doubtful": 0,
+    "own": {
+     "delta_net_rating": null,
+     "n": 0,
+     "net_rating_after": null,
+     "net_rating_before": null,
+     "pct_caller_improves": null
+    },
+    "rival": {
+     "delta_net_rating": 113.33333333333334,
+     "n": 1,
+     "net_rating_after": -20.000000000000007,
+     "net_rating_before": -133.33333333333334,
+     "pct_caller_improves": 0.0
+    },
+    "team_id": 34001,
+    "team_name": "ALFA"
+   },
+   {
+    "games_doubtful": 1,
+    "own": {
+     "delta_net_rating": -16.666666666666675,
+     "n": 2,
+     "net_rating_after": -3.333333333333333,
+     "net_rating_before": 13.333333333333341,
+     "pct_caller_improves": 50.0
+    },
+    "rival": {
+     "delta_net_rating": -69.16666666666667,
+     "n": 2,
+     "net_rating_after": -25.000000000000007,
+     "net_rating_before": 44.166666666666664,
+     "pct_caller_improves": 50.0
+    },
+    "team_id": 34003,
+    "team_name": "CARLOS"
+   },
+   {
+    "games_doubtful": 1,
+    "own": {
+     "delta_net_rating": -72.50000000000001,
+     "n": 2,
+     "net_rating_after": 16.666666666666657,
+     "net_rating_before": 89.16666666666667,
+     "pct_caller_improves": 0.0
+    },
+    "rival": {
+     "delta_net_rating": 15.000000000000007,
+     "n": 1,
+     "net_rating_after": 60.0,
+     "net_rating_before": 44.99999999999999,
+     "pct_caller_improves": 0.0
+    },
+    "team_id": 34004,
+    "team_name": "DELTA"
+   }
+  ]
+ }
+}

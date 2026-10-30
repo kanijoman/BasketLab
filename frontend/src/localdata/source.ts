@@ -11,7 +11,9 @@ import { competitionEvolution, EVOLUTION_STATS } from './evolution'
 import type { ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { mergeByKey, siblingCollections } from './multiPhase'
-import { loadWebCollections, loadWebRows, WebDataUnavailable } from '@/webdata/client'
+import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, type Derived } from './pbp'
+import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
+import { loadWebCollections, loadWebDerived, loadWebRows, WebDataUnavailable } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -21,11 +23,13 @@ interface IndexEntry { name: string; file: string; league: 'feb' | 'fbcyl'; game
 
 let indexLoad: Promise<IndexEntry[] | null> | null = null
 const competitions = new Map<string, Promise<Competition | null>>()
+const derivedLoads = new Map<string, Promise<Derived | null>>()
 
 /** Forget what was loaded (tests, or after a new export). */
 export function resetLocalData(): void {
   indexLoad = null
   competitions.clear()
+  derivedLoads.clear()
 }
 
 const url = (file: string) => `${import.meta.env.BASE_URL}local-data/${encodeURI(file)}`
@@ -153,3 +157,30 @@ export async function localCompetitionEvolution(collection: string, stat: string
   const known = (EVOLUTION_STATS as readonly string[]).includes(stat)
   return data ? competitionEvolution(data.team_rows, known ? stat : 'points', window) : null           // the router reads an unknown stat as points
 }
+
+/** The `DERIVED` of each game of a competition (the published `derived/`; there is no manual export of it), or `null` if it is not published. A reader without the key gets the access error. */
+function loadDerived(name: string): Promise<Derived | null> {
+  let load = derivedLoads.get(name)
+  if (!load) {
+    load = loadWebDerived(name).then(data => (data.format === FORMAT ? data : null), error => {
+      if (error instanceof WebDataUnavailable) return null
+      throw error
+    })
+    derivedLoads.set(name, load)
+    load.then(data => { if (!data) derivedLoads.delete(name) }, () => derivedLoads.delete(name))
+  }
+  return load
+}
+
+/** One of the pbp tables of the competition (issue #676), or `null` to use the API (the dataset is off or the competition has no published `DERIVED`). */
+async function pbpTable<T>(collection: string, table: (derived: Derived) => T): Promise<T | null> {
+  if (dataSourceOf('pbp') !== 'local') return null
+  const derived = await loadDerived(collection)
+  return derived ? table(derived) : null
+}
+
+export const localPointsByOrigin = (collection: string): Promise<OriginRow[] | null> => pbpTable(collection, pointsByOrigin)
+export const localByPeriod = (collection: string): Promise<PeriodRow[] | null> => pbpTable(collection, byPeriod)
+export const localSituations = (collection: string): Promise<SituationRow[] | null> => pbpTable(collection, situations)
+export const localTimeoutEffects = (collection: string): Promise<TimeoutRow[] | null> => pbpTable(collection, timeoutEffects)
+export const localDerivedCoverage = (collection: string): Promise<DerivedCoverage | null> => pbpTable(collection, derivedCoverage)
