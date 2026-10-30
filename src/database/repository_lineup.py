@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, FrozenSet
 from pymongo.errors import PyMongoError
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+from src.utils.time_utils import fbcyl_game_day
 
 
 class LineupRepositoryMixin:
@@ -209,25 +210,8 @@ class LineupRepositoryMixin:
             return []
 
     def _parse_fbcyl_date(self, raw_time: str) -> str:
-        """Parse FBCYL stats.time field to ISO YYYY-MM-DD string.
-
-        FBCYL stores the game datetime as e.g. ``'Mar 1, 2026 1:00:00 PM'``.
-        Returns ``''`` if parsing fails.
-        """
-        if not raw_time:
-            return ''
-        try:
-            from datetime import datetime
-            dt = datetime.strptime(raw_time.strip(), "%b %d, %Y %I:%M:%S %p")
-            return dt.strftime("%Y-%m-%d")
-        except ValueError:
-            # Try without leading-zero padding for single-digit days
-            try:
-                from datetime import datetime
-                dt = datetime.strptime(raw_time.strip(), "%B %d, %Y %I:%M:%S %p")
-                return dt.strftime("%Y-%m-%d")
-            except ValueError:
-                return raw_time[:10]  # best-effort: return first 10 chars
+        """The ISO day of a FBCYL ``stats.time`` (``Oct 3, 2026, 6:30:00 PM`` or the older ``Oct 4, 2025 7:00:00 PM``); ``''`` if it cannot be read (#681)."""
+        return fbcyl_game_day(raw_time)
 
     def _resolve_fbcyl_team_id(self, game: Dict, team_id_extern: str) -> str:
         """Resolve FBCYL teamIdExtern to teamIdIntern for PBP analysis.

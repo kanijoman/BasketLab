@@ -32,7 +32,7 @@ from src.services.multi_phase_service import MultiPhaseService  # noqa: E402
 from src.services.pbp_extended_stats_service import PBPExtendedStatsService  # noqa: E402
 from src.services.pbp_situation_stats_service import PBPSituationStatsService  # noqa: E402
 from src.services.team_comparison_service import TeamComparisonService  # noqa: E402
-from src.utils.time_utils import end_of_day  # noqa: E402
+from src.utils.time_utils import end_of_day, fbcyl_game_day  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "team_stats_feb.json"
 PLAYERS_OUT = Path(__file__).resolve().parent / "players_feb.json"
@@ -145,8 +145,8 @@ def build_player_vectors() -> dict:
 
 
 def _fbcyl_day(doc: dict) -> datetime:
-    """FBCYL's date is a day: ``Oct 4, 2025 7:00:00 PM`` -> 2025-10-04 (the pipeline keeps only month, day and year)."""
-    return datetime.strptime(" ".join(doc["stats"]["time"].split(" ")[:3]), "%b %d, %Y")
+    """FBCYL's date is a day: ``Oct 4, 2025, 7:00:00 PM`` (or the older writing without the comma) -> 2025-10-04 (the pipeline keeps only month, day and year)."""
+    return datetime.strptime(fbcyl_game_day(doc["stats"]["time"]), "%Y-%m-%d")
 
 
 def _fbcyl_in_range(doc: dict, filt: dict) -> bool:
@@ -290,8 +290,8 @@ def _evolution_pipeline(pipeline: list) -> list:
     (every game of the fixtures has a date)."""
     cleaned = []
     for stage in for_mongomock(pipeline):
-        if stage == {"$addFields": {}}:
-            continue
+        if stage == {"$addFields": {}} or set(stage.get("$addFields", {"": 0})) <= {"timeParts", "parsedDate"}:
+            continue                                                     # the date stages: the date is stored on the documents instead
         stage = copy.deepcopy(stage)
         project = stage.get("$project")
         if project and "game_date" in project:

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Any
 if TYPE_CHECKING:
     from database import MongoDBHandler
 
+from src.database.aggregation.fbcyl_date_expr import parse_day_stages
 from src.database.aggregation.pipeline_team_stats import TeamStatsPipelineMixin
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 
@@ -330,21 +331,12 @@ class EvolutionService:
         """Return per-game raw stat rows for a FBCYL team."""
         tid = int(team_id) if isinstance(team_id, str) and team_id.isdigit() else team_id
         pipeline = [
-            {
-                "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$stats.startDate",
-                            "format": "%Y-%m-%dT%H:%M:%S.%LZ",
-                            "onError": None,
-                            "onNull": None,
-                        }
-                    },
-                    # Pre-capture both team entries before unwind
-                    "t0_entry": {"$arrayElemAt": ["$stats.teams", 0]},
-                    "t1_entry": {"$arrayElemAt": ["$stats.teams", 1]},
-                }
-            },
+            # The day of the game, from ``stats.time`` (``stats.startDate`` is not in the documents, #681), and both team entries before the unwind
+            *parse_day_stages("$stats.time", "parsedDate"),
+            {"$addFields": {
+                "t0_entry": {"$arrayElemAt": ["$stats.teams", 0]},
+                "t1_entry": {"$arrayElemAt": ["$stats.teams", 1]},
+            }},
             {"$match": {"stats.teams.teamIdExtern": tid}},
             {"$unwind": {"path": "$stats.teams", "includeArrayIndex": "teamIndex"}},
             {"$match": {"stats.teams.teamIdExtern": tid}},
