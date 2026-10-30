@@ -18,6 +18,8 @@ export interface GameRow {
   def_rebounds: number; off_rebounds: number
   assists: number; steals: number; turnovers: number; blocks: number
   possessions: number
+  /** FEB: 40 plus 5 per overtime; the stored possessions are scaled to 40 minutes by it (rows published before #672 have none: 40) */
+  game_minutes?: number
   opponent_fg2_made: number; opponent_fg2_attempts: number; opponent_fg3_made: number; opponent_fg3_attempts: number
   opponent_ft_made: number; opponent_ft_attempts: number
   opponent_def_rebounds: number; opponent_off_rebounds: number
@@ -34,6 +36,8 @@ export interface TeamTableFilter {
   result?: 'won' | 'lost'
   from?: string
   to?: string
+  /** The games OUTSIDE the range of dates (the rest of the season of a stretch, #670); a game whose date cannot be read is outside, as Mongo's `$not` says. */
+  outsideDates?: boolean
 }
 
 /** A team's season totals and ratios, the row the pages already read (`TeamStat`) plus the games counted. */
@@ -113,9 +117,9 @@ export function matchesFilters(r: Pick<GameRow, 'is_local' | 'won' | 'starttime'
   if (f.result === 'lost' && (r.won || r.tied)) return false           // a tied game (FBCYL) is neither
   if (f.from || f.to) {
     const t = parsePlayed(r.starttime)
-    if (t === null) return false                                  // a null date matches no range in Mongo
-    if (f.from && t < bound(f.from)) return false
-    if (f.to && t >= endOfDay(f.to)) return false
+    // a null date matches no range in Mongo (and the complement of a range, `$not`, does)
+    const inside = t !== null && (!f.from || t >= bound(f.from)) && (!f.to || t < endOfDay(f.to))
+    if (inside === Boolean(f.outsideDates)) return false
   }
   return true
 }
@@ -175,7 +179,10 @@ function table(rows: GameRow[], side: (r: GameRow) => Side): LocalTeamStat[] {
     for (const g of games) for (const k of SUMMED) sums[k] += side(g)[k]
     const fbcyl = games[0].fouls !== undefined
     const stat = derive(id, games[0].team_name, games.length, games.filter(g => g.is_local).length, games.map(g => g.match_id), sums, fbcyl)
-    return fbcyl ? { ...stat, ...fbcylExtras(games, sums, side === rival) } : stat
+    if (!fbcyl) return stat
+    // FBCYL's table names the rebounds per game its own way (`def_rebounds_per_game`): the two of FEB's table are not in it
+    const { offensive_rebounds_per_game: _off, defensive_rebounds_per_game: _def, ...shared } = stat
+    return { ...shared, ...fbcylExtras(games, sums, side === rival) } as LocalTeamStat
   })
   return out.sort((a, b) => (b.points_per_game as number) - (a.points_per_game as number))
 }

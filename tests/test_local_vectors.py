@@ -115,3 +115,69 @@ def test_the_stored_fbcyl_player_cases_are_what_the_real_pipeline_answers(stored
     if client is None:
         pytest.skip("needs a real mongod: FBCYL's player pipeline uses operators mongomock does not implement")
     assert json.loads(json.dumps(fbcyl_players.build_cases(client), sort_keys=True, default=str)) == stored_fbcyl_players["cases"]
+
+
+# Comparativas (#670): both groups of the season through ``TeamComparisonService``, the reference of ``frontend/src/localdata/comparison.test.ts``.
+@pytest.mark.parametrize("builder, path", [("build_comparison_vectors", "COMPARISON_OUT"), ("build_fbcyl_comparison_vectors", "COMPARISON_FBCYL_OUT")])
+def test_the_stored_comparison_vectors_are_the_current_reference(builder, path):
+    stored = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(getattr(generate, builder)(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("builder", ["build_comparison_vectors", "build_fbcyl_comparison_vectors"])
+def test_the_comparisons_tell_something_apart(builder):
+    cases = {c["name"]: c["expected"] for c in getattr(generate, builder)()["cases"]}
+    games = {row["team_name"]: row["games_a"] + row["games_b"] for row in cases["home vs away"]["team"]}
+    assert set(games.values()) == {6}
+    for name, comparison in cases.items():
+        for row in comparison["team"]:
+            both = row["games_a"] + row["games_b"]
+            if name == "won vs lost":
+                assert both <= games[row["team_name"]], name              # FBCYL: a tied game is neither won nor lost
+            else:
+                assert both == games[row["team_name"]], name              # every game is in one group or the other (the rest of a stretch is its complement)
+    empty = cases["stretch that holds no game"]["team"]
+    assert all(row["games_a"] == 0 and row["a"] is None and row["diff"] == {} for row in empty)      # a group with no game has no figures, so no difference
+    assert any(0 < row["games_a"] < 6 for row in cases["stretch between two dates"]["team"])
+
+
+# Multifase (#671): ``MultiPhaseService`` over two phases (the home and the away games of each league) and the sibling collections of a name, the reference of
+# ``frontend/src/localdata/multiPhase.test.ts``.
+def test_the_stored_multi_phase_vectors_are_the_current_reference():
+    stored = json.loads(generate.MULTI_OUT.read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(generate.build_multi_vectors(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("league", ["feb", "fbcyl"])
+def test_the_merged_tables_add_the_phases_up(league):
+    vectors = json.loads(generate.MULTI_OUT.read_text(encoding="utf-8"))[league]
+    phases = vectors["phases"].values()
+    games = {t["team_name"]: sum(next(r for r in p["team_stats"] if r["team_name"] == t["team_name"]).get("total_games", next(r for r in p["team_stats"] if r["team_name"] == t["team_name"]).get("games_played")) for p in phases) for t in vectors["team_stats"]}
+    assert all(row["games_played"] == games[row["team_name"]] > 0 for row in vectors["team_stats"])        # every team is in both phases: its games are the sum
+    assert len(vectors["players"]) > 0
+
+
+def test_the_siblings_of_a_collection_are_those_of_its_competition_and_season():
+    siblings = json.loads(generate.MULTI_OUT.read_text(encoding="utf-8"))["siblings"]["expected"]
+    assert siblings["L_F_-2_2025_2026_Liga_Regular_A"] == sorted(siblings["L_F_-2_2025_2026_Liga_Regular_A"]) and len(siblings["L_F_-2_2025_2026_Liga_Regular_A"]) == 4
+    assert siblings["L_F_-2_2024_2025_Liga_Regular_A"] == ["L_F_-2_2024_2025_Liga_Regular_A"]              # another season is not a phase
+    assert "L_F_-2_2025_2026_Otra_Fase_C" in siblings["L_F_-2_2025_2026_Otra_Fase_C"]                    # a collection that is not in the pool is its own sibling
+    assert "PRIMERA_FEB_2025_2026_Liga_Regular_Unico" not in siblings["L_F_-2_2025_2026_Liga_Regular_A"]     # another competition
+
+
+# Evolución (#672): ``EvolutionService.get_competition_evolution`` over the real per-game pipelines of each league, the reference of ``frontend/src/localdata/evolution.test.ts``.
+@pytest.mark.parametrize("builder, path", [("build_evolution_vectors", "EVOLUTION_OUT"), ("build_fbcyl_evolution_vectors", "EVOLUTION_FBCYL_OUT")])
+def test_the_stored_evolution_vectors_are_the_current_reference(builder, path):
+    stored = json.loads(getattr(generate, path).read_text(encoding="utf-8"))
+    assert json.loads(json.dumps(getattr(generate, builder)(), sort_keys=True)) == stored
+
+
+@pytest.mark.parametrize("path", ["EVOLUTION_OUT", "EVOLUTION_FBCYL_OUT"])
+def test_the_evolution_vectors_cover_every_stat_and_tell_something(path):
+    from src.services.evolution_service import EVOLUTION_STAT_KEYS
+
+    cases = json.loads(getattr(generate, path).read_text(encoding="utf-8"))["cases"]
+    assert {c["stat"] for c in cases} == set(EVOLUTION_STAT_KEYS)
+    points = next(c for c in cases if c["stat"] == "points" and c["window"] == 3)["points"]
+    assert [p["game_number"] for p in points] == list(range(1, len(points) + 1)) and len(points) > 3
+    assert any(p["competition_rolling"] != p["competition_cumulative"] for p in points)          # the window matters once a team has played more games than it

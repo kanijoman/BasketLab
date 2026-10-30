@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ScopedAccessError } from '@live-package/crypto'
 import { DATA_FLAG_KEY, localDataEnabled, localPlayerStats, localTeamStats, resetLocalData } from './source'
+import { loadWebRows, WebDataUnavailable } from '@/webdata/client'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
 import fbcylTeams from '../../../tests/local_vectors/team_stats_fbcyl.json'
 import fbcylPlayers from '../../../tests/local_vectors/players_fbcyl.json'
+
+// The published rows come from `webdata/client`; here they are not published unless a test says so (the manual export `local-data/` is the fallback).
+vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebRows: vi.fn() }))
 
 // The local data source (issue #327, step 2): the web reads the exported files instead of the API when `?data=local` is on, and says so
 // (null) whenever it cannot answer, so that the caller falls back to the API instead of showing an empty table.
@@ -27,7 +32,10 @@ function serve(files: Record<string, unknown> = FILES) {
 }
 const turnOn = () => localStorage.setItem(DATA_FLAG_KEY, 'local')
 
-beforeEach(() => { localStorage.clear(); resetLocalData(); window.history.replaceState(null, '', '/') })
+beforeEach(() => {
+  localStorage.clear(); resetLocalData(); window.history.replaceState(null, '', '/')
+  vi.mocked(loadWebRows).mockReset().mockRejectedValue(new WebDataUnavailable('no publicado'))
+})
 const realFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = realFetch })          // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
 
@@ -102,6 +110,39 @@ describe('local tables', () => {
 
   it('answers null for a file of another format version', async () => {
     serve({ ...FILES, 'index.json': { ...INDEX, format: 99 } }); turnOn()
+    expect(await localTeamStats(FEB, {})).toBeNull()
+  })
+})
+
+// Issue #673 (P4): the rows of the publication (`rows/` of web-data) are what the tables are computed from; the manual export is the fallback of development.
+describe('the rows of the publication', () => {
+  it('are used first: the tables are computed from them and the manual export is not even asked for', async () => {
+    serve(); turnOn()
+    vi.mocked(loadWebRows).mockResolvedValue({ format: 1, collection: FEB, league: 'feb', games: 12, team_rows: teams.rows, player_rows: players.rows } as never)
+    const all = await localTeamStats(FEB, {})
+    expect(all?.team_stats.reduce((n, t) => n + t.total_games, 0)).toBe(24)
+    expect(await localPlayerStats(FEB, { team: 'BRAVO' })).not.toBeNull()
+    expect(loadWebRows).toHaveBeenCalledTimes(1)                   // once per competition for the team and the player tables
+    expect(fetched).toEqual([])
+  })
+
+  it('a competition that is not published falls back to the manual export, and then to the API (null)', async () => {
+    serve(); turnOn()
+    expect((await localTeamStats(FEB, {}))?.team_stats.length).toBeGreaterThan(0)
+    resetLocalData()
+    serve({})
+    expect(await localTeamStats(FEB, {})).toBeNull()
+  })
+
+  it('a reader without the key is told so (the access error goes through), not sent to the API', async () => {
+    serve(); turnOn()
+    vi.mocked(loadWebRows).mockRejectedValue(new ScopedAccessError('sin clave'))
+    await expect(localTeamStats(FEB, {})).rejects.toBeInstanceOf(ScopedAccessError)
+  })
+
+  it('rows of another format are not used', async () => {
+    serve({}); turnOn()
+    vi.mocked(loadWebRows).mockResolvedValue({ format: 99, collection: FEB, league: 'feb', games: 1, team_rows: [], player_rows: null } as never)
     expect(await localTeamStats(FEB, {})).toBeNull()
   })
 })

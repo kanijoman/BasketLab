@@ -4,6 +4,7 @@ from typing import List, Dict, Optional
 from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin
+from .possession_expr import game_minutes
 
 
 class TeamPerGamePipelineMixin:
@@ -19,6 +20,7 @@ class TeamPerGamePipelineMixin:
         """
         project = TeamStatsPipelineMixin._project_match_data()
         project["$project"]["starttime"] = "$HEADER.starttime"
+        project["$project"]["game_minutes"] = game_minutes()          # what ``possessions_per_40`` scaled by: the client undoes it for Evolución (#672)
         return [TeamStatsPipelineMixin._add_match_level_fields(), TeamStatsPipelineMixin._unwind_teams(), project]
 
     @staticmethod

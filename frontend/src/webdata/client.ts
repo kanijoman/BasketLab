@@ -8,8 +8,9 @@ import { decryptScoped, PackageDecryptError, ScopedAccessError } from '@live-pac
 import { loadRights, scopeKeys } from '@live-package/rights'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
 import type { ScoutingReport, ScoutingScope } from '@/api/scoutingRival'
-import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type WebDataManifest } from './contract.generated'
+import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type Wrap, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
+import type { Competition } from '@/localdata/competition'
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
@@ -95,49 +96,68 @@ export async function loadReportTeams(collection: string): Promise<Array<{ id: s
   return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
 }
 
+/** A sealed file of the publication with the manifest it came from, the wraps of its key and its text. */
+interface Sealed { manifest: WebDataManifest; wraps: Wrap[]; text: string }
+
 /** The sealed file of the first report of the competition that `find` accepts, with the manifest it came from. */
-async function sealedFile(collection: string, find: (entry: ReportEntry) => boolean): Promise<{ manifest: WebDataManifest; entry: ReportEntry; text: string }> {
+async function sealedFile(collection: string, find: (entry: ReportEntry) => boolean): Promise<Sealed> {
   const { manifest, index } = await reportIndexOf(collection)
   const entry = index.reports.find(find)
   if (!entry) throw new WebDataUnavailable('Este informe no está publicado.')
-  return { manifest, entry, text: await fetchText(entry.file) }
+  return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
+}
+
+/** The sealed rows of a competition (`rows/`), with the manifest they came from. */
+async function sealedRows(collection: string): Promise<Sealed> {
+  const manifest = await loadManifest()
+  const entry = manifest.rows.find(r => r.collection === collection)
+  if (!entry) throw new WebDataUnavailable('Esta competición no tiene datos publicados.')
+  return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
 }
 
 /**
- * Opens a sealed report of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
+ * Opens a sealed file of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
  * page was open) makes it read the manifest again, once.
  * @throws ScopedAccessError the reader has no key that opens it (ask for an invitation)
  * @throws WebDataUnavailable it cannot be had from the publication (use the API)
  */
-async function openSealed<T>(collection: string, find: (entry: ReportEntry) => boolean): Promise<T> {
+async function openSealed<T>(locate: () => Promise<Sealed>, what: string): Promise<T> {
   let sealed
   try {
-    sealed = await sealedFile(collection, find)
+    sealed = await locate()
   } catch (error) {
     if (!(error instanceof Gone)) throw error
     resetWebData()
     try {
-      sealed = await sealedFile(collection, find)
+      sealed = await locate()
     } catch (again) {
       throw again instanceof Gone ? new WebDataUnavailable('Los datos publicados han cambiado: recarga la página.') : again
     }
   }
   try {
-    return JSON.parse(await decryptScoped(sealed.text, sealed.entry.wraps, scopeKeys(sealed.manifest, loadRights()))) as T
+    return JSON.parse(await decryptScoped(sealed.text, sealed.wraps, scopeKeys(sealed.manifest, loadRights()))) as T
   } catch (error) {
     if (error instanceof ScopedAccessError) throw error
-    if (error instanceof PackageDecryptError || error instanceof SyntaxError) throw new WebDataUnavailable('El informe publicado está dañado.')
+    if (error instanceof PackageDecryptError || error instanceof SyntaxError) throw new WebDataUnavailable(`${what} publicado está dañado.`)
     throw error
   }
 }
 
 /** The report of a team (its own analysis or the rule-based report of a rival). */
 export const loadWebReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
-  openSealed<TeamReport>(collection, r => r.team_id === teamId && r.mode === mode)
+  openSealed<TeamReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === mode), 'El informe')
 
 /** The full scouting of a rival for a scope: `liga`, `copa` (the cups of the season) or `todo` (both), issue #638. */
 export const loadWebScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport> =>
-  openSealed<ScoutingReport>(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope)
+  openSealed<ScoutingReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope), 'El informe')
+
+/** The names of the competitions the publication has rows for (the phases of a competition are found among them), issue #671. */
+export async function loadWebCollections(): Promise<string[]> {
+  return (await loadManifest()).rows.map(r => r.collection)
+}
+
+/** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
+export const loadWebRows = (collection: string): Promise<Competition> => openSealed<Competition>(() => sealedRows(collection), 'El fichero')
 
 const SCOPE_ORDER: ScoutingScope[] = ['liga', 'copa', 'todo']
 
