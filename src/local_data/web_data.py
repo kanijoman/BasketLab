@@ -17,6 +17,7 @@ from src.live_prep.package_sealing import Sealer
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
+from src.local_data.inout_export import export_inout
 from src.local_data.lineups_export import export_lineups
 from src.local_data.matches_export import export_matches
 from src.local_data.possessions_export import export_possession_csv, export_possessions
@@ -28,7 +29,7 @@ INDEX = "index.json"
 ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
-            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/"}
+            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/"}
 
 
 def _json(value: Any) -> str:
@@ -85,6 +86,9 @@ def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Op
     if section == "matches":
         payload = export_matches(handler, collection)
         return payload if payload["matches"] else None
+    if section == "inout":
+        payload = export_inout(handler, collection)
+        return payload if payload["players"] else None
     if section == "lineups":
         payload = export_lineups(handler, collection)
         return payload if payload["teams"] else None
@@ -97,7 +101,7 @@ def _publish_section(section: str, handler: Any, db: Any, collection: str, out_d
     if payload is None:
         return None
     fields = seal_file(out_dir, f"{collection}", _json(payload), [f"competicion:{collection}"], sealer, kept, SECTIONS[section])
-    return {"collection": collection, "league": payload["league"], "games": payload.get("games", len(payload.get("teams", []))), **fields}       # rotations: ``games`` counts the teams
+    return {"collection": collection, "league": payload["league"], "games": payload.get("games", len(payload.get("teams", payload.get("players", [])))), **fields}       # rotations: ``games`` counts the teams
 
 
 def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: Sealer, old: Dict[Any, Dict[str, Any]], scout: bool = False,
