@@ -103,6 +103,7 @@ class RuleConfig:
     bonus_short_left_s: int = 120
     rival_important_avg_min_s: int = 1200
     contact_ftr_z: float = 0.5
+    contact_min_ft_pct: float = 0.65   # #698: whoever draws the contact must also convert from the line (shrunk % of the package)
     turnover_player_min: int = 3
     fatigue_critical_index: float = 95.0
     lever_step_pts100: float = 5.0

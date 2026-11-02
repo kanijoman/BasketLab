@@ -14,6 +14,7 @@ export function useReminders(next: NextMatch[], now: Date, loader: ReminderLoade
   const [prefs, setPrefs] = useState<ReminderPrefs>(() => loadReminderPrefs())
   const [result, setResult] = useState<SyncResult | null>(null)
   const justTurnedOn = useRef(false)
+  const askedThisOpening = useRef(false)
   const loaderRef = useRef(loader)
   loaderRef.current = loader
   const plan = prefs.enabled ? planReminders(next, now, prefs.leadMin) : []
@@ -26,8 +27,10 @@ export function useReminders(next: NextMatch[], now: Date, loader: ReminderLoade
       const plugin = await loaderRef.current.load()
       if (cancelled) return
       if (!plugin) { if (prefs.enabled) setResult({ ok: false, reason: 'unavailable', scheduled: 0 }); return }
-      const ask = justTurnedOn.current
+      // a choice kept as "on" by an earlier session may have never been granted the permission (#697): ask once per opening, not on every change of the plan
+      const ask = justTurnedOn.current || (prefs.enabled && !askedThisOpening.current)
       justTurnedOn.current = false
+      if (prefs.enabled) askedThisOpening.current = true
       const outcome = await syncReminders(plugin, plan, { ask })
       if (!cancelled && prefs.enabled) setResult(outcome)
     })()

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BoxscoreEntry, LastStat, Snapshot, SnapshotPlayer } from '../../engine/types'
-import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, highlightFor, playerRowLabel, playerRows, teamRows } from './model'
+import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, deviationOf, highlightFor, playerRowLabel, playerRows, teamRows } from './model'
 
 const stats = (over: Partial<SnapshotPlayer['stats']> = {}) => ({ fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, orb: 0, drb: 0, tov: 0, stl: 0, ast: 0, blk: 0, ...over })
 const player = (name: string, team: string, over: Partial<SnapshotPlayer> = {}): SnapshotPlayer =>
@@ -124,5 +124,36 @@ describe('what the last action lights', () => {
     const light = highlightFor(last({ keys: ['on_court'] }), 'p1')
     expect(light?.row).toBe(true)
     expect(NORMAL_COLUMNS.some(c => light?.cell(c))).toBe(false)
+  })
+})
+
+// Issue #699 (feedback 0.5.0): the totals of the team and the advanced columns were not coloured.
+describe('the colours that were missing (issue #699)', () => {
+  const by = (id: string) => [...NORMAL_COLUMNS, ...ADVANCED_COLUMNS].find(c => c.id === id)!
+  const players = playerRows(SNAP, 'A', ENTRIES)
+
+  it('the totals row takes its deviations from the team (against the rival), the player rows from their own entry', () => {
+    const { totals } = teamRows(SNAP, 'A', players, { pts: 0.6, tov: -0.5 })
+    expect(deviationOf(by('pts'), totals)).toBe(0.6)
+    expect(deviationOf(by('tov'), totals)).toBe(-0.5)
+    expect(deviationOf(by('ast'), totals)).toBeNull()
+    expect(deviationOf(by('pts'), players[0])).toBe(0.8)
+  })
+
+  it('without deviations of the team the totals have no colour, and the row of the team (nobody owns it) never has', () => {
+    const { team, totals } = teamRows(SNAP, 'A', players)
+    expect(deviationOf(by('pts'), totals)).toBeNull()
+    expect(deviationOf(by('tov'), team)).toBeNull()
+  })
+
+  it('the advanced columns that have a good and a bad side are coloured by the deviation of their figure', () => {
+    const entry = { ...ENTRIES.p1, dev: { ts: 0.5, ftr: -0.2, tov: -0.4, ast: 0.3, stl: 0.1, blk: 0.2, drb: -0.6, orb: 0.7 } }
+    const row = { ...players[0], entry }
+    expect(['ts', 'ftr', 'tov_pct', 'ast_pct', 'stl_pct', 'blk_pct', 'drb_pct', 'orb_pct'].map(id => deviationOf(by(id), row))).toEqual([0.5, -0.2, -0.4, 0.3, 0.1, 0.2, -0.6, 0.7])
+  })
+
+  it('the ones with no side or no reference in the package stay without colour', () => {
+    const row = { ...players[0], entry: { ...ENTRIES.p1, dev: { pts: 0.5, ts: 0.5 } } }
+    expect(['usage', 'orating', 'drating', 'net_rtg', 'three_pr', 'pie'].map(id => deviationOf(by(id), row))).toEqual([null, null, null, null, null, null])
   })
 })

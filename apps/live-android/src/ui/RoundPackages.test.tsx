@@ -280,6 +280,27 @@ describe('RoundPackages: the reminders of the matches of interest (issue #482)',
     expect(await screen.findByText(/2 avisos programados/i)).toBeTruthy()
   })
 
+  it('a choice kept as "on" with the permission never asked asks for it when the app opens, once, and then schedules (#697, 0.5.0: "no he dado ningún permiso")', async () => {
+    localStorage.setItem('basketlab-live-reminders', JSON.stringify({ enabled: true, leadMin: 30 }))
+    const checkPermissions = vi.fn().mockResolvedValueOnce({ display: 'prompt' }).mockResolvedValue({ display: 'granted' })
+    const plugin = fake({ checkPermissions })
+    show(ROUNDS, withPlugin(plugin))
+    await waitFor(() => expect(plugin.schedule).toHaveBeenCalledTimes(1))
+    expect(plugin.requestPermissions).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/2 avisos programados/i)).toBeTruthy()
+  })
+
+  it('a permission asked and dismissed is not asked again every time the plan changes', async () => {
+    localStorage.setItem('basketlab-live-reminders', JSON.stringify({ enabled: true, leadMin: 30 }))
+    const plugin = fake({ checkPermissions: vi.fn().mockResolvedValue({ display: 'prompt' }), requestPermissions: vi.fn().mockResolvedValue({ display: 'prompt' }) })
+    const view = render(<RoundPackages rounds={ROUNDS} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...withPlugin(plugin)} />)
+    await waitFor(() => expect(plugin.requestPermissions).toHaveBeenCalledTimes(1))
+    fireEvent.change(screen.getByRole('combobox', { name: /minutos antes/i }), { target: { value: '60' } })
+    await Promise.resolve()
+    view.unmount()
+    expect(plugin.requestPermissions).toHaveBeenCalledTimes(1)
+  })
+
   it('the choice is kept on the device and the reminders are scheduled again when the app opens', async () => {
     const plugin = fake()
     const { unmount } = render(<RoundPackages rounds={ROUNDS} canOpen={() => true} busy={null} onDownload={vi.fn()} isLoaded={() => false} now={NOW} {...withPlugin(plugin)} />)
