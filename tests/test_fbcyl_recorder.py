@@ -90,6 +90,9 @@ class World:
         step = self.script(self.clock)
         if "FCBQWeb" in url:
             return Response(200, {}, step["calendar"].encode())
+        if "streaming.optimalway" in url:                                    # the live feed of the web, by the id of the calendar (#444: the one the first recording never asked)
+            live = step.get("live")
+            return Response(400 if live is None else 200, {"date": "x"}, b"" if live is None else json.dumps(live).encode())
         body = step.get("moves" if "Moves" in url else "stats")
         return Response(404 if body is None else 200, {"date": "x"}, b"" if body is None else json.dumps(body).encode())
 
@@ -149,6 +152,49 @@ def test_it_gives_up_when_the_match_never_appears_or_never_ends(tmp_path):
     assert summary["reason"] == "time_limit"
 
 
+# --- the live feed of the web (the first recording, 31/10, never asked for it: the match id of the moves endpoint only exists when the match is over) ------------------------------
+
+AD_GAME = "23837"
+
+
+def live_body(moves, home=0, away=0, period=1):
+    return {"idMatchIntern": int(AD_GAME), "period": period, "score": {"local": home, "visit": away, "minuteQuarter": 3, "minuteAbsolute": 3, "period": period},
+            "timestamp": "2026/10/31 17:30:00", "moves": [{"idMove": i, "period": period} for i in range(moves)]}
+
+
+def test_while_the_match_is_live_and_has_no_id_the_live_feed_of_the_web_is_polled_by_the_id_of_the_calendar(tmp_path):
+    def script(t):
+        live = 120 <= t < 600
+        done = t >= 600
+        return {"calendar": calendar_text(row(uuid=UUID if done else None, state="1" if done else "0", live=live, adGameId=AD_GAME, matchStartedHour="2026-10-31 17:00:06" if t >= 120 else None)),
+                "live": live_body(int(t // 10), 2, 1), "moves": [{"idMove": 1}] * 9, "stats": {"time": "t", "moves": []}}
+    _, summary, world = run(script, tmp_path)
+    asked = [(t, url) for t, url in world.calls if "streaming.optimalway" in url]
+    assert asked and min(t for t, _ in asked) >= 120 and all(url.endswith(f"/fbcyl/streaming/match-id/{AD_GAME}") for _, url in asked)
+    during = [t for t, _ in asked if t < 600]
+    assert len(during) >= 40 and all(b - a == 10 for a, b in zip(during, during[1:]))          # every interval, not every calendar minute
+    polls = [p for p in lines(tmp_path / "polls.jsonl") if p["endpoint"] == "live"]
+    assert polls[0]["n_moves"] < polls[10]["n_moves"] and polls[5]["score"] == [2, 1] and polls[5]["period"] == 1
+    assert summary["finished"] and len(list((tmp_path / "bodies").glob("*live*"))) >= 10
+
+
+def test_the_live_feed_keeps_being_polled_next_to_the_moves_once_the_match_has_its_id(tmp_path):
+    def script(t):
+        return {"calendar": calendar_text(row(uuid=UUID, state="1" if t > 60 else "0", live=True, adGameId=AD_GAME, matchStartedHour="2026-10-31 17:00:06")),
+                "live": live_body(5), "moves": [{"idMove": 1}] * 5, "stats": {"time": "t", "moves": []}}
+    run(script, tmp_path)
+    assert {p["endpoint"] for p in lines(tmp_path / "polls.jsonl")} == {"live", "moves", "stats"}
+
+
+def test_without_a_game_id_in_the_calendar_or_before_the_match_is_live_the_feed_is_not_asked_for(tmp_path):
+    def script(t):
+        return {"calendar": calendar_text(row(uuid=UUID if t > 200 else None, state="1" if t > 260 else "0", live=t > 200, adGameId=AD_GAME if t > 100 else None)), "live": live_body(1), "moves": [], "stats": {}}
+    _, _, world = run(script, tmp_path)
+    assert not [t for t, url in world.calls if "streaming.optimalway" in url and t < 200]       # an id that is there but a match that has not started: nothing to ask
+    run(lambda t: {"calendar": calendar_text(row(uuid=UUID if t > 20 else None, state="1" if t > 60 else "0", live=True)), "live": live_body(1), "moves": [], "stats": {}}, tmp_path / "b")
+    assert "live" not in {p["endpoint"] for p in lines(tmp_path / "b" / "polls.jsonl")}
+
+
 # --- the report: live or in one go ----------------------------------------------------------------------------------------------------------------
 
 def record(tmp_path, counts):
@@ -171,11 +217,33 @@ def test_moves_that_grow_during_the_match_are_live(tmp_path):
     assert verdict(record(tmp_path, [0, 40, 120, 250, 380, 460, 520]))["live"] is True
 
 
-def test_moves_that_appear_all_at_once_when_the_match_ends_are_not_live(tmp_path):
+def record_live(tmp_path, live_counts, moves_counts):
+    """The same recording with the readings of the live feed of the web next to those of the moves endpoint."""
+    folder = record(tmp_path, moves_counts)
+    polls = [json.loads(x) for x in (folder / "polls.jsonl").read_text(encoding="utf-8").splitlines()]
+    for i, n in enumerate(live_counts):
+        polls.append({**polls[i], "endpoint": "live", "n_moves": n, "score": [0, 0]})
+    (folder / "polls.jsonl").write_text("\n".join(json.dumps(p) for p in polls), encoding="utf-8")
+    return folder
+
+
+def test_moves_that_appear_all_at_once_when_the_match_ends_say_nothing_if_the_live_feed_was_not_asked(tmp_path):
+    """The first recording (31/10) only asked the endpoints of after the match: its NO-GO was not a finding about the live feed of the web."""
     result = verdict(record(tmp_path, [0, 0, 0, 0, 0, 0, 520]))
+    assert result["live"] is None and "no se sondeó" in result["reason"]
+
+
+def test_a_live_feed_that_grows_during_the_match_is_live_even_if_the_moves_endpoint_comes_at_the_end(tmp_path):
+    result = verdict(record_live(tmp_path, [0, 40, 120, 250, 380, 460, 520], [0, 0, 0, 0, 0, 0, 520]))
+    assert result["live"] is True and "flujo en directo" in result["reason"]
+
+
+def test_a_live_feed_that_is_empty_until_the_end_is_not_live(tmp_path):
+    result = verdict(record_live(tmp_path, [0, 0, 0, 0, 0, 0, 520], [0, 0, 0, 0, 0, 0, 520]))
     assert result["live"] is False and "de golpe" in result["reason"]
 
 
 def test_the_report_says_the_go_no_go_in_words(tmp_path):
-    assert "NO-GO" in report(record(tmp_path, [0, 0, 0, 0, 0, 0, 520]))
-    assert "NO-GO" not in report(record(tmp_path / "x", [0, 40, 120, 250, 380, 460, 520]))
+    assert "NO-GO" in report(record_live(tmp_path, [0, 0, 0, 0, 0, 0, 520], [0, 0, 0, 0, 0, 0, 520]))
+    assert "GO" in report(record_live(tmp_path / "x", [0, 40, 120, 250, 380, 460, 520], [0, 0, 0, 0, 0, 0, 520])) and "NO-GO" not in report(record_live(tmp_path / "y", [0, 40, 120, 250, 380, 460, 520], [0, 40, 120, 250, 380, 460, 520]))
+    assert "no concluyente" in report(record(tmp_path / "z", [0, 0, 0, 0, 0, 0, 520]))
