@@ -2,7 +2,7 @@
 
 Writes what the web reads (``src/local_data/web_data``): the sealed rows and reports of every games collection and the manifest ``index.json``. Needs
 ``PACKAGE_MASTER_KEY`` (or ``PACKAGE_PASSWORD``, >= 8 characters) like the live packages. The workflow ``web-data.yml`` starts from the previous
-publication so that what did not change keeps its bytes. ``--closed`` leaves the open scope out (the beta is over).
+publication so that what did not change keeps its bytes, and a competition whose games and code are the same as in it is not computed again (#700, ``build_cache``). ``--closed`` leaves the open scope out (the beta is over).
 """
 import argparse
 import os
@@ -38,8 +38,10 @@ def main(argv=None) -> int:
         return 2
     scouting = [] if args.no_scouting else (args.scouting or [n for n in scouting_collections(handler, interest_clubs()) if n in names])
     started = time.time()
+    # what each section cost, and which ones were reused because nothing changed (#700): the log is how a slow build is told apart from a stuck one
     manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection), scouting=scouting,
-                                on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"))
+                                on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"),
+                                on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True))
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")
     return 0

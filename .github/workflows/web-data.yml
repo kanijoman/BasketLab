@@ -40,7 +40,7 @@ jobs:
     # a red Atlas refresh (missing matches) must not block the data; a cancelled one does
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120   # #700: the first build after a change of code computes every competition again (about 50 minutes); the rest reuse what did not change
     services:
       mongo:
         image: mongo:7
