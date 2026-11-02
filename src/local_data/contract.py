@@ -28,7 +28,7 @@ class FileEntry(TypedDict):
 
 class RowsEntry(FileEntry):
     """The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676), its shots (``shots/``, #685) or the rotation analysis of its teams
-    (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players): same entry, other content."""
+    (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players) or the rival-adjusted figures of its teams (``rival_adjusted/``, #710; ``games`` counts its teams): same entry, other content."""
     collection: str
     league: Literal["feb", "fbcyl"]
     games: int
@@ -56,6 +56,7 @@ class WebDataManifest(TypedDict):
     lineups: NotRequired[List[RowsEntry]]
     inout: NotRequired[List[RowsEntry]]
     consistency: NotRequired[List[RowsEntry]]
+    rival_adjusted: NotRequired[List[RowsEntry]]
     reports: List[ReportIndexEntry]
 
 

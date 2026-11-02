@@ -9,7 +9,7 @@
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 import { loadReportTeams } from '@/webdata/client'
-import { localCollectionList, localPlayerConsistency, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
+import { localCollectionList, localRivalAdjusted, localPlayerConsistency, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -1207,9 +1207,9 @@ export interface RivalAdjEntry {
 export type RivalAdjustedResult = Record<string, Record<string, RivalAdjEntry>>
 
 export const getRivalAdjusted = (collection: string) =>
-  get<RivalAdjustedResult>(
+  fromSource('rival-adjusted', () => localRivalAdjusted(collection), () => get<RivalAdjustedResult>(
     `/teams/${encodeURIComponent(collection)}/rival-adjusted`,
-  )
+  ))
 
 // FASE 3/4 — Elasticity models
 export interface ElasticityTrainRequest {

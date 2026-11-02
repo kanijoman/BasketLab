@@ -120,7 +120,7 @@ async function sealedRows(collection: string): Promise<Sealed> {
 }
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout' | 'consistency', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout' | 'consistency' | 'rival_adjusted', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
@@ -227,6 +227,16 @@ export interface PublishedConsistency {
 }
 export const loadWebConsistency = (collection: string): Promise<PublishedConsistency> =>
   openSealed<PublishedConsistency>(() => sealedSection('consistency', collection, 'Esta competición no tiene la consistencia publicada.'), 'El fichero')
+
+/** What `GET /teams/{collection}/rival-adjusted` answers (computed when the competition was published): by team name, the raw and adjusted average, the adjustment, the strength of schedule and the games of each stat, issue #710. */
+export interface PublishedRivalAdjusted {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  teams: Record<string, Record<string, { raw_avg: number | null; adj_avg: number | null; adj: number | null; sos: number | null; n: number }>>
+}
+export const loadWebRivalAdjusted = (collection: string): Promise<PublishedRivalAdjusted> =>
+  openSealed<PublishedRivalAdjusted>(() => sealedSection('rival_adjusted', collection, 'Esta competición no tiene el ajuste por rival publicado.'), 'El fichero')
 
 /** The list of the matches of a competition, each with its analysis (computed when it was published), issue #677. */
 export interface PublishedMatches {
