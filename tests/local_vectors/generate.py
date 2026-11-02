@@ -47,6 +47,7 @@ SHOTS_OUT = Path(__file__).resolve().parent / "shots_feb.json"
 SHOTS_FBCYL_OUT = Path(__file__).resolve().parent / "shots_fbcyl.json"
 EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 COLLECTIONS_OUT = Path(__file__).resolve().parent / "collections.json"
+QUARTILES_OUT = Path(__file__).resolve().parent / "player_quartiles.json"
 LINEUPS_OUT = Path(__file__).resolve().parent / "lineups_feb.json"
 LINEUPS_FBCYL_OUT = Path(__file__).resolve().parent / "lineups_fbcyl.json"
 FILTERS = [
@@ -447,6 +448,10 @@ def main() -> None:
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()
+
+    from quartile_vectors import build as build_quartiles              # reads the player vectors written above
+
+    _write(QUARTILES_OUT, build_quartiles())
 
 
 if __name__ == "__main__":

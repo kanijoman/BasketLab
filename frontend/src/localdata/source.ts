@@ -11,6 +11,7 @@ import { competitionEvolution, EVOLUTION_STATS } from './evolution'
 import type { CollectionInfo, ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { lineupAnalysis, type LineupQuery, type Lineups } from './lineups'
+import { playerQuartiles, type PlayerQuartiles } from './playerQuartiles'
 import { mergeByKey, siblingCollections } from './multiPhase'
 import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, type Derived } from './pbp'
 import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
@@ -111,6 +112,12 @@ export async function localPlayerStats(collection: string, filters: PlayerTableF
   if (dataSourceOf('player-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   return data ? playerTable(data, filters) : null
+}
+
+/** The quartiles of the players of the competition (issue #707), as `GET /players/{collection}/quartiles`; `null` to use the API. */
+export async function localPlayerQuartiles(collection: string): Promise<PlayerQuartiles | null> {
+  const table = await localPlayerStats(collection, {})
+  return table ? playerQuartiles(table) : null
 }
 
 /** The player table of a competition's rows (each league has its own), or `null` if it was exported without player rows. */

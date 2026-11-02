@@ -9,7 +9,7 @@
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 import { loadReportTeams } from '@/webdata/client'
-import { localCollectionList, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
+import { localCollectionList, localPlayerQuartiles, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -233,9 +233,9 @@ export const getPlayerStats = (collection: string, params?: TeamFilters) =>
   )
 
 export const getPlayerQuartiles = (collection: string) =>
-  get<Record<string, Record<string, number>>>(
+  fromSource('player-stats', () => localPlayerQuartiles(collection), () => get<Record<string, Record<string, number>>>(
     `/players/${encodeURIComponent(collection)}/quartiles`,
-  )
+  ))
 
 // With the dataset `inout` on (`?data=local`, issue #678) the analysis was computed when the competition was published (FEB): there at once; FBCYL and unpublished ones, the API.
 export const getInOutAnalysis = (collection: string, playerId: string) =>
