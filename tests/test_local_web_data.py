@@ -138,11 +138,11 @@ def test_a_new_game_never_changes_a_file_in_place_and_leaves_no_orphans(handler,
     handler.connection.client["BASKETBALL"][FEB].insert_one({**games.build_games()[0], "_id": 9999})
     publish_web_data(handler, tmp_path, sealer, [FEB, FBCYL])
     after = _tree(tmp_path)
-    assert all(after[name] == data for name, data in before.items() if name in after and name != "index.json")   # same name, same bytes
+    assert all(after[name] == data for name, data in before.items() if name in after and name not in ("index.json", "build-cache.json"))   # same name, same bytes (the memory of the build is the one file that is rewritten, and no client reads it)
     assert before.keys() - after.keys() and after.keys() - before.keys()                                         # what changed got a new name
     manifest = _manifest(tmp_path)
     reports = [e["file"] for r in manifest["reports"] for e in json.loads(after[r["file"]])["reports"]]
-    referenced = {e["file"] for e in manifest["rows"] + [x for section in SECTIONS for x in manifest.get(section, [])] + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json"}
+    referenced = {e["file"] for e in manifest["rows"] + [x for section in SECTIONS for x in manifest.get(section, [])] + manifest["reports"]} | set(reports) | {"index.json", "frontend/vercel.json", "build-cache.json"}
     assert set(after) == referenced
     untouched = [n for n in after if "FBCYL" in n and n in before]
     assert untouched                                                                                             # the other competition kept its files
