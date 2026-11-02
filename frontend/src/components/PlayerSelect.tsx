@@ -1,6 +1,7 @@
 /** Player picker: name search + team filter + player dropdown (IN/OUT page). */
 import { useMemo, useState } from 'react'
 import type { PlayerStat } from '@/api/client'
+import { playerKey } from '@/lib/playerKey'
 import { Input, Select } from '@/components/ui/Field'
 
 export type TeamOption = { id: string; name: string }
@@ -60,7 +61,7 @@ export default function PlayerSelect({
       <Select aria-label={label} className="w-full min-w-0" value={value} onChange={e => onChange(e.target.value)}>
         <option value="">— Selecciona jugador —</option>
         {filtered.map((p, idx) => (
-          <option key={`${p.player_id}_${(p.team_name ?? '').trim()}_${idx}`} value={p.player_id}>
+          <option key={`${playerKey(p)}_${(p.team_name ?? '').trim()}_${idx}`} value={playerKey(p)}>
             {p.player_name} ({(p.team_name ?? '').trim() || '—'})
           </option>
         ))}

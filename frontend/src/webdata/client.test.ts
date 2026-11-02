@@ -255,11 +255,13 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     expect(requested.filter(f => f.startsWith('lineups/'))).toHaveLength(1)
   })
 
-  it('opens the IN/OUT of the players of a FEB competition, and FBCYL has none (issue #678)', async () => {
+  it('opens the IN/OUT of the players of both leagues, the FBCYL ones by uuid (issues #678, #711)', async () => {
     const inout = await loadWebInOut(FEB)
     expect(inout.players.length).toBeGreaterThan(0)
     expect(requested.filter(f => f.startsWith('inout/'))).toHaveLength(1)
-    await expect(loadWebInOut(FBCYL)).rejects.toBeInstanceOf(WebDataUnavailable)
+    const fbcyl = await loadWebInOut(FBCYL)
+    expect(fbcyl.players.length).toBeGreaterThan(0)
+    expect(fbcyl.players.every(p => p.player_id.includes('-'))).toBe(true)
   })
 
   it('opens the consistency of the players of an FBCYL competition, and the FEB one of the sample has none (issue #709)', async () => {
