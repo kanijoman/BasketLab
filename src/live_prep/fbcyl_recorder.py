@@ -2,7 +2,9 @@
 
 The calendar of a group (ESB API, Base64) has a row per match: ``state`` (0 to play, 1 played), ``isLive``, ``matchDay`` (kick-off, Madrid), ``matchStartedHour`` and
 a ``universallyid`` that exists once the match has data. With it, ``getJsonWithMatchMoves`` (the play-by-play) and ``getJsonWithMatchStats`` answer. In eleven finished matches every
-move is stamped within 12 s of the others, right after the end: this recorder watches the next one to prove whether anything is served during the game.
+move is stamped within 12 s of the others, right after the end, and the first recording (31/10) saw the id appear only then. But the web of the federation (``/directos``) shows the score
+live through ANOTHER service that needs no id of the match: ``streaming/match-id/{adGameId}`` (the ``adGameId`` of the calendar row, and an SSE channel that pushes each move). The recorder
+polls it while the match is live, next to the others, to prove what is served during the game.
 
 Output directory (one per match), the same layout as ``recorder.py``::
 
@@ -31,8 +33,9 @@ from .recorder import Response, _kept
 
 API = "https://esb.optimalwayconsulting.com/fbcyl/1/jR4rgA5K6Chhh5vyfrxo9wTScdg2NT7K/FCBQWeb/getAllGamesByGrupWithMatchRecords/{group}/0"
 STATS = "https://msstats.optimalwayconsulting.com/v1/fbcyl"
-ENDPOINTS = {"moves": STATS + "/getJsonWithMatchMoves/{uuid}", "stats": STATS + "/getJsonWithMatchStats/{uuid}?currentSeason=true"}
-KEPT_ROW = ("universallyid", "state", "isLive", "matchDay", "dayTime", "localScore", "visitorScore", "matchStartedHour", "idMatch")
+LIVE = "https://streaming.optimalwayconsulting.com/fbcyl/streaming/match-id/{uuid}"            # keyed by ``adGameId``, not by the uuid of the stats
+ENDPOINTS = {"moves": STATS + "/getJsonWithMatchMoves/{uuid}", "stats": STATS + "/getJsonWithMatchStats/{uuid}?currentSeason=true", "live": LIVE}
+KEPT_ROW = ("universallyid", "state", "isLive", "matchDay", "dayTime", "localScore", "visitorScore", "matchStartedHour", "idMatch", "adGameId")
 PLAN_BEFORE, PLAN_AFTER = timedelta(hours=3), timedelta(hours=2)     # as the FEB recorder: a job launched up to 3 h ahead waits for the start
 
 
@@ -93,6 +96,7 @@ class FbcylRecorder:
         self.tail_polls, self.skip_if_finished, self._now, self._sleep, self._utcnow = tail_polls, skip_if_finished, now, sleep, utcnow
         self._sha: Dict[str, str] = {}
         self._seq = 0
+        self._game_id: Optional[str] = None      # ``adGameId`` of the calendar row, once the match is being played (the live feed answers by it)
         self.summary: Dict[str, Any] = {"polls": 0, "bodies_saved": 0, "errors": 0, "finished": False, "reason": None, "uuid": None}
 
     # -- files -------------------------------------------------------------------------------------
@@ -154,6 +158,9 @@ class FbcylRecorder:
             return {"n_moves": len(doc), "last_period": doc[-1].get("period") if doc and isinstance(doc[-1], dict) else None}
         if endpoint == "stats" and isinstance(doc, dict):
             return {"period": doc.get("period"), "stats_time": doc.get("time"), "n_moves": len(doc.get("moves") or [])}
+        if endpoint == "live" and isinstance(doc, dict):
+            score = doc.get("score") or {}
+            return {"period": doc.get("period"), "n_moves": len(doc.get("moves") or []), "score": [score.get("local"), score.get("visit")], "minute": score.get("minuteAbsolute"), "stamp": doc.get("timestamp")}
         return {}
 
     # -- the run -------------------------------------------------------------------------------------
@@ -168,31 +175,45 @@ class FbcylRecorder:
         (self.out / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
         return self.summary
 
+    def _watch_game_id(self, row: Optional[Dict[str, Any]]) -> None:
+        """The live feed answers by ``adGameId`` and only means something once the match is being played (the calendar says live or gives the hour it started)."""
+        if row and row.get("adGameId") and (row.get("isLive") or row.get("matchStartedHour")):
+            self._game_id = str(row["adGameId"])
+
     def _wait_for_the_match(self) -> Optional[str]:
-        """Watches the calendar until the match has an id; None (with the reason) when it was already played or never starts."""
-        began, first = self._now(), True
+        """Watches the calendar until the match has an id; None (with the reason) when it was already played or never starts. While it is live and has an ``adGameId`` the live
+        feed is polled at the interval of the recorder, the calendar every ``calendar_every_s``."""
+        began, first, last_calendar = self._now(), True, None
         while True:
-            row = self._row()
-            if row and first and self.skip_if_finished and str(row.get("state")) == "1":
-                self.summary.update(finished=True, reason="already_finished")
-                return None
-            first = False
-            if row and row.get("universallyid"):
-                self.summary["uuid"] = row["universallyid"]
-                return row["universallyid"]
+            if last_calendar is None or self._now() - last_calendar >= self.calendar_every_s:
+                last_calendar = self._now()
+                row = self._row()
+                if row and first and self.skip_if_finished and str(row.get("state")) == "1":
+                    self.summary.update(finished=True, reason="already_finished")
+                    return None
+                first = False
+                self._watch_game_id(row)
+                if row and row.get("universallyid"):
+                    self.summary["uuid"] = row["universallyid"]
+                    return row["universallyid"]
             if (self._now() - began) / 60 >= self.max_wait_minutes:
                 self.summary["reason"] = "never_started"
                 return None
-            self._sleep(self.calendar_every_s)
+            if self._game_id:
+                self._poll("live", self._game_id)
+            self._sleep(self.interval if self._game_id else self.calendar_every_s)
 
     def _record(self, uuid: str) -> None:
         began, last_calendar, tail = self._now(), self._now(), None
         while True:
             self._poll("moves", uuid)
             self._poll("stats", uuid)
+            if self._game_id:
+                self._poll("live", self._game_id)
             if self._now() - last_calendar >= self.calendar_every_s:
                 last_calendar = self._now()
                 row = self._row()
+                self._watch_game_id(row)
                 if row and str(row.get("state")) == "1":
                     self.summary["finished"] = True
                     tail = self.tail_polls if tail is None else tail
