@@ -29,6 +29,9 @@ EMPTY_ZONES = {"own": {}, "conceded": {}, "league": {}}
 ODD_NAME = "EQUIPO “ÑANDÚ” — 日本 ✅"
 
 
+TONES = {(30, 30, 30): "ink", (110, 110, 120): "muted", (30, 130, 70): "ok", (180, 40, 40): "bad"}     # the layout's colours, as the web names them (it prints with the paper palette)
+
+
 class Recorder:
     """The methods of ``ScoutingPDF`` that the layout calls, writing down what they are asked for."""
 
@@ -39,7 +42,7 @@ class Recorder:
 
     def h2(self, text, keep_with=35): self.calls.append(["h2", text, keep_with])
 
-    def para(self, text, size=10, bold=False, color=(30, 30, 30)): self.calls.append(["para", text, size, bold, list(color)])
+    def para(self, text, size=10, bold=False, color=(30, 30, 30)): self.calls.append(["para", text, size, bold, TONES[tuple(color)]])
 
     def bullet(self, text, tag="", size=10): self.calls.append(["bullet", text, tag, size])
 
@@ -49,7 +52,7 @@ class Recorder:
 
     def table(self, headers, rows, widths, aligns=None, colors=None):
         self.calls.append(["table", list(headers), [list(r) for r in rows], list(widths), list(aligns) if aligns else None,
-                           [[list(c) if c else None for c in row] for row in colors] if colors else None])
+                           [[TONES[tuple(c)] if c else None for c in row] for row in colors] if colors else None])
 
 
 def _calls(report: Dict[str, Any], own_name: str) -> List[List[Any]]:

@@ -31,5 +31,5 @@ def test_the_scouting_pdf_vectors_cover_what_the_browser_has_to_get_right():
     assert any(call[0] == "h2" and call[2] == 120 for case in cases for call in case["calls"])         # the heading that travels with the chart
     assert any(not any(c[0] == "image" for c in case["calls"]) for case in cases)                       # a report without zones has no chart
     assert any("Jugadoras" in json.dumps(case["calls"]) for case in cases)                              # the women's wording
-    assert any(call[0] == "para" and call[4] == [180, 40, 40] for case in cases for call in case["calls"])   # the notices, in red
+    assert any(call[0] == "para" and call[4] == "bad" for case in cases for call in case["calls"])   # the notices, in red
     assert [value for value, _ in _stored()["safe"]][-1] == 42

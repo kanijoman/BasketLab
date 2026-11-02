@@ -1,25 +1,19 @@
 // The PDF of the rival scouting, made in the browser (issue #715). The server lays the report out with fpdf2 (`services/scouting_pdf.py`): headings, paragraphs, bullets, tables with their
-// widths and coloured cells, spacing and a zones chart. `scoutingCalls` asks for exactly what that layout asks (call by call, same order and texts; `tests/local_vectors/scouting_pdf.json`
+// widths and tones in its cells, spacing and a zones chart. `scoutingCalls` asks for exactly what that layout asks (call by call, same order and texts; `tests/local_vectors/scouting_pdf.json`
 // records the real layout over a recorder) and `scoutingPdf` draws those calls with jsPDF, loaded when the button is pressed. The report is the sealed one (or the job's JSON).
 import type { ScoutingReport } from '@/api/scoutingRival'
 import { pyFixed } from '@/localdata/pyMath'
+import { PAPER, type Tone } from '@design/paper'
 
-type Color = [number, number, number]
-const DARK: Color = [30, 30, 30]
-const ACCENT: Color = [50, 50, 80]
-const SOFT: Color = [240, 240, 245]
-const GREEN: Color = [30, 130, 70]
-const RED: Color = [180, 40, 40]
-const MUTED: Color = [110, 110, 120]
-
+/** The calls of the layout; a colour is a TONE (`ink`, `muted`, `ok`, `bad`): the paper palette of design/paper.ts says which one it is. */
 export type Call =
   | ['h1', string]
   | ['h2', string, number]
-  | ['para', string, number, boolean, Color]
+  | ['para', string, number, boolean, Tone]
   | ['bullet', string, string, number]
   | ['ln', number | null]
   | ['image', number]
-  | ['table', string[], Array<Array<string | number>>, number[], string[] | null, Array<Array<Color | null>> | null]
+  | ['table', string[], Array<Array<string | number>>, number[], string[] | null, Array<Array<Tone | null>> | null]
 
 /** What the report has beyond the typed fields: the quarters, the edges, the timeouts and the zones of the shots. */
 interface ZoneRow { label: string; own_fga: number; own_fg_pct: number | null; league_fg_pct: number | null; own_delta_pp: number | null; conceded_fga: number; conceded_fg_pct: number | null; conceded_delta_pp: number | null }
@@ -38,9 +32,9 @@ const COMPARISON_ROWS = 14
 const fmt = (value: number, digits = 1, sign = false): string => pyFixed(value, digits, sign).replace('.', ',')
 const pct = (value: number | null | undefined, sign = false): string => (value === null || value === undefined ? '-' : `${fmt(value, 0, sign)} %`)
 
-function deltaColor(delta: number | null | undefined, goodHigh: boolean): Color | null {
+function deltaColor(delta: number | null | undefined, goodHigh: boolean): Tone | null {
   if (delta === null || delta === undefined || Math.abs(delta) < 4) return null
-  return (delta > 0) === goodHigh ? GREEN : RED
+  return (delta > 0) === goodHigh ? 'ok' : 'bad'
 }
 
 /** Does the zones chart exist? (the server draws one when some of the first ten zones has a percentage). */
@@ -52,16 +46,16 @@ export function scoutingCalls(report: ScoutingReport, ownName = 'Nuestro equipo'
   const calls: Call[] = []
   const team = r.team.name
   const female = r.gender === 'F'
-  const para = (text: string, size = 10, bold = false, color: Color = DARK) => calls.push(['para', text, size, bold, color])
+  const para = (text: string, size = 10, bold = false, tone: Tone = 'ink') => calls.push(['para', text, size, bold, tone])
   const bullet = (text: string, tag = '', size = 10) => calls.push(['bullet', text, tag, size])
   const h2 = (text: string, keepWith = 35) => calls.push(['h2', text, keepWith])
-  const table = (headers: string[], rows: Array<Array<string | number>>, widths: number[], aligns: string[] | null = null, colors: Array<Array<Color | null>> | null = null) =>
+  const table = (headers: string[], rows: Array<Array<string | number>>, widths: number[], aligns: string[] | null = null, colors: Array<Array<Tone | null>> | null = null) =>
     calls.push(['table', headers, rows, widths, aligns, colors])
 
   // summary
   calls.push(['h1', team])
-  para(`${r.sample_games} partidos analizados con el motor del directo | Balance ${r.record.wins}-${r.record.losses} | ${fmt(r.record.avg_for)} a favor, ${fmt(r.record.avg_against)} en contra (${fmt(r.record.avg_margin, 1, true)} de media)`, 9, false, MUTED)
-  for (const notice of r.notices) { calls.push(['ln', 1]); para(notice, 9, true, RED) }
+  para(`${r.sample_games} partidos analizados con el motor del directo | Balance ${r.record.wins}-${r.record.losses} | ${fmt(r.record.avg_for)} a favor, ${fmt(r.record.avg_against)} en contra (${fmt(r.record.avg_margin, 1, true)} de media)`, 9, false, 'muted')
+  for (const notice of r.notices) { calls.push(['ln', 1]); para(notice, 9, true, 'bad') }
   if (r.profile.length > 0) { h2('Perfil'); r.profile.forEach(line => bullet(line)) }
 
   // keys and plan
@@ -75,7 +69,7 @@ export function scoutingCalls(report: ScoutingReport, ownName = 'Nuestro equipo'
   if (r.plan.neutralize.length > 0 || r.plan.exploit.length > 0) {
     h2('Plan de partido')
     for (const [title, plan] of [['Peligros a neutralizar', r.plan.neutralize], ['Debilidades a explotar', r.plan.exploit]] as const) {
-      if (plan.length > 0) { para(title, 10, true, title.startsWith('Deb') ? GREEN : RED); plan.forEach(item => bullet(item.text)) }
+      if (plan.length > 0) { para(title, 10, true, title.startsWith('Deb') ? 'ok' : 'bad'); plan.forEach(item => bullet(item.text)) }
     }
   }
 
@@ -119,7 +113,7 @@ export function scoutingCalls(report: ScoutingReport, ownName = 'Nuestro equipo'
   const origin = r.origin ?? []
   if (origin.length > 0) {
     h2('Origen de los puntos')
-    para('Por partido; definición por posesión (la de la FEB es más estricta). «Concede» = lo que anotan sus rivales.', 8, false, MUTED)
+    para('Por partido; definición por posesión (la de la FEB es más estricta). «Concede» = lo que anotan sus rivales.', 8, false, 'muted')
     const cell = (value: number | null, key: string) => (value === null ? '-' : fmt(value, 1) + (key === 'bench_pct' ? ' %' : ''))
     table(['', 'Propio', 'Liga', 'Dif.', 'Concede', 'Dif.'],
       origin.map(o => [o.label, cell(o.own, o.key), cell(o.league, o.key), pct(o.own_delta_pct, true), cell(o.conceded, o.key), pct(o.conceded_delta_pct, true)]),
@@ -129,7 +123,7 @@ export function scoutingCalls(report: ScoutingReport, ownName = 'Nuestro equipo'
   // alerts and matchup
   if (r.alerts.length > 0) {
     h2('Alertas del motor sobre este equipo')
-    para('Lo que el motor del directo avisaría en sus partidos (por partido y minuto medio).', 8, false, MUTED)
+    para('Lo que el motor del directo avisaría en sus partidos (por partido y minuto medio).', 8, false, 'muted')
     r.alerts.forEach(alert => bullet(alert.text, '', 9))
   }
   if (r.comparison.length > 0) {
@@ -137,7 +131,7 @@ export function scoutingCalls(report: ScoutingReport, ownName = 'Nuestro equipo'
     const shown = r.comparison.filter(c => c.advantage !== 'neutral').slice(0, COMPARISON_ROWS)
     const winner = { own: ownName, rival: team, even: 'Igualado' }
     table(['Estadística', ownName, team, 'Ventaja'], shown.map(c => [c.label, c.own_text, c.rival_text, winner[c.advantage as 'own' | 'rival' | 'even']]), [66, 32, 32, 56], ['L', 'R', 'R', 'L'],
-      shown.map(c => [null, null, null, c.advantage === 'own' ? GREEN : c.advantage === 'rival' ? RED : null]))
+      shown.map(c => [null, null, null, c.advantage === 'own' ? 'ok' : c.advantage === 'rival' ? 'bad' : null]))
   }
 
   // games
@@ -166,9 +160,9 @@ const BOTTOM = 16
 interface Doc {
   setFont(name: string, style?: string): unknown
   setFontSize(size: number): unknown
-  setTextColor(r: number, g: number, b: number): unknown
-  setFillColor(r: number, g: number, b: number): unknown
-  setDrawColor(r: number, g: number, b: number): unknown
+  setTextColor(color: string): unknown
+  setFillColor(color: string): unknown
+  setDrawColor(color: string): unknown
   setLineWidth(width: number): unknown
   rect(x: number, y: number, w: number, h: number, style?: string): unknown
   line(x1: number, y1: number, x2: number, y2: number): unknown
@@ -192,11 +186,11 @@ export async function scoutingPdf(report: ScoutingReport, options: { subtitle?: 
 
   const newPage = () => { pdf.addPage(); y = 18 }
   const ensure = (needed: number) => { if (y + needed > height - BOTTOM) newPage() }
-  const text = (value: string, x: number, size: number, bold = false, color: Color = DARK, align?: 'center' | 'right') => {
-    pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size); pdf.setTextColor(...color)
+  const text = (value: string, x: number, size: number, bold = false, color: string = PAPER.ink, align?: 'center' | 'right') => {
+    pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size); pdf.setTextColor(color)
     pdf.text(scoutingSafe(value), x, y + size * POINT, align ? { align } : undefined)
   }
-  const wrapped = (value: string, x: number, width: number, size: number, bold: boolean, color: Color, lineHeight: number) => {
+  const wrapped = (value: string, x: number, width: number, size: number, bold: boolean, color: string, lineHeight: number) => {
     pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size)
     for (const line of pdf.splitTextToSize(scoutingSafe(value), width)) {
       ensure(lineHeight)
@@ -214,59 +208,59 @@ export async function scoutingPdf(report: ScoutingReport, options: { subtitle?: 
     const bar = (total - 14) / shown.length
     shown.forEach((z, i) => {
       const top = y + 2 + i * bar
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(...DARK)
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(PAPER.ink)
       pdf.text(scoutingSafe(`${z.label} (${z.own_fga})`), MARGIN, top + bar * 0.6)
-      pdf.setFillColor(0x3b, 0x5b, 0x92); pdf.rect(MARGIN + label, top + bar * 0.08, (plot * (z.own_fg_pct ?? 0)) / 100, bar * 0.38, 'F')
-      pdf.setFillColor(0xd9, 0x8c, 0x3d); pdf.rect(MARGIN + label, top + bar * 0.5, (plot * (z.conceded_fg_pct ?? 0)) / 100, bar * 0.38, 'F')
-      if (z.league_fg_pct !== null) { pdf.setDrawColor(0, 0, 0); pdf.setLineWidth(0.5); pdf.line(MARGIN + label + (plot * z.league_fg_pct) / 100, top, MARGIN + label + (plot * z.league_fg_pct) / 100, top + bar) }
+      pdf.setFillColor(PAPER.own); pdf.rect(MARGIN + label, top + bar * 0.08, (plot * (z.own_fg_pct ?? 0)) / 100, bar * 0.38, 'F')
+      pdf.setFillColor(PAPER.conceded); pdf.rect(MARGIN + label, top + bar * 0.5, (plot * (z.conceded_fg_pct ?? 0)) / 100, bar * 0.38, 'F')
+      if (z.league_fg_pct !== null) { pdf.setDrawColor(PAPER.ink); pdf.setLineWidth(0.5); pdf.line(MARGIN + label + (plot * z.league_fg_pct) / 100, top, MARGIN + label + (plot * z.league_fg_pct) / 100, top + bar) }
     })
     const legend = y + total - 9
-    pdf.setFillColor(0x3b, 0x5b, 0x92); pdf.rect(MARGIN + label, legend, 3, 3, 'F'); text(`${full.team.name}: tiros propios`, MARGIN + label + 5, 7)
+    pdf.setFillColor(PAPER.own); pdf.rect(MARGIN + label, legend, 3, 3, 'F'); text(`${full.team.name}: tiros propios`, MARGIN + label + 5, 7)
     y = legend
-    pdf.setFillColor(0xd9, 0x8c, 0x3d); pdf.rect(MARGIN + label, legend + 4, 3, 3, 'F'); y = legend + 4; text('Tiros que concede', MARGIN + label + 5, 7)
+    pdf.setFillColor(PAPER.conceded); pdf.rect(MARGIN + label, legend + 4, 3, 3, 'F'); y = legend + 4; text('Tiros que concede', MARGIN + label + 5, 7)
     y = legend + 9
   }
 
-  const drawTable = (headers: string[], rows: Array<Array<string | number>>, widths: number[], aligns: string[] | null, colors: Array<Array<Color | null>> | null) => {
+  const drawTable = (headers: string[], rows: Array<Array<string | number>>, widths: number[], aligns: string[] | null, colors: Array<Array<Tone | null>> | null) => {
     const al = aligns ?? ['L', ...Array(headers.length - 1).fill('R')]
-    const cell = (value: string, x: number, w: number, align: string, size: number, bold: boolean, color: Color, fill: Color) => {
-      pdf.setFillColor(...fill); pdf.setDrawColor(150, 150, 150); pdf.setLineWidth(0.2); pdf.rect(x, y, w, 5.5, 'FD')
+    const cell = (value: string, x: number, w: number, align: string, size: number, bold: boolean, color: string, fill: string) => {
+      pdf.setFillColor(fill); pdf.setDrawColor(PAPER.line); pdf.setLineWidth(0.2); pdf.rect(x, y, w, 5.5, 'FD')
       pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(size)
       let shown = scoutingSafe(value)
       while (shown && pdf.getTextWidth(shown) > w - 2) shown = shown.slice(0, -1)
       const at = align === 'R' ? x + w - 1 : align === 'C' ? x + w / 2 : x + 1
-      pdf.setTextColor(...color)
+      pdf.setTextColor(color)
       pdf.text(shown, at, y + 3.9, align === 'R' ? { align: 'right' } : align === 'C' ? { align: 'center' } : undefined)
     }
     ensure(6)
     let x = MARGIN
-    headers.forEach((head, j) => { cell(head, x, widths[j], al[j], 8.5, true, [255, 255, 255], ACCENT); x += widths[j] })
+    headers.forEach((head, j) => { cell(head, x, widths[j], al[j], 8.5, true, PAPER.surface, PAPER.ink); x += widths[j] })
     y += 6
     rows.forEach((row, i) => {
       if (y > 270) newPage()
       x = MARGIN
-      row.forEach((value, j) => { cell(String(value), x, widths[j], al[j], 8.5, false, colors?.[i]?.[j] ?? DARK, i % 2 ? SOFT : [255, 255, 255]); x += widths[j] })
+      row.forEach((value, j) => { const tone = colors?.[i]?.[j]; cell(String(value), x, widths[j], al[j], 8.5, false, tone ? PAPER[tone] : PAPER.ink, i % 2 ? PAPER.surfaceRaised : PAPER.surface); x += widths[j] })
       y += 5.5
     })
   }
 
   for (const call of scoutingCalls(report, options.ownName ?? 'Nuestro equipo')) {
     switch (call[0]) {
-      case 'h1': wrapped(call[1], MARGIN, 186, 18, true, DARK, 9); break
+      case 'h1': wrapped(call[1], MARGIN, 186, 18, true, PAPER.ink, 9); break
       case 'h2': {
         ensure(call[2]); y += 3
-        pdf.setFillColor(...ACCENT); pdf.rect(MARGIN, y, 186, 7, 'F')
-        text(` ${call[1]}`, MARGIN, 11, true, [255, 255, 255]); y += 7 + 1.5 - 0.0; y += 0
+        pdf.setFillColor(PAPER.ink); pdf.rect(MARGIN, y, 186, 7, 'F')
+        text(` ${call[1]}`, MARGIN, 11, true, PAPER.surface); y += 7 + 1.5
         break
       }
-      case 'para': wrapped(call[1], MARGIN, 186, call[2], call[3], call[4], 5); break
+      case 'para': wrapped(call[1], MARGIN, 186, call[2], call[3], PAPER[call[4]], 5); break
       case 'bullet': {
         ensure(5.8); text('-', 14, call[3], true)
         const tag = call[2] ? scoutingSafe(call[2]) : ''
         pdf.setFont('helvetica', 'bold'); pdf.setFontSize(call[3])
         const offset = tag ? pdf.getTextWidth(tag) + 3 : 0
-        if (tag) text(tag, 18, call[3], true, ACCENT)
-        wrapped(call[1], 18 + offset, 186 - 6 - offset, call[3], false, DARK, 5)
+        if (tag) text(tag, 18, call[3], true, PAPER.muted)
+        wrapped(call[1], 18 + offset, 186 - 6 - offset, call[3], false, PAPER.ink, 5)
         y += 0.8
         break
       }
@@ -280,10 +274,10 @@ export async function scoutingPdf(report: ScoutingReport, options: { subtitle?: 
   const stamp = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
   for (let page = 1; page <= pages; page++) {
     pdf.setPage(page)
-    pdf.setFillColor(...DARK); pdf.rect(0, 0, 210, 14, 'F')
-    y = 3; text('Scouting rival', MARGIN, 11, true, [255, 255, 255])
+    pdf.setFillColor(PAPER.ink); pdf.rect(0, 0, 210, 14, 'F')
+    y = 3; text('Scouting rival', MARGIN, 11, true, PAPER.surface)
     y = height - 12
-    text(`BasketLab | ${options.subtitle ? `${options.subtitle} | ` : ''}Generado el ${stamp} | Pag. ${page}`, 105, 8, false, MUTED, 'center')
+    text(`BasketLab | ${options.subtitle ? `${options.subtitle} | ` : ''}Generado el ${stamp} | Pag. ${page}`, 105, 8, false, PAPER.muted, 'center')
   }
   return new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' })
 }
