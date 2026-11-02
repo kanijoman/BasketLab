@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadWebImages, loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -282,6 +282,18 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     }
     expect(requested.filter(f => f.startsWith('rival_adjusted/'))).toHaveLength(2)
     await expect(loadWebRivalAdjusted('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('opens the crest and the photos of a team of the current season, and a team of another league or of an unknown competition is unavailable (issue #717)', async () => {
+    const images = await loadWebImages(FEB, '101')
+    expect(images.team).toBe('ALPHA')
+    expect(images.logo).toMatch(/^data:image\/png;base64,/)
+    const players = Object.values(images.players)
+    expect(players.length).toBeGreaterThan(0)
+    expect(players[0]).toEqual(expect.objectContaining({ birth_date: '05/03/2000', height: '190 cm' }))
+    await expect(loadWebImages(FBCYL, '34001')).rejects.toBeInstanceOf(WebDataUnavailable)
+    await expect(loadWebImages(FEB, '999')).rejects.toBeInstanceOf(WebDataUnavailable)
+    await expect(loadWebImages('NOPE_2030', '101')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
 
   it('a competition with neither is unavailable (the caller falls back), not an access problem', async () => {

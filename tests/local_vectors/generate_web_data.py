@@ -7,6 +7,7 @@ opens and says what the exporter says today. The secret is public on purpose: th
 """
 import copy
 import json
+import base64
 import shutil
 import sys
 from pathlib import Path
@@ -23,6 +24,7 @@ import games  # noqa: E402
 
 from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
+from src.local_data.images_export import Source  # noqa: E402
 from src.local_data.web_data import publish_web_data  # noqa: E402
 from src.services.scouting_rival_service import ScoutingRivalService  # noqa: E402
 
@@ -94,11 +96,27 @@ def fixture_scouting_service(handler):
                                 extra_games=lambda h, c, t: {"copa": iter(cup)}, levels_of=lambda h, c: {})
 
 
+class FixtureFeb(Source):
+    """The FEB of the fixtures: a crest and a photo made here (the fixture games have no photo URL, so every player gets the same small one) and an identity for everyone."""
+
+    # fixed bytes, not encoded here: the size of a PNG depends on the zlib of the machine and the sealed fixture records it
+    PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAD80lEQVR4nO3UQQ3AIADAQIYQhE3xXIEFfkuTOwV99VnvtwdAwPw7AOCWYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBYyKAxipBJcf2MvYAAAAAElFTkSuQmCC")
+
+    def get(self, url):
+        return self.PNG
+
+    def length(self, url):
+        return len(self.PNG)
+
+    def identity(self, team_id, player_id):
+        return "05/03/2000", "190 cm"
+
+
 def main() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     manifest = publish_web_data(fixture_handler(), OUT, ScopedSealer(SECRET, open_access=True), [FEB, FBCYL], scouting=[FEB],
-                                scouting_service=fixture_scouting_service)
+                                scouting_service=fixture_scouting_service, image_source=FixtureFeb())
     print("wrote", OUT, sum(1 for p in OUT.rglob("*") if p.is_file()), "files,", len(manifest["rows"]), "competitions")
 
 

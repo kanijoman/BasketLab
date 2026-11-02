@@ -57,7 +57,7 @@ export interface WebDataManifest {
   reports: ReportIndexEntry[]
 }
 
-/** One sealed report: its team, its mode and the wraps of its key. ``scouting`` is the full scouting of the rival (#638) and then ``scope`` says which
+/** One sealed report: its team, its mode and the wraps of its key. ``images`` is the crest and the photos of a team for the DOCX of the individual scouting (#717; ``team_id`` is the team it is about); ``scouting`` is the full scouting of the rival (#638) and then ``scope`` says which
     games it counts: ``liga`` (the league), ``copa`` (the cups of the season) or ``todo`` (both). */
 export interface ReportEntry {
   file: string
@@ -65,7 +65,7 @@ export interface ReportEntry {
   sha256: string
   team_id: string
   team: string
-  mode: 'own' | 'rival' | 'scouting'
+  mode: 'own' | 'rival' | 'scouting' | 'images'
   scope?: 'liga' | 'copa' | 'todo'
   wraps: Wrap[]
 }

@@ -61,11 +61,11 @@ class WebDataManifest(TypedDict):
 
 
 class ReportEntry(FileEntry):
-    """One sealed report: its team, its mode and the wraps of its key. ``scouting`` is the full scouting of the rival (#638) and then ``scope`` says which
+    """One sealed report: its team, its mode and the wraps of its key. ``images`` is the crest and the photos of a team for the DOCX of the individual scouting (#717; ``team_id`` is the team it is about); ``scouting`` is the full scouting of the rival (#638) and then ``scope`` says which
     games it counts: ``liga`` (the league), ``copa`` (the cups of the season) or ``todo`` (both)."""
     team_id: str
     team: str
-    mode: Literal["own", "rival", "scouting"]
+    mode: Literal["own", "rival", "scouting", "images"]
     scope: NotRequired[Literal["liga", "copa", "todo"]]
     wraps: List[Wrap]
 

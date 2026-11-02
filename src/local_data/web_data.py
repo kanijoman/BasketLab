@@ -21,6 +21,7 @@ from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
 from src.local_data.consistency_export import export_consistency
+from src.local_data.images_export import Source, current_season_collections, seal_images
 from src.local_data.inout_export import export_inout
 from src.local_data.lineups_export import export_lineups
 from src.local_data.matches_export import export_matches
@@ -31,7 +32,7 @@ from src.local_data.shots_export import export_shots
 from src.local_data.team_reports import seal_file, seal_reports
 
 INDEX = "index.json"
-ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
+ROWS, REPORTS, SCOUTING, DERIVED, IMAGES = "rows/", "reports/", "scouting/", "derived/", "images/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
             "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/", "consistency": "consistency/", "rival_adjusted": "rival_adjusted/"}
@@ -116,9 +117,11 @@ def _publish_section(section: str, handler: Any, db: Any, collection: str, out_d
 
 
 def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: Sealer, old: Dict[Any, Dict[str, Any]], scout: bool = False,
-                          scouting_service: Optional[Callable[[Any], Any]] = None) -> Dict[str, Any]:
-    """Seal the reports of a competition (and its scouting, when asked) and write their index (plain: the wraps are not secret), named after its hash."""
+                          scouting_service: Optional[Callable[[Any], Any]] = None, images: Optional[Source] = None) -> Dict[str, Any]:
+    """Seal the reports of a competition (and its scouting and the crest and photos of its teams, when asked) and write their index (plain: the wraps are not secret), named after its hash."""
     entries = seal_reports(handler, collection, out_dir, sealer, old, REPORTS)
+    if images is not None:
+        entries += seal_images(handler.connection.client["BASKETBALL"][collection], collection, out_dir, sealer, old, IMAGES, images)
     if scout:
         from src.local_data.scouting_export import seal_scouting
 
@@ -174,11 +177,12 @@ def _referenced(out_dir: Path, manifest: Dict[str, Any]) -> set:
 
 def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: Iterable[str], keep_others: bool = False,
                      on_collection: Optional[Callable[[str], None]] = None, scouting: Optional[Iterable[str]] = None,
-                     scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None) -> Dict[str, Any]:
+                     scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None,
+                     image_source: Optional[Source] = None) -> Dict[str, Any]:
     """Write the artifacts of ``collections`` and the manifest (returned). With ``keep_others`` the competitions of the previous publication that are
     not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``. ``scouting`` lists the
     collections whose teams also get their full scouting by scope (``scouting_export``; ``scouting_service`` builds the service, for tests). A competition that has not
-    changed since the previous publication (``build_cache``) reuses its sealed files; ``on_section(competition, section, seconds, reused)`` says what each one cost (#700)."""
+    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     db = handler.connection.client["BASKETBALL"]
@@ -190,6 +194,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     kept_rows = {e["collection"]: e for e in (previous or {}).get("rows", [])}
     sections = {s: {e["collection"]: e for e in (previous or {}).get(s, []) if keep_others and e["collection"] not in names} for s in SECTIONS}
     kept_sections = {s: {e["collection"]: e for e in (previous or {}).get(s, [])} for s in SECTIONS}
+    imaged = current_season_collections(names) if image_source is not None else set()
     memory, code = build_cache.load(out_dir), code_version()
     remembered = {k: v for k, v in memory["competitions"].items() if keep_others and k not in names}
     for name in names:
@@ -199,7 +204,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
         remembered[name] = entries.pop("_memory")
         for section, entry in entries.items():
             sections[section][name] = entry
-        reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports, name in scouted, scouting_service)
+        reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports, name in scouted, scouting_service, image_source if name in imaged else None)
         if on_collection:
             on_collection(name)
     manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(),
@@ -209,7 +214,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     _write_if_changed(out_dir / INDEX, (_json(manifest) + "\n").encode("utf-8"))
     _write_if_changed(out_dir / build_cache.CACHE, build_cache.save(out_dir, code, remembered))
     keep = _referenced(out_dir, manifest)
-    for folder in (ROWS, *SECTIONS.values(), REPORTS, SCOUTING):
+    for folder in (ROWS, *SECTIONS.values(), REPORTS, SCOUTING, IMAGES):
         for stale in (out_dir / folder).glob("*.json"):
             if f"{folder}{stale.name}" not in keep:
                 stale.unlink()

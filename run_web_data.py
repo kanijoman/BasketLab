@@ -19,11 +19,13 @@ def main(argv=None) -> int:
     parser.add_argument("--collection", action="append", help="only this collection (repeatable); the rest of the previous publication is kept")
     parser.add_argument("--closed", action="store_true", help="do not wrap for the open scope")
     parser.add_argument("--scouting", action="append", help="also scout the teams of this collection (repeatable); default: the competitions where a club of interest plays")
+    parser.add_argument("--no-images", action="store_true", help="do not publish the crest and the photos of the teams of the newest season (the DOCX of the individual scouting, #717)")
     parser.add_argument("--no-scouting", action="store_true", help="do not publish the full scouting of the rival (it takes about ten seconds per team)")
     args = parser.parse_args(argv)
 
     from src.api.deps import _create_handler
     from src.live_prep.package_sealing import make_sealer
+    from src.local_data.images_export import Source
     from src.local_data.web_data import publish_web_data
     from src.local_data.scouting_export import interest_clubs, scouting_collections
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
@@ -41,7 +43,8 @@ def main(argv=None) -> int:
     # what each section cost, and which ones were reused because nothing changed (#700): the log is how a slow build is told apart from a stuck one
     manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection), scouting=scouting,
                                 on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"),
-                                on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True))
+                                on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True),
+                                image_source=None if args.no_images else Source())
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")
     return 0
