@@ -240,7 +240,7 @@ class LineupRepositoryMixin:
         # Aggregate counting stats
         counting_stats = [
             'points_for', 'points_against', 'fgm', 'fga', 'fg3m', 'fg3a',
-            'ftm', 'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf'
+            'ftm', 'fta', 'orb', 'opp_drb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf'
         ]
         
         for stat in counting_stats:
@@ -284,6 +284,11 @@ class LineupRepositoryMixin:
         denominator = fga + 0.44 * fta + tov
         if denominator > 0:
             existing['tov_pct'] = round((tov / denominator) * 100, 1)
+
+        # ORB% over the totals (#691: it used to stay the first game's figure)
+        orb_chances = existing.get('orb', 0) + existing.get('opp_drb', 0)
+        if orb_chances > 0:
+            existing['orb_pct'] = round((existing['orb'] / orb_chances) * 100, 1)
 
     def _get_player_names_for_lineup(
         self,

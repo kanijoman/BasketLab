@@ -598,6 +598,7 @@ class LineupStatsCalculator:
         result['ftm'] = stats['ftm']
         result['fta'] = fta
         result['orb'] = orb
+        result['opp_drb'] = stats['opp_drb']      # the rival's defensive rebounds: ORB% of several games is over the sums (#691)
         result['drb'] = stats['drb']
         result['trb'] = orb + stats['drb']
         result['ast'] = stats['ast']

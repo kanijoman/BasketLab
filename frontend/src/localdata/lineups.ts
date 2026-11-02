@@ -1,6 +1,6 @@
 // Combinaciones on the device (issue #686): the lineup tables of a team from the per-game counters a competition publishes (`lineups/` of web-data), as
 // `LineupService.get_lineup_analysis` answers them. The service computes every combination game by game and merges the games of the period summing the counters and recomputing the
-// ratios (`repository_lineup._merge_lineup_stats`), so that is what is done here, with its roundings and its oddities (the ORB% of a lineup stays that of its first game).
+// ratios (`repository_lineup._merge_lineup_stats`), so that is what is done here, with its roundings.
 // Parity: `lineups.test.ts` against `tests/local_vectors/lineups_*.json`.
 import type { GameLogEntry, LineupRow } from '@/api/client'
 import { npMean, npStd, pyRound } from './pyMath'
@@ -43,7 +43,7 @@ const DAY_MS = 86_400_000
 
 type Counters = Record<string, number>
 
-const COUNTERS = ['points_for', 'points_against', 'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf'] as const
+const COUNTERS = ['points_for', 'points_against', 'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta', 'orb', 'opp_drb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf'] as const
 
 /** The row of one game, by column name. */
 function named(columns: string[], row: number[]): Counters {
@@ -67,7 +67,7 @@ function gameStats(game: Counters): Counters {
 
 /** The fields of a lineup of the API, in the order the calculator writes them. */
 const FIELDS = ['points_for', 'points_against', 'plus_minus', 'possessions', 'ortg', 'drtg', 'net_rating', 'efg_pct', 'tov_pct', 'orb_pct', 'ftr', 'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta',
-  'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'minutes', 'games_played', 'segments_count', 'avg_minutes_per_game'] as const
+  'orb', 'opp_drb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'minutes', 'games_played', 'segments_count', 'avg_minutes_per_game'] as const
 
 const pick = (stats: Counters): Counters => Object.fromEntries(FIELDS.map(field => [field, stats[field]]))
 
@@ -94,7 +94,9 @@ function merged(games: Counters[]): Counters {
   }
   const denominator = total.fga + 0.44 * total.fta + total.tov
   if (denominator > 0) total.tov_pct = pyRound((total.tov / denominator) * 100, 1)
-  return pick(total)                                                                            // orb_pct: the first game's (as the service)
+  const orbChances = total.orb + total.opp_drb
+  if (orbChances > 0) total.orb_pct = pyRound((total.orb / orbChances) * 100, 1)                // over the totals (#691: it used to stay the first game's)
+  return pick(total)
 }
 
 /** One line of the game log of a lineup (before merging: the figures of that game alone). */

@@ -78,7 +78,7 @@ def test_every_file_of_the_publication_is_referenced_and_named_by_its_hash():
     for entry in manifest["reports"]:
         files |= {e["file"] for e in json.loads((OUT / entry["file"]).read_text(encoding="utf-8"))["reports"]}
     on_disk = {str(p.relative_to(OUT)).replace("\\", "/") for p in OUT.rglob("*") if p.is_file()}
-    assert on_disk == files | {"index.json", "frontend/vercel.json"}
+    assert on_disk == files | {"index.json", "frontend/vercel.json", "build-cache.json"}      # the memory of the build (#700) is no artifact of the web
 
 
 def test_the_publication_has_the_derived_of_each_competition_and_they_say_what_the_exporter_says_today(handler):
