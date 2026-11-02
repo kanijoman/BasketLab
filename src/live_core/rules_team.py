@@ -31,21 +31,27 @@ def foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
 
 
 def _contact_player(snap: Dict[str, Any], ctx: RuleContext) -> Optional[Dict[str, Any]]:
-    """The own player on court who draws the most contact (free-throw rate z above the threshold), or None."""
+    """The own player on court who draws contact (free-throw rate z above the threshold) AND converts from the line (percentage above the minimum),
+    the best product of both (#698); a package without percentages ranks by contact alone. None when nobody does both."""
     best = None
     for pid, p in snap["players"].items():
         if p["team_id"] != ctx.own_team_id or not p["on_court"]:
             continue
-        ftr = ((ctx.baselines.get(pid) or {}).get("z") or {}).get("ftr")
-        if ftr is not None and ftr >= ctx.config.contact_ftr_z and (best is None or ftr > best[0]):
-            best = (ftr, pid, p["name"].strip())
-    return {"player_id": best[1], "name": best[2]} if best else None
+        base = ctx.baselines.get(pid) or {}
+        ftr, ft_pct = (base.get("z") or {}).get("ftr"), base.get("ft_pct")
+        if ftr is None or ftr < ctx.config.contact_ftr_z or (ft_pct is not None and ft_pct < ctx.config.contact_min_ft_pct):
+            continue
+        score = ftr * (ft_pct if ft_pct is not None else 1.0)
+        if best is None or score > best[0]:
+            best = (score, pid, p["name"].strip(), ft_pct)
+    return {"player_id": best[1], "name": best[2], "ft_pct": None if best[3] is None else round(100 * best[3])} if best else None
 
 
 def _attack_proposal(contact: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if contact is None:
         return [tactic_proposal("Atacar el aro y forzar el contacto")]
-    return [tactic_proposal(f"Balón a {contact['name']}, que provoca contacto", contact["player_id"], contact["name"])]
+    shooting = "" if contact["ft_pct"] is None else f" ({contact['ft_pct']} % en tiros libres)"
+    return [tactic_proposal(f"Balón a {contact['name']}, que provoca contacto{shooting}", contact["player_id"], contact["name"])]
 
 
 def rival_foul_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
