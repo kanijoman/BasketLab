@@ -18,6 +18,7 @@ import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Tabs from '@/components/ui/Tabs'
 import PlayerSelect, { type TeamOption } from '@/components/PlayerSelect'
+import { playerKey } from '@/lib/playerKey'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -238,7 +239,7 @@ export default function InOutPage() {
           <div className="space-y-4">
             <div className="card p-4 grid grid-cols-2 gap-4 max-w-3xl">
               <PlayerSelect key={`${collection?.name ?? ''}_1`} label="Jugador 1" value={together1} onChange={(v) => setT1(v)} players={players} teams={teamList} />
-              <PlayerSelect key={`${collection?.name ?? ''}_2`} label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => p.player_id !== together1)} teams={teamList} />
+              <PlayerSelect key={`${collection?.name ?? ''}_2`} label="Jugador 2" value={together2} onChange={(v) => setT2(v)} players={players.filter(p => playerKey(p) !== together1)} teams={teamList} />
             </div>
 
             {(inout1Loading || inout2Loading) && (

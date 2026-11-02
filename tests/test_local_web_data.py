@@ -36,12 +36,12 @@ def _fast_lineups(handler, name):
 
 
 def _fast_inout(handler, name):
-    """One analysed player and one not, as the real exporter lists them (FBCYL has none: left to the API)."""
+    """One analysed player and one not, as the real exporter lists them (the id is the uuid in FBCYL, #711)."""
     from src.local_data.export import FORMAT
 
     fbcyl = "FBCYL" in name
     return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb",
-            "players": [] if fbcyl else [{"player_id": "1", "analysis": {"on": {"minutes": 1}, "off": {"minutes": 2}}}, {"player_id": "2", "analysis": {}}]}
+            "players": [{"player_id": "593291b9-ff22-4545-b7b3-88159242a0d8" if fbcyl else "1", "analysis": {"on": {"minutes": 1}, "off": {"minutes": 2}}}, {"player_id": "2", "analysis": {}}]}
 
 
 def _fast_consistency(handler, name):
@@ -289,12 +289,12 @@ def test_the_lineups_are_published_for_a_competition_with_play_by_play_and_not_f
     assert _manifest(tmp_path / "other").get("lineups", []) == []
 
 
-def test_the_inout_of_a_feb_competition_is_published_sealed_and_fbcyl_has_none(handler, tmp_path):
-    """#678: ``games`` counts the players; the real exporter is tested in ``test_local_inout_export.py`` (it plays every game for every player)."""
+def test_the_inout_of_every_competition_is_published_sealed(handler, tmp_path):
+    """#678, #711: ``games`` counts the players (FBCYL's are listed by uuid); the real exporter is tested in ``test_local_inout_export.py`` (it plays every game for every player)."""
     publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
     entries = _manifest(tmp_path)["inout"]
-    assert [e["collection"] for e in entries] == [FEB]
-    entry = entries[0]
+    assert sorted(e["collection"] for e in entries) == sorted([FEB, FBCYL])
+    entry = next(e for e in entries if e["collection"] == FEB)
     assert entry["file"].startswith("inout/") and entry["games"] == 2
     assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(_fast_inout(handler, FEB), default=str))
     with pytest.raises(Exception):

@@ -28,6 +28,7 @@ import SlideDrawer from '@/components/ui/SlideDrawer'
 import DiffBadge from '@/components/ui/DiffBadge'
 import CVBadge from '@/components/ui/CVBadge'
 import { tippedHeader } from '@/components/ui/Tooltip'
+import { playerKey } from '@/lib/playerKey'
 
 // -- Column helpers ------------------------------------------------------------
 
@@ -48,7 +49,7 @@ function buildNumCol(
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
       const formatted = pct ? fmtPct(v) : fmt(v, decimals)
-      const cvEntry = consistencyByPlayerId?.[(row.original as PlayerStat).player_id]?.[cvKey ?? key]
+      const cvEntry = consistencyByPlayerId?.[playerKey(row.original as PlayerStat)]?.[cvKey ?? key]
       if (!cvEntry) return formatted
       return (
         <span className="inline-flex items-center gap-1.5">

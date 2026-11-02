@@ -39,6 +39,19 @@ beforeEach(() => {
   api.getPlayerConsistency.mockReset().mockResolvedValue({})
 })
 
+// Issue #711: the consistency of an FBCYL player is keyed by his uuid; the table lists him by the actorId of one game, so the figures never reached his row.
+describe('PlayerStatsPage: the consistency of an FBCYL player (issue #711)', () => {
+  it('reads it by his uuid, not by the actorId of the table', async () => {
+    const uuid = '593291b9-ff22-4545-b7b3-88159242a0d8'
+    api.getPlayerStats.mockResolvedValue([{ ...player('872552', 'F. NUEVO', 14), player_uuid: uuid }])
+    api.getPlayerConsistency.mockResolvedValue({ [uuid]: { points_per_game: { mean: 14, std: 3.2, cv: 22.9, n: 5 } } })
+    renderPage()
+    await chooseTeam()
+    expect(await screen.findByText('F. NUEVO')).toBeInTheDocument()
+    expect(await screen.findByText(/σ\s*23/)).toBeInTheDocument()                   // the badge of the points column, from the entry of his uuid
+  })
+})
+
 describe('PlayerStatsPage on the base components (issue #192)', () => {
   it('has one h1, the competition as its subtitle, and asks for a team before loading any player', async () => {
     renderPage()

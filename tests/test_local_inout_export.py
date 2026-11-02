@@ -49,7 +49,14 @@ def test_each_player_has_what_the_endpoint_answers_for_them(handler):
     json.dumps(payload)
 
 
-def test_fbcyl_is_left_to_the_api(handler):
-    """Its table lists a player by the actorId of one game and the analysis looks for the uuid: nothing a publication could answer for what the page asks."""
+def test_fbcyl_publishes_each_player_by_his_uuid_regression(handler):
+    """#711. Bug it prevents: the page asked FBCYL's IN/OUT with the ``player_id`` of the table (the actorId of ONE game, which changes from game to game), and the analysis looks for the
+    uuid, so every FBCYL player came out with no game analysed. A player is known by his uuid (``player_uuid`` of the rows, completed over the season), and that is what is published."""
     payload = export_inout(handler, FBCYL)
-    assert payload["league"] == "fbcyl" and payload["players"] == []
+    assert payload["league"] == "fbcyl" and payload["players"], "the players of an FBCYL competition are published"
+    ids = [p["player_id"] for p in payload["players"]]
+    assert len(ids) == len(set(ids)) and all("-" in i for i in ids)                          # uuids, not the numeric actorIds of the table
+    for entry in payload["players"][:6]:
+        expected = json.loads(json.dumps(get_inout_analysis(FBCYL, entry["player_id"], handler), default=str))
+        assert entry["analysis"] == expected
+    assert any(p["analysis"].get("games_analyzed") for p in payload["players"])               # asked by uuid, the analysis finds the games

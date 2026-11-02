@@ -735,6 +735,8 @@ export interface TeamStat {
 export interface PlayerStat {
   // identity
   player_id: string
+  /** FBCYL: the stable id of the player (his `player_id` is the actorId of one game); the analyses and the consistency are keyed by it (#711) */
+  player_uuid?: string
   player_name: string
   team_name: string
   team_id?: string
