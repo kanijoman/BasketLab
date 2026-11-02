@@ -8,10 +8,10 @@ import io
 import json
 from pathlib import Path
 
-import mongomock
 import pytest
 from PIL import Image
 
+from db_helpers import new_mock_db
 from src.live_prep.package_scopes import open_sealed, scope_key
 from src.live_prep.package_sealing import ScopedSealer
 from src.local_data.images_export import (
@@ -67,7 +67,7 @@ def games():
 
 @pytest.fixture()
 def collection():
-    col = mongomock.MongoClient()["v"][COLLECTION]
+    col = new_mock_db("v")[COLLECTION]
     col.insert_many(games())
     return col
 

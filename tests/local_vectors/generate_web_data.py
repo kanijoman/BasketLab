@@ -7,6 +7,7 @@ opens and says what the exporter says today. The secret is public on purpose: th
 """
 import copy
 import json
+import base64
 import shutil
 import sys
 from pathlib import Path
@@ -98,21 +99,14 @@ def fixture_scouting_service(handler):
 class FixtureFeb(Source):
     """The FEB of the fixtures: a crest and a photo made here (the fixture games have no photo URL, so every player gets the same small one) and an identity for everyone."""
 
-    @staticmethod
-    def _png(width: int, height: int, colour: tuple) -> bytes:
-        import io
-
-        from PIL import Image
-
-        out = io.BytesIO()
-        Image.new("RGBA", (width, height), colour).save(out, format="PNG")
-        return out.getvalue()
+    # fixed bytes, not encoded here: the size of a PNG depends on the zlib of the machine and the sealed fixture records it
+    PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAYAAAB5fY51AAAD80lEQVR4nO3UQQ3AIADAQIYQhE3xXIEFfkuTOwV99VnvtwdAwPw7AOCWYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBWQYFpBhWECGYQEZhgVkGBaQYVhAhmEBGYYFZBgWkGFYQIZhARmGBYyKAxipBJcf2MvYAAAAAElFTkSuQmCC")
 
     def get(self, url):
-        return self._png(300, 300, (30, 90, 200, 255))
+        return self.PNG
 
     def length(self, url):
-        return len(self.get(url))
+        return len(self.PNG)
 
     def identity(self, team_id, player_id):
         return "05/03/2000", "190 cm"
