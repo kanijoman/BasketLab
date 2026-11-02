@@ -97,7 +97,7 @@ async function reportIndexOf(collection: string): Promise<{ manifest: WebDataMan
 export async function loadReportTeams(collection: string): Promise<Array<{ id: string; name: string }>> {
   const { index } = await reportIndexOf(collection)
   const teams = new Map(index.reports.map(r => [r.team_id, r.team]))
-  return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))        // as `$sort` does: by code unit, not by the locale
 }
 
 /** A sealed file of the publication with the manifest it came from, the wraps of its key and its text. */
@@ -120,7 +120,7 @@ async function sealedRows(collection: string): Promise<Sealed> {
 }
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout' | 'consistency' | 'rival_adjusted', collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
@@ -170,6 +170,11 @@ export async function loadWebCollections(): Promise<string[]> {
   return (await loadManifest()).rows.map(r => r.collection)
 }
 
+/** What the manifest says of each published competition (name, league, games): the list of competitions of the web, issue #705. */
+export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: 'feb' | 'fbcyl'; games: number }>> {
+  return (await loadManifest()).rows.map(({ collection, league, games }) => ({ collection, league, games }))
+}
+
 /** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
 export const loadWebRows = (collection: string): Promise<Competition> => openSealed<Competition>(() => sealedRows(collection), 'El fichero')
 
@@ -212,6 +217,26 @@ export interface PublishedInOut {
 }
 export const loadWebInOut = (collection: string): Promise<PublishedInOut> =>
   openSealed<PublishedInOut>(() => sealedSection('inout', collection, 'Esta competición no tiene el IN/OUT publicado.'), 'El fichero')
+
+/** What `GET /players/{collection}/consistency` answers (computed when the competition was published): the mean, deviation, coefficient of variation and games of each stat of each player, issue #709. */
+export interface PublishedConsistency {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  players: Record<string, Record<string, { mean: number; std: number; cv: number; n: number }>>
+}
+export const loadWebConsistency = (collection: string): Promise<PublishedConsistency> =>
+  openSealed<PublishedConsistency>(() => sealedSection('consistency', collection, 'Esta competición no tiene la consistencia publicada.'), 'El fichero')
+
+/** What `GET /teams/{collection}/rival-adjusted` answers (computed when the competition was published): by team name, the raw and adjusted average, the adjustment, the strength of schedule and the games of each stat, issue #710. */
+export interface PublishedRivalAdjusted {
+  format: number
+  collection: string
+  league: 'feb' | 'fbcyl'
+  teams: Record<string, Record<string, { raw_avg: number | null; adj_avg: number | null; adj: number | null; sos: number | null; n: number }>>
+}
+export const loadWebRivalAdjusted = (collection: string): Promise<PublishedRivalAdjusted> =>
+  openSealed<PublishedRivalAdjusted>(() => sealedSection('rival_adjusted', collection, 'Esta competición no tiene el ajuste por rival publicado.'), 'El fichero')
 
 /** The list of the matches of a competition, each with its analysis (computed when it was published), issue #677. */
 export interface PublishedMatches {

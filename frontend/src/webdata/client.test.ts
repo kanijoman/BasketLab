@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -72,6 +72,15 @@ describe('the reports of web-data, opened in the browser', () => {
     expect(await loadReportTeams(FEB)).toEqual([
       { id: '101', name: 'ALPHA' }, { id: '102', name: 'BRAVO' }, { id: '103', name: 'CHARLIE' }, { id: '104', name: 'DELTA' },
     ])
+  })
+
+  it('the team list is sorted as MongoDB sorts it (by code unit), not by the locale: capitals first, accents last (issue #706)', async () => {
+    const manifest = JSON.parse(read('index.json'))
+    const entry = manifest.reports.find((r: { collection: string }) => r.collection === FEB)
+    const index = JSON.parse(read(entry.file))
+    index.reports = ['Ñandú', 'álamo', 'Zeta', 'alfa'].map((team, i) => ({ ...index.reports[0], team_id: String(i), team, mode: 'own' }))
+    override[entry.file] = JSON.stringify(index)
+    expect((await loadReportTeams(FEB)).map(t => t.name)).toEqual(['Zeta', 'alfa', 'Ñandú', 'álamo'])
   })
 
   it('a competition or team that is not published is unavailable (the caller falls back to the API), not an access problem', async () => {
@@ -251,6 +260,26 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     expect(inout.players.length).toBeGreaterThan(0)
     expect(requested.filter(f => f.startsWith('inout/'))).toHaveLength(1)
     await expect(loadWebInOut(FBCYL)).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('opens the consistency of the players of an FBCYL competition, and the FEB one of the sample has none (issue #709)', async () => {
+    const consistency = await loadWebConsistency(FBCYL)
+    const sample = Object.values(consistency.players)[0]
+    expect(Object.keys(consistency.players).length).toBeGreaterThan(0)
+    expect(Object.values(sample)[0]).toEqual(expect.objectContaining({ mean: expect.any(Number), std: expect.any(Number), cv: expect.any(Number), n: expect.any(Number) }))
+    expect(requested.filter(f => f.startsWith('consistency/'))).toHaveLength(1)
+    await expect(loadWebConsistency(FEB)).rejects.toBeInstanceOf(WebDataUnavailable)
+    await expect(loadWebConsistency('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('opens the rival-adjusted figures of the teams of both leagues (issue #710)', async () => {
+    for (const name of [FEB, FBCYL]) {
+      const adjusted = await loadWebRivalAdjusted(name)
+      expect(Object.keys(adjusted.teams).length).toBeGreaterThan(1)
+      expect(Object.values(adjusted.teams)[0].ortg).toEqual(expect.objectContaining({ raw_avg: expect.any(Number), n: expect.any(Number) }))
+    }
+    expect(requested.filter(f => f.startsWith('rival_adjusted/'))).toHaveLength(2)
+    await expect(loadWebRivalAdjusted('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
 
   it('a competition with neither is unavailable (the caller falls back), not an access problem', async () => {

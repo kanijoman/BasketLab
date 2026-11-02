@@ -8,7 +8,8 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { loadReportTeams } from '@/webdata/client'
+import { localCollectionList, localRivalAdjusted, localPlayerConsistency, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -84,7 +85,7 @@ export interface TeamEntry {
 }
 
 export const getTeamsInCollection = (collection: string) =>
-  get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`)
+  fromSource('team-stats', () => localTeamNames(collection), () => get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`))
 
 export const detectFormat = (collection: string) =>
   get<{ collection: string; is_fbcyl: boolean }>(
@@ -186,9 +187,9 @@ export const getTeamConsistency = (collection: string) =>
 /** Per-player intra-game consistency: {player_id: {stat_key: CVEntry}} */
 export type ConsistencyMap = CVMap   // alias kept for player stats page
 export const getPlayerConsistency = (collection: string) =>
-  get<ConsistencyMap>(
+  fromSource('player-consistency', () => localPlayerConsistency(collection), () => get<ConsistencyMap>(
     `/players/${encodeURIComponent(collection)}/consistency`,
-  )
+  ))
 
 export const getTeamEvolution = (
   collection: string,
@@ -196,9 +197,9 @@ export const getTeamEvolution = (
   stat: string,
   window = 5,
 ) =>
-  get<EvolutionPoint[]>(
+  fromSource('evolution', () => localTeamEvolution(collection, teamId, stat, window), () => get<EvolutionPoint[]>(
     `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamId)}?stat=${encodeURIComponent(stat)}&window=${window}`,
-  )
+  ))
 
 export const getCompetitionEvolution = (
   collection: string,
@@ -232,9 +233,9 @@ export const getPlayerStats = (collection: string, params?: TeamFilters) =>
   )
 
 export const getPlayerQuartiles = (collection: string) =>
-  get<Record<string, Record<string, number>>>(
+  fromSource('player-stats', () => localPlayerQuartiles(collection), () => get<Record<string, Record<string, number>>>(
     `/players/${encodeURIComponent(collection)}/quartiles`,
-  )
+  ))
 
 // With the dataset `inout` on (`?data=local`, issue #678) the analysis was computed when the competition was published (FEB): there at once; FBCYL and unpublished ones, the API.
 export const getInOutAnalysis = (collection: string, playerId: string) =>
@@ -892,7 +893,7 @@ export interface LineupRow {
 export interface EvolutionPoint {
   game_date: string
   game_number: number
-  value: number
+  value: number | null
   rolling_avg?: number | null
   cumulative_avg?: number | null
   won?: boolean
@@ -977,7 +978,7 @@ export interface CollectionInfo {
 }
 
 export const getCollectionList = () =>
-  get<CollectionInfo[]>('/collections/list')
+  fromSource('collections', () => localCollectionList(), () => get<CollectionInfo[]>('/collections/list'))
 
 export const deleteCollection = (name: string) =>
   fetch(`${BASE}/collections/${encodeURIComponent(name)}`, { method: 'DELETE', headers: adminHeaders() })
@@ -1206,9 +1207,9 @@ export interface RivalAdjEntry {
 export type RivalAdjustedResult = Record<string, Record<string, RivalAdjEntry>>
 
 export const getRivalAdjusted = (collection: string) =>
-  get<RivalAdjustedResult>(
+  fromSource('rival-adjusted', () => localRivalAdjusted(collection), () => get<RivalAdjustedResult>(
     `/teams/${encodeURIComponent(collection)}/rival-adjusted`,
-  )
+  ))
 
 // FASE 3/4 — Elasticity models
 export interface ElasticityTrainRequest {
@@ -1298,7 +1299,7 @@ export interface MonteCarloRequest {
 }
 
 export const getLiveTeamNames = (collection: string) =>
-  get<TeamEntry[]>(`/teams/${encodeURIComponent(collection)}/teams`)
+  fromSource('report-teams', () => loadReportTeams(collection), () => get<TeamEntry[]>(`/teams/${encodeURIComponent(collection)}/teams`))
 export interface SimulatedGameStat {
   mean:    number
   std:     number

@@ -20,10 +20,12 @@ from src.local_data.build_cache import code_version
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
+from src.local_data.consistency_export import export_consistency
 from src.local_data.inout_export import export_inout
 from src.local_data.lineups_export import export_lineups
 from src.local_data.matches_export import export_matches
 from src.local_data.possessions_export import export_possession_csv, export_possessions
+from src.local_data.rival_adjusted_export import export_rival_adjusted
 from src.local_data.rotations_export import export_rotations
 from src.local_data.shots_export import export_shots
 from src.local_data.team_reports import seal_file, seal_reports
@@ -32,7 +34,7 @@ INDEX = "index.json"
 ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
-            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/"}
+            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/", "consistency": "consistency/", "rival_adjusted": "rival_adjusted/"}
 
 
 def _json(value: Any) -> str:
@@ -92,6 +94,12 @@ def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Op
     if section == "inout":
         payload = export_inout(handler, collection)
         return payload if payload["players"] else None
+    if section == "consistency":
+        payload = export_consistency(handler, collection)
+        return payload if payload["players"] else None
+    if section == "rival_adjusted":
+        payload = export_rival_adjusted(handler, collection)
+        return payload if payload["teams"] else None
     if section == "lineups":
         payload = export_lineups(handler, collection)
         return payload if payload["teams"] else None

@@ -240,8 +240,8 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             is_fbcyl = _is_fbcyl(collection_name)
 
             if is_fbcyl:
-                # FBCYL format: teams.name
-                teams = collection.distinct("teams.name")
+                # FBCYL format: stats.teams.name (it listed "teams.name", which no FBCYL game has: #706)
+                teams = collection.distinct("stats.teams.name")
             else:
                 # FEB format: HEADER.TEAM.name
                 teams = collection.distinct("HEADER.TEAM.name")

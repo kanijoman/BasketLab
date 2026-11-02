@@ -44,10 +44,30 @@ def _fast_inout(handler, name):
             "players": [] if fbcyl else [{"player_id": "1", "analysis": {"on": {"minutes": 1}, "off": {"minutes": 2}}}, {"player_id": "2", "analysis": {}}]}
 
 
+def _fast_consistency(handler, name):
+    """One player with one stat for a FEB competition; FBCYL has none here (the real exporter has its own test)."""
+    from src.local_data.export import FORMAT
+
+    fbcyl = "FBCYL" in name
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb",
+            "players": {} if fbcyl else {"101-1": {"points_per_game": {"mean": 10.5, "std": 2.0, "cv": 19.0, "n": 5}}}}
+
+
+def _fast_rival_adjusted(handler, name):
+    """Two teams for a FEB competition; FBCYL has none here (the real exporter has its own test)."""
+    from src.local_data.export import FORMAT
+
+    fbcyl = "FBCYL" in name
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb",
+            "teams": {} if fbcyl else {"ALPHA": {"ortg": {"raw_avg": 100.0, "adj_avg": 101.5, "adj": 1.5, "sos": 99.0, "n": 6}}, "BRAVO": {}}}
+
+
 @pytest.fixture(autouse=True)
 def cheap_lineups(monkeypatch):
     monkeypatch.setattr("src.local_data.web_data.export_lineups", _fast_lineups)
     monkeypatch.setattr("src.local_data.web_data.export_inout", _fast_inout)
+    monkeypatch.setattr("src.local_data.web_data.export_consistency", _fast_consistency)
+    monkeypatch.setattr("src.local_data.web_data.export_rival_adjusted", _fast_rival_adjusted)
 
 
 @pytest.fixture()
@@ -277,6 +297,30 @@ def test_the_inout_of_a_feb_competition_is_published_sealed_and_fbcyl_has_none(h
     entry = entries[0]
     assert entry["file"].startswith("inout/") and entry["games"] == 2
     assert _open(tmp_path, entry, f"competicion:{FEB}") == json.loads(json.dumps(_fast_inout(handler, FEB), default=str))
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+
+
+def test_the_consistency_of_the_players_is_published_sealed_for_the_competition_that_has_it(handler, tmp_path):
+    """#709: ``games`` counts the players; the real exporter is tested in ``test_local_consistency_export.py``."""
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    entries = _manifest(tmp_path)["consistency"]
+    assert [e["collection"] for e in entries] == [FEB]
+    entry = entries[0]
+    assert entry["file"].startswith("consistency/") and entry["games"] == 1
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == _fast_consistency(handler, FEB)
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+
+
+def test_the_rival_adjusted_figures_are_published_sealed_for_the_competition_that_has_them(handler, tmp_path):
+    """#710: ``games`` counts the teams; the real exporter is tested in ``test_local_rival_adjusted_export.py``."""
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    entries = _manifest(tmp_path)["rival_adjusted"]
+    assert [e["collection"] for e in entries] == [FEB]
+    entry = entries[0]
+    assert entry["file"].startswith("rival_adjusted/") and entry["games"] == 2
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == _fast_rival_adjusted(handler, FEB)
     with pytest.raises(Exception):
         _open(tmp_path, entry, "club:101")
 

@@ -349,7 +349,11 @@ class EvolutionService:
                             "onNull": "unknown",
                         }
                     },
-                    "won":     {"$ifNull": ["$stats.teams.isWinner", False]},
+                    # the team with more points won (real FBCYL documents carry no ``isWinner``: it was None everywhere and every game came out lost, #708)
+                    "won":     {"$gt": [
+                        {"$ifNull": ["$stats.teams.data.score", "$stats.teams.PTS"]},
+                        {"$cond": [{"$eq": ["$teamIndex", 0]}, {"$ifNull": ["$t1_entry.data.score", "$t1_entry.PTS"]}, {"$ifNull": ["$t0_entry.data.score", "$t0_entry.PTS"]}]},
+                    ]},
                     "opponent": {
                         "$cond": [
                             {"$eq": ["$teamIndex", 0]},

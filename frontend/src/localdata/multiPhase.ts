@@ -2,6 +2,7 @@
 // The tables of several collections (the phases of a competition) are merged by team or player name: the counting stats are added up, the per-game figures,
 // percentages and ratings are recomputed from the totals. Every quirk of the service is kept on purpose (what it does not add is seeded with 0 and what is not
 // a number comes from the first row), because the page must show what the API shows. Parity: `multiPhase.test.ts` against `tests/local_vectors/multi_phase.json`.
+import { parseComponents } from './collections'
 import { pyRound } from './pyMath'
 
 type Row = Record<string, unknown>
@@ -148,24 +149,7 @@ export function mergeByKey(tablesByCollection: Record<string, Row[]>, key: strin
 // ── The phases of a competition (CollectionService.get_sibling_collections) ─────────────────────────────────────────────
 
 const YEAR = /^\d{4}$/
-const GROUP = /^[A-Z0-9]{1,2}$/i
 const FBCYL_PREFIX = /^FBCYL_/i
-
-/** Best-effort parsing of the competition and the season of a collection name (`_parse_components`): FBCYL `FBCYL_{competition}_{season}`, FEB a slug with the year(s) of the season. */
-function parseComponents(name: string, league: 'FEB' | 'FBCYL'): { competition: string; season: string } {
-  if (league === 'FBCYL') {
-    const rest = name.replace(FBCYL_PREFIX, '')
-    const cut = rest.indexOf('_')
-    return cut < 0 ? { competition: rest, season: '' } : { competition: rest.slice(0, cut), season: rest.slice(cut + 1).replace(/_/g, ' ') }
-  }
-  const parts = name.split('_')
-  const yearAt = parts.findIndex(p => YEAR.test(p))
-  if (yearAt < 0) return { competition: name, season: '' }
-  const remainder = parts.slice(yearAt)
-  // a short last token (A, B, 1A…) is the group; a longer phase name (ELIMINATORIAS, FASE_ASCENSO) stays in the season
-  const season = remainder.length > 1 && GROUP.test(remainder[remainder.length - 1]) ? remainder.slice(0, -1).join('_') : remainder.join('_')
-  return { competition: parts.slice(0, yearAt).join('_'), season }
-}
 
 /** Only the leading year token(s) of a season (`2025_ELIMINATORIAS` → `2025`), or the whole season when it has none. */
 function seasonYear(season: string): string {
