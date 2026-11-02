@@ -1,0 +1,815 @@
+{
+ "listed": [
+  {
+   "competition": "1ª",
+   "game_count": 19,
+   "group": "",
+   "league": "FBCYL",
+   "name": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+   "season": "FASE-GRUPO A-1 2026 "
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 38,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_1ºE-1ºO_Final",
+   "season": "2024_2025_1ºE-1ºO_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 59,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_2_Final",
+   "season": "2024_2025_ELIMINATORIAS_1_2_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 61,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_4_Final",
+   "season": "2024_2025_ELIMINATORIAS_1_4_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 65,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_8_Final",
+   "season": "2024_2025_ELIMINATORIAS_1_8_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 85,
+   "group": "A",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_A",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 86,
+   "group": "B",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_B",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 87,
+   "group": "C",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_C",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 88,
+   "group": "D",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_D",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 89,
+   "group": "E",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_E",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 90,
+   "group": "F",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_F",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 91,
+   "group": "G",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_G",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 92,
+   "group": "H",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_H",
+   "season": "2024_2025_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 97,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_Liga_Regular_ESTE",
+   "season": "2024_2025_Liga_Regular_ESTE"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 79,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_Liga_Regular_OESTE",
+   "season": "2024_2025_Liga_Regular_OESTE"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 56,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2024_2025_Liga_Regular_Único",
+   "season": "2024_2025_Liga_Regular_Único"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 79,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2024_2025_PERMANENCIA_1_2_Final",
+   "season": "2024_2025_PERMANENCIA_1_2_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 26,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_PLAYOFFS_1_2_Final",
+   "season": "2024_2025_PLAYOFFS_1_2_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 28,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_PLAYOFFS_1_4_Final",
+   "season": "2024_2025_PLAYOFFS_1_4_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 28,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2024_2025_PLAYOFFS_Final",
+   "season": "2024_2025_PLAYOFFS_Final"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 37,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2024_2025_Play-Offs_1_2_Final",
+   "season": "2024_2025_Play-Offs_1_2_Final"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 39,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2024_2025_Play-Offs_1_4_Final",
+   "season": "2024_2025_Play-Offs_1_4_Final"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 39,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2024_2025_Play-Offs_Final",
+   "season": "2024_2025_Play-Offs_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 40,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_1ºE-1ºO_Final",
+   "season": "2025_2026_1ºE-1ºO_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 61,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_2_Final",
+   "season": "2025_2026_ELIMINATORIAS_1_2_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 63,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_4_Final",
+   "season": "2025_2026_ELIMINATORIAS_1_4_Final"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 67,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_8_Final",
+   "season": "2025_2026_ELIMINATORIAS_1_8_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 87,
+   "group": "A",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_A",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 88,
+   "group": "B",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_B",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 89,
+   "group": "C",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_C",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 90,
+   "group": "D",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_D",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 91,
+   "group": "E",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_E",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 92,
+   "group": "F",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_F",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 93,
+   "group": "G",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_G",
+   "season": "2025_2026_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 2,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_Liga_Regular_ESTE",
+   "season": "2025_2026_Liga_Regular_ESTE"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 81,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_Liga_Regular_OESTE",
+   "season": "2025_2026_Liga_Regular_OESTE"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 58,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2025_2026_Liga_Regular_Único",
+   "season": "2025_2026_Liga_Regular_Único"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 83,
+   "group": "",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2025_2026_PERMANENCIA_Final",
+   "season": "2025_2026_PERMANENCIA_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 59,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_Play-offs_1_16_Final",
+   "season": "2025_2026_Play-offs_1_16_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 6,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_Play-offs_1_2_Final",
+   "season": "2025_2026_Play-offs_1_2_Final"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 71,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2025_2026_Play-offs_1_2_Final",
+   "season": "2025_2026_Play-offs_1_2_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 8,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_Play-offs_1_4_Final",
+   "season": "2025_2026_Play-offs_1_4_Final"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 73,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2025_2026_Play-offs_1_4_Final",
+   "season": "2025_2026_Play-offs_1_4_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 12,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_Play-offs_1_8_Final",
+   "season": "2025_2026_Play-offs_1_8_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 8,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2025_2026_Play-offs_Final",
+   "season": "2025_2026_Play-offs_Final"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 73,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2025_2026_Play-offs_Final",
+   "season": "2025_2026_Play-offs_Final"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 89,
+   "group": "A",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_A",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 90,
+   "group": "B",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_B",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 91,
+   "group": "C",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_C",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 92,
+   "group": "D",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_D",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 93,
+   "group": "E",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_E",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 94,
+   "group": "F",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_F",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 95,
+   "group": "G",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_G",
+   "season": "2026_2027_FASE_DE_GRUPOS"
+  },
+  {
+   "competition": "LIGA_U",
+   "game_count": 2,
+   "group": "A",
+   "league": "FEB",
+   "name": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+   "season": "2026_2027_LIGA_REGULAR_GRUPO"
+  },
+  {
+   "competition": "LIGA_U",
+   "game_count": 3,
+   "group": "B",
+   "league": "FEB",
+   "name": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B",
+   "season": "2026_2027_LIGA_REGULAR_GRUPO"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 55,
+   "group": "A",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+   "season": "2026_2027_Liga_Regular"
+  },
+  {
+   "competition": "SEGUNDA_FEB",
+   "game_count": 56,
+   "group": "B",
+   "league": "FEB",
+   "name": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+   "season": "2026_2027_Liga_Regular"
+  },
+  {
+   "competition": "TERCERA_FEB",
+   "game_count": 68,
+   "group": "",
+   "league": "FEB",
+   "name": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+   "season": "2026_2027_Liga_Regular_A-B"
+  },
+  {
+   "competition": "LF_CHALLENGE",
+   "game_count": 19,
+   "group": "",
+   "league": "FEB",
+   "name": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "season": "2026_2027_Liga_Regular_Único"
+  },
+  {
+   "competition": "LF_ENDESA",
+   "game_count": 2,
+   "group": "",
+   "league": "FEB",
+   "name": "LF_ENDESA_2026_2027_Liga_Regular_Único",
+   "season": "2026_2027_Liga_Regular_Único"
+  },
+  {
+   "competition": "PRIMERA_FEB",
+   "game_count": 60,
+   "group": "",
+   "league": "FEB",
+   "name": "PRIMERA_FEB_2026_2027_Liga_Regular_Único",
+   "season": "2026_2027_Liga_Regular_Único"
+  },
+  {
+   "competition": "COPA_ESPAÑA",
+   "game_count": 61,
+   "group": "",
+   "league": "FEB",
+   "name": "COPA_ESPAÑA_2026_2027_Play-offs_1_16_Final",
+   "season": "2026_2027_Play-offs_1_16_Final"
+  }
+ ],
+ "published": [
+  {
+   "collection": "FBCYL_1ª_FASE-GRUPO_A-1_2026_",
+   "games": 19,
+   "league": "fbcyl"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_1ºE-1ºO_Final",
+   "games": 38,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_2_Final",
+   "games": 59,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_4_Final",
+   "games": 61,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_8_Final",
+   "games": 65,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_A",
+   "games": 85,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_B",
+   "games": 86,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_C",
+   "games": 87,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_D",
+   "games": 88,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_E",
+   "games": 89,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_F",
+   "games": 90,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_G",
+   "games": 91,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_FASE_DE_GRUPOS_H",
+   "games": 92,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_Liga_Regular_ESTE",
+   "games": 97,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_Liga_Regular_OESTE",
+   "games": 79,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2024_2025_Liga_Regular_Único",
+   "games": 56,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2024_2025_PERMANENCIA_1_2_Final",
+   "games": 79,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_PLAYOFFS_1_2_Final",
+   "games": 26,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_PLAYOFFS_1_4_Final",
+   "games": 28,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2024_2025_PLAYOFFS_Final",
+   "games": 28,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2024_2025_Play-Offs_1_2_Final",
+   "games": 37,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2024_2025_Play-Offs_1_4_Final",
+   "games": 39,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2024_2025_Play-Offs_Final",
+   "games": 39,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_1ºE-1ºO_Final",
+   "games": 40,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_2_Final",
+   "games": 61,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_4_Final",
+   "games": 63,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_8_Final",
+   "games": 67,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_A",
+   "games": 87,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_B",
+   "games": 88,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_C",
+   "games": 89,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_D",
+   "games": 90,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_E",
+   "games": 91,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_F",
+   "games": 92,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_FASE_DE_GRUPOS_G",
+   "games": 93,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_Liga_Regular_ESTE",
+   "games": 2,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_Liga_Regular_OESTE",
+   "games": 81,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2025_2026_Liga_Regular_Único",
+   "games": 58,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2025_2026_PERMANENCIA_Final",
+   "games": 83,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_Play-offs_1_16_Final",
+   "games": 59,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_Play-offs_1_2_Final",
+   "games": 6,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2025_2026_Play-offs_1_2_Final",
+   "games": 71,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_Play-offs_1_4_Final",
+   "games": 8,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2025_2026_Play-offs_1_4_Final",
+   "games": 73,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_Play-offs_1_8_Final",
+   "games": 12,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2025_2026_Play-offs_Final",
+   "games": 8,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2025_2026_Play-offs_Final",
+   "games": 73,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_A",
+   "games": 89,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_B",
+   "games": 90,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_C",
+   "games": 91,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_D",
+   "games": 92,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_E",
+   "games": 93,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_F",
+   "games": 94,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_FASE_DE_GRUPOS_G",
+   "games": 95,
+   "league": "feb"
+  },
+  {
+   "collection": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A",
+   "games": 2,
+   "league": "feb"
+  },
+  {
+   "collection": "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B",
+   "games": 3,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_A",
+   "games": 55,
+   "league": "feb"
+  },
+  {
+   "collection": "SEGUNDA_FEB_2026_2027_Liga_Regular_B",
+   "games": 56,
+   "league": "feb"
+  },
+  {
+   "collection": "TERCERA_FEB_2026_2027_Liga_Regular_A-B",
+   "games": 68,
+   "league": "feb"
+  },
+  {
+   "collection": "LF_CHALLENGE_2026_2027_Liga_Regular_Único",
+   "games": 19,
+   "league": "feb"
+  },
+  {
+   "collection": "LF_ENDESA_2026_2027_Liga_Regular_Único",
+   "games": 2,
+   "league": "feb"
+  },
+  {
+   "collection": "PRIMERA_FEB_2026_2027_Liga_Regular_Único",
+   "games": 60,
+   "league": "feb"
+  },
+  {
+   "collection": "COPA_ESPAÑA_2026_2027_Play-offs_1_16_Final",
+   "games": 61,
+   "league": "feb"
+  }
+ ],
+ "skipped": [
+  "COLLECTION_META"
+ ]
+}

@@ -8,7 +8,7 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localCollectionList, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -977,7 +977,7 @@ export interface CollectionInfo {
 }
 
 export const getCollectionList = () =>
-  get<CollectionInfo[]>('/collections/list')
+  fromSource('collections', () => localCollectionList(), () => get<CollectionInfo[]>('/collections/list'))
 
 export const deleteCollection = (name: string) =>
   fetch(`${BASE}/collections/${encodeURIComponent(name)}`, { method: 'DELETE', headers: adminHeaders() })

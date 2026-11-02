@@ -46,6 +46,7 @@ PBP_FBCYL_OUT = Path(__file__).resolve().parent / "pbp_fbcyl.json"
 SHOTS_OUT = Path(__file__).resolve().parent / "shots_feb.json"
 SHOTS_FBCYL_OUT = Path(__file__).resolve().parent / "shots_fbcyl.json"
 EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
+COLLECTIONS_OUT = Path(__file__).resolve().parent / "collections.json"
 LINEUPS_OUT = Path(__file__).resolve().parent / "lineups_feb.json"
 LINEUPS_FBCYL_OUT = Path(__file__).resolve().parent / "lineups_fbcyl.json"
 FILTERS = [
@@ -437,7 +438,9 @@ def main() -> None:
     _write(SHOTS_OUT, build_shots_vectors())
     _write(SHOTS_FBCYL_OUT, build_fbcyl_shots_vectors())
     from lineup_vectors import build as build_lineups
+    from collection_vectors import build as build_collections
 
+    _write(COLLECTIONS_OUT, build_collections())
     _write(LINEUPS_OUT, build_lineups("feb"), compact=True)
     _write(LINEUPS_FBCYL_OUT, build_lineups("fbcyl"), compact=True)
     print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT, PBP_OUT, PBP_FBCYL_OUT, SHOTS_OUT, SHOTS_FBCYL_OUT)

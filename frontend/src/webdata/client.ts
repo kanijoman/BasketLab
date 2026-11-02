@@ -170,6 +170,11 @@ export async function loadWebCollections(): Promise<string[]> {
   return (await loadManifest()).rows.map(r => r.collection)
 }
 
+/** What the manifest says of each published competition (name, league, games): the list of competitions of the web, issue #705. */
+export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: 'feb' | 'fbcyl'; games: number }>> {
+  return (await loadManifest()).rows.map(({ collection, league, games }) => ({ collection, league, games }))
+}
+
 /** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
 export const loadWebRows = (collection: string): Promise<Competition> => openSealed<Competition>(() => sealedRows(collection), 'El fichero')
 

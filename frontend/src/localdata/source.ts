@@ -8,7 +8,7 @@ import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggrega
 import { compareTeams } from './comparison'
 import type { Competition } from './competition'
 import { competitionEvolution, EVOLUTION_STATS } from './evolution'
-import type { ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
+import type { CollectionInfo, ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { lineupAnalysis, type LineupQuery, type Lineups } from './lineups'
 import { mergeByKey, siblingCollections } from './multiPhase'
@@ -16,7 +16,8 @@ import { byPeriod, derivedCoverage, pointsByOrigin, situations, timeoutEffects, 
 import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } from '@/api/pbpExtended'
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
-import { loadWebCollections, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedInOut, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
+import { collectionList } from './collections'
+import { loadWebCollectionInfos, loadWebCollections, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedInOut, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -150,6 +151,17 @@ export async function localMultiPlayerStats(collections: string[]): Promise<Play
   const tables = all?.map(data => playerTable(data, {}))
   if (!all || !tables || tables.some(t => t === null)) return null
   return mergeByKey(Object.fromEntries(tables.map((t, i) => [collections[i], t as unknown as Array<Record<string, unknown>>])), 'player_name') as unknown as PlayerStat[]
+}
+
+/** The competitions of the publication, as `GET /collections/list` lists them (issue #705); `null` to use the API (the dataset is off or nothing is published). */
+export async function localCollectionList(): Promise<CollectionInfo[] | null> {
+  if (dataSourceOf('collections') !== 'local') return null
+  try {
+    return collectionList(await loadWebCollectionInfos())
+  } catch (error) {
+    if (error instanceof WebDataUnavailable) return null
+    throw error
+  }
 }
 
 /** The phases of a competition among the published ones (the names of the manifest; the manual export in development), or `null` to use the API. */
