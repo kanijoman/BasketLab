@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadWebConsistency, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -260,6 +260,16 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     expect(inout.players.length).toBeGreaterThan(0)
     expect(requested.filter(f => f.startsWith('inout/'))).toHaveLength(1)
     await expect(loadWebInOut(FBCYL)).rejects.toBeInstanceOf(WebDataUnavailable)
+  })
+
+  it('opens the consistency of the players of an FBCYL competition, and the FEB one of the sample has none (issue #709)', async () => {
+    const consistency = await loadWebConsistency(FBCYL)
+    const sample = Object.values(consistency.players)[0]
+    expect(Object.keys(consistency.players).length).toBeGreaterThan(0)
+    expect(Object.values(sample)[0]).toEqual(expect.objectContaining({ mean: expect.any(Number), std: expect.any(Number), cv: expect.any(Number), n: expect.any(Number) }))
+    expect(requested.filter(f => f.startsWith('consistency/'))).toHaveLength(1)
+    await expect(loadWebConsistency(FEB)).rejects.toBeInstanceOf(WebDataUnavailable)
+    await expect(loadWebConsistency('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
 
   it('a competition with neither is unavailable (the caller falls back), not an access problem', async () => {

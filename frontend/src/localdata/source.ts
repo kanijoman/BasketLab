@@ -8,7 +8,7 @@ import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggrega
 import { compareTeams } from './comparison'
 import type { Competition } from './competition'
 import { competitionEvolution, EVOLUTION_STATS, teamEvolution } from './evolution'
-import type { CollectionInfo, ComparisonKind, EvolutionPoint, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
+import type { CVMap, CollectionInfo, ComparisonKind, EvolutionPoint, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { lineupAnalysis, type LineupQuery, type Lineups } from './lineups'
 import { playerQuartiles, type PlayerQuartiles } from './playerQuartiles'
@@ -18,7 +18,7 @@ import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } 
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
 import { collectionList } from './collections'
-import { loadWebCollectionInfos, loadWebCollections, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedInOut, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
+import { loadWebCollectionInfos, loadWebCollections, loadWebConsistency, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedConsistency, type PublishedInOut, type PublishedMatches, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -34,6 +34,7 @@ const rotationLoads = new Map<string, Promise<Rotations | null>>()
 const lineupLoads = new Map<string, Promise<Lineups | null>>()
 const inOutLoads = new Map<string, Promise<PublishedInOut | null>>()
 const matchLoads = new Map<string, Promise<PublishedMatches | null>>()
+const consistencyLoads = new Map<string, Promise<PublishedConsistency | null>>()
 const possessionLoads = new Map<string, Promise<PublishedPossessions | null>>()
 const possessionCsvLoads = new Map<string, Promise<PublishedPossessionCsv | null>>()
 
@@ -47,6 +48,7 @@ export function resetLocalData(): void {
   lineupLoads.clear()
   inOutLoads.clear()
   matchLoads.clear()
+  consistencyLoads.clear()
   possessionLoads.clear()
   possessionCsvLoads.clear()
 }
@@ -288,6 +290,13 @@ export async function localInOut(collection: string, playerId: string): Promise<
   if (dataSourceOf('inout') !== 'local') return null
   const published = await loadOnce(inOutLoads, collection, loadWebInOut)
   return (published?.players.find(p => p.player_id === String(playerId))?.analysis as InOutResult | undefined) ?? null
+}
+
+/** The consistency of the players (issue #709), as `GET /players/{collection}/consistency` answers it, computed when the competition was published; `null` to use the API. */
+export async function localPlayerConsistency(collection: string): Promise<CVMap | null> {
+  if (dataSourceOf('player-consistency') !== 'local') return null
+  const published = await loadOnce(consistencyLoads, collection, loadWebConsistency)
+  return published ? (published.players as CVMap) : null
 }
 
 /** Partidos (issue #677): the list of the matches of a competition, as `GET /matches/{collection}`; `null` to use the API. */

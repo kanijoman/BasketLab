@@ -20,6 +20,7 @@ from src.local_data.build_cache import code_version
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
+from src.local_data.consistency_export import export_consistency
 from src.local_data.inout_export import export_inout
 from src.local_data.lineups_export import export_lineups
 from src.local_data.matches_export import export_matches
@@ -32,7 +33,7 @@ INDEX = "index.json"
 ROWS, REPORTS, SCOUTING, DERIVED = "rows/", "reports/", "scouting/", "derived/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
-            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/"}
+            "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/", "consistency": "consistency/"}
 
 
 def _json(value: Any) -> str:
@@ -91,6 +92,9 @@ def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Op
         return payload if payload["matches"] else None
     if section == "inout":
         payload = export_inout(handler, collection)
+        return payload if payload["players"] else None
+    if section == "consistency":
+        payload = export_consistency(handler, collection)
         return payload if payload["players"] else None
     if section == "lineups":
         payload = export_lineups(handler, collection)

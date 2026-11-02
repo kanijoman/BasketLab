@@ -9,7 +9,7 @@
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 import { loadReportTeams } from '@/webdata/client'
-import { localCollectionList, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
+import { localCollectionList, localPlayerConsistency, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -187,9 +187,9 @@ export const getTeamConsistency = (collection: string) =>
 /** Per-player intra-game consistency: {player_id: {stat_key: CVEntry}} */
 export type ConsistencyMap = CVMap   // alias kept for player stats page
 export const getPlayerConsistency = (collection: string) =>
-  get<ConsistencyMap>(
+  fromSource('player-consistency', () => localPlayerConsistency(collection), () => get<ConsistencyMap>(
     `/players/${encodeURIComponent(collection)}/consistency`,
-  )
+  ))
 
 export const getTeamEvolution = (
   collection: string,
