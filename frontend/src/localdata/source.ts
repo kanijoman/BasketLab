@@ -164,6 +164,14 @@ export async function localCollectionList(): Promise<CollectionInfo[] | null> {
   }
 }
 
+/** The team names of a competition, as `GET /collections/?collection=` lists them (`distinct`, sorted: by code unit); `null` to use the API (the dataset is off or the competition is not published). */
+export async function localTeamNames(collection: string): Promise<string[] | null> {
+  if (dataSourceOf('team-stats') !== 'local') return null
+  const data = await loadCompetition(collection)
+  if (!data) return null
+  return [...new Set(data.team_rows.map(row => row.team_name))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+}
+
 /** The phases of a competition among the published ones (the names of the manifest; the manual export in development), or `null` to use the API. */
 export async function localSiblingCollections(collection: string): Promise<string[] | null> {
   if (dataSourceOf('multi-phase') !== 'local') return null

@@ -74,6 +74,15 @@ describe('the reports of web-data, opened in the browser', () => {
     ])
   })
 
+  it('the team list is sorted as MongoDB sorts it (by code unit), not by the locale: capitals first, accents last (issue #706)', async () => {
+    const manifest = JSON.parse(read('index.json'))
+    const entry = manifest.reports.find((r: { collection: string }) => r.collection === FEB)
+    const index = JSON.parse(read(entry.file))
+    index.reports = ['Ñandú', 'álamo', 'Zeta', 'alfa'].map((team, i) => ({ ...index.reports[0], team_id: String(i), team, mode: 'own' }))
+    override[entry.file] = JSON.stringify(index)
+    expect((await loadReportTeams(FEB)).map(t => t.name)).toEqual(['Zeta', 'alfa', 'Ñandú', 'álamo'])
+  })
+
   it('a competition or team that is not published is unavailable (the caller falls back to the API), not an access problem', async () => {
     await expect(loadWebReport('NO_SUCH_COMPETITION', '1', 'own')).rejects.toBeInstanceOf(WebDataUnavailable)
     await expect(loadWebReport(FEB, '999', 'own')).rejects.toBeInstanceOf(WebDataUnavailable)

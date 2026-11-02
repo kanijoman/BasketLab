@@ -8,7 +8,8 @@
 
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
-import { localCollectionList, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { loadReportTeams } from '@/webdata/client'
+import { localCollectionList, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -84,7 +85,7 @@ export interface TeamEntry {
 }
 
 export const getTeamsInCollection = (collection: string) =>
-  get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`)
+  fromSource('team-stats', () => localTeamNames(collection), () => get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`))
 
 export const detectFormat = (collection: string) =>
   get<{ collection: string; is_fbcyl: boolean }>(
@@ -1298,7 +1299,7 @@ export interface MonteCarloRequest {
 }
 
 export const getLiveTeamNames = (collection: string) =>
-  get<TeamEntry[]>(`/teams/${encodeURIComponent(collection)}/teams`)
+  fromSource('report-teams', () => loadReportTeams(collection), () => get<TeamEntry[]>(`/teams/${encodeURIComponent(collection)}/teams`))
 export interface SimulatedGameStat {
   mean:    number
   std:     number

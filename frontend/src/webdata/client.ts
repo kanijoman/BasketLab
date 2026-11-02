@@ -97,7 +97,7 @@ async function reportIndexOf(collection: string): Promise<{ manifest: WebDataMan
 export async function loadReportTeams(collection: string): Promise<Array<{ id: string; name: string }>> {
   const { index } = await reportIndexOf(collection)
   const teams = new Map(index.reports.map(r => [r.team_id, r.team]))
-  return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  return [...teams].map(([id, name]) => ({ id, name })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))        // as `$sort` does: by code unit, not by the locale
 }
 
 /** A sealed file of the publication with the manifest it came from, the wraps of its key and its text. */
