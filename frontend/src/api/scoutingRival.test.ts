@@ -35,11 +35,17 @@ describe('rival scouting api (issue #299)', () => {
     expect(fetchMock.mock.calls[1][0]).toBe('/api/v1/scouting-rival/report/j1')
   })
 
-  it('downloads the PDF as a blob', async () => {
+  it('makes the PDF in the browser from the report, without calling the server (issue #715)', async () => {
     const api = await load()
-    const blob = await api.downloadScoutingPdf('j1')
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/scouting-rival/pdf/j1')
-    expect(blob).toBeInstanceOf(Blob)
+    fetchMock.mockClear()
+    const report = {
+      team: { id: '1', name: 'EQUIPO' }, own_team: { id: '2', name: 'MI CLUB' }, collection: 'FEB_X', sample_games: 3, games: [], low_sample: false, notices: [], record: { wins: 2, losses: 1, avg_for: 70, avg_against: 65, avg_margin: 5 },
+      profile: [], keys: [], plan: { neutralize: [], exploit: [] }, players: [], lineups: [], origin: [], alerts: [], comparison: [],
+    }
+    const blob = await api.downloadScoutingPdf(report as never)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(blob.type).toBe('application/pdf')
+    expect(blob.size).toBeGreaterThan(1000)
   })
 
   it('turns the API detail into the error message', async () => {

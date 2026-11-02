@@ -109,10 +109,10 @@ export async function getScoutingReport(jobId: string): Promise<ScoutingReport> 
   return res.json() as Promise<ScoutingReport>
 }
 
-export async function downloadScoutingPdf(jobId: string): Promise<Blob> {
-  const res = await fetch(job('pdf', jobId))
-  if (!res.ok) throw await failure(res)
-  return res.blob()
+/** The PDF of a report, made in the browser from the report itself (issue #715: no job and no server; jsPDF is loaded when the button is pressed). */
+export async function downloadScoutingPdf(report: ScoutingReport): Promise<Blob> {
+  const { scoutingPdf } = await import('@/lib/scoutingPdf')
+  return scoutingPdf(report, { subtitle: report.collection, ownName: report.own_team?.name ?? 'Nuestro equipo' })
 }
 
 /**

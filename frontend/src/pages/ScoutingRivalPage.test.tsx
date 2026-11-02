@@ -178,7 +178,7 @@ describe('ScoutingRivalPage (issue #299)', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(1500) })
     const button = await screen.findByRole('button', { name: /descargar pdf/i })
     fireEvent.click(button)
-    await waitFor(() => expect(scouting.downloadScoutingPdf).toHaveBeenCalledWith('j1'))
+    await waitFor(() => expect(scouting.downloadScoutingPdf).toHaveBeenCalledWith(expect.objectContaining({ team: expect.objectContaining({ name: expect.any(String) }) })))       // made from the report, not from a job
     fireEvent.click(button)
     await waitFor(() => expect(scouting.downloadScoutingPdf).toHaveBeenCalledTimes(2))
   })
@@ -230,7 +230,7 @@ describe('ScoutingRivalPage: published scouting by scope (issue #638)', () => {
     expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
     expect(scouting.getPublishedScouting).toHaveBeenCalledWith('FEB_X', '2', 'liga')
     expect(scouting.startScouting).not.toHaveBeenCalled()
-    expect(screen.queryByRole('button', { name: /descargar pdf/i })).toBeNull()                 // a published report has no job to take the PDF from
+    expect(screen.getByRole('button', { name: /descargar pdf/i })).toBeInTheDocument()          // the PDF is made in the browser from the report: a published one has it too (issue #715)
   })
 
   it('changing the scope shows that scope of the same rival at once', async () => {
