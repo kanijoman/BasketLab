@@ -142,11 +142,8 @@ def _games(pdf: ScoutingPDF, report: Dict[str, Any]) -> None:
     pdf.table(["Fecha", "Rival", "Cancha", "Resultado", ""], rows, [26, 84, 26, 30, 10], ["L", "L", "L", "R", "C"])
 
 
-def render_scouting_pdf(report: Dict[str, Any], subtitle: str = "", own_name: str = "Nuestro equipo", compress: bool = True) -> bytes:
-    """The PDF of a scouting report; ``subtitle`` (e.g. the competition) goes to the footer, ``own_name`` to the matchup."""
-    pdf = ScoutingPDF("Scouting rival", subtitle)
-    pdf.set_compression(compress)
-    pdf.add_page()
+def lay_out(pdf: Any, report: Dict[str, Any], own_name: str) -> None:
+    """The sections of the report, in order, on ``pdf`` (a ``ScoutingPDF``; the vectors of the browser's version run it over a recorder, #715)."""
     _summary(pdf, report)
     _keys_and_plan(pdf, report)
     _people(pdf, report)
@@ -155,4 +152,12 @@ def render_scouting_pdf(report: Dict[str, Any], subtitle: str = "", own_name: st
     _origin(pdf, report)
     _alerts_and_matchup(pdf, report, own_name)
     _games(pdf, report)
+
+
+def render_scouting_pdf(report: Dict[str, Any], subtitle: str = "", own_name: str = "Nuestro equipo", compress: bool = True) -> bytes:
+    """The PDF of a scouting report; ``subtitle`` (e.g. the competition) goes to the footer, ``own_name`` to the matchup."""
+    pdf = ScoutingPDF("Scouting rival", subtitle)
+    pdf.set_compression(compress)
+    pdf.add_page()
+    lay_out(pdf, report, own_name)
     return bytes(pdf.output())

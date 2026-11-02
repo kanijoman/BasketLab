@@ -97,8 +97,8 @@ export const getTeamReport = (collection: string, teamId: string, mode: ReportMo
 export const getReportTeams = (collection: string): Promise<TeamEntry[]> =>
   fromSource('report-teams', () => loadReportTeams(collection), () => getLiveTeamNames(collection))
 
+/** The PDF of the report, made in the browser from the report itself (issue #714: no server step; the libraries are loaded when the button is pressed). */
 export async function downloadTeamReportPdf(collection: string, teamId: string, mode: ReportMode): Promise<Blob> {
-  const res = await fetch(url(collection, teamId, mode, '/pdf'))
-  if (!res.ok) throw await failure(res)
-  return res.blob()
+  const [{ teamReportPdf }, report] = await Promise.all([import('@/lib/teamReportPdf'), getTeamReport(collection, teamId, mode)])
+  return teamReportPdf(report)
 }

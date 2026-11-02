@@ -13,6 +13,13 @@ export function pyRound(x: number, digits: number): number {
   return sign * (lastDigit % 2 === 0 ? Number(kept) : Number(abs.toFixed(digits)))
 }
 
+/** Python's `format(x, "+.2f")`: `digits` decimals with the exact ties to the even digit (a zero that was negative keeps its sign: `-0.04` is `-0.0`), and a `+` on the rest if `plus`. */
+export function pyFixed(x: number, digits: number, plus = false): string {
+  if (!Number.isFinite(x)) return String(x)
+  const negative = x < 0 || Object.is(x, -0)
+  return (negative ? '-' : plus ? '+' : '') + Math.abs(pyRound(x, digits)).toFixed(digits)
+}
+
 // NumPy's `np.sum` of a float array: pairwise (blocks of eight accumulators up to 128 values, halves above), which is not the sequential sum and can differ in the last bit.
 function npSum(values: number[], from = 0, count = values.length): number {
   if (count < 8) {

@@ -25,7 +25,7 @@ import SegmentedControl from '@/components/ui/SegmentedControl'
 type Phase =
   | { kind: 'idle' }
   | { kind: 'running'; progress: ScoutingProgress | null }
-  | { kind: 'done'; jobId: string | null; report: ScoutingReport }      // `jobId` null: the report was published (no PDF to download from a job)
+  | { kind: 'done'; jobId: string | null; report: ScoutingReport }      // `jobId` null: the report was published
   | { kind: 'locked' }                                                   // published, sealed, and this browser has no key for it
   | { kind: 'error'; message: string }
 
@@ -225,10 +225,10 @@ export default function ScoutingRivalPage() {
     }
   }
 
-  async function downloadPdf(jobId: string, team: string) {
+  async function downloadPdf(report: ScoutingReport) {
     setDownloading(true)
     try {
-      saveBlob(await downloadScoutingPdf(jobId), `Scouting_${team.replace(/\W+/g, '_')}.pdf`)
+      saveBlob(await downloadScoutingPdf(report), `Scouting_${report.team.name.replace(/\W+/g, '_')}.pdf`)
     } catch (e) {
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : String(e) })
     } finally {
@@ -305,7 +305,7 @@ export default function ScoutingRivalPage() {
 
             {phase.kind === 'done' && (
               <Preview report={phase.report} downloading={downloading}
-                onPdf={phase.jobId ? () => void downloadPdf(phase.jobId as string, phase.report.team.name) : undefined} />
+                onPdf={() => void downloadPdf(phase.report)} />
             )}
           </>
         )}

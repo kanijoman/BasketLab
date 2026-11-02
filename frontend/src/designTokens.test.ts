@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { PAPER } from '@design/paper'
 
 // Issue #188: the colours of the web come from design/tokens.css (shared with the live app), so both themes work everywhere.
 // A colour written in a component only fits the theme it was picked for: this guard keeps them out.
@@ -53,6 +54,14 @@ describe('colours of the web (issue #188)', () => {
 
   it.each(Object.keys(EXCEPTIONS))('%s is still an exception (when it is fixed, take it off the list)', name => {
     expect(offences(join(SRC, name)).length).toBeGreaterThan(0)
+  })
+
+  // The PDFs are printed on white paper whatever the theme: their colours are the tones of the LIGHT theme, written once in design/paper.ts (issues #714, #715).
+  it('keeps the colours of the paper equal to the tokens of the light theme', () => {
+    const light = tokens.slice(tokens.indexOf(':root[data-theme="light"]'))
+    const token = (name: string) => light.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`))?.[1]
+    const expected = { ink: '--text', muted: '--text-muted', line: '--line', surface: '--surface', surfaceRaised: '--surface-raised', ok: '--ok', bad: '--dev-bad', own: '--sev-info', conceded: '--pace-fast' }
+    for (const [name, css] of Object.entries(expected)) expect(PAPER[name as keyof typeof PAPER], name).toBe(token(css))
   })
 
   // White text was right on the dark surfaces only: in the light theme it vanished (the title of Análisis Predictivo).

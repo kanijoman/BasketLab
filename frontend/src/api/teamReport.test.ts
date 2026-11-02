@@ -25,11 +25,16 @@ describe('team report api', () => {
     )
   })
 
-  it('downloads the PDF from the /pdf endpoint', async () => {
+  it('makes the PDF in the browser from the report, without the /pdf endpoint (issue #714)', async () => {
+    const report = {
+      team: 'A', mode: 'own', games_played: 5, low_sample: false, strengths: [], weaknesses: [], differentials: [], consistency: [], zones: [], profile: ['Equipo rápido'], tactics: [], training: [],
+    }
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => report })
     const api = await load()
     const blob = await api.downloadTeamReportPdf('c1', '7', 'own')
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/reports/team-report/c1/pdf?team_id=7&mode=own')
-    expect(blob).toBeInstanceOf(Blob)
+    expect(fetchMock.mock.calls.map(c => String(c[0]))).toEqual(['/api/v1/reports/team-report/c1?team_id=7&mode=own'])           // the JSON report only
+    expect(blob.type).toBe('application/pdf')
+    expect(blob.size).toBeGreaterThan(1000)
   })
 
   it('surfaces the API error detail', async () => {
