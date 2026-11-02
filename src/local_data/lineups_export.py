@@ -17,9 +17,9 @@ from src.utils.time_utils import fbcyl_game_instant
 
 SIZES = (2, 3, 4, 5)
 # ``[game, minutes, segments, possessions, ortg, drtg, orb_pct, ...counters]``: ``game`` is the index in the team's ``games``; the three ratios are the game's own (ORtg and DRtg
-# use the possessions before rounding, ORB% the opponent's rebounds) and the rest are the counters the browser sums
+# use the possessions before rounding, ORB% the opponent's rebounds) and the rest are the counters the browser sums (``opp_drb`` too: the ORB% of several games is over the sums, #691)
 COLUMNS = ("game", "minutes", "segments", "possessions", "ortg", "drtg", "orb_pct", "points_for", "points_against", "fgm", "fga", "fg3m", "fg3a", "ftm", "fta",
-           "orb", "drb", "ast", "stl", "blk", "tov", "pf")
+           "orb", "opp_drb", "drb", "ast", "stl", "blk", "tov", "pf")
 _FEB_PROJECTION = {"PLAYBYPLAY": 1, "HEADER": 1, "BOXSCORE.TEAM.id": 1, "BOXSCORE.TEAM.PLAYER.id": 1}
 _FBCYL_PROJECTION = {"moves": 1, "stats.teams": 1, "stats.time": 1}
 
