@@ -23,6 +23,7 @@ import games  # noqa: E402
 
 from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
+from src.local_data.images_export import Source  # noqa: E402
 from src.local_data.web_data import publish_web_data  # noqa: E402
 from src.services.scouting_rival_service import ScoutingRivalService  # noqa: E402
 
@@ -94,11 +95,34 @@ def fixture_scouting_service(handler):
                                 extra_games=lambda h, c, t: {"copa": iter(cup)}, levels_of=lambda h, c: {})
 
 
+class FixtureFeb(Source):
+    """The FEB of the fixtures: a crest and a photo made here (the fixture games have no photo URL, so every player gets the same small one) and an identity for everyone."""
+
+    @staticmethod
+    def _png(width: int, height: int, colour: tuple) -> bytes:
+        import io
+
+        from PIL import Image
+
+        out = io.BytesIO()
+        Image.new("RGBA", (width, height), colour).save(out, format="PNG")
+        return out.getvalue()
+
+    def get(self, url):
+        return self._png(300, 300, (30, 90, 200, 255))
+
+    def length(self, url):
+        return len(self.get(url))
+
+    def identity(self, team_id, player_id):
+        return "05/03/2000", "190 cm"
+
+
 def main() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     manifest = publish_web_data(fixture_handler(), OUT, ScopedSealer(SECRET, open_access=True), [FEB, FBCYL], scouting=[FEB],
-                                scouting_service=fixture_scouting_service)
+                                scouting_service=fixture_scouting_service, image_source=FixtureFeb())
     print("wrote", OUT, sum(1 for p in OUT.rglob("*") if p.is_file()), "files,", len(manifest["rows"]), "competitions")
 
 

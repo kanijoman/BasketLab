@@ -59,6 +59,13 @@ def test_the_sealed_reports_say_what_the_service_says_today(handler):
             if entry["mode"] == "scouting":
                 service = vectors.fixture_scouting_service(handler)
                 fresh[(entry["team_id"], "scouting", entry["scope"])] = _dump(service.build_scopes(manifest_entry["collection"], entry["team_id"])[entry["scope"]])
+            if entry["mode"] == "images":                                                  # #717: the same payload, made again from the fixture games and the fixture FEB
+                from src.local_data.images_export import team_payload, team_sources
+
+                collection = manifest_entry["collection"]
+                teams = team_sources(handler.connection.client["BASKETBALL"][collection])
+                fresh[(entry["team_id"], "images", None)] = json.dumps(team_payload(collection, entry["team_id"], teams[entry["team_id"]], {}, vectors.FixtureFeb()),
+                                                                       ensure_ascii=False, separators=(",", ":"), sort_keys=True)
         assert {(e["team_id"], e["mode"], e.get("scope")) for e in index["reports"]} == set(fresh)
         for entry in index["reports"]:
             assert _open(entry) == fresh[(entry["team_id"], entry["mode"], entry.get("scope"))]
