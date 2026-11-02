@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .advanced_stats import AdvancedStatsCalculator as Adv
 from .config import RuleConfig
-from .four_factors import possessions as estimated_possessions
+from .four_factors import FT_POSSESSION_COST, possessions as estimated_possessions
 
 ADVANCED_KEYS = ("usage", "orating", "drating", "net_rtg", "efg", "ts", "ftr", "three_pr", "ast_pct", "tov_pct", "stl_pct", "blk_pct", "drb_pct", "orb_pct", "pie")
 
@@ -113,9 +113,36 @@ def _deviation(p: Dict[str, Any], baseline: Optional[Dict[str, Any]], cfg: RuleC
         fga = st["fg2a"] + st["fg3a"]
         if fga:
             out["efg"] = _clamp(((st["fg2m"] + 1.5 * st["fg3m"]) / fga - float(baseline["rates"]["efg"])) / (_EFG_SPREAD / math.sqrt(fga + 1)), cfg)
+            out["ftr"] = _clamp((st["fta"] / fga - float(baseline["rates"]["ftr"])) / (_EFG_SPREAD / math.sqrt(fga + 1)), cfg)
+            shots = fga + FT_POSSESSION_COST * st["fta"]
+            expected_ts = float(baseline["impact40"]["pts"]) / (2 * (baseline["rates"]["fg2a40"] + baseline["rates"]["fg3a40"] + FT_POSSESSION_COST * baseline["impact40"]["fta"]))
+            out["ts"] = _clamp((p["pts"] / (2 * shots) - expected_ts) / (_EFG_SPREAD / math.sqrt(shots + 1)), cfg)
     except (KeyError, TypeError):
         return {}                # a baseline without what is compared: the same as having none
     return out
+
+
+def _team_deviation(own: Dict[str, int], rival: Dict[str, int], cfg: RuleConfig) -> Dict[str, Optional[float]]:
+    """The totals of a team against the RIVAL's (#699; the package has no season average of a team to compare with): the same scale as a player's (sign of good,
+    [-1, 1]), noise of a count sqrt(own + rival + 1); the two teams' entries are mirrored. Empty while neither has done anything."""
+    if not any(own.values()) and not any(rival.values()):
+        return {}
+    out: Dict[str, Optional[float]] = {}
+    for column, inverted in (("pts", False), ("fg3m", False), ("ftm", False), ("orb", False), ("drb", False), ("reb", False), ("ast", False), ("stl", False), ("blk", False),
+                             ("tov", True), ("pf", True)):
+        z = (own[column] - rival[column]) / math.sqrt(own[column] + rival[column] + 1)
+        out[column] = _clamp(-z if inverted else z, cfg)
+    own_fga, rival_fga = own["fg2a"] + own["fg3a"], rival["fg2a"] + rival["fg3a"]
+    if own_fga and rival_fga:
+        gap = (own["fg2m"] + 1.5 * own["fg3m"]) / own_fga - (rival["fg2m"] + 1.5 * rival["fg3m"]) / rival_fga
+        out["efg"] = _clamp(gap / (_EFG_SPREAD * math.sqrt(1 / (own_fga + 1) + 1 / (rival_fga + 1))), cfg)
+    return out
+
+
+def _team_counts(snapshot: Dict[str, Any], team_id: str, players: List[Dict[str, Any]]) -> Dict[str, int]:
+    s = snapshot["teams"][team_id]["stats"]
+    return {**{k: s[k] for k in ("fg2m", "fg2a", "fg3m", "fg3a", "ftm", "orb", "drb", "ast", "stl", "blk", "pts")}, "reb": s["orb"] + s["drb"],
+            "tov": s["tov"] + s.get("tov_team", 0), "pf": sum(p["pf"] for p in players)}
 
 
 def _number(player: Dict[str, Any], roster: Optional[Dict[str, Dict[str, Any]]], pid: str, baselines: Optional[Dict[str, Dict[str, Any]]] = None) -> Optional[str]:
@@ -146,3 +173,12 @@ def build(snapshot: Dict[str, Any], baselines: Dict[str, Dict[str, Any]], cfg: R
         advanced = _advanced(p, team, rival, cfg) if team is not None and rival is not None else {key: None for key in ADVANCED_KEYS}
         out[pid] = {"val": _valuation(p), "adv": advanced, "dev": _deviation(p, baselines.get(pid), cfg), "no": _number(p, roster, pid, baselines)}
     return out
+
+
+def team_totals(snapshot: Dict[str, Any], cfg: RuleConfig) -> Dict[str, Dict[str, Optional[float]]]:
+    """``{team id: deviation}`` of the totals row of each team against the other's (#699); empty for a snapshot that is not the state machine's or with other than two teams."""
+    ids = list(snapshot.get("teams") or {})
+    if len(ids) != 2 or not all("fg2m" in (snapshot["teams"][t].get("stats") or {}) for t in ids) or not all("stats" in p for p in snapshot.get("players", {}).values()):
+        return {}
+    counts = {t: _team_counts(snapshot, t, [p for p in snapshot.get("players", {}).values() if p["team_id"] == t]) for t in ids}
+    return {ids[0]: _team_deviation(counts[ids[0]], counts[ids[1]], cfg), ids[1]: _team_deviation(counts[ids[1]], counts[ids[0]], cfg)}

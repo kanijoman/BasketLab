@@ -221,6 +221,8 @@ export interface EngineOutput {
     formation?: FormationStatus; win_prob?: WinProb; win_levers?: WinLever[]
     /** The box score tab (issue #593): per player, the valuation, the advanced figures and the deviation from his own average. */
     boxscore?: Record<string, BoxscoreEntry>
+    /** Deviation of the totals of each team against the rival's, by team id (#699). */
+    boxscore_teams?: Record<string, Record<string, number | null>>
   }
   /** Whether the teams of the package are the teams of the match (issue #417); when not, there are no alerts nor analysis. */
   package_match?: { ok: boolean; expected: string[]; found: string[] }

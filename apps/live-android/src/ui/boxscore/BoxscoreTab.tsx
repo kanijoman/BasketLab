@@ -8,6 +8,8 @@ import { ADVANCED_COLUMNS, NORMAL_COLUMNS, cellText, deviationOf, highlightFor, 
 interface Props {
   snapshot?: Snapshot | null
   entries?: Record<string, BoxscoreEntry>
+  /** Deviation of the totals row of each team against the rival's (``analysis.boxscore_teams``, #699). */
+  teams?: Record<string, Record<string, number | null>>
   own: TeamRef
   rival: TeamRef
   /** Local team id from the engine. */
@@ -41,7 +43,7 @@ function Cell({ column, row, hit, seq }: { column: Column; row: Row; hit: boolea
   )
 }
 
-export default function BoxscoreTab({ snapshot, entries, own, rival, homeId }: Props) {
+export default function BoxscoreTab({ snapshot, entries, teams, own, rival, homeId }: Props) {
   const { home, away } = orderTeams(own, rival, homeId ?? snapshot?.home_id)
   const [teamId, setTeamId] = useState(own.id)
   const [mode, setMode] = useState<Mode>('normal')
@@ -54,7 +56,7 @@ export default function BoxscoreTab({ snapshot, entries, own, rival, homeId }: P
     return <section className="bx"><p className="detail">Sin partido todavía: el boxscore aparece en cuanto empieza.</p></section>
   }
   const rows = playerRows(snapshot, shown.id, entries)
-  const { team, totals } = teamRows(snapshot, shown.id, rows)
+  const { team, totals } = teamRows(snapshot, shown.id, rows, teams?.[shown.id])
   const columns = mode === 'normal' ? NORMAL_COLUMNS : ADVANCED_COLUMNS
   const news = (id: string) => fresh && last.team_id === id && id !== shown.id && last.seq !== viewed[id]
   const choose = (id: string) => { setTeamId(id); setViewed(v => ({ ...v, [id]: last?.seq ?? 0 })) }
@@ -97,7 +99,7 @@ export default function BoxscoreTab({ snapshot, entries, own, rival, homeId }: P
           </tbody>
         </table>
       </div>
-      <p className="detail bx-legend">Verde: mejor que su media esperada por los minutos jugados; rojo: peor (en pérdidas y faltas, más es peor). Sin color: sin media con la que comparar.</p>
+      <p className="detail bx-legend">Verde: mejor que su media esperada por los minutos jugados; rojo: peor (en pérdidas y faltas, más es peor). Totales: frente al rival. Sin color: sin media con la que comparar.</p>
     </section>
   )
 }

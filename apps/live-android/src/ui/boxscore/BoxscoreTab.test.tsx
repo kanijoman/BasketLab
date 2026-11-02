@@ -87,6 +87,20 @@ describe('BoxscoreTab (issue #593)', () => {
     expect(screen.getByRole('table').parentElement?.className).toContain('bx-scroll')
   })
 
+  describe('the totals and the advanced figures (issue #699)', () => {
+    it('the totals row is coloured against the rival and the advanced columns with a reference against his own average', () => {
+      render(view({ entries: { p1: { ...ENTRIES.p1, dev: { ...ENTRIES.p1.dev, ts: 0.6, ftr: -0.5 } } }, teams: { A: { pts: 0.7, tov: -0.2 }, B: { pts: -0.7 } } }))
+      const totals = rowOf('Totales')
+      expect(totals.querySelector('td[data-col="pts"]')!.getAttribute('data-dev')).toBe('up')
+      expect(totals.querySelector('td[data-col="tov"]')!.getAttribute('data-dev')).toBe('down')
+      expect(totals.querySelector('td[data-col="ast"]')!.getAttribute('data-dev')).toBeNull()
+      fireEvent.click(screen.getByRole('radio', { name: 'Avanzada' }))
+      expect(rowOf('A. PRIMERA').querySelector('td[data-col="ts"]')!.getAttribute('data-dev')).toBe('up')
+      expect(rowOf('A. PRIMERA').querySelector('td[data-col="ftr"]')!.getAttribute('data-dev')).toBe('down')
+      expect(rowOf('A. PRIMERA').querySelector('td[data-col="orating"]')!.getAttribute('data-dev')).toBeNull()
+    })
+  })
+
   describe('against his own average', () => {
     const cell = (column: string) => rowOf('A. PRIMERA').querySelector(`td[data-col="${column}"]`)!
 

@@ -57,8 +57,8 @@ export function playerRows(snapshot: Snapshot, teamId: string, entries: Record<s
   return rows.sort((a, b) => Number(b.onCourt) - Number(a.onCourt) || a.name.localeCompare(b.name, 'es'))
 }
 
-/** The row of the team (what nobody owns: rebounds and turnovers of the team) and the totals, as the PDF has them. */
-export function teamRows(snapshot: Snapshot, teamId: string, players: Row[]): { team: Row; totals: Row } {
+/** The row of the team (what nobody owns: rebounds and turnovers of the team) and the totals, as the PDF has them. ``teamDev``: the deviations of the totals against the rival's (#699). */
+export function teamRows(snapshot: Snapshot, teamId: string, players: Row[], teamDev: Record<string, number | null> = {}): { team: Row; totals: Row } {
   const team = snapshot.teams[teamId]?.stats
   const sum = (key: keyof PlayerStats) => players.reduce((acc, r) => acc + r.stats[key], 0)
   const stats: PlayerStats = team ? { ...EMPTY, ...team } : { ...EMPTY }
@@ -71,7 +71,7 @@ export function teamRows(snapshot: Snapshot, teamId: string, players: Row[]): { 
     team: { id: `${teamId}:team`, kind: 'team', name: 'Equipo', number: null, onCourt: false, minutes: 0, pts: 0, pm: null, pf: 0, fd: 0, stats: nobody },
     totals: { id: `${teamId}:total`, kind: 'total', name: 'Totales', number: null, onCourt: false, minutes: players.reduce((acc, r) => acc + r.minutes, 0), pts: team?.pts ?? snapshot.score[teamId] ?? 0,
       pm: null, pf: players.reduce((acc, r) => acc + r.pf, 0), fd: players.reduce((acc, r) => acc + r.fd, 0), stats: totals,
-      entry: { val: players.reduce((acc, r) => acc + (r.entry?.val ?? 0), 0), adv: {} as BoxscoreEntry['adv'], dev: {} } },
+      entry: { val: players.reduce((acc, r) => acc + (r.entry?.val ?? 0), 0), adv: {} as BoxscoreEntry['adv'], dev: teamDev } },
   }
 }
 
@@ -108,15 +108,15 @@ export const ADVANCED_COLUMNS: Column[] = [
   advanced('drating', 'DRtg', 'Rating defensivo: puntos permitidos por cada 100 posesiones cuando está en pista (menor es mejor)'),
   advanced('net_rtg', 'NetRtg', 'Net rating individual: rating ofensivo menos defensivo'),
   advanced('efg', 'eFG%', 'Acierto de tiro de campo ajustado por los triples', 'efg'),
-  advanced('ts', 'TS%', 'Acierto real de tiro: puntos por tiro de campo y tiro libre intentados'),
-  advanced('ftr', 'FTr', 'Tasa de tiro libre: tiros libres intentados por intento de campo'),
+  advanced('ts', 'TS%', 'Acierto real de tiro: puntos por tiro de campo y tiro libre intentados', 'ts'),
+  advanced('ftr', 'FTr', 'Tasa de tiro libre: tiros libres intentados por intento de campo', 'ftr'),
   advanced('three_pr', '3Pr', 'Tasa de triple: proporción de intentos de campo que son triples'),
-  advanced('ast_pct', '%AST', 'Porcentaje de canastas del equipo con asistencia del jugador mientras está en pista'),
-  advanced('tov_pct', '%TO', 'Porcentaje de posesiones del jugador que acaban en pérdida (menor es mejor)'),
-  advanced('stl_pct', '%ROB', 'Porcentaje de posesiones del rival que acaban en robo del jugador'),
-  advanced('blk_pct', '%TAP', 'Porcentaje de intentos de 2 del rival tapados por el jugador'),
-  advanced('drb_pct', '%RD', 'Porcentaje de rebotes defensivos disponibles capturados por el jugador'),
-  advanced('orb_pct', '%RO', 'Porcentaje de rebotes ofensivos disponibles capturados por el jugador'),
+  advanced('ast_pct', '%AST', 'Porcentaje de canastas del equipo con asistencia del jugador mientras está en pista', 'ast'),
+  advanced('tov_pct', '%TO', 'Porcentaje de posesiones del jugador que acaban en pérdida (menor es mejor)', 'tov'),
+  advanced('stl_pct', '%ROB', 'Porcentaje de posesiones del rival que acaban en robo del jugador', 'stl'),
+  advanced('blk_pct', '%TAP', 'Porcentaje de intentos de 2 del rival tapados por el jugador', 'blk'),
+  advanced('drb_pct', '%RD', 'Porcentaje de rebotes defensivos disponibles capturados por el jugador', 'drb'),
+  advanced('orb_pct', '%RO', 'Porcentaje de rebotes ofensivos disponibles capturados por el jugador', 'orb'),
   advanced('pie', 'PIE%', 'Impacto relativo del jugador en el partido (Player Impact Estimate)'),
 ]
 
@@ -124,7 +124,7 @@ export const cellText = (column: Column, row: Row): string => column.text(row)
 
 /** How far a cell is from the average of its player, in [-1, 1] with the sign of good (null: nothing to compare with). */
 export function deviationOf(column: Column, row: Row): number | null {
-  const value = column.dev && row.kind === 'player' ? row.entry?.dev?.[column.dev] : null
+  const value = column.dev && row.kind !== 'team' ? row.entry?.dev?.[column.dev] : null
   return typeof value === 'number' ? value : null
 }
 
