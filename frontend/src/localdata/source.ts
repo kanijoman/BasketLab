@@ -7,8 +7,8 @@ import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlaye
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
 import { compareTeams } from './comparison'
 import type { Competition } from './competition'
-import { competitionEvolution, EVOLUTION_STATS } from './evolution'
-import type { CollectionInfo, ComparisonKind, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
+import { competitionEvolution, EVOLUTION_STATS, teamEvolution } from './evolution'
+import type { CollectionInfo, ComparisonKind, EvolutionPoint, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
 import { dataSourceOf } from '@/datasource/switch'
 import { lineupAnalysis, type LineupQuery, type Lineups } from './lineups'
 import { playerQuartiles, type PlayerQuartiles } from './playerQuartiles'
@@ -118,6 +118,15 @@ export async function localPlayerStats(collection: string, filters: PlayerTableF
 export async function localPlayerQuartiles(collection: string): Promise<PlayerQuartiles | null> {
   const table = await localPlayerStats(collection, {})
   return table ? playerQuartiles(table) : null
+}
+
+/** One team's game-by-game series (issue #708), as `GET /teams/{collection}/evolution/{team}`; `null` to use the API (the dataset is off, the competition is not published, or the window
+ *  is one the API refuses: 2 to 15 games). */
+export async function localTeamEvolution(collection: string, teamId: string, stat: string, window: number): Promise<EvolutionPoint[] | null> {
+  if (dataSourceOf('evolution') !== 'local') return null
+  if (!Number.isInteger(window) || window < 2 || window > 15) return null
+  const data = await loadCompetition(collection)
+  return data ? teamEvolution(data.team_rows, teamId, stat, window) : null
 }
 
 /** The player table of a competition's rows (each league has its own), or `null` if it was exported without player rows. */

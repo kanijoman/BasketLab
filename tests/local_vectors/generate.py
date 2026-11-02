@@ -48,6 +48,8 @@ SHOTS_FBCYL_OUT = Path(__file__).resolve().parent / "shots_fbcyl.json"
 EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 COLLECTIONS_OUT = Path(__file__).resolve().parent / "collections.json"
 QUARTILES_OUT = Path(__file__).resolve().parent / "player_quartiles.json"
+TEAM_EVOLUTION_OUT = Path(__file__).resolve().parent / "team_evolution_feb.json"
+TEAM_EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "team_evolution_fbcyl.json"
 LINEUPS_OUT = Path(__file__).resolve().parent / "lineups_feb.json"
 LINEUPS_FBCYL_OUT = Path(__file__).resolve().parent / "lineups_fbcyl.json"
 FILTERS = [
@@ -306,7 +308,7 @@ def _evolution_pipeline(pipeline: list) -> list:
     return cleaned
 
 
-def _evolution_vectors(games: list, collection: str, team_ids) -> dict:
+def _evolution_service(games: list, collection: str, team_ids) -> EvolutionService:
     col = mongomock.MongoClient()["v"][collection]
     col.insert_many(games)
 
@@ -337,9 +339,23 @@ def _evolution_vectors(games: list, collection: str, team_ids) -> dict:
         def _evolution_fbcyl(self, coll, team_id):
             return self._rows.setdefault(("fbcyl", team_id), super()._evolution_fbcyl(coll, team_id))
 
-    service = _Cached(_Handler())
+    return _Cached(_Handler())
+
+
+def _evolution_vectors(games: list, collection: str, team_ids) -> dict:
+    service = _evolution_service(games, collection, team_ids)
     return {"cases": [{"stat": stat, "window": window, "points": service.get_competition_evolution(collection, stat=stat, rolling_window=window)}
                       for stat in sorted(EVOLUTION_STAT_KEYS) for window in EVOLUTION_WINDOWS]}
+
+
+# The evolution of ONE team (#708): every stat of every team with the default window, and the extreme windows on three stats.
+TEAM_EVOLUTION_WINDOWS = ((5, sorted(EVOLUTION_STAT_KEYS)), (2, ("points", "offensive_rating", "efg_percentage")), (15, ("points", "offensive_rating", "efg_percentage")))
+
+
+def _team_evolution_vectors(games: list, collection: str, team_ids) -> dict:
+    service = _evolution_service(games, collection, team_ids)
+    return {"cases": [{"team_id": str(team_id), "stat": stat, "window": window, "points": service.get_team_evolution(collection, str(team_id), stat=stat, rolling_window=window)}
+                      for team_id in team_ids(games) for window, stats in TEAM_EVOLUTION_WINDOWS for stat in stats]}
 
 
 def build_evolution_vectors() -> dict:
@@ -347,6 +363,20 @@ def build_evolution_vectors() -> dict:
     for game in games:
         game["parsedDate"] = _played(game)
     return _evolution_vectors(games, "LEAGUE", lambda docs: sorted({t["id"] for g in docs for t in g["HEADER"]["TEAM"]}))
+
+
+def build_team_evolution_vectors() -> dict:
+    games = build_games()
+    for game in games:
+        game["parsedDate"] = _played(game)
+    return _team_evolution_vectors(games, "LEAGUE", lambda docs: sorted({t["id"] for g in docs for t in g["HEADER"]["TEAM"]}))
+
+
+def build_fbcyl_team_evolution_vectors() -> dict:
+    games = build_fbcyl_games()
+    for game in games:
+        game["parsedDate"] = _fbcyl_day(game)
+    return _team_evolution_vectors(games, "FBCYL_LEAGUE", lambda docs: sorted({t["teamIdExtern"] for g in docs for t in g["stats"]["teams"]}))
 
 
 def build_fbcyl_evolution_vectors() -> dict:
@@ -434,6 +464,8 @@ def main() -> None:
     _write(MULTI_OUT, build_multi_vectors())
     _write(EVOLUTION_OUT, build_evolution_vectors())
     _write(EVOLUTION_FBCYL_OUT, build_fbcyl_evolution_vectors())
+    _write(TEAM_EVOLUTION_OUT, build_team_evolution_vectors(), compact=True)
+    _write(TEAM_EVOLUTION_FBCYL_OUT, build_fbcyl_team_evolution_vectors(), compact=True)
     _write(PBP_OUT, build_pbp_vectors())
     _write(PBP_FBCYL_OUT, build_fbcyl_pbp_vectors())
     _write(SHOTS_OUT, build_shots_vectors())

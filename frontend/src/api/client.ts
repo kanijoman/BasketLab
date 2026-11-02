@@ -9,7 +9,7 @@
 import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 import { loadReportTeams } from '@/webdata/client'
-import { localCollectionList, localPlayerQuartiles, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
+import { localCollectionList, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
 import { fromSource } from '@/datasource/resolve'
 
 const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
@@ -197,9 +197,9 @@ export const getTeamEvolution = (
   stat: string,
   window = 5,
 ) =>
-  get<EvolutionPoint[]>(
+  fromSource('evolution', () => localTeamEvolution(collection, teamId, stat, window), () => get<EvolutionPoint[]>(
     `/teams/${encodeURIComponent(collection)}/evolution/${encodeURIComponent(teamId)}?stat=${encodeURIComponent(stat)}&window=${window}`,
-  )
+  ))
 
 export const getCompetitionEvolution = (
   collection: string,
@@ -893,7 +893,7 @@ export interface LineupRow {
 export interface EvolutionPoint {
   game_date: string
   game_number: number
-  value: number
+  value: number | null
   rolling_avg?: number | null
   cumulative_avg?: number | null
   won?: boolean

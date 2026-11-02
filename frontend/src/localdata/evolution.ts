@@ -1,8 +1,9 @@
 // Evolución on the device (issue #672): `EvolutionService.get_competition_evolution` (`src/services/evolution_service.py`) computed from the rows of the contract.
 // Per team, its games in date order give a value of the chosen stat each; at game number i the competition's rolling average is the mean of every team's rolling
 // mean over its last `window` games and the cumulative one the mean of every team's running mean (a team with fewer than i games does not count at i).
-// Parity with the API: `evolution.test.ts` against `tests/local_vectors/evolution_*.json`.
-import type { CompetitionEvolutionPoint } from '@/api/client'
+// Parity with the API: `evolution.test.ts` against `tests/local_vectors/evolution_*.json`. One team's own series (issue #708, `get_team_evolution`): `teamEvolution`, `teamEvolution.test.ts`
+// against `team_evolution_*.json`.
+import type { CompetitionEvolutionPoint, EvolutionPoint } from '@/api/client'
 import { parsePlayed, type GameRow } from './aggregateTeams'
 import { pyRound } from './pyMath'
 
@@ -29,7 +30,9 @@ const estimate = (box: { fga: number; fta: number; tov: number; orb: number }) =
 function possessionsOf(row: GameRow, own: Parameters<typeof estimate>[0], rival: Parameters<typeof estimate>[0]): { poss: number; oppPoss: number } {
   if (row.fouls !== undefined) return { poss: estimate(own), oppPoss: estimate(rival) }           // only FBCYL rows carry fouls
   const unscale = (row.game_minutes ?? 40) / 40
-  return { poss: row.possessions * unscale || estimate(own), oppPoss: row.opponent_possessions * unscale || estimate(rival) }
+  // undoing the 40-minute scaling leaves noise in the last digits (68.72888888888887 × 1.125 = 77.31999999999998, the game had 77.32), enough to flip a rounding at .xx5 in the averages
+  const rescale = (value: number) => (unscale === 1 ? value : Math.round(value * unscale * 1e9) / 1e9)
+  return { poss: rescale(row.possessions) || estimate(own), oppPoss: rescale(row.opponent_possessions) || estimate(rival) }
 }
 
 /** The value of a stat in one game of a team, or `null` (`_compute_stat`). */
@@ -94,4 +97,35 @@ export function competitionEvolution(rows: GameRow[], stat: string, window = 5):
     })
   }
   return points
+}
+
+/** The day a game was played as the pipeline writes it (`%Y-%m-%d`, `"unknown"` when the date cannot be read). */
+const dayText = (row: GameRow): string => {
+  const played = parsePlayed(row.starttime)
+  return played === null ? 'unknown' : new Date(played).toISOString().slice(0, 10)
+}
+
+/**
+ * The game-by-game series of one team (`EvolutionService.get_team_evolution`): its value of the stat, the rolling mean over its last `window` games and the running mean (both over
+ * the games that have a value), its opponent and whether it won. An unknown stat is read as points, as the router does.
+ */
+export function teamEvolution(rows: GameRow[], teamId: string, stat: string, window = 5): EvolutionPoint[] {
+  const known = (EVOLUTION_STATS as readonly string[]).includes(stat) ? stat : 'points'
+  const games = gamesByTeam(rows.filter(row => String(row.team_id) === teamId))[0] ?? []
+  const values = games.map(game => gameValue(game, known))
+  let sum = 0, count = 0
+  return games.map((game, i) => {
+    const value = values[i]
+    if (value !== null) { sum += value; count += 1 }
+    const inWindow = values.slice(Math.max(0, i - window + 1), i + 1).filter((v): v is number => v !== null)
+    return {
+      game_number: i + 1,
+      game_date: dayText(game),
+      opponent: rows.find(other => other.match_id === game.match_id && String(other.team_id) !== teamId)?.team_name ?? '',
+      value: value === null ? null : pyRound(value, 2),
+      rolling_avg: inWindow.length > 0 ? pyRound(mean(inWindow), 2) : null,
+      cumulative_avg: count > 0 ? pyRound(sum / count, 2) : null,
+      won: Boolean(game.won),
+    }
+  })
 }
