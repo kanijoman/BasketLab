@@ -1,0 +1,49 @@
+name: Restore the archive
+description: >
+  Downloads the private archive of the games (repository basketlab-archive) and restores it into the Mongo of `mongo-uri` (an ephemeral service container),
+  then creates the team index. READ ONLY: it never writes the archive (that is archive-refresh.yml, the only writer). Used by the jobs that read the games
+  without Atlas (live packages, rule evaluation; issue #724). The caller checks the repository out, sets Python up, installs requirements.txt and
+  declares the Mongo service.
+
+inputs:
+  deploy-key:
+    description: The ARCHIVE_DEPLOY_KEY secret (a composite action cannot read secrets itself, so the caller passes it)
+    required: true
+  collection:
+    description: Restore only this collection (and its metadata); empty restores the whole archive
+    required: false
+    default: ""
+  mongo-uri:
+    description: Connection string of the ephemeral Mongo
+    required: false
+    default: mongodb://localhost:27017
+
+runs:
+  using: composite
+  steps:
+    - name: Download the archive
+      shell: bash
+      env:
+        ARCHIVE_DEPLOY_KEY: ${{ inputs.deploy-key }}
+        OWNER: ${{ github.repository_owner }}
+      run: |
+        install -m 700 -d ~/.ssh
+        # The secret was saved by hand: whatever it arrived with (CRLF, BOM, spaces for newlines...) the key is rebuilt from its base64 body
+        printf '%s' "$ARCHIVE_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/archive_key || { echo "::error::ARCHIVE_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+        chmod 600 ~/.ssh/archive_key
+        ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY has the shape of a key but OpenSSH cannot read it (a passphrase? it must have none)"; exit 1; }
+        ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+        export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+        python run_archive.py pull --repo "git@github.com:${OWNER}/basketlab-archive.git" --dir archive
+    - name: Restore the archive into the ephemeral Mongo
+      shell: bash
+      env:
+        MONGODB_CONNECTION_STRING: ${{ inputs.mongo-uri }}
+        COLLECTION: ${{ inputs.collection }}
+      run: python run_archive.py load --src archive --replace ${COLLECTION:+--collection "$COLLECTION"}
+    # An index is not part of the archive: the packages read the games of a team across the collections of a season and without it every game (about 1 MB) is scanned
+    - name: Create the team index
+      shell: bash
+      env:
+        MONGODB_CONNECTION_STRING: ${{ inputs.mongo-uri }}
+      run: python run_archive.py index

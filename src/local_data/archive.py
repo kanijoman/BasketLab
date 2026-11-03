@@ -152,6 +152,22 @@ def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] 
     return manifest
 
 
+def ensure_team_indexes(db: Any) -> int:
+    """The index of the games of a team (``HEADER.TEAM.id``) on every FEB collection, as the refresh creates it on Atlas (issue #502); how many collections got it.
+
+    An index is not part of the archive, so the Mongo restored from it starts without; the jobs that read the games of a team across the collections of a season (the live
+    packages, the rule evaluation) call this right after the restore. Same name and key as ``IndexManager.ensure_team_index``: creating it twice is harmless. FBCYL has no
+    ``HEADER.TEAM``."""
+    import pymongo
+
+    from src.services.derived_backfill import feb_collection_names
+
+    names = feb_collection_names(db)
+    for name in names:
+        db[name].create_index([("HEADER.TEAM.id", pymongo.ASCENDING)], name="team_id_1", background=True)
+    return len(names)
+
+
 def load_archive(src_dir: Path, db: Any, only: Optional[Iterable[str]] = None) -> Dict[str, int]:
     """Replace the collections of ``db`` with the ones of the archive; ``{collection: games}``. Every file is checked against its sha256 first:
     a corrupt archive is refused with nothing loaded. The collection metadata (``COLLECTION_META``, #724) is restored by id, not replaced."""
