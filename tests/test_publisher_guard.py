@@ -8,7 +8,7 @@ packages until a complete refresh has run.
 import json
 from unittest.mock import MagicMock, patch
 
-import mongomock
+from db_helpers import new_mock_db
 
 from src.live_prep import publisher
 from src.live_prep.publisher import competitions_without_phases
@@ -23,7 +23,7 @@ def _entry(competition, url, **over):
 
 
 def _db(*metas):
-    meta = mongomock.MongoClient()["b"]["COLLECTION_META"]
+    meta = new_mock_db("b")["COLLECTION_META"]
     for i, (url, label) in enumerate(metas):
         meta.insert_one({"_id": f"COL_{i}", "competition_url": url, "season_value": "2026", "group_label": label})
     db = MagicMock()
