@@ -51,10 +51,20 @@ Parte de la épica #326 (apagar Render, #334). Pregunta: ¿se puede dejar de usa
 
 1. **Comprobación previa** (de solo lectura): recuento de partidos por colección en Atlas y en el archivo, y confirmar el camino de FBCYL. Si hay diferencias, se importan al archivo antes de seguir.
 2. **Catálogo único de competiciones** (`config/competitions.json`, decidido el 03/11/2026): una entrada por competición con el scrape (`competition_url`, `season_value`, `groups`, `recheck_days`), los paquetes y reglas (`level`, `gender`, `clubs`, `rule_config`, `group_rules`), lo que sigue el grabador y `active`. El refresco, `live-packages` y el grabador lo leen; `local_refresh.json` y `atlas_refresh.json` se derivan o desaparecen, y `feb_watchlist.json` y `package_publish.json` conservan solo lo que no es de competiciones (el club, el acceso, las claves). Un test falla si algo referencia una competición ausente del catálogo.
-3. **Refresco sin Atlas**: un job que restaura el archivo, scrapea las competiciones activas del catálogo, rellena `DERIVED` y guarda el archivo (lo que `web-data` ya hace), con cron propio.
+3. **Refresco sin Atlas**: un job que restaura el archivo, scrapea las competiciones activas del catálogo, rellena `DERIVED` y guarda el archivo (lo que `web-data` ya hace), con cron propio. **`COLLECTION_META` pasa a ir en el archivo** (decidido el 03/11/2026): hoy `_SKIP_NAMES` la deja fuera, así que el Mongo efímero la tiene vacía y solo el scrape la reconstruye (`continue-on-error`); `live-packages` la necesita para las etiquetas, la temporada y las fases de `groups: all` (`competition_infos`, `ingested_collections`) y `match_schedule_service` para la URL del calendario. Unos 76 documentos, un fichero aparte en el archivo, restaurado con el resto.
 4. **`live-packages` y `rule-evaluation` leen del Mongo efímero**, con su propio paso corto (no colgados de `web-data`). Medir una vuelta completa antes de quitar la lectura de Atlas y no hacerlo en semana de release.
 5. **Quitar el respaldo de Atlas de `web-data`** y retirar `atlas-refresh.yml`, `config/atlas_refresh.json` y `run_atlas_refresh.py` con sus tests y docs.
 6. **Cierre**: copia final de Atlas, retirar los secretos `ATLAS_*` y la documentación (OPERATIONS, ARCHITECTURE, LIVE), y la API de Render con #334.
+
+## Colecciones que no son partidos
+
+| Colección | Qué es | Decisión (03/11/2026) |
+|---|---|---|
+| `COLLECTION_META` | metadatos del scrape por colección (URL del calendario, etiquetas, grupo) | **va al archivo** (paso 3) |
+| `HISTORICAL` | temporadas pasadas para el predictivo | **se descarta por ahora**: el predictivo se rehará y se decidirá si hace falta |
+| `ELASTICITIES` | modelos entrenados del predictivo | **se descarta por ahora**, igual |
+
+Como se descartan al apagar Atlas, la **copia final de Atlas** (paso 6) las conserva fuera del archivo, por si tras el rework se necesitan: no se pierde nada, solo deja de estar en producción.
 
 ## Ciclo de vida de una competición
 
