@@ -1,5 +1,6 @@
-"""Guards of ``web-data.yml`` (#646): the job rewrites the only copy of the games, so the order and conditions of its steps are part of the contract.
+"""Guards of ``web-data.yml`` (#646, #724): the job builds the web data from the archive, so the order and conditions of its steps are part of the contract.
 
+Since #724 it no longer scrapes or saves the archive (``archive-refresh.yml`` does, see ``test_archive_refresh_workflow.py``): it restores it and builds from it.
 The workflow itself only runs on GitHub (secrets, SSH, a service container): these tests fix what can go wrong silently when someone edits it.
 """
 from pathlib import Path
@@ -12,22 +13,18 @@ STEPS = {step["name"]: step for step in NAMED}
 ORDER = [step["name"] for step in NAMED]
 
 
-def test_the_archive_is_saved_only_after_a_complete_restore_and_never_with_fewer_games():
-    save = STEPS["Save the archive"]
-    assert "steps.restore.outcome == 'success'" in save["if"] and "!cancelled()" in save["if"]
-    assert "--no-shrink" in save["run"]
-
-
 def test_a_failed_download_or_restore_stops_everything_that_would_use_the_empty_database():
     assert STEPS["Restore the archive into the ephemeral Mongo"]["if"] == "steps.pull.outcome == 'success'"
-    assert "steps.restore.outcome == 'success'" in STEPS["Scrape the new games into the ephemeral Mongo"]["if"]
     assert "continue-on-error" not in STEPS["Restore the archive into the ephemeral Mongo"]       # a red restore must turn the run red
 
 
-def test_the_order_is_download_restore_scrape_build_publish_save():
-    names = ["Download the archive", "Restore the archive into the ephemeral Mongo", "Scrape the new games into the ephemeral Mongo",
-             "Build the artifacts", "Publish to the web-data branch", "Save the archive"]
+def test_the_order_is_download_restore_build_publish():
+    names = ["Download the archive", "Restore the archive into the ephemeral Mongo", "Build the artifacts", "Publish to the web-data branch"]
     assert [ORDER.index(n) for n in names] == sorted(ORDER.index(n) for n in names)
+
+
+def test_it_neither_scrapes_nor_saves_the_archive():
+    assert not [n for n in ORDER if n.startswith(("Scrape", "Fill DERIVED", "Save the archive"))]
 
 
 def test_without_the_archive_secret_it_reads_atlas_as_before():
@@ -35,10 +32,9 @@ def test_without_the_archive_secret_it_reads_atlas_as_before():
     assert "ATLAS_READ_URI" in build and "ATLAS_WRITE_URI" in build and "EPHEMERAL_MONGO" in build
 
 
-def test_the_ephemeral_mongo_is_a_service_container_and_nothing_scrapes_atlas():
+def test_the_ephemeral_mongo_is_a_service_container_and_the_build_reads_it():
     assert WORKFLOW["jobs"]["publish"]["services"]["mongo"]["image"].startswith("mongo:")
-    for name in ("Scrape the new games into the ephemeral Mongo", "Fill DERIVED in the new games", "Restore the archive into the ephemeral Mongo"):
-        assert "EPHEMERAL_MONGO" in STEPS[name]["env"]["MONGODB_CONNECTION_STRING"]
+    assert "EPHEMERAL_MONGO" in STEPS["Restore the archive into the ephemeral Mongo"]["env"]["MONGODB_CONNECTION_STRING"]
 
 
 def test_the_deploy_key_is_rebuilt_and_checked_before_it_is_used_regression():
