@@ -13,12 +13,13 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from src.services._scouting_formatters import safe as _safe, fmt_min as _fmt_min, prep_player_for_radar as _prep_player_for_radar
+from src.services._scouting_formatters import safe as _safe, fmt_min as _fmt_min, prep_player_for_radar as _prep_player_for_radar  # noqa: F401 - _safe/_fmt_min: the tests of this module pin them
+from src.services.scouting_docx_tables import player_tables
 from src.services._scouting_docx_helpers import (
     write_table as _write_table,
-    set_cell_shading as _set_cell_shading,
-    quartile_fill as _quartile_fill,
     write_player_stats_table as _write_player_stats_table,
+    quartile_fill as _quartile_fill,  # noqa: F401
+    set_cell_shading as _set_cell_shading,  # noqa: F401
 )
 
 logger = logging.getLogger(__name__)
@@ -259,96 +260,17 @@ class IndividualScoutingDocxBuilder:
 
     def _add_basic_stats_tables(self, doc, player, all_players):
         doc.add_heading('1. Estadística General', level=1)
-
-        _AVG_DEFS = [
-            ("PJ",  "games_played",                   False),
-            ("MIN", "minutes_per_game",               False),
-            ("PTS", "points_per_game",                False),
-            ("TL%", "fg1_percentage",                 False),
-            ("T2%", "fg2_percentage",                 False),
-            ("T3%", "fg3_percentage",                 False),
-            ("RO",  "offensive_rebounds_per_game",    False),
-            ("RD",  "defensive_rebounds_per_game",    False),
-            ("RT",  "rebounds_per_game",              False),
-            ("AST", "assists_per_game",               False),
-            ("ROB", "steals_per_game",                False),
-            ("BP",  "turnovers_per_game",             True),
-            ("TAP", "blocks_per_game",                False),
-            ("FP",  "fouls_per_game",                 True),
-            ("VAL", "valoracion_per_game",            False),
-        ]
-        _pct = {"fg1_percentage", "fg2_percentage", "fg3_percentage"}
-        _min = {"minutes_per_game"}
-        headers = [d[0] for d in _AVG_DEFS]
-        fmt = [
-            _fmt_min(player.get(d[1])) if d[1] in _min
-            else _safe(player.get(d[1]), suffix="%") if d[1] in _pct
-            else _safe(player.get(d[1]))
-            for d in _AVG_DEFS
-        ]
-        raw = [player.get(d[1]) for d in _AVG_DEFS]
-        all_raw = [[p.get(d[1]) for p in all_players] for d in _AVG_DEFS]
-        rev = {i for i, d in enumerate(_AVG_DEFS) if d[2]}
-
+        tables = player_tables(player, all_players)
         doc.add_paragraph().add_run("Promedios por partido:").bold = True
-        _write_player_stats_table(doc, headers, fmt, raw, all_raw, rev)
-
+        _write_player_stats_table(doc, tables["averages"])
         doc.add_paragraph().add_run("Totales acumulados:").bold = True
-        tm = player.get("total_minutes", 0) or 0
         # Widths in cm: PJ MIN PTS TL   T2   T3   RO  RD  RT  AST ROB BP  TAP FP  VAL
         _TW = [0.7, 1.5, 0.8, 2.0, 2.0, 2.0, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8]
-        # \u2060 = Unicode word-joiner: prevents Word from breaking at the "/" character
-        _s = "\u2060/\u2060"
-        _write_table(doc, [
-            "PJ", "MIN", "PTS", "TL", "T2", "T3",
-            "RO", "RD", "RT", "AST", "ROB", "BP", "TAP", "FP", "VAL",
-        ], [[
-            str(player.get("games_played", 0)),
-            _fmt_min(tm),
-            str(player.get("total_pts", 0)),
-            f"{player.get('total_p1m', 0)}{_s}{player.get('total_p1a', 0)}",
-            f"{player.get('total_p2m', 0)}{_s}{player.get('total_p2a', 0)}",
-            f"{player.get('total_p3m', 0)}{_s}{player.get('total_p3a', 0)}",
-            str(player.get("total_ro", 0)),
-            str(player.get("total_rd", 0)),
-            str(player.get("total_rt", 0)),
-            str(player.get("total_assist", 0)),
-            str(player.get("total_st", 0)),
-            str(player.get("total_to", 0)),
-            str(player.get("total_bs", 0)),
-            str(player.get("total_pf", 0)),
-            str(player.get("total_val", 0)),
-        ]], col_widths_cm=_TW, no_wrap=True)
+        _write_table(doc, tables["totals"]["headers"], [tables["totals"]["cells"]], col_widths_cm=_TW, no_wrap=True)
 
     def _add_advanced_stats_table(self, doc, player, all_players):
         doc.add_heading('2. Estadística Avanzada', level=1)
-
-        _ADV_DEFS = [
-            ("TS%",    "true_shooting",    False),
-            ("eFG%",   "efg_percentage",   False),
-            ("3PAr",   "three_point_rate", False),
-            ("FTr",    "free_throw_rate",  False),
-            ("ORB%",   "orb_pct",          False),
-            ("DRB%",   "drb_pct",          False),
-            ("AST%",   "ast_pct",          False),
-            ("TO%",    "tov_pct_adv",      True),
-            ("ROB%",   "stl_pct",          False),
-            ("TAP%",   "blk_pct",          False),
-            ("USG%",   "usage_pct",        False),
-            ("ORtg",   "orating",          False),
-            ("DRtg",   "drating",          True),
-            ("NetRtg", "net_rtg",          False),
-        ]
-        _pct = {
-            "true_shooting", "efg_percentage", "three_point_rate", "free_throw_rate",
-            "orb_pct", "drb_pct", "ast_pct", "tov_pct_adv", "stl_pct", "blk_pct", "usage_pct",
-        }
-        headers = [d[0] for d in _ADV_DEFS]
-        fmt = [_safe(player.get(d[1]), suffix="%") if d[1] in _pct else _safe(player.get(d[1])) for d in _ADV_DEFS]
-        raw = [player.get(d[1]) for d in _ADV_DEFS]
-        all_raw = [[p.get(d[1]) for p in all_players] for d in _ADV_DEFS]
-        rev = {i for i, d in enumerate(_ADV_DEFS) if d[2]}
-        _write_player_stats_table(doc, headers, fmt, raw, all_raw, rev)
+        _write_player_stats_table(doc, player_tables(player, all_players)["advanced"])
 
     def _add_shot_profile(self, doc, shots: List[Dict], player_name: str) -> None:
         if not shots:

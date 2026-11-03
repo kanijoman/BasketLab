@@ -101,35 +101,25 @@ def quartile_fill(
         return "FFC7CE"
 
 
-def write_player_stats_table(
-    doc: Any,
-    headers: List[str],
-    formatted: List[str],
-    raw: List[Optional[float]],
-    all_raw: List[List[Optional[float]]],
-    reverse_cols: Optional[set] = None,
-) -> None:
-    """Header row + single data row with per-cell quartile background coloring."""
+def write_player_stats_table(doc: Any, table: Dict[str, Any]) -> None:
+    """Header row + single data row with per-cell quartile background coloring (``table``: ``headers`` and ``cells`` of ``text`` and ``fill``, as ``player_tables`` says)."""
     from docx.shared import Pt
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-    rev = reverse_cols or set()
-    t = doc.add_table(rows=2, cols=len(headers))
+    t = doc.add_table(rows=2, cols=len(table["headers"]))
     t.style = "Light Grid Accent 1"
-    for i, h in enumerate(headers):
+    for i, h in enumerate(table["headers"]):
         cell = t.rows[0].cells[i]
         cell.text = h
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         for run in cell.paragraphs[0].runs:
             run.font.bold = True
             run.font.size = Pt(7)
-    for i, val in enumerate(formatted):
+    for i, spec in enumerate(table["cells"]):
         cell = t.rows[1].cells[i]
-        cell.text = val
+        cell.text = spec["text"]
         cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         for run in cell.paragraphs[0].runs:
             run.font.size = Pt(8)
-        if i < len(raw) and i < len(all_raw):
-            fill = quartile_fill(raw[i], all_raw[i], reverse=i in rev)
-            if fill:
-                set_cell_shading(cell, fill)
+        if spec["fill"]:
+            set_cell_shading(cell, spec["fill"])

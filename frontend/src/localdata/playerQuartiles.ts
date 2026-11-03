@@ -11,7 +11,7 @@ const MIN_VALUES = 4
 
 /** `np.percentile(values, 100 * q)` with the default (linear) method over sorted values. numpy interpolates from the nearer end (`a + d·t` below the half, `b − d·(1 − t)` from it),
  *  and the two differ in the last digit, so this is not the textbook `a + d·t`. */
-function percentile(sorted: number[], q: number): number {
+export function percentile(sorted: number[], q: number): number {
   const virtual = (sorted.length - 1) * q
   const previous = Math.floor(virtual)
   const next = Math.min(previous + 1, sorted.length - 1)

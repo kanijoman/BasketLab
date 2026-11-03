@@ -576,15 +576,6 @@ async function downloadBlob(res: Response, fallback: string): Promise<Blob> {
   return res.blob()
 }
 
-/** Individual scouting DOCX for an entire team (one page per player, blank notes section). */
-export const downloadIndividualScoutingDocx = async (
-  collection: string,
-  teamId: string,
-): Promise<Blob> => {
-  const params = new URLSearchParams({ collection, team_id: teamId })
-  return downloadBlob(await fetch(`${BASE}/reports/individual-scouting/docx?${params}`), 'Error descargando DOCX')
-}
-
 /** Convert an HTML report to PDF (kept for the planned rule-based report engine). */
 export const exportReportPdf = async (
   html: string,

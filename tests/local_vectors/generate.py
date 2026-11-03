@@ -49,6 +49,7 @@ EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 COLLECTIONS_OUT = Path(__file__).resolve().parent / "collections.json"
 QUARTILES_OUT = Path(__file__).resolve().parent / "player_quartiles.json"
 REPORT_HTML_OUT = Path(__file__).resolve().parent / "report_html.json"
+SCOUTING_DOCX_OUT = Path(__file__).resolve().parent / "scouting_docx.json"
 SCOUTING_PDF_OUT = Path(__file__).resolve().parent / "scouting_pdf.json"
 TEAM_EVOLUTION_OUT = Path(__file__).resolve().parent / "team_evolution_feb.json"
 TEAM_EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "team_evolution_fbcyl.json"
@@ -494,6 +495,10 @@ def main() -> None:
     from scouting_pdf_vectors import build as build_scouting_pdf
 
     _write(SCOUTING_PDF_OUT, build_scouting_pdf(), compact=True)
+
+    from scouting_docx_vectors import build as build_scouting_docx
+
+    _write(SCOUTING_DOCX_OUT, build_scouting_docx(), compact=True)
 
 
 if __name__ == "__main__":

@@ -13,10 +13,10 @@ import {
   postWeeklyReport,
   getWeeklyReportProgress,
   downloadWeeklyReport,
-  downloadIndividualScoutingDocx,
   type WeeklyReportProgress,
   type TeamEntry,
 } from '@/api/client'
+import { downloadIndividualScoutingDocx } from '@/api/individualScouting'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
