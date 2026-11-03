@@ -52,11 +52,11 @@ beforeEach(() => {
 })
 
 describe('AdminPage on the base components (issue #195)', () => {
-  it('has one h1 and the five tabs, Colecciones open', async () => {
+  it('has one h1 and the four tabs, Colecciones open', async () => {
     renderPage()
     expect(screen.getByRole('heading', { level: 1, name: 'Administración' })).toBeInTheDocument()
     const tabs = within(screen.getByRole('tablist', { name: /secciones de administración/i })).getAllByRole('tab')
-    expect(tabs.map(t => t.textContent)).toEqual(['Colecciones', 'Descargar FEB', 'Descargar FBCYL', 'Histórico', 'Modelos predictivos'])
+    expect(tabs.map(t => t.textContent)).toEqual(['Colecciones', 'Descargar FEB', 'Descargar FBCYL', 'Histórico'])      // the models are out with the predictive analysis
     expect(screen.getByRole('tab', { name: 'Colecciones' })).toHaveAttribute('aria-selected', 'true')
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Colecciones' }), { key: 'ArrowRight' })
     expect(screen.getByRole('tab', { name: 'Descargar FEB' })).toHaveAttribute('aria-selected', 'true')
@@ -132,16 +132,5 @@ describe('Histórico', () => {
     await waitFor(() => expect(api.postCompetitionIngest).toHaveBeenCalledWith(
       { competition_url: 'u1', competition_label: 'LF2', seasons: [{ season_value: 's1', season_label: '2025/2026' }] }))
     expect(screen.getByRole('button', { name: /Descargar 1 temporada/ })).toHaveAttribute('aria-busy', 'true')
-  })
-})
-
-describe('Modelos predictivos', () => {
-  it('Elasticidades and Validación are tabs of their own', async () => {
-    renderPage()
-    openTab('Modelos predictivos')
-    const sub = screen.getByRole('tablist', { name: /modelos predictivos/i })
-    expect(within(sub).getAllByRole('tab').map(t => t.textContent)).toEqual(['Elasticidades', 'Validación'])
-    fireEvent.click(within(sub).getByRole('tab', { name: 'Validación' }))
-    expect(within(sub).getByRole('tab', { name: 'Validación' })).toHaveAttribute('aria-selected', 'true')
   })
 })
