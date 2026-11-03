@@ -24,6 +24,12 @@ class Nothing(Source):
     def identity(self, team_id, player_id):
         return None, None
 
+    def photo_url(self, uuid):
+        return None
+
+    def team_logo_url(self, team_id):
+        return None
+
 
 def _entries(tmp_path, manifest, collection):
     entry = next(r for r in manifest["reports"] if r["collection"] == collection)
@@ -35,12 +41,13 @@ def test_without_a_source_of_images_nothing_is_published_of_them(handler, tmp_pa
     assert all(e["mode"] != "images" for c in (FEB, FBCYL) for e in _entries(tmp_path, manifest, c)) and not (tmp_path / "images").exists()
 
 
-def test_the_current_season_competitions_list_the_file_of_each_team_in_their_report_index_and_fbcyl_none(handler, tmp_path):
+def test_the_current_season_competitions_list_the_file_of_each_team_in_their_report_index_and_fbcyl_too(handler, tmp_path):
     manifest = publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL], image_source=Nothing())
     images = [e for e in _entries(tmp_path, manifest, FEB) if e["mode"] == "images"]
     assert sorted(e["team_id"] for e in images) == ["101", "102", "103", "104"] and all(e["file"].startswith("images/") and (tmp_path / e["file"]).is_file() for e in images)
     assert {w["scope"] for w in images[0]["wraps"]} >= {f"competicion:{FEB}", "club:101"}
-    assert all(e["mode"] != "images" for e in _entries(tmp_path, manifest, FBCYL))
+    fbcyl = [e for e in _entries(tmp_path, manifest, FBCYL) if e["mode"] == "images"]                  # FBCYL has crest and photos too (#721), asked of the ESB by uuid
+    assert sorted(e["team_id"] for e in fbcyl) == ["34001", "34002", "34003", "34004"] and all(e["file"].startswith("images/") for e in fbcyl)
 
 
 def test_the_files_of_a_team_that_left_are_removed_and_the_rest_keep_their_bytes(handler, tmp_path):
