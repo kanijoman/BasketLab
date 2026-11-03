@@ -205,6 +205,14 @@ def _collections(db: Any = None) -> List[str]:
     return ingested_collections(db, package_entries(load_catalogue(DEFAULT_CATALOGUE)))
 
 
+def competitions_without_phases(db: Any, entries: List[Any]) -> List[str]:
+    """The competitions of ``entries`` (the active FEB ones of the catalogue, as the packages take them) whose collections are not known: a ``groups: all`` competition takes its
+    phases from ``COLLECTION_META``, and with none (or none that its ``packages_groups`` keeps) there is nothing to publish for it. A single group names its own collection."""
+    from src.services.atlas_refresh import ingested_collections
+
+    return [e.competition_label for e in entries if not ingested_collections(db, [e])]
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Build the encrypted live packages of the upcoming matches")
     parser.add_argument("--config", default=DEFAULT_CONFIG)
@@ -226,6 +234,15 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
     errors: List[str] = []
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue, package_entries
+
+    lacking = competitions_without_phases(db, package_entries(load_catalogue(DEFAULT_CATALOGUE)))
+    if lacking:
+        # Nothing is written, so the workflow has nothing to publish and the branch keeps the previous packages: a database that has not seen a COMPLETE refresh (the metadata
+        # of the phases comes from the FEB scrape) must never replace a complete publication with a reduced one.
+        print("The phases of these competitions are not in COLLECTION_META, so there are no packages to build for them: " + ", ".join(lacking)
+              + ". Run a complete Archive refresh (without `only`) first; the previous packages stay published.", file=sys.stderr)
+        return 3
     collections = _collections(db)
     competitions = competition_infos(db, collections, config["competitions"], [config["team_id"]])
     entries = publish_all(db, args.out, sealer, collections, config["team_id"],
