@@ -4,9 +4,11 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({
-  getLiveTeamNames: vi.fn(), postWeeklyReport: vi.fn(), getWeeklyReportProgress: vi.fn(), downloadWeeklyReport: vi.fn(), downloadIndividualScoutingDocx: vi.fn(),
+  getLiveTeamNames: vi.fn(), postWeeklyReport: vi.fn(), getWeeklyReportProgress: vi.fn(), downloadWeeklyReport: vi.fn(),
 }))
+const scouting = vi.hoisted(() => ({ downloadIndividualScoutingDocx: vi.fn() }))
 vi.mock('@/api/client', () => api)
+vi.mock('@/api/individualScouting', () => scouting)
 vi.mock('@/context/CollectionContext', () => ({
   useCollection: () => ({ collection: { name: 'LF_CHALLENGE', label: 'LF Challenge', isFbcyl: false } }),
 }))
@@ -75,15 +77,15 @@ describe('ReportPage on the base components (issue #193)', () => {
   })
 
   it('the individual scouting DOCX waits for a team, downloads it and says why when it fails', async () => {
-    api.downloadIndividualScoutingDocx.mockRejectedValueOnce(new Error('FEB no responde'))
+    scouting.downloadIndividualScoutingDocx.mockRejectedValueOnce(new Error('FEB no responde'))
     renderPage()
     await screen.findAllByRole('option', { name: 'Alfa' })
     expect(screen.getByRole('button', { name: 'Descargar DOCX' })).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Equipo a analizar'), { target: { value: '2' } })
     fireEvent.click(screen.getByRole('button', { name: 'Descargar DOCX' }))
     expect(await screen.findByText('FEB no responde')).toBeInTheDocument()
-    expect(api.downloadIndividualScoutingDocx).toHaveBeenCalledWith('LF_CHALLENGE', '2')
-    api.downloadIndividualScoutingDocx.mockResolvedValueOnce(new Blob(['docx']))
+    expect(scouting.downloadIndividualScoutingDocx).toHaveBeenCalledWith('LF_CHALLENGE', '2')
+    scouting.downloadIndividualScoutingDocx.mockResolvedValueOnce(new Blob(['docx']))
     fireEvent.click(screen.getByRole('button', { name: 'Descargar DOCX' }))
     await waitFor(() => expect(screen.queryByText('FEB no responde')).toBeNull())
   })

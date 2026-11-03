@@ -12,6 +12,11 @@ export const PAPER = {
   bad: '#cf222e',            // --dev-bad
   own: '#0863cd',            // --sev-info: the team in a chart
   conceded: '#b45309',       // --pace-fast: what it concedes
+  warn: '#9a6700',           // --warn
+  faint: '#5d6670',          // --text-faint
+  onData: '#ffffff',         // --on-data: ink over a bubble of data colour
+  heatHot: '#ea580c',        // --chart-1: the hot layer of a heatmap
+  heatCool: '#0969da',       // --chart-2: the cool layer
 } as const
 
 export type Tone = 'ink' | 'muted' | 'ok' | 'bad'

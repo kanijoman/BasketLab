@@ -161,7 +161,6 @@ async function openSealed<T>(locate: () => Promise<Sealed>, what: string): Promi
 export const loadWebReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
   openSealed<TeamReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === mode), 'El informe')
 
-/** The full scouting of a rival for a scope: `liga`, `copa` (the cups of the season) or `todo` (both), issue #638. */
 /** The crest and the photos of a team of the newest season, with the date of birth and height of each player (issue #717): what the DOCX of the individual scouting needs and the FEB does not let the browser fetch. */
 export interface TeamImages {
   format: number
@@ -175,6 +174,7 @@ export interface TeamImages {
 export const loadWebImages = (collection: string, teamId: string): Promise<TeamImages> =>
   openSealed<TeamImages>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'images'), 'El fichero')
 
+/** The full scouting of a rival for a scope: `liga`, `copa` (the cups of the season) or `todo` (both), issue #638. */
 export const loadWebScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport> =>
   openSealed<ScoutingReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope), 'El informe')
 
