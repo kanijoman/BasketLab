@@ -6,7 +6,7 @@ READ, and the connection is wrapped so that it cannot be anything else: ``ReadOn
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List, Optional
 
 from src.pbp.game_derived import DERIVED_VERSION
 
@@ -72,12 +72,39 @@ def compare(archive: Any, atlas: Any) -> List[Dict[str, Any]]:
     return rows
 
 
+META = "COLLECTION_META"
+
+
+def _meta_ids(db: Any) -> List[str]:
+    return sorted(str(doc["_id"]) for doc in db[META].find({}, {"_id": 1})) if META in db.list_collection_names() else []
+
+
+def compare_meta(archive: Any, atlas: Any) -> Dict[str, Any]:
+    """What ``COLLECTION_META`` (the metadata the FEB scrape writes per collection; the archive does not carry it yet) holds, for information: how many documents on each
+    side, the ones of a collection that no longer has games in Atlas and the games collections of Atlas that have none (the packages label those with their own name)."""
+    atlas = atlas if isinstance(atlas, ReadOnly) else ReadOnly(atlas)
+    meta, games = _meta_ids(atlas), set(_games(atlas))
+    return {"atlas": len(meta), "archive": len(_meta_ids(archive)),
+            "without_games": sorted(set(meta) - games), "without_meta": sorted(games - set(meta))}
+
+
 def missing(report: List[Dict[str, Any]]) -> int:
     """Games that Atlas has and the archive does not: what would be lost."""
     return sum(len(r["only_atlas"]) for r in report)
 
 
-def _lines(report: List[Dict[str, Any]]) -> Iterator[str]:
+def _meta_lines(meta: Dict[str, Any]) -> Iterator[str]:
+    yield ""
+    yield "### COLLECTION_META (informativo)"
+    yield ""
+    yield f"Documentos en Atlas: {meta['atlas']} · en el archivo: {meta['archive']} (el archivo todavía no la lleva; el scrape la reconstruye en cada pasada)."
+    if meta["without_games"]:
+        yield f"- Metadatos de colecciones **sin partidos** en Atlas ({len(meta['without_games'])}): {', '.join(meta['without_games'][:SHOWN])}"
+    if meta["without_meta"]:
+        yield f"- Colecciones con partidos **sin metadatos** en Atlas ({len(meta['without_meta'])}): {', '.join(meta['without_meta'][:SHOWN])}"
+
+
+def _lines(report: List[Dict[str, Any]], meta: Optional[Dict[str, Any]] = None) -> Iterator[str]:
     lost = missing(report)
     yield "## ✅ Atlas no tiene nada que no esté en el archivo" if not lost else f"## ❌ Faltan {lost} partidos en el archivo (los tiene Atlas)"
     yield ""
@@ -93,7 +120,9 @@ def _lines(report: List[Dict[str, Any]]) -> Iterator[str]:
             shown = ", ".join(r["only_atlas"][:SHOWN]) + (" …" if len(r["only_atlas"]) > SHOWN else "")
             yield ""
             yield f"**{r['collection']}**: solo en Atlas: {shown}"
+    if meta is not None:
+        yield from _meta_lines(meta)
 
 
-def render_markdown(report: List[Dict[str, Any]]) -> str:
-    return "\n".join(_lines(report)) + "\n"
+def render_markdown(report: List[Dict[str, Any]], meta: Optional[Dict[str, Any]] = None) -> str:
+    return "\n".join(_lines(report, meta)) + "\n"

@@ -100,3 +100,47 @@ class TestReadOnly:
     def test_the_database_cannot_be_dropped_either(self):
         with pytest.raises(PermissionError):
             ReadOnly(new_mock_db("b")).drop_collection("x")
+
+
+class TestCollectionMeta:
+    """``COLLECTION_META`` (one document per collection, written by the FEB scrape) is not in the archive: the report says what Atlas holds of it, for information."""
+
+    def test_it_lists_the_metadata_of_atlas_and_which_have_no_games_or_lack_metadata(self):
+        from src.local_data.atlas_compare import compare_meta
+
+        archive, atlas = new_mock_db("a"), new_mock_db("b")
+        _fill(atlas, FEB, ["g1"])
+        _fill(atlas, OLD, ["o1"])
+        atlas["COLLECTION_META"].insert_many([{"_id": FEB, "competition_label": "PRIMERA FEB"}, {"_id": "GONE_2020_2021_X", "competition_label": "OTRA"}])
+        meta = compare_meta(archive, atlas)
+        assert meta["atlas"] == 2 and meta["archive"] == 0
+        assert meta["without_games"] == ["GONE_2020_2021_X"]            # metadata of a collection that no longer has games
+        assert meta["without_meta"] == [OLD]                            # a collection with games and no metadata (labelled with its own name by the packages)
+
+    def test_the_archive_side_counts_once_it_carries_the_metadata(self):
+        from src.local_data.atlas_compare import compare_meta
+
+        archive, atlas = new_mock_db("a"), new_mock_db("b")
+        archive["COLLECTION_META"].insert_one({"_id": FEB})
+        atlas["COLLECTION_META"].insert_one({"_id": FEB})
+        assert compare_meta(archive, atlas)["archive"] == 1
+
+    def test_the_summary_has_its_section_and_it_never_makes_the_report_unsafe(self):
+        from src.local_data.atlas_compare import compare_meta
+
+        archive, atlas = new_mock_db("a"), new_mock_db("b")
+        _fill(archive, FEB, ["g1"])
+        _fill(atlas, FEB, ["g1"])
+        atlas["COLLECTION_META"].insert_one({"_id": "GONE_2020_2021_X"})
+        text = render_markdown(compare(archive, atlas), compare_meta(archive, atlas))
+        assert text.startswith("## ✅") and "COLLECTION_META" in text and "GONE_2020_2021_X" in text
+
+    def test_atlas_is_only_read_with_a_projection(self):
+        from src.local_data.atlas_compare import compare_meta
+
+        atlas = new_mock_db("b")
+        atlas["COLLECTION_META"].insert_one({"_id": FEB, "competition_url": "x"})
+        meta = compare_meta(new_mock_db("a"), atlas)
+        assert meta["atlas"] == 1
+        with pytest.raises(PermissionError):
+            ReadOnly(atlas)["COLLECTION_META"].find({})                  # no projection: refused

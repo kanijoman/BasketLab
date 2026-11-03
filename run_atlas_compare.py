@@ -17,7 +17,7 @@ def main(argv=None, archive=None, atlas=None) -> int:
     if atlas is None and not uri:
         print("ATLAS_READ_URI is not set (the read-only Atlas user; there is no fallback to the write one)", file=sys.stderr)
         return 2
-    from src.local_data.atlas_compare import ReadOnly, compare, missing, render_markdown
+    from src.local_data.atlas_compare import ReadOnly, compare, compare_meta, missing, render_markdown
 
     if archive is None or atlas is None:
         from pymongo import MongoClient
@@ -26,8 +26,9 @@ def main(argv=None, archive=None, atlas=None) -> int:
 
         archive = archive if archive is not None else MongoClient(get_mongodb_connection_string())[DATABASE]
         atlas = atlas if atlas is not None else MongoClient(uri)[DATABASE]
-    report = compare(archive, ReadOnly(atlas))
-    text = render_markdown(report)
+    guarded = ReadOnly(atlas)
+    report = compare(archive, guarded)
+    text = render_markdown(report, compare_meta(archive, guarded))
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
