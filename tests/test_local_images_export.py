@@ -34,9 +34,10 @@ def jpeg(width, height) -> bytes:
 
 
 class FakeFeb(Source):
-    def __init__(self, images, identities=None):
+    def __init__(self, images, identities=None, photos=None, crests=None):
         self.images, self.identities = dict(images), identities or {}
-        self.gets, self.heads, self.scrapes = [], [], []
+        self.photos, self.crests = photos or {}, crests or {}                      # FBCYL: the photo URL of a player uuid, the crest URL of a team id
+        self.gets, self.heads, self.scrapes, self.lookups = [], [], [], []
 
     def get(self, url):
         self.gets.append(url)
@@ -49,6 +50,14 @@ class FakeFeb(Source):
     def identity(self, team_id, player_id):
         self.scrapes.append((team_id, player_id))
         return self.identities.get(player_id, (None, None))
+
+    def photo_url(self, uuid):
+        self.lookups.append(("photo", uuid))
+        return self.photos.get(uuid)
+
+    def team_logo_url(self, team_id):
+        self.lookups.append(("crest", team_id))
+        return self.crests.get(str(team_id))
 
 
 URLS = {"logo1": "https://img/logo1", "p11": "https://img/p11", "p12": "https://img/p12", "logo2": "https://img/logo2", "p21": "https://img/p21"}
@@ -141,11 +150,63 @@ def test_a_player_without_a_photo_url_has_no_photo_and_no_download(collection):
     assert payload["players"]["21"]["birth_date"] is None and payload["players"]["21"]["height"] == "190 cm"
 
 
-def test_only_the_competitions_of_the_newest_season_are_published_and_fbcyl_has_no_photos():
+def test_only_the_competitions_of_the_newest_season_of_each_league_are_published():
     names = ["PRIMERA_FEB_2025_2026_Liga_Regular_Unico", "PRIMERA_FEB_2026_2027_Liga_Regular_Unico", "COPA_ESPANA_2026_2027_FASE_DE_GRUPOS_A", "COPA_ESPANA_2025_2026_Play-offs_Final",
-             "FBCYL_1ª_FASE-GRUPO_A-1_2026_", "SEGUNDA_FEB_2026_2027_Liga_Regular_A", "SIN_TEMPORADA"]
-    assert current_season_collections(names) == {"PRIMERA_FEB_2026_2027_Liga_Regular_Unico", "COPA_ESPANA_2026_2027_FASE_DE_GRUPOS_A", "SEGUNDA_FEB_2026_2027_Liga_Regular_A"}
+             "FBCYL_1ª_FASE-GRUPO_A-1_2026_", "FBCYL_1ª_FASE-GRUPO_A-1_2025_", "SEGUNDA_FEB_2026_2027_Liga_Regular_A", "SIN_TEMPORADA"]
+    assert current_season_collections(names) == {"PRIMERA_FEB_2026_2027_Liga_Regular_Unico", "COPA_ESPANA_2026_2027_FASE_DE_GRUPOS_A", "SEGUNDA_FEB_2026_2027_Liga_Regular_A", "FBCYL_1ª_FASE-GRUPO_A-1_2026_"}
+    assert current_season_collections(["FBCYL_X_2025_"]) == {"FBCYL_X_2025_"}                      # FBCYL's season is the single year: its newest does not depend on FEB's
     assert current_season_collections([]) == set()
+
+
+FBCYL = "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
+FB_URLS = {"crest101": "https://cdn/crest101.png", "ph1": "https://s3/ph1.jpg", "ph2": "https://s3/ph2.jpg"}
+FB_IMAGES = {FB_URLS["crest101"]: png(300, 300), FB_URLS["ph1"]: jpeg(300, 400), FB_URLS["ph2"]: jpeg(260, 360)}
+
+
+@pytest.fixture()
+def fbcyl():
+    """Two FBCYL games: a uuid is the stable key of a player (his ``actorId`` changes from game to game) and some appearances come without it."""
+    col = new_mock_db("f")[FBCYL]
+
+    def game(i, actor):
+        return {"uuid": f"g{i}", "stats": {"teams": [
+            {"teamIdIntern": 900 + i, "teamIdExtern": 101, "name": "ALFA ", "players": [
+                {"uuid": "u1", "actorId": actor, "name": "A. UNO", "dorsal": "4"}, {"uuid": "u2", "actorId": actor + 1, "name": "B. DOS", "dorsal": "7"},
+                {"uuid": None, "actorId": actor + 2, "name": "C. SIN UUID", "dorsal": "9"}]},
+            {"teamIdIntern": 950 + i, "teamIdExtern": 102, "name": "BRAVO", "players": [{"uuid": "u3", "actorId": actor + 5, "name": "D. TRES", "dorsal": "1"}]}]}}
+    col.insert_many([game(1, 10), game(2, 20)])
+    return col
+
+
+def test_fbcyl_sources_are_read_from_the_stats_by_uuid_and_those_without_uuid_are_left_out(fbcyl):
+    teams = team_sources(fbcyl)
+    assert sorted(teams) == ["101", "102"] and teams["101"]["name"] == "ALFA" and teams["101"]["logo"] is None and teams["101"]["fbcyl"] is True
+    assert teams["101"]["players"] == {"u1": {"name": "A. UNO", "no": "4", "photo": None}, "u2": {"name": "B. DOS", "no": "7", "photo": None}}
+
+
+def test_fbcyl_asks_the_esb_for_the_crest_and_for_the_photo_of_each_uuid_and_has_no_identity_to_scrape(fbcyl):
+    feb = FakeFeb(FB_IMAGES, photos={"u1": FB_URLS["ph1"], "u2": FB_URLS["ph2"]}, crests={"101": FB_URLS["crest101"]})
+    payload = team_payload(FBCYL, "101", team_sources(fbcyl)["101"], {}, feb)
+    assert sorted(feb.lookups) == [("crest", "101"), ("photo", "u1"), ("photo", "u2")] and feb.scrapes == []
+    assert decode(payload["logo"]).height == LOGO_HEIGHT and decode(payload["players"]["u1"]["photo"]).format == "JPEG"
+    assert payload["players"]["u1"] == {"name": "A. UNO", "no": "4", "photo": payload["players"]["u1"]["photo"], "birth_date": None, "height": None}
+    assert payload["sources"]["players"]["u2"] == {"url": FB_URLS["ph2"], "size": len(FB_IMAGES[FB_URLS["ph2"]])}
+
+
+def test_fbcyl_the_next_publication_asks_again_where_the_photo_is_but_downloads_only_what_changed_regression(fbcyl):
+    """The ESB is the only place that says which photo a uuid has now, so it is asked every time; the image is downloaded only if its size changed."""
+    first = team_payload(FBCYL, "101", team_sources(fbcyl)["101"], {}, FakeFeb(FB_IMAGES, photos={"u1": FB_URLS["ph1"], "u2": FB_URLS["ph2"]}, crests={"101": FB_URLS["crest101"]}))
+    changed = {**FB_IMAGES, FB_URLS["ph1"]: png(300, 401, (10, 200, 10, 255))}
+    feb = FakeFeb(changed, photos={"u1": FB_URLS["ph1"], "u2": "https://s3/ph2-new.jpg"}, crests={"101": FB_URLS["crest101"]})
+    feb.images["https://s3/ph2-new.jpg"] = jpeg(100, 140)
+    again = team_payload(FBCYL, "101", team_sources(fbcyl)["101"], first, feb)
+    assert sorted(feb.gets) == sorted([FB_URLS["ph1"], "https://s3/ph2-new.jpg"]) and feb.scrapes == []
+    assert again["logo"] == first["logo"] and again["players"]["u1"]["photo"] != first["players"]["u1"]["photo"]
+
+
+def test_fbcyl_a_player_without_photo_and_a_team_without_crest_are_left_blank_without_failing(fbcyl):
+    payload = team_payload(FBCYL, "101", team_sources(fbcyl)["101"], {}, FakeFeb(FB_IMAGES, photos={"u1": FB_URLS["ph1"]}))
+    assert payload["logo"] is None and payload["players"]["u2"]["photo"] is None and payload["players"]["u1"]["photo"]
 
 
 def test_each_team_is_sealed_for_the_competition_and_the_clubs_and_an_unchanged_team_keeps_its_bytes(collection, tmp_path):

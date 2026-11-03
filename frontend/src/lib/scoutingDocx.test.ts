@@ -72,6 +72,15 @@ describe('the document', () => {
     expect(xml.indexOf('4. Perfil de Juego')).toBeLessThan(xml.indexOf('5. Notas del cuerpo técnico'))
   })
 
+  it('finds the photo of an FBCYL player by his uuid (his player_id changes from game to game), with no birth date nor height', async () => {
+    const fbcyl = team.map((p, i) => ({ ...p, player_id: 900 + i, player_uuid: `uuid-${i}` })) as unknown as PlayerStat[]
+    const imgs: TeamImages = { ...images, players: { 'uuid-0': { name: 'X', no: '11', photo: JPEG, birth_date: null, height: null } } }
+    const { xml, media } = await parts(await scoutingDocx({ players: fbcyl, teamName: fbcyl[0].team_name, images: imgs, today: new Date('2026-03-05T12:00:00'), date: '05/03/2026' }))
+    expect(xml).toContain('#11')                                                  // the dorsal of the published file, found by uuid
+    expect(media.length).toBeGreaterThanOrEqual(2)                                // crest and photo
+    expect(xml).toContain('___________')                                          // the age and the height stay blank
+  })
+
   it('has nothing to say for a team without players', async () => {
     await expect(scoutingDocx({ players, teamName: 'NO EXISTE', images: null, today: new Date(), date: '' })).rejects.toThrow(/jugadores/)
   })

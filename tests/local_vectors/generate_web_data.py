@@ -111,6 +111,12 @@ class FixtureFeb(Source):
     def identity(self, team_id, player_id):
         return "05/03/2000", "190 cm"
 
+    def photo_url(self, uuid):                      # FBCYL: the ESB says where the photo of a uuid is
+        return f"https://fixture.test/photo/{uuid}"
+
+    def team_logo_url(self, team_id):
+        return f"https://fixture.test/crest/{team_id}"
+
 
 def main() -> None:
     if OUT.exists():

@@ -291,7 +291,10 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     const players = Object.values(images.players)
     expect(players.length).toBeGreaterThan(0)
     expect(players[0]).toEqual(expect.objectContaining({ birth_date: '05/03/2000', height: '190 cm' }))
-    await expect(loadWebImages(FBCYL, '34001')).rejects.toBeInstanceOf(WebDataUnavailable)
+    const fbcyl = await loadWebImages(FBCYL, '34001')                                  // FBCYL has its own newest season, with the crest and the photos by uuid
+    expect(fbcyl.logo).toMatch(/^data:image\//)
+    expect(Object.keys(fbcyl.players).length).toBeGreaterThan(0)
+    await expect(loadWebImages(FBCYL, '999')).rejects.toBeInstanceOf(WebDataUnavailable)
     await expect(loadWebImages(FEB, '999')).rejects.toBeInstanceOf(WebDataUnavailable)
     await expect(loadWebImages('NOPE_2030', '101')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
