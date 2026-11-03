@@ -3,20 +3,22 @@ name: Live packages
 # Builds the encrypted live preparation packages of the club's upcoming matches and publishes them to the
 # `live-packages` branch (issue #175), which the app downloads through raw.githubusercontent.com
 # (CORS open, no credentials). The branch is rewritten with a single commit on every run (no history growth).
-# Runs after each Atlas refresh (fresh data), and by hand. Needs the repository secrets PACKAGE_PASSWORD
-# (>= 8 characters; the same password is typed once in the app) and ATLAS_READ_URI (read-only Atlas user;
-# ATLAS_WRITE_URI is used as fallback). `config/package_publish.json` → `access` chooses password (legacy) or scopes (issue #410,
-# PACKAGE_MASTER_KEY optional). See docs/OPERATIONS.md.
+# Runs after each archive refresh (fresh data), and by hand. The games come from the private archive (issue #724, step 4): the job restores it into an ephemeral Mongo with the
+# shared action `.github/actions/restore-archive` (read only) and builds from there; the archive refresh saved it minutes before. Without ARCHIVE_DEPLOY_KEY it reads Atlas as
+# before (ATLAS_READ_URI, ATLAS_WRITE_URI as fallback) until Atlas is retired. Needs the repository secret PACKAGE_PASSWORD (>= 8 characters; the same password is typed once
+# in the app). `config/package_publish.json` → `access` chooses password (legacy) or scopes (issue #410, PACKAGE_MASTER_KEY optional). See docs/OPERATIONS.md.
 
 on:
   workflow_run:
-    workflows: ["Atlas refresh"]
+    workflows: ["Archive refresh"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
   pull_request:
     paths:
       - "run_package_publish.py"
+      - "run_archive.py"
+      - ".github/actions/restore-archive/action.yml"
       - "src/live_prep/publisher.py"
       - "src/live_prep/package_builder.py"
       - "src/live_prep/db_source.py"
@@ -39,10 +41,17 @@ concurrency:
 jobs:
   publish:
     name: Build and publish packages
-    # a red Atlas refresh (missing matches) must not block the packages; a cancelled one does
+    # a red archive refresh (missing matches) must not block the packages; a cancelled one does
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -54,10 +63,22 @@ jobs:
       - name: Validate the configuration (pull requests)
         if: github.event_name == 'pull_request'
         run: python -c "import run_package_publish; from src.live_prep.publisher import load_config, _collections; print(load_config(), _collections())"
+      - name: Choose the source of the games
+        id: source
+        if: github.event_name != 'pull_request'
+        env:
+          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+        run: |
+          if [ -n "$ARCHIVE_DEPLOY_KEY" ]; then echo "archive=true" >> "$GITHUB_OUTPUT"; else echo "archive=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Restore the archive
+        if: steps.source.outputs.archive == 'true'
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
       - name: Build the packages
         if: github.event_name != 'pull_request'
         env:
-          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
+          MONGODB_CONNECTION_STRING: ${{ steps.source.outputs.archive == 'true' && env.EPHEMERAL_MONGO || secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
           PACKAGE_PASSWORD: ${{ secrets.PACKAGE_PASSWORD }}
           # optional: the master key of the scopes (issue #410); without it the password is the master
           PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY }}

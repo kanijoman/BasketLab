@@ -4,6 +4,7 @@
 after a refresh); ``python run_archive.py load --src DIR --replace`` restores it into the database of ``MONGODB_CONNECTION_STRING`` (the ephemeral
 Mongo of a job): it REPLACES the collections it holds, so it needs ``--replace``. ``pull --repo URL --dir DIR`` downloads the archive from the
 private repository and ``push --repo URL --dir DIR`` saves it back (only when it changed; the last versions stay tagged), see ``archive_repo``.
+``index`` creates the team index of the FEB collections after a restore (the jobs that only READ the archive: live packages, rule evaluation).
 """
 import argparse
 import os
@@ -25,6 +26,7 @@ def main(argv=None) -> int:
     load.add_argument("--src", required=True)
     load.add_argument("--collection", action="append")
     load.add_argument("--replace", action="store_true", help="required: the collections of the archive are dropped and rewritten")
+    sub.add_parser("index", help="create the team index (HEADER.TEAM.id) on the FEB collections of the database, right after a restore")
     pull = sub.add_parser("pull", help="download the archive from the private repository")
     push = sub.add_parser("push", help="save the archive in the private repository (only if it changed)")
     for sync in (pull, push):
@@ -46,10 +48,13 @@ def main(argv=None) -> int:
     from pymongo import MongoClient
 
     from src.database.db_config import get_mongodb_connection_string
-    from src.local_data.archive import dump_archive, load_archive
+    from src.local_data.archive import dump_archive, ensure_team_indexes, load_archive
 
     db = MongoClient(get_mongodb_connection_string())["BASKETBALL"]
     started = time.time()
+    if args.command == "index":
+        print(f"team index on {ensure_team_indexes(db)} collections, {time.time() - started:.0f} s")
+        return 0
     if args.command == "dump":
         try:
             manifest = dump_archive(db, args.out, only=args.collection, allow_shrink=not args.no_shrink)

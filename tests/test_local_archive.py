@@ -290,3 +290,33 @@ def test_a_refresh_that_lost_metadata_does_not_overwrite_the_archive(db, tmp_pat
     with pytest.raises(ValueError, match="metadata"):
         dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
     dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=True)             # a deliberate dump is allowed
+
+
+# --- the team index of a restored Mongo (issue #724, step 4) ------------------------------------------------------------------------------------------------
+# The packages read the games of a team in every collection of the season; `HEADER.TEAM.id` is indexed by the refresh on Atlas (#502) but an index is not part of the
+# archive, so the Mongo that a job restores from it starts without. The jobs that read it (live packages, the rule evaluation) create it right after the restore.
+def test_the_team_index_is_created_on_the_feb_collections_only_and_twice_is_harmless(db):
+    from src.local_data.archive import ensure_team_indexes
+
+    assert ensure_team_indexes(db) == 3                                                  # the three FEB collections of the fixture
+    assert ensure_team_indexes(db) == 3
+    for name in NAMES[:3]:
+        assert "team_id_1" in db[name].index_information()
+    assert "team_id_1" not in db["FBCYL_2026_2027_Liga_Regular_A"].index_information()    # FBCYL has no HEADER.TEAM
+    assert "team_id_1" not in db["HISTORICAL"].index_information() and META not in db.list_collection_names()
+
+
+def test_the_team_index_has_the_name_and_key_the_refresh_gives_it(db):
+    from src.local_data.archive import ensure_team_indexes
+
+    ensure_team_indexes(db)
+    info = db[NAMES[2]].index_information()["team_id_1"]
+    assert info["key"] == [("HEADER.TEAM.id", 1)]                                         # same as IndexManager.ensure_team_index: calling both is harmless
+
+
+def test_the_entry_point_has_an_index_command():
+    import run_archive
+
+    with pytest.raises(SystemExit) as stop:
+        run_archive.main(["index", "--help"])
+    assert stop.value.code == 0

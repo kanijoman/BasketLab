@@ -2,8 +2,9 @@ name: Rule evaluation
 
 # Replays the games of a FEB competition as live from both teams through the alert engine and measures every rule
 # (issue #238): alerts, duplicates, follow-up by the coach, outcome, coach behaviour. The recordings committed in
-# tests/recordings replace the simulated feed of their match. By hand only: it reads the whole competition from Atlas
-# (repository secret ATLAS_READ_URI, ATLAS_WRITE_URI as fallback). The report goes to the run summary and to the
+# tests/recordings replace the simulated feed of their match. By hand only: it reads the whole competition from the private archive (issue #724, step 4: only that collection is
+# restored into an ephemeral Mongo by `.github/actions/restore-archive`, read only); without ARCHIVE_DEPLOY_KEY it reads Atlas as before (repository secret ATLAS_READ_URI,
+# ATLAS_WRITE_URI as fallback) until Atlas is retired. The report goes to the run summary and to the
 # `rule-evaluation` artifact (report.md, evaluation.json, alerts.jsonl). See docs/LIVE_RULES_CANDIDATES.md.
 
 on:
@@ -44,6 +45,13 @@ jobs:
     name: Evaluate the rules
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -52,9 +60,21 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
+      - name: Choose the source of the games
+        id: source
+        env:
+          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+        run: |
+          if [ -n "$ARCHIVE_DEPLOY_KEY" ]; then echo "archive=true" >> "$GITHUB_OUTPUT"; else echo "archive=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Restore the archive
+        if: steps.source.outputs.archive == 'true'
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+          collection: ${{ inputs.collection }}
       - name: Evaluate
         env:
-          MONGODB_CONNECTION_STRING: ${{ secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
+          MONGODB_CONNECTION_STRING: ${{ steps.source.outputs.archive == 'true' && env.EPHEMERAL_MONGO || secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
           COLLECTION: ${{ inputs.collection }}
           TEAM: ${{ inputs.team }}
           MIN_PRIOR_GAMES: ${{ inputs.min_prior_games }}
