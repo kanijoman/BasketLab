@@ -12,7 +12,14 @@ import pytest
 from src.api.app import app
 
 ROOT = Path(__file__).resolve().parents[1]
-ROUTES = {(method, route.path) for route in app.routes for method in (getattr(route, "methods", None) or set())}
+
+
+def _routes():
+    """The routes of the app NOW (not at import: a worker that collects many test modules must not freeze a half-built app) and a guard that it is the whole app."""
+    routes = {(method, route.path) for route in app.routes for method in (getattr(route, "methods", None) or set())}
+    assert ("GET", "/api/v1/health") in routes or any(path.startswith("/api/v1/") for _, path in routes), "the API routes are not mounted"
+    return routes
+
 
 RETIRED = [
     ("DELETE", "/api/v1/collections/{name}"),
@@ -32,17 +39,17 @@ RETIRED = [
 
 @pytest.mark.parametrize("method, path", RETIRED)
 def test_the_route_is_gone(method, path):
-    assert (method, path) not in ROUTES
+    assert (method, path) not in _routes()
 
 
 def test_no_route_of_the_scrape_router_is_left():
-    assert not [path for _, path in ROUTES if path.startswith("/api/v1/scrape")]
+    assert not [path for _, path in _routes() if path.startswith("/api/v1/scrape")]
 
 
 def test_the_reads_the_kept_code_needs_and_the_listing_stay():
     for route in (("GET", "/api/v1/collections/list"), ("GET", "/api/v1/historical/seasons"), ("GET", "/api/v1/historical/teams"),
                   ("POST", "/api/v1/analysis/elasticity/train")):
-        assert route in ROUTES
+        assert route in _routes()
 
 
 def test_the_separate_scraper_service_is_gone():
