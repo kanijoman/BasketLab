@@ -1,6 +1,6 @@
 """Compare the archive (restored into the Mongo of ``MONGODB_CONNECTION_STRING``) with Atlas, READ ONLY (issue #724, step 1).
 
-``ATLAS_READ_URI`` must be the connection string of a read-only Atlas user; there is no fallback to the write one. Exit code: 0 if Atlas has nothing the
+``ATLAS_READ_URI`` is the connection string of Atlas (the workflow passes the write user's one when there is no read-only user: Atlas is deprecated); whatever it allows, only reads are made (``ReadOnly``). Exit code: 0 if Atlas has nothing the
 archive lacks, 1 if it has games the archive does not, 2 without the credential. The report (markdown) goes to the output and to ``GITHUB_STEP_SUMMARY``.
 """
 import os
@@ -15,7 +15,7 @@ DATABASE = "BASKETBALL"
 def main(argv=None, archive=None, atlas=None) -> int:
     uri = os.environ.get("ATLAS_READ_URI")
     if atlas is None and not uri:
-        print("ATLAS_READ_URI is not set (the read-only Atlas user; there is no fallback to the write one)", file=sys.stderr)
+        print("ATLAS_READ_URI is not set (the connection string of Atlas; the workflow takes it from ATLAS_READ_URI or ATLAS_WRITE_URI)", file=sys.stderr)
         return 2
     from src.local_data.atlas_compare import ReadOnly, compare, compare_meta, missing, render_markdown
 
