@@ -1,0 +1,112 @@
+name: Archive refresh
+
+# Brings the games up to date WITHOUT Atlas (issue #724, step 3): downloads the private archive (repository `basketlab-archive`), restores it into an ephemeral Mongo (service
+# container), scrapes from FEB and FBCYL what was played since (`config/competitions.json`, the catalogue: every active competition, `run_atlas_refresh.py`), fills DERIVED and
+# saves the archive back. It is the ONLY writer of the archive: `web-data.yml` runs after it, restores the archive and builds the web data from it, and no other job pushes.
+# A scrape that reports a problem (a competition failed, matches still missing) does not stop the save, since the new games are worth keeping, but leaves the run red.
+# Needs the repository secret ARCHIVE_DEPLOY_KEY (deploy key with write access to basketlab-archive). See docs/OPERATIONS.md.
+
+on:
+  schedule:
+    - cron: "30 5,13,21 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Refresh only these competitions (comma separated, e.g. 'tercera feb, lf2'): the first load of a competition is heavy"
+        required: false
+        default: ""
+  pull_request:
+    paths:
+      - "run_atlas_refresh.py"
+      - "run_backfill_derived.py"
+      - "run_archive.py"
+      - "src/services/atlas_refresh.py"
+      - "src/services/feb_match_ingest.py"
+      - "src/services/fbcyl_match_ingest.py"
+      - "src/services/competition_catalogue.py"
+      - "src/local_data/archive.py"
+      - "src/local_data/archive_repo.py"
+      - "config/competitions.json"
+      - ".github/workflows/archive-refresh.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: archive-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Scrape into the archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # the first load of a competition is heavy (about 0.5 s per match: a whole new competition of 1.500 matches is ~13 minutes); the usual run takes a few minutes
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate the catalogue (pull requests)
+        if: github.event_name == 'pull_request'
+        run: python -c "import run_atlas_refresh, run_backfill_derived, run_archive; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions to refresh')"
+      - name: Download the archive
+        id: pull
+        if: github.event_name != 'pull_request'
+        env:
+          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # The secret was saved by hand: whatever it arrived with (CRLF, BOM, spaces for newlines...) the key is rebuilt from its base64 body
+          printf '%s' "$ARCHIVE_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/archive_key || { echo "::error::ARCHIVE_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+          chmod 600 ~/.ssh/archive_key
+          ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY has the shape of a key but OpenSSH cannot read it (a passphrase? it must have none)"; exit 1; }
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+          python run_archive.py pull --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive
+      - name: Restore the archive into the ephemeral Mongo
+        id: restore
+        if: steps.pull.outcome == 'success'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: python run_archive.py load --src archive --replace
+      # Only what has been played since the archive: the games stored are skipped; the last days are looked at again (recheck_days) in case FEB corrected them.
+      - name: Scrape the new games
+        id: scrape
+        if: steps.restore.outcome == 'success'
+        continue-on-error: true
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: python run_atlas_refresh.py --config config/competitions.json --require-env ${ONLY:+--only "$ONLY"}
+      # Games stored before a new DERIVED_VERSION get the field here; idempotent and cheap. Runs even if the scrape reported a problem.
+      - name: Fill DERIVED in the games
+        if: steps.restore.outcome == 'success' && !cancelled()
+        continue-on-error: true
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: python run_backfill_derived.py --require-env
+      # The archive is saved even if the scrape reported a problem (the new games are worth keeping), but only after a complete restore and never with fewer games or
+      # metadata than it had (`--no-shrink`): the last versions stay tagged in the repository.
+      - name: Save the archive
+        if: ${{ !cancelled() && steps.restore.outcome == 'success' }}
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+          python run_archive.py dump --out archive --no-shrink
+          python run_archive.py push --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive --message "Archive $(date -u +%Y-%m-%dT%H:%MZ)"
+      - name: Fail the run if the scrape reported a problem
+        if: ${{ !cancelled() && steps.scrape.outcome == 'failure' }}
+        run: |
+          echo "::error::The scrape reported a problem (a competition failed or matches are still missing): see its summary. The new games were saved."
+          exit 1

@@ -5,15 +5,15 @@ name: Web data
 # (`run_web_data.py`, `src/local_data/web_data.py`). Starts from the previous publication so that what did not change keeps its bytes
 # (sealing is random; a file never changes in place). The branch is rewritten with a single commit (no history growth) and only when something changed.
 #
-# Source of the games (issue #646): with the secret ARCHIVE_DEPLOY_KEY the job downloads the private archive (repository `basketlab-archive`),
-# restores it into an ephemeral Mongo (service container), scrapes what is new from FEB (`config/competitions.json`: every competition,
-# 3a FEB complete), builds the artifacts from there and saves the archive back. Without the secret it reads Atlas as before.
-# Runs after each Atlas refresh and by hand. Needs ATLAS_READ_URI (ATLAS_WRITE_URI as fallback; only without the archive) and
-# PACKAGE_MASTER_KEY (or PACKAGE_PASSWORD, >= 8 characters). See docs/OPERATIONS.md.
+# Source of the games (issues #646, #724): with the secret ARCHIVE_DEPLOY_KEY the job downloads the private archive (repository `basketlab-archive`), restores it into an
+# ephemeral Mongo (service container) and builds the artifacts from there. It does NOT scrape or save the archive: `archive-refresh.yml` does that (minutes), is the only
+# writer of the archive and runs first. Without the secret it reads Atlas as before (until Atlas is retired).
+# Runs after each archive refresh (even a red one: missing matches must not block the data; a cancelled one does) and by hand. Needs PACKAGE_MASTER_KEY (or
+# PACKAGE_PASSWORD, >= 8 characters), and ATLAS_READ_URI (ATLAS_WRITE_URI as fallback; only without the archive). See docs/OPERATIONS.md.
 
 on:
   workflow_run:
-    workflows: ["Atlas refresh"]
+    workflows: ["Archive refresh"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -37,7 +37,7 @@ concurrency:
 jobs:
   publish:
     name: Build and publish the web data
-    # a red Atlas refresh (missing matches) must not block the data; a cancelled one does
+    # a red archive refresh (missing matches) must not block the data; a cancelled one does
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120   # #700: the first build after a change of code computes every competition again (about 50 minutes); the rest reuse what did not change
@@ -87,20 +87,6 @@ jobs:
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
         run: python run_archive.py load --src archive --replace
-      # Only what FEB has played since the archive: the games stored are skipped. A red report (missing matches) does not stop the data.
-      - name: Scrape the new games into the ephemeral Mongo
-        id: scrape
-        if: steps.restore.outcome == 'success'
-        continue-on-error: true
-        env:
-          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_atlas_refresh.py --config config/competitions.json --require-env
-      - name: Fill DERIVED in the new games
-        if: steps.restore.outcome == 'success'
-        continue-on-error: true
-        env:
-          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_backfill_derived.py --require-env
       - name: Start from the previous publication
         if: github.event_name != 'pull_request'
         run: |
@@ -126,13 +112,3 @@ jobs:
           git checkout -q --orphan publish
           git commit -q -m "Web data $(date -u +%Y-%m-%dT%H:%MZ)"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" publish:web-data
-      # The archive is saved even if the build failed (the new games are worth keeping), but only after a complete restore and never with fewer
-      # games than it had (`--no-shrink`): the last versions stay tagged in the repository.
-      - name: Save the archive
-        if: ${{ !cancelled() && steps.restore.outcome == 'success' }}
-        env:
-          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: |
-          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
-          python run_archive.py dump --out archive --no-shrink
-          python run_archive.py push --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive --message "Archive $(date -u +%Y-%m-%dT%H:%MZ)"
