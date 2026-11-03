@@ -6,6 +6,7 @@ import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
 import { aggregateTeams, type TeamTableFilter, type TeamTables } from './aggregateTeams'
 import { compareTeams } from './comparison'
+import { lastMatchOf, type LastMatch } from './lastMatch'
 import type { Competition } from './competition'
 import { competitionEvolution, EVOLUTION_STATS, teamEvolution } from './evolution'
 import type { CVMap, CollectionInfo, RivalAdjustedResult, ComparisonKind, EvolutionPoint, CompetitionEvolutionPoint, TeamComparison, TeamStat } from '@/api/client'
@@ -109,6 +110,12 @@ export async function localTeamStats(collection: string, filters: TeamTableFilte
   if (dataSourceOf('team-stats') !== 'local') return null
   const data = await loadCompetition(collection)
   return data ? aggregateTeams(data.team_rows, filters) : null
+}
+
+/** The last game of a team (issue #716: the weekly report's «Último partido»), or `null` when the competition is not published or the team has no game with a date. No switch of its own: the report asks it. */
+export async function localLastMatch(collection: string, teamName: string): Promise<LastMatch | null> {
+  const data = await loadCompetition(collection)
+  return data ? lastMatchOf(data.team_rows, teamName) : null
 }
 
 /** The player table of the competition with the filters (each league has its own table), or `null` to use the API (a competition exported without player rows). */
