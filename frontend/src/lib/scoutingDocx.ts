@@ -4,6 +4,7 @@
 import type { PlayerStat } from '@/api/client'
 import type { TeamImages } from '@/webdata/client'
 import { percentile } from '@/localdata/playerQuartiles'
+import { playerKey } from '@/lib/playerKey'
 import { pyFixed, pyRound } from '@/localdata/pyMath'
 
 type Column = readonly [header: string, key: string, kind: 'min' | 'pct' | 'num', lowerIsBetter: boolean]
@@ -171,7 +172,7 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
   })
 
   const identity = (player: PlayerStat) => {
-    const extra = input.images?.players[String(player.player_id)]
+    const extra = input.images?.players[playerKey(player)]
     const age = ageOn(extra?.birth_date, input.today)
     const photo = bytesOf(extra?.photo)
     const fact = (label: string, value: string) => new Paragraph({ children: [new TextRun({ text: `${label}: `, bold: true }), new TextRun({ text: value })] })
