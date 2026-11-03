@@ -63,9 +63,12 @@ class TestTheRefresh:
 
 
 class TestTheSingleWriter:
-    def test_only_the_refresh_pushes_the_archive(self):
-        writers = [p.name for p in WORKFLOWS.glob("*.yml") if "run_archive.py push" in p.read_text(encoding="utf-8")]
-        assert writers == ["archive-refresh.yml"]
+    def test_only_the_refresh_and_the_purge_push_the_archive_and_they_never_run_at_once(self):
+        writers = [p.name for p in sorted(WORKFLOWS.glob("*.yml")) if "run_archive.py push" in p.read_text(encoding="utf-8")]
+        assert writers == ["archive-purge.yml", "archive-refresh.yml"]
+        groups = {_load(name)["concurrency"]["group"] for name in writers}
+        assert groups == {"archive-refresh"}                                       # one group: a purge waits for a refresh and the other way round
+        assert all(_load(name)["concurrency"]["cancel-in-progress"] is False for name in writers)
 
     def test_the_publication_restores_the_archive_and_builds_from_it_without_scraping_or_saving(self):
         web = _load("web-data.yml")
@@ -73,9 +76,9 @@ class TestTheSingleWriter:
         assert "run_archive.py load --src archive --replace" in runs and "run_web_data.py" in runs
         assert "run_atlas_refresh.py --config" not in runs and "run_backfill_derived.py" not in runs and "run_archive.py dump" not in runs
 
-    def test_the_publication_waits_for_the_refresh_and_no_longer_for_the_atlas_one(self):
+    def test_the_publication_waits_for_the_refresh_and_the_purge_and_no_longer_for_the_atlas_one(self):
         runs = _triggers(_load("web-data.yml"))["workflow_run"]
-        assert runs["workflows"] == ["Archive refresh"] and runs["types"] == ["completed"]
+        assert runs["workflows"] == ["Archive refresh", "Archive purge"] and runs["types"] == ["completed"]       # a purge changes what is published too
 
     def test_a_red_refresh_does_not_stop_the_publication_but_a_cancelled_one_does(self):
         condition = _load("web-data.yml")["jobs"]["publish"]["if"]
@@ -110,3 +113,42 @@ class TestTheGuardsOfTheWriter:
         assert "python -m src.local_data.ssh_key" in run and "ssh-keygen -y -f" in run
         assert run.index("python -m src.local_data.ssh_key") < run.index("ssh-keygen -y -f") < run.index("run_archive.py pull")
         assert "ARCHIVE_DEPLOY_KEY" in run.split("ssh_key", 1)[1].split("exit 1", 1)[0]
+
+
+class TestThePurgeWorkflow:
+    """``archive-purge.yml`` (issue #724): the deliberate order that deletes a competition from the archive. By hand only, a dry run without the confirmation."""
+
+    wf = _load("archive-purge.yml")
+    steps = {s["name"]: s for s in wf["jobs"]["purge"]["steps"] if "name" in s}
+
+    def test_it_runs_only_by_hand_and_asks_for_the_competition_the_season_and_a_confirmation(self):
+        triggers = _triggers(self.wf)
+        assert list(triggers) == ["workflow_dispatch"]
+        inputs = triggers["workflow_dispatch"]["inputs"]
+        assert inputs["competition"]["required"] is True and inputs["season"]["required"] is True
+        assert inputs["confirm"]["required"] is False and inputs["league"]["options"] == ["feb", "fbcyl"]
+
+    def test_the_inputs_reach_the_command_through_the_environment_not_the_script_text(self):
+        step = self.steps["Purge"]
+        assert "${{" not in step["run"], "an input interpolated into the script would allow command injection"
+        assert {"COMPETITION", "SEASON", "LEAGUE", "CONFIRM"} <= set(step["env"])
+        assert "run_archive.py purge" in step["run"] and '--confirm "$CONFIRM"' in step["run"]
+
+    def test_without_the_confirmation_nothing_is_saved_and_the_plan_goes_to_the_summary(self):
+        assert self.steps["Save the archive"]["if"] == "inputs.confirm != ''"
+        assert "GITHUB_STEP_SUMMARY" in self.steps["Purge"]["run"]
+
+    def test_the_order_is_download_purge_save_and_a_failed_purge_stops_the_save(self):
+        names = [s.get("name", "") for s in self.wf["jobs"]["purge"]["steps"]]
+        order = ["Download the archive", "Purge", "Save the archive"]
+        assert [names.index(n) for n in order] == sorted(names.index(n) for n in order)
+        assert "continue-on-error" not in self.steps["Purge"] and "!cancelled()" not in self.steps["Save the archive"]["if"]
+
+    def test_it_pushes_with_the_deploy_key_after_rebuilding_and_checking_it(self):
+        run = self.steps["Download the archive"]["run"]
+        assert run.index("python -m src.local_data.ssh_key") < run.index("ssh-keygen -y -f") < run.index("run_archive.py pull")
+        assert "run_archive.py push" in self.steps["Save the archive"]["run"] and "GIT_SSH_COMMAND" in self.steps["Save the archive"]["run"]
+
+    def test_it_does_not_touch_the_database_or_atlas(self):
+        text = (WORKFLOWS / "archive-purge.yml").read_text(encoding="utf-8")
+        assert "MONGODB_CONNECTION_STRING" not in text and "secrets.ATLAS" not in text
