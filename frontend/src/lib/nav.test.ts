@@ -7,7 +7,10 @@ import { NAV_GROUPS, NAV_ITEMS } from './nav'
 // Issue #191 (U4): ONE definition of the navigation of a collection, for the sidebar, the menu of the phone and the cards of the hub.
 describe('navigation of a collection (issue #191)', () => {
   const app = readFileSync(join(__dirname, '..', 'App.tsx'), 'utf8')
-  const routes = [...app.matchAll(/<Route path="([a-z-]+)"\s+element/g)].map(m => m[1]).filter(p => p !== 'collection')
+  // Pages taken out of the web (their code is kept): they redirect to the hub, so they are routes without an entry.
+  const RETIRED = ['predictive']
+  const allRoutes = [...app.matchAll(/<Route path="([a-z-]+)"\s+element/g)].map(m => m[1]).filter(p => p !== 'collection')
+  const routes = allRoutes.filter(p => !RETIRED.includes(p))
 
   it('groups the pages by what the staff does with them', () => {
     expect(NAV_GROUPS.map(g => g.label)).toEqual(['Equipos', 'Jugadores', 'Partido', 'Live', 'Informes'])
@@ -22,6 +25,14 @@ describe('navigation of a collection (issue #191)', () => {
   it('the live package is made by the app, not by a page of the web: no live-prep route or entry (issue #667)', () => {
     expect(routes).not.toContain('live-prep')
     expect(NAV_ITEMS.map(i => i.subPath)).not.toContain('live-prep')
+  })
+
+  it('the predictive analysis is out of the web for now (the rework): no entry, no page, and its old address goes to the hub; its code is kept', () => {
+    expect(NAV_ITEMS.map(i => i.subPath)).not.toContain('predictive')
+    expect(NAV_GROUPS.find(g => g.label === 'Partido')!.items.map(i => i.subPath)).toEqual(['matches'])
+    expect(app).not.toMatch(/import PredictivePage/)
+    expect(app).toMatch(/<Route path="predictive"\s+element=\{<Navigate to=".."/)
+    expect(allRoutes).toContain('predictive')
   })
 
   it('every entry says what it is for (the card of the hub)', () => {

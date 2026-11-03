@@ -5,7 +5,6 @@
  * Tab 2 "Descargar FEB": dropdowns en cascada + scraping con barra de progreso.
  * Tab 3 "Descargar FBCYL": ídem para FBCYL.
  * Tab 4 "Histórico": temporadas pasadas FEB en la colección HISTORICAL.
- * Tab 5 "Modelos predictivos": elasticidades y validación.
  * Cada pestaña vive en `./admin/` (issue #195).
  */
 import { useState } from 'react'
@@ -18,16 +17,14 @@ import AdminKeyField from '@/components/AdminKeyField'
 import { CollectionsTab } from './admin/CollectionsTab'
 import { FBCYLDownloadTab, FEBDownloadTab } from './admin/DownloadTabs'
 import { HistoricalTab } from './admin/HistoricalTab'
-import { ModelsTab } from './admin/ModelsTab'
 
-type Tab = 'collections' | 'feb' | 'fbcyl' | 'historical' | 'models'
+type Tab = 'collections' | 'feb' | 'fbcyl' | 'historical'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'collections', label: 'Colecciones' },
   { id: 'feb',         label: 'Descargar FEB' },
   { id: 'fbcyl',       label: 'Descargar FBCYL' },
   { id: 'historical',  label: 'Histórico' },
-  { id: 'models',      label: 'Modelos predictivos' },
 ]
 
 export default function AdminPage() {
@@ -48,14 +45,12 @@ export default function AdminPage() {
           {activeTab === 'feb'         && <FEBDownloadTab />}
           {activeTab === 'fbcyl'       && <FBCYLDownloadTab />}
           {activeTab === 'historical'  && <HistoricalTab />}
-          {activeTab === 'models'      && <ModelsTab />}
         </div>
 
         <div className="pt-4 border-t border-line text-xs text-ink-faint space-y-1">
           <p><span className="font-medium">FEB:</span> Descarga partidos de las ligas nacionales FEB (L.F.2, EBA, etc.).</p>
           <p><span className="font-medium">FBCYL:</span> Descarga partidos de las ligas de Castilla y León.</p>
-          <p><span className="font-medium">Histórico:</span> Descarga temporadas pasadas en la colección unificada HISTORICAL para modelos predictivos.</p>
-          <p><span className="font-medium">Modelos:</span> Entrenamiento Ridge/GBM y validación walk-forward de los modelos predictivos.</p>
+          <p><span className="font-medium">Histórico:</span> Descarga temporadas pasadas en la colección unificada HISTORICAL.</p>
           <p className="flex items-center gap-1">
             <ChevronRight className="w-3 h-3" aria-hidden="true" />
             Los datos nuevos incluyen metadatos de competición para análisis cruzado futuro.

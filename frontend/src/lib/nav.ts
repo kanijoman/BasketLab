@@ -5,7 +5,7 @@
  */
 import type { ComponentType } from 'react'
 import {
-  Activity, ArrowLeftRight, BarChart2, BrainCircuit, ClipboardList, FileSearch, FileText, Layers, LayoutDashboard, Microscope, RotateCcw,
+  Activity, ArrowLeftRight, BarChart2, ClipboardList, FileSearch, FileText, Layers, LayoutDashboard, Microscope, RotateCcw,
   Scale, Swords, Target, TrendingUp, Trophy, Users, Users2,
 } from 'lucide-react'
 
@@ -47,7 +47,6 @@ export const NAV_GROUPS: NavGroup[] = [
   ] },
   { label: 'Partido', items: [
     { subPath: 'matches', label: 'Análisis de partido', description: 'Un partido concreto: marcador y comparativa de estadísticas de los dos equipos', icon: Swords },
-    { subPath: 'predictive', label: 'Análisis predictivo', description: 'Elasticidades Ridge, Monte Carlo y predicción de partido', icon: BrainCircuit },
   ] },
   { label: 'Live', items: [
     { subPath: 'scouting-rival', label: 'Scouting del rival', description: 'PDF de cualquier equipo con lo que ve el motor: claves, jugadoras, zonas y plan', icon: FileSearch },

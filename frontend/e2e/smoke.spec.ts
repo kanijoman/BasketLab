@@ -105,7 +105,7 @@ test('on a phone the navigation is a menu, it reaches every group and no page sc
     const main = document.querySelector('main') as HTMLElement
     return { document: document.documentElement.scrollWidth - window.innerWidth, main: main.scrollWidth - main.clientWidth }
   })
-  for (const path of ['', '/teams', '/possessions', '/players', '/lineups', '/comparativas', '/report', '/shots', '/predictive']) {
+  for (const path of ['', '/teams', '/possessions', '/players', '/lineups', '/comparativas', '/report', '/shots']) {
     await page.goto(`/${COLLECTION}${path}`)
     await page.waitForLoadState('networkidle')
     const { document: d, main } = await overflow()

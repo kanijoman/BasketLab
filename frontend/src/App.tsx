@@ -21,7 +21,7 @@
  *
  * AnimatePresence wraps routes for page transition animations.
  */
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from '@/context/AuthContext'
 import Layout from '@/components/Layout'
@@ -44,7 +44,6 @@ import PossessionsPage from '@/pages/PossessionsPage'
 import PbpAnalysisPage from '@/pages/PbpAnalysisPage'
 import InOutPage from '@/pages/InOutPage'
 import AdminPage from '@/pages/AdminPage'
-import PredictivePage from '@/pages/PredictivePage'
 import MatchAnalysisPage from '@/pages/MatchAnalysisPage'
 import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
 import RotacionesPage from '@/pages/RotacionesPage'
@@ -76,7 +75,8 @@ export default function App() {
               <Route path="pbp"         element={<PbpAnalysisPage />} />
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />
-              <Route path="predictive"  element={<PredictivePage />} />
+              {/* The predictive analysis is out of the web while it is reworked (its page and tabs are kept in pages/PredictivePage.tsx and pages/predictive/): the old address goes to the hub */}
+              <Route path="predictive"  element={<Navigate to=".." replace />} />
               <Route path="matches"    element={<MatchAnalysisPage />} />
               <Route path="multiphase"  element={<MultiPhaseStatsPage />} />
               <Route path="rotaciones" element={<RotacionesPage />} />

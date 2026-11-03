@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test'
 // Issue #197 (U7): accessibility of the key pages, in both themes and on a phone and a desktop (WCAG 2.0/2.1 A and AA: contrast, names of the controls, keyboard
 // access to what scrolls). A violation names the rule, the element and the colours: the audit of 28/10/2026 found 197 of them before the fixes.
 const C = 'L_F_-2_2025_2026_Liga_Regular_B'
-const PAGES = ['/', `/${C}`, `/${C}/teams`, `/${C}/players`, `/${C}/shots`, `/${C}/lineups`, `/${C}/report`, `/${C}/team-report`, `/${C}/predictive`, `/${C}/matches`, `/${C}/comparativas`]
+const PAGES = ['/', `/${C}`, `/${C}/teams`, `/${C}/players`, `/${C}/shots`, `/${C}/lineups`, `/${C}/report`, `/${C}/team-report`, `/${C}/matches`, `/${C}/comparativas`]
 
 for (const theme of ['light', 'dark'] as const) {
   for (const width of [390, 1280]) {
