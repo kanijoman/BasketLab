@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PAPER } from '@design/paper'
-import { courtSvg, paperChartTheme } from './scoutingCharts'
+import { courtSvg, paperChartTheme, titledSvg } from './scoutingCharts'
 import { svgToPng, svgSize } from './svgImage'
 import type { ShotRawData, ShotZoneData } from '@/api/client'
 
@@ -42,6 +42,19 @@ describe('the court as an image of the DOCX', () => {
     expect(svgSize(courtSvg('zones', ZONES, []))).toEqual({ width: 450, height: 420 })
     expect(svgSize('<svg viewBox="0 0 640 540" width="640" height="540"></svg>')).toEqual({ width: 640, height: 540 })
     expect(svgSize('<svg></svg>')).toBeNull()
+  })
+})
+
+describe('the court with a title (the shot charts of the weekly report)', () => {
+  it('puts the lines of the title over the court and grows by their height, escaped', () => {
+    const court = courtSvg('zones', ZONES, [])
+    const svg = titledSvg(court, ['Alfa & Beta', '14/30 (46.7%)'])
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true)
+    for (const line of ['Alfa &amp; Beta', '14/30 (46.7%)']) expect(svg).toContain(`>${line}<`)
+    expect(svg).toContain('70%')                                                         // the court is inside
+    const inner = svgSize(court)!, outer = svgSize(svg)!
+    expect(outer.width).toBe(inner.width)
+    expect(outer.height).toBeGreaterThan(inner.height)
   })
 })
 
