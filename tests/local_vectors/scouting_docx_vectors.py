@@ -9,7 +9,9 @@ import random
 from pathlib import Path
 from typing import Any, Dict, List
 
+from src.services._scouting_formatters import prep_player_for_radar
 from src.services.scouting_docx_tables import ADVANCED, AVERAGES, player_tables
+from src.visualization.radar_chart import RadarChart
 
 HERE = Path(__file__).resolve().parent
 KEYS = [c[1] for c in AVERAGES + ADVANCED]
@@ -30,9 +32,20 @@ def _awkward() -> List[Dict[str, Any]]:
     return players
 
 
+def _radar(players: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """What the server draws in the radar of each player: the normalised value of every metric and the league average, as ``IndividualScoutingDocxBuilder._add_radar_chart`` asks the real chart for them."""
+    chart = RadarChart(figsize=(8, 6))
+    league = [chart.calculate_metrics_from_stats(prep_player_for_radar(p)) for p in players]
+    out = []
+    for player in players:
+        values, averages = chart.normalize_values(chart.calculate_metrics_from_stats(prep_player_for_radar(player)), league)
+        out.append({"values": [float(v) for v in values], "averages": [float(v) for v in averages]})
+    return out
+
+
 def build() -> Dict[str, Any]:
     sample = json.loads((HERE / "players_feb.json").read_text(encoding="utf-8"))["cases"][0]["players"]
     leagues = []
     for name, players in (("sample", sample), ("awkward", _awkward())):
-        leagues.append({"name": name, "players": players, "expected": [player_tables(p, players) for p in players]})
+        leagues.append({"name": name, "players": players, "expected": [player_tables(p, players) for p in players], "radar": _radar(players)})
     return {"leagues": leagues}

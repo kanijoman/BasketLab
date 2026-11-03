@@ -121,12 +121,17 @@ function sizeOf(image: { data: Uint8Array; type: 'png' | 'jpg' }): { width: numb
   return null
 }
 
+/** The charts of a player, as PNG bytes: the heatmap and the zones of his shots (none when he has no shots) and his radar. */
+export interface PlayerCharts { heatmap?: Uint8Array; zones?: Uint8Array; radar?: Uint8Array }
+
 export interface ScoutingDocxInput {
   /** Everyone of the competition (the colours are measured against all of them); the page of each player of `teamName` is made. */
   players: PlayerStat[]
   teamName: string
   /** The crest, the photos and the identity of the team (`images/` of the publication); `null` for a competition that has none (an older season, FBCYL). */
   images: TeamImages | null
+  /** The charts of each player by `player_id`; a page has the sections of the charts it has. */
+  charts?: Record<string, PlayerCharts>
   today: Date
   /** `dd/mm/yyyy`, as the header prints it. */
   date: string
@@ -145,10 +150,10 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
   const noBorders = { top: none, bottom: none, left: none, right: none }
   const logo = bytesOf(input.images?.logo)
 
-  const picture = (image: NonNullable<ReturnType<typeof bytesOf>>, heightInches: number) => {
+  const picture = (image: NonNullable<ReturnType<typeof bytesOf>>, o: { height?: number; width?: number }) => {      // inches
     const size = sizeOf(image) ?? { width: 1, height: 1 }
-    const height = Math.round(heightInches * 96)
-    return new ImageRun({ type: image.type, data: image.data, transformation: { width: Math.max(1, Math.round((height * size.width) / size.height)), height }, altText: { title: 'imagen', description: 'imagen', name: 'imagen' } })
+    const [width, height] = o.width ? [Math.round(o.width * 96), Math.round((o.width * 96 * size.height) / size.width)] : [Math.round(((o.height ?? 1) * 96 * size.width) / size.height), Math.round((o.height ?? 1) * 96)]
+    return new ImageRun({ type: image.type, data: image.data, transformation: { width: Math.max(1, width), height: Math.max(1, height) }, altText: { title: 'imagen', description: 'imagen', name: 'imagen' } })
   }
   const paragraph = (text: string, size: number, o: { bold?: boolean; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; color?: string } = {}) =>
     new Paragraph({ alignment: o.align, children: [new TextRun({ text, bold: o.bold, size, color: o.color })] })
@@ -157,7 +162,7 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
   const header = () => new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [new TableRow({ children: [
-      new TableCell({ borders, verticalAlign: VerticalAlign.CENTER, children: [logo ? new Paragraph({ alignment: AlignmentType.CENTER, children: [picture(logo, 0.6)] }) : paragraph(input.teamName, 22)] }),
+      new TableCell({ borders, verticalAlign: VerticalAlign.CENTER, children: [logo ? new Paragraph({ alignment: AlignmentType.CENTER, children: [picture(logo, { height: 0.6 })] }) : paragraph(input.teamName, 22)] }),
       new TableCell({ borders, children: [
         paragraph(`Scouting Individual — ${input.teamName}`, 24, { bold: true, align: AlignmentType.RIGHT, color: '1A1A4E' }),
         paragraph(input.date, 18, { align: AlignmentType.RIGHT }),
@@ -177,7 +182,7 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
           new Paragraph({ children: [new TextRun({ text: `#${extra?.no ?? ''}  ${player.player_name ?? '—'}`, bold: true, size: 28 })] }),
           fact('Nac.', extra?.birth_date || BLANK), fact('Edad', age === null ? BLANK : `${age} años`), fact('Altura', extra?.height || BLANK), fact('Posición', BLANK),
         ] }),
-        new TableCell({ borders: noBorders, verticalAlign: VerticalAlign.CENTER, children: [photo ? new Paragraph({ alignment: AlignmentType.CENTER, children: [picture(photo, 1.3)] }) : paragraph('[FOTO]', 20)] }),
+        new TableCell({ borders: noBorders, verticalAlign: VerticalAlign.CENTER, children: [photo ? new Paragraph({ alignment: AlignmentType.CENTER, children: [picture(photo, { height: 1.3 })] }) : paragraph('[FOTO]', 20)] }),
       ] })],
     })
   }
@@ -195,6 +200,22 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
     ],
   })
 
+  const png = (bytes: Uint8Array) => ({ data: bytes, type: 'png' as const })
+  const charts = (player: PlayerStat): Array<InstanceType<typeof Paragraph> | InstanceType<typeof Table>> => {
+    const mine = input.charts?.[String(player.player_id)]
+    if (!mine) return []
+    const out: Array<InstanceType<typeof Paragraph> | InstanceType<typeof Table>> = []
+    if (mine.heatmap || mine.zones) {
+      const cell = (bytes?: Uint8Array) => new TableCell({ borders: noBorders, verticalAlign: VerticalAlign.CENTER, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: bytes ? [picture(png(bytes), { height: 2.5 })] : [] })] })
+      out.push(heading('3. Perfil de Lanzamiento'), new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [cell(mine.heatmap), cell(mine.zones)] })] }))
+    }
+    if (mine.radar) {
+      out.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: true, children: [new TextRun({ text: '4. Perfil de Juego' })] }),
+        new Paragraph({ alignment: AlignmentType.CENTER, children: [picture(png(mine.radar), { width: 5.5 })] }))
+    }
+    return out
+  }
+
   const page = (player: PlayerStat): Array<InstanceType<typeof Paragraph> | InstanceType<typeof Table>> => {
     const t = playerTables(player, input.players)
     const widths = [0.7, 1.5, 0.8, 2.0, 2.0, 2.0, 0.7, 0.7, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8].map(cm => Math.round(cm * CM))        // PJ MIN PTS TL T2 T3 RO RD RT AST ROB BP TAP FP VAL
@@ -204,6 +225,7 @@ export async function scoutingDocx(input: ScoutingDocxInput): Promise<Blob> {
       paragraph('Promedios por partido:', 20, { bold: true }), statsTable(t.averages.headers, t.averages.cells),
       paragraph('Totales acumulados:', 20, { bold: true }), statsTable(t.totals.headers, t.totals.cells.map(text => ({ text, fill: null })), { widths }),
       heading('2. Estadística Avanzada'), statsTable(t.advanced.headers, t.advanced.cells),
+      ...charts(player),
       heading('5. Notas del cuerpo técnico'), ...Array.from({ length: 6 }, () => new Paragraph({ children: [new TextRun({ text: FILL_NOTES })] })),
     ]
   }

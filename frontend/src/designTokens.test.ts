@@ -60,7 +60,7 @@ describe('colours of the web (issue #188)', () => {
   it('keeps the colours of the paper equal to the tokens of the light theme', () => {
     const light = tokens.slice(tokens.indexOf(':root[data-theme="light"]'))
     const token = (name: string) => light.match(new RegExp(`${name}:\\s*(#[0-9a-fA-F]{6})`))?.[1]
-    const expected = { ink: '--text', muted: '--text-muted', line: '--line', surface: '--surface', surfaceRaised: '--surface-raised', ok: '--ok', bad: '--dev-bad', own: '--sev-info', conceded: '--pace-fast' }
+    const expected = { ink: '--text', muted: '--text-muted', line: '--line', surface: '--surface', surfaceRaised: '--surface-raised', ok: '--ok', bad: '--dev-bad', own: '--sev-info', conceded: '--pace-fast', warn: '--warn', faint: '--text-faint', onData: '--on-data', heatHot: '--chart-1', heatCool: '--chart-2' }
     for (const [name, css] of Object.entries(expected)) expect(PAPER[name as keyof typeof PAPER], name).toBe(token(css))
   })
 

@@ -59,6 +59,19 @@ describe('the document', () => {
     expect(xml).toContain(players[0].team_name)
   })
 
+  it('holds the charts of a player where he has them: the shooting profile (heatmap and zones) and the radar, each under its heading, and none where he has none', async () => {
+    const png = Uint8Array.from(atob(PNG.split(',')[1]), c => c.charCodeAt(0))
+    const charts = { [String(team[0].player_id)]: { heatmap: png, zones: png, radar: png }, [String(team[1].player_id)]: { radar: png } }
+    const { xml, media } = await parts(await scoutingDocx({ players, teamName: players[0].team_name, images: null, charts, today: new Date('2026-03-05T12:00:00'), date: '05/03/2026' }))
+    expect((xml.match(/3\. Perfil de Lanzamiento/g) ?? []).length).toBe(1)                // the player with no shots has no profile section
+    expect((xml.match(/4\. Perfil de Juego/g) ?? []).length).toBe(2)
+    expect((xml.match(/<w:pageBreakBefore/g) ?? []).length).toBe(2)                        // the radar starts a page, as it always did
+    expect(media.length).toBeGreaterThanOrEqual(1)
+    expect((xml.match(/<w:drawing>/g) ?? []).length).toBe(4)
+    expect(xml.indexOf('3. Perfil de Lanzamiento')).toBeLessThan(xml.indexOf('4. Perfil de Juego'))
+    expect(xml.indexOf('4. Perfil de Juego')).toBeLessThan(xml.indexOf('5. Notas del cuerpo técnico'))
+  })
+
   it('has nothing to say for a team without players', async () => {
     await expect(scoutingDocx({ players, teamName: 'NO EXISTE', images: null, today: new Date(), date: '' })).rejects.toThrow(/jugadores/)
   })

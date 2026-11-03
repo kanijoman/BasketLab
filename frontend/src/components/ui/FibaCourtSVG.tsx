@@ -15,7 +15,7 @@
  */
 import { useMemo, type RefObject } from 'react'
 import type { ShotZoneData, ShotRawData } from '@/api/client'
-import { useChartTheme } from '@/lib/chartTheme'
+import { useChartTheme, type ChartTheme } from '@/lib/chartTheme'
 import { RATING_LABEL, ratingColor, zoneColours } from '@/lib/zoneRating'
 
 // ---------------------------------------------------------------------------
@@ -82,6 +82,8 @@ interface Props {
   vizMode?: 'zones' | 'scatter' | 'heatmap'
   /** Individual shot records used for scatter / heatmap modes. */
   rawShots?: ShotRawData[]
+  /** The colours to draw with instead of the theme in use (the DOCX is printed on white paper whatever the screen shows, issue #717). */
+  theme?: ChartTheme
 }
 
 const LINE_W = 2
@@ -95,9 +97,11 @@ export default function FibaCourtSVG({
   svgRef,
   vizMode = 'zones',
   rawShots,
+  theme: given,
 }: Props) {
   // Every colour is a token of the theme in use (issue #196): the court is the page's, light or dark, and an export copies what is drawn
-  const theme = useChartTheme()
+  const screenTheme = useChartTheme()
+  const theme = given ?? screenTheme
   const line = theme.axis
   const [heatHot, heatCool] = [theme.series[0], theme.series[1]]
   // Normalise zone data keyed by zone id
