@@ -64,6 +64,46 @@ class TestLoad:
         assert entry["group_value"] == "90060"
 
 
+def _fbcyl(**over):
+    base = {"league": "fbcyl", "competition": "1ª FASE-GRUPO A-1", "season_label": "2026", "season_value": "2026",
+            "fbcyl": {"competition_id": "7298", "category": "1129", "gender": "F", "territory": "1"}}
+    return {**base, **over}
+
+
+class TestFbcyl:
+    """FBCYL competitions are listed in the catalogue too: which groups to scrape is said here (issue #724); they have no packages, calendar or recorder."""
+
+    def test_a_valid_fbcyl_entry_loads_without_a_url_or_groups(self, tmp_path):
+        [entry] = load_catalogue(_write(tmp_path, _fbcyl()))
+        assert entry["league"] == "fbcyl" and entry["fbcyl"]["competition_id"] == "7298" and entry["active"] is True
+
+    @pytest.mark.parametrize("bad, message", [
+        ({"fbcyl": {"category": "1129"}}, "competition_id"),
+        ({"fbcyl": {"competition_id": "7298"}}, "category"),
+        ({"fbcyl": "7298"}, "fbcyl"),
+        ({"league": "other"}, "league"),
+    ])
+    def test_a_bad_fbcyl_entry_names_its_position_and_the_field(self, tmp_path, bad, message):
+        with pytest.raises(ValueError, match=rf"#1.*{message}"):
+            load_catalogue(_write(tmp_path, _fbcyl(**bad)))
+
+    def test_two_groups_of_the_same_season_are_two_entries_and_the_same_group_twice_is_not(self, tmp_path):
+        other = _fbcyl(competition="1ª FASE-GRUPO A-2", fbcyl={"competition_id": "7299", "category": "1129", "gender": "F", "territory": "1"})
+        assert len(load_catalogue(_write(tmp_path, _fbcyl(), other))) == 2
+        with pytest.raises(ValueError, match="twice"):
+            load_catalogue(_write(tmp_path, _fbcyl(), _fbcyl()))
+
+    def test_the_refresh_scrapes_them_and_the_packages_and_the_recorder_ignore_them(self, tmp_path):
+        catalogue = load_catalogue(_write(tmp_path, _entry(record=["a"]), _fbcyl()))
+        refresh = refresh_entries(catalogue)
+        assert [e.league for e in refresh] == ["feb", "fbcyl"]
+        assert refresh[1].fbcyl == {"competition_id": "7298", "category": "1129", "gender": "F", "territory": "1"}
+        assert (refresh[1].competition_label, refresh[1].season_value) == ("1ª FASE-GRUPO A-1", "2026")
+        assert [e.competition_label for e in package_entries(catalogue)] == ["PRIMERA FEB"]
+        assert [c["competition"] for c in package_catalog(catalogue)] == ["PRIMERA FEB"]
+        assert record_calendars(catalogue) == ["a"]
+
+
 class TestViews:
     def test_the_refresh_takes_the_active_entries_with_what_the_scraper_needs(self, tmp_path):
         path = _write(tmp_path, _entry(), _entry(competition="LF ENDESA", competition_url=URL.replace("primerafeb", "lfendesa"), active=False))
@@ -108,16 +148,29 @@ class TestViews:
 class TestTheRealCatalogue:
     """What the repository's file says: it replaces the four files without changing what they made."""
 
-    def test_it_loads_and_every_competition_has_a_scrape_a_level_and_a_gender(self):
+    def test_it_loads_with_the_feb_competitions_complete_and_the_fbcyl_groups_to_scrape(self):
         catalogue = load_catalogue(ROOT / DEFAULT_CATALOGUE)
-        assert len(catalogue) == 8 and all(e["active"] for e in catalogue)
-        assert all(e["groups"] == "all" for e in catalogue)                       # every competition complete, 3a FEB included (the archive has no 512 MB limit)
-        assert all(e["recheck_days"] == 3 for e in catalogue)                     # the refresh of web-data looks again at the last days
+        feb = [e for e in catalogue if e["league"] == "feb"]
+        assert len(feb) == 8 and all(e["active"] for e in catalogue)
+        assert all(e["groups"] == "all" for e in feb)                             # every competition complete, 3a FEB included (the archive has no 512 MB limit)
+        assert all(e["recheck_days"] == 3 for e in feb)                           # the refresh of web-data looks again at the last days
+        assert all("packages_groups" not in e or e["packages_groups"] == [] for e in feb)     # and the packages of every group of 3a FEB too (decided 03/11/2026)
+
+    def test_the_fbcyl_groups_are_primera_nacional_femenina_a_1_and_a_2(self):
+        fbcyl = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "fbcyl"]
+        assert [(e["competition"], e["fbcyl"]["competition_id"]) for e in fbcyl] == [("1ª FASE-GRUPO A-1", "7298"), ("1ª FASE-GRUPO A-2", "7299")]
+        assert {(e["season_value"], e["fbcyl"]["category"], e["fbcyl"]["gender"], e["fbcyl"]["territory"]) for e in fbcyl} == {("2026", "1129", "F", "1")}
+
+    def test_the_collection_of_a_1_is_the_one_already_stored(self):
+        from src.database import get_collection_name
+
+        a1 = next(e for e in refresh_entries(load_catalogue(ROOT / DEFAULT_CATALOGUE)) if e.league == "fbcyl")
+        assert get_collection_name(f"FBCYL_{a1.competition_label}", a1.season_value, "") == "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
 
     def test_the_old_atlas_refresh_has_no_competition_the_catalogue_lacks(self):
         from src.services.atlas_refresh import load_config
 
-        names = {e.competition_label for e in refresh_entries(load_catalogue(ROOT / DEFAULT_CATALOGUE))}
+        names = {e.competition_label for e in refresh_entries(load_catalogue(ROOT / DEFAULT_CATALOGUE))}   # the atlas file is only FEB
         assert {e.competition_label for e in load_config(ROOT / "config" / "atlas_refresh.json")} <= names
 
     def test_the_other_files_no_longer_hold_what_the_catalogue_says(self):

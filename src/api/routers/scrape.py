@@ -311,6 +311,10 @@ from src.services.feb_match_ingest import (  # noqa: E402 - shared with the Atla
     scrape_feb_collection,
     store_feb_match as _store_feb_match,
 )
+from src.services.fbcyl_match_ingest import (  # noqa: E402 - shared with the refresh job
+    scrape_fbcyl_collection,
+    store_fbcyl_match as _store_fbcyl_match,
+)
 
 
 def _run_feb_scrape(job_id: str, params: FEBScrapeParams) -> None:
@@ -326,70 +330,19 @@ def _run_feb_scrape(job_id: str, params: FEBScrapeParams) -> None:
         job["errors"].append(f"Fatal: {exc}")
 
 
-def _store_fbcyl_match(
-    job: Dict[str, Any],
-    db: Any,
-    scraper: Any,
-    collection_name: str,
-    uuid: str,
-    league_ctx: Dict[str, str],
-) -> None:
-    """Fetch and store a single FBCYL match; update job counters."""
-    job["current_match"] = uuid
-    try:
-        if db.document_exists(collection_name, uuid):
-            job["skipped"] += 1
-            return
-        doc = scraper.get_match_complete_data(uuid, league_ctx=league_ctx)
-        if doc:
-            db.insert_fbcyl_match(collection_name, uuid, doc)
-        else:
-            job["errors"].append(f"No data for match {uuid}")
-    except Exception as exc:
-        job["errors"].append(f"Match {uuid}: {exc}")
-    finally:
-        job["done"] += 1
-
-
 def _run_fbcyl_scrape(job_id: str, params: FBCYLScrapeParams) -> None:
     """Background task: download all FBCYL matches for the given selection."""
     job = SCRAPE_JOBS[job_id]
     job["status"] = "running"
 
     try:
-        from src.scraper.fbcyl_scraper import FBCYLWebScraper
-        from src.scraper.web_client import WebClient
-        from src.database import MongoDBHandler, get_collection_name
+        from src.database import MongoDBHandler
 
-        scraper = FBCYLWebScraper(WebClient())
-        db = MongoDBHandler()
-
-        collection_name = get_collection_name(
-            f"FBCYL_{params.competition_label}", params.season, "",
-        )
-        job["collection"] = collection_name
-
-        league_ctx: Dict[str, str] = {
-            "gender": params.gender,
-            "territory": params.territory,
-            "category": params.category,
-            "competition_id": params.competition_id,
-            "season": params.season,
-        }
-
-        job["status"] = "discovering"
-        match_uuids = scraper.get_matches(params.competition_id)
-        job["total"] = len(match_uuids)
-        job["status"] = "running"
-
-        for uuid in match_uuids:
-            _store_fbcyl_match(job, db, scraper, collection_name, uuid, league_ctx)
-            if job["done"] % 10 == 0:
-                gc.collect()
-
+        scrape_fbcyl_collection(MongoDBHandler(), params.model_dump(), job=job)
         job["status"] = "done"
         job["current_match"] = None
 
     except Exception as exc:
         job["status"] = "error"
         job["errors"].append(f"Fatal: {exc}")
+

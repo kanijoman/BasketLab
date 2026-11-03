@@ -40,6 +40,8 @@ class RefreshEntry:
     groups: str = ""
     group_filter: List[str] = field(default_factory=list)
     recheck_days: int = 0                                            # >0: stored games of the last N days are downloaded again and replaced if FEB corrected them (#646)
+    league: str = "feb"                                              # "fbcyl": a FBCYL group of the catalogue of competitions (#724): scraped by ``fbcyl_match_ingest``, no calendar to compare with
+    fbcyl: Dict[str, str] = field(default_factory=dict)              # its ``competition_id``, ``category``, ``gender`` and ``territory``
 
 
 def load_config(path: Any = DEFAULT_CONFIG) -> List[RefreshEntry]:
@@ -124,6 +126,8 @@ def ingested_collections(db: Optional[Any], entries: List[RefreshEntry]) -> List
     meta = db.repository.connection.get_collection("COLLECTION_META") if db is not None else None
     names: List[str] = []
     for entry in entries:
+        if entry.league == "fbcyl":
+            continue                                                 # live packages are FEB only
         if entry.groups != ALL_GROUPS:
             names.append(get_collection_name(entry.competition_label, entry.season_label, entry.group_label))
             continue
@@ -171,13 +175,31 @@ def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Ca
     return item
 
 
+def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any]) -> Dict[str, Any]:
+    """One FBCYL group: the matches not stored yet and the ``DERIVED`` of what came in. There is no calendar to compare with and the team index is of the FEB header."""
+    from src.services.fbcyl_match_ingest import scrape_fbcyl_collection
+
+    item: Dict[str, Any] = {"collection": f"{entry.competition_label}/{entry.season_label}", "league": "fbcyl", "fatal": None, "job": None, "freshness": None}
+    try:
+        params = {**entry.fbcyl, "season": entry.season_value, "competition_label": entry.competition_label}
+        job = scrape_fbcyl_collection(db, params, scraper)
+        item.update(collection=job["collection"], job=job)
+        _fill_derived(db, job["collection"])
+    except Exception as exc:  # noqa: BLE001 - one failing group must not block the others
+        item["fatal"] = f"{type(exc).__name__}: {exc}"
+    return item
+
+
 def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = None,
-                freshness: Optional[Callable[[str], Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+                freshness: Optional[Callable[[str], Dict[str, Any]]] = None, fbcyl_scraper: Optional[Any] = None) -> List[Dict[str, Any]]:
     from src.services.data_freshness_service import DataFreshnessService
 
     check = freshness or DataFreshnessService(db).check
     report = []
     for entry in entries:
+        if entry.league == "fbcyl":
+            report.append(_refresh_fbcyl(db, entry, fbcyl_scraper))
+            continue
         try:
             concrete = expand_entries([entry], scraper)
         except Exception as exc:  # noqa: BLE001 - a failed discovery is that competition's error only
@@ -201,8 +223,12 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
             continue
         job, fresh = r["job"], r["freshness"] or {}
         stored = job["done"] - job["skipped"] - len(job["errors"])
-        out.append(f"- Partidos en FEB: {job['total']} · nuevos guardados: {stored} · ya existentes o en juego: "
+        source = "FBCYL" if r.get("league") == "fbcyl" else "FEB"
+        out.append(f"- Partidos en {source}: {job['total']} · nuevos guardados: {stored} · ya existentes o en juego: "
                    f"{job['skipped']} · errores: {len(job['errors'])}")
+        if source == "FBCYL":
+            out.extend(f"  - {e}" for e in job["errors"][:10])
+            continue                                              # FBCYL has no calendar to compare with
         if job.get("rechecked"):
             out.append(f"- Revisados de nuevo (últimos días): {job['rechecked']} · corregidos: {job.get('corrected', 0)}")
         out.append(f"- En la base de datos: {fresh.get('games_in_db')} · último partido: {fresh.get('last_game')}")

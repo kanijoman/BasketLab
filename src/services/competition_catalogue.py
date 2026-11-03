@@ -1,6 +1,6 @@
 """The single catalogue of competitions (issue #724, step 2): ``config/competitions.json``.
 
-One entry per competition and season says everything about it: what the refresh scrapes (``competition_url``, ``season_*``, ``groups``, ``recheck_days``), what the packages
+One entry per competition and season (FEB, or a FBCYL group: ``"league": "fbcyl"`` with the ``fbcyl`` object the scraper needs) says everything about it: what the refresh scrapes (``competition_url``, ``season_*``, ``groups``, ``recheck_days``), what the packages
 know of it (``level``, ``gender``, ``clubs``, ``rule_config``, ``group_rules``, and ``packages_groups``: the groups of the competition that get packages) and which
 calendars the live recorder follows (``record``). Before it these lived in four files that drifted apart (``atlas_refresh.json``, ``local_refresh.json``, the ``competitions``
 of ``package_publish.json`` and the ``calendars`` of ``feb_watchlist.json``).
@@ -17,6 +17,8 @@ from typing import Any, Dict, List
 DEFAULT_CATALOGUE = "config/competitions.json"
 ALL_GROUPS = "all"
 _REQUIRED = ("competition", "competition_url", "season_label", "season_value")
+_REQUIRED_FBCYL = ("competition", "season_label", "season_value")
+LEAGUES = ("feb", "fbcyl")
 
 
 def _norm(name: str) -> str:
@@ -25,19 +27,38 @@ def _norm(name: str) -> str:
     return normalize_name(name)
 
 
+def _check_fbcyl(where: str, value: Any) -> None:
+    """The ``fbcyl`` object of a FBCYL entry: the group (``competition_id``) and the ``category`` the scraper needs; ``gender`` and ``territory`` are texts too."""
+    if not isinstance(value, dict):
+        raise ValueError(f"{where}: fbcyl must be an object with competition_id and category")
+    for key in ("competition_id", "category"):
+        if not isinstance(value.get(key), str) or not value[key].strip():
+            raise ValueError(f"{where}: fbcyl lacks: {key}")
+    for key in ("gender", "territory"):
+        if key in value and not isinstance(value[key], str):
+            raise ValueError(f"{where}: fbcyl.{key} must be a text")
+
+
 def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     """One entry, validated: ``ValueError`` names its position and the field."""
     where = f"competitions entry #{position}"
-    missing = [k for k in _REQUIRED if not isinstance(raw.get(k), str) or not raw[k].strip()]
+    league = raw.get("league", "feb")
+    if league not in LEAGUES:
+        raise ValueError(f"{where}: league must be one of {LEAGUES}, not {league!r}")
+    missing = [k for k in (_REQUIRED if league == "feb" else _REQUIRED_FBCYL) if not isinstance(raw.get(k), str) or not raw[k].strip()]
     if missing:
         raise ValueError(f"{where} lacks: {', '.join(missing)}")
     groups = raw.get("groups", "")
-    if groups not in ("", ALL_GROUPS):
-        raise ValueError(f"{where}: groups must be \"{ALL_GROUPS}\" or absent, not {groups!r}")
-    if groups == ALL_GROUPS and (raw.get("group_value") or raw.get("group_label")):
-        raise ValueError(f"{where}: groups \"{ALL_GROUPS}\" excludes group_value and group_label")
-    if groups != ALL_GROUPS and not (raw.get("group_value") and raw.get("group_label")):
-        raise ValueError(f"{where}: a single group needs group_value and group_label")
+    if league == "fbcyl":
+        groups = ""
+        _check_fbcyl(where, raw.get("fbcyl"))
+    else:
+        if groups not in ("", ALL_GROUPS):
+            raise ValueError(f"{where}: groups must be \"{ALL_GROUPS}\" or absent, not {groups!r}")
+        if groups == ALL_GROUPS and (raw.get("group_value") or raw.get("group_label")):
+            raise ValueError(f"{where}: groups \"{ALL_GROUPS}\" excludes group_value and group_label")
+        if groups != ALL_GROUPS and not (raw.get("group_value") and raw.get("group_label")):
+            raise ValueError(f"{where}: a single group needs group_value and group_label")
     active = raw.get("active", True)
     if not isinstance(active, bool):
         raise ValueError(f"{where}: active must be true or false, not {active!r}")
@@ -47,7 +68,7 @@ def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     for key in ("record", "packages_groups"):
         if not isinstance(raw.get(key, []), list) or any(not isinstance(v, str) for v in raw.get(key, [])):
             raise ValueError(f"{where}: {key} must be a list of texts")
-    return {**raw, "groups": groups, "active": active, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
+    return {**raw, "league": league, "groups": groups, "active": active, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
 
 
 def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
@@ -59,7 +80,7 @@ def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
     normalize_catalog(entries)
     seen = set()
     for i, e in enumerate(entries, start=1):
-        key = (_norm(e["competition"]), e["season_value"], e.get("group_value", ""))
+        key = (e["league"], _norm(e["competition"]), e["season_value"], e.get("group_value", "") or (e.get("fbcyl") or {}).get("competition_id", ""))
         if key in seen:
             raise ValueError(f"competitions entry #{i}: {e['competition']} {e['season_label']} is listed twice")
         seen.add(key)
@@ -75,14 +96,22 @@ def _refresh_entry(entry: Dict[str, Any], group_filter: List[str]) -> Any:
         group_filter=group_filter, recheck_days=entry["recheck_days"])
 
 
+def _fbcyl_entry(entry: Dict[str, Any]) -> Any:
+    from src.services.atlas_refresh import RefreshEntry
+
+    fbcyl = {"gender": "", "territory": "0", **entry["fbcyl"]}
+    return RefreshEntry(competition_url="", season_value=entry["season_value"], competition_label=entry["competition"], season_label=entry["season_label"],
+                        year=entry["season_value"], league="fbcyl", fbcyl=fbcyl)
+
+
 def refresh_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
-    """What the refresh scrapes: the active entries, every group of each competition."""
-    return [_refresh_entry(e, []) for e in catalogue if e["active"]]
+    """What the refresh scrapes: the active entries, every group of each FEB competition and the FBCYL groups listed."""
+    return [_fbcyl_entry(e) if e["league"] == "fbcyl" else _refresh_entry(e, []) for e in catalogue if e["active"]]
 
 
 def package_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
     """What the packages are made for: the active entries, narrowed to ``packages_groups`` (a competition scraped complete can publish only some of its groups)."""
-    return [_refresh_entry(e, list(e["packages_groups"])) for e in catalogue if e["active"]]
+    return [_refresh_entry(e, list(e["packages_groups"])) for e in catalogue if e["active"] and e["league"] == "feb"]
 
 
 def package_catalog(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -90,7 +119,7 @@ def package_catalog(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     from src.live_prep.competition_info import normalize_catalog
 
     chosen: Dict[str, Dict[str, Any]] = {}
-    for entry in catalogue:
+    for entry in (e for e in catalogue if e["league"] == "feb"):          # FBCYL has no packages
         key = _norm(entry["competition"])
         if key not in chosen or entry["active"] or not chosen[key]["active"]:
             chosen[key] = entry
@@ -99,4 +128,4 @@ def package_catalog(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def record_calendars(catalogue: List[Dict[str, Any]]) -> List[str]:
     """The calendars the live recorder scans: those of the active entries, in order, without repeats."""
-    return list(dict.fromkeys(url for e in catalogue if e["active"] for url in e["record"]))
+    return list(dict.fromkeys(url for e in catalogue if e["active"] and e["league"] == "feb" for url in e["record"]))

@@ -147,7 +147,7 @@ def test_recheck_days_is_validated_and_the_refresh_config_for_web_data_asks_for_
     with pytest.raises(ValueError, match="recheck_days"):
         load_config(bad)
     root = Path(__file__).resolve().parent.parent / "config"
-    assert all(e.recheck_days > 0 for e in load_config(root / "competitions.json"))      # the refresh of web-data looks again at the last days
+    assert all(e.recheck_days > 0 for e in load_config(root / "competitions.json") if e.league == "feb")      # the refresh of web-data looks again at the last days
     assert all(e.recheck_days == 0 for e in load_config(root / "atlas_refresh.json"))      # the production refresh is not changed
 
 

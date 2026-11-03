@@ -321,7 +321,7 @@ class TestSeniorCompetitions:
 
     def test_no_competition_is_listed_twice_in_a_config(self):
         for path in ("config/atlas_refresh.json", "config/competitions.json"):
-            seen = [(e.competition_url, e.group_value or "all") for e in load_config(path)]
+            seen = [(e.league, e.competition_url, e.group_value or "all", e.fbcyl.get("competition_id", "")) for e in load_config(path)]
             assert len(seen) == len(set(seen)), path
 
     def test_the_existing_collections_of_the_app_are_not_renamed(self):
@@ -377,3 +377,52 @@ class TestRefreshFillsDerived:
         db, _ = self._with_a_game_without_derived(feb_game_doc)
         report = refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=TestRefreshAll._freshness(None, []))
         assert report[0]["fatal"] is None
+
+
+class TestFbcylInTheRefresh:
+    """The refresh scrapes the FBCYL groups of the catalogue too (issue #724): no calendar to compare with, no team index, the DERIVED of its games filled."""
+
+    ENTRY = RefreshEntry(competition_url="", season_value="2026", competition_label="1ª FASE-GRUPO A-1", season_label="2026", year="2026", league="fbcyl",
+                         fbcyl={"competition_id": "7298", "category": "1129", "gender": "F", "territory": "1"})
+
+    def test_a_group_is_scraped_with_its_context_and_its_derived_filled_without_a_freshness_check(self):
+        from unittest.mock import MagicMock, patch
+
+        db, scraper = _db(), MagicMock()
+        scraper.get_matches.return_value = ["u1"]
+        scraper.get_match_complete_data.return_value = {"uuid": "u1"}
+        check = MagicMock()
+        with patch("src.services.atlas_refresh._fill_derived") as fill, patch("src.services.atlas_refresh._ensure_team_index") as index:
+            report = refresh_all(db, [self.ENTRY], fbcyl_scraper=scraper, freshness=check)
+        [item] = report
+        assert item["fatal"] is None and item["league"] == "fbcyl" and item["freshness"] is None
+        assert item["collection"] == "FBCYL_1ª_FASE-GRUPO_A-1_2026_" and item["job"]["total"] == 1
+        assert scraper.get_match_complete_data.call_args.kwargs["league_ctx"]["competition_id"] == "7298"
+        fill.assert_called_once()
+        index.assert_not_called()                                    # the team index is of the FEB header
+        check.assert_not_called()
+
+    def test_a_failing_group_is_its_own_error_and_the_others_go_on(self):
+        from unittest.mock import MagicMock
+
+        scraper = MagicMock()
+        scraper.get_matches.side_effect = RuntimeError("FBCYL no responde")
+        from src.services.atlas_refresh import needs_attention
+
+        report = refresh_all(_db(), [self.ENTRY, self.ENTRY], fbcyl_scraper=scraper, freshness=lambda c: {})
+        assert [r["fatal"] for r in report] == ["RuntimeError: FBCYL no responde"] * 2
+        assert needs_attention(report)
+
+    def test_the_markdown_does_not_claim_a_comparison_with_the_feb_calendar(self):
+        from unittest.mock import MagicMock
+
+        scraper = MagicMock()
+        scraper.get_matches.return_value = []
+        text = to_markdown(refresh_all(_db(), [self.ENTRY], fbcyl_scraper=scraper, freshness=lambda c: {}))
+        assert "FBCYL" in text and "calendario de FEB" not in text
+
+    def test_only_finds_a_group_by_its_name_and_the_publisher_never_takes_it(self):
+        from src.services.atlas_refresh import ingested_collections, only_competitions
+
+        assert only_competitions([self.ENTRY], ["1ª fase-grupo a-1"]) == [self.ENTRY]          # by its label, case and punctuation ignored
+        assert ingested_collections(_db(), [self.ENTRY]) == []       # live packages are FEB only
