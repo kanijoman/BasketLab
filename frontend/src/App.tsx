@@ -17,7 +17,7 @@
  *   /:collection/inout        → InOutPage
  *   /:collection/lineups      → LineupsPage
  *   /:collection/rotaciones   → RotacionesPage
- *   /admin                    → AdminPage (requires admin role)
+ *   /admin                    → redirects to / (the Administration page is gone, #724)
  *
  * AnimatePresence wraps routes for page transition animations.
  */
@@ -25,7 +25,6 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import { AuthProvider } from '@/context/AuthContext'
 import Layout from '@/components/Layout'
-import PrivateRoute from '@/components/PrivateRoute'
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 import HomePage from '@/pages/HomePage'
@@ -43,7 +42,6 @@ import ScoutingRivalPage from '@/pages/ScoutingRivalPage'
 import PossessionsPage from '@/pages/PossessionsPage'
 import PbpAnalysisPage from '@/pages/PbpAnalysisPage'
 import InOutPage from '@/pages/InOutPage'
-import AdminPage from '@/pages/AdminPage'
 import MatchAnalysisPage from '@/pages/MatchAnalysisPage'
 import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
 import RotacionesPage from '@/pages/RotacionesPage'
@@ -82,15 +80,8 @@ export default function App() {
               <Route path="rotaciones" element={<RotacionesPage />} />
             </Route>
 
-            {/* ── Admin ── */}
-            <Route
-              path="admin"
-              element={
-                <PrivateRoute requiredRole="admin">
-                  <AdminPage />
-                </PrivateRoute>
-              }
-            />
+            {/* The Administration page is gone (#724: the data is loaded by the scheduled refresh of the archive); its old address goes to the home */}
+            <Route path="admin" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </AnimatePresence>

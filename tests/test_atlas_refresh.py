@@ -55,10 +55,10 @@ class TestScrapeCollection:
         meta = db.repository.connection.get_collection.return_value.find_one({"_id": job_name(db)})
         assert meta is None or meta["competition_url"] == ENTRY["competition_url"]
 
-    def test_in_progress_detection_is_shared_with_the_api_router(self):
-        from src.api.routers import scrape
-
-        assert scrape._is_in_progress is is_in_progress and is_in_progress({"HEADER": {"status": "2"}})
+    def test_a_game_that_is_still_being_played_is_detected(self):
+        """The helper lived in the scrape router and was shared with it; the router is gone (#724) and the refresh is its only user."""
+        assert is_in_progress({"HEADER": {"status": "2"}}) and not is_in_progress({"HEADER": {"status": "3"}})
+        assert not is_in_progress({"HEADER": {}})                  # no status (older data): finished
 
 
 def job_name(db):

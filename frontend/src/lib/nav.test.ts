@@ -8,7 +8,7 @@ import { NAV_GROUPS, NAV_ITEMS } from './nav'
 describe('navigation of a collection (issue #191)', () => {
   const app = readFileSync(join(__dirname, '..', 'App.tsx'), 'utf8')
   // Pages taken out of the web (their code is kept): they redirect to the hub, so they are routes without an entry.
-  const RETIRED = ['predictive']
+  const RETIRED = ['predictive', 'admin']
   const allRoutes = [...app.matchAll(/<Route path="([a-z-]+)"\s+element/g)].map(m => m[1]).filter(p => p !== 'collection')
   const routes = allRoutes.filter(p => !RETIRED.includes(p))
 
@@ -25,6 +25,12 @@ describe('navigation of a collection (issue #191)', () => {
   it('the live package is made by the app, not by a page of the web: no live-prep route or entry (issue #667)', () => {
     expect(routes).not.toContain('live-prep')
     expect(NAV_ITEMS.map(i => i.subPath)).not.toContain('live-prep')
+  })
+
+  it('the Administration page is gone (issue #724): its address goes to the home, the page is not imported and the web asks the server for none of its writes', () => {
+    expect(app).not.toMatch(/import AdminPage/)
+    expect(app).toMatch(/<Route\s+path="admin"\s+element=\{<Navigate to="\/" replace \/>\}/)
+    expect(app).not.toMatch(/PrivateRoute requiredRole/)
   })
 
   it('the predictive analysis is out of the web for now (the rework): no entry, no page, and its old address goes to the hub; its code is kept', () => {

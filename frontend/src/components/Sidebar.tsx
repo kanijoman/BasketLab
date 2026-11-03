@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Settings, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/Button'
 import { NAV_GROUPS, SUMMARY, type NavItem } from '@/lib/nav'
@@ -46,12 +46,6 @@ function NavList({ base, compact = false, onNavigate }: { base: string; compact?
           {group.items.map(link)}
         </div>
       ))}
-      <div className="space-y-0.5 border-t border-line pt-3">
-        <NavLink to="/admin" className={linkClass} title={compact ? 'Administración' : undefined} onClick={onNavigate}>
-          <Settings className="h-4 w-4 shrink-0" />
-          {!compact && <span className="truncate">Administración</span>}
-        </NavLink>
-      </div>
     </nav>
   )
 }

@@ -61,10 +61,12 @@ describe('HomePage on the base components (issue #666)', () => {
     await waitFor(() => expect(api.getCollectionList).toHaveBeenCalledTimes(2))
   })
 
-  it('an empty database sends to the administration', async () => {
+  it('an empty database says the data comes from the scheduled refresh and links to no administration', async () => {
     api.getCollectionList.mockResolvedValue([])
     renderPage()
     expect(await screen.findByText('Base de datos vacía')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ir a Administración' })).toHaveAttribute('href', '/admin')
+    expect(screen.getByText(/refresco programado/i)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Administra/ })).toBeNull()
+    expect(document.querySelector('a[href="/admin"]')).toBeNull()
   })
 })

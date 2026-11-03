@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Clock, ChevronRight, Database, Settings, RefreshCw } from 'lucide-react'
+import { Clock, ChevronRight, Database, RefreshCw } from 'lucide-react'
 import { getCollectionList, type CollectionInfo } from '@/api/client'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
@@ -218,14 +218,6 @@ export default function HomePage() {
               </div>
               <div className="flex items-center gap-3">
                 <IconButton icon={RefreshCw} size="sm" label="Actualizar lista" onClick={() => refetch()} />
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-1 text-xs text-ink-faint
-                             hover:text-ink transition-colors"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  Administrar
-                </Link>
               </div>
             </div>
 
@@ -250,12 +242,9 @@ export default function HomePage() {
                 <div>
                   <p className="text-sm font-medium text-ink">Base de datos vacía</p>
                   <p className="text-xs text-ink-muted mt-1">
-                    Descarga una competición desde el panel de administración.
+                    Los datos los carga el refresco programado del archivo; aún no ha publicado ninguna competición.
                   </p>
                 </div>
-                <Link to="/admin" className="btn-primary text-sm px-4 py-2">
-                  Ir a Administración
-                </Link>
               </div>
             )}
 

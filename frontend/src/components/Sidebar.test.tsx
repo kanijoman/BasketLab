@@ -17,7 +17,8 @@ describe('Sidebar (issue #191)', () => {
     for (const group of ['Equipos', 'Jugadores', 'Partido', 'Live', 'Informes']) {
       expect(within(nav).getByRole('heading', { name: group })).toBeInTheDocument()
     }
-    expect(within(nav).getAllByRole('link')).toHaveLength(NAV_ITEMS.length + 1)           // + Administración
+    expect(within(nav).getAllByRole('link')).toHaveLength(NAV_ITEMS.length)                  // the Administration page is gone: the data is loaded by the scheduled refresh
+    expect(within(nav).queryByRole('link', { name: 'Administración' })).toBeNull()
     expect(within(nav).getByRole('link', { name: 'Equipo' })).toHaveAttribute('href', '/LF2/teams')
     expect(within(nav).getByRole('link', { name: 'Resumen' })).toHaveAttribute('href', '/LF2')
     expect(within(nav).getByRole('link', { name: 'Equipo' })).toHaveAttribute('aria-current', 'page')

@@ -73,7 +73,7 @@ Antes de dar una entrega por terminada y del commit/PR, revisa y **actualiza** (
 
 ## Arquitectura (resumen; detalle en ARCHITECTURE)
 - **UI → API → Servicio → Repositorio → MongoDB.** El frontend nunca toca la BD. Consultas complejas = aggregation pipelines (no filtrar en Python).
-- Backend `src/api` (FastAPI :8000, `run_api.py`) + servicio scraper aparte (`src/api/scraper_app.py`, `run_scraper.py`). Frontend `frontend/` (Vite :5173).
+- Backend `src/api` (FastAPI :8000, `run_api.py`; **sin escrituras desde la web desde #724**: los datos los carga el refresco programado del archivo y se retiran con la purga). Frontend `frontend/` (Vite :5173).
 - Visualización: matplotlib → PNG bytes por la API. Sync `pymongo` (decisión tomada).
 
 ## Patrones obligatorios
@@ -114,7 +114,6 @@ MongoDB (no SQL) · aggregation pipelines (no ORM) · fpdf2 + python-docx · mat
 ## Comandos
 ```bash
 python run_api.py                    # API :8000 (BASKETLAB_DEV=1 → reload)
-python run_scraper.py                # servicio scraper
 cd frontend && npm run dev           # Vite :5173
 pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite completa la corre el CI (en paralelo: python -m pytest -n auto)
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build

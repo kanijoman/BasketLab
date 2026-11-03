@@ -236,16 +236,6 @@ jobs:
           fi
           curl -fsSL -X POST "$HOOK"
 
-      - name: Trigger Render deploy hook (scraper)
-        env:
-          HOOK: ${{ secrets.RENDER_SCRAPER_DEPLOY_HOOK_URL }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_SCRAPER_DEPLOY_HOOK_URL secret not set: skipping the basketlab-scraper deploy"
-            exit 0
-          fi
-          curl -fsSL -X POST "$HOOK"
-
       # The hook is asynchronous: wait until the API serves THIS commit and its database is connected.
       # Needs the repository variable RENDER_API_URL (public URL of basketlab-api); skipped without it.
       - uses: actions/checkout@v7

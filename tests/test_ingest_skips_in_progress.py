@@ -9,7 +9,7 @@ FEB marks finished matches with ``HEADER.status == '3'`` (``FINISHED``).
 import pytest
 from unittest.mock import MagicMock
 
-from src.api.routers.scrape import _store_feb_match
+from src.services.feb_match_ingest import store_feb_match as _store_feb_match
 
 
 def _job():

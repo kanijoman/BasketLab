@@ -126,18 +126,15 @@ class TestCollectionMetaAtScrapeTime:
         assert docs[0]["competition_url"].endswith("/lf2/9/2025") and docs[0]["group_value"] == "1"
         assert docs[0]["league"] == "FEB" and "saved_at" in docs[0]
 
-    def test_the_feb_scrape_job_saves_the_metadata(self):
-        from src.api.routers import scrape
+    def test_the_feb_scrape_saves_the_metadata(self):
+        from src.services.feb_match_ingest import scrape_feb_collection
 
         scraper = MagicMock()
         scraper.get_page_content.return_value = (None, MagicMock())
         scraper.get_matches.return_value = []
-        db = MagicMock()
-        params = scrape.FEBScrapeParams(competition_url="https://x/calendario/lf2/9/2025", season_value="5", group_value="1",
-                                        year="2025", competition_label="LF2", season_label="LF2 2025", group_label="A")
-        scrape.SCRAPE_JOBS["job1"] = {"status": "queued", "errors": [], "done": 0, "skipped": 0, "total": 0}
-        with patch("src.scraper.FEBWebScraper", return_value=scraper), patch("src.database.MongoDBHandler", return_value=db), \
-                patch("src.services.collection_meta.save_feb_meta") as save:
-            scrape._run_feb_scrape("job1", params)
+        params = MagicMock(competition_url="https://x/calendario/lf2/9/2025", season_value="5", group_value="1", year="2025", competition_label="LF2",
+                           season_label="LF2 2025", group_label="A", recheck_days=0)
+        with patch("src.services.collection_meta.save_feb_meta") as save:
+            scrape_feb_collection(MagicMock(), params, scraper)
         save.assert_called_once()
         assert save.call_args[0][2] is params

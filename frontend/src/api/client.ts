@@ -6,7 +6,6 @@
  * In production set VITE_API_BASE to the FastAPI server URL.
  */
 
-import { adminHeaders } from '@/lib/adminKey'
 import type { ZoneRating } from '@/lib/zoneRating'
 import { loadReportTeams } from '@/webdata/client'
 import { localCollectionList, localRivalAdjusted, localPlayerConsistency, localPlayerQuartiles, localTeamEvolution, localCompetitionEvolution, localPossessionCsv, localPossessionStats, localTeamConsistency, localMatchAnalysis, localInOut, localLineups, localMatchList, localRotation, localShotRaw, localShotZones, localMultiPlayerStats, localMultiTeamStats, localPlayerStats, localSiblingCollections, localTeamComparison, localTeamNames, localTeamStats } from '@/localdata/source'
@@ -18,7 +17,6 @@ export const API_BASE = BASE
 
 // Separate service for scraping — lighter Render instance with no ML deps loaded.
 // Falls back to the main API base so local dev works with a single backend.
-const SCRAPER_BASE = (import.meta.env.VITE_SCRAPER_BASE ?? import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 
 function _fmtDetail(detail: unknown, status: number): string {
   if (Array.isArray(detail))
@@ -30,28 +28,6 @@ function _fmtDetail(detail: unknown, status: number): string {
       .join('; ')
   if (typeof detail === 'string') return detail
   return `HTTP ${status}`
-}
-
-async function scrapeGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${SCRAPER_BASE}${path}`)
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(_fmtDetail((body as { detail?: unknown }).detail, res.status))
-  }
-  return res.json() as Promise<T>
-}
-
-async function scrapePost<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${SCRAPER_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...adminHeaders() },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const b = await res.json().catch(() => ({}))
-    throw new Error(_fmtDetail((b as { detail?: unknown }).detail, res.status))
-  }
-  return res.json() as Promise<T>
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -973,92 +949,6 @@ export interface CollectionInfo {
 export const getCollectionList = () =>
   fromSource('collections', () => localCollectionList(), () => get<CollectionInfo[]>('/collections/list'))
 
-export const deleteCollection = (name: string) =>
-  fetch(`${BASE}/collections/${encodeURIComponent(name)}`, { method: 'DELETE', headers: adminHeaders() })
-    .then(res => {
-      if (!res.ok) return res.json().then(b => Promise.reject(new Error(b.detail ?? `HTTP ${res.status}`)))
-    })
-
-// ── Scraping discovery ────────────────────────────────────────────────────────
-
-export interface DropdownOption {
-  text: string
-  value: string
-}
-
-export interface FbcylInitData {
-  seasons: DropdownOption[]
-  genders: DropdownOption[]
-  territories: DropdownOption[]
-}
-
-export const getFebCompetitions = () =>
-  scrapeGet<{ name: string; results_url: string }[]>('/scrape/feb/competitions')
-
-export const getFebSeasons = (url: string, year = '2025') =>
-  scrapeGet<DropdownOption[]>(`/scrape/feb/seasons?url=${encodeURIComponent(url)}&year=${year}`)
-
-export const getFebGroups = (url: string, season: string, year = '2025') =>
-  scrapeGet<DropdownOption[]>(
-    `/scrape/feb/groups?url=${encodeURIComponent(url)}&season=${encodeURIComponent(season)}&year=${year}`,
-  )
-
-export const getFbcylInit = () =>
-  scrapeGet<FbcylInitData>('/scrape/fbcyl/init')
-
-export const getFbcylCategories = (season: string, gender = '', territory = '0') =>
-  scrapeGet<DropdownOption[]>(
-    `/scrape/fbcyl/categories?season=${encodeURIComponent(season)}&gender=${encodeURIComponent(gender)}&territory=${encodeURIComponent(territory)}`,
-  )
-
-export const getFbcylCompetitions = (category: string, gender = '', territory = '0') =>
-  scrapeGet<DropdownOption[]>(
-    `/scrape/fbcyl/competitions?category=${encodeURIComponent(category)}&gender=${encodeURIComponent(gender)}&territory=${encodeURIComponent(territory)}`,
-  )
-
-// ── Scraping jobs ─────────────────────────────────────────────────────────────
-
-export interface FEBScrapeParams {
-  competition_url: string
-  season_value: string
-  group_value: string
-  year?: string
-  competition_label: string
-  season_label: string
-  group_label: string
-}
-
-export interface FBCYLScrapeParams {
-  competition_id: string
-  season: string
-  gender?: string
-  territory?: string
-  category: string
-  competition_label: string
-}
-
-export interface ScrapeRequest {
-  league: 'FEB' | 'FBCYL'
-  feb?: FEBScrapeParams
-  fbcyl?: FBCYLScrapeParams
-}
-
-export interface ScrapeJob {
-  status: 'starting' | 'discovering' | 'running' | 'done' | 'error'
-  total: number
-  done: number
-  skipped: number
-  errors: string[]
-  current_match: string | null
-  collection: string | null
-}
-
-export const postScrapeStart = (req: ScrapeRequest) =>
-  scrapePost<{ job_id: string }>('/scrape/start', req)
-
-export const getScrapeProgress = (jobId: string) =>
-  scrapeGet<ScrapeJob>(`/scrape/progress/${encodeURIComponent(jobId)}`)
-
 // ── Reports (binary downloads) ────────────────────────────────────────────────
 
 export const getPlayerScoutingUrl = (collection: string, playerId: string) =>
@@ -1070,60 +960,7 @@ export const getTeamScoutingUrl = (collection: string, teamName: string) =>
 export const getSeasonSummaryUrl = (collection: string) =>
   `${BASE}/reports/${encodeURIComponent(collection)}/season-summary`
 
-// ── Historical ingestion ──────────────────────────────────────────────────────
-
-export interface FEBSeasonParams {
-  competition_url: string
-  season_value: string
-  group_value: string
-  year?: string
-  competition_label: string
-  season_label: string
-  group_label: string
-  normalized_season: string
-}
-
-export interface FBCYLHistoricalSeasonParams {
-  competition_id: string
-  season: string
-  gender?: string
-  territory?: string
-  category: string
-  competition_label: string
-  normalized_season: string
-}
-
-export interface HistoricalIngestRequest {
-  league: 'FEB' | 'FBCYL'
-  feb_seasons?: FEBSeasonParams[]
-  fbcyl_seasons?: FBCYLHistoricalSeasonParams[]
-}
-
-export interface HistoricalJob {
-  status: 'starting' | 'discovering' | 'running' | 'done' | 'error'
-  total: number
-  done: number
-  errors: string[]
-  current_season: string | null
-  current_match: string | null
-}
-
-export interface HistoricalSummaryEntry {
-  league: string
-  competition: string
-  season: string
-  group: string
-  match_count: number
-}
-
-export const postHistoricalIngest = (req: HistoricalIngestRequest) =>
-  post<{ job_id: string }>('/historical/ingest', req)
-
-export const getHistoricalProgress = (jobId: string) =>
-  get<HistoricalJob>(`/historical/progress/${encodeURIComponent(jobId)}`)
-
-export const getHistoricalSummary = () =>
-  get<HistoricalSummaryEntry[]>('/historical/summary')
+// ── Historical (read by the kept predictive code) ─────────────────────────────
 
 export const getHistoricalSeasons = () =>
   get<string[]>('/historical/seasons')
@@ -1137,21 +974,6 @@ export const getHistoricalTeams = (season?: string) =>
   get<HistoricalTeamEntry[]>(
     season ? `/historical/teams?season=${encodeURIComponent(season)}` : '/historical/teams'
   )
-
-export interface FEBCompetitionSeasonParam {
-  season_value: string
-  season_label: string
-}
-
-export interface FEBCompetitionIngestRequest {
-  competition_url: string
-  competition_label: string
-  year?: string
-  seasons: FEBCompetitionSeasonParam[]
-}
-
-export const postCompetitionIngest = (req: FEBCompetitionIngestRequest) =>
-  post<{ job_id: string }>('/historical/ingest_competition', req)
 
 // ── Análisis predictivo (FASE 2-5) ───────────────────────────────────────────
 
