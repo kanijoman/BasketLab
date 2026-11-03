@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi.testclient import TestClient
 
+from api_routes import api_operations, takes_the_admin_key
 from src.api.app import app
 from src.api.deps import get_db
 
@@ -90,21 +91,15 @@ PUBLIC_WRITE_ROUTES = {
 }
 
 
-def _has_admin_guard(route) -> bool:
-    from src.api.security import require_admin
-
-    return any(d.call is require_admin for d in route.dependant.dependencies)
-
-
 def test_every_write_route_is_protected_or_explicitly_public():
     """New POST/PUT/PATCH/DELETE endpoints must take ``Depends(require_admin)`` or be added
-    (consciously) to PUBLIC_WRITE_ROUTES above."""
-    unclassified = []
-    for route in app.routes:
-        methods = (getattr(route, "methods", None) or set()) - {"GET", "HEAD", "OPTIONS"}
-        if not methods or not hasattr(route, "dependant"):
-            continue
-        for m in methods:
-            if (m, route.path) not in PUBLIC_WRITE_ROUTES and not _has_admin_guard(route):
-                unclassified.append((m, route.path))
+    (consciously) to PUBLIC_WRITE_ROUTES above.
+
+    Read from the OpenAPI schema: a loop over ``app.routes`` finds nothing in the FastAPI of the CI (included routers are nested there) and the check passed without checking."""
+    operations = api_operations(app)
+    assert ("POST", "/api/v1/analysis/elasticity/train") in operations and takes_the_admin_key(operations[("POST", "/api/v1/analysis/elasticity/train")])   # it does see the guarded ones
+    unclassified = [
+        (method, path) for (method, path), operation in operations.items()
+        if method in {"POST", "PUT", "PATCH", "DELETE"} and (method, path) not in PUBLIC_WRITE_ROUTES and not takes_the_admin_key(operation)
+    ]
     assert unclassified == []

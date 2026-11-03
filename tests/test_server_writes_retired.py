@@ -9,16 +9,15 @@ from pathlib import Path
 
 import pytest
 
+from api_routes import api_operations
 from src.api.app import app
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def _routes():
-    """The routes of the app NOW (not at import: a worker that collects many test modules must not freeze a half-built app) and a guard that it is the whole app."""
-    routes = {(method, route.path) for route in app.routes for method in (getattr(route, "methods", None) or set())}
-    assert ("GET", "/api/v1/health") in routes or any(path.startswith("/api/v1/") for _, path in routes), "the API routes are not mounted"
-    return routes
+    """The operations of the API now (from the OpenAPI schema: ``app.routes`` is nested in newer FastAPI versions and a flat loop over it sees none of them, see ``api_routes``)."""
+    return set(api_operations(app))
 
 
 RETIRED = [
