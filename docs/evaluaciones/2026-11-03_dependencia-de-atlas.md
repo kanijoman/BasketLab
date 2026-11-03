@@ -47,21 +47,33 @@ Parte de la épica #326 (apagar Render, #334). Pregunta: ¿se puede dejar de usa
 | **Ejecuciones canceladas de `web-data`** | al separar el refresco de la publicación, el scrape (y el guardado del archivo) no depende de que la publicación larga llegue a correr |
 | **El viernes de la release de la app** | no migrar `live-packages` en semana de release sin medir una vuelta completa antes |
 
-## Plan propuesto (cada paso, un PR de la misma naturaleza)
+## Plan acordado (cada paso, un PR de la misma naturaleza)
 
 1. **Comprobación previa** (de solo lectura): recuento de partidos por colección en Atlas y en el archivo, y confirmar el camino de FBCYL. Si hay diferencias, se importan al archivo antes de seguir.
-2. **Refresco sin Atlas**: un job que restaura el archivo, scrapea con `local_refresh.json`, rellena `DERIVED` y guarda el archivo (lo que `web-data` ya hace), con cron propio.
-3. **`live-packages` y `rule-evaluation` leen del Mongo efímero**, con el patrón de `web-data`. Medir una vuelta completa antes de quitar la lectura de Atlas.
-4. **Quitar el respaldo de Atlas de `web-data`** y retirar `atlas-refresh.yml`, `config/atlas_refresh.json` y `run_atlas_refresh.py` con sus tests y docs.
-5. **Cierre**: copia final de Atlas, retirar los secretos `ATLAS_*` y la documentación (OPERATIONS, ARCHITECTURE, LIVE), y la API de Render con #334.
+2. **Catálogo único de competiciones** (`config/competitions.json`, decidido el 03/11/2026): una entrada por competición con el scrape (`competition_url`, `season_value`, `groups`, `recheck_days`), los paquetes y reglas (`level`, `gender`, `clubs`, `rule_config`, `group_rules`), lo que sigue el grabador y `active`. El refresco, `live-packages` y el grabador lo leen; `local_refresh.json` y `atlas_refresh.json` se derivan o desaparecen, y `feb_watchlist.json` y `package_publish.json` conservan solo lo que no es de competiciones (el club, el acceso, las claves). Un test falla si algo referencia una competición ausente del catálogo.
+3. **Refresco sin Atlas**: un job que restaura el archivo, scrapea las competiciones activas del catálogo, rellena `DERIVED` y guarda el archivo (lo que `web-data` ya hace), con cron propio.
+4. **`live-packages` y `rule-evaluation` leen del Mongo efímero**, con su propio paso corto (no colgados de `web-data`). Medir una vuelta completa antes de quitar la lectura de Atlas y no hacerlo en semana de release.
+5. **Quitar el respaldo de Atlas de `web-data`** y retirar `atlas-refresh.yml`, `config/atlas_refresh.json` y `run_atlas_refresh.py` con sus tests y docs.
+6. **Cierre**: copia final de Atlas, retirar los secretos `ATLAS_*` y la documentación (OPERATIONS, ARCHITECTURE, LIVE), y la API de Render con #334.
+
+## Ciclo de vida de una competición
+
+| Acción | Cómo | Efecto |
+|---|---|---|
+| **Añadir** | entrada en el catálogo por PR; primera carga pesada con *Run workflow* y `only`; demo con `demo_builder` (manual) | se scrapea, publica y graba |
+| **Pausar** | `active: false` | deja de scrapearse, publicarse y grabarse; los datos siguen en el archivo y en la web; reversible |
+| **Retirar de verdad (purga)** | orden aparte, con **confirmación explícita** (nombre de la competición), tras quitar la entrada | borra del archivo y de la publicación; es el único camino que reduce el archivo |
+| **Cambio de temporada** | entrada nueva y la anterior a `active: false` | las temporadas viejas ya se guardan ligeras |
+
+Retirar una entrada solo **pausa**: nunca borra datos por sí misma. La purga necesita un modo deliberado del archivo, porque hoy `--no-shrink` se niega a sustituirlo por uno con menos partidos (es la guarda que impide perder partidos por un fallo).
 
 ## Qué cambia en el uso diario
 
 - Refrescar datos deja de ser «scrapear contra Atlas»: se lanza el workflow o, en local, `run_archive.py pull` + `load` y el scraper contra el Mongo local.
-- Una competición nueva se añade a **una** configuración (`local_refresh.json`), no a dos.
+- Una competición nueva se añade a **una** configuración (el catálogo), no a cuatro ficheros.
 - Se pierde la consulta directa en el panel de Atlas; sustituye el Mongo local cargado desde el archivo.
 
 ## Decisiones que quedan para el autor
 
-- Si se acepta el plan y el orden (en particular dar a `live-packages` su propio paso en vez de colgarlo de `web-data`).
+- ~~Si se acepta el plan y el orden~~: aceptado el 03/11/2026, con `live-packages` en su propio paso, catálogo único y purga con confirmación.
 - Qué hacer con la copia final de Atlas (dónde se guarda) antes del paso 5.
