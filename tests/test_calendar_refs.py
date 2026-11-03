@@ -71,9 +71,9 @@ def test_one_group_failing_does_not_hide_the_others_when_reading_all(monkeypatch
 
 
 def test_the_watchlist_follows_the_teams_of_interest_in_their_groups_and_in_the_copa():
-    import json
+    from src.live_prep.recorder import load_watchlist
 
-    watch = json.loads(open("config/feb_watchlist.json", encoding="utf-8").read())
+    watch = load_watchlist("config/feb_watchlist.json")           # the teams of the file and the calendars of the catalogue of competitions (#724)
     refs = [split_calendar_ref(r) for r in watch["calendars"]]
     groups = {(url.split("nm=")[1], group) for url, _, group in refs}
     assert {("segundafeb", "89999"), ("segundafeb", "90000"), ("tercerafeb", "90060"), ("copaespaa", "all")} <= groups

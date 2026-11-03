@@ -3,7 +3,7 @@
 The incremental scrape skips every game it stores (``document_exists``), so a game that FEB corrects after the fact (a box score fixed the day after, a
 play-by-play completed) stayed wrong forever. A competition entry may ask (``recheck_days``) to download again the stored games whose date is inside that
 window and to REPLACE the ones that changed, by match code (never duplicating, never deleting: a failed or unfinished download keeps what is stored).
-Off by default: only the refresh that builds ``web-data`` (``config/local_refresh.json``) asks for it.
+Off by default: only the refresh that builds ``web-data`` (the catalogue of competitions, ``config/competitions.json``) asks for it.
 """
 import json
 from datetime import datetime
@@ -147,7 +147,7 @@ def test_recheck_days_is_validated_and_the_refresh_config_for_web_data_asks_for_
     with pytest.raises(ValueError, match="recheck_days"):
         load_config(bad)
     root = Path(__file__).resolve().parent.parent / "config"
-    assert all(e.recheck_days > 0 for e in load_config(root / "local_refresh.json"))      # the refresh of web-data looks again at the last days
+    assert all(e.recheck_days > 0 for e in load_config(root / "competitions.json"))      # the refresh of web-data looks again at the last days
     assert all(e.recheck_days == 0 for e in load_config(root / "atlas_refresh.json"))      # the production refresh is not changed
 
 

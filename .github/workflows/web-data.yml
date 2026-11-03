@@ -6,7 +6,7 @@ name: Web data
 # (sealing is random; a file never changes in place). The branch is rewritten with a single commit (no history growth) and only when something changed.
 #
 # Source of the games (issue #646): with the secret ARCHIVE_DEPLOY_KEY the job downloads the private archive (repository `basketlab-archive`),
-# restores it into an ephemeral Mongo (service container), scrapes what is new from FEB (`config/local_refresh.json`: every competition,
+# restores it into an ephemeral Mongo (service container), scrapes what is new from FEB (`config/competitions.json`: every competition,
 # 3a FEB complete), builds the artifacts from there and saves the archive back. Without the secret it reads Atlas as before.
 # Runs after each Atlas refresh and by hand. Needs ATLAS_READ_URI (ATLAS_WRITE_URI as fallback; only without the archive) and
 # PACKAGE_MASTER_KEY (or PACKAGE_PASSWORD, >= 8 characters). See docs/OPERATIONS.md.
@@ -24,7 +24,7 @@ on:
       - "src/local_data/**"
       - "src/live_prep/scouting_*.py"
       - "src/services/scouting_rival_service.py"
-      - "config/local_refresh.json"
+      - "config/competitions.json"
       - ".github/workflows/web-data.yml"
 
 permissions:
@@ -58,7 +58,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Validate the entry points (pull requests)
         if: github.event_name == 'pull_request'
-        run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.atlas_refresh import load_config; print(len(load_config('config/local_refresh.json')), 'competitions')"
+        run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions')"
       - name: Choose the source of the games
         id: source
         if: github.event_name != 'pull_request'
@@ -94,7 +94,7 @@ jobs:
         continue-on-error: true
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_atlas_refresh.py --config config/local_refresh.json --require-env
+        run: python run_atlas_refresh.py --config config/competitions.json --require-env
       - name: Fill DERIVED in the new games
         if: steps.restore.outcome == 'success'
         continue-on-error: true

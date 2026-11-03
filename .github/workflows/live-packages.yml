@@ -26,6 +26,7 @@ on:
       - "src/live_prep/package_sealing.py"
       - "src/services/match_schedule_service.py"
       - "config/package_publish.json"
+      - "config/competitions.json"
       - ".github/workflows/live-packages.yml"
 
 permissions:

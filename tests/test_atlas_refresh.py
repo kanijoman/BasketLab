@@ -248,7 +248,7 @@ class TestCompetitionWithPhases:
         from src.live_prep.publisher import _collections
 
         names = _collections()
-        assert names == ["TERCERA_FEB_2026_2027_Liga_Regular_A-B"]   # the phases of the other competitions need the database
+        assert names == []   # every competition is complete now (#724): its phases come from COLLECTION_META, which needs the database
 
     def test_the_copa_is_in_the_repository_config_as_one_competition(self):
         copa = [e for e in load_config("config/atlas_refresh.json") if "nm=copaespaa" in e.competition_url]
@@ -291,7 +291,7 @@ class TestSeniorCompetitions:
     """Every senior competition of the season is kept fresh (#456): the cloud (free plan, 512 MB) and the local database (no limit).
 
     ≈ 3.370 matches a season ≈ 0,13 MB each on disk: 3ª FEB alone has 10 subgroups and 1.768 matches, so Atlas keeps only 3ª FEB A-B
-    (the group of interest) and the other competitions complete; ``config/local_refresh.json`` has all of them.
+    (the group of interest) and the other competitions complete; the catalogue of competitions (``config/competitions.json``, #724) has all of them.
     """
 
     SENIOR = {"LF ENDESA": "nm=lfendesa", "PRIMERA FEB": "nm=primerafeb", "LF CHALLENGE": "nm=lfchallenge", "SEGUNDA FEB": "nm=segundafeb",
@@ -315,12 +315,12 @@ class TestSeniorCompetitions:
         assert [(e.group_label, e.groups) for e in tercera] == [('Liga Regular "A-B"', "")]
 
     def test_the_local_database_has_every_group_of_3a_feb_too(self):
-        local = self.by_competition("config/local_refresh.json")
+        local = self.by_competition("config/competitions.json")
         assert set(self.SENIOR) | {"TERCERA FEB"} <= set(local)
         assert [e.groups for e in local["TERCERA FEB"]] == ["all"]
 
     def test_no_competition_is_listed_twice_in_a_config(self):
-        for path in ("config/atlas_refresh.json", "config/local_refresh.json"):
+        for path in ("config/atlas_refresh.json", "config/competitions.json"):
             seen = [(e.competition_url, e.group_value or "all") for e in load_config(path)]
             assert len(seen) == len(set(seen)), path
 
@@ -334,7 +334,7 @@ class TestSeniorCompetitions:
     def test_only_keeps_the_competitions_asked_for_ignoring_case_and_punctuation(self):
         from src.services.atlas_refresh import only_competitions
 
-        entries = load_config("config/local_refresh.json")
+        entries = load_config("config/competitions.json")
         assert {e.competition_label for e in only_competitions(entries, ["tercera feb", "LF2"])} == {"TERCERA FEB", "L.F.-2"}
         assert only_competitions(entries, []) == entries
 
@@ -342,7 +342,7 @@ class TestSeniorCompetitions:
         from src.services.atlas_refresh import only_competitions
 
         with pytest.raises(ValueError, match="XYZ"):
-            only_competitions(load_config("config/local_refresh.json"), ["XYZ"])
+            only_competitions(load_config("config/competitions.json"), ["XYZ"])
 
     def test_the_cli_accepts_only_and_the_workflow_passes_it_from_an_input(self):
         import yaml

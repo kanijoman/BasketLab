@@ -169,7 +169,9 @@ class TestCli:
         assert json.loads(capsys.readouterr().out.strip().splitlines()[-1]) == {"include": []}
 
     def test_the_committed_watchlist_is_valid_and_has_the_requested_match(self):
-        wl = json.loads((Path(__file__).resolve().parents[1] / "config" / "feb_watchlist.json").read_text(encoding="utf-8"))
+        from src.live_prep.recorder import load_watchlist
+
+        wl = load_watchlist(Path(__file__).resolve().parents[1] / "config" / "feb_watchlist.json")
         assert "1008631" in wl["teams"]  # MIPELLETYMAS B.F. LEON: every match of the club
         assert all(c.startswith("https://baloncestoenvivo.feb.es/calendario") for c in wl["calendars"]) and wl["calendars"]
 

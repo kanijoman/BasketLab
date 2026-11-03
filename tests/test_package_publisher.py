@@ -213,7 +213,9 @@ class TestConfigAndCli:
     def test_config_lists_the_club_and_how_many_matches_to_prepare(self, tmp_path):
         path = tmp_path / "c.json"
         path.write_text(json.dumps({"team_id": OWN, "upcoming": 3}), encoding="utf-8")
-        assert load_config(path) == {"team_id": OWN, "upcoming": 3, "rounds": True,
+        empty = tmp_path / "competitions.json"
+        empty.write_text(json.dumps({"competitions": []}), encoding="utf-8")                   # the competitions come from the catalogue (#724)
+        assert load_config(path, empty) == {"team_id": OWN, "upcoming": 3, "rounds": True,
                                     "access": {"mode": "legacy", "open": True, "monthly": False, "scopes": []},
                                     "competitions": []}
 

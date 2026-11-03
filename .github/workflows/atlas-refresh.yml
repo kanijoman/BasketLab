@@ -23,7 +23,6 @@ on:
       - "src/services/atlas_refresh.py"
       - "src/services/feb_match_ingest.py"
       - "config/atlas_refresh.json"
-      - "config/local_refresh.json"
       - ".github/workflows/atlas-refresh.yml"
 
 permissions:

@@ -43,7 +43,12 @@ class RefreshEntry:
 
 
 def load_config(path: Any = DEFAULT_CONFIG) -> List[RefreshEntry]:
+    """The entries to scrape of a refresh config (``scrapes``, the format of ``config/atlas_refresh.json``) or of the catalogue of competitions (``competitions``: the active ones, issue #724)."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if "competitions" in data:
+        from src.services.competition_catalogue import load_catalogue, refresh_entries
+
+        return refresh_entries(load_catalogue(path))
     names = {f.name for f in fields(RefreshEntry)}
     entries = []
     for i, raw in enumerate(data.get("scrapes", []), start=1):
