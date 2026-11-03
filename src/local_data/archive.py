@@ -22,6 +22,9 @@ FORMAT = 1
 MANIFEST = "archive.json"
 SUFFIX = ".jsonl.gz"
 PLAY_BY_PLAY = ("PLAYBYPLAY", "moves")                  # FEB and FBCYL: what a light game leaves out
+META = "COLLECTION_META"                                # the metadata the FEB scrape writes per collection (#724): it travels in the archive, in a file of its own
+META_FILE = META + SUFFIX
+META_VOLATILE = ("saved_at",)                           # the time of the last scrape: it changes on every refresh and would commit the archive each time
 BATCH = 500
 _SEASON = re.compile(r"(20\d\d)_(20\d\d)")
 _OPTIONS = json_util.CANONICAL_JSON_OPTIONS
@@ -56,6 +59,23 @@ def _lines(collection: Any, light: bool) -> Iterator[bytes]:
         yield json_util.dumps(doc, json_options=_OPTIONS, separators=(",", ":")).encode("utf-8") + b"\n"
 
 
+def _meta_docs(db: Any) -> List[Dict[str, Any]]:
+    if META not in db.list_collection_names():
+        return []
+    return [{k: v for k, v in doc.items() if k not in META_VOLATILE} for doc in db[META].find({})]
+
+
+def _meta_bytes(docs: Iterable[Dict[str, Any]]) -> bytes:
+    lines = (json_util.dumps(doc, json_options=_OPTIONS, separators=(",", ":")).encode("utf-8") + b"\n" for doc in sorted(docs, key=lambda d: str(d["_id"])))
+    return gzip.compress(b"".join(lines), compresslevel=9, mtime=0)
+
+
+def _read_meta(src_dir: Path, entry: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not entry:
+        return []
+    return [json_util.loads(line, json_options=_OPTIONS) for line in gzip.decompress((src_dir / entry["file"]).read_bytes()).splitlines()]
+
+
 def _write_if_changed(path: Path, data: bytes) -> None:
     if not path.exists() or path.read_bytes() != data:
         path.write_bytes(data)
@@ -65,7 +85,10 @@ def _refuse_shrinking(db: Any, out_dir: Path, names: List[str], whole: bool) -> 
     """Raise before writing anything if the archive already in ``out_dir`` has a collection that ``db`` no longer has (``whole`` only) or holds with fewer games."""
     if not (out_dir / MANIFEST).is_file():
         return
-    for entry in json.loads((out_dir / MANIFEST).read_text(encoding="utf-8"))["collections"]:
+    stored = json.loads((out_dir / MANIFEST).read_text(encoding="utf-8"))
+    if whole and (stored.get("meta") or {}).get("docs", 0) > len(_meta_docs(db)):
+        raise ValueError(f"the database has fewer collection metadata ({len(_meta_docs(db))}) than the archive ({stored['meta']['docs']}): not overwriting it")
+    for entry in stored["collections"]:
         name = entry["name"]
         if name in names:
             now = db[name].count_documents({})
@@ -73,6 +96,23 @@ def _refuse_shrinking(db: Any, out_dir: Path, names: List[str], whole: bool) -> 
                 raise ValueError(f"{name} has fewer games ({now}) than the archive ({entry['games']}): not overwriting it")
         elif whole and entry["games"] > 0:               # a collection without games that is gone loses nothing
             raise ValueError(f"{name} is in the archive and no longer in the database (fewer games): not overwriting it")
+
+
+def _dump_meta(db: Any, out_dir: Path, only: Optional[Iterable[str]]) -> Optional[Dict[str, Any]]:
+    """The metadata file and its manifest entry: all of the database's, or with ``only`` the archive's own plus the database's of those collections."""
+    docs = {str(d["_id"]): d for d in _meta_docs(db)}
+    if only is not None:
+        kept = {}
+        if (out_dir / MANIFEST).is_file():
+            previous = json.loads((out_dir / MANIFEST).read_text(encoding="utf-8")).get("meta")
+            kept = {str(d["_id"]): d for d in _read_meta(out_dir, previous)}
+        kept.update({k: v for k, v in docs.items() if k in set(only)})
+        docs = kept
+    if not docs:
+        return None
+    data = _meta_bytes(docs.values())
+    _write_if_changed(out_dir / META_FILE, data)
+    return {"file": META_FILE, "docs": len(docs), "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
 
 
 def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] = None, only: Optional[Iterable[str]] = None,
@@ -100,16 +140,21 @@ def dump_archive(db: Any, out_dir: Path, light: Optional[Callable[[str], bool]] 
     if only is None:
         entries = {n: e for n, e in entries.items() if n in set(names)}
     manifest = {"format": FORMAT, "collections": [entries[n] for n in sorted(entries)]}
+    meta = _dump_meta(db, out_dir, only)
+    if meta:
+        manifest["meta"] = meta
     for stale in out_dir.glob("*" + SUFFIX):
-        if stale.name not in {e["file"] for e in entries.values()}:
+        if stale.name not in {e["file"] for e in entries.values()} | {META_FILE}:
             stale.unlink()
+    if not meta and (out_dir / META_FILE).exists():
+        (out_dir / META_FILE).unlink()
     _write_if_changed(out_dir / MANIFEST, (json.dumps(manifest, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
     return manifest
 
 
 def load_archive(src_dir: Path, db: Any, only: Optional[Iterable[str]] = None) -> Dict[str, int]:
     """Replace the collections of ``db`` with the ones of the archive; ``{collection: games}``. Every file is checked against its sha256 first:
-    a corrupt archive is refused with nothing loaded."""
+    a corrupt archive is refused with nothing loaded. The collection metadata (``COLLECTION_META``, #724) is restored by id, not replaced."""
     src_dir = Path(src_dir)
     manifest = json.loads((src_dir / MANIFEST).read_text(encoding="utf-8"))
     wanted = set(only) if only is not None else None
@@ -119,6 +164,11 @@ def load_archive(src_dir: Path, db: Any, only: Optional[Iterable[str]] = None) -
         blobs[entry["name"]] = data = (src_dir / entry["file"]).read_bytes()
         if hashlib.sha256(data).hexdigest() != entry["sha256"]:
             raise ValueError(f"{entry['file']}: sha256 does not match the manifest (corrupt or tampered archive)")
+    meta_entry = manifest.get("meta")
+    if meta_entry:
+        blobs[META] = data = (src_dir / meta_entry["file"]).read_bytes()
+        if hashlib.sha256(data).hexdigest() != meta_entry["sha256"]:
+            raise ValueError(f"{meta_entry['file']}: sha256 does not match the manifest (corrupt or tampered archive)")
     loaded: Dict[str, int] = {}
     for entry in entries:
         name = entry["name"]
@@ -135,4 +185,8 @@ def load_archive(src_dir: Path, db: Any, only: Optional[Iterable[str]] = None) -
         if count == 0:
             db.create_collection(name)                  # Mongo creates a collection with its first document: an empty one would be missing otherwise
         loaded[name] = count
+    if meta_entry:
+        for doc in _read_meta(src_dir, meta_entry):
+            if wanted is None or str(doc["_id"]) in wanted:
+                db[META].replace_one({"_id": doc["_id"]}, doc, upsert=True)       # by id and without dropping: a scrape may have written some already
     return loaded

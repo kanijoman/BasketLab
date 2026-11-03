@@ -191,3 +191,102 @@ def test_an_empty_collection_that_is_gone_is_not_lost_games(tmp_path):
     db.drop_collection(NAMES[1])
     manifest = dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
     assert [c["name"] for c in manifest["collections"]] == [NAMES[0]]
+
+
+# --- COLLECTION_META (issue #724): the metadata the FEB scrape writes per collection travels in the archive -------------------------------------------------
+# It is what `live-packages` reads for labels and phases and what the refresh of a `groups: all` competition reads to know its phases. Before, the Mongo restored
+# from the archive had it EMPTY until a scrape rebuilt it (and that step may fail), and the archive never carried it.
+META = "COLLECTION_META"
+
+
+def _meta(collection, **extra):
+    return {"_id": collection, "league": "FEB", "competition_label": "PRIMERA FEB", "season_label": "2026/2027", "group_label": "Liga Regular", "year": "2026",
+            "saved_at": "2026-11-03T08:00:00+00:00", **extra}
+
+
+def test_the_metadata_round_trips_without_the_time_it_was_saved(db, tmp_path):
+    db[META].insert_many([_meta(NAMES[2]), _meta(NAMES[1])])
+    manifest = dump_archive(db, tmp_path, light=lambda name: False)
+    assert manifest["meta"]["docs"] == 2 and (tmp_path / manifest["meta"]["file"]).is_file()
+    target = new_mock_db("restored")
+    load_archive(tmp_path, target)
+    restored = sorted(target[META].find({}), key=lambda d: d["_id"])
+    assert [d["_id"] for d in restored] == sorted([NAMES[2], NAMES[1]])
+    assert all("saved_at" not in d and d["competition_label"] == "PRIMERA FEB" for d in restored)
+
+
+def test_a_scrape_that_only_rewrites_the_saved_time_changes_no_byte(db, tmp_path):
+    db[META].insert_one(_meta(NAMES[2]))
+    dump_archive(db, tmp_path, light=lambda name: False)
+    first = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    db[META].replace_one({"_id": NAMES[2]}, _meta(NAMES[2], saved_at="2026-11-04T08:00:00+00:00"))        # the next refresh saves the same selection again
+    dump_archive(db, tmp_path, light=lambda name: False)
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == first
+
+
+def test_a_database_without_metadata_makes_an_archive_without_it_and_an_old_archive_still_loads(db, tmp_path):
+    manifest = dump_archive(db, tmp_path, light=lambda name: False)
+    assert "meta" not in manifest and not (tmp_path / (META + ".jsonl.gz")).exists()
+    target = new_mock_db("restored")
+    load_archive(tmp_path, target)
+    assert META not in target.list_collection_names()
+
+
+def test_loading_restores_the_metadata_by_id_without_dropping_what_is_there(db, tmp_path):
+    db[META].insert_many([_meta(NAMES[2]), _meta(NAMES[1], group_label="Fase")])
+    dump_archive(db, tmp_path, light=lambda name: False)
+    target = new_mock_db("restored")
+    target[META].insert_one({"_id": "SCRAPED_ALREADY", "competition_label": "X"})
+    target[META].insert_one(_meta(NAMES[1], group_label="old"))
+    load_archive(tmp_path, target)
+    load_archive(tmp_path, target)                                                       # twice: idempotent
+    by_id = {d["_id"]: d for d in target[META].find({})}
+    assert set(by_id) == {NAMES[2], NAMES[1], "SCRAPED_ALREADY"}
+    assert by_id[NAMES[1]]["group_label"] == "Fase"                                       # the archive's version wins for its own ids
+
+
+def test_loading_some_collections_restores_only_their_metadata(db, tmp_path):
+    db[META].insert_many([_meta(NAMES[2]), _meta(NAMES[1])])
+    dump_archive(db, tmp_path, light=lambda name: False)
+    target = new_mock_db("restored")
+    load_archive(tmp_path, target, only=[NAMES[2]])
+    assert [d["_id"] for d in target[META].find({})] == [NAMES[2]]
+
+
+def test_a_tampered_metadata_file_is_refused_before_anything_is_loaded(db, tmp_path):
+    db[META].insert_one(_meta(NAMES[2]))
+    manifest = dump_archive(db, tmp_path, light=lambda name: False)
+    (tmp_path / manifest["meta"]["file"]).write_bytes(gzip.compress(b'{"_id": "x"}\n'))
+    target = new_mock_db("restored")
+    with pytest.raises(ValueError, match="sha256"):
+        load_archive(tmp_path, target)
+    assert target.list_collection_names() == []
+
+
+def test_dumping_some_collections_keeps_the_metadata_of_the_others_and_updates_its_own(db, tmp_path):
+    db[META].insert_many([_meta(NAMES[2]), _meta(NAMES[1])])
+    dump_archive(db, tmp_path, light=lambda name: False)
+    db[META].replace_one({"_id": NAMES[2]}, _meta(NAMES[2], group_label="Playoff"))
+    db[META].delete_one({"_id": NAMES[1]})                                               # not dumped now: the archive keeps its copy
+    dump_archive(db, tmp_path, light=lambda name: False, only=[NAMES[2]])
+    target = new_mock_db("restored")
+    load_archive(tmp_path, target)
+    by_id = {d["_id"]: d for d in target[META].find({})}
+    assert set(by_id) == {NAMES[2], NAMES[1]} and by_id[NAMES[2]]["group_label"] == "Playoff"
+
+
+def test_the_metadata_file_is_not_taken_for_a_stale_competition_file(db, tmp_path):
+    db[META].insert_one(_meta(NAMES[2]))
+    dump_archive(db, tmp_path, light=lambda name: False)
+    db[NAMES[0]].drop()                                                                  # a competition leaves: its file goes, the metadata file stays
+    dump_archive(db, tmp_path, light=lambda name: False)
+    assert (tmp_path / (META + ".jsonl.gz")).is_file()
+
+
+def test_a_refresh_that_lost_metadata_does_not_overwrite_the_archive(db, tmp_path):
+    db[META].insert_many([_meta(NAMES[2]), _meta(NAMES[1])])
+    dump_archive(db, tmp_path, light=lambda name: False)
+    db[META].delete_one({"_id": NAMES[1]})
+    with pytest.raises(ValueError, match="metadata"):
+        dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=False)
+    dump_archive(db, tmp_path, light=lambda name: False, allow_shrink=True)             # a deliberate dump is allowed
