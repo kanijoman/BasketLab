@@ -3,20 +3,15 @@
  * Informe semanal (ZIP de PNGs) y scouting individual del equipo (DOCX).
  * Stats de temporada → TeamStatsPage
  */
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FileText, Download, CalendarDays, ClipboardList } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
-import {
-  getLiveTeamNames,
-  postWeeklyReport,
-  getWeeklyReportProgress,
-  downloadWeeklyReport,
-  type WeeklyReportProgress,
-  type TeamEntry,
-} from '@/api/client'
+import { getLiveTeamNames, type TeamEntry } from '@/api/client'
 import { downloadIndividualScoutingDocx } from '@/api/individualScouting'
+import { downloadWeeklyReport, type WeeklyReportProgress } from '@/api/weeklyReport'
+import { saveBlob } from '@/lib/download'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -59,7 +54,7 @@ export default function ReportPage() {
   const [weeklyTeamB,   setWeeklyTeamB]   = useState('')
   const [weeklyLoading, setWeeklyLoading] = useState(false)
   const [weeklyProgress, setWeeklyProgress] = useState<WeeklyReportProgress | null>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [weeklyError,   setWeeklyError]   = useState<string | null>(null)
   const [scoutTeam,    setScoutTeam]    = useState('')
   const [scoutLoading, setScoutLoading] = useState(false)
   const [scoutError,   setScoutError]   = useState<string | null>(null)
@@ -114,36 +109,12 @@ export default function ReportPage() {
                   disabled={!weeklyTeamA || !weeklyTeamB || weeklyTeamA === weeklyTeamB}
                   onClick={async () => {
                     setWeeklyLoading(true)
+                    setWeeklyError(null)
                     setWeeklyProgress({ status: 'running', step: 0, total: 5, message: 'Iniciando…', error: null })
                     try {
-                      const { job_id } = await postWeeklyReport(col, weeklyTeamA, weeklyTeamB)
-                      await new Promise<void>((resolve, reject) => {
-                        pollRef.current = setInterval(async () => {
-                          try {
-                            const prog = await getWeeklyReportProgress(job_id)
-                            setWeeklyProgress(prog)
-                            if (prog.status === 'done') {
-                              clearInterval(pollRef.current!)
-                              resolve()
-                            } else if (prog.status === 'error') {
-                              clearInterval(pollRef.current!)
-                              reject(new Error(prog.error ?? 'Error desconocido'))
-                            }
-                          } catch (e) {
-                            clearInterval(pollRef.current!)
-                            reject(e)
-                          }
-                        }, 1500)
-                      })
-                      const blob = await downloadWeeklyReport(job_id)
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `informe_${col.slice(0, 20)}.zip`
-                      a.click()
-                      URL.revokeObjectURL(url)
+                      saveBlob(await downloadWeeklyReport(col, weeklyTeamA, weeklyTeamB, setWeeklyProgress), `informe_${col.slice(0, 20)}.zip`)
                     } catch (err) {
-                      console.error('Weekly report error:', err)
+                      setWeeklyError(err instanceof Error ? err.message : 'Error generando el informe')
                     } finally {
                       setWeeklyLoading(false)
                     }
@@ -152,6 +123,7 @@ export default function ReportPage() {
                 >
                   {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
                 </Button>
+                {weeklyError && <p className="text-xs text-warn">{weeklyError}</p>}
                 {weeklyLoading && weeklyProgress && (
                   <div className="flex flex-col gap-1">
                     <div className="w-full h-1.5 rounded-full bg-surface-raised overflow-hidden">
@@ -164,9 +136,6 @@ export default function ReportPage() {
                       {weeklyProgress.message}
                       {weeklyProgress.total > 0 && ` (${weeklyProgress.step}/${weeklyProgress.total})`}
                     </p>
-                    {weeklyProgress.status === 'error' && (
-                      <p className="text-xs text-warn text-center">{weeklyProgress.error}</p>
-                    )}
                   </div>
                 )}
               </div>
@@ -194,12 +163,7 @@ export default function ReportPage() {
                     setScoutError(null)
                     try {
                       const blob = await downloadIndividualScoutingDocx(col, scoutTeam)
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `scouting_${scoutTeam}.docx`
-                      a.click()
-                      URL.revokeObjectURL(url)
+                      saveBlob(blob, `scouting_${scoutTeam}.docx`)
                     } catch (err) {
                       setScoutError(err instanceof Error ? err.message : 'Error descargando el DOCX')
                     } finally {

@@ -3,12 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const api = vi.hoisted(() => ({
-  getLiveTeamNames: vi.fn(), postWeeklyReport: vi.fn(), getWeeklyReportProgress: vi.fn(), downloadWeeklyReport: vi.fn(),
-}))
+const api = vi.hoisted(() => ({ getLiveTeamNames: vi.fn() }))
+const weekly = vi.hoisted(() => ({ downloadWeeklyReport: vi.fn() }))
 const scouting = vi.hoisted(() => ({ downloadIndividualScoutingDocx: vi.fn() }))
 vi.mock('@/api/client', () => api)
 vi.mock('@/api/individualScouting', () => scouting)
+vi.mock('@/api/weeklyReport', () => weekly)
 vi.mock('@/context/CollectionContext', () => ({
   useCollection: () => ({ collection: { name: 'LF_CHALLENGE', label: 'LF Challenge', isFbcyl: false } }),
 }))
@@ -59,10 +59,12 @@ describe('ReportPage on the base components (issue #193)', () => {
     expect(screen.getByRole('button', { name: 'Descargar ZIP' })).toBeEnabled()
   })
 
-  it('the weekly report asks for the job, shows its progress and the button says it is working until it is done', async () => {
-    api.postWeeklyReport.mockResolvedValue({ job_id: 'j1' })
-    api.getWeeklyReportProgress.mockResolvedValue({ status: 'done', step: 5, total: 5, message: 'Listo', error: null })
-    api.downloadWeeklyReport.mockResolvedValue(new Blob(['zip']))
+  it('the weekly report shows its progress as it goes, the button says it is working until it is done, and the zip is saved', async () => {
+    let finish: (blob: Blob) => void = () => {}
+    weekly.downloadWeeklyReport.mockImplementation((_c: string, _a: string, _b: string, onProgress: (p: unknown) => void) => {
+      onProgress({ status: 'running', step: 2, total: 5, message: 'Último partido — Alfa', error: null })
+      return new Promise<Blob>(resolve => { finish = resolve })
+    })
     renderPage()
     await screen.findAllByRole('option', { name: 'Alfa' })
     fireEvent.change(screen.getByLabelText('Equipo propio (A)'), { target: { value: '1' } })
@@ -71,9 +73,23 @@ describe('ReportPage on the base components (issue #193)', () => {
     const working = await screen.findByRole('button', { name: /Generando informe/ })
     expect(working).toHaveAttribute('aria-busy', 'true')
     expect(working).toBeDisabled()
-    expect(api.postWeeklyReport).toHaveBeenCalledWith('LF_CHALLENGE', '1', '2')
-    await waitFor(() => expect(api.downloadWeeklyReport).toHaveBeenCalledWith('j1'), { timeout: 4000 })
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Descargar ZIP' })).toBeEnabled(), { timeout: 4000 })
+    expect(await screen.findByText(/Último partido — Alfa \(2\/5\)/)).toBeInTheDocument()
+    expect(weekly.downloadWeeklyReport).toHaveBeenCalledWith('LF_CHALLENGE', '1', '2', expect.any(Function))
+    finish(new Blob(['zip']))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Descargar ZIP' })).toBeEnabled())
+  })
+
+  it('the weekly report says why it failed instead of only logging it, and a new try clears it', async () => {
+    weekly.downloadWeeklyReport.mockRejectedValueOnce(new Error('Uno de los equipos no está en esta competición.'))
+    renderPage()
+    await screen.findAllByRole('option', { name: 'Alfa' })
+    fireEvent.change(screen.getByLabelText('Equipo propio (A)'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Equipo rival (B)'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar ZIP' }))
+    expect(await screen.findByText('Uno de los equipos no está en esta competición.')).toBeInTheDocument()
+    weekly.downloadWeeklyReport.mockResolvedValueOnce(new Blob(['zip']))
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar ZIP' }))
+    await waitFor(() => expect(screen.queryByText('Uno de los equipos no está en esta competición.')).toBeNull())
   })
 
   it('the individual scouting DOCX waits for a team, downloads it and says why when it fails', async () => {

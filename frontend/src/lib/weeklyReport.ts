@@ -7,18 +7,20 @@
 //     {team}/2_Graficos_Lanzamiento/Equipo/{team}_Mapa_Calor.png, _Zonas.png and Jugadoras/{player}/{player}_Mapa_Calor.png, _Zonas.png
 import { ScopedAccessError } from '@live-package/crypto'
 import type { ShotRawData, ShotZoneData, TeamFilters } from '@/api/client'
-import type { LastMatch } from '@/localdata/lastMatch'
 import { tableSvg } from '@/lib/weeklyTables'
 import {
   ADV_HEADERS, BASIC_HEADERS, CONSISTENCY_HEADERS, LAST_MATCH_HEADERS, advancedRows, basicRows, comparativeAdvancedRows, comparativeBasicRows, consistencyRows, lastMatchRows, playerRows,
   type Comparative, type CVTable, type PlayerMode, type Row,
 } from '@/lib/weeklyRows'
 
+/** The last game of a team: its figures and its rival's in that game (rows of the tables), the rival's name and the day. */
+export interface LastGame { team: Row; opponent: Row; opponentName: string; date: string }
+
 /** What the report reads: the tables of the competition with the filters, the players, the last game of a team and the shots (of a team, or of one of its players). */
 export interface WeeklyData {
   teamStats(filter: TeamFilters): Promise<{ team_stats: Row[]; opponent_stats: Row[] }>
   consistency(): Promise<CVTable>
-  lastMatch(teamName: string): Promise<LastMatch | null>
+  lastMatch(teamName: string): Promise<LastGame | null>
   players(): Promise<Row[]>
   shots(teamId: string, player?: string): Promise<ShotRawData[]>
   zones(teamId: string, player?: string): Promise<ShotZoneData[]>
