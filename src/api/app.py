@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.api.routers import collections, teams, players, lineups, scrape
+from src.api.routers import collections, teams, players, lineups
 from src.api.routers import shots, possessions, reports, historical, analysis
 from src.api.routers import analysis_predictive, matches, multi_phase, rotaciones, team_report, live_package, health, scouting_rival
 
@@ -91,7 +91,6 @@ app.include_router(collections.router, prefix="/api/v1/collections", tags=["coll
 app.include_router(teams.router,       prefix="/api/v1/teams",       tags=["teams"])
 app.include_router(players.router,     prefix="/api/v1/players",     tags=["players"])
 app.include_router(lineups.router,     prefix="/api/v1/lineups",     tags=["lineups"])
-app.include_router(scrape.router,      prefix="/api/v1/scrape",      tags=["scrape"])
 app.include_router(shots.router,       prefix="/api/v1/shots",       tags=["shots"])
 app.include_router(possessions.router, prefix="/api/v1/possessions", tags=["possessions"])
 app.include_router(team_report.router,  prefix="/api/v1/reports",     tags=["reports"])  # before reports (literal prefix)

@@ -2,18 +2,16 @@
 Léelo cuando toques Render/Vercel, variables de entorno, veas un 401/503 en Admin/scrape/ingesta/entrenamiento, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Estado actual (decisión consciente)
-`ADMIN_API_KEY` **no está definida en producción**, a propósito: la aplicación no es pública y se prefiere que esas rutas queden cerradas. Consecuencia en Render (`ENVIRONMENT=production`):
+**El servidor ya no recibe escrituras de la web (#724).** Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`: **cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*). `ADMIN_API_KEY` **no está definida en producción**, a propósito, y solo protege lo que queda de escritura, el entrenamiento del predictivo (se conserva, fuera de la web mientras se rehace). Consecuencia en Render (`ENVIRONMENT=production`):
 
 | Funciona | Responde **503** ("ADMIN_API_KEY no está configurada en el servidor") |
 |---|---|
-| Todas las lecturas (equipos, jugadores, tiros, informes, rankings, rotaciones…) | `DELETE /api/v1/collections/{name}` (borrar colección) |
-| Cómputo sin persistir: informe de equipo, export PDF, informe semanal, Monte Carlo, predicción de partido | `POST /api/v1/scrape/start` (descargar competiciones) |
-| | `POST /api/v1/historical/ingest` y `/ingest_competition` |
-| | `POST /api/v1/analysis/elasticity/train` y `/train/stream` (entrenar modelos) |
+| Todas las lecturas (equipos, jugadores, tiros, informes, rankings, rotaciones…) | `POST /api/v1/analysis/elasticity/train` y `/train/stream` (entrenar modelos) |
+| Cómputo sin persistir: informe de equipo, export PDF, informe semanal, Monte Carlo, predicción de partido | |
 
 El 503 es el comportamiento diseñado, no un fallo (`src/api/security.py`, probado en `tests/test_admin_auth.py`). En **local** (sin `ENVIRONMENT=production`) esas rutas están abiertas y no hace falta clave.
 
-Para cargar o refrescar datos mientras la clave no exista: ejecutar la API/scraper en local (`python run_api.py`) con `MONGODB_CONNECTION_STRING` apuntando a la misma base de Atlas; en local no hay guarda.
+Para cargar o refrescar datos en local: `python run_archive.py pull` + `load` sobre un Mongo local y `python run_atlas_refresh.py --config config/competitions.json` contra él (ver *Refrescar el archivo sin Atlas*); ya no hay página ni ruta de servidor para ello.
 
 ## Activar la clave (paso a paso)
 Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producción.
@@ -23,9 +21,9 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
    - o Python: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
    Guárdala en un gestor de contraseñas.
 2. **Render → servicio `basketlab-api` → Environment**: añadir `ADMIN_API_KEY` = la clave. Guardar.
-3. **Render → servicio `basketlab-scraper` → Environment**: añadir `ADMIN_API_KEY` con **exactamente el mismo valor** (el scraper tiene su propia guarda: el frontend envía la misma clave a ambos).
+3. ~~**Render → servicio `basketlab-scraper`**~~: el servicio se retiró (#724); solo `basketlab-api` tiene la clave (el frontend envía la clave a la API, `X-Admin-Key`).
 4. **Redeploy** de los dos servicios (Render los reinicia al guardar variables; si no, *Manual Deploy → Deploy latest commit*). Los servicios gratuitos tardan en despertar.
-5. **Introducir la clave en la app**: página **Admin** → campo "Clave de administración" → *Guardar*. Se guarda solo en esa sesión del navegador (`sessionStorage`); al cerrar la pestaña hay que volver a ponerla.
+5. **Introducir la clave en la app**: la página Admin se retiró (#724); hoy solo la usa el entrenamiento del predictivo (`pages/predictive/ElasticityTab.tsx`, fuera de la web mientras se rehace), con el campo "Clave de administración" (`AdminKeyField`, `sessionStorage`). Si se reactiva el predictivo, se guarda ahí; por `curl` basta la cabecera `X-Admin-Key`.
 6. **Comprobar** (sustituye URL y clave):
    ```bash
    # sin clave -> 401
@@ -56,7 +54,7 @@ Backend (Render): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWE
 Al integrar en `main`, `ci.yml` ejecuta los tests y luego llama a los *Deploy Hooks* de Render. Cada hook es un secreto de GitHub **opcional**: si falta, ese paso avisa (`::warning`) y se omite, no rompe el pipeline. (Antes, con el secreto sin definir, `curl` fallaba con *URL rejected: Malformed input to a URL function*.)
 1. Render → servicio `basketlab-api` → *Settings → Deploy Hook* → copiar la URL.
 2. GitHub → *Settings → Secrets and variables → Actions → New repository secret* → `RENDER_DEPLOY_HOOK_URL` = esa URL.
-3. Repetir con `basketlab-scraper` → secreto `RENDER_SCRAPER_DEPLOY_HOOK_URL`.
+3. (El servicio `basketlab-scraper` y su secreto `RENDER_SCRAPER_DEPLOY_HOOK_URL` se retiraron en #724: se puede borrar el secreto.)
 **Comprobación posterior (#111)**: tras los hooks, `scripts/post_deploy_check.py --sha $GITHUB_SHA` espera (hasta **40 min**: el plan gratuito arranca en frío y a veces tarda 20-25 min en desplegar, #269) a que `GET /api/v1/health` informe del commit empujado (`RENDER_GIT_COMMIT`; el deploy es asíncrono y hasta entonces responde la versión anterior) y exige que `GET /api/v1/health/db` esté conectado. Un fallo deja `main` en rojo con la causa clasificada (`auth_failed`, `unreachable`…). Necesita la **variable** (no secreto) de GitHub `RENDER_API_URL` = URL pública de `basketlab-api` (*Settings → Secrets and variables → Actions → Variables*); sin ella se omite con un aviso. **Varios merges seguidos (#269)**: si la API ya sirve un commit **más nuevo que contiene** el comprobado (lo pregunta a la API de comparación de GitHub con `GITHUB_TOKEN`), el check pasa con la nota «superado por un despliegue más nuevo» y comprueba igualmente la base de datos; además el job de despliegue tiene `concurrency: deploy-render` con `cancel-in-progress`, así que el run de un commit antiguo que sigue esperando se **cancela** (gris) cuando llega uno nuevo en lugar de fallar. Sigue en rojo lo que es un fallo real: la API sirve un commit anterior tras los 40 min (el mensaje manda a mirar el panel de Render: ¿build fallido o en cola?) o la base de datos no conecta. Los hooks de despliegue están sin definir a propósito (Render despliega solo con cada push) y el job solo espera.
 Si Render ya despliega solo en cada push (*Auto-Deploy* activado en el servicio), los hooks son redundantes y se pueden dejar sin definir: elige una sola vía para no desplegar dos veces.
 

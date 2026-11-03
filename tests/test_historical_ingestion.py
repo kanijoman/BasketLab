@@ -410,45 +410,10 @@ def api_client():
 
 
 class TestHistoricalAPI:
-    def test_historical_ingest_returns_job_id(self, api_client):
-        payload = {
-            "league": "FEB",
-            "feb_seasons": [{
-                "competition_url": "https://example.com",
-                "season_value": "S1",
-                "group_value": "G1",
-                "competition_label": "LF2",
-                "season_label": "LF2 2024",
-                "group_label": "A",
-                "normalized_season": "2024-25",
-            }],
-        }
-        # Mock the background task so it doesn't actually scrape
-        with patch("src.api.routers.historical._run_feb_ingest"):
-            resp = api_client.post("/api/v1/historical/ingest", json=payload)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "job_id" in body
-        assert isinstance(body["job_id"], str)
-
-    def test_historical_progress_unknown_job_returns_404(self, api_client):
-        resp = api_client.get("/api/v1/historical/progress/nonexistent-job-id")
-        assert resp.status_code == 404
-
     def test_historical_summary_returns_list(self, api_client):
         resp = api_client.get("/api/v1/historical/summary")
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
-
-    def test_historical_ingest_invalid_league_returns_400(self, api_client):
-        resp = api_client.post("/api/v1/historical/ingest",
-                               json={"league": "INVALID"})
-        assert resp.status_code == 400
-
-    def test_historical_ingest_feb_without_seasons_returns_422(self, api_client):
-        resp = api_client.post("/api/v1/historical/ingest",
-                               json={"league": "FEB"})
-        assert resp.status_code == 422
 
 
 # ---------------------------------------------------------------------------

@@ -5,7 +5,6 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.deps import get_db
-from src.api.security import require_admin
 from src.services import CollectionService
 from src.services.data_freshness_service import DataFreshnessService
 
@@ -37,31 +36,6 @@ def list_collections(
 @router.get("/{name}/freshness", summary="Is the collection up to date with FEB's calendar?")
 def collection_freshness(name: str, db=Depends(get_db)):
     return DataFreshnessService(db).check(name)
-
-
-@router.delete("/{name}", summary="Drop a basketball collection", dependencies=[Depends(require_admin)])
-def delete_collection(name: str, db=Depends(get_db)) -> Dict[str, str]:
-    """Permanently drop the collection *name* from MongoDB.
-
-    Args:
-        name: Collection name, must start with ``FEB_`` or ``FBCYL_``.
-
-    Returns:
-        Confirmation message.
-
-    Raises:
-        400 if the name does not match the expected prefix.
-        500 on database error.
-    """
-    svc = CollectionService(db)
-    try:
-        svc.drop_collection(name)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
-    return {"message": f"Collection '{name}' dropped."}
-
 
 
 @router.get("/", summary="List teams inside a collection")

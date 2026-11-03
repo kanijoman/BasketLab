@@ -1,4 +1,4 @@
-"""Admin API key protecting destructive / ingestion / training endpoints (issue #115).
+"""Admin API key protecting the training endpoints (issue #115; the destructive and ingestion ones were retired, issue #724).
 
 Policy: set ``ADMIN_API_KEY`` and send it as ``X-Admin-Key``. Without the variable the
 protected routes are open in development (local use) and closed (503) in production.
@@ -10,13 +10,8 @@ from fastapi.testclient import TestClient
 
 from src.api.app import app
 from src.api.deps import get_db
-from src.api.scraper_app import app as scraper_app
 
 PROTECTED = [
-    ("DELETE", "/api/v1/collections/FEB_X", None),
-    ("POST", "/api/v1/scrape/start", {}),
-    ("POST", "/api/v1/historical/ingest", {}),
-    ("POST", "/api/v1/historical/ingest_competition", {}),
     ("POST", "/api/v1/analysis/elasticity/train", {}),
     ("POST", "/api/v1/analysis/elasticity/train/stream", {}),
 ]
@@ -82,39 +77,6 @@ class TestPublicRoutesStayPublic:
         assert r.status_code not in BLOCKED
 
 
-class TestScraperService:
-    """The separate scraper app mounts the same routers and must be protected too."""
-
-    def test_scraper_app_requires_the_key(self, monkeypatch):
-        monkeypatch.setenv("ADMIN_API_KEY", "s3cret")
-        scraper_app.dependency_overrides[get_db] = lambda: MagicMock()
-        try:
-            c = TestClient(scraper_app)
-            assert c.delete("/api/v1/collections/FEB_X").status_code == 401
-            assert c.post("/api/v1/scrape/start", json={}).status_code == 401
-            ok = c.delete("/api/v1/collections/FEB_X", headers={"X-Admin-Key": "s3cret"})
-            assert ok.status_code not in BLOCKED
-        finally:
-            scraper_app.dependency_overrides.clear()
-
-
-def test_key_is_read_at_request_time_not_import_time(client, monkeypatch):
-    assert _call(client, "DELETE", "/api/v1/collections/FEB_X", None).status_code not in BLOCKED
-    monkeypatch.setenv("ADMIN_API_KEY", "late")
-    assert _call(client, "DELETE", "/api/v1/collections/FEB_X", None).status_code == 401
-
-
-def test_cors_allows_the_admin_header():
-    r = TestClient(app).options(
-        "/api/v1/collections/FEB_X",
-        headers={"Origin": "http://localhost:5173", "Access-Control-Request-Method": "DELETE",
-                 "Access-Control-Request-Headers": "x-admin-key"},
-    )
-    assert r.status_code == 200
-    assert "x-admin-key" in r.headers.get("access-control-allow-headers", "").lower() or \
-        r.headers.get("access-control-allow-headers") == "x-admin-key"
-
-
 # Write endpoints deliberately left public: compute-only (nothing persisted or destroyed).
 PUBLIC_WRITE_ROUTES = {
     ("POST", "/api/v1/reports/export-pdf"),
@@ -134,12 +96,11 @@ def _has_admin_guard(route) -> bool:
     return any(d.call is require_admin for d in route.dependant.dependencies)
 
 
-@pytest.mark.parametrize("application", [app, scraper_app], ids=["api", "scraper"])
-def test_every_write_route_is_protected_or_explicitly_public(application):
+def test_every_write_route_is_protected_or_explicitly_public():
     """New POST/PUT/PATCH/DELETE endpoints must take ``Depends(require_admin)`` or be added
     (consciously) to PUBLIC_WRITE_ROUTES above."""
     unclassified = []
-    for route in application.routes:
+    for route in app.routes:
         methods = (getattr(route, "methods", None) or set()) - {"GET", "HEAD", "OPTIONS"}
         if not methods or not hasattr(route, "dependant"):
             continue

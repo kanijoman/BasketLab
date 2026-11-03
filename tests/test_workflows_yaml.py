@@ -39,9 +39,9 @@ class TestRenderDeployHooks:
     def _deploy_steps(self):
         return [s for s in _steps("ci.yml") if "Render deploy hook" in s.get("name", "")]
 
-    def test_api_and_scraper_have_their_own_hook(self):
+    def test_only_the_api_has_a_hook_the_scraper_service_is_gone(self):
         names = " ".join(s["name"] for s in self._deploy_steps())
-        assert "api" in names.lower() and "scraper" in names.lower()
+        assert "api" in names.lower() and "scraper" not in names.lower() and "SCRAPER" not in (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
 
     def test_empty_secret_is_skipped_with_a_warning_instead_of_failing_regression(self):
         for step in self._deploy_steps():
@@ -50,9 +50,8 @@ class TestRenderDeployHooks:
             assert "secrets." not in script, "the secret must come through env, not be interpolated in the script"
             assert "HOOK" in step["env"]
 
-    def test_hooks_use_distinct_secrets(self):
-        secrets = {s["env"]["HOOK"] for s in self._deploy_steps()}
-        assert len(secrets) == len(self._deploy_steps()) >= 2
+    def test_the_hook_comes_from_its_own_secret(self):
+        assert [s["env"]["HOOK"] for s in self._deploy_steps()] == ["${{ secrets.RENDER_DEPLOY_HOOK_URL }}"]
 
 
 class TestLiveAndroidReleases:

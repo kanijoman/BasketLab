@@ -1,13 +1,6 @@
-"""Tests for the historical router — ingestion jobs and query endpoints.
+"""Tests for the historical router — the query endpoints (the ingestion jobs were retired, issue #724).
 
 Covers:
-- POST /historical/ingest with FEB → 200 + job_id
-- POST /historical/ingest with FBCYL → 200 + job_id
-- POST /historical/ingest with invalid league → 400
-- POST /historical/ingest with FEB but missing feb_seasons → 422
-- POST /historical/ingest with FBCYL but missing fbcyl_seasons → 422
-- GET /historical/progress/{job_id} → returns job state dict
-- GET /historical/progress/unknown → 404
 - GET /historical/summary → 200 list
 - GET /historical/seasons → 200 list
 - GET /historical/teams → 200 list
@@ -22,7 +15,6 @@ from fastapi.testclient import TestClient
 
 from src.api.app import app
 from src.api.deps import get_db
-from src.api.routers.historical import HISTORICAL_JOBS
 
 
 V1 = "/api/v1"
@@ -32,14 +24,6 @@ V1 = "/api/v1"
 # Fixtures
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(autouse=True)
-def clear_historical_jobs():
-    """Isolate the in-process job store between tests."""
-    HISTORICAL_JOBS.clear()
-    yield
-    HISTORICAL_JOBS.clear()
-
-
 @pytest.fixture
 def client():
     mock_db = MagicMock()
@@ -47,135 +31,6 @@ def client():
     app.dependency_overrides[get_db] = lambda: mock_db
     yield TestClient(app)
     app.dependency_overrides.clear()
-
-
-# ── request payloads ──────────────────────────────────────────────────────────
-
-_FEB_PAYLOAD = {
-    "league": "FEB",
-    "feb_seasons": [
-        {
-            "competition_url": "https://baloncestoenvivo.feb.es/competition/1",
-            "season_value": "2025",
-            "group_value": "A",
-            "year": "2025",
-            "competition_label": "LF2",
-            "season_label": "LF2 2025",
-            "group_label": "A",
-            "normalized_season": "2024-25",
-        }
-    ],
-}
-
-_FBCYL_PAYLOAD = {
-    "league": "FBCYL",
-    "fbcyl_seasons": [
-        {
-            "competition_id": "12",
-            "season": "2025",
-            "gender": "M",
-            "territory": "0",
-            "category": "Senior",
-            "competition_label": "SeniorA",
-            "normalized_season": "2024-25",
-        }
-    ],
-}
-
-
-# ---------------------------------------------------------------------------
-# POST /historical/ingest
-# ---------------------------------------------------------------------------
-
-class TestStartHistoricalIngest:
-    def test_feb_returns_job_id(self, client):
-        resp = client.post(f"{V1}/historical/ingest", json=_FEB_PAYLOAD)
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "job_id" in body
-        assert isinstance(body["job_id"], str)
-
-    def test_fbcyl_returns_job_id(self, client):
-        resp = client.post(f"{V1}/historical/ingest", json=_FBCYL_PAYLOAD)
-        assert resp.status_code == 200
-        assert "job_id" in resp.json()
-
-    def test_invalid_league_returns_400(self, client):
-        payload = {"league": "ACB", "feb_seasons": []}
-        resp = client.post(f"{V1}/historical/ingest", json=payload)
-        assert resp.status_code == 400
-
-    def test_feb_missing_feb_seasons_returns_422(self, client):
-        payload = {"league": "FEB", "feb_seasons": None}
-        resp = client.post(f"{V1}/historical/ingest", json=payload)
-        assert resp.status_code == 422
-
-    def test_fbcyl_missing_fbcyl_seasons_returns_422(self, client):
-        payload = {"league": "FBCYL", "fbcyl_seasons": None}
-        resp = client.post(f"{V1}/historical/ingest", json=payload)
-        assert resp.status_code == 422
-
-    def test_feb_job_is_stored(self, client):
-        resp = client.post(f"{V1}/historical/ingest", json=_FEB_PAYLOAD)
-        job_id = resp.json()["job_id"]
-        # TestClient runs background tasks synchronously, status may already be final
-        assert job_id in HISTORICAL_JOBS
-
-    def test_job_has_required_fields(self, client):
-        resp = client.post(f"{V1}/historical/ingest", json=_FEB_PAYLOAD)
-        job_id = resp.json()["job_id"]
-        job = HISTORICAL_JOBS[job_id]
-        for key in ("status", "total", "done", "errors"):
-            assert key in job
-
-    def test_two_successive_jobs_have_different_ids(self, client):
-        id1 = client.post(f"{V1}/historical/ingest", json=_FEB_PAYLOAD).json()["job_id"]
-        id2 = client.post(f"{V1}/historical/ingest", json=_FEB_PAYLOAD).json()["job_id"]
-        assert id1 != id2
-
-
-# ---------------------------------------------------------------------------
-# GET /historical/progress/{job_id}
-# ---------------------------------------------------------------------------
-
-class TestIngestProgress:
-    def _seed_job(self, status="running"):
-        job_id = "test-job-abc-123"
-        HISTORICAL_JOBS[job_id] = {
-            "status": status,
-            "total": 5,
-            "done": 2,
-            "errors": [],
-            "current_season": "2024-25",
-            "current_match": None,
-        }
-        return job_id
-
-    def test_known_job_returns_200(self, client):
-        job_id = self._seed_job()
-        resp = client.get(f"{V1}/historical/progress/{job_id}")
-        assert resp.status_code == 200
-
-    def test_returns_status_field(self, client):
-        job_id = self._seed_job("running")
-        resp = client.get(f"{V1}/historical/progress/{job_id}")
-        assert resp.json()["status"] == "running"
-
-    def test_returns_done_count(self, client):
-        job_id = self._seed_job()
-        resp = client.get(f"{V1}/historical/progress/{job_id}")
-        assert resp.json()["done"] == 2
-
-    def test_unknown_job_returns_404(self, client):
-        resp = client.get(f"{V1}/historical/progress/does-not-exist")
-        assert resp.status_code == 404
-
-    def test_done_job_fields_present(self, client):
-        job_id = self._seed_job("done")
-        resp = client.get(f"{V1}/historical/progress/{job_id}")
-        body = resp.json()
-        assert body["status"] == "done"
-        assert "errors" in body
 
 
 # ---------------------------------------------------------------------------
