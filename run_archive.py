@@ -5,6 +5,8 @@ after a refresh); ``python run_archive.py load --src DIR --replace`` restores it
 Mongo of a job): it REPLACES the collections it holds, so it needs ``--replace``. ``pull --repo URL --dir DIR`` downloads the archive from the
 private repository and ``push --repo URL --dir DIR`` saves it back (only when it changed; the last versions stay tagged), see ``archive_repo``.
 ``index`` creates the team index of the FEB collections after a restore (the jobs that only READ the archive: live packages, rule evaluation).
+``purge --dir DIR --competition C --season S [--league feb|fbcyl] [--confirm "C S"]`` deletes a competition from the archive directory (a dry run without ``--confirm``), see
+``archive_purge``.
 """
 import argparse
 import os
@@ -13,6 +15,24 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+
+
+def _purge(args) -> int:
+    from src.local_data.archive_purge import NothingToPurge, StillActive, confirmation_for, purge
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE
+
+    try:
+        result = purge(args.dir, args.competition, args.season, args.catalogue or DEFAULT_CATALOGUE, league=args.league, confirm=args.confirm)
+    except (ValueError, NothingToPurge, StillActive) as error:
+        print(error, file=sys.stderr)
+        return 2
+    lines = [f"{len(result['collections'])} collections, {result['games']} games, {result['bytes'] / 1e6:.1f} MB of {args.competition} {args.season}:"]
+    lines += [f"  - {name}" for name in result["collections"]]
+    if result["purged"]:
+        print("\n".join(lines + [f"PURGED (and {result['metadata']} metadata documents). The push keeps the last versions of the archive as tags."]))
+    else:
+        print("\n".join(lines + [f"Dry run: nothing was deleted. To purge, repeat with --confirm \"{confirmation_for(args.competition, args.season)}\"."]))
+    return 0
 
 
 def main(argv=None) -> int:
@@ -27,6 +47,13 @@ def main(argv=None) -> int:
     load.add_argument("--collection", action="append")
     load.add_argument("--replace", action="store_true", help="required: the collections of the archive are dropped and rewritten")
     sub.add_parser("index", help="create the team index (HEADER.TEAM.id) on the FEB collections of the database, right after a restore")
+    purge = sub.add_parser("purge", help="delete a competition and season from the archive directory (a dry run without --confirm)")
+    purge.add_argument("--dir", required=True)
+    purge.add_argument("--competition", required=True, help="the label of the competition, as in the catalogue (e.g. 'PRIMERA FEB'; a FBCYL group: its own label)")
+    purge.add_argument("--season", required=True, help="the season label (e.g. '2024/2025'; FBCYL: '2026')")
+    purge.add_argument("--league", choices=["feb", "fbcyl"], default="feb")
+    purge.add_argument("--catalogue", default=None, help="catalogue of competitions (default: config/competitions.json); an ACTIVE competition is never purged")
+    purge.add_argument("--confirm", default=None, help='the competition and the season typed again, e.g. "PRIMERA FEB 2024/2025"; without it nothing is deleted')
     pull = sub.add_parser("pull", help="download the archive from the private repository")
     push = sub.add_parser("push", help="save the archive in the private repository (only if it changed)")
     for sync in (pull, push):
@@ -35,6 +62,8 @@ def main(argv=None) -> int:
     push.add_argument("--message", default="Archive refresh")
     args = parser.parse_args(argv)
 
+    if args.command == "purge":
+        return _purge(args)
     if args.command in ("pull", "push"):
         from src.local_data import archive_repo
 

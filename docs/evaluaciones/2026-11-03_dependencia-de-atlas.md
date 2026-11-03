@@ -72,7 +72,7 @@ Como se descartan al apagar Atlas, la **copia final de Atlas** (paso 6) las cons
 |---|---|---|
 | **Añadir** | entrada en el catálogo por PR; primera carga pesada con *Run workflow* y `only`; demo con `demo_builder` (manual) | se scrapea, publica y graba |
 | **Pausar** | `active: false` | deja de scrapearse, publicarse y grabarse; los datos siguen en el archivo y en la web; reversible |
-| **Retirar de verdad (purga)** | orden aparte, con **confirmación explícita** (nombre de la competición), tras quitar la entrada | borra del archivo y de la publicación; es el único camino que reduce el archivo |
+| **Retirar de verdad (purga)** | orden aparte, con **confirmación explícita** (nombre de la competición): *Archive purge*, hecho | borra del archivo y, en la publicación siguiente, de la web; es el único camino que reduce el archivo; se rechaza una competición activa |
 | **Cambio de temporada** | entrada nueva y la anterior a `active: false` | las temporadas viejas ya se guardan ligeras |
 
 Retirar una entrada solo **pausa**: nunca borra datos por sí misma. La purga necesita un modo deliberado del archivo, porque hoy `--no-shrink` se niega a sustituirlo por uno con menos partidos (es la guarda que impide perder partidos por un fallo).

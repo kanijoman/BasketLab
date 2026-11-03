@@ -1,0 +1,81 @@
+name: Archive purge
+
+# The deliberate order that DELETES a competition from the private archive (issue #724). Pausing an entry of the catalogue never deletes anything and the refresh refuses
+# to shrink the archive, so a competition that is gone for good needs this. By hand only, in two steps: without `confirm` it is a DRY RUN (the summary lists the collections,
+# games and size it would delete and nothing is saved); repeat it with `confirm` = the competition and the season typed exactly ("PRIMERA FEB 2024/2025") to purge. A
+# competition that is still ACTIVE in the catalogue is refused: pause it first, or the next refresh would bring it back. Works on the archive repository only (no database, no
+# Atlas): the last versions of the archive stay reachable as tags, which is how a mistake is undone. `web-data.yml` runs after it and drops what was purged from the
+# publication. It shares the concurrency group of the refresh: a purge waits for a refresh and the other way round (the archive has a single writer at a time).
+# Needs the repository secret ARCHIVE_DEPLOY_KEY (write access to basketlab-archive). See docs/OPERATIONS.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      competition:
+        description: "Label of the competition as in config/competitions.json (e.g. PRIMERA FEB; a FBCYL group: its own label, e.g. 1ª FASE-GRUPO A-1)"
+        required: true
+        type: string
+      season:
+        description: "Season label (e.g. 2024/2025; FBCYL: 2026)"
+        required: true
+        type: string
+      league:
+        description: "feb or fbcyl"
+        required: false
+        default: feb
+        type: choice
+        options: [feb, fbcyl]
+      confirm:
+        description: "Empty = dry run. To purge, the competition and the season typed exactly, e.g. PRIMERA FEB 2024/2025"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: archive-refresh
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Purge from the archive
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Download the archive
+        env:
+          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          # The secret was saved by hand: whatever it arrived with (CRLF, BOM, spaces for newlines...) the key is rebuilt from its base64 body
+          printf '%s' "$ARCHIVE_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/archive_key || { echo "::error::ARCHIVE_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+          chmod 600 ~/.ssh/archive_key
+          ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY has the shape of a key but OpenSSH cannot read it (a passphrase? it must have none)"; exit 1; }
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+          python run_archive.py pull --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive
+      # The inputs reach the command through the environment, never through the text of the script (a competition name is typed by a person).
+      - name: Purge
+        env:
+          COMPETITION: ${{ inputs.competition }}
+          SEASON: ${{ inputs.season }}
+          LEAGUE: ${{ inputs.league }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          python run_archive.py purge --dir archive --competition "$COMPETITION" --season "$SEASON" --league "$LEAGUE" ${CONFIRM:+--confirm "$CONFIRM"} | tee purge.txt
+          { echo '```'; cat purge.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      # Only with a confirmation (a wrong one failed the step above). The push keeps the last versions of the archive as tags, so a mistake is undone from there.
+      - name: Save the archive
+        if: inputs.confirm != ''
+        run: |
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+          python run_archive.py push --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive --message "Purge ${{ github.run_id }} $(date -u +%Y-%m-%dT%H:%MZ)"
