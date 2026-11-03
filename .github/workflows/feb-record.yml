@@ -1,6 +1,6 @@
 name: FEB live recorder
 
-# Records the live feed of the matches in config/feb_watchlist.json from their kick-off (issue #171).
+# Records the live feed of the matches in config/feb_watchlist.json (teams, matches) and of the calendars of the catalogue of competitions (config/competitions.json, #724) from their kick-off (issue #171).
 # A cheap planner runs every 15 minutes; when a watched match is about to start (or is already being
 # played) it launches one recorder job for it, which waits for the start, polls FEB until the match
 # finishes and uploads the recording as an artifact together with a report (cadence, delay, status
@@ -22,6 +22,7 @@ on:
       - "src/live_prep/recording_report.py"
       - "src/scraper/**"
       - "config/feb_watchlist.json"
+      - "config/competitions.json"
       - ".github/workflows/feb-record.yml"
   workflow_dispatch:
     inputs:

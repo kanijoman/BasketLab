@@ -1,0 +1,169 @@
+{
+  "competitions": [
+    {
+      "competition": "LF ENDESA",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=4&t=2026&nm=lfendesa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "level": 1,
+      "gender": "F",
+      "record": []
+    },
+    {
+      "competition": "PRIMERA FEB",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=1&t=2026&nm=primerafeb",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "level": 2,
+      "gender": "M",
+      "rule_config": {
+        "formation_min_on_court": 0
+      },
+      "record": []
+    },
+    {
+      "competition": "LF CHALLENGE",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=67&t=2026&nm=lfchallenge",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "level": 2,
+      "gender": "F",
+      "record": [
+        "https://baloncestoenvivo.feb.es/calendario.aspx?g=67&t=2026&nm=lfchallenge"
+      ]
+    },
+    {
+      "competition": "SEGUNDA FEB",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "level": 3,
+      "gender": "M",
+      "clubs": [
+        "1008857",
+        "1008978"
+      ],
+      "record": [
+        "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb#t=2026&g=89999",
+        "https://baloncestoenvivo.feb.es/calendario.aspx?g=2&t=2026&nm=segundafeb#t=2026&g=90000"
+      ]
+    },
+    {
+      "competition": "L.F.-2",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=9&t=2026&nm=lf2",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "level": 3,
+      "gender": "F",
+      "record": []
+    },
+    {
+      "competition": "LIGA U",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=74&t=2026&nm=ligau",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "gender": "M",
+      "record": []
+    },
+    {
+      "competition": "COPA ESPAÑA",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=73&t=2026&nm=copaespaa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "gender": "M",
+      "clubs": [
+        "1008857",
+        "1008978",
+        "1010490"
+      ],
+      "rule_config": {
+        "formation_min_on_court": 0
+      },
+      "group_rules": [
+        {
+          "group": "FASE DE GRUPOS",
+          "rule_config": {
+            "formation_min_on_court": 2
+          }
+        }
+      ],
+      "record": [
+        "https://baloncestoenvivo.feb.es/calendario.aspx?g=73&t=2026&nm=copaespaa#t=2026&g=all"
+      ]
+    },
+    {
+      "competition": "TERCERA FEB",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "year": "2026",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=3&t=2026&nm=tercerafeb",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "level": 4,
+      "gender": "M",
+      "clubs": [
+        "1010490"
+      ],
+      "record": [
+        "https://baloncestoenvivo.feb.es/calendario.aspx?g=3&t=2026&nm=tercerafeb#t=2026&g=90060"
+      ]
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE-GRUPO A-1",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Primera Nacional Femenina, grupo A-1",
+      "fbcyl": {
+        "competition_id": "7298",
+        "category": "1129",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE-GRUPO A-2",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Primera Nacional Femenina, grupo A-2",
+      "fbcyl": {
+        "competition_id": "7299",
+        "category": "1129",
+        "gender": "F",
+        "territory": "1"
+      }
+    }
+  ]
+}

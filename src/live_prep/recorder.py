@@ -295,6 +295,16 @@ def plan(watch: Dict[str, Any], now: datetime, fetch_calendar: Callable[[str], l
     return unique
 
 
+def load_watchlist(path: Any, catalogue: Any = None) -> Dict[str, Any]:
+    """The watchlist file (the teams, matches and calendars written by hand) with the calendars of the active competitions of the catalogue (issue #724) added to its ``calendars``."""
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue, record_calendars
+
+    watch = json.loads(Path(path).read_text(encoding="utf-8"))
+    followed = record_calendars(load_catalogue(catalogue or DEFAULT_CATALOGUE))
+    watch["calendars"] = list(dict.fromkeys(_listed(watch.get("calendars")) + followed))
+    return watch
+
+
 # --- real adapters + CLI ------------------------------------------------------------------------------
 
 def http_get(url: str, token: str) -> Response:
@@ -341,6 +351,7 @@ def main(argv: Optional[List[str]] = None, fetch_calendar=None, match_status=Non
     sub = parser.add_subparsers(dest="cmd", required=True)
     p_plan = sub.add_parser("plan", help="print the matches to record now as a GitHub Actions matrix")
     p_plan.add_argument("--watchlist", required=True)
+    p_plan.add_argument("--catalogue", default=None, help="catalogue of competitions whose calendars are added to the watchlist's (default: config/competitions.json)")
     p_plan.add_argument("--now", help="ISO time (UTC) instead of the current time (tests)")
     p_plan.add_argument("--extra", action="append", default=[], help="match code to record immediately (repeatable)")
     p_plan.add_argument("--extra-team", action="append", default=[], help="also record every match of this team id")
@@ -358,7 +369,7 @@ def main(argv: Optional[List[str]] = None, fetch_calendar=None, match_status=Non
 
     if args.cmd == "plan":
         now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
-        watch = json.loads(Path(args.watchlist).read_text(encoding="utf-8"))
+        watch = load_watchlist(args.watchlist, args.catalogue)
         include = plan(watch, now, fetch_calendar, match_status, args.extra, args.extra_team, args.extra_competition)
         print(json.dumps({"include": include}))
         return 0

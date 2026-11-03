@@ -248,7 +248,7 @@ class TestCompetitionWithPhases:
         from src.live_prep.publisher import _collections
 
         names = _collections()
-        assert names == ["TERCERA_FEB_2026_2027_Liga_Regular_A-B"]   # the phases of the other competitions need the database
+        assert names == []   # every competition is complete now (#724): its phases come from COLLECTION_META, which needs the database
 
     def test_the_copa_is_in_the_repository_config_as_one_competition(self):
         copa = [e for e in load_config("config/atlas_refresh.json") if "nm=copaespaa" in e.competition_url]
@@ -291,7 +291,7 @@ class TestSeniorCompetitions:
     """Every senior competition of the season is kept fresh (#456): the cloud (free plan, 512 MB) and the local database (no limit).
 
     ≈ 3.370 matches a season ≈ 0,13 MB each on disk: 3ª FEB alone has 10 subgroups and 1.768 matches, so Atlas keeps only 3ª FEB A-B
-    (the group of interest) and the other competitions complete; ``config/local_refresh.json`` has all of them.
+    (the group of interest) and the other competitions complete; the catalogue of competitions (``config/competitions.json``, #724) has all of them.
     """
 
     SENIOR = {"LF ENDESA": "nm=lfendesa", "PRIMERA FEB": "nm=primerafeb", "LF CHALLENGE": "nm=lfchallenge", "SEGUNDA FEB": "nm=segundafeb",
@@ -315,13 +315,13 @@ class TestSeniorCompetitions:
         assert [(e.group_label, e.groups) for e in tercera] == [('Liga Regular "A-B"', "")]
 
     def test_the_local_database_has_every_group_of_3a_feb_too(self):
-        local = self.by_competition("config/local_refresh.json")
+        local = self.by_competition("config/competitions.json")
         assert set(self.SENIOR) | {"TERCERA FEB"} <= set(local)
         assert [e.groups for e in local["TERCERA FEB"]] == ["all"]
 
     def test_no_competition_is_listed_twice_in_a_config(self):
-        for path in ("config/atlas_refresh.json", "config/local_refresh.json"):
-            seen = [(e.competition_url, e.group_value or "all") for e in load_config(path)]
+        for path in ("config/atlas_refresh.json", "config/competitions.json"):
+            seen = [(e.league, e.competition_url, e.group_value or "all", e.fbcyl.get("competition_id", "")) for e in load_config(path)]
             assert len(seen) == len(set(seen)), path
 
     def test_the_existing_collections_of_the_app_are_not_renamed(self):
@@ -334,7 +334,7 @@ class TestSeniorCompetitions:
     def test_only_keeps_the_competitions_asked_for_ignoring_case_and_punctuation(self):
         from src.services.atlas_refresh import only_competitions
 
-        entries = load_config("config/local_refresh.json")
+        entries = load_config("config/competitions.json")
         assert {e.competition_label for e in only_competitions(entries, ["tercera feb", "LF2"])} == {"TERCERA FEB", "L.F.-2"}
         assert only_competitions(entries, []) == entries
 
@@ -342,7 +342,7 @@ class TestSeniorCompetitions:
         from src.services.atlas_refresh import only_competitions
 
         with pytest.raises(ValueError, match="XYZ"):
-            only_competitions(load_config("config/local_refresh.json"), ["XYZ"])
+            only_competitions(load_config("config/competitions.json"), ["XYZ"])
 
     def test_the_cli_accepts_only_and_the_workflow_passes_it_from_an_input(self):
         import yaml
@@ -377,3 +377,52 @@ class TestRefreshFillsDerived:
         db, _ = self._with_a_game_without_derived(feb_game_doc)
         report = refresh_all(db, [RefreshEntry(**ENTRY)], scraper=_scraper(["1"]), freshness=TestRefreshAll._freshness(None, []))
         assert report[0]["fatal"] is None
+
+
+class TestFbcylInTheRefresh:
+    """The refresh scrapes the FBCYL groups of the catalogue too (issue #724): no calendar to compare with, no team index, the DERIVED of its games filled."""
+
+    ENTRY = RefreshEntry(competition_url="", season_value="2026", competition_label="1ª FASE-GRUPO A-1", season_label="2026", year="2026", league="fbcyl",
+                         fbcyl={"competition_id": "7298", "category": "1129", "gender": "F", "territory": "1"})
+
+    def test_a_group_is_scraped_with_its_context_and_its_derived_filled_without_a_freshness_check(self):
+        from unittest.mock import MagicMock, patch
+
+        db, scraper = _db(), MagicMock()
+        scraper.get_matches.return_value = ["u1"]
+        scraper.get_match_complete_data.return_value = {"uuid": "u1"}
+        check = MagicMock()
+        with patch("src.services.atlas_refresh._fill_derived") as fill, patch("src.services.atlas_refresh._ensure_team_index") as index:
+            report = refresh_all(db, [self.ENTRY], fbcyl_scraper=scraper, freshness=check)
+        [item] = report
+        assert item["fatal"] is None and item["league"] == "fbcyl" and item["freshness"] is None
+        assert item["collection"] == "FBCYL_1ª_FASE-GRUPO_A-1_2026_" and item["job"]["total"] == 1
+        assert scraper.get_match_complete_data.call_args.kwargs["league_ctx"]["competition_id"] == "7298"
+        fill.assert_called_once()
+        index.assert_not_called()                                    # the team index is of the FEB header
+        check.assert_not_called()
+
+    def test_a_failing_group_is_its_own_error_and_the_others_go_on(self):
+        from unittest.mock import MagicMock
+
+        scraper = MagicMock()
+        scraper.get_matches.side_effect = RuntimeError("FBCYL no responde")
+        from src.services.atlas_refresh import needs_attention
+
+        report = refresh_all(_db(), [self.ENTRY, self.ENTRY], fbcyl_scraper=scraper, freshness=lambda c: {})
+        assert [r["fatal"] for r in report] == ["RuntimeError: FBCYL no responde"] * 2
+        assert needs_attention(report)
+
+    def test_the_markdown_does_not_claim_a_comparison_with_the_feb_calendar(self):
+        from unittest.mock import MagicMock
+
+        scraper = MagicMock()
+        scraper.get_matches.return_value = []
+        text = to_markdown(refresh_all(_db(), [self.ENTRY], fbcyl_scraper=scraper, freshness=lambda c: {}))
+        assert "FBCYL" in text and "calendario de FEB" not in text
+
+    def test_only_finds_a_group_by_its_name_and_the_publisher_never_takes_it(self):
+        from src.services.atlas_refresh import ingested_collections, only_competitions
+
+        assert only_competitions([self.ENTRY], ["1ª fase-grupo a-1"]) == [self.ENTRY]          # by its label, case and punctuation ignored
+        assert ingested_collections(_db(), [self.ENTRY]) == []       # live packages are FEB only

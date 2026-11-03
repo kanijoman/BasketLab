@@ -35,7 +35,9 @@ DEFAULT_ACCESS = {"mode": "legacy", "open": True, "monthly": False, "scopes": []
 CALENDAR_WINDOW = 30  # matches asked to the calendar per collection before picking the nearest rivals
 
 
-def load_config(path: Any = DEFAULT_CONFIG) -> Dict[str, Any]:
+def load_config(path: Any = DEFAULT_CONFIG, catalogue: Any = None) -> Dict[str, Any]:
+    """The config of the publication. The competitions (level, gender, clubs, rules) come from the catalogue of competitions (issue #724); a ``competitions`` list inside the file
+    itself (the old place) still wins, so a config written for a test or a fork keeps working."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not data.get("team_id"):
         raise ValueError("config lacks: team_id")
@@ -44,7 +46,13 @@ def load_config(path: Any = DEFAULT_CONFIG) -> Dict[str, Any]:
         raise ValueError(f"access.mode must be one of {ACCESS_MODES}")
     access = {"mode": access["mode"], "open": bool(access["open"]), "monthly": bool(access["monthly"]), "scopes": [str(s) for s in access["scopes"]]}
     return {"team_id": str(data["team_id"]), "upcoming": int(data.get("upcoming", 3)), "rounds": bool(data.get("rounds", True)), "access": access,
-            "competitions": normalize_catalog(data.get("competitions"))}
+            "competitions": normalize_catalog(data["competitions"]) if "competitions" in data else _catalogue_competitions(catalogue)}
+
+
+def _catalogue_competitions(catalogue: Any = None) -> List[Dict[str, Any]]:
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue, package_catalog
+
+    return package_catalog(load_catalogue(catalogue or DEFAULT_CATALOGUE))
 
 
 def build_index(packages: List[Dict[str, Any]], now: Optional[str] = None, rounds: Optional[List[Dict[str, Any]]] = None,
@@ -192,9 +200,9 @@ def _collections(db: Any = None) -> List[str]:
 
     Without ``db`` (the PR config check) only the fixed groups are listed."""
     from src.services.atlas_refresh import ingested_collections
-    from src.services.atlas_refresh import load_config as load_refresh
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue, package_entries
 
-    return ingested_collections(db, load_refresh())
+    return ingested_collections(db, package_entries(load_catalogue(DEFAULT_CATALOGUE)))
 
 
 def main(argv: Optional[List[str]] = None) -> int:

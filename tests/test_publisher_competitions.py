@@ -68,7 +68,10 @@ class TestCatalog:
         path.write_text(json.dumps({"team_id": OWN, "competitions": CATALOG}), encoding="utf-8")
         assert load_config(path)["competitions"] == normalize_catalog(CATALOG)
         path.write_text(json.dumps({"team_id": OWN}), encoding="utf-8")
-        assert load_config(path)["competitions"] == []
+        empty = tmp_path / "competitions.json"
+        empty.write_text(json.dumps({"competitions": []}), encoding="utf-8")
+        assert load_config(path, empty)["competitions"] == []                              # no list in the file: the catalogue of competitions (#724), here an empty one
+        assert {c["competition"] for c in load_config(path)["competitions"]} >= {"LF ENDESA", "PRIMERA FEB"}   # and the repository's by default
 
     @pytest.mark.parametrize("bad", [{"level": 1}, {"competition": "X", "gender": "Z"}, {"competition": "X", "level": "uno"},
                                      {"competition": "X", "clubs": "1008857"}])
