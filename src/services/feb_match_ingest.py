@@ -11,13 +11,34 @@ from src.utils.time_utils import utc_now_naive
 FEB_STATUS_FINISHED = "3"
 
 
-def is_in_progress(doc: Dict[str, Any]) -> bool:
-    """True when a FEB doc carries a status other than FINISHED ('3').
+# A game cannot be live two days after it started. FEB sometimes never marks a played game as finished (match 2537218 of 3a FEB, played on 11-10-2026, still shows
+# status 1, «SCHEDULED», with a final score): the rule "not finished means in progress" skipped it in every refresh and the refresh went red every time (issue #724).
+STALE_AFTER = timedelta(hours=48)
 
-    Docs without ``HEADER.status`` (older data) are treated as finished.
+
+def _has_score(doc: Dict[str, Any]) -> bool:
+    """Both teams of ``HEADER.TEAM`` have a points figure and the game is not 0-0 (a game FEB lists with no result is not a finished one)."""
+    teams = ((doc or {}).get("HEADER") or {}).get("TEAM") or []
+    try:
+        points = [int(t.get("pts")) for t in teams]
+    except (TypeError, ValueError):
+        return False
+    return len(points) >= 2 and sum(points) > 0
+
+
+def is_in_progress(doc: Dict[str, Any], now: Optional[datetime] = None) -> bool:
+    """True when a FEB doc carries a status other than FINISHED ('3') and may still be played.
+
+    Docs without ``HEADER.status`` (older data) are treated as finished. A game that started more than ``STALE_AFTER`` ago and has a score is not in progress whatever
+    status FEB shows: it is stored as it is, and a refresh of the last days replaces it if FEB corrects it.
     """
     status = (doc.get("HEADER") or {}).get("status")
-    return status is not None and str(status) != FEB_STATUS_FINISHED
+    if status is None or str(status) == FEB_STATUS_FINISHED:
+        return False
+    played = _played(doc)
+    if played is not None and _has_score(doc) and (now or utc_now_naive()) - played > STALE_AFTER:
+        return False
+    return True
 
 
 _CORRECTABLE = ("HEADER", "BOXSCORE", "PLAYBYPLAY", "SHOTCHART")
