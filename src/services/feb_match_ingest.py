@@ -11,13 +11,40 @@ from src.utils.time_utils import utc_now_naive
 FEB_STATUS_FINISHED = "3"
 
 
-def is_in_progress(doc: Dict[str, Any]) -> bool:
-    """True when a FEB doc carries a status other than FINISHED ('3').
+# A game cannot be live 8 hours after it started. FEB sometimes never marks a played game as finished (match 2537218 of 3a FEB, played on 11-10-2026, still shows
+# status 1, «SCHEDULED», with its four quarters filled in): the rule "not finished means in progress" skipped it in every refresh and the refresh went red every time
+# (issue #724). Past ``STALE_AFTER`` from its start, a game whose score of the four quarters is in is assumed finished.
+STALE_AFTER = timedelta(hours=8)
+QUARTERS_PLAYED = 4
 
-    Docs without ``HEADER.status`` (older data) are treated as finished.
+
+def _four_quarters_filled(doc: Dict[str, Any]) -> bool:
+    """``HEADER.QUARTERS.QUARTER`` has at least four quarters, each with the two scores (``scoreA``, ``scoreB``) as numbers; an overtime adds quarters, never removes."""
+    quarters = (((doc or {}).get("HEADER") or {}).get("QUARTERS") or {}).get("QUARTER") or []
+    filled = 0
+    for quarter in quarters:
+        try:
+            int(quarter.get("scoreA"))
+            int(quarter.get("scoreB"))
+        except (AttributeError, TypeError, ValueError):
+            continue
+        filled += 1
+    return filled >= QUARTERS_PLAYED
+
+
+def is_in_progress(doc: Dict[str, Any], now: Optional[datetime] = None) -> bool:
+    """True when a FEB doc carries a status other than FINISHED ('3') and may still be played.
+
+    Docs without ``HEADER.status`` (older data) are treated as finished. A game that started more than ``STALE_AFTER`` ago with its four quarters filled in is not in
+    progress whatever status FEB shows: it is stored as it is, and a refresh of the last days replaces it if FEB corrects it.
     """
     status = (doc.get("HEADER") or {}).get("status")
-    return status is not None and str(status) != FEB_STATUS_FINISHED
+    if status is None or str(status) == FEB_STATUS_FINISHED:
+        return False
+    played = _played(doc)
+    if played is not None and _four_quarters_filled(doc) and (now or utc_now_naive()) - played > STALE_AFTER:
+        return False
+    return True
 
 
 _CORRECTABLE = ("HEADER", "BOXSCORE", "PLAYBYPLAY", "SHOTCHART")
