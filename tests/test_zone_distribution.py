@@ -6,7 +6,6 @@ browser cannot count different shots). What each entity shot must be what the ex
 import sys
 from pathlib import Path
 
-import mongomock
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
@@ -14,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 import fbcyl_games  # noqa: E402
 import games  # noqa: E402
 
+from db_helpers import new_mock_db  # noqa: E402
 from src.local_data.shots_export import export_shots  # noqa: E402
 from src.shotcharts.fbcyl_zones import stream_zone_counts_fbcyl  # noqa: E402
 from src.shotcharts.feb_zones import ZONE_META, aggregate_zones, stream_zone_counts_feb  # noqa: E402
@@ -25,7 +25,7 @@ FBCYL = "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
 
 
 def _collection(name, docs):
-    col = mongomock.MongoClient()["v"][name]
+    col = new_mock_db()[name]
     if docs:
         col.insert_many(docs)
     return col
