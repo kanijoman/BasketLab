@@ -7,7 +7,7 @@
  * Filtering by team/player preserves global league rank, not filtered rank.
  * Each row shows the delta relative to the league leader.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Trophy, Medal, Award } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -19,6 +19,7 @@ import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Tabs from '@/components/ui/Tabs'
+import ExportButton from '@/components/ui/ExportButton'
 import { Field, Input, Select } from '@/components/ui/Field'
 
 // -- Stat definitions ----------------------------------------------------------
@@ -162,6 +163,18 @@ export default function RankingsPage() {
   const leaderVal = allRanked.length > 0 ? ((allRanked[0][stat.key] as number) ?? 0) : 0
   const maxVal    = Math.max(...allRanked.map(p => (p[stat.key] as number) ?? 0), 0.001)
 
+  // Export (issue #759): the whole ranking under the filters (the page shows 30), with the position of the league and the gap to its leader; PNG and PDF capture the list
+  const listRef = useRef<HTMLDivElement>(null)
+  const round2  = (n: number) => Math.round(n * 100) / 100
+  const csvData = useMemo(() => filteredRanked.map(p => {
+    const val = (p[stat.key] as number) ?? 0
+    return { rank: globalRankMap.get(p.player_id) ?? 0, player: p.player_name, team: p.team_name, games: p.games_played, value: round2(val), gap: -Math.abs(round2(val - leaderVal)) }
+  }), [filteredRanked, globalRankMap, stat, leaderVal])
+  const csvHeaders = [
+    { key: 'rank', label: 'Puesto' }, { key: 'player', label: 'Jugadora' }, { key: 'team', label: 'Equipo' }, { key: 'games', label: 'PJ' },
+    { key: 'value', label: stat.label }, { key: 'gap', label: 'Dif. con el líder' },
+  ]
+
   if (!collection) {
     return (
       <PageTransition>
@@ -175,7 +188,11 @@ export default function RankingsPage() {
       <div className="space-y-4">
 
         {/* Header */}
-        <PageHeader title="Rankings de Jugadores" subtitle={collection.label} />
+        <PageHeader title="Rankings de Jugadores" subtitle={collection.label}
+          actions={!isLoading && filteredRanked.length > 0 ? (
+            <ExportButton filename={`ranking_${stat.key}_${collection.name}`} pdfTitle={`Ranking — ${stat.label} — ${collection.label}`}
+              csvData={csvData} csvHeaders={csvHeaders} captureRef={listRef} />
+          ) : undefined} />
 
         {/* Group tabs (Básicas / Tiro / Avanzadas) */}
         <Tabs label="Grupos de estadísticas" tabs={STAT_GROUPS.map((g, i) => ({ id: String(i), label: g.label }))} value={String(groupIdx)}
@@ -262,7 +279,7 @@ export default function RankingsPage() {
             Sin resultados para los filtros aplicados.
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div ref={listRef} className="space-y-1.5">
             {filteredRanked.slice(0, 30).map((player, idx) => {
               // Composite key: player_id may be empty/null for some entries — fall back to
               // name+team to avoid React key collisions that cause DOM nodes to persist.

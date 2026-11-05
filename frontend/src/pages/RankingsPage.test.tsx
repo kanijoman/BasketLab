@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const api = vi.hoisted(() => ({ getPlayerStats: vi.fn() }))
 vi.mock('@/api/client', () => api)
@@ -93,5 +93,58 @@ describe('RankingsPage on the base components (issue #192)', () => {
     await screen.findByText('Anotador')
     fireEvent.change(screen.getByLabelText('Buscar jugador'), { target: { value: 'titular' } })
     expect(order()).toEqual(['Titular'])
+  })
+})
+
+// the CSV of the export is a Blob handed to an anchor: the boundary is the browser, a fake records what would be saved
+function captureDownloads() {
+  const blobs: Blob[] = []
+  vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn((b: Blob) => { blobs.push(b); return 'blob:x' }), revokeObjectURL: vi.fn() })
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+  return blobs
+}
+const realUrl = URL
+afterEach(() => { vi.stubGlobal('URL', realUrl); vi.restoreAllMocks() })           // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
+
+// Issue #759: Rankings had no export. The CSV is the whole ranking under the filters (not the 30 shown), with the position in the league, and the PNG and the PDF capture the list.
+describe('RankingsPage export (issue #759)', () => {
+  const MANY = Array.from({ length: 35 }, (_, i) => player(String(i + 1), `Jugadora ${String(i + 1).padStart(2, '0')}`, 20, 40 - i))
+
+  it('offers CSV, PNG and PDF when there is a ranking, and nothing when the filters leave it empty', async () => {
+    api.getPlayerStats.mockReset().mockResolvedValue(PLAYERS)
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /Exportar/ }))
+    expect(['CSV', 'PNG', 'PDF'].every(name => screen.getByRole('button', { name }))).toBe(true)
+    fireEvent.change(screen.getByPlaceholderText('Buscar jugador…'), { target: { value: 'nadie se llama así' } })
+    expect(screen.queryByRole('button', { name: /Exportar/ })).toBeNull()
+  })
+
+  it('the CSV is the whole ranking, with the position in the league and the value of the statistic chosen', async () => {
+    const blobs = captureDownloads()
+    api.getPlayerStats.mockReset().mockResolvedValue(MANY)
+    renderPage()
+    await screen.findByText('Jugadora 01')
+    expect(screen.queryByText('Jugadora 31')).toBeNull()                                  // the page shows the first 30
+    fireEvent.click(screen.getByRole('button', { name: /Exportar/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'CSV' }))
+    const lines = (await blobs[0].text()).split('\n')
+    expect(lines[0]).toBe('"Puesto","Jugadora","Equipo","PJ","Puntos","Dif. con el líder"')
+    expect(lines).toHaveLength(36)                                                        // the header and the 35 players
+    expect(lines[1]).toBe('1,Jugadora 01,Equipo,5,40,0')
+    expect(lines[35]).toBe('35,Jugadora 35,Equipo,5,6,-34')
+  })
+
+  it('exports under the filters but keeps the position of the league', async () => {
+    const blobs = captureDownloads()
+    api.getPlayerStats.mockReset().mockResolvedValue(PLAYERS)
+    renderPage()
+    await screen.findByText('Anotador')
+    fireEvent.click(screen.getByRole('button', { name: 'Minutos' }))
+    fireEvent.change(screen.getByPlaceholderText('Buscar jugador…'), { target: { value: 'anot' } })
+    fireEvent.click(screen.getByRole('button', { name: /Exportar/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'CSV' }))
+    const lines = (await blobs[0].text()).split('\n')
+    expect(lines[0]).toContain('"Minutos"')
+    expect(lines.slice(1)).toEqual(['2,Anotador,Equipo,5,18.5,-12.7'])                      // second in minutes, 12.7 behind Titular (31.2)
   })
 })

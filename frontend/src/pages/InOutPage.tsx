@@ -2,7 +2,7 @@
  * InOutPage — Fase 4
  * Impacto de jugadores dentro/fuera de la cancha con cards ON/OFF.
  */
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeftRight, Users } from 'lucide-react'
 
@@ -17,8 +17,10 @@ import {
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Tabs from '@/components/ui/Tabs'
+import ExportButton from '@/components/ui/ExportButton'
 import PlayerSelect, { type TeamOption } from '@/components/PlayerSelect'
 import { playerKey } from '@/lib/playerKey'
+import { inoutRows, inoutVsRows } from '@/lib/inoutExport'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -174,10 +176,36 @@ export default function InOutPage() {
     enabled:  Boolean(collection) && Boolean(together2),
   })
 
+  // Export (issue #759): the figures of the cards and a capture of the results; only when there is something to export
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const slug = (text: string) => text.replace(/[^\p{L}\p{N}]+/gu, '_').replace(/^_|_$/g, '')
+  const vsReady = Boolean(inout1 && inout2 && !inout1Loading && !inout2Loading)
+  const exportOptions = useMemo(() => {
+    const where = collection?.name ?? ''
+    if (tab === 'IN/OUT' && inout && !inoutLoading) {
+      return {
+        filename: `inout_${slug(inout.player_name)}_${where}`,
+        pdfTitle: `Análisis IN/OUT — ${inout.player_name} — ${collection?.label ?? ''}`,
+        csvHeaders: [{ key: 'stat', label: 'Estadística' }, { key: 'on', label: 'ON' }, { key: 'off', label: 'OFF' }, { key: 'diff', label: 'ON − OFF' }],
+        csvData: inoutRows(inout.on, inout.off) as unknown as Record<string, unknown>[],
+      }
+    }
+    if (tab === 'IN vs IN' && vsReady && inout1 && inout2) {
+      return {
+        filename: `inout_${slug(inout1.player_name)}_vs_${slug(inout2.player_name)}_${where}`,
+        pdfTitle: `IN vs IN — ${inout1.player_name} / ${inout2.player_name} — ${collection?.label ?? ''}`,
+        csvHeaders: [{ key: 'stat', label: 'Estadística' }, { key: 'a', label: `${inout1.player_name} (ON)` }, { key: 'b', label: `${inout2.player_name} (ON)` }, { key: 'diff', label: 'Diferencia' }],
+        csvData: inoutVsRows(inout1.on, inout2.on) as unknown as Record<string, unknown>[],
+      }
+    }
+    return null
+  }, [tab, inout, inoutLoading, inout1, inout2, vsReady, collection?.name, collection?.label])
+
   return (
     <PageTransition>
       <div className="space-y-4">
-        <PageHeader title="Análisis IN/OUT" subtitle={collection?.label} />
+        <PageHeader title="Análisis IN/OUT" subtitle={collection?.label}
+          actions={exportOptions ? <ExportButton {...exportOptions} captureRef={resultsRef} /> : undefined} />
 
         <Tabs label="Vistas del análisis IN/OUT" tabs={TABS.map(t => ({ id: t, label: t }))} value={tab} onChange={setTab} />
 
@@ -193,7 +221,7 @@ export default function InOutPage() {
             )}
 
             {inout && !inoutLoading && (
-              <>
+              <div ref={resultsRef} className="space-y-4">
                 <div className="flex items-center gap-2">
                   <ArrowLeftRight className="w-4 h-4 text-secondary-text" />
                   <span className="text-sm font-medium text-ink">{inout.player_name}</span>
@@ -222,7 +250,7 @@ export default function InOutPage() {
                     <DeltaBar value={delta(inout.off.turnover_rate, inout.on.turnover_rate)} label="%TO (↓ mejor)" />
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {!p1 && (
@@ -247,7 +275,7 @@ export default function InOutPage() {
             )}
 
             {inout1 && inout2 && !inout1Loading && !inout2Loading && (
-              <>
+              <div ref={resultsRef} className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-secondary-text" />
                   <span className="text-sm font-medium text-ink">{inout1.player_name}</span>
@@ -277,7 +305,7 @@ export default function InOutPage() {
                     <DeltaBar value={delta(inout1.on.defensive_rebound_rate,inout2.on.defensive_rebound_rate)} label="DR%" />
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {/* Partial load: one player selected */}
