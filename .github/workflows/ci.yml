@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: ["main"]
 
+# A newer push to a pull request cancels the run of the previous commit (issue #741); a run of main is never cancelled (its deploy waits for the tests).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # ── Backend tests ──────────────────────────────────────────────────────────
   test-backend:
@@ -31,20 +36,20 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       # The suite is the longest job of an integration: it runs in parallel (pytest-xdist, one worker per CPU; the runner
-      # has 4) instead of in a single process. `loadscope` keeps the tests of a module together so its module-scoped fixtures
-      # are built once per worker. `python -m pytest` (not `pytest`) keeps the repo root on sys.path: some tests import
+      # has 4) instead of in a single process. `worksteal` (issue #741) hands tests out one by one and lets an idle worker take them from a busy one: `loadscope` pinned
+      # a whole module to a worker, and a module with 300 s of vector tests left three workers waiting at the end. `--durations` lists the slowest tests of every run. `python -m pytest` (not `pytest`) keeps the repo root on sys.path: some tests import
       # `from tests.x import y`. Override addopts to skip the HTML coverage report; single quotes avoid bash quoting issues.
       # Tests use mongomock (no real DB); ENVIRONMENT=development so db_config does not raise on a missing Atlas URL.
       - name: Run tests in parallel (no coverage outside main)
         if: github.ref != 'refs/heads/main'
-        run: python -m pytest tests/ -n auto --dist loadscope --tb=short -q --override-ini='addopts='
+        run: python -m pytest tests/ -n auto --dist worksteal --durations=30 --durations-min=1 --tb=short -q --override-ini='addopts='
         env:
           ENVIRONMENT: development
 
       # The coverage gate (82 %) is enforced on main, where the tracing cost does not delay a pull request.
       - name: Run tests in parallel with the coverage gate (main)
         if: github.ref == 'refs/heads/main'
-        run: python -m pytest tests/ -n auto --dist loadscope --cov=src --cov-report=term-missing --cov-fail-under=82 --tb=short -q --override-ini='addopts='
+        run: python -m pytest tests/ -n auto --dist worksteal --durations=30 --durations-min=1 --cov=src --cov-report=term-missing --cov-fail-under=82 --tb=short -q --override-ini='addopts='
         env:
           ENVIRONMENT: development
 
