@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Literal, Optional
 from fastapi import APIRouter, Depends, Query
 
 from src.api.deps import get_db
+from src.shotcharts.zone_distribution import zone_counts_by_owner
 from src.shotcharts.zone_rating import rate_zones
 from src.shotcharts.feb_zones import (  # noqa: F401  (private aliases kept for existing tests)
     ZONE_META as _ZONE_META,
@@ -54,7 +55,7 @@ def get_shot_zones(
     team_id: Optional[str] = Query(None, description="Filter by stable team ID"),
     player: Optional[str] = Query(None, description="Filter by player ID"),
     compare: Optional[Literal["league"]] = Query(
-        None, description="'league' adds rating/league_pct/delta_pp/low_sample per zone"),
+        None, description="'league' adds rating/league_pct/delta_pp/percentile/low_sample per zone"),
     db=Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Return shooting percentages by court zone.
@@ -65,12 +66,13 @@ def get_shot_zones(
         collection: MongoDB collection name.
         team_id: Optional stable team ID (FEB ``HEADER.TEAM.id`` / FBCYL ``teamIdExtern``).
         player: Optional player ID filter (FEB id / FBCYL uuid).
-        compare: ``league`` rates each zone against the league average for that zone.
+        compare: ``league`` rates each zone against how the competition shoots there (#760): the quartiles of its teams, or of its players when a player is asked for,
+            weighted by their attempts.
 
     Returns:
         List of 10 zone objects with ``zone``, ``zone_label``, ``points``,
         ``fga``, ``fgm``, ``fg_pct`` (+ ``rating``, ``league_pct``, ``delta_pp``,
-        ``low_sample`` when ``compare=league``).
+        ``percentile``, ``low_sample`` when ``compare=league``).
     """
     try:
         stream, _ = _readers(collection)
@@ -79,9 +81,8 @@ def get_shot_zones(
         zones = _aggregate_zones(accum)
         if compare != "league":
             return zones
-        if team_id or player:
-            accum = stream(coll, team_id=None, player_filter=None)
-        return rate_zones(zones, _aggregate_zones(accum))
+        owners = zone_counts_by_owner(coll, collection, "player" if player else "team")
+        return rate_zones(zones, list(owners.values()))
     except Exception:
         return []
 
