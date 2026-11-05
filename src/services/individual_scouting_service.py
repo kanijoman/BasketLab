@@ -160,13 +160,13 @@ class IndividualScoutingDocxBuilder:
 
     @staticmethod
     def _load_league_zones(coll):
-        """League zone stats used to colour each player's zones relative to the league."""
+        """How the competition's players shot in each zone: what colours each player's zones (#760, #765)."""
         if coll is None:
             return None
-        from src.shotcharts.league_zones import league_zone_stats
+        from src.shotcharts.league_zones import league_zone_distribution
         from src.shotcharts.zone_analysis import ZoneAnalyzer
 
-        return league_zone_stats(ZoneAnalyzer(), coll)
+        return league_zone_distribution(ZoneAnalyzer(), coll, by="player")
 
     def _add_player_page(self, doc, player, all_players, fetcher, coll, logo_bytes, team_id):
         name = player.get("player_name", "—")

@@ -6,7 +6,7 @@ minimum of shots: each entity weighs what it shot, so a player with one shot doe
 """
 import pytest
 
-from src.shotcharts.zone_rating import ZoneRatingConfig, rate_zone, rate_zone_vs_average, rate_zones, weighted_quantile
+from src.shotcharts.zone_rating import rate_zone, rate_zones, weighted_quantile
 
 
 class TestWeightedQuantile:
@@ -121,15 +121,3 @@ class TestRateZones:
     def test_inputs_are_not_mutated(self):
         rate_zones(self.ZONES, self.ENTITIES)
         assert "rating" not in self.ZONES[0]
-
-
-class TestTheOldRuleOfTheServerCharts:
-    """The matplotlib charts of the server (weekly and individual scouting PDFs in API mode) still rate against the league average with fixed margins: the rule that #760 replaces
-    on the web. It keeps its own name and tests until they are migrated (issue #765)."""
-
-    def test_the_fixed_margin_rule_is_what_it_was(self):
-        assert rate_zone_vs_average(60, 100, 400, 1000)["rating"] == "above"
-        assert rate_zone_vs_average(41, 100, 400, 1000)["rating"] == "average"
-        assert rate_zone_vs_average(6, 10, 500, 1000)["rating"] == "average"
-        assert rate_zone_vs_average(43, 100, 400, 1000, ZoneRatingConfig(z_threshold=0.5, min_delta_pp=1.0))["rating"] == "above"
-        assert rate_zone_vs_average(0, 0, 400, 1000)["rating"] == "none" and rate_zone_vs_average(5, 10, 0, 0)["rating"] == "unknown"

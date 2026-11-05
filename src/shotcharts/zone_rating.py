@@ -5,7 +5,6 @@ what each team (or each player, when a player is rated) shot there; ``above`` is
 each entity weighs what it shot, so a player with one shot does not move the quartiles, and a zone with few shots is still painted (``low_sample`` is only a hint).
 Pure functions; ``frontend/src/localdata/shots.ts`` is its twin and ``tests/local_vectors/shots_*.json`` the parity between them.
 """
-import math
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -14,9 +13,6 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 class ZoneRatingConfig:
     # below this many attempts the rating is flagged as low-confidence (a hint only: the zone is rated anyway)
     min_fga: int = 10
-    # the fixed-margin rule of ``rate_zone_vs_average`` (the server charts still use it, issue #765)
-    z_threshold: float = 1.0
-    min_delta_pp: float = 2.0
 
 
 LOWER_QUARTILE = 0.25
@@ -75,30 +71,3 @@ def rate_zones(zones: List[Dict[str, Any]], entities: Sequence[Dict[str, Dict[st
         per_entity = [(e[z["zone"]].get("fgm", 0), e[z["zone"]].get("fga", 0)) for e in entities if z["zone"] in e]
         out.append({**z, **rate_zone(z.get("fgm", 0), z.get("fga", 0), per_entity, cfg)})
     return out
-
-
-# --- the rule that #760 replaces on the web, still used by the matplotlib charts of the server (issue #765) -------------------------------------------------------------
-
-_P_FLOOR = 0.01
-
-
-def rate_zone_vs_average(fgm: int, fga: int, league_fgm: int, league_fga: int, cfg: Optional[ZoneRatingConfig] = None) -> Dict[str, Any]:
-    """The previous rule: against the league AVERAGE of the zone, ``above``/``below`` only if the gap is at least ``min_delta_pp`` points and the binomial ``z`` at least ``z_threshold``."""
-    cfg = cfg or ZoneRatingConfig()
-    low = fga < cfg.min_fga
-    if fga <= 0:
-        return {"league_pct": _pct(league_fgm, league_fga), "delta_pp": None, "rating": "none", "low_sample": low}
-    if league_fga <= 0:
-        return {"league_pct": None, "delta_pp": None, "rating": "unknown", "low_sample": low}
-    p, p_league = fgm / fga, league_fgm / league_fga
-    delta_pp = (p - p_league) * 100.0
-    q = min(max(p_league, _P_FLOOR), 1 - _P_FLOOR)
-    z = (p - p_league) / math.sqrt(q * (1 - q) / fga)
-    rating = "average"
-    if abs(delta_pp) >= cfg.min_delta_pp and abs(z) >= cfg.z_threshold:
-        rating = "above" if delta_pp > 0 else "below"
-    return {"league_pct": p_league * 100.0, "delta_pp": delta_pp, "rating": rating, "low_sample": low}
-
-
-def _pct(made: int, att: int) -> Optional[float]:
-    return made / att * 100.0 if att > 0 else None

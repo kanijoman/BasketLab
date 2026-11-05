@@ -39,7 +39,7 @@ from src.utils.time_utils import fbcyl_game_day
 from stats.stats_calculator import StatsCalculator
 from shotcharts import ShotChartVisualizer
 from shotcharts.zone_analysis import ZoneAnalyzer
-from shotcharts.league_zones import league_zone_stats
+from shotcharts.league_zones import league_zone_distribution
 from shotcharts.coordinate_utils import convert_shots_for_zone_analysis
 
 from src.services._weekly_report_helpers import (
@@ -532,8 +532,8 @@ class WeeklyReportService:
             fig = self._vis.plot_heatmap(shots=shots, title=title, figsize=(10, 10), alpha=0.6)
             zf.writestr(f'{team_prefix}/{safe}_Mapa_Calor.png', fig_to_png(fig))
 
-            league = league_zone_stats(
-                self._zones, self._db.connection.get_collection(collection), fbcyl=is_fbcyl)
+            league_coll = self._db.connection.get_collection(collection)
+            league = league_zone_distribution(self._zones, league_coll, fbcyl=is_fbcyl, by='team')      # the team's zones against the teams (#765)
             processed = convert_shots_for_zone_analysis(shots)
             stats_z   = self._zones.analyze_zone_performance(processed)
             fig = self._zones.plot_zone_analysis(
@@ -549,6 +549,8 @@ class WeeklyReportService:
                 if pid:
                     by_player.setdefault(str(pid), []).append(shot)
 
+            league_players = (league_zone_distribution(self._zones, league_coll, fbcyl=is_fbcyl, by='player')       # a player's zones against the players (#765)
+                              if any(len(s) >= 5 for s in by_player.values()) else None)
             for pid, pshots in by_player.items():
                 if len(pshots) < 5:
                     continue
@@ -570,7 +572,7 @@ class WeeklyReportService:
                 fig = self._zones.plot_zone_analysis(
                     stats=zstats,
                     title=f'{ptitle} - Análisis por Zonas\n{pm}/{pt} ({pa:.1f}%)',
-                    figsize=(10, 10), league_stats=league)
+                    figsize=(10, 10), league_stats=league_players)
                 zf.writestr(f'{player_prefix}/{safe_p}/{safe_p}_Zonas.png', fig_to_png(fig))
 
         except Exception as exc:
