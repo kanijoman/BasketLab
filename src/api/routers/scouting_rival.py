@@ -63,10 +63,6 @@ def _run(job_id: str, req: ScoutingRequest, db) -> None:
 
 @router.post("", status_code=202, summary="Start the scouting report of a team")
 def start_scouting(req: ScoutingRequest, background_tasks: BackgroundTasks, db=Depends(get_db)) -> Dict[str, str]:
-    from src.utils.collection_utils import is_fbcyl
-
-    if is_fbcyl(req.collection):
-        raise HTTPException(422, "El scouting del rival solo está disponible para colecciones FEB por ahora")
     if req.own_team_id and req.own_team_id == req.team_id:
         raise HTTPException(422, "El equipo propio y el rival deben ser distintos")
     names = _team_names(db, req.collection)
