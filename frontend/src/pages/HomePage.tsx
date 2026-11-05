@@ -1,11 +1,10 @@
 ﻿/**
- * HomePage — landing page showing available collections from MongoDB.
- *
- * Groups collections by league → competition → season desc → group.
+ * HomePage — landing page: the competition is chosen by ámbito → temporada → competición → grupo (issue #761, `lib/collectionPicker`),
+ * with the latest season preselected, and the page links to the one chosen.
  * Recent collections are stored in localStorage for quick access at the top.
  * If the database is empty, directs the user to the Admin panel.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Clock, ChevronRight, Database, RefreshCw } from 'lucide-react'
@@ -14,52 +13,14 @@ import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Button, { IconButton } from '@/components/ui/Button'
 import BrandLogo from '@/components/BrandLogo'
+import CollectionPicker from '@/components/CollectionPicker'
+import { pickCollection, type Selection } from '@/lib/collectionPicker'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
 import { DataUnavailable } from '@/datasource/resolve'
 
-// ── Grouping helpers ──────────────────────────────────────────────────────────
-
-interface GroupedCompetition {
-  competition: string
-  seasons: { season: string; collections: CollectionInfo[] }[]
-}
-
-interface GroupedLeague {
-  league: string
-  competitions: GroupedCompetition[]
-}
-
-function groupCollections(list: CollectionInfo[]): GroupedLeague[] {
-  const byLeague = new Map<string, Map<string, Map<string, CollectionInfo[]>>>()
-
-  for (const col of list) {
-    if (!byLeague.has(col.league)) byLeague.set(col.league, new Map())
-    const byComp = byLeague.get(col.league)!
-    if (!byComp.has(col.competition)) byComp.set(col.competition, new Map())
-    const bySeason = byComp.get(col.competition)!
-    if (!bySeason.has(col.season)) bySeason.set(col.season, [])
-    bySeason.get(col.season)!.push(col)
-  }
-
-  const leagues: GroupedLeague[] = []
-  for (const [league, comps] of [...byLeague.entries()].sort()) {
-    const competitions: GroupedCompetition[] = []
-    for (const [competition, seasons] of [...comps.entries()].sort()) {
-      const seasonList = [...seasons.entries()]
-        .sort((a, b) => b[0].localeCompare(a[0])) // season desc
-        .map(([season, cols]) => ({
-          season,
-          collections: cols.sort((a, b) => (a.group ?? '').localeCompare(b.group ?? '')),
-        }))
-      competitions.push({ competition, seasons: seasonList })
-    }
-    leagues.push({ league, competitions })
-  }
-  return leagues
-}
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/** The competition the selectors resolve to: a link to it. */
 function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => void }) {
   const isFbcyl = col.league === 'FBCYL'
   return (
@@ -90,56 +51,11 @@ function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => 
   )
 }
 
-function LeagueSection({
-  group,
-  onNavigate,
-}: {
-  group: GroupedLeague
-  onNavigate: (col: CollectionInfo) => void
-}) {
-  const isFbcyl = group.league === 'FBCYL'
-  const total = group.competitions.reduce(
-    (n, c) => n + c.seasons.reduce((s, ss) => s + ss.collections.length, 0),
-    0,
-  )
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <span className={`text-xs px-2.5 py-1 rounded-pill font-semibold ${
-          isFbcyl ? 'bg-secondary/20 text-secondary-text' : 'bg-accent/20 text-accent-text'
-        }`}>
-          {group.league}
-        </span>
-        <span className="text-xs text-ink-faint">{total} colecciones</span>
-      </div>
-
-      <div className="space-y-5">
-        {group.competitions.map(comp => (
-          <div key={comp.competition} className="space-y-2">
-            <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
-              {comp.competition}
-            </p>
-            {comp.seasons.map(s => (
-              <div key={s.season} className="space-y-1.5">
-                {s.collections.length > 1 && (
-                  <p className="text-xs text-ink-faint ml-1">Temporada {s.season}</p>
-                )}
-                {s.collections.map(col => (
-                  <CollectionCard key={col.name} col={col} onClick={() => onNavigate(col)} />
-                ))}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const [recents, setRecents] = useState<RecentCollection[]>([])
+  const [selection, setSelection] = useState<Selection>({})
 
   useEffect(() => {
     setRecents(loadRecents())
@@ -165,7 +81,7 @@ export default function HomePage() {
     saveRecent(col.name, col.league === 'FBCYL')
   }
 
-  const grouped = collections ? groupCollections(collections) : []
+  const picked = useMemo(() => pickCollection(collections ?? [], selection).collection, [collections, selection])
 
   return (
     <PageTransition>
@@ -249,11 +165,12 @@ export default function HomePage() {
               </div>
             )}
 
-            {!isLoading && !isError && grouped.length > 0 && (
-              <div className="space-y-8">
-                {grouped.map(g => (
-                  <LeagueSection key={g.league} group={g} onNavigate={handleNavigate} />
-                ))}
+            {!isLoading && !isError && collections && collections.length > 0 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <CollectionPicker list={collections} value={selection} onChange={next => setSelection(next)} />
+                </div>
+                {picked && <CollectionCard col={picked} onClick={() => handleNavigate(picked)} />}
               </div>
             )}
           </div>

@@ -26,22 +26,29 @@ afterEach(() => vi.restoreAllMocks())
 
 // Issue #191 (U4): change of competition from the header, staying on the same page.
 describe('CollectionSwitcher (issue #191)', () => {
-  it('lists the competitions with the current one chosen', async () => {
+  it('shows only the levels with something to choose, starting on the current competition (#761)', async () => {
     show('/LF2_2025_A/teams')
-    const select = await screen.findByRole('combobox', { name: 'Competición' })
+    const select = await screen.findByRole('combobox', { name: 'Grupo' })
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2))
-    expect(select).toHaveValue('LF2_2025_A')
+    expect(select).toHaveValue('A')
+    expect(screen.getAllByRole('combobox')).toHaveLength(1)      // one ámbito, one season, one competition: nothing to choose
+  })
+
+  it('changing the season keeps the page and the competition when they exist there (#761)', async () => {
+    show('/LF2_2025_A/rotaciones', [...LIST, { ...LIST[0], name: 'LF2_2024_A', season: '2024-2025' }] as client.CollectionInfo[])
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Temporada' }), { target: { value: '2024-2025' } })
+    expect(screen.getByTestId('where')).toHaveTextContent('/LF2_2024_A/rotaciones')
   })
 
   it('goes to the same page of the other competition', async () => {
     show('/LF2_2025_A/lineups')
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Competición' }), { target: { value: 'LF2_2025_B' } })
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Grupo' }), { target: { value: 'B' } })
     expect(screen.getByTestId('where')).toHaveTextContent('/LF2_2025_B/lineups')
   })
 
   it('from the summary it goes to the summary', async () => {
     show('/LF2_2025_A')
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Competición' }), { target: { value: 'LF2_2025_B' } })
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Grupo' }), { target: { value: 'B' } })
     expect(screen.getByTestId('where')).toHaveTextContent('/LF2_2025_B')
   })
 
