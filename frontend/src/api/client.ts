@@ -60,20 +60,6 @@ export interface TeamEntry {
 export const getTeamsInCollection = (collection: string) =>
   fromSource('team-stats', () => localTeamNames(collection), () => get<string[]>(`/collections/?collection=${encodeURIComponent(collection)}`))
 
-export const detectFormat = (collection: string) =>
-  get<{ collection: string; is_fbcyl: boolean }>(
-    `/collections/format?collection=${encodeURIComponent(collection)}`,
-  )
-
-export const resolveCollectionName = (
-  competition: string,
-  season: string,
-  group: string,
-) =>
-  get<{ collection_name: string }>(
-    `/collections/resolve?competition=${encodeURIComponent(competition)}&season=${encodeURIComponent(season)}&group=${encodeURIComponent(group)}`,
-  )
-
 // ── Teams ─────────────────────────────────────────────────────────────────────
 
 export interface TeamFilters {
@@ -134,14 +120,6 @@ export const getTeamComparison = (collection: string, by: ComparisonKind, range?
       return get<TeamComparison>(`/teams/${encodeURIComponent(collection)}/compare?${qs}`)
     },
   )
-
-export const getTeamQuartiles = (collection: string) =>
-  get<Record<string, Record<string, number>>>(
-    `/teams/${encodeURIComponent(collection)}/quartiles`,
-  )
-
-/** @deprecated Use getTeamQuartiles */
-export const getQuartiles = getTeamQuartiles
 
 /** Per-team intra-game consistency: {team_name: {stat_key: {mean, std, cv, n}}} */
 export interface CVEntry { mean: number; std: number; cv: number; n: number }
@@ -216,11 +194,6 @@ export const getInOutAnalysis = (collection: string, playerId: string) =>
     'inout',
     () => localInOut(collection, playerId),
     () => get<InOutResult>(`/players/${encodeURIComponent(collection)}/inout/${encodeURIComponent(playerId)}`),
-  )
-
-export const getPlayersTogether = (collection: string, p1: string, p2: string) =>
-  get<PlayersTogetherResult>(
-    `/players/${encodeURIComponent(collection)}/together/${encodeURIComponent(p1)}/${encodeURIComponent(p2)}`,
   )
 
 // ── Lineups ───────────────────────────────────────────────────────────────────
@@ -549,21 +522,6 @@ async function downloadBlob(res: Response, fallback: string): Promise<Blob> {
   return res.blob()
 }
 
-/** Convert an HTML report to PDF (kept for the planned rule-based report engine). */
-export const exportReportPdf = async (
-  html: string,
-  team: string,
-  analysisType = 'own',
-): Promise<Blob> =>
-  downloadBlob(
-    await fetch(`${BASE}/reports/export-pdf`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ html, team, analysis_type: analysisType }),
-    }),
-    'Error generando PDF',
-  )
-
 // ── Match Analysis ────────────────────────────────────────────────────────────
 
 export interface MatchSummary {
@@ -628,16 +586,6 @@ export const getMultiPlayerStats = (collections: string[], is_fbcyl = false) =>
     'multi-phase',
     () => localMultiPlayerStats(collections),
     () => get<PlayerStat[]>(`/multi/player-stats?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`),
-  )
-
-export const getMultiTeamStatsBreakdown = (collections: string[], is_fbcyl = false) =>
-  get<Record<string, TeamStat[]>>(
-    `/multi/team-stats/breakdown?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
-  )
-
-export const getMultiPlayerStatsBreakdown = (collections: string[], is_fbcyl = false) =>
-  get<Record<string, PlayerStat[]>>(
-    `/multi/player-stats/breakdown?collections=${collections.map(encodeURIComponent).join(',')}&is_fbcyl=${is_fbcyl}`,
   )
 
 export const getSiblingCollections = (collection: string) =>
@@ -945,17 +893,6 @@ export interface CollectionInfo {
 
 export const getCollectionList = () =>
   fromSource('collections', () => localCollectionList(), () => get<CollectionInfo[]>('/collections/list'))
-
-// ── Reports (binary downloads) ────────────────────────────────────────────────
-
-export const getPlayerScoutingUrl = (collection: string, playerId: string) =>
-  `${BASE}/reports/${encodeURIComponent(collection)}/player-scouting/${encodeURIComponent(playerId)}`
-
-export const getTeamScoutingUrl = (collection: string, teamName: string) =>
-  `${BASE}/reports/${encodeURIComponent(collection)}/team-scouting/${encodeURIComponent(teamName)}`
-
-export const getSeasonSummaryUrl = (collection: string) =>
-  `${BASE}/reports/${encodeURIComponent(collection)}/season-summary`
 
 // ── Historical (read by the kept predictive code) ─────────────────────────────
 
