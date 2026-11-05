@@ -122,8 +122,12 @@ class TestValidation:
         assert client.post(V1, json={**BODY, "own_team_id": "ZZZ"}).status_code == 404
         assert client.post(V1, json={**BODY, "own_team_id": "T1"}).status_code == 422
 
-    def test_fbcyl_is_not_supported_yet(self, client):
-        assert client.post(V1, json={**BODY, "collection": "FBCYL_1A_FASE_GRUPO_A_2025"}).status_code == 422
+    def test_a_fbcyl_collection_starts_a_job_like_a_feb_one(self, client):
+        """Issue #635: FBCYL is no longer refused (it was a 422 «solo FEB por ahora»): the service decides what a collection can give."""
+        response = client.post(V1, json={**BODY, "collection": "FBCYL_1A_FASE_GRUPO_A_2025"})
+        assert response.status_code == 202
+        wait_done(client, response.json()["job_id"])
+        assert CALLS[-1][0] == "FBCYL_1A_FASE_GRUPO_A_2025"
 
     def test_a_body_without_team_is_422(self, client):
         assert client.post(V1, json={"collection": COLLECTION}).status_code == 422

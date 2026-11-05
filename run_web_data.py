@@ -27,7 +27,7 @@ def main(argv=None) -> int:
     from src.live_prep.package_sealing import make_sealer
     from src.local_data.images_export import Source
     from src.local_data.web_data import publish_web_data
-    from src.local_data.scouting_export import interest_clubs, scouting_collections
+    from src.local_data.scouting_export import fbcyl_interest_clubs, interest_clubs, scouting_collections
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
 
     handler = shared_handler()
@@ -38,7 +38,7 @@ def main(argv=None) -> int:
     except ValueError as error:
         print(error, file=sys.stderr)
         return 2
-    scouting = [] if args.no_scouting else (args.scouting or [n for n in scouting_collections(handler, interest_clubs()) if n in names])
+    scouting = [] if args.no_scouting else (args.scouting or [n for n in scouting_collections(handler, interest_clubs(), fbcyl_interest_clubs()) if n in names])
     started = time.time()
     # what each section cost, and which ones were reused because nothing changed (#700): the log is how a slow build is told apart from a stuck one
     manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection), scouting=scouting,

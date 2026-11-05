@@ -201,11 +201,21 @@ describe('ScoutingRivalPage (issue #299)', () => {
     expect(await screen.findByText(/ya hay un informe en preparación/i)).toBeTruthy()
   })
 
-  it('is FEB only for now', async () => {
+  // Issue #635: FBCYL has its scouting too (it was «solo FEB por ahora»): the same page, the teams of the competition, and the notice of its experimental play-by-play
+  // comes with the report
+  it('serves FBCYL too: the teams of the competition can be chosen and the report is read', async () => {
     collectionState.value = { name: 'FBCYL_X', label: 'FBCYL X', isFbcyl: true }
+    scouting.getScoutingScopes.mockResolvedValue(['liga'])
+    scouting.getPublishedScouting.mockResolvedValue({ ...REPORT, own_team: null, comparison: [], scope: 'liga', notices: ['El jugada a jugada de FBCYL es experimental: lo anotan los propios clubes.'] })
     renderPage()
-    expect(screen.getByText(/solo para competiciones FEB/i)).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /generar informe/i })).toBeNull()
+    expect(screen.queryByText(/solo para competiciones FEB/i)).toBeNull()
+    await choose('2', '')
+    expect(api.getLiveTeamNames).toHaveBeenCalledWith('FBCYL_X')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    expect(await screen.findByText(/jugada a jugada de FBCYL es experimental/i)).toBeInTheDocument()
+    expect(scouting.getPublishedScouting).toHaveBeenCalledWith('FBCYL_X', '2', 'liga')
+    expect(screen.queryByRole('radiogroup', { name: 'Partidos a analizar' })).toBeNull()          // no cups: only the league
+    expect(scouting.startScouting).not.toHaveBeenCalled()
   })
 })
 

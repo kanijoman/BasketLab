@@ -53,7 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
   ] },
   { label: 'Informes', items: [
     { subPath: 'report', label: 'Informe semanal', description: 'Report builder con PDF y DOCX exportable', icon: FileText },
-    { subPath: 'team-report', label: 'Informe de equipo', description: 'Análisis propio por reglas · PDF (en FBCYL también scouting del rival; en FEB, usa Scouting del rival)', icon: ClipboardList },
+    { subPath: 'team-report', label: 'Informe de equipo', description: 'Análisis propio por reglas · PDF (para un rival, usa Scouting del rival)', icon: ClipboardList },
   ] },
 ]
 
