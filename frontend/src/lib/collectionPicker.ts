@@ -21,9 +21,20 @@ const YEAR = /^\d{4}$/
 /** A competition with a single group says «Único»: nothing to show. */
 const ONLY_GROUP = /^[uú]nico$/i
 
+/**
+ * FBCYL names its competitions with a code (`FBCYL_1ª_…`) that says nothing to a person: the names people use, for the codes known so far. A code that is not here is shown as the data
+ * gives it; add the new ones as competitions are published (FEB's names are already readable).
+ */
+const FBCYL_NAMES: Record<string, string> = { '1ª': '1ª División Femenina' }
+
 const words = (text: string) => text.split(/[_\s]+/).filter(Boolean)
 /** «1_8» is a fraction of the draw: 1/8. */
 const fractions = (text: string) => text.replace(/(\d)\s(\d)/g, '$1/$2')
+
+const competitionName = (c: CollectionInfo): string => {
+  const name = words(c.competition ?? '').join(' ')
+  return c.league === 'FBCYL' ? FBCYL_NAMES[name] ?? name : name
+}
 
 /** The four levels of a collection as the selectors show them, read from what the name gives (`localdata/collections.parseComponents`): the years of its season, the name of its competition and the rest (phase and group). */
 export function levelsOf(c: CollectionInfo): Required<Selection> {
@@ -34,7 +45,7 @@ export function levelsOf(c: CollectionInfo): Required<Selection> {
   return {
     ambito: c.league,
     season: years.join('/'),
-    competition: words(c.competition ?? '').join(' '),
+    competition: competitionName(c),
     group: [phase, group].filter(Boolean).join(' '),
   }
 }

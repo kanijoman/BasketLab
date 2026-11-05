@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CollectionInfo } from '@/api/client'
 import { collectionList } from '@/localdata/collections'
-import { collectionLabel, pickCollection, selectionOf } from './collectionPicker'
+import { collectionLabel, levelsOf, pickCollection, selectionOf } from './collectionPicker'
 
 // Issue #761: the competition is chosen by ámbito → temporada → competición → grupo, each level filtered by the previous ones.
 const c = (name: string, league: string, competition: string, season: string, group = ''): CollectionInfo =>
@@ -106,9 +106,17 @@ describe('levels of the real competitions', () => {
     for (const c of REAL) expect(pickCollection(REAL, selectionOf(c)).collection?.name).toBe(c.name)
   })
 
-  it('the FBCYL phase is its group', () => {
+  it('the FBCYL phase is its group, and its competition has a name people know', () => {
     const p = pickCollection(REAL, { ambito: 'FBCYL' })
-    expect(p.selection).toMatchObject({ season: '2026', competition: '1ª', group: 'FASE-GRUPO A-1' })
+    expect(p.selection).toMatchObject({ season: '2026', competition: '1ª División Femenina', group: 'FASE-GRUPO A-1' })
+    expect(collectionLabel(p.collection!)).toBe('1ª División Femenina 2026 · FASE-GRUPO A-1')
+  })
+
+  it('an FBCYL competition without a known name is shown as the data gives it; FEB names are never renamed', () => {
+    const list = collectionList([{ collection: 'FBCYL_U16_2026_FASE_1', league: 'fbcyl', games: 3 }, { collection: 'PRIMERA_FEB_2026_2027_Liga_Regular_Único', league: 'feb', games: 3 }])
+    expect(levelsOf(list.find(c => c.league === 'FBCYL')!).competition).toBe('U16')
+    expect(levelsOf(list.find(c => c.league === 'FEB')!).competition).toBe('PRIMERA FEB')
+    expect(levelsOf({ ...list[0], league: 'FEB', competition: '1ª' }).competition).toBe('1ª')           // the table is only for FBCYL
   })
 
   it('names a collection by its competition, season and group', () => {
