@@ -85,8 +85,8 @@ export function pickCollection(list: CollectionInfo[], wanted: Selection): Picke
 /** The levels of a collection (the header starts on the current one). */
 export const selectionOf = levelsOf
 
-/** «SEGUNDA FEB 2026/2027 · Liga Regular B»: what a collection is called on the home page. */
+/** «SEGUNDA FEB 2026/2027 Liga Regular B»: what a collection is called on the home page. */
 export function collectionLabel(c: CollectionInfo): string {
   const { competition, season, group } = levelsOf(c)
-  return [`${competition} ${season}`.trim(), group].filter(Boolean).join(' · ')
+  return [competition, season, group].filter(Boolean).join(' ')
 }

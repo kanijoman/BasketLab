@@ -109,7 +109,7 @@ describe('levels of the real competitions', () => {
   it('the FBCYL phase is its group, and its competition has a name people know', () => {
     const p = pickCollection(REAL, { ambito: 'FBCYL' })
     expect(p.selection).toMatchObject({ season: '2026/2027', competition: '1ª División Femenina', group: 'FASE-GRUPO A-1' })
-    expect(collectionLabel(p.collection!)).toBe('1ª División Femenina 2026/2027 · FASE-GRUPO A-1')
+    expect(collectionLabel(p.collection!)).toBe('1ª División Femenina 2026/2027 FASE-GRUPO A-1')
   })
 
   it('a single year is the year the season starts in: 2026 is 2026/2027, and two years are shown as they are', () => {
@@ -125,7 +125,7 @@ describe('levels of the real competitions', () => {
   })
 
   it('names a collection by its competition, season and group', () => {
-    expect(collectionLabel(REAL.find(c => c.name.startsWith('SEGUNDA_FEB_2026_2027_Liga_Regular_B'))!)).toBe('SEGUNDA FEB 2026/2027 · Liga Regular B')
-    expect(collectionLabel(REAL.find(c => c.name.startsWith('PRIMERA_FEB_2026_2027'))!)).toBe('PRIMERA FEB 2026/2027 · Liga Regular')
+    expect(collectionLabel(REAL.find(c => c.name.startsWith('SEGUNDA_FEB_2026_2027_Liga_Regular_B'))!)).toBe('SEGUNDA FEB 2026/2027 Liga Regular B')
+    expect(collectionLabel(REAL.find(c => c.name.startsWith('PRIMERA_FEB_2026_2027'))!)).toBe('PRIMERA FEB 2026/2027 Liga Regular')
   })
 })

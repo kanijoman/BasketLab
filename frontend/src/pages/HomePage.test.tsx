@@ -141,6 +141,6 @@ describe('HomePage selectors with the real names of the competitions', () => {
     expect(within(screen.getByRole('combobox', { name: 'Competición' })).getAllByRole('option').map(o => o.textContent)).toEqual(['PRIMERA FEB', 'SEGUNDA FEB'])
     fireEvent.change(screen.getByRole('combobox', { name: 'Competición' }), { target: { value: 'SEGUNDA FEB' } })
     expect(within(screen.getByRole('combobox', { name: 'Grupo' })).getAllByRole('option').map(o => o.textContent)).toEqual(['Liga Regular A', 'Liga Regular B'])
-    expect(screen.getByRole('link', { name: /SEGUNDA FEB 2026\/2027 · Liga Regular A/ })).toHaveAttribute('href', '/SEGUNDA_FEB_2026_2027_Liga_Regular_A')
+    expect(screen.getByRole('link', { name: /SEGUNDA FEB 2026\/2027 Liga Regular A/ })).toHaveAttribute('href', '/SEGUNDA_FEB_2026_2027_Liga_Regular_A')
   })
 })
