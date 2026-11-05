@@ -18,7 +18,7 @@ const [A, B] = [String((TEAMS[0] as { team_name: string }).team_name), String((T
 const PLAYERS = (vectors.leagues[0].players as Record<string, unknown>[]).map((p, i) => ({ ...p, player_id: `p${i}`, team_name: i < 2 ? A : B })) as never[]
 
 beforeEach(() => {
-  localStorage.clear()
+  localStorage.clear(); localStorage.setItem('basketlab.data', 'api')
   raster.svgToPng.mockReset().mockImplementation(async (svg: string) => new TextEncoder().encode(svg))
 })
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers() })

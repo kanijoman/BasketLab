@@ -19,7 +19,7 @@ import CollectionSwitcher from '@/components/CollectionSwitcher'
 import { IconButton } from '@/components/ui/Button'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import ThemeControl from '@/components/ThemeControl'
-import { localDataEnabled, localDatasets } from '@/datasource/switch'
+import { apiDatasets } from '@/datasource/switch'
 import BrandLogo from '@/components/BrandLogo'
 import { useCollection, CollectionProvider } from '@/context/CollectionContext'
 
@@ -71,10 +71,11 @@ function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
       {collection && <div className="min-w-0 hidden md:block"><CollectionSwitcher /></div>}
 
       {/* Right side — future: user avatar / auth */}
-      <div className="ml-auto flex items-center gap-2">
-        {localDataEnabled() && (
-          <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent-text text-xs"
-                title={`Se leen de los ficheros publicados, no de la API: ${localDatasets().join(', ')} (?data=api para volver a la API)`}>Datos locales</span>
+      <div className="ml-auto flex items-center gap-2">
+
+        {apiDatasets().length > 0 && (
+          <span className="px-1.5 py-0.5 rounded bg-warn/15 text-warn text-xs"
+                title={`Se leen de la API, no de los ficheros publicados: ${apiDatasets().join(', ')} (?data=local para volver a los ficheros)`}>Datos de la API</span>
         )}
         <ThemeControl />
         <a

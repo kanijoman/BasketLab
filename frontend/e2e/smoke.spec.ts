@@ -14,6 +14,8 @@ test.beforeEach(async ({ page }) => {
   // a clean start once per test: a reload keeps what the test stored (the theme chosen)
   await page.addInitScript(() => {
     if (!sessionStorage.getItem('e2e-started')) { localStorage.clear(); sessionStorage.setItem('e2e-started', '1') }
+    // the e2e talks to the real API over an in-memory database, not to the published files (the default since #334)
+    if (localStorage.getItem('basketlab.data') === null) localStorage.setItem('basketlab.data', 'api')
   })
 })
 

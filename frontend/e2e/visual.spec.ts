@@ -9,6 +9,7 @@ for (const theme of ['light', 'dark'] as const) {
   for (const width of [390, 768, 1280]) {
     test(`captures: ${theme}, ${width} px`, async ({ page }, info) => {
       await page.addInitScript(t => localStorage.setItem('basketlab-web-theme', t), theme)
+      await page.addInitScript(() => localStorage.setItem('basketlab.data', 'api'))      // the real API over an in-memory database, not the published files (the default since #334)
       await page.setViewportSize({ width, height: 900 })
       for (const [name, path] of PAGES) {
         await page.goto(path)

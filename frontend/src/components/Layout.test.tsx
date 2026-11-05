@@ -67,24 +67,26 @@ describe('Layout shell (issue #191)', () => {
   })
 })
 
-// Issue #327 (step 2): while the tables come from the local files the header says so, so nobody takes them for the API's.
-describe('Layout local data tag (issue #327)', () => {
-  it('shows «Datos locales» only when the local data source is on', () => {
+// Issues #327, #334: the header says when something comes from the API (the default is the published files), so a table from the API is not taken for a local one.
+describe('Layout API data tag (issues #327, #334)', () => {
+  it('shows nothing by default (everything is local) and «Datos de la API» when the API is forced', () => {
     phone(false)
     shell('/LF2/teams')
+    expect(screen.queryByText('Datos de la API')).toBeNull()
     expect(screen.queryByText('Datos locales')).toBeNull()
     cleanup()
-    localStorage.setItem('basketlab.data', 'local')
+    localStorage.setItem('basketlab.data', 'api')
     shell('/LF2/teams')
-    expect(screen.getByText('Datos locales')).toBeInTheDocument()
+    expect(screen.getByText('Datos de la API')).toBeInTheDocument()
   })
 
-  // Issue #329: with only some datasets on, the tag says which, so a table from the API is not taken for a local one.
-  it('says which datasets are local when only some are (the others still come from the API)', () => {
+  // Issue #329: with only some datasets local, the tag says which ones still read the API.
+  it('says which datasets still read the API when only some are local', () => {
     phone(false)
     localStorage.setItem('basketlab.data', 'local:team-report')
     shell('/LF2/team-report')
-    expect(screen.getByText('Datos locales')).toHaveAttribute('title', expect.stringContaining('team-report'))
-    expect(screen.getByText('Datos locales').getAttribute('title')).not.toContain('team-stats')
+    const title = screen.getByText('Datos de la API').getAttribute('title') ?? ''
+    expect(title).toContain('team-stats')
+    expect(title).not.toContain('team-report,')
   })
 })

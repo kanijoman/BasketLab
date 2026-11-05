@@ -25,7 +25,7 @@ class FakeEventSource {                                              // what the
 }
 
 beforeEach(() => {
-  localStorage.clear(); resetLocalData(); calls = []; streamed = []
+  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []; streamed = []
   vi.mocked(loadWebShots).mockReset().mockResolvedValue(shotVectors.payload as never)
   vi.mocked(loadWebRotations).mockReset().mockResolvedValue(ROTATIONS as never)
   ;(globalThis as { EventSource?: unknown }).EventSource = FakeEventSource

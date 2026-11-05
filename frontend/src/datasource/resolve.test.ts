@@ -7,7 +7,7 @@ import { WebDataUnavailable } from '@/webdata/client'
 // The ONE policy of the migration (issue #329): a dataset that is on reads the published files; if they cannot answer it reads the API as before;
 // an access problem is not «cannot answer» (the reader must unlock: the API is not a way round the keys); any other error is an error.
 const turnOn = (value = 'local') => localStorage.setItem(DATA_FLAG_KEY, value)
-beforeEach(() => { localStorage.clear(); window.history.replaceState(null, '', '/') })
+beforeEach(() => { localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); window.history.replaceState(null, '', '/') })
 
 describe('fromSource', () => {
   it('off: the API answers and the local reader is never called', async () => {

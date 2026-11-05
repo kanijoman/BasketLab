@@ -11,6 +11,7 @@ for (const theme of ['light', 'dark'] as const) {
     test(`no accessibility violations: ${theme}, ${width} px`, async ({ page }) => {
       test.setTimeout(180_000)
       await page.addInitScript(t => localStorage.setItem('basketlab-web-theme', t), theme)
+      await page.addInitScript(() => localStorage.setItem('basketlab.data', 'api'))      // the real API over an in-memory database, not the published files (the default since #334)
       await page.setViewportSize({ width, height: 800 })
       const found: string[] = []
       for (const path of PAGES) {
