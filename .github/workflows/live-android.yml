@@ -102,7 +102,10 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - uses: gradle/actions/setup-gradle@v4
+      # v6 moved the cache to a proprietary component with its own terms of use; the release is weekly, so the cache is switched off (docs/OPERATIONS.md)
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-disabled: true
 
       - run: npm ci
 
