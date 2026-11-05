@@ -49,6 +49,7 @@ EVOLUTION_FBCYL_OUT = Path(__file__).resolve().parent / "evolution_fbcyl.json"
 COLLECTIONS_OUT = Path(__file__).resolve().parent / "collections.json"
 QUARTILES_OUT = Path(__file__).resolve().parent / "player_quartiles.json"
 REPORT_HTML_OUT = Path(__file__).resolve().parent / "report_html.json"
+SCOUTING_COMPARE_OUT = Path(__file__).resolve().parent / "scouting_compare.json"
 SCOUTING_DOCX_OUT = Path(__file__).resolve().parent / "scouting_docx.json"
 WEEKLY_ROWS_OUT = Path(__file__).resolve().parent / "weekly_rows.json"
 SCOUTING_PDF_OUT = Path(__file__).resolve().parent / "scouting_pdf.json"
@@ -497,6 +498,10 @@ def main() -> None:
     from report_vectors import build as build_report_html
 
     _write(REPORT_HTML_OUT, build_report_html(), compact=True)
+
+    from scouting_compare_vectors import build as build_scouting_compare
+
+    _write(SCOUTING_COMPARE_OUT, build_scouting_compare())
 
     from scouting_pdf_vectors import build as build_scouting_pdf
 

@@ -1,6 +1,8 @@
 /** Rival scouting report (issue #299): start the report of any team (background job), poll it, read it and download the PDF. */
-import { API_BASE } from './client'
-import { fromSource } from '@/datasource/resolve'
+import { API_BASE, getTeamStats } from './client'
+import { getPointsByOrigin } from './pbpExtended'
+import { DataUnavailable, fromSource } from '@/datasource/resolve'
+import { compareTeams, STAT_CATALOG, type ComparisonRow } from '@/lib/scoutingCompare'
 import { loadScoutingScopes, loadWebScouting } from '@/webdata/client'
 
 export interface ScoutingRequest {
@@ -122,6 +124,32 @@ export async function downloadScoutingPdf(report: ScoutingReport): Promise<Blob>
 export const getScoutingScopes = (collection: string, teamId: string): Promise<ScoutingScope[]> =>
   fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), async () => [], () => [])
 
-/** The published scouting of a team for a scope, or `null` when it is off or cannot be had (the page then generates it as always). */
+/** The published scouting of a team for a scope, or `null` when it is off or cannot be had (with the API asked for on purpose, the page generates it as always). */
 export const getPublishedScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport | null> =>
   fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), async () => null, () => null)
+
+/** The stats of the play-by-play that complete the season rows (the group `Origen de los puntos` of the catalog, as `PBP_KEYS` of the server). */
+const PBP_KEYS = STAT_CATALOG.filter(stat => stat.group === 'Origen de los puntos').map(stat => stat.key)
+
+const idOf = (row: Record<string, unknown>): string => String(row.team_id ?? row._id)
+
+/**
+ * The matchup of our team against the rival, stat by stat (issue #751: it was a job on the server). It is computed on the device from what the web already reads: the season rows
+ * of the competition and, as an enrichment, the play-by-play figures (`ScoutingRivalService._rows`). Without the row of a team there is nothing to compare. An access error (no key)
+ * reaches the page; the play-by-play figures not being published only leaves those stats out.
+ */
+export async function getOwnComparison(collection: string, ownId: string, rivalId: string): Promise<ComparisonRow[]> {
+  const { team_stats: seasonRows } = await getTeamStats(collection)
+  const wanted = new Set([String(ownId), String(rivalId)])
+  const rows: Record<string, Record<string, unknown>> = {}
+  for (const row of seasonRows as unknown as Record<string, unknown>[]) if (wanted.has(idOf(row))) rows[idOf(row)] = { ...row }
+  try {
+    for (const row of (await getPointsByOrigin(collection)) as unknown as Record<string, unknown>[]) {
+      const target = rows[String(row.team_id)]
+      if (target) for (const key of PBP_KEYS) if (row[key] !== null && row[key] !== undefined) target[key] = row[key]
+    }
+  } catch (error) {
+    if (!(error instanceof DataUnavailable)) throw error                  // no key: the reader must unlock; «not published» only leaves those stats out
+  }
+  return compareTeams(rows[String(ownId)], rows[String(rivalId)])
+}
