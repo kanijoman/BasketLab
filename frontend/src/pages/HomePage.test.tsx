@@ -102,14 +102,15 @@ describe('HomePage selectors (issue #761)', () => {
     expect(screen.getByRole('link', { name: /LF2 2026/ })).toHaveAttribute('href', '/LF2_2026_A')
   })
 
-  it('the ámbitos come from the data, and the group selector only exists when there is more than one', async () => {
+  it('the ámbitos come from the data, and the group selector is there while the group says something', async () => {
     api.getCollectionList.mockResolvedValue(LIST)
     renderPage()
     const ambito = await screen.findByRole('combobox', { name: 'Ámbito' })
     expect(within(ambito).getAllByRole('option').map(o => o.textContent)).toEqual(['FEB', 'FBCYL', 'ANDALUCIA'])
     expect(screen.getByRole('combobox', { name: 'Grupo' })).toBeInTheDocument()
+    fireEvent.change(ambito, { target: { value: 'ANDALUCIA' } })
+    expect(screen.queryByRole('combobox', { name: 'Grupo' })).toBeNull()                       // «Senior» with no phase or group: nothing to choose or to say
     fireEvent.change(ambito, { target: { value: 'FBCYL' } })
-    expect(screen.queryByRole('combobox', { name: 'Grupo' })).toBeNull()
     expect(screen.getByRole('link', { name: /1A 2026/ })).toHaveAttribute('href', '/FBCYL_1A_2026')
   })
 

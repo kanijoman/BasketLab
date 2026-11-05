@@ -1,6 +1,6 @@
 /**
  * The four selectors of a competition (issue #761): Ámbito → Temporada → Competición → Grupo, each filtered by the previous ones (`lib/collectionPicker`).
- * The group is hidden when there is only one; in `compact` mode (the header) every level with a single option is hidden. It reports the resolved selection and its collection.
+ * All four are shown, the group too when it is the only one (it names the phase: «Liga Regular») unless it has nothing to say (no phase, no group); in `compact` mode (the header) every level with a single option is hidden. It reports the resolved selection and its collection.
  */
 import { Select } from '@/components/ui/Field'
 import type { CollectionInfo } from '@/api/client'
@@ -19,7 +19,7 @@ export default function CollectionPicker({ list, value, onChange, compact = fals
     { key: 'ambito', label: 'Ámbito', options: picker.ambitos, always: true },
     { key: 'season', label: 'Temporada', options: picker.seasons, always: true },
     { key: 'competition', label: 'Competición', options: picker.competitions, always: true },
-    { key: 'group', label: 'Grupo', options: picker.groups, always: false },
+    { key: 'group', label: 'Grupo', options: picker.groups, always: true },
   ]
   function change(key: keyof Selection, next: string) {
     const picked = pickCollection(list, { ...picker.selection, [key]: next })
@@ -27,7 +27,7 @@ export default function CollectionPicker({ list, value, onChange, compact = fals
   }
   return (
     <>
-      {levels.filter(l => l.options.length > 1 || (l.always && !compact && l.options.length > 0)).map(l => (
+      {levels.filter(l => l.options.length > 1 || (l.always && !compact && l.options.some(Boolean))).map(l => (
         <label key={l.key} className={compact ? 'min-w-0' : 'flex min-w-0 flex-col gap-1 text-xs font-medium text-ink-muted'}>
           {!compact && l.label}
           <Select
