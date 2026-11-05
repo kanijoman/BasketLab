@@ -1,4 +1,4 @@
-"""Entry point of the scheduled Atlas refresh (issue #177): ``python run_atlas_refresh.py [--require-env]``."""
+"""Entry point of the scheduled refresh of the archive (issues #177, #724): ``python run_refresh.py [--require-env]``."""
 import os
 import sys
 

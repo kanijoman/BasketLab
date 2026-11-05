@@ -167,12 +167,6 @@ class TestTheRealCatalogue:
         a1 = next(e for e in refresh_entries(load_catalogue(ROOT / DEFAULT_CATALOGUE)) if e.league == "fbcyl")
         assert get_collection_name(f"FBCYL_{a1.competition_label}", a1.season_value, "") == "FBCYL_1ª_FASE-GRUPO_A-1_2026_"
 
-    def test_the_old_atlas_refresh_has_no_competition_the_catalogue_lacks(self):
-        from src.services.atlas_refresh import load_config
-
-        names = {e.competition_label for e in refresh_entries(load_catalogue(ROOT / DEFAULT_CATALOGUE))}   # the atlas file is only FEB
-        assert {e.competition_label for e in load_config(ROOT / "config" / "atlas_refresh.json")} <= names
-
     def test_the_other_files_no_longer_hold_what_the_catalogue_says(self):
         assert "competitions" not in json.loads((ROOT / "config" / "package_publish.json").read_text(encoding="utf-8"))
         assert "calendars" not in json.loads((ROOT / "config" / "feb_watchlist.json").read_text(encoding="utf-8"))
