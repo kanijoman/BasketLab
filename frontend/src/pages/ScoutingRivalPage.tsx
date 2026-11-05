@@ -167,7 +167,7 @@ export default function ScoutingRivalPage() {
   const { data: teams = [] } = useQuery<TeamEntry[]>({
     queryKey: ['team-list', col],
     queryFn: () => getLiveTeamNames(col),
-    enabled: Boolean(col) && !collection?.isFbcyl,
+    enabled: Boolean(col),
     staleTime: 10 * 60_000,
   })
 
@@ -250,11 +250,6 @@ export default function ScoutingRivalPage() {
 
         {!collection ? (
           <p className="text-sm text-ink-muted">Selecciona una colección.</p>
-        ) : collection.isFbcyl ? (
-          <div className="card p-6 flex items-start gap-3">
-            <FileSearch className="w-5 h-5 text-warn mt-0.5" />
-            <p className="text-sm text-ink-muted">El scouting del rival está disponible solo para competiciones FEB por ahora.</p>
-          </div>
         ) : (
           <>
             <div className="card p-5 space-y-4">

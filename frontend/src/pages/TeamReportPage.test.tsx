@@ -28,8 +28,8 @@ function page(collection: string, report = vi.spyOn(api, 'getTeamReport')) {
 
 afterEach(() => vi.restoreAllMocks())
 
-// Issue #627: the rival scouting has TWO doors in the web. «Scouting del rival» is the complete one (keys, plan, players, comparison, its own PDF) but it is FEB only;
-// the rival mode of this page is a poorer subset that also serves FBCYL. In FEB this page is for the own team and points at the other; in FBCYL it keeps both modes.
+// Issues #627 and #635: the rival scouting has ONE door in the web: «Scouting del rival» (keys, plan, players, comparison, its own PDF), in FEB and in FBCYL. This page is for
+// the own team and points at it, whatever the league.
 describe('TeamReportPage (issue #627)', () => {
   it('in FEB there is only the own analysis, and the rival scouting is one link away', async () => {
     const report = page(FEB)
@@ -43,17 +43,16 @@ describe('TeamReportPage (issue #627)', () => {
     expect(report).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), 'rival')
   })
 
-  it('in FBCYL both modes stay, and the rival one says what it is', async () => {
+  it('in FBCYL it is the same: only the own analysis, and the rival scouting is one link away (it was a rival mode «por reglas» before #635)', async () => {
     const report = page(FBCYL)
     await screen.findByRole('heading', { level: 1, name: 'Informe de equipo' })
-    expect(screen.getByRole('radiogroup', { name: 'Tipo de informe' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Propio equipo' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.queryByRole('radiogroup', { name: 'Tipo de informe' })).toBeNull()
+    expect(screen.getByRole('link', { name: /Scouting del rival/ })).toHaveAttribute('href', `/${FBCYL}/scouting-rival`)
     await screen.findByRole('option', { name: 'Zamora' })
     fireEvent.change(screen.getByLabelText('Equipo'), { target: { value: '10' } })
-    fireEvent.click(screen.getByRole('radio', { name: 'Scouting rival' }))
-    await waitFor(() => expect(report).toHaveBeenCalledWith(FBCYL, '10', 'rival'))
-    expect(screen.getByText(/versión por reglas/i)).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /Scouting del rival/ })).toBeNull()
+    await waitFor(() => expect(report).toHaveBeenCalledWith(FBCYL, '10', 'own'))
+    expect(report).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), 'rival')
+    expect(screen.queryByText(/versión por reglas/i)).toBeNull()
   })
 })
 
