@@ -13,6 +13,10 @@ inputs:
     description: Restore only this collection (and its metadata); empty restores the whole archive
     required: false
     default: ""
+  restore:
+    description: "'false' only downloads (the archive stays in ./archive and the key is left for the steps that save it): the purge, which edits the files, not a database"
+    required: false
+    default: "true"
   mongo-uri:
     description: Connection string of the ephemeral Mongo
     required: false
@@ -34,8 +38,10 @@ runs:
         ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY has the shape of a key but OpenSSH cannot read it (a passphrase? it must have none)"; exit 1; }
         ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
         export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
+        echo "GIT_SSH_COMMAND=$GIT_SSH_COMMAND" >> "$GITHUB_ENV"      # for the steps that save the archive afterwards (archive-refresh, archive-purge)
         python run_archive.py pull --repo "git@github.com:${OWNER}/basketlab-archive.git" --dir archive
     - name: Restore the archive into the ephemeral Mongo
+      if: inputs.restore == 'true'
       shell: bash
       env:
         MONGODB_CONNECTION_STRING: ${{ inputs.mongo-uri }}
@@ -43,6 +49,7 @@ runs:
       run: python run_archive.py load --src archive --replace ${COLLECTION:+--collection "$COLLECTION"}
     # An index is not part of the archive: the packages read the games of a team across the collections of a season and without it every game (about 1 MB) is scanned
     - name: Create the team index
+      if: inputs.restore == 'true'
       shell: bash
       env:
         MONGODB_CONNECTION_STRING: ${{ inputs.mongo-uri }}

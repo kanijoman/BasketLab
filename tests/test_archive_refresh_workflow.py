@@ -38,7 +38,7 @@ class TestTheRefresh:
 
     def test_it_restores_the_archive_scrapes_the_active_competitions_of_the_catalogue_fills_derived_and_saves(self):
         runs = _runs(self.wf)
-        order = [runs.index(s) for s in ("run_archive.py pull", "run_archive.py load --src archive --replace", "run_refresh.py --config config/competitions.json",
+        order = [runs.index(s) for s in ("run_refresh.py --config config/competitions.json",
                                          "run_backfill_derived.py", "run_archive.py dump --out archive --no-shrink", "run_archive.py push")]
         assert order == sorted(order)
 
@@ -73,7 +73,7 @@ class TestTheSingleWriter:
     def test_the_publication_restores_the_archive_and_builds_from_it_without_scraping_or_saving(self):
         web = _load("web-data.yml")
         runs = _runs(web)
-        assert "run_archive.py load --src archive --replace" in runs and "run_web_data.py" in runs
+        assert "restore-archive" in str(web) and "run_web_data.py" in runs
         assert "run_refresh.py --config" not in runs and "run_backfill_derived.py" not in runs and "run_archive.py dump" not in runs
 
     def test_the_publication_waits_for_the_refresh_and_the_purge_and_no_longer_for_the_atlas_one(self):
@@ -96,23 +96,21 @@ class TestTheGuardsOfTheWriter:
         assert "--no-shrink" in save["run"]
 
     def test_a_failed_download_or_restore_stops_everything_that_would_use_the_empty_database(self):
-        assert self.steps["Restore the archive into the ephemeral Mongo"]["if"] == "steps.pull.outcome == 'success'"
+        assert self.steps["Restore the archive"]["id"] == "restore" and self.steps["Restore the archive"]["if"] == "github.event_name != 'pull_request'"
         assert "steps.restore.outcome == 'success'" in self.steps["Scrape the new games"]["if"]
         assert "steps.restore.outcome == 'success'" in self.steps["Fill DERIVED in the games"]["if"]
-        assert "continue-on-error" not in self.steps["Restore the archive into the ephemeral Mongo"]       # a red restore must turn the run red
+        assert "continue-on-error" not in self.steps["Restore the archive"]       # a red restore must turn the run red
 
     def test_everything_works_on_the_ephemeral_mongo_and_nothing_touches_atlas(self):
         wf = _load("archive-refresh.yml")
         assert wf["jobs"]["refresh"]["services"]["mongo"]["image"].startswith("mongo:")
-        for name in ("Restore the archive into the ephemeral Mongo", "Scrape the new games", "Fill DERIVED in the games", "Save the archive"):
+        for name in ("Scrape the new games", "Fill DERIVED in the games", "Save the archive"):
             assert "EPHEMERAL_MONGO" in self.steps[name]["env"]["MONGODB_CONNECTION_STRING"]
         assert "secrets.ATLAS" not in (WORKFLOWS / "archive-refresh.yml").read_text(encoding="utf-8")
 
-    def test_the_deploy_key_is_rebuilt_and_checked_before_it_is_used_regression(self):
-        run = self.steps["Download the archive"]["run"]
-        assert "python -m src.local_data.ssh_key" in run and "ssh-keygen -y -f" in run
-        assert run.index("python -m src.local_data.ssh_key") < run.index("ssh-keygen -y -f") < run.index("run_archive.py pull")
-        assert "ARCHIVE_DEPLOY_KEY" in run.split("ssh_key", 1)[1].split("exit 1", 1)[0]
+    def test_the_download_is_the_shared_action_whose_key_handling_is_tested_there(self):
+        step = self.steps["Restore the archive"]
+        assert step["uses"] == "./.github/actions/restore-archive" and step["with"]["deploy-key"] == "${{ secrets.ARCHIVE_DEPLOY_KEY }}"
 
 
 class TestThePurgeWorkflow:
@@ -144,9 +142,8 @@ class TestThePurgeWorkflow:
         assert [names.index(n) for n in order] == sorted(names.index(n) for n in order)
         assert "continue-on-error" not in self.steps["Purge"] and "!cancelled()" not in self.steps["Save the archive"]["if"]
 
-    def test_it_pushes_with_the_deploy_key_after_rebuilding_and_checking_it(self):
-        run = self.steps["Download the archive"]["run"]
-        assert run.index("python -m src.local_data.ssh_key") < run.index("ssh-keygen -y -f") < run.index("run_archive.py pull")
+    def test_it_pushes_with_the_deploy_key_that_the_download_leaves_in_the_environment(self):
+        assert self.steps["Download the archive"]["uses"] == "./.github/actions/restore-archive"
         assert "run_archive.py push" in self.steps["Save the archive"]["run"] and "GIT_SSH_COMMAND" in self.steps["Save the archive"]["run"]
 
     def test_it_does_not_touch_the_database_or_atlas(self):

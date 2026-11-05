@@ -59,26 +59,12 @@ jobs:
       - name: Validate the catalogue (pull requests)
         if: github.event_name == 'pull_request'
         run: python -c "import run_refresh, run_backfill_derived, run_archive; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions to refresh')"
-      - name: Download the archive
-        id: pull
-        if: github.event_name != 'pull_request'
-        env:
-          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          # The secret was saved by hand: whatever it arrived with (CRLF, BOM, spaces for newlines...) the key is rebuilt from its base64 body
-          printf '%s' "$ARCHIVE_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/archive_key || { echo "::error::ARCHIVE_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
-          chmod 600 ~/.ssh/archive_key
-          ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY has the shape of a key but OpenSSH cannot read it (a passphrase? it must have none)"; exit 1; }
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
-          python run_archive.py pull --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive
-      - name: Restore the archive into the ephemeral Mongo
+      - name: Restore the archive
         id: restore
-        if: steps.pull.outcome == 'success'
-        env:
-          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_archive.py load --src archive --replace
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
       # Only what has been played since the archive: the games stored are skipped; the last days are looked at again (recheck_days) in case FEB corrected them.
       - name: Scrape the new games
         id: scrape

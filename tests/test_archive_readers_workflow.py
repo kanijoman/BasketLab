@@ -115,3 +115,34 @@ class TestRuleEvaluation:
     def test_it_stays_manual_and_never_writes_the_archive(self):
         assert list(_on(self.wf)) == ["workflow_dispatch"]
         assert "run_archive.py push" not in (ROOT / ".github" / "workflows" / "rule-evaluation.yml").read_text(encoding="utf-8")
+
+
+WORKFLOWS_WITH_THE_ARCHIVE = ("archive-refresh.yml", "archive-purge.yml", "web-data.yml", "atlas-compare.yml", "live-packages.yml", "rule-evaluation.yml")
+
+
+class TestOneCopyOfTheDownload:
+    """Issue #732: the download of the archive with the rebuilt deploy key lived four times inline; it is written once, in the action, and every workflow uses it."""
+
+    action = yaml.safe_load(ACTION.read_text(encoding="utf-8"))
+    steps = {s["name"]: s for s in action["runs"]["steps"]}
+
+    def test_a_workflow_that_only_downloads_can_skip_the_restore_and_the_index(self):
+        assert self.action["inputs"]["restore"]["default"] in ("true", True)
+        for name in ("Restore the archive into the ephemeral Mongo", "Create the team index"):
+            assert "inputs.restore" in self.steps[name]["if"], name
+        assert "if" not in self.steps["Download the archive"]                 # the download always happens
+
+    def test_the_key_stays_available_for_the_steps_that_save_the_archive_afterwards(self):
+        assert "GITHUB_ENV" in self.steps["Download the archive"]["run"] and "GIT_SSH_COMMAND" in self.steps["Download the archive"]["run"]
+
+    def test_no_workflow_keeps_its_own_copy_of_the_download_script(self):
+        for name in WORKFLOWS_WITH_THE_ARCHIVE:
+            text = (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+            assert "src.local_data.ssh_key" not in text and "run_archive.py pull" not in text, name
+            assert "./.github/actions/restore-archive" in text, name
+
+    def test_the_writers_download_with_the_action_and_the_purge_does_not_restore(self):
+        purge = next(s for s in _steps(_load("archive-purge.yml"), "purge") if s.get("name") == "Download the archive")
+        assert purge["uses"] == "./.github/actions/restore-archive" and str(purge["with"]["restore"]).lower() == "false"
+        refresh = next(s for s in _steps(_load("archive-refresh.yml"), "refresh") if s.get("id") == "restore")
+        assert refresh["uses"] == "./.github/actions/restore-archive" and str(refresh["with"].get("restore", "true")).lower() == "true"
