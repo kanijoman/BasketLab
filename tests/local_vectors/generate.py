@@ -337,11 +337,16 @@ def _evolution_service(games: list, collection: str, team_ids) -> EvolutionServi
             super().__init__(handler)
             self._rows = {}
 
+        def _cached(self, key, compute):
+            if key not in self._rows:                                     # NOT ``setdefault(key, compute())``: it evaluates the pipeline even when the rows are there (#741)
+                self._rows[key] = compute()
+            return self._rows[key]
+
         def _evolution_feb(self, coll, team_id):
-            return self._rows.setdefault(("feb", team_id), super()._evolution_feb(coll, team_id))
+            return self._cached(("feb", team_id), lambda: super(_Cached, self)._evolution_feb(coll, team_id))
 
         def _evolution_fbcyl(self, coll, team_id):
-            return self._rows.setdefault(("fbcyl", team_id), super()._evolution_fbcyl(coll, team_id))
+            return self._cached(("fbcyl", team_id), lambda: super(_Cached, self)._evolution_fbcyl(coll, team_id))
 
     return _Cached(_Handler())
 
