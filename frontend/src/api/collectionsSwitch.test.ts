@@ -15,7 +15,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); resetLocalData(); calls = []
+  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
   vi.mocked(loadWebCollectionInfos).mockReset().mockResolvedValue(MANIFEST as never)
   globalThis.fetch = vi.fn(async (url: string) => { calls.push(String(url)); return { ok: true, json: async () => [{ name: 'DE_LA_API' }] } }) as unknown as typeof fetch
 })

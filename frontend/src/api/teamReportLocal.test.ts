@@ -15,7 +15,7 @@ const realFetch = globalThis.fetch
 let apiCalls: string[]
 
 beforeEach(() => {
-  localStorage.clear()
+  localStorage.clear(); localStorage.setItem('basketlab.data', 'api')
   apiCalls = []
   globalThis.fetch = vi.fn(async (url: string) => { apiCalls.push(String(url)); return { ok: true, json: async () => FROM_API } }) as unknown as typeof fetch
 })

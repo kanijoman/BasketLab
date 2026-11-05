@@ -9,7 +9,7 @@ import { DATA_FLAG_KEY } from '@/datasource/switch'
 const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
 const REPORT = { scope: 'copa', team: { id: '101', name: 'ALPHA' } }
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => { localStorage.clear(); localStorage.setItem('basketlab.data', 'api') })
 afterEach(() => vi.restoreAllMocks())
 
 describe('published scouting', () => {

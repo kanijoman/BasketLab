@@ -13,7 +13,7 @@ let calls: string[]
 const realFetch = globalThis.fetch
 
 beforeEach(() => {
-  localStorage.clear(); resetLocalData(); calls = []
+  localStorage.clear(); localStorage.setItem('basketlab.data', 'api'); resetLocalData(); calls = []
   vi.mocked(loadWebDerived).mockReset().mockResolvedValue(vectors.derived as never)
   globalThis.fetch = vi.fn(async (url: string) => {
     calls.push(String(url))

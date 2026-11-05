@@ -17,7 +17,7 @@ const FEB = 'PRIMERA_FEB_2026_2027_Liga_Regular_Unico'
 const PLAYERS = [1, 2, 3, 4, 5].map(i => ({ player_id: String(i), player_name: `JUGADOR ${i}`, team_id: i < 4 ? '101' : '102', team_name: i < 4 ? 'ALFA' : 'BRAVO', games_played: 10, points_per_game: i })) as never[]
 
 beforeEach(() => {
-  localStorage.clear()
+  localStorage.clear(); localStorage.setItem('basketlab.data', 'api')
   raster.svgToPng.mockReset().mockResolvedValue(TINY_PNG)
   vi.spyOn(client, 'getShotRaw').mockResolvedValue([])                    // a test that wants shots says so; none must reach the network
 })

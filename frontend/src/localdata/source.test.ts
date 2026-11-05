@@ -40,21 +40,23 @@ const realFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = realFetch })          // not unstubAllGlobals: it would drop the in-memory localStorage of the setup
 
 describe('the switch', () => {
-  it('is off by default, and nothing is fetched', async () => {
+  it('is on by default (#334), and an API choice fetches nothing', async () => {
     serve()
+    expect(localDataEnabled()).toBe(true)
+    localStorage.setItem(DATA_FLAG_KEY, 'api')
     expect(localDataEnabled()).toBe(false)
     expect(await localTeamStats(FEB, {})).toBeNull()
     expect(fetched).toEqual([])
   })
 
-  it('?data=local turns it on and the choice is remembered; ?data=api turns it off', () => {
-    window.history.replaceState(null, '', '/x?data=local')
-    expect(localDataEnabled()).toBe(true)
-    window.history.replaceState(null, '', '/y')
-    expect(localDataEnabled()).toBe(true)
-    window.history.replaceState(null, '', '/y?data=api')
+  it('?data=api turns it off and the choice is remembered; ?data=local goes back to the default', () => {
+    window.history.replaceState(null, '', '/x?data=api')
     expect(localDataEnabled()).toBe(false)
-    expect(localStorage.getItem(DATA_FLAG_KEY)).toBeNull()
+    window.history.replaceState(null, '', '/y')
+    expect(localDataEnabled()).toBe(false)
+    expect(localStorage.getItem(DATA_FLAG_KEY)).toBe('api')
+    window.history.replaceState(null, '', '/y?data=local')
+    expect(localDataEnabled()).toBe(true)
   })
 })
 
