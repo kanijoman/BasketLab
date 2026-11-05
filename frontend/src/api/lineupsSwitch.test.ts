@@ -4,6 +4,7 @@ import { getLineupAnalysis, LAST_GAME, streamLineupAnalysis } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebLineups, WebDataUnavailable } from '@/webdata/client'
 import vectors from '../../../tests/local_vectors/lineups_feb.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #686: Combinaciones is its own dataset (`lineups`): on, the table of a team is merged on the device from the per-game counters of the publication (at once, no stream); off,
 // or when the competition or the team is not published, the API.
@@ -64,12 +65,12 @@ describe('data source switch: Combinaciones', () => {
     expect(last.every(row => row.games_played === 1)).toBe(true)
   })
 
-  it('on, but the team is not in the publication or the competition is not published: the API; with no key: the access error, not the API', async () => {
+  it('on, but the team is not in the publication or the competition is not published: a clear error, not the API; with no key: the access error', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:lineups')
-    expect((await streamLineupAnalysis(COLLECTION, 'NOBODY', 'X'))[0].players).toEqual(['DE LA API'])
+    await expect(streamLineupAnalysis(COLLECTION, 'NOBODY', 'X')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebLineups).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await getLineupAnalysis(COLLECTION, TEAM, 'A'))[0].players).toEqual(['DE LA API'])
+    await expect(getLineupAnalysis(COLLECTION, TEAM, 'A')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebLineups).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(streamLineupAnalysis(COLLECTION, TEAM, 'A')).rejects.toBeInstanceOf(ScopedAccessError)

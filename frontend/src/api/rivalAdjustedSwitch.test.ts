@@ -3,6 +3,7 @@ import { ScopedAccessError } from '@live-package/crypto'
 import { getRivalAdjusted } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebRivalAdjusted, WebDataUnavailable } from '@/webdata/client'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #710: the rival-adjusted figures are their own dataset (`rival-adjusted`): on, the answer of the endpoint computed when the competition was published; off, or when it
 // is not published, the API.
@@ -34,10 +35,10 @@ describe('data source switch: the rival-adjusted figures', () => {
     expect(loadWebRivalAdjusted).toHaveBeenCalledTimes(1)
   })
 
-  it('on but not published: the API', async () => {
+  it('on but not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:rival-adjusted')
     vi.mocked(loadWebRivalAdjusted).mockRejectedValue(new WebDataUnavailable('sin fichero'))
-    expect(await getRivalAdjusted(COLLECTION)).toEqual({ DE_LA_API: {} })
+    await expect(getRivalAdjusted(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on without the key: the access error, never the API', async () => {

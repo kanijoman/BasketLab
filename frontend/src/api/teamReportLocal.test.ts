@@ -4,9 +4,10 @@ import { getReportTeams, getTeamReport } from './teamReport'
 import * as client from './client'
 import * as web from '@/webdata/client'
 import { DATA_FLAG_KEY } from '@/localdata/source'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // The informe de equipo is the first page served from `web-data` (issue #639): with the local data source on it reads the sealed report published for
-// the staff; with it off, or when the publication cannot answer, it asks the API as before. An access problem is NOT a reason to ask the API: the
+// the staff; with it off on purpose (`?data=api`) it asks the API, and when the publication cannot answer it is a clear error (#334), never the API. An access problem is not a reason either: the
 // reader must be told to unlock (invitation), or the page would work for everyone through the server and the keys would mean nothing.
 const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
 const PUBLISHED = { team: 'DE WEB-DATA', mode: 'own' }
@@ -37,11 +38,11 @@ describe('getTeamReport with the local data source', () => {
     expect(apiCalls).toEqual([])
   })
 
-  it('on, but the publication cannot answer: it falls back to the API', async () => {
+  it('on, but the publication cannot answer: a clear error, and the API is not asked', async () => {
     turnOn()
     vi.spyOn(web, 'loadWebReport').mockRejectedValue(new web.WebDataUnavailable('down'))
-    expect(await getTeamReport(FEB, '101', 'own')).toEqual(FROM_API)
-    expect(apiCalls.length).toBe(1)
+    await expect(getTeamReport(FEB, '101', 'own')).rejects.toBeInstanceOf(DataUnavailable)
+    expect(apiCalls).toEqual([])
   })
 
   it('on, and the reader has no key: the access error reaches the page, the API is NOT asked in its place', async () => {
@@ -69,12 +70,13 @@ describe('getReportTeams with the local data source', () => {
     expect(await getReportTeams(FEB)).toEqual([{ id: '10', name: 'Zamora' }])
   })
 
-  it('on: the teams that have a published report; and the API ones if the publication cannot answer', async () => {
+  it('on: the teams that have a published report; a clear error, not the API ones, if the publication cannot answer', async () => {
     turnOn()
     vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '10', name: 'Zamora' }] as never)
     const published = vi.spyOn(web, 'loadReportTeams').mockResolvedValue([{ id: '101', name: 'ALPHA' }])
     expect(await getReportTeams(FEB)).toEqual([{ id: '101', name: 'ALPHA' }])
     published.mockRejectedValue(new web.WebDataUnavailable('down'))
-    expect(await getReportTeams(FEB)).toEqual([{ id: '10', name: 'Zamora' }])
+    await expect(getReportTeams(FEB)).rejects.toBeInstanceOf(DataUnavailable)
+    expect(client.getLiveTeamNames).not.toHaveBeenCalled()
   })
 })

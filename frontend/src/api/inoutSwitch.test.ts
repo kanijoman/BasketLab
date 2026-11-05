@@ -3,6 +3,7 @@ import { ScopedAccessError } from '@live-package/crypto'
 import { getInOutAnalysis } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebInOut, WebDataUnavailable } from '@/webdata/client'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #678: IN/OUT is its own dataset (`inout`): on, the analysis of a FEB player is the one computed when the competition was published; off, FBCYL, an unpublished competition or a
 // player that is not in it, the API.
@@ -35,12 +36,12 @@ describe('data source switch: IN/OUT', () => {
     expect(loadWebInOut).toHaveBeenCalledTimes(1)
   })
 
-  it('on, but the player is not in the publication or the competition is not published: the API; with no key: the access error, not the API', async () => {
+  it('on, but the player is not in the publication or the competition is not published: a clear error, not the API; with no key: the access error', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:inout')
-    expect((await getInOutAnalysis(COLLECTION, '999')).on.minutes).toBe(-1)
+    await expect(getInOutAnalysis(COLLECTION, '999')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebInOut).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await getInOutAnalysis(COLLECTION, '7')).on.minutes).toBe(-1)
+    await expect(getInOutAnalysis(COLLECTION, '7')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebInOut).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(getInOutAnalysis(COLLECTION, '7')).rejects.toBeInstanceOf(ScopedAccessError)

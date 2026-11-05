@@ -83,8 +83,8 @@ async function failure(res: Response): Promise<Error> {
 
 /**
  * The report of a team. With the dataset `team-report` on (`?data=local`) it is the one published in `web-data`, opened with the open key of the beta or
- * the invitations of the reader (issue #639); when that cannot answer it asks the API as always. An access error (`ScopedAccessError`) is NOT answered
- * by the API (`fromSource`): the page must tell the reader to unlock, otherwise the keys would mean nothing while the server still serves everything.
+ * the invitations of the reader (issue #639); when that cannot answer it is a clear error (#334), never the API. An access error (`ScopedAccessError`) is not answered
+ * by the API either (`fromSource`): the page must tell the reader to unlock, otherwise the keys would mean nothing.
  */
 export const getTeamReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
   fromSource('team-report', () => loadWebReport(collection, teamId, mode), async () => {
@@ -93,7 +93,7 @@ export const getTeamReport = (collection: string, teamId: string, mode: ReportMo
     return res.json() as Promise<TeamReport>
   })
 
-/** The teams to choose from: the ones with a published report with the dataset `report-teams` on (the API's list if it cannot answer), else the API's. */
+/** The teams to choose from: the ones with a published report with the dataset `report-teams` on (a clear error if it cannot answer), else the API's (`?data=api`). */
 export const getReportTeams = (collection: string): Promise<TeamEntry[]> =>
   fromSource('report-teams', () => loadReportTeams(collection), () => getLiveTeamNames(collection))
 

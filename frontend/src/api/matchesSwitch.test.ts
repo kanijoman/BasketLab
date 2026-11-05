@@ -3,6 +3,7 @@ import { ScopedAccessError } from '@live-package/crypto'
 import { getMatchAnalysis, getMatchList } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebMatches, WebDataUnavailable } from '@/webdata/client'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #677: Partidos is its own dataset (`matches`): on, the list and the analysis of a match are the ones computed when the competition was published; off, or when
 // they are not published (or the match is not in them), the API.
@@ -48,16 +49,16 @@ describe('data source switch: Partidos', () => {
     expect(loadWebMatches).toHaveBeenCalledTimes(1)
   })
 
-  it('on, but the match has no analysis in the publication or is not there: the API', async () => {
+  it('on, but the match has no analysis in the publication or is not there: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:matches')
-    expect((await getMatchAnalysis(COLLECTION, 9002)).home.team_name).toBe('DE LA API')
-    expect((await getMatchAnalysis(COLLECTION, 424242)).home.team_name).toBe('DE LA API')
+    await expect(getMatchAnalysis(COLLECTION, 9002)).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(getMatchAnalysis(COLLECTION, 424242)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
-  it('on, but not published: the API; with no key: the access error, not the API', async () => {
+  it('on, but not published: a clear error, not the API; with no key: the access error', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:matches')
     vi.mocked(loadWebMatches).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await getMatchList(COLLECTION))[0].match_id).toBe(-1)
+    await expect(getMatchList(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebMatches).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(getMatchList(COLLECTION)).rejects.toBeInstanceOf(ScopedAccessError)

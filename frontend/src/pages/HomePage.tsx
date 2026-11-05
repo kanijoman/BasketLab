@@ -15,6 +15,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button, { IconButton } from '@/components/ui/Button'
 import BrandLogo from '@/components/BrandLogo'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // ── Grouping helpers ──────────────────────────────────────────────────────────
 
@@ -144,7 +145,7 @@ export default function HomePage() {
     setRecents(loadRecents())
   }, [])
 
-  const { data: collections, isLoading, isError, refetch } = useQuery({
+  const { data: collections, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['collections-list'],
     queryFn: getCollectionList,
     staleTime: 30_000,
@@ -231,7 +232,7 @@ export default function HomePage() {
 
             {isError && (
               <div className="card p-6 text-center space-y-3">
-                <p className="text-sm text-bad">No se pudo conectar con el servidor.</p>
+                <p className="text-sm text-bad">{error instanceof DataUnavailable ? error.message : 'No se pudieron cargar los datos.'}</p>
                 <Button variant="secondary" size="sm" onClick={() => refetch()}>Reintentar</Button>
               </div>
             )}

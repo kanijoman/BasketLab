@@ -4,6 +4,7 @@ import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
 import quartiles from '../../../tests/local_vectors/player_quartiles.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #707: the quartiles of the players are computed from the player table of the competition (dataset `player-stats`); off, or when the competition is not published, the API.
 const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
@@ -36,8 +37,8 @@ describe('data source switch: the quartiles of the players', () => {
     expect(calls.filter(c => c.includes('/api/'))).toEqual([])
   })
 
-  it('on but the competition is not published: the API', async () => {
+  it('on but the competition is not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:player-stats')
-    expect((await getPlayerQuartiles('OTRA')).points_per_game.count).toBe(-1)
+    await expect(getPlayerQuartiles('OTRA')).rejects.toBeInstanceOf(DataUnavailable)
   })
 })

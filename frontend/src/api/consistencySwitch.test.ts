@@ -3,6 +3,7 @@ import { ScopedAccessError } from '@live-package/crypto'
 import { getPlayerConsistency } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebConsistency, WebDataUnavailable } from '@/webdata/client'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #709: the consistency of the players is its own dataset (`player-consistency`): on, the answer of the endpoint computed when the competition was published; off, or when it
 // is not published, the API.
@@ -34,10 +35,10 @@ describe('data source switch: the consistency of the players', () => {
     expect(loadWebConsistency).toHaveBeenCalledTimes(1)
   })
 
-  it('on but not published: the API', async () => {
+  it('on but not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:player-consistency')
     vi.mocked(loadWebConsistency).mockRejectedValue(new WebDataUnavailable('sin fichero'))
-    expect(await getPlayerConsistency(COLLECTION)).toEqual({ DE_LA_API: {} })
+    await expect(getPlayerConsistency(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on without the key: the access error, never the API', async () => {

@@ -3,6 +3,7 @@ import { getCompetitionEvolution, getMultiPlayerStats, getMultiTeamStats, getPla
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #327, step 2: with the local data source on, Estadísticas de equipo and Rankings read the exported files; with it off, or when the
 // competition is not exported, they ask the API as before (the pages do not know the difference).
@@ -45,9 +46,9 @@ describe('data source switch in the API client', () => {
     expect(calls.some(c => c.includes('/api/v1'))).toBe(false)
   })
 
-  it('on but the competition is not exported: falls back to the API', async () => {
+  it('on but the competition is not exported: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local')
-    expect((await getTeamStats('L_F_-2_2025_2026_Otra')).team_stats[0].team_name).toBe('DE LA API')
+    await expect(getTeamStats('L_F_-2_2025_2026_Otra')).rejects.toBeInstanceOf(DataUnavailable)
   })
 })
 
@@ -65,9 +66,9 @@ describe('data source switch: Comparativas', () => {
     expect(calls.some(c => c.includes('/api/v1'))).toBe(false)
   })
 
-  it('on, but a stretch with no date: the API says why (a 400), the device does not guess', async () => {
+  it('on, but a stretch with no date: the device does not guess and says it cannot answer', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:team-comparison')
-    expect((await getTeamComparison(FEB, 'period')).label_a).toBe('DE LA API')
+    await expect(getTeamComparison(FEB, 'period')).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('only the dataset turned on reads the files: the tables stay on the API', async () => {
@@ -94,9 +95,9 @@ describe('data source switch: Multifase', () => {
     expect(calls.some(c => c.includes('/api/v1'))).toBe(false)
   })
 
-  it('on, but one of the collections is not published: the API merges them all (a half merge would be wrong)', async () => {
+  it('on, but one of the collections is not published: no answer (a half merge would be wrong)', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:multi-phase')
-    expect((await getMultiTeamStats([FEB, 'L_F_-2_2025_2026_Otra']))[0].team_name).toBe('DE LA API')
+    await expect(getMultiTeamStats([FEB, 'L_F_-2_2025_2026_Otra'])).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('only that dataset reads the files', async () => {
@@ -125,14 +126,14 @@ describe('data source switch: Evolución', () => {
     expect(await getCompetitionEvolution(FEB, 'nonsense', 3)).toEqual(await getCompetitionEvolution(FEB, 'points', 3))
   })
 
-  it('on: a window the API refuses (2 to 15 games) is left to the API, which says so', async () => {
+  it('on: a window the API refuses (2 to 15 games) is not answered either: a clear error', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
-    expect((await getCompetitionEvolution(FEB, 'points', 1))[0].competition_rolling).toBe(-1)
-    expect((await getCompetitionEvolution(FEB, 'points', 16))[0].competition_rolling).toBe(-1)
+    await expect(getCompetitionEvolution(FEB, 'points', 1)).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(getCompetitionEvolution(FEB, 'points', 16)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
-  it('on, but the competition is not published: the API', async () => {
+  it('on, but the competition is not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
-    expect((await getCompetitionEvolution('L_F_-2_2025_2026_Otra', 'points', 3))[0].competition_rolling).toBe(-1)
+    await expect(getCompetitionEvolution('L_F_-2_2025_2026_Otra', 'points', 3)).rejects.toBeInstanceOf(DataUnavailable)
   })
 })

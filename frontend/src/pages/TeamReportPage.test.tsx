@@ -62,7 +62,7 @@ describe('TeamReportPage (issue #627)', () => {
 const invitation = (scope: string) => `bl1.${btoa(JSON.stringify({ s: scope, k: btoa(String.fromCharCode(...new Uint8Array(32).fill(3))), e: null })).replace(/=+$/, '')}`
 
 describe('TeamReportPage: unlocking (issue #639)', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => { localStorage.clear(); localStorage.setItem('basketlab.data', 'api') })      // the page lists the teams through the API here: the keys are what is under test
 
   it('a reader without the key is asked for an invitation, and the one pasted unlocks the report', async () => {
     const report = vi.spyOn(api, 'getTeamReport')

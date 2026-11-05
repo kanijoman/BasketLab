@@ -2,8 +2,8 @@
 // `index.json` is the only file that keeps its name; everything else carries the hash of its content, so a file is never read in a version that is not
 // the manifest's. Reports are sealed by scope: this opens them with the open key the manifest publishes while the beta lasts and with the invitations
 // (rights) of the reader. Unlocking is the live app's (`@live-package`): one implementation until the shared interface (#330).
-// Everything here answers `WebDataUnavailable` when the data cannot be had (host down, schema unknown, not published) so that the caller falls back
-// to the API, and lets `ScopedAccessError` through: «you have no key for this» is not «try the API».
+// Everything here answers `WebDataUnavailable` when the data cannot be had (host down, schema unknown, not published) so that the caller says there is no answer (no
+// fallback to the API, #334), and lets `ScopedAccessError` through: «you have no key for this» is not «try the API».
 import { decryptScoped, PackageDecryptError, ScopedAccessError } from '@live-package/crypto'
 import { loadRights, scopeKeys } from '@live-package/rights'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
@@ -19,7 +19,7 @@ import type { InOutResult, MatchAnalysis, MatchSummary, PossessionStat, Rotation
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
 
-/** The data cannot be had from `web-data`: the caller falls back to the API. */
+/** The data cannot be had from `web-data`: there is no answer (the API is not asked in its place). */
 export class WebDataUnavailable extends DataUnavailable {}
 
 // The shape of the manifest and of the report indexes is generated from the Python contract (`src/local_data/contract.py`, issue #328)

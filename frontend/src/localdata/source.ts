@@ -1,6 +1,6 @@
 // The local data source (issue #327, step 2): the tables of the web computed from the files `run_local_export.py` writes, instead of the API.
 // Which datasets read it is the switch of `datasource/switch` (`?data=local`, `?data=local:team-stats,…`, `?data=api`). Every function answers `null` when it cannot (switch off,
-// competition not exported, no player rows, file missing or of another format) so that the caller falls back to the API.
+// competition not exported, no player rows, file missing or of another format) so that `fromSource` says there is no answer (it never asks the API in its place, #334).
 import type { InOutResult, LineupRow, PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
