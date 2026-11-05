@@ -1,6 +1,6 @@
 /**
  * The four selectors of a competition (issue #761): Ámbito → Temporada → Competición → Grupo, each filtered by the previous ones (`lib/collectionPicker`).
- * All four are shown, the group too when it is the only one (it names the phase: «Liga Regular») unless it has nothing to say (no phase, no group); in `compact` mode (the header) every level with a single option is hidden. It reports the resolved selection and its collection.
+ * All four are shown, the group too when it is the only one (it names the phase: «Liga Regular») unless it has nothing to say (no phase, no group); in `compact` mode (the header) every level with a single option is hidden except the group. It reports the resolved selection and its collection.
  */
 import { Select } from '@/components/ui/Field'
 import type { CollectionInfo } from '@/api/client'
@@ -27,7 +27,7 @@ export default function CollectionPicker({ list, value, onChange, compact = fals
   }
   return (
     <>
-      {levels.filter(l => l.options.length > 1 || (l.always && !compact && l.options.some(Boolean))).map(l => (
+      {levels.filter(l => l.options.length > 1 || (l.key === 'group' ? l.options.some(Boolean) : l.always && !compact)).map(l => (
         <label key={l.key} className={compact ? 'min-w-0' : 'flex min-w-0 flex-col gap-1 text-xs font-medium text-ink-muted'}>
           {!compact && l.label}
           <Select

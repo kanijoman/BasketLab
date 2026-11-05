@@ -27,8 +27,10 @@ describe('CollectionPicker (issue #761)', () => {
     expect(onChange).toHaveBeenCalledWith({ ambito: 'FBCYL', season: '2025', competition: 'U16', group: '' }, expect.objectContaining({ name: 'F25' }))
   })
 
-  it('compact mode hides every level with a single option', () => {
+  it('compact mode hides every level with a single option except the group, which names the phase', () => {
     render(<CollectionPicker list={[LIST[0], LIST[1]]} value={{}} onChange={() => {}} compact />)
     expect(screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))).toEqual(['Grupo'])
+    render(<CollectionPicker list={[c('P', 'FEB', 'PRIMERA FEB', '2026_2027_Liga_Regular_Único')]} value={{}} onChange={() => {}} compact />)
+    expect(screen.getAllByRole('combobox', { name: 'Grupo' })).toHaveLength(2)
   })
 })
