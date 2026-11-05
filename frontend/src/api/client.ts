@@ -886,7 +886,7 @@ export interface PossessionStat {
 
 export interface CollectionInfo {
   name: string
-  league: 'FEB' | 'FBCYL'
+  league: 'FEB' | 'FBCYL' | (string & {})   // the ámbito: new federations arrive as data (#761)
   competition: string
   season: string
   group: string

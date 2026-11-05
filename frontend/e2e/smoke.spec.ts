@@ -39,13 +39,14 @@ test('opens in the light theme even on a dark device, keeps the one chosen and p
   expect(errors).toEqual([])
 })
 
-test('home lists the competition, hides the internal collection and opens it', async ({ page }) => {
+test('home chooses the competition with the selectors, hides the internal collection and opens it (#761)', async ({ page }) => {
   const errors = collectErrors(page)
   await page.goto('/')
   await expect(page.getByText('BasketLab').first()).toBeVisible()
-  await expect(page.getByText(/Liga_Regular/).first()).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Ámbito' })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Temporada' })).toBeVisible()
   await expect(page.getByText('COLLECTION_META')).toHaveCount(0)
-  await page.getByText(/Liga_Regular/).first().click()
+  await page.getByRole('link', { name: /partidos/ }).first().click()
   await expect(page).toHaveURL(new RegExp(`/${COLLECTION}$`))
   expect(errors).toEqual([])
 })

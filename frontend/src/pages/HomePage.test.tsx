@@ -83,3 +83,43 @@ describe('HomePage on the base components (issue #666)', () => {
     expect(document.querySelector('a[href="/admin"]')).toBeNull()
   })
 })
+
+// Issue #761: the competition is chosen by ámbito → temporada → competición → grupo instead of a list of collections.
+describe('HomePage selectors (issue #761)', () => {
+  const LIST = [
+    { name: 'LF2_2026_A', league: 'FEB', competition: 'LF2', season: '2026', group: 'A', game_count: 12 },
+    { name: 'LF2_2026_B', league: 'FEB', competition: 'LF2', season: '2026', group: 'B', game_count: 11 },
+    { name: 'LF2_2025_A', league: 'FEB', competition: 'LF2', season: '2025', group: 'A', game_count: 30 },
+    { name: 'FBCYL_1A_2026', league: 'FBCYL', competition: '1A', season: '2026', group: '', game_count: 8 },
+    { name: 'AND_SEN_2026', league: 'ANDALUCIA', competition: 'Senior', season: '2026', group: '', game_count: 5 },
+  ]
+
+  it('preselects the latest season and links to the competition it resolves', async () => {
+    api.getCollectionList.mockResolvedValue(LIST)
+    renderPage()
+    expect(await screen.findByRole('combobox', { name: 'Ámbito' })).toHaveValue('FEB')
+    expect(screen.getByRole('combobox', { name: 'Temporada' })).toHaveValue('2026')
+    expect(screen.getByRole('link', { name: /LF2 2026/ })).toHaveAttribute('href', '/LF2_2026_A')
+  })
+
+  it('the ámbitos come from the data, and the group selector only exists when there is more than one', async () => {
+    api.getCollectionList.mockResolvedValue(LIST)
+    renderPage()
+    const ambito = await screen.findByRole('combobox', { name: 'Ámbito' })
+    expect(within(ambito).getAllByRole('option').map(o => o.textContent)).toEqual(['FEB', 'FBCYL', 'ANDALUCIA'])
+    expect(screen.getByRole('combobox', { name: 'Grupo' })).toBeInTheDocument()
+    fireEvent.change(ambito, { target: { value: 'FBCYL' } })
+    expect(screen.queryByRole('combobox', { name: 'Grupo' })).toBeNull()
+    expect(screen.getByRole('link', { name: /1A 2026/ })).toHaveAttribute('href', '/FBCYL_1A_2026')
+  })
+
+  it('choosing the group changes the competition it opens, and opening it is remembered', async () => {
+    api.getCollectionList.mockResolvedValue(LIST)
+    renderPage()
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Grupo' }), { target: { value: 'B' } })
+    const link = screen.getByRole('link', { name: /LF2 2026/ })
+    expect(link).toHaveAttribute('href', '/LF2_2026_B')
+    fireEvent.click(link)
+    expect(loadRecents().map(r => r.name)).toContain('LF2_2026_B')
+  })
+})
