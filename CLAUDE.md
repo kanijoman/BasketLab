@@ -42,7 +42,7 @@ Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests
 ## Calidad (antes de escribir y cada ~100 líneas)
 | Comprobación | Umbral | Acción |
 |---|---|---|
-| Líneas del archivo | >300 aviso · >500 **parar** | extraer módulo/helper **ahora** |
+| Líneas del archivo | >300 aviso · >500 **parar** (excepción, #203: los literales de pipelines de Mongo —`database/aggregation/fbcyl_pipeline.py`, `pipeline_team_stats.py`—, `detailed_zones._create_10_zone_system` y los vectores generados son datos declarativos de baja complejidad: no se parten por líneas; la excepción se revisa si se elimina la API, #641) | extraer módulo/helper **ahora** |
 | Longitud de función | >40 | dividir antes de seguir |
 | Duplicación | similar existente | reutilizar/extraer helper |
 | Anidación / condicionales | >3 niveles o >5 | refactorizar |
