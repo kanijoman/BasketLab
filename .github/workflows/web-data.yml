@@ -59,27 +59,12 @@ jobs:
       - name: Validate the entry points (pull requests)
         if: github.event_name == 'pull_request'
         run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions')"
-      - name: Download the archive
-        id: pull
-        if: github.event_name != 'pull_request'
-        env:
-          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          # The secret was saved by hand: whatever it arrived with (CRLF, BOM, spaces for newlines...) the key is rebuilt from its base64 body
-          printf '%s' "$ARCHIVE_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/archive_key || { echo "::error::ARCHIVE_DEPLOY_KEY does not contain an OpenSSH private key (see above how the text looks; save it again from the file as is)"; exit 1; }
-          chmod 600 ~/.ssh/archive_key
-          ssh-keygen -y -f ~/.ssh/archive_key > /dev/null || { echo "::error::ARCHIVE_DEPLOY_KEY has the shape of a key but OpenSSH cannot read it (a passphrase? it must have none)"; exit 1; }
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          echo "GIT_SSH_COMMAND=ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes" >> "$GITHUB_ENV"
-          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
-          python run_archive.py pull --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive
-      - name: Restore the archive into the ephemeral Mongo
+      - name: Restore the archive
         id: restore
-        if: steps.pull.outcome == 'success'
-        env:
-          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_archive.py load --src archive --replace
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
       - name: Start from the previous publication
         if: github.event_name != 'pull_request'
         run: |

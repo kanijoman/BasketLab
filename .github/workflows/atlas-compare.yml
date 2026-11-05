@@ -37,20 +37,10 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
-      - name: Download the archive
-        env:
-          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s' "$ARCHIVE_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/archive_key || { echo "::error::ARCHIVE_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
-          chmod 600 ~/.ssh/archive_key
-          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
-          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/archive_key -o IdentitiesOnly=yes"
-          python run_archive.py pull --repo "git@github.com:${{ github.repository_owner }}/basketlab-archive.git" --dir archive
-      - name: Restore the archive into the ephemeral Mongo
-        env:
-          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_archive.py load --src archive --replace
+      - name: Restore the archive
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
       - name: Compare with Atlas (read only)
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
