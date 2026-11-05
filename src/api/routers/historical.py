@@ -1,6 +1,6 @@
 """Historical router — what is stored in the HISTORICAL collection (read only).
 
-The ingestion endpoints (a background job that downloaded seasons into HISTORICAL, and its progress) are gone (issue #724, towards switching Render off): the server takes no
+The ingestion endpoints (a background job that downloaded seasons into HISTORICAL, and its progress) are gone (issue #724, towards a server that takes no writes): the server takes no
 writes from the web any more. HISTORICAL feeds the predictive analysis, which is out of the web while it is reworked; its reads stay for the kept code. The ingestion service
 (``historical_ingestion_service``) and the repository are kept too.
 """

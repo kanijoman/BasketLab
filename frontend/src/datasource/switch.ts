@@ -1,5 +1,5 @@
 // The switch of the local-first migration (issues #329, #334): which datasets the web reads from the published files (`localdata`, `webdata`) and which from the
-// API. Since #334 the DEFAULT is the published files for every dataset (the API is only the fallback when they cannot answer, and goes away with Render): `?data=api`
+// API. Since #334 the DEFAULT is the published files for every dataset (the API is only the fallback when they cannot answer, and goes away with the server): `?data=api`
 // forces the API for everything, `?data=local` goes back to the default and `?data=local:team-report,team-stats` turns on only those; the choice is remembered in the
 // browser (`localStorage`). Anything else in `?data=` is ignored. Without storage (private window, blocked) the default applies, and `?data=api` still works for the page.
 

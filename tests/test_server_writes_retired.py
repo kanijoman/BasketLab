@@ -1,4 +1,4 @@
-"""The server takes no writes from the web any more (issue #724, towards switching Render off: #334).
+"""The server takes no writes from the web any more (issue #724, towards a server that takes no writes: #334).
 
 Loading data is the job of the scheduled refresh of the archive (``archive-refresh.yml``), removing a competition is the purge (``archive-purge.yml``) and the Administration page of
 the web is gone. So the routes that scraped, ingested history or dropped a collection, and the separate scraper service that served them, are gone too. What the kept predictive
@@ -54,8 +54,6 @@ def test_the_reads_the_kept_code_needs_and_the_listing_stay():
 def test_the_separate_scraper_service_is_gone():
     assert importlib.util.find_spec("src.api.scraper_app") is None
     assert not (ROOT / "run_scraper.py").exists()
-    render = (ROOT / "render.yaml").read_text(encoding="utf-8")
-    assert "basketlab-scraper" not in render and "run_scraper.py" not in render
 
 
 def test_the_services_the_refresh_uses_are_still_there():

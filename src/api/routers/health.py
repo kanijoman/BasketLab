@@ -20,8 +20,8 @@ def _failure(kind: str) -> JSONResponse:
 
 @router.get("", summary="Liveness and deployed commit (public, no database needed)")
 def liveness() -> Dict[str, Any]:
-    """``commit`` = Render's ``RENDER_GIT_COMMIT``: the post-deploy check waits until it is the pushed one."""
-    return {"status": "ok", "commit": os.environ.get("RENDER_GIT_COMMIT") or os.environ.get("GIT_COMMIT") or None}
+    """``commit`` = the ``GIT_COMMIT`` of the environment the server runs in, if it sets one (``null`` otherwise)."""
+    return {"status": "ok", "commit": os.environ.get("GIT_COMMIT") or None}
 
 
 @router.get("/db", summary="Database connectivity (public, no credentials)")

@@ -274,43 +274,6 @@ jobs:
       - name: Report the duplicated blocks
         run: python scripts/duplicate_code.py
 
-  # ── Deploy to Render (backend) ─────────────────────────────────────────────
-  deploy-backend:
-    name: Deploy → Render
-    needs: [test-backend, test-frontend, e2e-web]
-    runs-on: ubuntu-latest
-    # Render's free plan may take 20-25 min to deploy (issue #269): the check waits up to 40 min.
-    timeout-minutes: 60
-    # A newer push cancels the run of an older commit that is still waiting (it shows grey, not red)
-    concurrency:
-      group: deploy-render
-      cancel-in-progress: true
-    # Only deploy on push to main (not PRs, not develop)
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    # Each hook is optional: a missing secret skips that deploy with a warning instead of
-    # failing the pipeline (see docs/OPERATIONS.md for how to create them).
-    steps:
-      - name: Trigger Render deploy hook (api)
-        env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-        run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::RENDER_DEPLOY_HOOK_URL secret not set: skipping the basketlab-api deploy"
-            exit 0
-          fi
-          curl -fsSL -X POST "$HOOK"
-
-      # The hook is asynchronous: wait until the API serves THIS commit and its database is connected.
-      # Needs the repository variable RENDER_API_URL (public URL of basketlab-api); skipped without it.
-      - uses: actions/checkout@v7
-      - name: Post-deploy check (api)
-        env:
-          RENDER_API_URL: ${{ vars.RENDER_API_URL }}
-          # lets the check ask GitHub whether a newer commit that contains this one is already deployed
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/post_deploy_check.py --sha "$GITHUB_SHA"
-
   # ── Deploy to Vercel (frontend) ────────────────────────────────────────────
   # Vercel auto-deploys via its native GitHub integration.
   # No explicit job needed here — Vercel listens to the repo directly.

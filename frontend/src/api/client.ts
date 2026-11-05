@@ -15,9 +15,6 @@ const BASE = (import.meta.env.VITE_API_BASE ?? '') + '/api/v1'
 /** For API modules split out of this (already oversized) file. */
 export const API_BASE = BASE
 
-// Separate service for scraping — lighter Render instance with no ML deps loaded.
-// Falls back to the main API base so local dev works with a single backend.
-
 function _fmtDetail(detail: unknown, status: number): string {
   if (Array.isArray(detail))
     return (detail as { msg?: string; loc?: unknown[] }[])

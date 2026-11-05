@@ -33,27 +33,6 @@ def _steps_of_job(workflow: str, job: str):
     return data["jobs"][job].get("steps", [])
 
 
-class TestRenderDeployHooks:
-    """A missing deploy-hook secret must not fail the pipeline (curl: "URL rejected: Malformed input")."""
-
-    def _deploy_steps(self):
-        return [s for s in _steps("ci.yml") if "Render deploy hook" in s.get("name", "")]
-
-    def test_only_the_api_has_a_hook_the_scraper_service_is_gone(self):
-        names = " ".join(s["name"] for s in self._deploy_steps())
-        assert "api" in names.lower() and "scraper" not in names.lower() and "SCRAPER" not in (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-
-    def test_empty_secret_is_skipped_with_a_warning_instead_of_failing_regression(self):
-        for step in self._deploy_steps():
-            script = step["run"]
-            assert '[ -z "$HOOK" ]' in script and "::warning" in script and "exit 0" in script
-            assert "secrets." not in script, "the secret must come through env, not be interpolated in the script"
-            assert "HOOK" in step["env"]
-
-    def test_the_hook_comes_from_its_own_secret(self):
-        assert [s["env"]["HOOK"] for s in self._deploy_steps()] == ["${{ secrets.RENDER_DEPLOY_HOOK_URL }}"]
-
-
 class TestLiveAndroidReleases:
     def _text(self):
         return (ROOT / ".github" / "workflows" / "live-android.yml").read_text(encoding="utf-8")
@@ -188,24 +167,6 @@ class TestRuleEvaluation:
     def test_the_report_is_uploaded_even_if_the_evaluation_fails(self):
         upload = next(s for s in _steps("rule-evaluation.yml") if "upload-artifact" in str(s.get("uses", "")))
         assert upload["if"] == "${{ !cancelled() }}" and upload["with"]["path"] == "rule-evaluation/"
-
-
-class TestDeployJob:
-    """Issue #269: an older run still waiting for Render must not fail when a newer deploy arrives."""
-
-    def _job(self):
-        return yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))["jobs"]["deploy-backend"]
-
-    def test_a_newer_deploy_cancels_the_run_that_is_still_waiting(self):
-        concurrency = self._job()["concurrency"]
-        assert concurrency["cancel-in-progress"] is True and concurrency["group"]
-
-    def test_the_job_may_wait_as_long_as_the_check_does(self):
-        assert self._job()["timeout-minutes"] >= 50
-
-    def test_the_check_can_ask_github_whether_a_newer_commit_contains_ours(self):
-        step = next(s for s in self._job()["steps"] if "Post-deploy check" in s.get("name", ""))
-        assert step["env"]["GITHUB_TOKEN"] == "${{ github.token }}"
 
 
 class TestAppVersionAndUpdate:
@@ -410,10 +371,10 @@ class TestRedProofJob:
         checkout = next(s for s in job["steps"] if "checkout" in s.get("uses", ""))
         assert checkout["with"]["fetch-depth"] == 0                  # the diff against the base needs it
 
-    def test_it_is_informative_and_the_deploy_does_not_wait_for_it(self):
+    def test_it_is_informative_and_no_job_waits_for_it(self):
         data = yaml.safe_load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
         assert self._job()["continue-on-error"] is True
-        assert "red-proof" not in data["jobs"]["deploy-backend"]["needs"]
+        assert not [name for name, job in data["jobs"].items() if "red-proof" in job.get("needs", [])]
 
     def test_it_runs_the_script_against_the_base_branch_of_the_pull_request(self):
         run = " ".join(s.get("run", "") for s in self._job()["steps"])

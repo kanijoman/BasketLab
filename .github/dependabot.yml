@@ -24,7 +24,7 @@ updates:
       - { dependency-name: "*", update-types: ["version-update:semver-major"] }
       - { dependency-name: "pyodide" }        # pinned: the engine of the tablet runs on it and the vectors are measured with it; a change is made on purpose
 
-  # requirements.txt uses open ranges (>=): CI and Render already install the latest, so a version PR would only raise a minimum. Only security updates (limit 0 = no version PRs).
+  # requirements.txt uses open ranges (>=): CI already installs the latest, so a version PR would only raise a minimum. Only security updates (limit 0 = no version PRs).
   - package-ecosystem: "pip"
     directory: "/"
     schedule: { interval: "weekly", day: "monday" }
