@@ -123,3 +123,23 @@ describe('HomePage selectors (issue #761)', () => {
     expect(loadRecents().map(r => r.name)).toContain('LF2_2026_B')
   })
 })
+
+// The collections come named as the publication names them: the selectors show the year, the competition and the phase+group, not the pieces of the slug.
+describe('HomePage selectors with the real names of the competitions', () => {
+  const REAL = [
+    { name: 'PRIMERA_FEB_2026_2027_Liga_Regular_Único', league: 'FEB', competition: 'PRIMERA_FEB', season: '2026_2027_Liga_Regular_Único', group: '', game_count: 40 },
+    { name: 'SEGUNDA_FEB_2026_2027_Liga_Regular_A', league: 'FEB', competition: 'SEGUNDA_FEB', season: '2026_2027_Liga_Regular', group: 'A', game_count: 30 },
+    { name: 'SEGUNDA_FEB_2026_2027_Liga_Regular_B', league: 'FEB', competition: 'SEGUNDA_FEB', season: '2026_2027_Liga_Regular', group: 'B', game_count: 28 },
+  ]
+
+  it('season is the years, competition its name and group the phase with its group', async () => {
+    api.getCollectionList.mockResolvedValue(REAL)
+    renderPage()
+    const season = await screen.findByRole('combobox', { name: 'Temporada' })
+    expect(within(season).getAllByRole('option').map(o => o.textContent)).toEqual(['2026/2027'])
+    expect(within(screen.getByRole('combobox', { name: 'Competición' })).getAllByRole('option').map(o => o.textContent)).toEqual(['PRIMERA FEB', 'SEGUNDA FEB'])
+    fireEvent.change(screen.getByRole('combobox', { name: 'Competición' }), { target: { value: 'SEGUNDA FEB' } })
+    expect(within(screen.getByRole('combobox', { name: 'Grupo' })).getAllByRole('option').map(o => o.textContent)).toEqual(['Liga Regular A', 'Liga Regular B'])
+    expect(screen.getByRole('link', { name: /SEGUNDA FEB 2026\/2027 · Liga Regular A/ })).toHaveAttribute('href', '/SEGUNDA_FEB_2026_2027_Liga_Regular_A')
+  })
+})

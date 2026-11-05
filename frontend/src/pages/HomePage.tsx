@@ -14,7 +14,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button, { IconButton } from '@/components/ui/Button'
 import BrandLogo from '@/components/BrandLogo'
 import CollectionPicker from '@/components/CollectionPicker'
-import { pickCollection, type Selection } from '@/lib/collectionPicker'
+import { collectionLabel, levelsOf, pickCollection, type Selection } from '@/lib/collectionPicker'
 import { loadRecents, pruneRecents, saveRecent, saveRecents, type RecentCollection } from '@/lib/recents'
 import { DataUnavailable } from '@/datasource/resolve'
 
@@ -23,6 +23,7 @@ import { DataUnavailable } from '@/datasource/resolve'
 /** The competition the selectors resolve to: a link to it. */
 function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => void }) {
   const isFbcyl = col.league === 'FBCYL'
+  const levels = levelsOf(col)
   return (
     <Link
       to={`/${encodeURIComponent(col.name)}`}
@@ -37,11 +38,9 @@ function CollectionCard({ col, onClick }: { col: CollectionInfo; onClick: () => 
             ? 'bg-secondary/20 text-secondary-text'
             : 'bg-accent/20 text-accent-text'
         }`}>
-          {col.group ? `Grupo ${col.group}` : col.season}
+          {levels.group || levels.season}
         </span>
-        <span className="text-sm text-ink font-medium truncate">
-          {col.competition} {col.season}{col.group ? ` – ${col.group}` : ''}
-        </span>
+        <span className="text-sm text-ink font-medium truncate">{collectionLabel(col)}</span>
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <span className="text-xs text-ink-faint">{col.game_count} partidos</span>
