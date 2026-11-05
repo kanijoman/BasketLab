@@ -42,7 +42,7 @@ class TestInOutEndpoint:
             "on":  {"points_for": 105.0, "points_against": 98.0, "minutes": 320.0, "net_rating": 7.0},
             "off": {"points_for": 100.0, "points_against": 104.0, "minutes": 280.0, "net_rating": -4.0},
         }
-        with patch("src.api.routers.players.PlayerStatsService") as MockSvc:
+        with patch("src.services.inout_service.PlayerStatsService") as MockSvc:
             MockSvc.return_value.get_in_out_analysis.return_value = mock_result
             r = client.get(self._url("FEB_test", "1234"))
         assert r.status_code == 200
@@ -57,7 +57,7 @@ class TestInOutEndpoint:
             "on":  {"points_for": 110.0, "points_against": 100.0, "minutes": 200.0, "net_rating": 10.0},
             "off": {"points_for": 95.0, "points_against": 102.0, "minutes": 200.0, "net_rating": -7.0},
         }
-        with patch("src.api.routers.players.PlayerStatsService") as MockSvc:
+        with patch("src.services.inout_service.PlayerStatsService") as MockSvc:
             MockSvc.return_value.get_in_out_analysis.return_value = mock_result
             r = client.get(self._url("FEB_test", "99"))
         body = r.json()
@@ -65,7 +65,7 @@ class TestInOutEndpoint:
             assert field in body["on"], f"Missing field '{field}' in 'on' block"
 
     def test_missing_player_propagates_gracefully(self, client):
-        with patch("src.api.routers.players.PlayerStatsService") as MockSvc:
+        with patch("src.services.inout_service.PlayerStatsService") as MockSvc:
             MockSvc.return_value.get_in_out_analysis.return_value = {}
             r = client.get(self._url("FEB_test", "nonexistent"))
         assert r.status_code in (200, 404)

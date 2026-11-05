@@ -10,25 +10,13 @@ thread-safe and re-usable across requests.
 
 from __future__ import annotations
 
-from functools import lru_cache
-
 from fastapi import HTTPException
 
+from src.database.shared_handler import shared_handler
 
-@lru_cache(maxsize=1)
-def _create_handler():
-    """Lazy-initialise MongoDBHandler once per process."""
-    import sys
-    import os
-    # Ensure 'src/' is importable as a package root in both run modes.
-    _src = os.path.join(os.path.dirname(__file__), "..", "..")
-    if _src not in sys.path:
-        sys.path.insert(0, os.path.abspath(_src))
 
-    # Import after path is set up.
-    from src.database import MongoDBHandler  # noqa: PLC0415
-    handler = MongoDBHandler()
-    return handler
+# The handler is shared with the jobs that publish data (``src/database/shared_handler.py``); the old name stays for the routes and the tests.
+_create_handler = shared_handler
 
 
 def get_db():
@@ -37,7 +25,7 @@ def get_db():
     Raises ``HTTP 503`` when the database is not reachable so callers
     receive a clean JSON error instead of an unhandled exception.
     """
-    from src.api.db_health import classify_db_error, hint_for
+    from src.database.db_health import classify_db_error, hint_for
 
     try:
         handler = _create_handler()
