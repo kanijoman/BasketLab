@@ -34,9 +34,9 @@ describe('RankingsPage minutes', () => {
   it('ranks players by minutes per game when "Minutos" is chosen in the basic stats', async () => {
     renderPage()
     await screen.findByText('Anotador')
-    expect(order()).toEqual(['Anotador', 'Titular', 'Suplente'])        // by points, the default
+    expect(order()).toEqual(['Anotador', 'Titular'])                      // by points, the default (the substitute plays 6 minutes: under half of the median, #763)
     fireEvent.click(screen.getByRole('button', { name: 'Minutos' }))
-    expect(order()).toEqual(['Titular', 'Anotador', 'Suplente'])
+    expect(order()).toEqual(['Titular', 'Anotador'])
     expect(screen.getByText('31.2')).toBeTruthy()
   })
 
@@ -146,5 +146,59 @@ describe('RankingsPage export (issue #759)', () => {
     const lines = (await blobs[0].text()).split('\n')
     expect(lines[0]).toContain('"Minutos"')
     expect(lines.slice(1)).toEqual(['2,Anotador,Equipo,5,18.5,-12.7'])                      // second in minutes, 12.7 behind Titular (31.2)
+  })
+})
+
+// Issue #763: whoever has almost no volume behind a rate does not lead its ranking. The minimum is the same rule for every statistic (half of the median volume per game of the team)
+// and the page says what it counts: attempts of the category for the shooting percentages, minutes for the rest.
+describe('RankingsPage minimum volume (issue #763)', () => {
+  // ten games of the team; three-point attempts per game: 4, 3, 0.2, 0, 2 → the median is 2, the minimum 1 per game = 10 attempts
+  const shooter = (id: string, p3a: number, pct: number) => ({
+    player_id: id, player_name: id, team_name: 'Equipo', team_id: '1', games_played: 10, minutes_per_game: 20, total_minutes: 200, points_per_game: 5, total_p3a: p3a, fg3_percentage: pct,
+  })
+  const THREES = [shooter('Anita', 40, 45), shooter('Berta', 30, 40), shooter('Cleo', 2, 100), shooter('Dora', 0, 0), shooter('Elena', 20, 35)]
+  const names = () => screen.getAllByText(/^(Anita|Berta|Cleo|Dora|Elena)$/).map(n => n.textContent)
+
+  beforeEach(() => api.getPlayerStats.mockReset().mockResolvedValue(THREES))
+
+  it('a 100 % on two attempts does not lead the ranking of threes, and the page says the minimum', async () => {
+    renderPage()
+    await screen.findByText('Anita')
+    fireEvent.click(screen.getByRole('tab', { name: 'Tiro' }))
+    fireEvent.click(screen.getByRole('button', { name: '% T3' }))
+    expect(names()).toEqual(['Anita', 'Berta', 'Elena'])
+    expect(screen.getByText(/Mínimo: 1\.0 intentos de triple por partido del equipo/)).toBeInTheDocument()
+    expect(screen.getByText(/2 jugadoras fuera de este ranking/)).toBeInTheDocument()
+  })
+
+  it('the same players are all there in the statistics that count minutes, with the minimum in minutes', async () => {
+    renderPage()
+    await screen.findByText('Anita')
+    expect(names()).toHaveLength(5)                                         // 20 minutes per game each: all above half of the median
+    expect(screen.getByText(/Mínimo: 10\.0 minutos por partido del equipo/)).toBeInTheDocument()
+    expect(screen.queryByText(/fuera de este ranking/)).toBeNull()
+  })
+
+  it('every statistic of the page has a volume (nothing is ranked without a rule)', async () => {
+    const { STAT_VOLUME_KEYS } = await import('./RankingsPage')
+    expect(Object.values(STAT_VOLUME_KEYS).every(Boolean)).toBe(true)
+    expect(STAT_VOLUME_KEYS.fg3_percentage).toBe('p3a')
+    expect(STAT_VOLUME_KEYS.true_shooting).toBe('tsa')
+    expect(['usage_pct', 'orating', 'drating', 'net_rtg', 'ast_pct', 'tov_pct_adv', 'stl_pct', 'blk_pct', 'orb_pct', 'drb_pct', 'pie', 'points_per_game', 'valoracion_per_game', 'pllss_per_game']
+      .every(key => STAT_VOLUME_KEYS[key] === 'minutes')).toBe(true)
+  })
+
+  it('the export has the same ranking as the screen: the players below the minimum are not in the CSV', async () => {
+    const blobs: Blob[] = []
+    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn((b: Blob) => { blobs.push(b); return 'blob:x' }), revokeObjectURL: vi.fn() })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    renderPage()
+    await screen.findByText('Anita')
+    fireEvent.click(screen.getByRole('tab', { name: 'Tiro' }))
+    fireEvent.click(screen.getByRole('button', { name: '% T3' }))
+    fireEvent.click(screen.getByRole('button', { name: /Exportar/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'CSV' }))
+    const lines = (await blobs[0].text()).split('\n')
+    expect(lines.slice(1).map(l => l.split(',')[1])).toEqual(['Anita', 'Berta', 'Elena'])
   })
 })

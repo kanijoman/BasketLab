@@ -15,6 +15,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getPlayerStats, type PlayerStat } from '@/api/client'
 import { fmt, fmtPct } from '@/lib/utils'
+import { VOLUME, minimumFor, type VolumeKind } from '@/lib/rankingMinimum'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
@@ -29,6 +30,8 @@ interface StatDef {
   label: string
   format: (v: number | undefined) => string
   reverse?: boolean   // lower = better
+  /** What the statistic is made of: whoever has too little of it does not appear in its ranking (#763). Attempts of its category for the shooting ones, minutes for the rest. */
+  volume: VolumeKind
 }
 
 interface StatGroup {
@@ -40,49 +43,52 @@ const STAT_GROUPS: StatGroup[] = [
   {
     label: 'Básicas',
     stats: [
-      { key: 'points_per_game',             label: 'Puntos',      format: v => fmt(v) },
-      { key: 'rebounds_per_game',           label: 'Rebotes',     format: v => fmt(v) },
-      { key: 'offensive_rebounds_per_game', label: 'Reb. Of.',    format: v => fmt(v) },
-      { key: 'defensive_rebounds_per_game', label: 'Reb. Def.',   format: v => fmt(v) },
-      { key: 'assists_per_game',            label: 'Asistencias', format: v => fmt(v) },
-      { key: 'steals_per_game',             label: 'Robos',       format: v => fmt(v) },
-      { key: 'blocks_per_game',             label: 'Tapones',     format: v => fmt(v) },
-      { key: 'turnovers_per_game',          label: 'Pérdidas',    format: v => fmt(v), reverse: true },
-      { key: 'fouls_per_game',              label: 'Faltas',      format: v => fmt(v), reverse: true },
-      { key: 'valoracion_per_game',         label: 'Valoración',  format: v => fmt(v) },
-      { key: 'pllss_per_game',              label: '+/-',         format: v => fmt(v) },
-      { key: 'minutes_per_game',            label: 'Minutos',     format: v => fmt(v) },
+      { key: 'points_per_game',             label: 'Puntos',      format: v => fmt(v), volume: 'minutes' },
+      { key: 'rebounds_per_game',           label: 'Rebotes',     format: v => fmt(v), volume: 'minutes' },
+      { key: 'offensive_rebounds_per_game', label: 'Reb. Of.',    format: v => fmt(v), volume: 'minutes' },
+      { key: 'defensive_rebounds_per_game', label: 'Reb. Def.',   format: v => fmt(v), volume: 'minutes' },
+      { key: 'assists_per_game',            label: 'Asistencias', format: v => fmt(v), volume: 'minutes' },
+      { key: 'steals_per_game',             label: 'Robos',       format: v => fmt(v), volume: 'minutes' },
+      { key: 'blocks_per_game',             label: 'Tapones',     format: v => fmt(v), volume: 'minutes' },
+      { key: 'turnovers_per_game',          label: 'Pérdidas',    format: v => fmt(v), reverse: true, volume: 'minutes' },
+      { key: 'fouls_per_game',              label: 'Faltas',      format: v => fmt(v), reverse: true, volume: 'minutes' },
+      { key: 'valoracion_per_game',         label: 'Valoración',  format: v => fmt(v), volume: 'minutes' },
+      { key: 'pllss_per_game',              label: '+/-',         format: v => fmt(v), volume: 'minutes' },
+      { key: 'minutes_per_game',            label: 'Minutos',     format: v => fmt(v), volume: 'minutes' },
     ],
   },
   {
     label: 'Tiro',
     stats: [
-      { key: 'fg1_percentage',   label: '% TL',  format: v => fmtPct(v) },
-      { key: 'fg2_percentage',   label: '% T2',  format: v => fmtPct(v) },
-      { key: 'fg3_percentage',   label: '% T3',  format: v => fmtPct(v) },
-      { key: 'efg_percentage',   label: 'eFG%',  format: v => fmtPct(v) },
-      { key: 'true_shooting',    label: 'TS%',   format: v => fmtPct(v) },
-      { key: 'free_throw_rate',  label: 'FTr',   format: v => fmt(v) },
-      { key: 'three_point_rate', label: '3PAr',  format: v => fmt(v) },
+      { key: 'fg1_percentage',   label: '% TL',  format: v => fmtPct(v), volume: 'p1a' },
+      { key: 'fg2_percentage',   label: '% T2',  format: v => fmtPct(v), volume: 'p2a' },
+      { key: 'fg3_percentage',   label: '% T3',  format: v => fmtPct(v), volume: 'p3a' },
+      { key: 'efg_percentage',   label: 'eFG%',  format: v => fmtPct(v), volume: 'fga' },
+      { key: 'true_shooting',    label: 'TS%',   format: v => fmtPct(v), volume: 'tsa' },
+      { key: 'free_throw_rate',  label: 'FTr',   format: v => fmt(v), volume: 'fga' },
+      { key: 'three_point_rate', label: '3PAr',  format: v => fmt(v), volume: 'fga' },
     ],
   },
   {
     label: 'Avanzadas',
     stats: [
-      { key: 'usage_pct',   label: 'USG%',    format: v => fmtPct(v) },
-      { key: 'orating',     label: 'ORtg',    format: v => fmt(v) },
-      { key: 'drating',     label: 'DRtg',    format: v => fmt(v), reverse: true },
-      { key: 'net_rtg',     label: 'Net Rtg', format: v => fmt(v) },
-      { key: 'ast_pct',     label: 'Ast%',    format: v => fmtPct(v) },
-      { key: 'tov_pct_adv', label: 'TO%',     format: v => fmtPct(v), reverse: true },
-      { key: 'stl_pct',     label: 'Stl%',    format: v => fmtPct(v) },
-      { key: 'blk_pct',     label: 'Blk%',    format: v => fmtPct(v) },
-      { key: 'orb_pct',     label: 'ROF%',    format: v => fmtPct(v) },
-      { key: 'drb_pct',     label: 'RDef%',   format: v => fmtPct(v) },
-      { key: 'pie',         label: 'PIE',     format: v => fmtPct(v) },
+      { key: 'usage_pct',   label: 'USG%',    format: v => fmtPct(v), volume: 'minutes' },
+      { key: 'orating',     label: 'ORtg',    format: v => fmt(v), volume: 'minutes' },
+      { key: 'drating',     label: 'DRtg',    format: v => fmt(v), reverse: true, volume: 'minutes' },
+      { key: 'net_rtg',     label: 'Net Rtg', format: v => fmt(v), volume: 'minutes' },
+      { key: 'ast_pct',     label: 'Ast%',    format: v => fmtPct(v), volume: 'minutes' },
+      { key: 'tov_pct_adv', label: 'TO%',     format: v => fmtPct(v), reverse: true, volume: 'minutes' },
+      { key: 'stl_pct',     label: 'Stl%',    format: v => fmtPct(v), volume: 'minutes' },
+      { key: 'blk_pct',     label: 'Blk%',    format: v => fmtPct(v), volume: 'minutes' },
+      { key: 'orb_pct',     label: 'ROF%',    format: v => fmtPct(v), volume: 'minutes' },
+      { key: 'drb_pct',     label: 'RDef%',   format: v => fmtPct(v), volume: 'minutes' },
+      { key: 'pie',         label: 'PIE',     format: v => fmtPct(v), volume: 'minutes' },
     ],
   },
 ]
+
+/** The volume behind each statistic of the page, by its key (the rule of the minimum is the same for all: `lib/rankingMinimum.ts`). */
+export const STAT_VOLUME_KEYS: Record<string, VolumeKind> = Object.fromEntries(STAT_GROUPS.flatMap(g => g.stats.map(s => [String(s.key), s.volume])))
 
 // -- Medal helpers -------------------------------------------------------------
 
@@ -132,17 +138,22 @@ export default function RankingsPage() {
     [rawPlayers],
   )
 
-  // Global ranking: min-minutes + min-games filters, NO team/player filter → real league position
-  const allRanked = useMemo(() => {
+  // The minimum volume of the statistic (#763), computed over the whole competition, not over the filtered players
+  const minimum = useMemo(() => minimumFor(rawPlayers, stat.volume), [rawPlayers, stat.volume])
+
+  // Global ranking: min-minutes + min-games filters and the minimum volume, NO team/player filter → real league position
+  const [allRanked, belowMinimum] = useMemo(() => {
     let list = rawPlayers
     if (minMin > 0)   list = list.filter(p => p.minutes_per_game >= minMin)
     if (minGames > 0) list = list.filter(p => (p.games_played ?? 0) >= minGames)
-    return [...list].sort((a, b) => {
+    const qualified = list.filter(p => minimum.qualifies(p))
+    const ranked = [...qualified].sort((a, b) => {
       const av = (a[stat.key] as number) ?? 0
       const bv = (b[stat.key] as number) ?? 0
       return stat.reverse ? av - bv : bv - av
     })
-  }, [rawPlayers, stat, minMin, minGames])
+    return [ranked, list.length - qualified.length] as const
+  }, [rawPlayers, stat, minMin, minGames, minimum])
 
   // Map player_id → globally-ranked position (1-indexed)
   const globalRankMap = useMemo(
@@ -266,6 +277,14 @@ export default function RankingsPage() {
 
           <span className="text-xs text-ink-faint ml-auto">{filteredRanked.length} jugadores</span>
         </div>
+
+        {/* The minimum of the category: what it counts and who is left out (#763) */}
+        {rawPlayers.length > 0 && (
+          <p className="text-xs text-ink-muted">
+            Mínimo: {fmt(minimum.perTeamGame)} {VOLUME[stat.volume].unit} por partido del equipo (la mitad de la mediana de la competición)
+            {belowMinimum > 0 && <> · {belowMinimum} {belowMinimum === 1 ? 'jugadora fuera' : 'jugadoras fuera'} de este ranking</>}
+          </p>
+        )}
 
         {/* Ranked list */}
         {isLoading ? (
