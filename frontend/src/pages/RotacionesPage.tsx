@@ -573,7 +573,7 @@ export default function RotacionesPage() {
                   <span>
                     Otras jugadoras
                     <span className="ml-2 text-xs font-normal text-ink-faint">
-                      ({result.marginal_players.length}) — menos del 15% de partidos y media &lt; 5 min — excluidas del análisis
+                      ({result.marginal_players.length}) — menos del 15 % de los partidos del equipo o media &lt; 5 min — excluidas del análisis
                     </span>
                   </span>
                   <svg className="w-4 h-4 transition-transform group-open:rotate-180" viewBox="0 0 16 16" fill="currentColor">

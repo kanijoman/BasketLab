@@ -28,18 +28,20 @@ class TestRotationRest:
     def test_returns_service_result_and_forwards_params(self, client):
         with patch(SVC) as svc:
             svc.return_value.get_rotation_analysis.return_value = {"players": []}
-            r = client.get(f"{V1}/col/7?team_name=Foo&min_games=2&min_total_min=30")
+            r = client.get(f"{V1}/col/7?team_name=Foo&min_games_pct=0.25&min_avg_min=8")
         assert r.status_code == 200
         assert r.json() == {"players": []}
         svc.return_value.get_rotation_analysis.assert_called_once_with(
-            "col", "7", "Foo", min_games=2, min_total_min=30.0,
+            "col", "7", "Foo", min_games_pct=0.25, min_avg_min=8.0,
         )
 
     def test_team_name_is_required(self, client):
         assert client.get(f"{V1}/col/7").status_code == 422
 
-    def test_negative_min_games_rejected(self, client):
-        assert client.get(f"{V1}/col/7?team_name=Foo&min_games=-1").status_code == 422
+    def test_negative_thresholds_rejected(self, client):
+        assert client.get(f"{V1}/col/7?team_name=Foo&min_games_pct=-0.1").status_code == 422
+        assert client.get(f"{V1}/col/7?team_name=Foo&min_games_pct=1.5").status_code == 422
+        assert client.get(f"{V1}/col/7?team_name=Foo&min_avg_min=-1").status_code == 422
 
 
 class TestRotationStream:

@@ -372,79 +372,74 @@ class TestAggregateStarters:
 
 
 class TestFilterSignificantPlayers:
+    """Issue #757: the thresholds are relative to the games of the TEAM (a player is significant when he played at least 15 % of them and averages at least 5 minutes), not
+    absolute (5 games and 100 minutes): at the start of a season no team has 5 games, and the analysis kept three players of twelve, or all of them through the fallback."""
+
     svc = RotationService.__new__(RotationService)
 
     def _make_stats(self, games_played, avg_min):
         return {"games_played": games_played, "avg_min_per_game": avg_min, "total_minutes": avg_min * games_played, "name": "X"}
 
     def test_all_above_threshold_are_significant(self):
-        ps = {
-            "1": self._make_stats(10, 20),   # 10 games, 200 total min → passes both
-            "2": self._make_stats(8, 15),    # 8 games, 120 total min → passes both
-        }
-        result = self.svc._filter_significant_players(ps)
-        assert result == {"1", "2"}
+        ps = {"1": self._make_stats(10, 20), "2": self._make_stats(8, 15)}
+        assert self.svc._filter_significant_players(ps, total_games=10) == {"1", "2"}
 
     def test_junior_excluded_both_conditions_fail(self):
-        # 1 game, 2 min avg → 1 < 5 AND total=2 < 100 → MARGINAL
-        ps = {
-            "regular": self._make_stats(6, 20),   # 6 games, 120 min → significant
-            "junior":  self._make_stats(1, 2),     # 1 game, 2 min → marginal
-        }
-        result = self.svc._filter_significant_players(ps)
-        assert "regular" in result
-        assert "junior" not in result
+        # 1 game of 30 (3 %) and 2 min on average
+        ps = {"regular": self._make_stats(25, 20), "junior": self._make_stats(1, 2)}
+        result = self.svc._filter_significant_players(ps, total_games=30)
+        assert "regular" in result and "junior" not in result
 
-    def test_few_games_high_total_min_is_marginal(self):
-        # Injured: only 2 games (< 5) → BOTH conditions must pass → marginal
-        # Need a significant player alongside to prevent the empty-set fallback
-        ps = {
-            "regular": self._make_stats(6, 20),   # 6 games, 120 min → significant
-            "injured": self._make_stats(2, 60),   # 2 games, 120 min → marginal (games < 5)
-        }
-        result = self.svc._filter_significant_players(ps)
-        assert "regular" in result
-        assert "injured" not in result
+    def test_few_games_even_with_many_minutes_is_marginal(self):
+        # injured: 2 games of 20 (10 % < 15 %) at 30 minutes: failing EITHER condition makes a player marginal
+        ps = {"regular": self._make_stats(18, 20), "injured": self._make_stats(2, 30)}
+        result = self.svc._filter_significant_players(ps, total_games=20)
+        assert "regular" in result and "injured" not in result
 
-    def test_many_games_low_total_min_is_marginal_regression(self):
-        # Regression: player with 6 games but only 26.9 total min (e.g. E. MAGUIRE)
-        # → games >= 5 ✓ but total_min < 100 ✗ → BOTH required → marginal
+    def test_many_games_low_minutes_is_marginal_regression(self):
+        # Regression: 6 games but 4.48 minutes on average (E. MAGUIRE) is marginal whatever the games the team has played
+        ps = {"regular": self._make_stats(10, 25), "maguire": {"games_played": 6, "avg_min_per_game": 4.48, "total_minutes": 26.9, "name": "E. MAGUIRE"}}
+        result = self.svc._filter_significant_players(ps, total_games=10)
+        assert "regular" in result and "maguire" not in result
+
+    def test_at_the_start_of_a_season_a_rotation_player_is_significant_regression(self):
+        """Bug #757: with 4 games played nobody had the 5 games the absolute rule asked for, and a player of 12 minutes was left out as soon as a teammate had played more."""
         ps = {
-            "regular": self._make_stats(10, 25),  # 10 games, 250 min → significant
-            "maguire": {"games_played": 6, "avg_min_per_game": 4.48,
-                        "total_minutes": 26.9, "name": "E. MAGUIRE"},
+            "starter": self._make_stats(4, 30),     # all four games, 120 min
+            "bench": self._make_stats(4, 12),       # all four games, 48 min: marginal with 100 total minutes
+            "newcomer": self._make_stats(1, 12),    # one game of four (25 %)
+            "deep": self._make_stats(4, 3),         # every game but 3 minutes
+            "once": self._make_stats(1, 1),         # one minute, once
         }
-        result = self.svc._filter_significant_players(ps)
-        assert "regular" in result
-        assert "maguire" not in result
+        result = self.svc._filter_significant_players(ps, total_games=4)
+        assert result == {"starter", "bench", "newcomer"}
+
+    def test_the_games_threshold_scales_with_the_season(self):
+        ps = {"regular": self._make_stats(30, 20), "some": self._make_stats(5, 15), "few": self._make_stats(4, 15)}
+        # 15 % of 33 games = 4.95: five games are enough, four are not
+        result = self.svc._filter_significant_players(ps, total_games=33)
+        assert result == {"regular", "some"}
+
+    def test_boundaries_are_inclusive(self):
+        # exactly 15 % of the games (3 of 20) and exactly 5.0 minutes on average
+        assert self.svc._filter_significant_players({"exact": self._make_stats(3, 5.0), "full": self._make_stats(20, 30)}, total_games=20) == {"exact", "full"}
 
     def test_empty_player_stats_returns_empty_set(self):
-        result = self.svc._filter_significant_players({})
-        assert result == set()
+        assert self.svc._filter_significant_players({}, total_games=5) == set()
+
+    def test_no_games_does_not_divide_by_zero(self):
+        assert self.svc._filter_significant_players({"1": self._make_stats(1, 10)}, total_games=0) == {"1"}
 
     def test_fallback_when_all_marginal(self):
-        # If filter would exclude everyone, return all (safety fallback)
-        ps = {
-            "1": self._make_stats(1, 1),   # 1 game, 1 min total
-            "2": self._make_stats(1, 2),   # 1 game, 2 min total
-        }
-        result = self.svc._filter_significant_players(ps)
-        assert result == {"1", "2"}
+        # If the filter would exclude everyone, return all (safety fallback)
+        ps = {"1": self._make_stats(1, 1), "2": self._make_stats(1, 2)}
+        assert self.svc._filter_significant_players(ps, total_games=20) == {"1", "2"}
 
     def test_custom_thresholds(self):
-        ps = {
-            "a": self._make_stats(3, 15),  # 3 games, 45 min total
-            "b": self._make_stats(2, 3),   # 2 games, 6 min total
-        }
-        result = self.svc._filter_significant_players(ps, min_games=3, min_total_min=30.0)
-        assert "a" in result    # 3 >= 3 ✓ → significant
-        assert "b" not in result  # 2 < 3 AND 6 < 30 → marginal
+        ps = {"a": self._make_stats(3, 15), "b": self._make_stats(2, 3)}
+        result = self.svc._filter_significant_players(ps, total_games=4, min_games_pct=0.75, min_avg_min=10.0)
+        assert result == {"a"}                          # a: 3 of 4 games (75 %) and 15 min; b: 2 of 4 games (50 %) and 3 min
 
-    def test_boundary_exactly_at_threshold(self):
-        # Exactly 5 games and exactly 100 min total → significant
-        ps = {"exact": self._make_stats(5, 20)}  # 5 × 20 = 100 total
-        result = self.svc._filter_significant_players(ps)
-        assert "exact" in result
 
 
 class TestComputePerGamePct:
@@ -590,6 +585,18 @@ class TestGetRotationAnalysisFEB:
         db = MagicMock()
         db.get_games_for_team.return_value = games
         return RotationService(db)
+
+    def test_at_the_start_of_a_season_the_rotation_is_not_reduced_to_a_few_players_regression(self):
+        """Bug #757 with the state of a team after four games: ten players with minutes, two of them with scraps. The absolute rule (5 games and 100 minutes) kept three."""
+        players = _make_players(10, base_min=30) + [
+            {"id": "11", "name": "Player11", "minutes": "03:00", "minutes_float": 3.0},
+            {"id": "12", "name": "Player12", "minutes": "02:00", "minutes_float": 2.0},
+        ]
+        svc = self._make_service([_feb_game("10", players) for _ in range(4)])
+        result = svc.get_rotation_analysis("FEB_LF2_2026", "10", "Team A")
+        assert len(result["players"]) == 10
+        assert sorted(p["player_name"] for p in result["marginal_players"]) == ["Player11", "Player12"]
+        assert all(not p["is_marginal"] for p in result["players"]) and all(p["is_marginal"] for p in result["marginal_players"])
 
     def test_returns_expected_keys(self):
         players = _make_players(8, base_min=30)
