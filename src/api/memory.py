@@ -1,4 +1,4 @@
-"""Optional per-request memory log (set ``LOG_MEMORY=1``) to find what pushes RSS up on Render.
+"""Optional per-request memory log (set ``LOG_MEMORY=1``) to find what pushes RSS up on a small server.
 
 Logs a WARNING for every request that grows the process RSS by more than ``LOG_MEMORY_DELTA_MB``
 (default 25) or leaves it above ``LOG_MEMORY_HIGH_MB`` (default 350, ~70 % of the 512 MB limit).

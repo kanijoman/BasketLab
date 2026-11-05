@@ -1,8 +1,8 @@
 # Operaciones: despliegue y clave de administración
-Léelo cuando toques Render/Vercel, variables de entorno, veas un 401/503 en Admin/scrape/ingesta/entrenamiento, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
+Léelo cuando toques Vercel, variables de entorno, veas un 401/503 en Admin/scrape/ingesta/entrenamiento, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Estado actual (decisión consciente)
-**El servidor ya no recibe escrituras de la web (#724).** Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`: **cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*). `ADMIN_API_KEY` **no está definida en producción**, a propósito, y solo protege lo que queda de escritura, el entrenamiento del predictivo (se conserva, fuera de la web mientras se rehace). Consecuencia en Render (`ENVIRONMENT=production`):
+**El servidor ya no recibe escrituras de la web (#724).** Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`: **cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*). `ADMIN_API_KEY` **no está definida en producción**, a propósito, y solo protege lo que queda de escritura, el entrenamiento del predictivo (se conserva, fuera de la web mientras se rehace). Consecuencia con la API en producción (`ENVIRONMENT=production`; este repositorio no aloja ninguna, ver *Sin servidor alojado*):
 
 | Funciona | Responde **503** ("ADMIN_API_KEY no está configurada en el servidor") |
 |---|---|
@@ -13,6 +13,9 @@ El 503 es el comportamiento diseñado, no un fallo (`src/api/security.py`, proba
 
 Para cargar o refrescar datos en local: `python run_archive.py pull` + `load` sobre un Mongo local y `python run_refresh.py --config config/competitions.json` contra él (ver *Refrescar el archivo sin Atlas*); ya no hay página ni ruta de servidor para ello.
 
+## Sin servidor alojado (#334)
+**BasketLab no depende de ninguna plataforma de alojamiento de la API ni se integra con ella** (Render se retiró del proyecto el 05/11/2026): no hay `render.yaml`, ni job de despliegue en CI, ni comprobación posterior, y `GET /api/v1/health` informa del commit solo si el entorno define `GIT_COMMIT`. La web publicada lee los ficheros de `web-data` (el valor por defecto desde #745) y la API (`python run_api.py`) sirve para desarrollo local, pruebas y el e2e. Quien aloje la API necesita las variables de abajo y `VITE_API_BASE` en la web para que su respaldo la use. **Fuera del repositorio** (a mano, GitHub → *Settings → Secrets and variables → Actions*): borrar la variable `RENDER_API_URL` si existe (nada la lee ya) y, si alguna vez se definieron, los secretos `RENDER_DEPLOY_HOOK_URL` y `RENDER_SCRAPER_DEPLOY_HOOK_URL` (a 05/11/2026 no hay ninguno).
+
 ## Activar la clave (paso a paso)
 Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producción.
 
@@ -20,43 +23,38 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
    - PowerShell: `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))`
    - o Python: `python -c "import secrets; print(secrets.token_urlsafe(32))"`
    Guárdala en un gestor de contraseñas.
-2. **Render → servicio `basketlab-api` → Environment**: añadir `ADMIN_API_KEY` = la clave. Guardar.
-3. ~~**Render → servicio `basketlab-scraper`**~~: el servicio se retiró (#724); solo `basketlab-api` tiene la clave (el frontend envía la clave a la API, `X-Admin-Key`).
-4. **Redeploy** de los dos servicios (Render los reinicia al guardar variables; si no, *Manual Deploy → Deploy latest commit*). Los servicios gratuitos tardan en despertar.
+2. **Entorno del servidor de la API**: añadir `ADMIN_API_KEY` = la clave.
+3. (El servicio `basketlab-scraper` se retiró en #724: solo la API tiene la clave; el frontend la envía en `X-Admin-Key`.)
+4. **Reiniciar** el servicio para que lea la variable.
 5. **Introducir la clave en la app**: la página Admin se retiró (#724); hoy solo la usa el entrenamiento del predictivo (`pages/predictive/ElasticityTab.tsx`, fuera de la web mientras se rehace), con el campo "Clave de administración" (`AdminKeyField`, `sessionStorage`). Si se reactiva el predictivo, se guarda ahí; por `curl` basta la cabecera `X-Admin-Key`.
 6. **Comprobar** (sustituye URL y clave):
    ```bash
    # sin clave -> 401
-   curl -i -X DELETE https://<api>.onrender.com/api/v1/collections/PRUEBA_INEXISTENTE
+   curl -i -X DELETE https://<api>/api/v1/collections/PRUEBA_INEXISTENTE
    # con clave -> pasa la guarda (404/200 según exista la colección, pero ya no 401/503)
-   curl -i -X DELETE -H "X-Admin-Key: <clave>" https://<api>.onrender.com/api/v1/collections/PRUEBA_INEXISTENTE
+   curl -i -X DELETE -H "X-Admin-Key: <clave>" https://<api>/api/v1/collections/PRUEBA_INEXISTENTE
    ```
    Cuidado: usa un nombre de colección que **no exista** al probar.
 
 ## Rotar o retirar la clave
-- **Rotar**: cambiar el valor en los dos servicios de Render, redeploy y volver a guardarla en Admin. Las claves antiguas dejan de valer al instante (se lee en cada petición).
-- **Retirar** (volver al estado actual): borrar la variable en ambos servicios y redeploy → vuelven los 503.
+- **Rotar**: cambiar el valor en el entorno del servidor, reiniciar y volver a guardarla donde se use. Las claves antiguas dejan de valer al instante (se lee en cada petición).
+- **Retirar** (volver al estado actual): borrar la variable y reiniciar → vuelven los 503.
 
 ## Diagnóstico
 | Síntoma | Causa | Solución |
 |---|---|---|
 | 503 "ADMIN_API_KEY no está configurada" | variable sin definir en ese servicio (producción) | Estado actual esperado; pasos de arriba para activarla |
-| 401 "Clave de administración requerida o incorrecta" | sin clave en Admin, clave distinta o variable distinta entre `api` y `scraper` | Re-guardar la clave en Admin; comprobar que el valor es idéntico en ambos servicios |
-| 503 "Base de datos no disponible: …" (o 500 en versiones antiguas) en cualquier endpoint con datos | `MONGODB_CONNECTION_STRING` sin definir, credenciales de Atlas rechazadas, usuario sin permisos o IP no permitida | Abrir `/api/v1/health/db`: `error` = `missing_config` / `auth_failed` / `not_authorized` / `unreachable` / `invalid_config` y `hint`. Revisar Render → Environment y Atlas → Database Access / Network Access (`0.0.0.0/0` para Render free) |
+| 401 "Clave de administración requerida o incorrecta" | sin clave en Admin, clave distinta | Re-guardar la clave en Admin |
+| 503 "Base de datos no disponible: …" (o 500 en versiones antiguas) en cualquier endpoint con datos | `MONGODB_CONNECTION_STRING` sin definir, credenciales de Atlas rechazadas, usuario sin permisos o IP no permitida | Abrir `/api/v1/health/db`: `error` = `missing_config` / `auth_failed` / `not_authorized` / `unreachable` / `invalid_config` y `hint`. Revisar las variables de entorno del servicio y Atlas → Database Access / Network Access (`0.0.0.0/0` para Render free) |
 | Atlas desactualizado respecto a local | el scrape se hizo solo contra la BD local | `GET /api/v1/collections/{name}/freshness` lista `missing_codes` (jugados en FEB y ausentes) |
 | CORS / `OPTIONS` bloqueado | `ALLOWED_ORIGINS` no incluye la URL de Vercel | Ajustar `ALLOWED_ORIGINS` (la cabecera `X-Admin-Key` está permitida) |
 | Funciona en local pero no en producción | en local no hay guarda (sin `ENVIRONMENT=production`) | Esperado |
 
 ## Variables de entorno (resumen)
-Backend (Render): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional hasta que se decida activarla), `DISABLE_SCRAPING=1` (solo api). Frontend (Vercel): `VITE_API_BASE`, `VITE_SCRAPER_BASE`. Plantilla: `.env.example`.
+Backend (si se aloja): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional hasta que se decida activarla). Frontend (Vercel): `VITE_API_BASE` (solo para el respaldo de la API). Plantilla: `.env.example`.
 
-## Despliegue automático (CI → Render)
-Al integrar en `main`, `ci.yml` ejecuta los tests y luego llama a los *Deploy Hooks* de Render. Cada hook es un secreto de GitHub **opcional**: si falta, ese paso avisa (`::warning`) y se omite, no rompe el pipeline. (Antes, con el secreto sin definir, `curl` fallaba con *URL rejected: Malformed input to a URL function*.)
-1. Render → servicio `basketlab-api` → *Settings → Deploy Hook* → copiar la URL.
-2. GitHub → *Settings → Secrets and variables → Actions → New repository secret* → `RENDER_DEPLOY_HOOK_URL` = esa URL.
-3. (El servicio `basketlab-scraper` y su secreto `RENDER_SCRAPER_DEPLOY_HOOK_URL` se retiraron en #724: se puede borrar el secreto.)
-**Comprobación posterior (#111)**: tras los hooks, `scripts/post_deploy_check.py --sha $GITHUB_SHA` espera (hasta **40 min**: el plan gratuito arranca en frío y a veces tarda 20-25 min en desplegar, #269) a que `GET /api/v1/health` informe del commit empujado (`RENDER_GIT_COMMIT`; el deploy es asíncrono y hasta entonces responde la versión anterior) y exige que `GET /api/v1/health/db` esté conectado. Un fallo deja `main` en rojo con la causa clasificada (`auth_failed`, `unreachable`…). Necesita la **variable** (no secreto) de GitHub `RENDER_API_URL` = URL pública de `basketlab-api` (*Settings → Secrets and variables → Actions → Variables*); sin ella se omite con un aviso. **Varios merges seguidos (#269)**: si la API ya sirve un commit **más nuevo que contiene** el comprobado (lo pregunta a la API de comparación de GitHub con `GITHUB_TOKEN`), el check pasa con la nota «superado por un despliegue más nuevo» y comprueba igualmente la base de datos; además el job de despliegue tiene `concurrency: deploy-render` con `cancel-in-progress`, así que el run de un commit antiguo que sigue esperando se **cancela** (gris) cuando llega uno nuevo en lugar de fallar. Sigue en rojo lo que es un fallo real: la API sirve un commit anterior tras los 40 min (el mensaje manda a mirar el panel de Render: ¿build fallido o en cola?) o la base de datos no conecta. Los hooks de despliegue están sin definir a propósito (Render despliega solo con cada push) y el job solo espera.
-Si Render ya despliega solo en cada push (*Auto-Deploy* activado en el servicio), los hooks son redundantes y se pueden dejar sin definir: elige una sola vía para no desplegar dos veces.
+## Despliegue (web) y CI
+La web se despliega sola en Vercel (integración nativa de GitHub, con una vista previa por PR). `ci.yml` solo ejecuta los tests (backend repartido en 4 trabajos, web, e2e); **no despliega nada**: los datos y los paquetes los publica GitHub Actions en las ramas `web-data` y `live-packages`. Si se aloja la API en algún sitio, el despliegue es cosa de quien la aloje (ver *Sin servidor alojado*).
 
 ## Grabar partidos de FEB en directo (feb-record.yml)
 Para registrar el feed real de partidos (datos para calibrar el motor live, #118) edita `config/feb_watchlist.json` y haz PR a `main`: `calendars` = calendarios de FEB que se vigilan (los de `calendario.aspx?g=…&t=…&nm=…`; **el de una competición muestra un solo grupo**, así que para un grupo concreto se añade `#t=<temporada>&g=<grupo>` a la URL, p. ej. 2ª FEB A `…nm=segundafeb#t=2026&g=89999`, y `g=all` lee todos los grupos de la temporada: la Copa de España, cuyas fases aparecen ronda a ronda; las eliminatorias se leen de `Series.aspx`, #456); lo normal es **no lanzarlo a mano**: con los equipos de interés en `teams` el grabador se dispara solo; `teams` = ids de equipo (**todos sus partidos**; hoy 1008631 MIPELLETYMAS B.F. LEON, 1008978 Llíria, 1008857 Cultural y Deportiva Leonesa, 1010490 CAJA RURAL RDL); `matches` = códigos sueltos (`Partido.aspx?p=<código>` o la lista de *Preparación live*); `competitions` = calendarios cuyos partidos se graban **todos**. Para una sola vez, sin tocar la lista: *Run workflow* con `codes` (grabar ya), `teams` o `competition` (URL del calendario). Id de un equipo: enlace `Equipo.aspx?i=<id>` del calendario. Desde entonces el workflow lo graba solo: lanza el job entre 3 h antes y 2 h después del inicio (GitHub ejecuta el `schedule` pocas veces al día, por eso la ventana es amplia y el planner también corre tras cada *Atlas refresh*; ver [LIVE.md](LIVE.md)). Resultado: GitHub → *Actions* → *FEB live recorder* → la ejecución → **Artifacts** `recording-<código>` (y el informe en *Summary*). **Grabar ya** (sin tocar la lista): *Actions → FEB live recorder → Run workflow* con el código. Local: `python -m src.live_prep.recorder record --match <código> --start-at <ISO UTC>` y `python -m src.live_prep.recording_report recordings/<código> --replay`. Consejo: añadir el partido a la lista con **más de una hora de antelación** (el planner lo ve en la siguiente pasada de 15 min).
@@ -110,14 +108,14 @@ Tras cada refresco del archivo (*Archive refresh*, arriba), `web-data.yml` ejecu
 - **Dependabot** (`.github/dependabot.yml`): cada lunes abre, agrupados por ecosistema (menores y parches; los cambios mayores se hacen a propósito), los PR de `frontend/`, `apps/live-android/` y GitHub Actions (menores y parches, con `rebase-strategy: disabled`: una rama no se rebasa cada vez que avanza `main`, que repetiría todo el CI; pídelo con `@dependabot rebase` cuando vayas a integrarla). **pip no abre PR de versiones** (`requirements.txt` usa rangos `>=` y el CI y Render ya instalan lo último: solo subiría una cota mínima); sí llegan sus avisos de seguridad, que además se comprueban con `pip-audit -r requirements.txt` (23/10/2026: sin vulnerabilidades). Los avisos de seguridad llegan también como PR aparte en cualquier momento. `pyodide` está **fijado** en la app (el motor de la tablet y los vectores se miden con esa versión): cambiarlo es una decisión, con `npm run test:run` y `e2e` de la app. Un PR de Dependabot se integra como los demás (CI en verde).
 - **Comprobar a mano**: `cd frontend && npm audit --omit=dev` (la app live: `cd apps/live-android && npm audit --omit=dev`). Estado del 23/10/2026: la app live sin avisos; el frontend sin avisos (0 vulnerabilidades) tras subir `jspdf` (crítico), `axios`, `dompurify`, `lodash`, `form-data` y `react-router-dom` a la 7 (#526). Con una vulnerabilidad `high` o `critical` en producción se actualiza ya, sin esperar a Dependabot.
 
-## Memoria (límite de 512 MB en Render free)
-Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: scikit-learn +125 MB al primer uso predictivo, matplotlib +45, pandas +50). Medidas tomadas (issue #163):
+## Memoria (servidor pequeño, 512 MB)
+Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: scikit-learn +125 MB al primer uso predictivo, matplotlib +45, pandas +50). Medidas tomadas (issue #163), vigentes si alguien aloja la API en un servidor con poca RAM:
 - **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4). Antes `run_api.py` lanzaba 4 en Linux → ~500-700 MB en reposo y OOM intermitente al desplegar.
-- `MALLOC_ARENA_MAX=2` (menos fragmentación) y `pip install --no-cache-dir` en el build (`render.yaml`). Si los servicios no se crearon desde el Blueprint, poner `WEB_CONCURRENCY=1` y `MALLOC_ARENA_MAX=2` a mano en *Environment*.
+- `MALLOC_ARENA_MAX=2` (menos fragmentación) y `pip install --no-cache-dir` al instalar.
 - Listado de partidos con **proyección** (no cargar documentos completos), zonas de liga **en streaming** y caducidad (15 min) de los ZIP del informe semanal sin descargar.
-- **Diagnóstico**: poner `LOG_MEMORY=1` en el servicio y redeploy; los logs mostrarán `WARNING basketlab.memory GET /ruta rss 412 MB (+90 MB)` para peticiones que suben ≥ 25 MB (`LOG_MEMORY_DELTA_MB`) o dejan el RSS ≥ 350 MB (`LOG_MEMORY_HIGH_MB`). Contrastarlo con *Metrics → Memory* del servicio en Render.
+- **Diagnóstico**: poner `LOG_MEMORY=1` en el servicio; los logs mostrarán `WARNING basketlab.memory GET /ruta rss 412 MB (+90 MB)` para peticiones que suben ≥ 25 MB (`LOG_MEMORY_DELTA_MB`) o dejan el RSS ≥ 350 MB (`LOG_MEMORY_HIGH_MB`).
 - Regla de código: nunca `find({})` sin proyección sobre colecciones de partidos; iterar cursores/generadores en vez de materializar listas de documentos o tiros.
-Si aun así se supera el límite: plan de pago de Render (1 GB+) o separar los endpoints predictivos (scikit-learn) en otro servicio.
+Si aun así se supera el límite: más memoria o separar los endpoints predictivos (scikit-learn) en otro servicio.
 
 ## App Android (BasketLab Live): APK, firma y publicación
 La app (`apps/live-android`) se compila **en GitHub Actions** (`.github/workflows/live-android.yml`); no hace falta Android Studio ni Java en local. Cada PR/push que toque la app deja el APK como artefacto del workflow (requiere sesión de GitHub para descargarlo). Para tener un **enlace directo** (el repo es público) se publica una Release con una etiqueta.

@@ -19,4 +19,4 @@ cd frontend && npm run type-check && npm run test:run
 ```
 
 ## Despliegue
-Render (`render.yaml`: API y scraper) y Vercel (frontend). Variables en `.env.example`.
+Vercel (frontend); los datos y los paquetes los publica GitHub Actions en las ramas `web-data` y `live-packages`. La API (`python run_api.py`) es para desarrollo local y pruebas, sin alojamiento en el repositorio. Variables en `.env.example`.

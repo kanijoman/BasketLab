@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { DATASETS, DATA_FLAG_KEY, dataSourceOf, localDatasets, localDataEnabled, apiDatasets } from './switch'
 
 // The switch of the local-first migration (issues #329, #334): which datasets the web reads from the published files and which from the API. Since #334 the default is
-// LOCAL for every dataset (the API is the fallback when the files cannot answer, and goes away with Render): `?data=api` forces the API, `?data=local` goes back to the
+// LOCAL for every dataset (the API is the fallback when the files cannot answer, and goes away with the server): `?data=api` forces the API, `?data=local` goes back to the
 // default, `?data=local:team-report,team-stats` turns on only those. The choice is remembered in the browser.
 const at = (search: string) => window.history.replaceState(null, '', `/x${search}`)
 

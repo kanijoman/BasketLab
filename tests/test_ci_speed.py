@@ -81,9 +81,5 @@ def test_a_manual_run_can_check_the_coverage_path_before_it_reaches_main():
     assert "workflow_dispatch" in CI[True]
 
 
-def test_the_deploy_waits_for_the_gate_not_for_a_share():
-    assert "test-backend" in JOBS["deploy-backend"]["needs"] and "backend-shard" not in JOBS["deploy-backend"]["needs"]
-
-
 def test_the_split_tool_is_a_dev_dependency():
     assert "pytest-split" in (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")

@@ -16,7 +16,7 @@ SCANNED = [
     ("src", {".py"}),
     ("frontend/src", {".ts", ".tsx"}),
 ]
-SCANNED_FILES = ["requirements.txt", "render.yaml", ".env.example", "frontend/package.json"]
+SCANNED_FILES = ["requirements.txt", ".env.example", "frontend/package.json"]
 
 
 def _offenders():

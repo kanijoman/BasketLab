@@ -1,6 +1,6 @@
 -r requirements.txt
 
-# Development / testing (not installed on Render)
+# Development / testing (not needed to run the API)
 pytest>=7.4.0
 pytest-cov>=4.1.0
 pytest-xdist>=3.5.0   # the CI runs the suite in parallel (-n auto): the runner has 4 CPUs

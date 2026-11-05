@@ -1,4 +1,4 @@
-"""Memory mitigations for the 512 MB Render limit (issue #163)."""
+"""Memory mitigations for the 512 MB server limit (issue #163)."""
 import json
 import time
 from pathlib import Path
@@ -237,13 +237,3 @@ class TestMemoryLog:
         with caplog.at_level("WARNING", logger="basketlab.memory"):
             TestClient(app).get("/x")
         assert not caplog.records
-
-
-# --- 6. deployment config ------------------------------------------------------------------
-
-class TestRenderConfig:
-    def test_api_service_limits_memory_hungry_defaults(self):
-        text = (ROOT / "render.yaml").read_text(encoding="utf-8")
-        assert "MALLOC_ARENA_MAX" in text
-        assert "WEB_CONCURRENCY" in text
-        assert "--no-cache-dir" in text

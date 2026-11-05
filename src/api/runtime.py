@@ -1,8 +1,8 @@
 """Process settings for the API server."""
 from typing import Mapping, Optional
 
-# Each worker imports the whole app (~170 MB at idle): more than a couple does not fit the
-# 512 MB of Render's free plan.
+# Each worker imports the whole app (~170 MB at idle): more than a couple does not fit a small
+# (512 MB) server.
 MAX_WORKERS = 4
 
 

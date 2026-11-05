@@ -42,7 +42,7 @@ from src.api.runtime import uvicorn_workers  # noqa: E402
 
 if __name__ == "__main__":
     dev_mode = os.environ.get("BASKETLAB_DEV", "0") == "1"
-    # Render (and most PaaS) inject PORT dynamically; fall back to 8000 locally.
+    # Most PaaS inject PORT dynamically; fall back to 8000 locally.
     port = int(os.environ.get("PORT", 8000))
     # Windows does not support uvicorn's multiprocessing socket sharing
     # (WinError 10022 on sock.listen).  Always use a single worker.
