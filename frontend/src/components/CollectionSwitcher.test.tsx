@@ -34,6 +34,17 @@ describe('CollectionSwitcher (issue #191)', () => {
     expect(screen.getAllByRole('combobox')).toHaveLength(1)      // one ámbito, one season, one competition: nothing to choose
   })
 
+  it('the header shows the group too when it is the only one: it names the phase', async () => {
+    const two = [
+      { name: 'PRIMERA_FEB_2026_2027_Liga_Regular_Único', league: 'FEB', competition: 'PRIMERA_FEB', season: '2026_2027_Liga_Regular_Único', group: '', game_count: 40 },
+      { name: 'LF_ENDESA_2026_2027_Liga_Regular_Único', league: 'FEB', competition: 'LF_ENDESA', season: '2026_2027_Liga_Regular_Único', group: '', game_count: 30 },
+    ] as client.CollectionInfo[]
+    show('/PRIMERA_FEB_2026_2027_Liga_Regular_Único/teams', two)
+    expect(await screen.findByRole('combobox', { name: 'Grupo' })).toHaveValue('Liga Regular')
+    expect(screen.getByRole('combobox', { name: 'Competición' })).toHaveValue('PRIMERA FEB')      // two competitions: this one has something to choose
+    expect(screen.queryByRole('combobox', { name: 'Temporada' })).toBeNull()                       // one season: nothing to choose
+  })
+
   it('changing the season keeps the page and the competition when they exist there (#761)', async () => {
     show('/LF2_2025_A/rotaciones', [...LIST, { ...LIST[0], name: 'LF2_2024_A', season: '2024_2025' }] as client.CollectionInfo[])
     fireEvent.change(await screen.findByRole('combobox', { name: 'Temporada' }), { target: { value: '2024/2025' } })
