@@ -86,7 +86,7 @@ describe('new versions are noticed without opening Acerca de (issue #335)', () =
     const { d, listening } = withResume()
     const { unmount } = mount(d)
     await screen.findByRole('status', { name: /actualización/i })
-    expect(listening()).toBe(true)
+    await waitFor(() => expect(listening()).toBe(true))      // the listener is registered by an effect after the notice is painted: asserting at once was a race (#739)
     unmount()
     expect(listening()).toBe(false)
   })
