@@ -17,7 +17,7 @@ from src.utils.collection_utils import is_fbcyl
 
 def export_inout(handler: Any, name: str) -> Dict[str, Any]:
     """``{player_id, analysis}`` of every player of ``name`` in the order of the player rows (``player_id`` is the uuid in FBCYL); ``analysis`` is ``{}`` for a player the endpoint cannot analyse."""
-    from src.api.routers.players import get_inout_analysis
+    from src.services.inout_service import inout_analysis
 
     fbcyl = is_fbcyl(name)
     players, seen = [], set()
@@ -29,6 +29,6 @@ def export_inout(handler: Any, name: str) -> Dict[str, Any]:
         if row.get(key) is None or player_id in seen:
             continue
         seen.add(player_id)
-        analysis = get_inout_analysis(name, player_id, handler) or {}
+        analysis = inout_analysis(handler, name, player_id) or {}
         players.append({"player_id": player_id, "analysis": json.loads(json.dumps(analysis, default=str))})
     return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb", "players": players}

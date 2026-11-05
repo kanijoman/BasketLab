@@ -23,14 +23,14 @@ def main(argv=None) -> int:
     parser.add_argument("--no-scouting", action="store_true", help="do not publish the full scouting of the rival (it takes about ten seconds per team)")
     args = parser.parse_args(argv)
 
-    from src.api.deps import _create_handler
+    from src.database.shared_handler import shared_handler
     from src.live_prep.package_sealing import make_sealer
     from src.local_data.images_export import Source
     from src.local_data.web_data import publish_web_data
     from src.local_data.scouting_export import interest_clubs, scouting_collections
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
 
-    handler = _create_handler()
+    handler = shared_handler()
     db = handler.connection.client["BASKETBALL"]
     names = args.collection or sorted(set(feb_collection_names(db)) | set(fbcyl_collection_names(db)))
     try:

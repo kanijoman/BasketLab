@@ -32,7 +32,7 @@ class MongoDBConnection:
             self.db = self.client["BASKETBALL"]
             self._connected = True
         except PyMongoError as e:
-            from src.api.db_health import classify_db_error
+            from .db_health import classify_db_error
 
             self.last_error_kind = classify_db_error(e)
             print(f"[MongoDBConnection] Failed to connect to MongoDB ({self.last_error_kind}): {type(e).__name__}")
