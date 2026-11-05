@@ -97,7 +97,7 @@ export default function ComparativasPage() {
   const byName = useMemo(() => Object.fromEntries(rows.map(r => [r.team_name, r])), [rows])
   const columns = useMemo(() => buildColumns(defs, byName, rivals), [defs, byName, rivals])
   const quartiles = useMemo(() => computeQuartileMap(flat, defs.filter(d => !d.count).map(d => d.key as string)), [flat, defs])
-  const reverseColumns = useMemo(() => defs.filter(d => d.reverse !== rivals).map(d => d.key as string), [defs, rivals])
+  const reverseColumns = useMemo(() => defs.filter(d => Boolean(d.reverse) !== rivals).map(d => d.key as string), [defs, rivals])
 
   if (!collection) {
     return <PageTransition><p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p></PageTransition>

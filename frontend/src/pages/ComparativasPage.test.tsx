@@ -184,3 +184,32 @@ describe('ComparativasPage on the base components (issue #666)', () => {
     expect((screen.getByLabelText('Hasta') as HTMLInputElement).value).not.toBe('')
   })
 })
+
+// The colour of a cell says how the team ranks among the teams of the table: Q1 green is the best. With four teams the quartiles exist (below four there is no colouring).
+describe('ComparativasPage: quartile colours of the cells', () => {
+  const four = () => ['Alfa', 'Bravo', 'Charlie', 'Delta'].map((name, i) =>
+    team(name, { points_per_game: 85 - 5 * i, points_against_per_game: 70 + 5 * i, turnovers_per_game: 10 + i }, { points_per_game: 80, points_against_per_game: 80, turnovers_per_game: 11 }))
+
+  beforeEach(() => api.getTeamComparison.mockReset().mockResolvedValue({ by: 'venue', label_a: 'Local', label_b: 'Visitante', team: four(), opponent: four() }))
+
+  it('equipos: more points is green and fewer is red; fewer points against is green (the columns without the reverse mark were swapped)', async () => {
+    renderPage()
+    await screen.findByText('Alfa')
+    expect(cellOf('Alfa', 'PPP').className).toContain('table-cell-q1')          // 85 points: the best
+    expect(cellOf('Delta', 'PPP').className).toContain('table-cell-q4')         // 70: the worst
+    expect(cellOf('Alfa', 'PPC').className).toContain('table-cell-q1')          // 70 against: the best (less is better)
+    expect(cellOf('Delta', 'PPC').className).toContain('table-cell-q4')
+    expect(cellOf('Alfa', 'Perd').className).toContain('table-cell-q1')         // 10 turnovers: the best
+  })
+
+  it('rivales: what the rivals did is swapped, the more they scored the worse for the team', async () => {
+    renderPage()
+    await screen.findByText('Alfa')
+    fireEvent.click(screen.getByRole('radio', { name: 'Rivales' }))
+    expect(cellOf('Alfa', 'PPP').className).toContain('table-cell-q4')          // the rivals scored 85 against Alfa: the worst for Alfa
+    expect(cellOf('Delta', 'PPP').className).toContain('table-cell-q1')
+    expect(cellOf('Alfa', 'PPC').className).toContain('table-cell-q4')          // the rivals conceded 70: that is what Alfa scored, the least
+    expect(cellOf('Delta', 'PPC').className).toContain('table-cell-q1')
+    expect(cellOf('Alfa', 'Perd').className).toContain('table-cell-q4')         // the rivals lost the fewest balls against Alfa: bad for Alfa
+  })
+})
