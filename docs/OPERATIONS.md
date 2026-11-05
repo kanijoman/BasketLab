@@ -118,6 +118,8 @@ Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈
 Si aun así se supera el límite: más memoria o separar los endpoints predictivos (scikit-learn) en otro servicio.
 
 ## App Android (BasketLab Live): APK, firma y publicación
+**Gradle sin caché (#749, 05/11/2026)**: `live-android.yml` usa `gradle/actions/setup-gradle@v6` con `cache-disabled: true`. La versión 6 pasó el caché a un componente propietario (`gradle-actions-caching`) con sus propios términos de uso, que se aceptan al subir de versión; como la release es semanal el caché no compensa y el componente no se carga. Si algún día se quiere el caché, es una decisión sobre esos términos.
+
 La app (`apps/live-android`) se compila **en GitHub Actions** (`.github/workflows/live-android.yml`); no hace falta Android Studio ni Java en local. Cada PR/push que toque la app deja el APK como artefacto del workflow (requiere sesión de GitHub para descargarlo). Para tener un **enlace directo** (el repo es público) se publica una Release con una etiqueta.
 
 ### Publicar una versión
