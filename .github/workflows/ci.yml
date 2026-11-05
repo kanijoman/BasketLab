@@ -5,6 +5,7 @@ on:
     branches: ["main", "develop"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:     # a manual run measures the coverage too (it checks the combination of the shares before it reaches main)
 
 # A newer push to a pull request cancels the run of the previous commit (issue #741); a run of main is never cancelled (its deploy waits for the tests).
 concurrency:
@@ -13,9 +14,23 @@ concurrency:
 
 jobs:
   # ── Backend tests ──────────────────────────────────────────────────────────
-  test-backend:
-    name: Backend (pytest)
+  # The suite is the longest job of an integration (issue #741), so it is split into SHARES that run as parallel jobs: `pytest-split` hands each share the tests that
+  # add up to a quarter of the time stored in `.test_durations`, and inside a share pytest-xdist uses every CPU of the runner (4). `worksteal` hands tests out one by one
+  # and lets an idle worker take them from a busy one (`loadscope` pinned a module to a worker). `--durations` lists the slowest tests of every run.
+  # Recalibrate the split when the suite changes a lot: `python -m pytest tests -n auto --store-durations --durations-path=.test_durations`.
+  # `python -m pytest` (not `pytest`) keeps the repo root on sys.path: some tests import `from tests.x import y`. Override addopts to skip the HTML coverage report.
+  # Tests use mongomock (no real DB); ENVIRONMENT=development so db_config does not raise on a missing Atlas URL.
+  # The coverage is only measured on main or in a manual run (`workflow_dispatch`), where the tracing cost does not delay a pull request; each share saves its data and the
+  # gate job below combines them.
+  backend-shard:
+    name: Backend share ${{ matrix.group }}/4
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3, 4]
+    env:
+      WITH_COVERAGE: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
 
     steps:
       - uses: actions/checkout@v7
@@ -35,23 +50,68 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      # The suite is the longest job of an integration: it runs in parallel (pytest-xdist, one worker per CPU; the runner
-      # has 4) instead of in a single process. `worksteal` (issue #741) hands tests out one by one and lets an idle worker take them from a busy one: `loadscope` pinned
-      # a whole module to a worker, and a module with 300 s of vector tests left three workers waiting at the end. `--durations` lists the slowest tests of every run. `python -m pytest` (not `pytest`) keeps the repo root on sys.path: some tests import
-      # `from tests.x import y`. Override addopts to skip the HTML coverage report; single quotes avoid bash quoting issues.
-      # Tests use mongomock (no real DB); ENVIRONMENT=development so db_config does not raise on a missing Atlas URL.
-      - name: Run tests in parallel (no coverage outside main)
-        if: github.ref != 'refs/heads/main'
-        run: python -m pytest tests/ -n auto --dist worksteal --durations=30 --durations-min=1 --tb=short -q --override-ini='addopts='
+      - name: Run this share of the tests (no coverage outside main)
+        if: env.WITH_COVERAGE != 'true'
+        run: python -m pytest tests/ --splits 4 --group ${{ matrix.group }} --durations-path .test_durations --splitting-algorithm least_duration -n auto --dist worksteal --durations=30 --durations-min=1 --tb=short -q --override-ini='addopts='
         env:
           ENVIRONMENT: development
 
-      # The coverage gate (82 %) is enforced on main, where the tracing cost does not delay a pull request.
-      - name: Run tests in parallel with the coverage gate (main)
-        if: github.ref == 'refs/heads/main'
-        run: python -m pytest tests/ -n auto --dist worksteal --durations=30 --durations-min=1 --cov=src --cov-report=term-missing --cov-fail-under=82 --tb=short -q --override-ini='addopts='
+      - name: Run this share of the tests and keep its coverage data (main)
+        if: env.WITH_COVERAGE == 'true'
+        run: python -m pytest tests/ --splits 4 --group ${{ matrix.group }} --durations-path .test_durations --splitting-algorithm least_duration -n auto --dist worksteal --durations=30 --durations-min=1 --cov=src --cov-report= --tb=short -q --override-ini='addopts='
         env:
           ENVIRONMENT: development
+          COVERAGE_FILE: .coverage.share${{ matrix.group }}
+
+      - name: Upload the coverage data of this share (main)
+        if: ${{ !cancelled() && env.WITH_COVERAGE == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.group }}
+          path: .coverage.share${{ matrix.group }}
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  # The check that the ruleset of main requires (`Backend (pytest)`): it passes only if every share passed (a skipped or cancelled share is not a pass) and, when the coverage
+  # was measured, combines the data of the shares and applies the gate (82 %).
+  test-backend:
+    name: Backend (pytest)
+    needs: backend-shard
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      WITH_COVERAGE: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Every share passed
+        run: |
+          if [ "${{ needs.backend-shard.result }}" != "success" ]; then
+            echo "::error::The backend shares finished as: ${{ needs.backend-shard.result }}"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        if: env.WITH_COVERAGE == 'true'
+
+      - uses: actions/setup-python@v7
+        if: env.WITH_COVERAGE == 'true'
+        with:
+          python-version: "3.11"
+
+      - name: Download the coverage data of the shares
+        if: env.WITH_COVERAGE == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Combine the coverage and apply the gate (82 %)
+        if: env.WITH_COVERAGE == 'true'
+        run: |
+          pip install -q coverage
+          coverage combine .coverage.share1 .coverage.share2 .coverage.share3 .coverage.share4
+          coverage report --fail-under=82
 
   # ── Frontend tests ─────────────────────────────────────────────────────────
   test-frontend:
