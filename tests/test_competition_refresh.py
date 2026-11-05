@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 from db_helpers import new_mock_db
 
-from src.services.atlas_refresh import RefreshEntry, load_config, main, refresh_all, to_markdown
+from src.services.competition_refresh import RefreshEntry, load_config, main, refresh_all, to_markdown
 from src.services.feb_match_ingest import is_in_progress, scrape_feb_collection
 
 ENTRY = {"competition_url": "https://x/competicion.aspx?c=1", "season_value": "2026", "group_value": "7",
@@ -141,7 +141,7 @@ def test_the_cli_can_import_the_database_layer_in_a_clean_interpreter_regression
 
     root = Path(__file__).resolve().parents[1]
     env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
-    code = "import run_refresh; from src.services.atlas_refresh import main; from src.database import MongoDBHandler"
+    code = "import run_refresh; from src.services.competition_refresh import main; from src.database import MongoDBHandler"
     result = subprocess.run([sys.executable, "-c", code], cwd=root, env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-400:]
 
@@ -183,14 +183,14 @@ class TestCompetitionWithPhases:
             load_config(path)
 
     def test_every_phase_found_is_refreshed_into_its_own_collection(self):
-        from src.services.atlas_refresh import expand_entries
+        from src.services.competition_refresh import expand_entries
 
         entries = expand_entries([RefreshEntry(**COPA)], _phase_scraper())
         assert [(e.group_label, e.group_value, e.groups) for e in entries] == [(label, value, "") for label, value in COPA_GROUPS]
         assert {e.competition_url for e in entries} == {COPA["competition_url"]}
 
     def test_a_fixed_entry_is_left_untouched_and_does_not_ask_feb(self):
-        from src.services.atlas_refresh import expand_entries
+        from src.services.competition_refresh import expand_entries
 
         scraper = _phase_scraper()
         fixed = RefreshEntry(**ENTRY)
@@ -198,7 +198,7 @@ class TestCompetitionWithPhases:
         scraper.get_groups_for_season.assert_not_called()
 
     def test_the_group_filter_keeps_only_matching_labels_ignoring_case(self):
-        from src.services.atlas_refresh import expand_entries
+        from src.services.competition_refresh import expand_entries
 
         entries = expand_entries([RefreshEntry(**{**COPA, "group_filter": ["play-offs"]})], _phase_scraper())
         assert [e.group_value for e in entries] == ["90041"]
@@ -231,7 +231,7 @@ class TestCompetitionWithPhases:
 
     def test_the_publisher_finds_the_phases_already_stored_for_a_competition(self):
         """The live packages are built offline: the phases of ``groups: all`` are the collections the refresh stored."""
-        from src.services.atlas_refresh import ingested_collections
+        from src.services.competition_refresh import ingested_collections
 
         db = _db()
         meta = db.repository.connection.get_collection.return_value
@@ -279,14 +279,14 @@ class TestSeniorCompetitions:
             assert len(seen) == len(set(seen)), path
 
     def test_only_keeps_the_competitions_asked_for_ignoring_case_and_punctuation(self):
-        from src.services.atlas_refresh import only_competitions
+        from src.services.competition_refresh import only_competitions
 
         entries = load_config("config/competitions.json")
         assert {e.competition_label for e in only_competitions(entries, ["tercera feb", "LF2"])} == {"TERCERA FEB", "L.F.-2"}
         assert only_competitions(entries, []) == entries
 
     def test_an_unknown_competition_in_only_is_an_error(self):
-        from src.services.atlas_refresh import only_competitions
+        from src.services.competition_refresh import only_competitions
 
         with pytest.raises(ValueError, match="XYZ"):
             only_competitions(load_config("config/competitions.json"), ["XYZ"])
@@ -339,7 +339,7 @@ class TestFbcylInTheRefresh:
         scraper.get_matches.return_value = ["u1"]
         scraper.get_match_complete_data.return_value = {"uuid": "u1"}
         check = MagicMock()
-        with patch("src.services.atlas_refresh._fill_derived") as fill, patch("src.services.atlas_refresh._ensure_team_index") as index:
+        with patch("src.services.competition_refresh._fill_derived") as fill, patch("src.services.competition_refresh._ensure_team_index") as index:
             report = refresh_all(db, [self.ENTRY], fbcyl_scraper=scraper, freshness=check)
         [item] = report
         assert item["fatal"] is None and item["league"] == "fbcyl" and item["freshness"] is None
@@ -354,7 +354,7 @@ class TestFbcylInTheRefresh:
 
         scraper = MagicMock()
         scraper.get_matches.side_effect = RuntimeError("FBCYL no responde")
-        from src.services.atlas_refresh import needs_attention
+        from src.services.competition_refresh import needs_attention
 
         report = refresh_all(_db(), [self.ENTRY, self.ENTRY], fbcyl_scraper=scraper, freshness=lambda c: {})
         assert [r["fatal"] for r in report] == ["RuntimeError: FBCYL no responde"] * 2
@@ -369,7 +369,7 @@ class TestFbcylInTheRefresh:
         assert "FBCYL" in text and "calendario de FEB" not in text
 
     def test_only_finds_a_group_by_its_name_and_the_publisher_never_takes_it(self):
-        from src.services.atlas_refresh import ingested_collections, only_competitions
+        from src.services.competition_refresh import ingested_collections, only_competitions
 
         assert only_competitions([self.ENTRY], ["1ª fase-grupo a-1"]) == [self.ENTRY]          # by its label, case and punctuation ignored
         assert ingested_collections(_db(), [self.ENTRY]) == []       # live packages are FEB only

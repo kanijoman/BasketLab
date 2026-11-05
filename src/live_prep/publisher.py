@@ -1,10 +1,10 @@
 """Publish the live preparation packages of the club's upcoming matches (issue #175).
 
 ``python -m src.live_prep.publisher --out <dir>`` finds the next matches of ``team_id`` in the competitions
-of ``config/atlas_refresh.json``, builds one encrypted package per upcoming rival and writes
+of ``config/competitions.json`` (the catalogue), builds one encrypted package per upcoming rival and writes
 ``<dir>/<team_id>/<rival_id>.bpkg`` plus ``<dir>/index.json``. The workflow ``live-packages.yml`` pushes that
 directory to the ``live-packages`` branch, which the app reads through raw.githubusercontent.com.
-With ``"rounds": true`` (the default) it also writes, for EVERY competition kept fresh by the Atlas refresh, one compressed encrypted
+With ``"rounds": true`` (the default) it also writes, for EVERY competition kept fresh by the refresh of the archive, one compressed encrypted
 bundle with the packages of all the matches of its next round (``rounds/<collection>__r<round>.bpkgz``, see ``round_packages``) and lists
 them under ``rounds`` in the index (issues #286, #172); an app that predates it only reads ``packages``.
 Exit code 2 when the password (``PACKAGE_PASSWORD``, >= 8 characters) or the connection is missing.
@@ -196,10 +196,10 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
 
 
 def _collections(db: Any = None) -> List[str]:
-    """Collections of the competitions kept fresh by the Atlas refresh (single source of truth).
+    """Collections of the competitions kept fresh by the refresh of the archive (single source of truth).
 
     Without ``db`` (the PR config check) only the fixed groups are listed."""
-    from src.services.atlas_refresh import ingested_collections
+    from src.services.competition_refresh import ingested_collections
     from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue, package_entries
 
     return ingested_collections(db, package_entries(load_catalogue(DEFAULT_CATALOGUE)))
@@ -208,7 +208,7 @@ def _collections(db: Any = None) -> List[str]:
 def competitions_without_phases(db: Any, entries: List[Any]) -> List[str]:
     """The competitions of ``entries`` (the active FEB ones of the catalogue, as the packages take them) whose collections are not known: a ``groups: all`` competition takes its
     phases from ``COLLECTION_META``, and with none (or none that its ``packages_groups`` keeps) there is nothing to publish for it. A single group names its own collection."""
-    from src.services.atlas_refresh import ingested_collections
+    from src.services.competition_refresh import ingested_collections
 
     return [e.competition_label for e in entries if not ingested_collections(db, [e])]
 
@@ -225,7 +225,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"{exc} (GitHub secret)", file=sys.stderr)
         return 2
     if not os.environ.get("MONGODB_CONNECTION_STRING"):
-        print("MONGODB_CONNECTION_STRING is not set (GitHub secret ATLAS_READ_URI / ATLAS_WRITE_URI)", file=sys.stderr)
+        print("MONGODB_CONNECTION_STRING is not set (the workflow restores the archive into an ephemeral Mongo and sets it)", file=sys.stderr)
         return 2
     from src.database import MongoDBHandler
 

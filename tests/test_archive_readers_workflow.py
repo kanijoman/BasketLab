@@ -117,7 +117,7 @@ class TestRuleEvaluation:
         assert "run_archive.py push" not in (ROOT / ".github" / "workflows" / "rule-evaluation.yml").read_text(encoding="utf-8")
 
 
-WORKFLOWS_WITH_THE_ARCHIVE = ("archive-refresh.yml", "archive-purge.yml", "web-data.yml", "atlas-compare.yml", "live-packages.yml", "rule-evaluation.yml")
+WORKFLOWS_WITH_THE_ARCHIVE = ("archive-refresh.yml", "archive-purge.yml", "web-data.yml", "live-packages.yml", "rule-evaluation.yml")
 
 
 class TestOneCopyOfTheDownload:

@@ -58,7 +58,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Validate the entry points (pull requests)
         if: github.event_name == 'pull_request'
-        run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions')"
+        run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.competition_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions')"
       - name: Restore the archive
         id: restore
         if: github.event_name != 'pull_request'

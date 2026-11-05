@@ -51,7 +51,7 @@ def main(argv: Optional[list] = None) -> int:
     parser.add_argument("--require-env", action="store_true", help="fail unless MONGODB_CONNECTION_STRING is set (CI)")
     args = parser.parse_args(argv)
     if args.require_env and not os.environ.get("MONGODB_CONNECTION_STRING"):
-        print("MONGODB_CONNECTION_STRING is not set (GitHub secret ATLAS_WRITE_URI)", file=sys.stderr)
+        print("MONGODB_CONNECTION_STRING is not set (the workflow restores the archive into an ephemeral Mongo and sets it)", file=sys.stderr)
         return 2
 
     from pymongo import MongoClient

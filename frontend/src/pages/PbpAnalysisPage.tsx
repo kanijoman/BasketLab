@@ -95,7 +95,7 @@ export default function PbpAnalysisPage() {
     body = (
       <Notice>
         Sin datos del play-by-play para esta colección. Solo los partidos de FEB y FBCYL con el campo DERIVED de la versión actual tienen
-        estas cifras: se rellena solo tras cada actualización de Atlas, o con <code>python run_backfill_derived.py</code> en local.
+        estas cifras: se rellena solo tras cada actualización del archivo, o con <code>python run_backfill_derived.py</code> en local.
       </Notice>
     )
   } else if (tab === 'origin') {

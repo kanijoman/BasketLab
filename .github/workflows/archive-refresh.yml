@@ -20,7 +20,7 @@ on:
       - "run_refresh.py"
       - "run_backfill_derived.py"
       - "run_archive.py"
-      - "src/services/atlas_refresh.py"
+      - "src/services/competition_refresh.py"
       - "src/services/feb_match_ingest.py"
       - "src/services/fbcyl_match_ingest.py"
       - "src/services/competition_catalogue.py"
@@ -58,7 +58,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Validate the catalogue (pull requests)
         if: github.event_name == 'pull_request'
-        run: python -c "import run_refresh, run_backfill_derived, run_archive; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions to refresh')"
+        run: python -c "import run_refresh, run_backfill_derived, run_archive; from src.services.competition_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions to refresh')"
       - name: Restore the archive
         id: restore
         if: github.event_name != 'pull_request'
