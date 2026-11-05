@@ -21,7 +21,7 @@ Guía de la épica #187 para la web (`frontend/`). Tokens, marca y tema son de l
 
 Gráficos (recharts, SVG): `useChartTheme()` de `lib/chartTheme.ts` (colores ya resueltos del tema activo; nunca `var(--x)` en un atributo SVG, una exportación lo perdería).
 
-**Exportaciones** (`ExportButton`): PNG y PDF salen **en el tema activo** (#617): la captura con el fondo del tema, el gráfico exportado desde su SVG sobre ese fondo (no transparente) y cada página del PDF con el fondo, el título (`--text`) y la fecha (`--text-muted`) del tema; en claro, el PDF es claro de borde a borde. Un color para jsPDF también sale de los tokens: el guarda rechaza `setFillColor(13, 17, 23)` y similares.
+**Qué ventanas exportan (#759, 05/11/2026)**: todas las que muestran resultados ofrecen CSV, PNG y PDF con el mismo `ExportButton` —dentro de `DataTable` con `exportOptions`, o en las `actions` del `PageHeader`—; las que no tienen tabla (IN/OUT, Rankings) sacan el CSV de las mismas cifras que se ven (`lib/inoutExport.ts`; el ranking completo bajo los filtros, no solo las 30 visibles) y capturan los resultados para PNG y PDF. No exportan el Resumen (solo navega) ni los informes, que descargan sus propios PDF/DOCX. **Exportaciones** (`ExportButton`): PNG y PDF salen **en el tema activo** (#617): la captura con el fondo del tema, el gráfico exportado desde su SVG sobre ese fondo (no transparente) y cada página del PDF con el fondo, el título (`--text`) y la fecha (`--text-muted`) del tema; en claro, el PDF es claro de borde a borde. Un color para jsPDF también sale de los tokens: el guarda rechaza `setFillColor(13, 17, 23)` y similares.
 
 ## Componentes (`components/ui`)
 | Componente | Cuándo | Ejemplo |
