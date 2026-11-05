@@ -446,3 +446,14 @@ class TestWebVisualCaptures:
     def test_the_failure_report_is_still_uploaded_on_failure_only(self):
         reports = [s for s in self._job()["steps"] if s.get("with", {}).get("name") == "web-e2e-results"]
         assert len(reports) == 1 and reports[0]["if"] == "failure()"
+
+
+class TestGradleWithoutTheProprietaryCache:
+    """``gradle/actions`` v6 moved the build cache to ``gradle-actions-caching``, a proprietary component with its own terms of use (accepted by upgrading).
+    The release of the app is weekly, so the cache is not worth those terms: ``setup-gradle`` runs with ``cache-disabled`` and the component is never loaded."""
+
+    def test_every_setup_gradle_step_disables_the_cache(self):
+        steps = [s for workflow in (ROOT / ".github" / "workflows").glob("*.yml") for s in _steps(workflow.name) if "gradle/actions/setup-gradle" in str(s.get("uses", ""))]
+        assert steps, "the release workflow of the app sets Gradle up"
+        for step in steps:
+            assert step.get("with", {}).get("cache-disabled") in (True, "true"), step
