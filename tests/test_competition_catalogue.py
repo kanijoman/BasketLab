@@ -1,6 +1,6 @@
 """The single catalogue of competitions (issue #724, step 2): ``config/competitions.json`` says, once per competition, what is scraped, what is published and what is recorded.
 
-Before it, adding a competition meant editing four files that drifted apart (``atlas_refresh.json``, ``local_refresh.json``, the ``competitions`` of ``package_publish.json`` and
+Before it, adding a competition meant editing four files that drifted apart (the old refresh config, ``local_refresh.json``, the ``competitions`` of ``package_publish.json`` and
 the calendars of ``feb_watchlist.json``). The refresh, the packages and the recorder read this file; ``active: false`` pauses a competition (it is neither scraped, published nor
 recorded; its data stays), and removing an entry never deletes data (that is the purge, a separate and confirmed order).
 """

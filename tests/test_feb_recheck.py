@@ -14,7 +14,7 @@ import pytest
 from db_helpers import new_mock_db
 
 from src.database.repository import BasketballRepository
-from src.services.atlas_refresh import RefreshEntry, load_config, to_markdown
+from src.services.competition_refresh import RefreshEntry, load_config, to_markdown
 from src.services.feb_match_ingest import scrape_feb_collection
 
 COLLECTION = "LF_CHALLENGE_LF_CHALLENGE_2026_A"

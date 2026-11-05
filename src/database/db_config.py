@@ -49,7 +49,7 @@ def get_mongodb_connection_string() -> str:
     if environment == "production":
         raise RuntimeError(
             "MONGODB_CONNECTION_STRING env var is required in production. "
-            "Set it to your Atlas connection string before starting the server."
+            "Set it to your MongoDB connection string before starting the server."
         )
 
     # Local development fallback only.

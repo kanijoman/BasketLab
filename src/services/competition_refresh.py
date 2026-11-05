@@ -1,9 +1,9 @@
 """Keep the production database (Atlas) up to date with FEB (issue #177).
 
-``python run_atlas_refresh.py`` scrapes every competition listed in ``config/atlas_refresh.json``
+``python run_refresh.py`` scrapes every active competition of the catalogue ``config/competitions.json``
 (incremental: only matches that are finished and not stored yet), then compares each collection with FEB's
 calendar. Exit code 1 when a competition failed or still lacks played matches, 2 when the connection
-string is missing. Runs on a schedule in ``.github/workflows/atlas-refresh.yml``.
+string is missing. Runs on a schedule in ``.github/workflows/archive-refresh.yml`` over the archive restored into an ephemeral Mongo.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from dataclasses import dataclass, field, fields, replace
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-DEFAULT_CONFIG = "config/atlas_refresh.json"
+DEFAULT_CONFIG = "config/competitions.json"
 
 
 ALL_GROUPS = "all"
@@ -45,7 +45,7 @@ class RefreshEntry:
 
 
 def load_config(path: Any = DEFAULT_CONFIG) -> List[RefreshEntry]:
-    """The entries to scrape of a refresh config (``scrapes``, the format of ``config/atlas_refresh.json``) or of the catalogue of competitions (``competitions``: the active ones, issue #724)."""
+    """The entries to scrape of a refresh config (``scrapes``, the old format of the refresh config) or of the catalogue of competitions (``competitions``: the active ones, issue #724)."""
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if "competitions" in data:
         from src.services.competition_catalogue import load_catalogue, refresh_entries
@@ -250,7 +250,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--require-env", action="store_true", help="fail unless MONGODB_CONNECTION_STRING is set (CI)")
     args = parser.parse_args(argv)
     if args.require_env and not os.environ.get("MONGODB_CONNECTION_STRING"):
-        print("MONGODB_CONNECTION_STRING is not set (GitHub secret ATLAS_WRITE_URI)", file=sys.stderr)
+        print("MONGODB_CONNECTION_STRING is not set (the workflow restores the archive into an ephemeral Mongo and sets it)", file=sys.stderr)
         return 2
     try:
         entries = only_competitions(load_config(args.config), [n.strip() for a in args.only for n in a.split(",") if n.strip()])

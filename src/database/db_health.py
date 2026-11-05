@@ -12,9 +12,9 @@ from pymongo import errors as pme
 
 HINTS = {
     "missing_config": "Falta la variable MONGODB_CONNECTION_STRING en el servidor (variables de entorno del servicio).",
-    "auth_failed": "MongoDB rechazó la autenticación: revisar usuario y contraseña de la cadena de conexión (Atlas → Database Access).",
-    "not_authorized": "El usuario de MongoDB no tiene permisos sobre la base de datos BASKETBALL (Atlas → Database Access).",
-    "unreachable": "No se alcanza el servidor MongoDB: revisar Atlas → Network Access (IPs permitidas) y que el clúster esté activo.",
+    "auth_failed": "MongoDB rechazó la autenticación: revisar usuario y contraseña de la cadena de conexión.",
+    "not_authorized": "El usuario de MongoDB no tiene permisos sobre la base de datos BASKETBALL.",
+    "unreachable": "No se alcanza el servidor MongoDB: revisar la red (IPs permitidas, cortafuegos) y que el servidor esté activo.",
     "invalid_config": "La cadena de conexión de MongoDB no es válida.",
     "error": "Error inesperado al conectar con MongoDB (ver los logs del servidor).",
 }

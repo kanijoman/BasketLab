@@ -2,7 +2,7 @@
 
 One entry per competition and season (FEB, or a FBCYL group: ``"league": "fbcyl"`` with the ``fbcyl`` object the scraper needs) says everything about it: what the refresh scrapes (``competition_url``, ``season_*``, ``groups``, ``recheck_days``), what the packages
 know of it (``level``, ``gender``, ``clubs``, ``rule_config``, ``group_rules``, and ``packages_groups``: the groups of the competition that get packages) and which
-calendars the live recorder follows (``record``). Before it these lived in four files that drifted apart (``atlas_refresh.json``, ``local_refresh.json``, the ``competitions``
+calendars the live recorder follows (``record``). Before it these lived in four files that drifted apart (the old refresh config, ``local_refresh.json``, the ``competitions``
 of ``package_publish.json`` and the ``calendars`` of ``feb_watchlist.json``).
 
 ``active: false`` pauses an entry: it is neither scraped, published nor recorded, and its data stays where it is. Removing an entry never deletes data either: that is the
@@ -88,7 +88,7 @@ def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
 
 
 def _refresh_entry(entry: Dict[str, Any], group_filter: List[str]) -> Any:
-    from src.services.atlas_refresh import RefreshEntry
+    from src.services.competition_refresh import RefreshEntry
 
     return RefreshEntry(
         competition_url=entry["competition_url"], season_value=entry["season_value"], competition_label=entry["competition"], season_label=entry["season_label"],
@@ -97,7 +97,7 @@ def _refresh_entry(entry: Dict[str, Any], group_filter: List[str]) -> Any:
 
 
 def _fbcyl_entry(entry: Dict[str, Any]) -> Any:
-    from src.services.atlas_refresh import RefreshEntry
+    from src.services.competition_refresh import RefreshEntry
 
     fbcyl = {"gender": "", "territory": "0", **entry["fbcyl"]}
     return RefreshEntry(competition_url="", season_value=entry["season_value"], competition_label=entry["competition"], season_label=entry["season_label"],
