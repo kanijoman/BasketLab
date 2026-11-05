@@ -38,7 +38,7 @@ class TestTheRefresh:
 
     def test_it_restores_the_archive_scrapes_the_active_competitions_of_the_catalogue_fills_derived_and_saves(self):
         runs = _runs(self.wf)
-        order = [runs.index(s) for s in ("run_archive.py pull", "run_archive.py load --src archive --replace", "run_atlas_refresh.py --config config/competitions.json",
+        order = [runs.index(s) for s in ("run_archive.py pull", "run_archive.py load --src archive --replace", "run_refresh.py --config config/competitions.json",
                                          "run_backfill_derived.py", "run_archive.py dump --out archive --no-shrink", "run_archive.py push")]
         assert order == sorted(order)
 
@@ -74,7 +74,7 @@ class TestTheSingleWriter:
         web = _load("web-data.yml")
         runs = _runs(web)
         assert "run_archive.py load --src archive --replace" in runs and "run_web_data.py" in runs
-        assert "run_atlas_refresh.py --config" not in runs and "run_backfill_derived.py" not in runs and "run_archive.py dump" not in runs
+        assert "run_refresh.py --config" not in runs and "run_backfill_derived.py" not in runs and "run_archive.py dump" not in runs
 
     def test_the_publication_waits_for_the_refresh_and_the_purge_and_no_longer_for_the_atlas_one(self):
         runs = _triggers(_load("web-data.yml"))["workflow_run"]

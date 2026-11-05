@@ -7,9 +7,9 @@ name: Web data
 #
 # Source of the games (issues #646, #724): with the secret ARCHIVE_DEPLOY_KEY the job downloads the private archive (repository `basketlab-archive`), restores it into an
 # ephemeral Mongo (service container) and builds the artifacts from there. It does NOT scrape or save the archive: `archive-refresh.yml` does that (minutes), is the only
-# writer of the archive and runs first. Without the secret it reads Atlas as before (until Atlas is retired).
+# writer of the archive and runs first. The archive is the only source (Atlas was retired, #724): without the secret the job fails.
 # Runs after each archive refresh or purge (even a red one: missing matches must not block the data; a cancelled one does) and by hand. Needs PACKAGE_MASTER_KEY (or
-# PACKAGE_PASSWORD, >= 8 characters), and ATLAS_READ_URI (ATLAS_WRITE_URI as fallback; only without the archive). See docs/OPERATIONS.md.
+# PACKAGE_PASSWORD, >= 8 characters), and ARCHIVE_DEPLOY_KEY. See docs/OPERATIONS.md.
 
 on:
   workflow_run:
@@ -59,16 +59,9 @@ jobs:
       - name: Validate the entry points (pull requests)
         if: github.event_name == 'pull_request'
         run: python -c "import run_web_data, run_archive; from src.local_data.web_data import publish_web_data; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions')"
-      - name: Choose the source of the games
-        id: source
-        if: github.event_name != 'pull_request'
-        env:
-          ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
-        run: |
-          if [ -n "$ARCHIVE_DEPLOY_KEY" ]; then echo "archive=true" >> "$GITHUB_OUTPUT"; else echo "archive=false" >> "$GITHUB_OUTPUT"; fi
       - name: Download the archive
         id: pull
-        if: steps.source.outputs.archive == 'true'
+        if: github.event_name != 'pull_request'
         env:
           ARCHIVE_DEPLOY_KEY: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
         run: |
@@ -94,7 +87,7 @@ jobs:
       - name: Build the artifacts
         if: github.event_name != 'pull_request'
         env:
-          MONGODB_CONNECTION_STRING: ${{ steps.source.outputs.archive == 'true' && env.EPHEMERAL_MONGO || secrets.ATLAS_READ_URI || secrets.ATLAS_WRITE_URI }}
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
           PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY || secrets.PACKAGE_PASSWORD }}
         run: python run_web_data.py --out web-out
       - name: Publish to the web-data branch

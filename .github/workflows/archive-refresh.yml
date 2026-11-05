@@ -1,7 +1,7 @@
 name: Archive refresh
 
 # Brings the games up to date WITHOUT Atlas (issue #724, step 3): downloads the private archive (repository `basketlab-archive`), restores it into an ephemeral Mongo (service
-# container), scrapes from FEB and FBCYL what was played since (`config/competitions.json`, the catalogue: every active competition, `run_atlas_refresh.py`), fills DERIVED and
+# container), scrapes from FEB and FBCYL what was played since (`config/competitions.json`, the catalogue: every active competition, `run_refresh.py`), fills DERIVED and
 # saves the archive back. It is the ONLY writer of the archive: `web-data.yml` runs after it, restores the archive and builds the web data from it, and no other job pushes.
 # A scrape that reports a problem (a competition failed, matches still missing) does not stop the save, since the new games are worth keeping, but leaves the run red.
 # Needs the repository secret ARCHIVE_DEPLOY_KEY (deploy key with write access to basketlab-archive). See docs/OPERATIONS.md.
@@ -17,7 +17,7 @@ on:
         default: ""
   pull_request:
     paths:
-      - "run_atlas_refresh.py"
+      - "run_refresh.py"
       - "run_backfill_derived.py"
       - "run_archive.py"
       - "src/services/atlas_refresh.py"
@@ -58,7 +58,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Validate the catalogue (pull requests)
         if: github.event_name == 'pull_request'
-        run: python -c "import run_atlas_refresh, run_backfill_derived, run_archive; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions to refresh')"
+        run: python -c "import run_refresh, run_backfill_derived, run_archive; from src.services.atlas_refresh import load_config; print(len(load_config('config/competitions.json')), 'competitions to refresh')"
       - name: Download the archive
         id: pull
         if: github.event_name != 'pull_request'
@@ -87,7 +87,7 @@ jobs:
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
           ONLY: ${{ github.event.inputs.only }}
-        run: python run_atlas_refresh.py --config config/competitions.json --require-env ${ONLY:+--only "$ONLY"}
+        run: python run_refresh.py --config config/competitions.json --require-env ${ONLY:+--only "$ONLY"}
       # Games stored before a new DERIVED_VERSION get the field here; idempotent and cheap. Runs even if the scrape reported a problem.
       - name: Fill DERIVED in the games
         if: steps.restore.outcome == 'success' && !cancelled()

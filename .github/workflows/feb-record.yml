@@ -9,10 +9,10 @@ name: FEB live recorder
 on:
   schedule:
     - cron: "*/15 6-22 * * *"
-  # GitHub runs the schedule above only a few times a day (issue #205): also plan after every Atlas refresh
+  # GitHub runs the schedule above only a few times a day (issue #205): also plan after every archive refresh
   # (3 reliable runs a day), which looks up to 3 h ahead
   workflow_run:
-    workflows: ["Atlas refresh"]
+    workflows: ["Archive refresh"]
     types: [completed]
     branches: [main]
   # validates the planner (imports, watchlist, calendar) on PRs; the record job only runs when a match is due

@@ -155,16 +155,16 @@ class TestRecorderWorkflowBudget:
         assert job["timeout-minutes"] >= wait + max_minutes + 3  # + set-up
         assert job["timeout-minutes"] <= 360  # GitHub-hosted runners stop at 6 h
 
-    def test_the_planner_also_runs_after_each_atlas_refresh(self):
+    def test_the_planner_also_runs_after_each_archive_refresh(self):
         triggers = self._workflow()[True]  # YAML reads the key `on` as True
-        assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]
+        assert triggers["workflow_run"]["workflows"] == ["Archive refresh"]
         assert "completed" in triggers["workflow_run"]["types"]
         assert "schedule" in triggers and "workflow_dispatch" in triggers
-        assert triggers["workflow_run"]["workflows"] == ["Atlas refresh"]       # the schedule alone is unreliable: it also plans after each Atlas refresh (13:30 UTC covers a 17:00 match)
+        assert triggers["workflow_run"]["workflows"] == ["Archive refresh"]       # the schedule alone is unreliable: it also plans after each archive refresh (13:30 UTC covers a 17:00 match)
 
 
 class TestRuleEvaluation:
-    """The rule evaluator workflow (issue #238) runs by hand, reads Atlas read-only and always uploads its report."""
+    """The rule evaluator workflow (issue #238) runs by hand, reads the restored archive and always uploads its report."""
 
     def _data(self):
         return yaml.safe_load((ROOT / ".github" / "workflows" / "rule-evaluation.yml").read_text(encoding="utf-8"))
@@ -179,7 +179,7 @@ class TestRuleEvaluation:
         step = next(s for s in _steps("rule-evaluation.yml") if s.get("name") == "Evaluate")
         assert "${{" not in step["run"], "an input interpolated into the script would allow command injection"
         assert step["env"]["COLLECTION"] == "${{ inputs.collection }}"
-        assert "ATLAS_READ_URI" in step["env"]["MONGODB_CONNECTION_STRING"]   # read-only user first
+        assert step["env"]["MONGODB_CONNECTION_STRING"] == "${{ env.EPHEMERAL_MONGO }}"   # the restored archive, never Atlas
 
     def test_the_committed_recordings_replace_the_simulated_feed_of_their_match(self):
         step = next(s for s in _steps("rule-evaluation.yml") if s.get("name") == "Evaluate")
@@ -396,34 +396,6 @@ class TestRuleEvaluationRoster:
         assert step["env"]["ROSTER"] == "${{ inputs.roster }}" and step["env"]["ROSTER_FILE"] == "${{ inputs.roster_file }}"
         assert "${{ inputs" not in step["run"]
         assert "--roster-file" in step["run"] and '"$ROSTER_FILE"' in step["run"] and "--roster" in step["run"]
-
-
-class TestAtlasRefreshBackfill:
-    """The refresh fills DERIVED in the games already stored after every scrape (#382), so a new DERIVED_VERSION needs no manual run."""
-
-    def _step(self):
-        steps = [s for s in _steps_of_job("atlas-refresh.yml", "refresh") if "run_backfill_derived.py" in s.get("run", "")]
-        assert len(steps) == 1, "atlas-refresh.yml must have exactly one backfill step"
-        return steps[0]
-
-    def test_it_runs_after_the_scrape_with_the_atlas_secret_and_requires_the_environment(self):
-        names = [s.get("name", "") for s in _steps_of_job("atlas-refresh.yml", "refresh")]
-        step = self._step()
-
-        assert names.index(step["name"]) > names.index("Refresh Atlas")
-        assert step["env"]["MONGODB_CONNECTION_STRING"] == "${{ secrets.ATLAS_WRITE_URI }}"
-        assert "--require-env" in step["run"]
-
-    def test_it_runs_even_if_the_refresh_reports_missing_matches_but_never_in_pull_requests(self):
-        condition = self._step()["if"]
-
-        assert "!cancelled()" in condition and "github.event_name != 'pull_request'" in condition
-
-    def test_pull_requests_that_touch_the_backfill_trigger_the_workflow_validation(self):
-        data = yaml.safe_load((ROOT / ".github" / "workflows" / "atlas-refresh.yml").read_text(encoding="utf-8"))
-        paths = data[True]["pull_request"]["paths"] if True in data else data["on"]["pull_request"]["paths"]
-
-        assert "run_backfill_derived.py" in paths and "src/services/derived_backfill.py" in paths
 
 
 class TestRedProofJob:

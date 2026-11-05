@@ -27,9 +27,9 @@ def test_it_neither_scrapes_nor_saves_the_archive():
     assert not [n for n in ORDER if n.startswith(("Scrape", "Fill DERIVED", "Save the archive"))]
 
 
-def test_without_the_archive_secret_it_reads_atlas_as_before():
+def test_the_build_reads_the_ephemeral_mongo_and_never_atlas():
     build = STEPS["Build the artifacts"]["env"]["MONGODB_CONNECTION_STRING"]
-    assert "ATLAS_READ_URI" in build and "ATLAS_WRITE_URI" in build and "EPHEMERAL_MONGO" in build
+    assert build == "${{ env.EPHEMERAL_MONGO }}"
 
 
 def test_the_ephemeral_mongo_is_a_service_container_and_the_build_reads_it():

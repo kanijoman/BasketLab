@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Team crests are downloaded during the build (not committed: club crests in a public repo): the ids come from the
-// FEB calendar of the competitions of config/atlas_refresh.json (issue #230).
+// FEB calendar of the competitions of config/competitions.json (issue #230).
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'

@@ -123,7 +123,7 @@ class TestConfigAndCli:
             load_config(path)
 
     def test_the_repository_config_is_valid(self):
-        assert isinstance(load_config("config/atlas_refresh.json"), list)
+        assert isinstance(load_config("config/competitions.json"), list)
 
     def test_the_cli_fails_without_a_connection_string(self, monkeypatch, tmp_path):
         monkeypatch.delenv("MONGODB_CONNECTION_STRING", raising=False)
@@ -133,7 +133,7 @@ class TestConfigAndCli:
 
 
 def test_the_cli_can_import_the_database_layer_in_a_clean_interpreter_regression():
-    """CI runs ``run_atlas_refresh.py`` with no PYTHONPATH; ``src.database`` still needs ``src`` on sys.path (legacy imports)."""
+    """CI runs ``run_refresh.py`` with no PYTHONPATH; ``src.database`` still needs ``src`` on sys.path (legacy imports)."""
     import os
     import subprocess
     import sys
@@ -141,7 +141,7 @@ def test_the_cli_can_import_the_database_layer_in_a_clean_interpreter_regression
 
     root = Path(__file__).resolve().parents[1]
     env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
-    code = "import run_atlas_refresh; from src.services.atlas_refresh import main; from src.database import MongoDBHandler"
+    code = "import run_refresh; from src.services.atlas_refresh import main; from src.database import MongoDBHandler"
     result = subprocess.run([sys.executable, "-c", code], cwd=root, env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr[-400:]
 
@@ -251,48 +251,12 @@ class TestCompetitionWithPhases:
         assert names == []   # every competition is complete now (#724): its phases come from COLLECTION_META, which needs the database
 
     def test_the_copa_is_in_the_repository_config_as_one_competition(self):
-        copa = [e for e in load_config("config/atlas_refresh.json") if "nm=copaespaa" in e.competition_url]
+        copa = [e for e in load_config("config/competitions.json") if "nm=copaespaa" in e.competition_url]
         assert len(copa) == 1 and copa[0].groups == "all" and (copa[0].season_value, copa[0].year) == ("2026", "2026")
 
 
-class TestCompetitionsOfTheApp:
-    """The groups kept fresh in Atlas for the live app (issue #437, epic #435): LF Challenge, 2ª FEB A and B, 3ª FEB A-B (2026/27).
-
-    The refresh does not discover competitions: it scrapes exactly what ``config/atlas_refresh.json`` lists, so each group is an entry with the
-    values the scraper finds on the FEB site (competition page, season value, group value) and the labels that make the collection name.
-    """
-
-    EXPECTED = {
-        "TERCERA_FEB_2026_2027_Liga_Regular_A-B": ("g=3", "tercerafeb", "90060"),
-    }
-
-    @staticmethod
-    def entries():
-        from src.database.utils import get_collection_name
-
-        return {get_collection_name(e.competition_label, e.season_label, e.group_label): e for e in load_config("config/atlas_refresh.json") if e.groups != "all"}
-
-    def test_every_group_of_the_app_is_in_the_config_with_its_values(self):
-        entries = self.entries()
-        assert set(self.EXPECTED) <= set(entries)
-        for name, (g, nm, group_value) in self.EXPECTED.items():
-            entry = entries[name]
-            assert g in entry.competition_url and f"nm={nm}" in entry.competition_url and "t=2026" in entry.competition_url
-            assert (entry.season_value, entry.group_value, entry.year) == ("2026", group_value, "2026")
-
-    def test_two_entries_never_end_in_the_same_collection(self):
-        from src.database.utils import get_collection_name
-
-        names = [get_collection_name(e.competition_label, e.season_label, e.group_label) for e in load_config("config/atlas_refresh.json") if e.groups != "all"]
-        assert len(names) == len(set(names))
-
-
 class TestSeniorCompetitions:
-    """Every senior competition of the season is kept fresh (#456): the cloud (free plan, 512 MB) and the local database (no limit).
-
-    ≈ 3.370 matches a season ≈ 0,13 MB each on disk: 3ª FEB alone has 10 subgroups and 1.768 matches, so Atlas keeps only 3ª FEB A-B
-    (the group of interest) and the other competitions complete; the catalogue of competitions (``config/competitions.json``, #724) has all of them.
-    """
+    """Every senior competition of the season is kept fresh (#456) and the catalogue of competitions (``config/competitions.json``, #724) has all of them."""
 
     SENIOR = {"LF ENDESA": "nm=lfendesa", "PRIMERA FEB": "nm=primerafeb", "LF CHALLENGE": "nm=lfchallenge", "SEGUNDA FEB": "nm=segundafeb",
               "L.F.-2": "nm=lf2", "LIGA U": "nm=ligau", "COPA ESPAÑA": "nm=copaespaa"}
@@ -304,32 +268,15 @@ class TestSeniorCompetitions:
             out.setdefault(e.competition_label, []).append(e)
         return out
 
-    def test_atlas_has_every_senior_competition_with_all_its_groups_except_3a_feb(self):
-        cfg = self.by_competition("config/atlas_refresh.json")
-        for name, nm in self.SENIOR.items():
-            assert [e.groups for e in cfg[name]] == ["all"] and nm in cfg[name][0].competition_url, name
-            assert (cfg[name][0].season_value, cfg[name][0].year) == ("2026", "2026")
-
-    def test_atlas_keeps_only_the_group_of_interest_of_3a_feb(self):
-        tercera = self.by_competition("config/atlas_refresh.json")["TERCERA FEB"]
-        assert [(e.group_label, e.groups) for e in tercera] == [('Liga Regular "A-B"', "")]
-
     def test_the_local_database_has_every_group_of_3a_feb_too(self):
         local = self.by_competition("config/competitions.json")
         assert set(self.SENIOR) | {"TERCERA FEB"} <= set(local)
         assert [e.groups for e in local["TERCERA FEB"]] == ["all"]
 
     def test_no_competition_is_listed_twice_in_a_config(self):
-        for path in ("config/atlas_refresh.json", "config/competitions.json"):
+        for path in ("config/competitions.json",):
             seen = [(e.league, e.competition_url, e.group_value or "all", e.fbcyl.get("competition_id", "")) for e in load_config(path)]
             assert len(seen) == len(set(seen)), path
-
-    def test_the_existing_collections_of_the_app_are_not_renamed(self):
-        """2ª FEB A/B, LF Challenge and 3ª FEB A-B keep their collection names (games, COLLECTION_META and live packages refer to them)."""
-        from src.database.utils import get_collection_name
-
-        names = [get_collection_name(e.competition_label, e.season_label, e.group_label) for e in load_config("config/atlas_refresh.json") if e.groups != "all"]
-        assert "TERCERA_FEB_2026_2027_Liga_Regular_A-B" in names
 
     def test_only_keeps_the_competitions_asked_for_ignoring_case_and_punctuation(self):
         from src.services.atlas_refresh import only_competitions
@@ -348,9 +295,9 @@ class TestSeniorCompetitions:
         import yaml
         from pathlib import Path
 
-        wf = yaml.safe_load(Path(".github/workflows/atlas-refresh.yml").read_text(encoding="utf-8"))
+        wf = yaml.safe_load(Path(".github/workflows/archive-refresh.yml").read_text(encoding="utf-8"))
         assert "only" in wf[True]["workflow_dispatch"]["inputs"]
-        run = [s for s in wf["jobs"]["refresh"]["steps"] if "run_atlas_refresh.py" in s.get("run", "")][0]
+        run = [s for s in next(iter(wf["jobs"].values()))["steps"] if "run_refresh.py" in s.get("run", "")][0]
         assert "ONLY" in run["env"] and "$ONLY" in run["run"] and "${{" not in run["run"]
 
 
