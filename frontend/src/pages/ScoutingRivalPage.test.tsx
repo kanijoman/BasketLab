@@ -7,6 +7,7 @@ const api = vi.hoisted(() => ({ getLiveTeamNames: vi.fn() }))
 const scouting = vi.hoisted(() => ({
   getScoutingScopes: vi.fn(),
   getPublishedScouting: vi.fn(),
+  getOwnComparison: vi.fn(),
   startScouting: vi.fn(),
   getScoutingProgress: vi.fn(),
   getScoutingReport: vi.fn(),
@@ -63,6 +64,7 @@ beforeEach(() => {
   api.getLiveTeamNames.mockResolvedValue([{ id: '1', name: 'Equipo A' }, { id: '2', name: 'Equipo B' }, { id: '3', name: 'Equipo C' }])
   scouting.getScoutingScopes.mockResolvedValue([])                            // nothing published: the page works as always
   scouting.getPublishedScouting.mockResolvedValue(null)
+  scouting.getOwnComparison.mockResolvedValue([])
   scouting.startScouting.mockResolvedValue({ job_id: 'j1' })
   scouting.getScoutingProgress
     .mockResolvedValueOnce({ status: 'running', current: 4, total: 16, team: 'Equipo B', own_team: 'Equipo A', error: null })
@@ -255,17 +257,45 @@ describe('ScoutingRivalPage: published scouting by scope (issue #638)', () => {
     expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
   })
 
-  it('with our team chosen the report is generated as always (the matchup needs a pair of teams) and the page says so', async () => {
+  // Issue #751: the matchup needs two teams, not a job on the server: it is computed on the device and added to the published report of the rival
+  it('with our team chosen the published report gets the matchup computed on the device, and nothing is generated on a server', async () => {
+    scouting.getOwnComparison.mockResolvedValue([{ key: 'efg_percentage', label: 'eFG%', group: 'Four Factors', own: 55, rival: 50, own_text: '55,0 %', rival_text: '50,0 %', diff_pct: 10, advantage: 'own' }])
     renderPage()
     await choose('2', '1')
-    expect(await screen.findByText(/se genera en el servidor, con la comparativa/i)).toBeInTheDocument()
-    expect(screen.queryByRole('radiogroup', { name: 'Partidos a analizar' })).toBeNull()
+    expect(await screen.findByText(/la comparativa se calcula en el navegador/i)).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'Partidos a analizar' })).toBeInTheDocument()          // the scope is the rival's: it stays with our team chosen
     fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
-    await waitFor(() => expect(scouting.startScouting).toHaveBeenCalled())
-    expect(scouting.getPublishedScouting).not.toHaveBeenCalled()
+    expect(await screen.findByText('Alcance liga')).toBeInTheDocument()
+    expect(scouting.getPublishedScouting).toHaveBeenCalledWith('FEB_X', '2', 'liga')
+    expect(scouting.getOwnComparison).toHaveBeenCalledWith('FEB_X', '1', '2')
+    expect(await screen.findByText('Comparativa: Equipo A frente a Equipo B')).toBeInTheDocument()
+    expect(screen.getByText('55,0 %')).toBeInTheDocument()
+    expect(scouting.startScouting).not.toHaveBeenCalled()
   })
 
-  it('when the publication cannot give the report, it is generated as always', async () => {
+  it('changing the scope keeps the matchup of our team', async () => {
+    scouting.getOwnComparison.mockResolvedValue([{ key: 'efg_percentage', label: 'eFG%', group: 'Four Factors', own: 55, rival: 50, own_text: '55,0 %', rival_text: '50,0 %', diff_pct: 10, advantage: 'own' }])
+    renderPage()
+    await choose('2', '1')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    await screen.findByText('Alcance liga')
+    fireEvent.click(await screen.findByRole('radio', { name: 'Copa' }))
+    expect(await screen.findByText('Alcance copa')).toBeInTheDocument()
+    expect(await screen.findByText('Comparativa: Equipo A frente a Equipo B')).toBeInTheDocument()
+  })
+
+  it('on the published files, a rival with nothing published says so and no job is started on a server', async () => {
+    localStorage.setItem('basketlab.data', 'local')
+    scouting.getScoutingScopes.mockResolvedValue([])
+    renderPage()
+    await choose('2', '1')
+    fireEvent.click(screen.getByRole('button', { name: /generar informe/i }))
+    expect(await screen.findByText(/todavía no está publicado/i)).toBeInTheDocument()
+    expect(scouting.startScouting).not.toHaveBeenCalled()
+  })
+
+  it('when the publication cannot give the report (the API asked for on purpose), it is generated as always', async () => {
+    localStorage.setItem('basketlab.data', 'api')                     // this describe clears the storage: the API is asked for here
     scouting.getPublishedScouting.mockResolvedValue(null)
     renderPage()
     await choose('2', '')

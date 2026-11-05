@@ -10,10 +10,11 @@ import { Download, FileSearch } from 'lucide-react'
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
 import {
-  downloadScoutingPdf, getPublishedScouting, getScoutingProgress, getScoutingReport, getScoutingScopes, startScouting,
+  downloadScoutingPdf, getOwnComparison, getPublishedScouting, getScoutingProgress, getScoutingReport, getScoutingScopes, startScouting,
   type ScoutingProgress, type ScoutingReport, type ScoutingScope,
 } from '@/api/scoutingRival'
 import { ScopedAccessError } from '@live-package/crypto'
+import { dataSourceOf } from '@/datasource/switch'
 import AccessPanel from '@/components/AccessPanel'
 import PageTransition from '@/components/ui/PageTransition'
 import { saveBlob } from '@/lib/download'
@@ -204,8 +205,8 @@ export default function ScoutingRivalPage() {
     }
   }
 
-  // Published scouting has no matchup (it depends on a pair of teams): with «Nuestro equipo» chosen the report is generated as always.
-  const published = scopes.length > 0 && !own
+  // The published scouting is the rival's; the matchup (it depends on a pair of teams) is computed on the device from the season rows of the two teams (issue #751) and added to it.
+  const published = scopes.length > 0
 
   async function generate(chosen: ScoutingScope = scope) {
     setPhase({ kind: 'running', progress: null })
@@ -213,9 +214,15 @@ export default function ScoutingRivalPage() {
       if (published) {
         const report = await getPublishedScouting(col, rival, chosen)
         if (report) {
-          setPhase({ kind: 'done', jobId: null, report })
+          const comparison = own ? await getOwnComparison(col, own, rival) : []
+          const ownName = teams.find(t => t.id === own)?.name
+          setPhase({ kind: 'done', jobId: null, report: own ? { ...report, comparison, own_team: { id: own, name: ownName ?? own } } : report })
           return
         }
+      }
+      if (dataSourceOf('scouting') === 'local') {                    // the files are the source: nothing is generated on a server (#334)
+        setPhase({ kind: 'error', message: 'El scouting de este equipo todavía no está publicado. Prueba con otro equipo o vuelve más tarde.' })
+        return
       }
       const { job_id } = await startScouting({ collection: col, team_id: rival, ...(own ? { own_team_id: own } : {}) })
       void poll(job_id)
@@ -270,13 +277,13 @@ export default function ScoutingRivalPage() {
                 </Field>
               </div>
               {sameTeam && <p className="text-xs text-warn">El equipo a analizar y el nuestro deben ser distintos.</p>}
-              {scopes.length > 1 && !own && (
+              {scopes.length > 1 && (
                 <SegmentedControl label="Partidos a analizar" size="md" value={scope}
                   onChange={next => { if (running) return; setScope(next); if (phase.kind === 'done' && phase.jobId === null) void generate(next) }}
                   options={scopes.map(s => ({ value: s, label: SCOPE_LABEL[s] }))} />
               )}
               {scopes.length > 0 && own && (
-                <p className="text-xs text-ink-muted">Con «Nuestro equipo» elegido el informe se genera en el servidor, con la comparativa.</p>
+                <p className="text-xs text-ink-muted">La comparativa se calcula en el navegador con las estadísticas de temporada de los dos equipos.</p>
               )}
               <Button variant="secondary" icon={FileSearch} loading={running} disabled={!ready} onClick={() => void generate()}>
                 Generar informe
