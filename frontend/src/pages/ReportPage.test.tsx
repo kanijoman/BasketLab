@@ -92,6 +92,21 @@ describe('ReportPage on the base components (issue #193)', () => {
     await waitFor(() => expect(screen.queryByText('Uno de los equipos no está en esta competición.')).toBeNull())
   })
 
+  it('the individual scouting DOCX shows its progress as it goes (#215): the charts of each player, then the document', async () => {
+    let finish: (blob: Blob) => void = () => {}
+    scouting.downloadIndividualScoutingDocx.mockImplementation((_c: string, _t: string, onProgress: (p: unknown) => void) => {
+      onProgress({ stage: 'charts', current: 2, total: 5 })
+      return new Promise<Blob>(resolve => { finish = resolve })
+    })
+    renderPage()
+    await screen.findAllByRole('option', { name: 'Alfa' })
+    fireEvent.change(screen.getByLabelText('Equipo a analizar'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Descargar DOCX' }))
+    expect(await screen.findByRole('progressbar', { name: 'Gráficos de los jugadores (2/5)' })).toBeInTheDocument()
+    finish(new Blob(['docx']))
+    await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull())
+  })
+
   it('the individual scouting DOCX waits for a team, downloads it and says why when it fails', async () => {
     scouting.downloadIndividualScoutingDocx.mockRejectedValueOnce(new Error('FEB no responde'))
     renderPage()
@@ -100,7 +115,7 @@ describe('ReportPage on the base components (issue #193)', () => {
     fireEvent.change(screen.getByLabelText('Equipo a analizar'), { target: { value: '2' } })
     fireEvent.click(screen.getByRole('button', { name: 'Descargar DOCX' }))
     expect(await screen.findByText('FEB no responde')).toBeInTheDocument()
-    expect(scouting.downloadIndividualScoutingDocx).toHaveBeenCalledWith('LF_CHALLENGE', '2')
+    expect(scouting.downloadIndividualScoutingDocx).toHaveBeenCalledWith('LF_CHALLENGE', '2', expect.any(Function))
     scouting.downloadIndividualScoutingDocx.mockResolvedValueOnce(new Blob(['docx']))
     fireEvent.click(screen.getByRole('button', { name: 'Descargar DOCX' }))
     await waitFor(() => expect(screen.queryByText('FEB no responde')).toBeNull())

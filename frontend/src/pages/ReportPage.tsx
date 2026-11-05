@@ -9,7 +9,8 @@ import { FileText, Download, CalendarDays, ClipboardList } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import { getLiveTeamNames, type TeamEntry } from '@/api/client'
-import { downloadIndividualScoutingDocx } from '@/api/individualScouting'
+import ProgressBar from '@/components/ui/ProgressBar'
+import { downloadIndividualScoutingDocx, type DocxProgress } from '@/api/individualScouting'
 import { downloadWeeklyReport, type WeeklyReportProgress } from '@/api/weeklyReport'
 import { saveBlob } from '@/lib/download'
 import PageTransition from '@/components/ui/PageTransition'
@@ -57,6 +58,7 @@ export default function ReportPage() {
   const [weeklyError,   setWeeklyError]   = useState<string | null>(null)
   const [scoutTeam,    setScoutTeam]    = useState('')
   const [scoutLoading, setScoutLoading] = useState(false)
+  const [scoutProgress, setScoutProgress] = useState<DocxProgress | null>(null)
   const [scoutError,   setScoutError]   = useState<string | null>(null)
 
   const { data: teams = [] } = useQuery<TeamEntry[]>({
@@ -124,20 +126,7 @@ export default function ReportPage() {
                   {weeklyLoading ? 'Generando informe…' : 'Descargar ZIP'}
                 </Button>
                 {weeklyError && <p className="text-xs text-warn">{weeklyError}</p>}
-                {weeklyLoading && weeklyProgress && (
-                  <div className="flex flex-col gap-1">
-                    <div className="w-full h-1.5 rounded-full bg-surface-raised overflow-hidden">
-                      <div
-                        className="h-full bg-secondary transition-all duration-500"
-                        style={{ width: `${weeklyProgress.total > 0 ? (weeklyProgress.step / weeklyProgress.total) * 100 : 0}%` }}
-                      />
-                    </div>
-                    <p className="text-[11px] text-ink-muted text-center">
-                      {weeklyProgress.message}
-                      {weeklyProgress.total > 0 && ` (${weeklyProgress.step}/${weeklyProgress.total})`}
-                    </p>
-                  </div>
-                )}
+                {weeklyLoading && weeklyProgress && <ProgressBar step={weeklyProgress.step} total={weeklyProgress.total} message={weeklyProgress.message} />}
               </div>
             </ReportCard>
 
@@ -161,8 +150,9 @@ export default function ReportPage() {
                   onClick={async () => {
                     setScoutLoading(true)
                     setScoutError(null)
+                    setScoutProgress(null)
                     try {
-                      const blob = await downloadIndividualScoutingDocx(col, scoutTeam)
+                      const blob = await downloadIndividualScoutingDocx(col, scoutTeam, setScoutProgress)
                       saveBlob(blob, `scouting_${scoutTeam}.docx`)
                     } catch (err) {
                       setScoutError(err instanceof Error ? err.message : 'Error descargando el DOCX')
@@ -175,6 +165,10 @@ export default function ReportPage() {
                   {scoutLoading ? 'Generando documento…' : 'Descargar DOCX'}
                 </Button>
                 {scoutError && <p className="text-xs text-warn">{scoutError}</p>}
+                {scoutLoading && scoutProgress && (
+                  <ProgressBar step={scoutProgress.current} total={scoutProgress.total}
+                    message={scoutProgress.stage === 'charts' ? 'Gráficos de los jugadores' : 'Montando el documento'} />
+                )}
               </div>
             </ReportCard>
           </div>

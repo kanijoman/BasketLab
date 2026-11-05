@@ -44,6 +44,20 @@ describe('the DOCX of the individual scouting', () => {
     expect(fetched).not.toHaveBeenCalled()
   })
 
+  it('on: it reports its progress, the charts of each player and then the document (#215)', async () => {
+    localStorage.setItem(DATA_FLAG_KEY, 'local')
+    vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)
+    vi.spyOn(client, 'getLiveTeamNames').mockResolvedValue([{ id: '101', name: 'ALFA' }])
+    vi.spyOn(web, 'loadWebImages').mockResolvedValue(null as never)
+    const seen: unknown[] = []
+    await downloadIndividualScoutingDocx(FEB, '101', p => seen.push(p))
+    expect(seen).toEqual([
+      { stage: 'charts', current: 0, total: 3 },
+      { stage: 'charts', current: 1, total: 3 }, { stage: 'charts', current: 2, total: 3 }, { stage: 'charts', current: 3, total: 3 },
+      { stage: 'document', current: 3, total: 3 },
+    ])
+  })
+
   it('on, with no images published for the competition: the document is made without them', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local')
     vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)

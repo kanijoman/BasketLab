@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock
 
 from db_helpers import new_mock_db
-from src.shotcharts.league_zones import league_zone_stats
+from src.shotcharts.league_zones import league_zone_distribution
 from src.shotcharts.zone_analysis import ZoneAnalyzer
 from src.services.team_report_service import TeamReportService
 
@@ -40,9 +40,9 @@ def test_weekly_fbcyl_shots_use_one_orientation_for_every_team_regression():
     assert {s["team"] for s in second} == {"0"}
 
 
-def test_league_zone_stats_supports_fbcyl_collections():
-    stats = league_zone_stats(ZoneAnalyzer(), _coll(), fbcyl=True)
-    assert stats is not None and sum(z["total"] for z in stats.values()) == 60
+def test_league_zone_distribution_supports_fbcyl_collections():
+    teams = league_zone_distribution(ZoneAnalyzer(), _coll(), fbcyl=True, by="team")
+    assert teams is not None and len(teams) == 6 and sum(z["total"] for t in teams for z in t.values()) == 60
 
 
 def test_team_report_loads_fbcyl_zones_rated_against_the_league():
