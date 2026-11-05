@@ -50,8 +50,8 @@ class RotationService:
         team_id: str,
         team_name: str,
         progress_callback: Optional[Callable[[int, int], None]] = None,
-        min_games: int = 5,
-        min_total_min: float = 100.0,
+        min_games_pct: float = 0.15,
+        min_avg_min: float = 5.0,
     ) -> Dict[str, Any]:
         is_fbcyl = _is_fbcyl(collection_name)
 
@@ -107,7 +107,7 @@ class RotationService:
 
         # Identify significant players (exclude sporadic/junior players from all metrics)
         significant_ids = self._filter_significant_players(
-            player_stats, min_games=min_games, min_total_min=min_total_min
+            player_stats, total_games, min_games_pct=min_games_pct, min_avg_min=min_avg_min
         )
         significant_stats = {pid: player_stats[pid] for pid in significant_ids}
 
@@ -387,25 +387,33 @@ class RotationService:
     def _filter_significant_players(
         self,
         player_stats: Dict[str, Dict],
-        min_games: int = 5,
-        min_total_min: float = 100.0,
+        total_games: int,
+        min_games_pct: float = 0.15,
+        min_avg_min: float = 5.0,
     ) -> Set[str]:
         """Return the set of player IDs considered significant for analysis.
 
         A player is SIGNIFICANT only if BOTH conditions hold:
-          - games_played >= min_games
-          - total_minutes >= min_total_min
+          - games_played >= min_games_pct * total_games   (a share of the TEAM's games)
+          - avg_min_per_game >= min_avg_min
 
         A player failing EITHER condition is considered marginal (e.g. a player
-        who appeared in many games for 1-2 minutes each, or played only 1-2
+        who appeared in many games for 1-2 minutes each, or played only a few
         games regardless of minutes).
+
+        The thresholds are RELATIVE (issue #757): absolute ones (5 games and 100
+        minutes) are meant for a whole season and, at the start of one, left a
+        team with three players of twelve (or none, and then the fallback below
+        kept everybody). 15 % is the 5 games of a season of about 33; 5 minutes
+        on average is the 100 minutes of about 20 games.
 
         Falls back to all players when the filtered set would be empty (e.g.
         very short seasons with little data).
         """
+        needed = min_games_pct * total_games
         significant = {
             pid for pid, s in player_stats.items()
-            if s["games_played"] >= min_games and s["total_minutes"] >= min_total_min
+            if s["games_played"] + 1e-9 >= needed and s["avg_min_per_game"] >= min_avg_min
         }
         # Safety fallback: never return an empty set
         return significant if significant else set(player_stats.keys())

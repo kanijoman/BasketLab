@@ -22,15 +22,15 @@ def get_rotation_analysis(
     collection: str,
     team_id: str,
     team_name: str = Query(..., description="Human-readable team name"),
-    min_games: int = Query(default=5, ge=0, description="Min games played to be significant"),
-    min_total_min: float = Query(default=100.0, ge=0.0, description="Min total minutes to be significant"),
+    min_games_pct: float = Query(default=0.15, ge=0.0, le=1.0, description="Min share of the team's games a player must play to be significant"),
+    min_avg_min: float = Query(default=5.0, ge=0.0, description="Min average minutes per game to be significant"),
     db=Depends(get_db),
 ) -> Dict[str, Any]:
     """Return rotation metrics for a team across all games in the collection."""
     svc = RotationService(db)
     return svc.get_rotation_analysis(
         collection, team_id, team_name,
-        min_games=min_games, min_total_min=min_total_min,
+        min_games_pct=min_games_pct, min_avg_min=min_avg_min,
     )
 
 
@@ -42,8 +42,8 @@ async def stream_rotation_analysis(
     collection: str,
     team_id: str,
     team_name: str = Query(..., description="Human-readable team name"),
-    min_games: int = Query(default=5, ge=0, description="Min games played to be significant"),
-    min_total_min: float = Query(default=100.0, ge=0.0, description="Min total minutes to be significant"),
+    min_games_pct: float = Query(default=0.15, ge=0.0, le=1.0, description="Min share of the team's games a player must play to be significant"),
+    min_avg_min: float = Query(default=5.0, ge=0.0, description="Min average minutes per game to be significant"),
     db=Depends(get_db),
 ) -> StreamingResponse:
     """Server-Sent Events stream for rotation analysis.
@@ -68,7 +68,7 @@ async def stream_rotation_analysis(
             svc = RotationService(db)
             data = svc.get_rotation_analysis(
                 collection, team_id, team_name, progress_callback=_progress_cb,
-                min_games=min_games, min_total_min=min_total_min,
+                min_games_pct=min_games_pct, min_avg_min=min_avg_min,
             )
             result_holder["data"] = data
         except Exception as exc:  # noqa: BLE001
