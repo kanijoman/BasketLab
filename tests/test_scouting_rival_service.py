@@ -92,11 +92,6 @@ def test_scouting_a_team_against_itself_makes_no_sense(db, docs):
         service(db, docs).build(COLLECTION, A, own_team_id=A)
 
 
-def test_fbcyl_is_not_supported_yet(db, docs):
-    with pytest.raises(ValueError, match="FEB"):
-        service(db, docs).build("FBCYL_1A_FASE_GRUPO_A_2025", A)
-
-
 def test_a_failing_rule_report_does_not_stop_the_scouting(db, docs):
     report = service(db, docs, BrokenReport()).build(COLLECTION, A)
     assert report["team"]["id"] == A

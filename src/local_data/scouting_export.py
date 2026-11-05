@@ -2,11 +2,13 @@
 
 For each team of the competitions scouted ``ScoutingRivalService.build_scopes`` gives up to three reports (``liga``, ``copa``, ``todo``); each is sealed once
 and its key wrapped for who may read a rival report (``team_reports.report_scopes``: every club of the competition and the competition itself).
-Which competitions: the ones where a club of interest plays in the latest season (the club of the publisher config and the ``clubs`` of its catalog):
-a scouting costs about ten seconds per team, so the three hundred senior teams are not scouted unless the list grows on purpose.
+Which competitions: the ones where a club of interest plays in the latest season (the club of the publisher config and the ``clubs`` of its catalog; for FBCYL, which has no
+packages, the teams the recorder watches, ``config/fbcyl_watchlist.json``): a scouting costs about ten seconds per team, so the three hundred senior teams are not scouted unless
+the list grows on purpose. FBCYL (issue #635) has no cups: every team has only the league scope.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set
 
@@ -27,15 +29,46 @@ def interest_clubs(config: Optional[Dict[str, Any]] = None) -> Set[str]:
     return clubs
 
 
-def scouting_collections(handler: Any, clubs: Iterable[str]) -> List[str]:
-    """The league collections of the latest season where one of ``clubs`` plays, in name order (cups are scouted through the leagues of their teams)."""
-    names = [n for n in _feb_collections(handler) if not is_cup(n) and season_of(n)]
-    if not names:
-        return []
-    latest = max(season_of(n) for n in names)
-    wanted = {str(c) for c in clubs}
+FBCYL_WATCHLIST = Path(__file__).resolve().parents[2] / "config" / "fbcyl_watchlist.json"
+
+
+def fbcyl_interest_clubs(path: Any = None) -> Set[str]:
+    """The ids (``teamIdExtern``) of the FBCYL teams of interest: the ones the recorder watches. No file, no clubs: nothing is scouted for FBCYL."""
+    try:
+        data = json.loads(Path(path or FBCYL_WATCHLIST).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {str(team) for team in data.get("teams") or []}
+
+
+def _fbcyl_scouted(handler: Any, clubs: Set[str]) -> List[str]:
+    """The FBCYL groups of the latest season (the ``_season`` of their games) where one of ``clubs`` plays."""
+    from src.services.derived_backfill import fbcyl_collection_names
+
     database = _database(handler)
-    return [n for n in names if season_of(n) == latest and wanted & {str(t) for t in database[n].distinct("HEADER.TEAM.id")}]
+    seasons = {}
+    for name in sorted(fbcyl_collection_names(database)):
+        first = database[name].find_one({"_season": {"$exists": True}}, {"_season": 1})
+        if first and first.get("_season"):
+            seasons[name] = str(first["_season"])
+    if not seasons:
+        return []
+    latest = max(seasons.values())
+    return [n for n, season in seasons.items() if season == latest and clubs & {str(t) for t in database[n].distinct("stats.teams.teamIdExtern")}]
+
+
+def scouting_collections(handler: Any, clubs: Iterable[str], fbcyl_clubs: Iterable[str] = ()) -> List[str]:
+    """The league collections of the latest season where one of ``clubs`` plays (FEB) or one of ``fbcyl_clubs`` (FBCYL), in name order (cups are scouted through the leagues of
+    their teams; FBCYL has none)."""
+    names = [n for n in _feb_collections(handler) if not is_cup(n) and season_of(n)]
+    found: List[str] = []
+    if names:
+        latest = max(season_of(n) for n in names)
+        wanted = {str(c) for c in clubs}
+        database = _database(handler)
+        found = [n for n in names if season_of(n) == latest and wanted & {str(t) for t in database[n].distinct("HEADER.TEAM.id")}]
+    wanted_fbcyl = {str(c) for c in fbcyl_clubs}
+    return found + (_fbcyl_scouted(handler, wanted_fbcyl) if wanted_fbcyl else [])
 
 
 def _default_service(handler: Any) -> Any:

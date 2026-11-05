@@ -20,6 +20,10 @@ from src.utils.collection_utils import is_fbcyl
 
 Progress = Callable[[int, int], None]
 
+# What every FBCYL report says (issue #635): the clubs note the play-by-play themselves, so what depends on it is less certain than in FEB.
+FBCYL_NOTICE = ("El jugada a jugada de FBCYL es experimental: lo anotan los propios clubes, no recoge los rebotes de equipo y, a veces, faltan pérdidas o robos; "
+                "las cifras que dependen de él (ritmo, origen de los puntos, quintetos) pueden no ser fiables.")
+
 
 def _pbp_from_db(db: Any, collection: str) -> List[Dict[str, Any]]:
     from src.services.pbp_extended_stats_service import PBPExtendedStatsService
@@ -34,7 +38,11 @@ def _games_from_mongo(db: Any, collection: str) -> Iterable[Dict[str, Any]]:
 
 
 def _catalog_gender(db: Any, collection: str) -> str:
-    from src.live_prep.competition_info import competition_infos
+    from src.live_prep.competition_info import GENDERS, competition_infos
+
+    if is_fbcyl(collection):          # FBCYL is not in the catalog of the packages: every one of its games carries the gender of its competition
+        stored = db.repository.connection.get_collection(collection).find_one({}, {"_gender": 1}) or {}
+        return stored.get("_gender") if stored.get("_gender") in GENDERS else ""
     from src.live_prep.publisher import load_config
 
     return competition_infos(db, [collection], load_config()["competitions"], [])[collection].get("gender") or ""
@@ -66,7 +74,8 @@ class ScoutingRivalService:
 
     def _total_games(self, collection: str) -> int:
         coll = self._db.repository.connection.get_collection(collection)
-        return int(coll.count_documents({"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}))
+        with_moves = {"moves.0": {"$exists": True}} if is_fbcyl(collection) else {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}}
+        return int(coll.count_documents(with_moves))
 
     def _rows(self, collection: str, *team_ids: str) -> Dict[str, Dict[str, Any]]:
         rows = (self._stats.load_season_data(collection) or {}).get("team_stats") or []
@@ -83,8 +92,6 @@ class ScoutingRivalService:
     def build(self, collection: str, team_id: str, own_team_id: Optional[str] = None, progress: Optional[Progress] = None) -> Dict[str, Any]:
         """The scouting report (see ``scouting_report.build_scouting_report``) plus ``collection`` and ``own_team``."""
         team_id, own_team_id = str(team_id), str(own_team_id) if own_team_id else None
-        if is_fbcyl(collection):
-            raise ValueError("El scouting del rival solo está disponible para colecciones FEB por ahora")
         if own_team_id == team_id:
             raise ValueError("El equipo propio y el rival deben ser distintos")
         names = self._names(collection)
@@ -100,7 +107,7 @@ class ScoutingRivalService:
             rows = self._rows(collection, team_id, own_team_id)
             comparison = compare_teams(rows.get(own_team_id), rows.get(team_id))
         report = build_scouting_report(data, team_report=team_report, comparison=comparison, gender=self._gender(collection))
-        report["notices"] += notices
+        report["notices"] += notices + ([FBCYL_NOTICE] if is_fbcyl(collection) else [])
         report["collection"] = collection
         report["own_team"] = {"id": own_team_id, "name": names[own_team_id]} if own_team_id else None
         return report
@@ -110,20 +117,20 @@ class ScoutingRivalService:
         the last two only when the team has cup games. The engine replays every game once; the league context and the rule-based report are the league's.
         No matchup with our team here: it depends on a pair of teams and is computed from two profiles where it is read."""
         team_id = str(team_id)
-        if is_fbcyl(collection):
-            raise ValueError("El scouting del rival solo está disponible para colecciones FEB por ahora")
+        fbcyl = is_fbcyl(collection)
         if team_id not in self._names(collection):
             raise TeamNotFoundError(team_id)
         total = self._total_games(collection)
         data = scout_team_scopes(self._games(self._db, collection), team_id, collection,
                                  progress=(lambda done: progress(done, max(total, done))) if progress else None,
-                                 extra=self._extra_games(self._db, collection, team_id), levels=self._levels_of(self._db, collection) or None)
+                                 extra={} if fbcyl else self._extra_games(self._db, collection, team_id),          # FBCYL has no cups
+                                 levels=None if fbcyl else (self._levels_of(self._db, collection) or None))
         team_report, notices = self._team_report(collection, team_id)
         reports = {}
         for scope, scoped in data.items():
             of_the_league = scope in (LEAGUE, ALL)
             report = build_scouting_report(scoped, team_report=team_report if of_the_league else None, comparison=[], gender=self._gender(collection))
-            report["notices"] += _scope_notices(scope, scoped) + (notices if of_the_league else [])
+            report["notices"] += _scope_notices(scope, scoped) + (notices if of_the_league else []) + ([FBCYL_NOTICE] if fbcyl else [])
             report.update(scope=scope, collection=collection, own_team=None)
             reports[scope] = report
         return reports
