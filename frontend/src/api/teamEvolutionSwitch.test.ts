@@ -3,6 +3,7 @@ import { getTeamEvolution } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import evolution from '../../../tests/local_vectors/team_evolution_feb.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #708: the evolution of a team (dataset `evolution`, the one of the competition's) is computed from the rows; off, with a window the API refuses (2 to 15) or an unpublished competition, the API.
 const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
@@ -37,9 +38,9 @@ describe('data source switch: the evolution of a team', () => {
     expect(calls.filter(c => c.includes('/api/'))).toEqual([])
   })
 
-  it('on with a window the API refuses, or a competition that is not published: the API', async () => {
+  it('on with a window the API refuses, or a competition that is not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:evolution')
-    expect((await getTeamEvolution(FEB, '101', 'points', 20))[0].game_number).toBe(-1)
-    expect((await getTeamEvolution('OTRA', '101', 'points', 5))[0].game_number).toBe(-1)
+    await expect(getTeamEvolution(FEB, '101', 'points', 20)).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(getTeamEvolution('OTRA', '101', 'points', 5)).rejects.toBeInstanceOf(DataUnavailable)
   })
 })

@@ -3,6 +3,7 @@ import { ScopedAccessError } from '@live-package/crypto'
 import { fetchPossessionQualityCsv, fetchPossessionsCsv, getPossessionStats, getTeamConsistency } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebPossessionCsv, loadWebPossessions, WebDataUnavailable } from '@/webdata/client'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #679: Posesiones is its own dataset (`possessions`): on, the table, the consistency and the two CSV files are the ones computed when the competition was published (the
 // downloads are made in the browser, with the BOM Excel needs once at their start); off, or when they are not published, the API.
@@ -57,12 +58,12 @@ describe('data source switch: Posesiones', () => {
     expect(calls).toEqual([])
   })
 
-  it('on, but not published: the API (also for the downloads); with no key: the access error', async () => {
+  it('on, but not published: a clear error, not the API (also for the downloads); with no key: the access error', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:possessions')
     vi.mocked(loadWebPossessions).mockRejectedValue(new WebDataUnavailable('no publicado'))
     vi.mocked(loadWebPossessionCsv).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await getPossessionStats(COLLECTION))[0].team_name).toBe('DE LA API')
-    expect(await text(await fetchPossessionsCsv(COLLECTION))).toBe('de la api')
+    await expect(getPossessionStats(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(fetchPossessionsCsv(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebPossessions).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(getTeamConsistency(COLLECTION)).rejects.toBeInstanceOf(ScopedAccessError)

@@ -8,6 +8,7 @@ vi.mock('@/api/client', () => api)
 
 import HomePage from './HomePage'
 import { loadRecents } from '@/lib/recents'
+import { DataNotAvailable, DataUnavailable } from '@/datasource/resolve'
 
 // Issue #666 (U5e): the home on the base components — one h1 (the brand), the competitions are links (they take you to a page), the refresh an icon button
 // with its name, the failure a Button. Opening a competition is still remembered in the recents.
@@ -53,12 +54,24 @@ describe('HomePage on the base components (issue #666)', () => {
     await waitFor(() => expect(api.getCollectionList).toHaveBeenCalledTimes(2))
   })
 
-  it('a failing server says so and offers to retry', async () => {
+  // Since #334 there is no server behind the list: the failure says what failed (the published data), never «el servidor»
+  it('a failing list says so and offers to retry', async () => {
     api.getCollectionList.mockRejectedValue(new Error('boom'))
     renderPage()
-    expect(await screen.findByText('No se pudo conectar con el servidor.')).toBeInTheDocument()
+    expect(await screen.findByText('No se pudieron cargar los datos.')).toBeInTheDocument()
+    expect(screen.queryByText(/servidor/i)).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
     await waitFor(() => expect(api.getCollectionList).toHaveBeenCalledTimes(2))
+  })
+
+  it.each([
+    ['the files cannot answer', new DataNotAvailable('collections'), /no están disponibles todavía/],
+    ['the publication is down (the error of the files says why)', new DataUnavailable('No se pudo conectar con los datos publicados.'), /No se pudo conectar con los datos publicados\./],
+  ])('%s: the list shows that message, not a generic one', async (_name, error, message) => {
+    api.getCollectionList.mockRejectedValue(error)
+    renderPage()
+    expect(await screen.findByText(message)).toBeInTheDocument()
+    expect(screen.queryByText('No se pudieron cargar los datos.')).toBeNull()
   })
 
   it('an empty database says the data comes from the scheduled refresh and links to no administration', async () => {

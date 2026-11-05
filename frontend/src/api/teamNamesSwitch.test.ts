@@ -5,6 +5,7 @@ import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadReportTeams, WebDataUnavailable } from '@/webdata/client'
 import teams from '../../../tests/local_vectors/team_stats_feb.json'
 import players from '../../../tests/local_vectors/players_feb.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #706: the teams of a competition without the API. `getLiveTeamNames` (`{id, name}`, deduplicated by id) is the team list of the report index (`report-teams`); `getTeamsInCollection`
 // (the names, as `distinct` lists them) is the set of team names of the rows of the competition (`team-stats`).
@@ -47,11 +48,11 @@ describe('data source switch: the teams of a competition', () => {
     expect(calls.filter(c => c.includes('/api/'))).toEqual([])
   })
 
-  it('on but the competition is not published: the API', async () => {
+  it('on but the competition is not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:report-teams,team-stats')
     vi.mocked(loadReportTeams).mockRejectedValue(new WebDataUnavailable('sin informes'))
-    expect(await getLiveTeamNames('OTRA')).toEqual([{ id: '0', name: 'DE LA API' }])
-    expect(await getTeamsInCollection('OTRA')).toEqual(['DE LA API'])
+    await expect(getLiveTeamNames('OTRA')).rejects.toBeInstanceOf(DataUnavailable)
+    await expect(getTeamsInCollection('OTRA')).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on without the key: the access error, never the API', async () => {

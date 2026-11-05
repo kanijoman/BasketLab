@@ -4,6 +4,7 @@ import { getShotRaw, getShotZones, streamRotacionesAnalysis } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebRotations, loadWebShots, WebDataUnavailable } from '@/webdata/client'
 import shotVectors from '../../../tests/local_vectors/shots_feb.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issues #684 and #685: Tiros and Rotaciones are their own datasets (`shots`, `rotations`): on, the zones and the raw shots are counted on the device from the published
 // shots and the analysis of a team is the one computed when the competition was published; off, or when it is not published, the API.
@@ -53,10 +54,10 @@ describe('data source switch: Tiros', () => {
     expect(loadWebShots).toHaveBeenCalledTimes(1)
   })
 
-  it('on, but not published: the API; with no key: the access error, not the API', async () => {
+  it('on, but not published: a clear error, not the API; with no key: the access error', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:shots')
     vi.mocked(loadWebShots).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await getShotZones(COLLECTION, {}))[0].zone).toBe('DE LA API')
+    await expect(getShotZones(COLLECTION, {})).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebShots).mockRejectedValue(new ScopedAccessError('sin clave'))
     await expect(getShotRaw(COLLECTION, {})).rejects.toBeInstanceOf(ScopedAccessError)
@@ -77,11 +78,11 @@ describe('data source switch: Rotaciones', () => {
     expect(streamed).toEqual([])
   })
 
-  it('on, but the team is not in the publication or the competition is not published: the stream of the API', async () => {
+  it('on, but the team is not in the publication or the competition is not published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:rotations')
-    expect((await streamRotacionesAnalysis(COLLECTION, '999', 'OTHER')).total_games).toBe(-1)
+    await expect(streamRotacionesAnalysis(COLLECTION, '999', 'OTHER')).rejects.toBeInstanceOf(DataUnavailable)
     resetLocalData()
     vi.mocked(loadWebRotations).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await streamRotacionesAnalysis(COLLECTION, '101', 'ALPHA')).total_games).toBe(-1)
+    await expect(streamRotacionesAnalysis(COLLECTION, '101', 'ALPHA')).rejects.toBeInstanceOf(DataUnavailable)
   })
 })

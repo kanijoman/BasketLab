@@ -102,7 +102,7 @@ async function get<T>(collection: string, path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
-// With the dataset `pbp` on (`?data=local`, issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, the API as always.
+// With the dataset `pbp` on (`?data=local`, issue #676) the tables are summed on the device from the published DERIVED; if it cannot answer, a clear error (#334), never the API.
 export const getPointsByOrigin = (collection: string) => fromSource('pbp', () => localPointsByOrigin(collection), () => get<OriginRow[]>(collection, 'points-by-origin'))
 export const getByPeriod = (collection: string) => fromSource('pbp', () => localByPeriod(collection), () => get<PeriodRow[]>(collection, 'by-period'))
 export const getSituations = (collection: string) => fromSource('pbp', () => localSituations(collection), () => get<SituationRow[]>(collection, 'situations'))

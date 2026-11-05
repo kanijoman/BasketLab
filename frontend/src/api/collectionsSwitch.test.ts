@@ -3,6 +3,7 @@ import { ScopedAccessError } from '@live-package/crypto'
 import { getCollectionList } from './client'
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebCollectionInfos, WebDataUnavailable } from '@/webdata/client'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #705: the list of competitions is its own dataset (`collections`): on, it is the one of the manifest of the publication; off, or with no publication, the API.
 vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebCollectionInfos: vi.fn() }))
@@ -34,10 +35,10 @@ describe('data source switch: the list of competitions', () => {
     expect(calls).toEqual([])
   })
 
-  it('on but nothing published: the API', async () => {
+  it('on but nothing published: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:collections')
     vi.mocked(loadWebCollectionInfos).mockRejectedValue(new WebDataUnavailable('sin publicación'))
-    expect((await getCollectionList())[0].name).toBe('DE_LA_API')
+    await expect(getCollectionList()).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on without the key: the access error, never the API', async () => {

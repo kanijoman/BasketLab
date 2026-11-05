@@ -120,8 +120,8 @@ export async function downloadScoutingPdf(report: ScoutingReport): Promise<Blob>
  * off or the publication cannot say, so that the page keeps its job-based flow. An access error (no key) reaches the page.
  */
 export const getScoutingScopes = (collection: string, teamId: string): Promise<ScoutingScope[]> =>
-  fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), async () => [])
+  fromSource<ScoutingScope[]>('scouting', () => loadScoutingScopes(collection, teamId), async () => [], () => [])
 
 /** The published scouting of a team for a scope, or `null` when it is off or cannot be had (the page then generates it as always). */
 export const getPublishedScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport | null> =>
-  fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), async () => null)
+  fromSource<ScoutingReport | null>('scouting', () => loadWebScouting(collection, teamId, scope), async () => null, () => null)

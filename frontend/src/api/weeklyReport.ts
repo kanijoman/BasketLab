@@ -18,7 +18,7 @@ export type OnProgress = (progress: WeeklyReportProgress) => void
 const SHOTS_LIMIT = 10000
 const POLL_MS = 1500
 
-/** What the report reads, from the readers the pages use (the published files with the dataset on, the API as their fallback), the players once for both teams. */
+/** What the report reads, from the readers the pages use (the published files with the dataset on, the API only when `?data=api` asks for it), the players once for both teams. */
 async function readers(collection: string): Promise<WeeklyData> {
   const players = await getPlayerStats(collection)
   return {

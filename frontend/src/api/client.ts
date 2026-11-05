@@ -93,7 +93,7 @@ function buildTeamQs(params?: TeamFilters): string {
   return qs.toString() ? `?${qs}` : ''
 }
 
-// With the dataset `team-stats` on (`?data=local`, issues #327, #329) the tables are computed from the exported files; if they cannot answer, the API as always.
+// With the dataset `team-stats` on (`?data=local`, issues #327, #329) the tables are computed from the exported files; if they cannot answer, a clear error (`DataNotAvailable`, #334), never the API.
 export const getTeamStats = (collection: string, params?: TeamFilters) =>
   fromSource(
     'team-stats',

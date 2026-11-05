@@ -4,6 +4,7 @@ import { getByPeriod, getDerivedCoverage, getPointsByOrigin, getSituations, getT
 import { DATA_FLAG_KEY, resetLocalData } from '@/localdata/source'
 import { loadWebDerived, WebDataUnavailable } from '@/webdata/client'
 import vectors from '../../../tests/local_vectors/pbp_feb.json'
+import { DataUnavailable } from '@/datasource/resolve'
 
 // Issue #676: Análisis PBP is its own dataset (`pbp`): on, the five tables are summed on the device from the published DERIVED; off, or when it is not published, the API.
 vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), loadWebDerived: vi.fn() }))
@@ -42,10 +43,10 @@ describe('data source switch: Análisis PBP', () => {
     expect(loadWebDerived).toHaveBeenCalledTimes(1)                         // one file per competition for the five tables
   })
 
-  it('on, but the competition has no published DERIVED: the API answers', async () => {
+  it('on, but the competition has no published DERIVED: a clear error, not the API', async () => {
     localStorage.setItem(DATA_FLAG_KEY, 'local:pbp')
     vi.mocked(loadWebDerived).mockRejectedValue(new WebDataUnavailable('no publicado'))
-    expect((await getSituations(COLLECTION))[0].team_name).toBe('DE LA API')
+    await expect(getSituations(COLLECTION)).rejects.toBeInstanceOf(DataUnavailable)
   })
 
   it('on, but the reader has no key: the access error goes through, the API is not a way round it', async () => {

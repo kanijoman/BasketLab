@@ -6,6 +6,7 @@ import { MotionConfig } from 'framer-motion'
 import App from './App'
 import { applyStoredTheme } from './lib/theme'
 import { consumeInviteFromUrl } from './webdata/invite'
+import { DataNotAvailable } from './datasource/resolve'
 import '@design/tokens.css'
 import '@fontsource-variable/inter'
 import '@fontsource-variable/space-grotesk'
@@ -18,7 +19,7 @@ consumeInviteFromUrl()                                   // an invitation link (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failures, error) => !(error instanceof DataNotAvailable) && failures < 1,        // a question the files cannot answer will not be answered by asking again
       staleTime: 5 * 60 * 1000, // 5 min
     },
   },
