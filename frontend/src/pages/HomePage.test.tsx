@@ -40,7 +40,7 @@ describe('HomePage on the base components (issue #666)', () => {
 
   it('every competition is a link to its page, and opening it is remembered in the recents', async () => {
     renderPage()
-    const link = await screen.findByRole('link', { name: /LF2 2026/ })
+    const link = await screen.findByRole('link', { name: /LF2 2026\/2027/ })
     expect(link).toHaveAttribute('href', '/LF2_2026_A')
     expect(within(link).getByText('12 partidos')).toBeInTheDocument()
     fireEvent.click(link)
@@ -49,7 +49,7 @@ describe('HomePage on the base components (issue #666)', () => {
 
   it('the refresh of the list is an icon button with its name', async () => {
     renderPage()
-    await screen.findByRole('link', { name: /LF2 2026/ })
+    await screen.findByRole('link', { name: /LF2 2026\/2027/ })
     fireEvent.click(screen.getByRole('button', { name: 'Actualizar lista' }))
     await waitFor(() => expect(api.getCollectionList).toHaveBeenCalledTimes(2))
   })
@@ -98,8 +98,8 @@ describe('HomePage selectors (issue #761)', () => {
     api.getCollectionList.mockResolvedValue(LIST)
     renderPage()
     expect(await screen.findByRole('combobox', { name: 'Ámbito' })).toHaveValue('FEB')
-    expect(screen.getByRole('combobox', { name: 'Temporada' })).toHaveValue('2026')
-    expect(screen.getByRole('link', { name: /LF2 2026/ })).toHaveAttribute('href', '/LF2_2026_A')
+    expect(screen.getByRole('combobox', { name: 'Temporada' })).toHaveValue('2026/2027')
+    expect(screen.getByRole('link', { name: /LF2 2026\/2027/ })).toHaveAttribute('href', '/LF2_2026_A')
   })
 
   it('the ámbitos come from the data, and the group selector is there while the group says something', async () => {
@@ -111,14 +111,14 @@ describe('HomePage selectors (issue #761)', () => {
     fireEvent.change(ambito, { target: { value: 'ANDALUCIA' } })
     expect(screen.queryByRole('combobox', { name: 'Grupo' })).toBeNull()                       // «Senior» with no phase or group: nothing to choose or to say
     fireEvent.change(ambito, { target: { value: 'FBCYL' } })
-    expect(screen.getByRole('link', { name: /1A 2026/ })).toHaveAttribute('href', '/FBCYL_1A_2026')
+    expect(screen.getByRole('link', { name: /1A 2026\/2027/ })).toHaveAttribute('href', '/FBCYL_1A_2026')
   })
 
   it('choosing the group changes the competition it opens, and opening it is remembered', async () => {
     api.getCollectionList.mockResolvedValue(LIST)
     renderPage()
     fireEvent.change(await screen.findByRole('combobox', { name: 'Grupo' }), { target: { value: 'B' } })
-    const link = screen.getByRole('link', { name: /LF2 2026/ })
+    const link = screen.getByRole('link', { name: /LF2 2026\/2027/ })
     expect(link).toHaveAttribute('href', '/LF2_2026_B')
     fireEvent.click(link)
     expect(loadRecents().map(r => r.name)).toContain('LF2_2026_B')

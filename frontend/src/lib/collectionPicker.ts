@@ -1,5 +1,5 @@
 /**
- * Choosing a competition by levels (issue #761): ámbito (the league of the data: FEB, FBCYL, and whatever federation is added) → temporada (the year or years: 2026/2027) → competición
+ * Choosing a competition by levels (issue #761): ámbito (the league of the data: FEB, FBCYL, and whatever federation is added) → temporada (always the two years: 2026/2027; a name with a single year gives the year the season starts in) → competición
  * (its name: PRIMERA FEB, LF ENDESA…) → grupo (what tells the collections of a competition apart: the phase and the group, «Liga Regular A», «Play-offs 1/2 Final»).
  * Each level only offers what the previous ones allow; a choice that does not exist at the new level falls back to the default (the latest season, the first competition and group),
  * so the four levels always name one collection that exists. Pure: the home page and the header selector share it.
@@ -44,7 +44,7 @@ export function levelsOf(c: CollectionInfo): Required<Selection> {
   const group = c.group && !ONLY_GROUP.test(c.group) ? c.group : ''
   return {
     ambito: c.league,
-    season: years.join('/'),
+    season: years.length === 1 ? `${years[0]}/${Number(years[0]) + 1}` : years.join('/'),
     competition: competitionName(c),
     group: [phase, group].filter(Boolean).join(' '),
   }

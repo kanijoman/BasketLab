@@ -82,7 +82,7 @@ const REAL = collectionList(NAMES.map(([collection, league]) => ({ collection, l
 describe('levels of the real competitions', () => {
   it('the season is only the year(s)', () => {
     expect(pickCollection(REAL, { ambito: 'FEB' }).seasons).toEqual(['2026/2027', '2025/2026'])
-    expect(pickCollection(REAL, { ambito: 'FBCYL' }).seasons).toEqual(['2026'])
+    expect(pickCollection(REAL, { ambito: 'FBCYL' }).seasons).toEqual(['2026/2027'])           // FBCYL names only the year the season starts in (`_season` 2026, first game on 3/10/2026)
   })
 
   it('the competition is its name, without the underscores of the slug', () => {
@@ -108,8 +108,13 @@ describe('levels of the real competitions', () => {
 
   it('the FBCYL phase is its group, and its competition has a name people know', () => {
     const p = pickCollection(REAL, { ambito: 'FBCYL' })
-    expect(p.selection).toMatchObject({ season: '2026', competition: '1ª División Femenina', group: 'FASE-GRUPO A-1' })
-    expect(collectionLabel(p.collection!)).toBe('1ª División Femenina 2026 · FASE-GRUPO A-1')
+    expect(p.selection).toMatchObject({ season: '2026/2027', competition: '1ª División Femenina', group: 'FASE-GRUPO A-1' })
+    expect(collectionLabel(p.collection!)).toBe('1ª División Femenina 2026/2027 · FASE-GRUPO A-1')
+  })
+
+  it('a single year is the year the season starts in: 2026 is 2026/2027, and two years are shown as they are', () => {
+    const one = (season: string) => levelsOf({ name: 'x', league: 'FBCYL', competition: 'C', season, group: '', game_count: 1 }).season
+    expect([one('FASE 2026'), one('2026_2027_Liga'), one('2025 FASE')]).toEqual(['2026/2027', '2026/2027', '2025/2026'])
   })
 
   it('an FBCYL competition without a known name is shown as the data gives it; FEB names are never renamed', () => {

@@ -24,7 +24,7 @@ describe('CollectionPicker (issue #761)', () => {
     const onChange = vi.fn()
     render(<CollectionPicker list={LIST} value={{ ambito: 'FEB' }} onChange={onChange} />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Ámbito' }), { target: { value: 'FBCYL' } })
-    expect(onChange).toHaveBeenCalledWith({ ambito: 'FBCYL', season: '2025', competition: 'U16', group: '' }, expect.objectContaining({ name: 'F25' }))
+    expect(onChange).toHaveBeenCalledWith({ ambito: 'FBCYL', season: '2025/2026', competition: 'U16', group: '' }, expect.objectContaining({ name: 'F25' }))
   })
 
   it('compact mode hides every level with a single option except the group, which names the phase', () => {
