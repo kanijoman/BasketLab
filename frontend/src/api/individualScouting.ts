@@ -27,12 +27,16 @@ async function lenient<T>(make: () => Promise<T>): Promise<T | undefined> {
 
 const SHOTS_LIMIT = 10000
 
+/** Where the generation is: the charts of each player (the slow part), then the document. */
+export interface DocxProgress { stage: 'charts' | 'document'; current: number; total: number }
+
 /** The charts of each player of the team: his radar against the league and, in FEB (the shots are not charted in FBCYL, as the server never did), the heatmap and the zones of his shots against the league's. */
-async function chartsOf(collection: string, teamId: string, roster: PlayerStat[], league: PlayerStat[]): Promise<Record<string, PlayerCharts>> {
+async function chartsOf(collection: string, teamId: string, roster: PlayerStat[], league: PlayerStat[], onProgress?: (p: DocxProgress) => void): Promise<Record<string, PlayerCharts>> {
   const [{ courtSvg }, { radarModel, radarSvg }, { svgToPng }] = await Promise.all([import('@/lib/scoutingCharts'), import('@/lib/radarChart'), import('@/lib/svgImage')])
   const shooting = !/FBCYL/i.test(collection)
   const charts: Record<string, PlayerCharts> = {}
-  for (const player of roster) {                                      // one at a time: a player's charts are PNGs of a few hundred KB each
+  onProgress?.({ stage: 'charts', current: 0, total: roster.length })
+  for (const [index, player] of roster.entries()) {                                      // one at a time: a player's charts are PNGs of a few hundred KB each
     const id = String(player.player_id)
     const mine: PlayerCharts = {}
     mine.radar = await lenient(() => svgToPng(radarSvg(radarModel(player, league), player.player_name ?? '')))
@@ -43,15 +47,18 @@ async function chartsOf(collection: string, teamId: string, roster: PlayerStat[]
       mine.zones = await lenient(() => svgToPng(courtSvg('zones', zones, shots)))
     }
     charts[id] = mine
+    onProgress?.({ stage: 'charts', current: index + 1, total: roster.length })
   }
   return charts
 }
 
-async function inBrowser(collection: string, teamId: string): Promise<Blob> {
+async function inBrowser(collection: string, teamId: string, onProgress?: (p: DocxProgress) => void): Promise<Blob> {
   const [{ scoutingDocx }, players, teams, images] = await Promise.all([import('@/lib/scoutingDocx'), getPlayerStats(collection), getLiveTeamNames(collection), imagesOf(collection, teamId)])
   const today = new Date()
   const teamName = teams.find(t => t.id === teamId)?.name ?? ''
-  const charts = await chartsOf(collection, teamId, players.filter(p => p.team_name === teamName), players)
+  const roster = players.filter(p => p.team_name === teamName)
+  const charts = await chartsOf(collection, teamId, roster, players, onProgress)
+  onProgress?.({ stage: 'document', current: roster.length, total: roster.length })
   return scoutingDocx({
     players, teamName, images, charts, today,
     date: today.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
@@ -67,5 +74,6 @@ async function onServer(collection: string, teamId: string): Promise<Blob> {
   return res.blob()
 }
 
-export const downloadIndividualScoutingDocx = (collection: string, teamId: string): Promise<Blob> =>
-  fromSource('scouting', () => inBrowser(collection, teamId), () => onServer(collection, teamId))
+/** The server gives no progress: only the browser reports it (`onProgress`). */
+export const downloadIndividualScoutingDocx = (collection: string, teamId: string, onProgress?: (p: DocxProgress) => void): Promise<Blob> =>
+  fromSource('scouting', () => inBrowser(collection, teamId, onProgress), () => onServer(collection, teamId))
