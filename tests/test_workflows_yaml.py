@@ -363,7 +363,7 @@ class TestBackendTestsRunInParallel:
         steps = self._test_steps()
         assert steps, "the backend job must run pytest"
         for step in steps:
-            assert "python -m pytest" in step["run"] and "-n auto" in step["run"] and "--dist loadscope" in step["run"], step["name"]
+            assert "python -m pytest" in step["run"] and "-n auto" in step["run"] and "--dist worksteal" in step["run"], step["name"]
 
     def test_the_coverage_gate_runs_only_on_main_and_everything_else_runs_without_it(self):
         with_cov = [s for s in self._test_steps() if "--cov-fail-under=82" in s["run"]]
