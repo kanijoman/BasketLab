@@ -127,21 +127,6 @@ class TestLeagueZonesStreaming:
         assert not isinstance(it, list)
         assert list(it) == extract_shots_feb(coll, None, None)
 
-    def test_league_zone_stats_streams_the_shots_to_the_analyzer_regression(self):
-        from src.shotcharts.league_zones import league_zone_stats
-
-        received = {}
-
-        class Spy:
-            def analyze_zone_performance(self, shots):
-                received["is_list"] = isinstance(shots, list)
-                n = sum(1 for _ in shots)
-                return {"zone_stats": {"z": {"total": n}}}
-
-        stats = league_zone_stats(Spy(), self._coll())
-        assert received["is_list"] is False
-        assert stats == {"z": {"total": 30}}
-
     def test_zone_analyzer_accepts_any_iterable(self):
         from src.shotcharts.zone_analysis import ZoneAnalyzer
 

@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.colors import LinearSegmentedColormap
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Sequence, Tuple
 from pathlib import Path
 
 from .detailed_zones import DetailedCourtZones
@@ -129,15 +129,15 @@ class ZoneAnalyzer:
         return hex_color, 0.8
 
     @staticmethod
-    def get_relative_color(zone: Dict, league_zone: Optional[Dict]) -> Tuple[str, float]:
-        """Colour for a zone rated against the league's average in that zone."""
-        from src.shotcharts.zone_rating import rate_zone_vs_average       # the fixed-margin rule: these server charts only have the league's total (issue #765)
+    def get_relative_color(zone: Dict, zone_key: str, entities: Sequence[Dict[str, Dict]]) -> Tuple[str, float]:
+        """Colour for a zone rated against how the competition's entities (teams, or players) shoot in it: the rule of the web (issues #760, #765)."""
+        from src.shotcharts.zone_rating import rate_zone
 
-        ref = league_zone or {}
-        rating = rate_zone_vs_average(zone['made'], zone['total'], ref.get('made', 0), ref.get('total', 0))['rating']
+        per_entity = [(e[zone_key].get('made', 0), e[zone_key].get('total', 0)) for e in entities if zone_key in e]
+        rating = rate_zone(zone['made'], zone['total'], per_entity)['rating']
         if rating in RATING_COLORS:
             return RATING_COLORS[rating], 0.8
-        return '#E0E0E0', 0.5  # no data (unknown league baseline)
+        return '#E0E0E0', 0.5  # no data (nobody shot in the competition)
 
     def calculate_optimal_label_positions(self, zone_stats: Dict) -> Dict[str, Tuple[float, float]]:
         """
@@ -190,6 +190,13 @@ class ZoneAnalyzer:
         return label_positions
 
 
+    def zone_key_for_shot(self, x: float, y: float) -> Optional[str]:
+        """The key of the zone (a key of ``self.zones.zones``) a shot at ``(x, y)`` falls in; ``None`` outside every zone."""
+        zone_info = self.zones.get_zone_for_shot(x, y)
+        if not zone_info or 'name' not in zone_info:
+            return None
+        return next((key for key, data in self.zones.zones.items() if data['name'] == zone_info['name']), None)
+
     def analyze_zone_performance(self, shots: List[Dict]) -> Dict:
         """
         Analyze shot performance by zones.
@@ -223,25 +230,13 @@ class ZoneAnalyzer:
             total_shots += 1
             x, y = shot['x'], shot['y']
 
-            # Get zone for this shot
-            zone_info = self.zones.get_zone_for_shot(x, y)
-
-            if zone_info and 'name' in zone_info:
-                # Find the zone key that matches this zone info
-                zone_key = None
-                for key, zone_data in self.zones.zones.items():
-                    if zone_data['name'] == zone_info['name']:
-                        zone_key = key
-                        break
-
-                if zone_key:
-                    if shot['made']:
-                        zone_stats[zone_key]['made'] += 1
-                    else:
-                        zone_stats[zone_key]['missed'] += 1
-                    zone_stats[zone_key]['total'] += 1
+            zone_key = self.zone_key_for_shot(x, y)
+            if zone_key:
+                if shot['made']:
+                    zone_stats[zone_key]['made'] += 1
                 else:
-                    unclassified_shots += 1
+                    zone_stats[zone_key]['missed'] += 1
+                zone_stats[zone_key]['total'] += 1
             else:
                 unclassified_shots += 1
 
@@ -275,10 +270,10 @@ class ZoneAnalyzer:
             Plot title
         figsize : Tuple[int, int]
             Figure size
-        league_stats : Dict, optional
-            League ``zone_stats`` (same structure). When given, zones are coloured as
-            above / around / below the league average for that zone instead of the
-            legacy fixed thresholds.
+        league_stats : list of ``zone_stats``, optional
+            One per team (or per player) of the competition (``league_zones.league_zone_distribution``).
+            When given, zones are coloured as above / around / below the quartiles of the
+            competition in that zone (issues #760, #765) instead of the legacy fixed thresholds.
 
         Returns:
         --------
@@ -311,7 +306,7 @@ class ZoneAnalyzer:
                 # Zone has shots - color by basketball-realistic performance
                 percentage = stats_data['percentage']
                 if league_stats is not None:
-                    color, alpha = self.get_relative_color(stats_data, league_stats.get(zone_key))
+                    color, alpha = self.get_relative_color(stats_data, zone_key, league_stats)
                 else:
                     color, alpha = self.get_performance_color(percentage, zone_points)
 
