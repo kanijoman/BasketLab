@@ -6,8 +6,8 @@ import CollectionSwitcher from './CollectionSwitcher'
 import * as client from '@/api/client'
 
 const LIST = [
-  { name: 'LF2_2025_A', league: 'FEB', competition: 'LF2', season: '2025-2026', group: 'A', game_count: 30 },
-  { name: 'LF2_2025_B', league: 'FEB', competition: 'LF2', season: '2025-2026', group: 'B', game_count: 28 },
+  { name: 'LF2_2025_A', league: 'FEB', competition: 'LF2', season: '2025_2026', group: 'A', game_count: 30 },
+  { name: 'LF2_2025_B', league: 'FEB', competition: 'LF2', season: '2025_2026', group: 'B', game_count: 28 },
 ] as client.CollectionInfo[]
 
 function Where() { return <p data-testid="where">{useLocation().pathname}</p> }
@@ -35,8 +35,8 @@ describe('CollectionSwitcher (issue #191)', () => {
   })
 
   it('changing the season keeps the page and the competition when they exist there (#761)', async () => {
-    show('/LF2_2025_A/rotaciones', [...LIST, { ...LIST[0], name: 'LF2_2024_A', season: '2024-2025' }] as client.CollectionInfo[])
-    fireEvent.change(await screen.findByRole('combobox', { name: 'Temporada' }), { target: { value: '2024-2025' } })
+    show('/LF2_2025_A/rotaciones', [...LIST, { ...LIST[0], name: 'LF2_2024_A', season: '2024_2025' }] as client.CollectionInfo[])
+    fireEvent.change(await screen.findByRole('combobox', { name: 'Temporada' }), { target: { value: '2024/2025' } })
     expect(screen.getByTestId('where')).toHaveTextContent('/LF2_2024_A/rotaciones')
   })
 
