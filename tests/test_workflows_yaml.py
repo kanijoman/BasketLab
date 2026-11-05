@@ -351,12 +351,12 @@ class TestAndroidWorkflowManualRelease:
 class TestBackendTestsRunInParallel:
     """The backend tests were the bottleneck of every integration (8 min in one process on a 4-CPU runner).
 
-    They run with pytest-xdist; the coverage gate (82 %) only on main, so a pull request does not pay the tracing cost.
+    They run with pytest-xdist inside each share of the split (``test_ci_speed.py``); the coverage gate (82 %) only on main (or a manual run), so a pull request does not pay the tracing cost.
     ``python -m pytest`` (not the bare command) keeps the repo root on ``sys.path`` for ``from tests.x import y`` in the workers.
     """
 
     def _test_steps(self):
-        steps = _steps_of_job("ci.yml", "test-backend")
+        steps = _steps_of_job("ci.yml", "backend-shard")
         return [s for s in steps if "pytest" in s.get("run", "")]
 
     def test_every_pytest_step_is_parallel_and_keeps_the_root_on_the_path(self):
@@ -365,12 +365,12 @@ class TestBackendTestsRunInParallel:
         for step in steps:
             assert "python -m pytest" in step["run"] and "-n auto" in step["run"] and "--dist worksteal" in step["run"], step["name"]
 
-    def test_the_coverage_gate_runs_only_on_main_and_everything_else_runs_without_it(self):
-        with_cov = [s for s in self._test_steps() if "--cov-fail-under=82" in s["run"]]
+    def test_the_coverage_is_measured_only_on_main_or_a_manual_run_and_everything_else_runs_without_it(self):
+        with_cov = [s for s in self._test_steps() if "--cov=src" in s["run"]]
         without = [s for s in self._test_steps() if "--cov" not in s["run"]]
         assert len(with_cov) == 1 and len(without) == 1
-        assert with_cov[0]["if"] == "github.ref == 'refs/heads/main'"
-        assert without[0]["if"] == "github.ref != 'refs/heads/main'"
+        assert with_cov[0]["if"] == "env.WITH_COVERAGE == 'true'"
+        assert without[0]["if"] == "env.WITH_COVERAGE != 'true'"
 
     def test_xdist_is_installed_for_the_job(self):
         assert "pytest-xdist" in (ROOT / "requirements-dev.txt").read_text(encoding="utf-8")

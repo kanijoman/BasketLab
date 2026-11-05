@@ -4,6 +4,7 @@
 pytest>=7.4.0
 pytest-cov>=4.1.0
 pytest-xdist>=3.5.0   # the CI runs the suite in parallel (-n auto): the runner has 4 CPUs
+pytest-split>=0.10.0   # the CI splits the suite into parallel shares by the stored durations (.test_durations, issue #741)
 mongomock>=4.1.0
 httpx>=0.27.0
 pyyaml>=6.0
