@@ -131,10 +131,10 @@ class ZoneAnalyzer:
     @staticmethod
     def get_relative_color(zone: Dict, league_zone: Optional[Dict]) -> Tuple[str, float]:
         """Colour for a zone rated against the league's average in that zone."""
-        from src.shotcharts.zone_rating import rate_zone
+        from src.shotcharts.zone_rating import rate_zone_vs_average       # the fixed-margin rule: these server charts only have the league's total (issue #765)
 
         ref = league_zone or {}
-        rating = rate_zone(zone['made'], zone['total'], ref.get('made', 0), ref.get('total', 0))['rating']
+        rating = rate_zone_vs_average(zone['made'], zone['total'], ref.get('made', 0), ref.get('total', 0))['rating']
         if rating in RATING_COLORS:
             return RATING_COLORS[rating], 0.8
         return '#E0E0E0', 0.5  # no data (unknown league baseline)

@@ -829,10 +829,12 @@ export interface ShotZoneData {
   fgm: number
   fg_pct: number
   polygon?: [number, number][]
-  /** Present with `compare=league`: rating against the league average of this zone. */
+  /** Present with `compare=league`: rating against the quartiles of the competition in this zone (#760). */
   rating?: ZoneRating
   league_pct?: number | null
   delta_pp?: number | null
+  /** Weighted position (0-100) of this zone among the competition's teams (players for a player). */
+  percentile?: number | null
   /** True when there are too few attempts for the rating to be reliable. */
   low_sample?: boolean
 }

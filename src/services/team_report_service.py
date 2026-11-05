@@ -89,14 +89,15 @@ class TeamReportService:
             return []
 
     def _load_zones(self, collection: str, team_id: str) -> List[Dict[str, Any]]:
-        """Team shot zones rated against the league average (FEB and FBCYL)."""
+        """Team shot zones rated against the distribution of the competition's teams (FEB and FBCYL, #760)."""
         from src.shotcharts.fbcyl_zones import stream_zone_counts_fbcyl
         from src.shotcharts.feb_zones import aggregate_zones, stream_zone_counts_feb
+        from src.shotcharts.zone_distribution import zone_counts_by_owner
         from src.shotcharts.zone_rating import rate_zones
         from utils.collection_utils import is_fbcyl
 
         stream = stream_zone_counts_fbcyl if is_fbcyl(collection) else stream_zone_counts_feb
         coll = self._db.connection.get_collection(collection)
         team = aggregate_zones(stream(coll, team_id=team_id, player_filter=None))
-        league = aggregate_zones(stream(coll, team_id=None, player_filter=None))
-        return rate_zones(team, league)
+        teams = zone_counts_by_owner(coll, collection, "team")                  # the reference is how the competition's teams shoot in each zone (#760)
+        return rate_zones(team, list(teams.values()))

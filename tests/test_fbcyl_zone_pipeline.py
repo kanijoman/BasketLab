@@ -17,7 +17,8 @@ def _doc():
         "players": [{"uuid": uuid, "name": uuid, "data": {
             "shootingOfTwoSuccessfulPoint": [_pt(11.6, 50.0)] * made,
             "shootingOfTwoFailedPoint": [_pt(11.6, 50.0)] * miss}}]}
-    return {"stats": {"teams": [mk(1, "a", 8, 2), mk(2, "b", 2, 8)]}}
+    # six teams: with only two, the quartiles of the competition would coincide with its extremes (#760)
+    return {"stats": {"teams": [mk(1, "a", 9, 1), mk(2, "b", 2, 8), mk(3, "c", 4, 6), mk(4, "d", 5, 5), mk(5, "e", 6, 4), mk(6, "f", 7, 3)]}}
 
 
 def _coll():
@@ -41,7 +42,7 @@ def test_weekly_fbcyl_shots_use_one_orientation_for_every_team_regression():
 
 def test_league_zone_stats_supports_fbcyl_collections():
     stats = league_zone_stats(ZoneAnalyzer(), _coll(), fbcyl=True)
-    assert stats is not None and sum(z["total"] for z in stats.values()) == 20
+    assert stats is not None and sum(z["total"] for z in stats.values()) == 60
 
 
 def test_team_report_loads_fbcyl_zones_rated_against_the_league():

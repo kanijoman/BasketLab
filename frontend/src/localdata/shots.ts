@@ -42,35 +42,71 @@ function zoneTable(rows: Shots['shots']): ShotZoneData[] {
   })
 }
 
-// ── Rating of a zone against the league (`zone_rating.rate_zone`, provisional thresholds) ──────────────────────────────────────────────────────
+// ── Rating of a zone against the distribution of the competition (`zone_rating.rate_zone` and `zone_distribution.zone_counts_by_owner`, issue #760) ──────────────────────
 
-const Z_THRESHOLD = 1.0
-const MIN_DELTA_PP = 2.0
 const MIN_FGA = 10
-const P_FLOOR = 0.01
+const LOWER_QUARTILE = 0.25
+const UPPER_QUARTILE = 0.75
 
-const pct = (made: number, attempts: number): number | null => (attempts > 0 ? (made / attempts) * 100 : null)
+type Counts = { fga: number; fgm: number }
+type Rating = Pick<ShotZoneData, 'league_pct' | 'delta_pp' | 'percentile' | 'rating' | 'low_sample'>
 
-function rateZone(fgm: number, fga: number, leagueFgm: number, leagueFga: number): Pick<ShotZoneData, 'league_pct' | 'delta_pp' | 'rating' | 'low_sample'> {
-  const low = fga < MIN_FGA
-  if (fga <= 0) return { league_pct: pct(leagueFgm, leagueFga), delta_pp: null, rating: 'none', low_sample: low }
-  if (leagueFga <= 0) return { league_pct: null, delta_pp: null, rating: 'unknown', low_sample: low }
-  const p = fgm / fga, pLeague = leagueFgm / leagueFga
-  const deltaPp = (p - pLeague) * 100
-  const q = Math.min(Math.max(pLeague, P_FLOOR), 1 - P_FLOOR)
-  const z = (p - pLeague) / Math.sqrt((q * (1 - q)) / fga)
-  let rating: ShotZoneData['rating'] = 'average'
-  if (Math.abs(deltaPp) >= MIN_DELTA_PP && Math.abs(z) >= Z_THRESHOLD) rating = deltaPp > 0 ? 'above' : 'below'
-  return { league_pct: pLeague * 100, delta_pp: deltaPp, rating, low_sample: low }
+/** The `q` quantile of `[value, weight]` pairs by the inverse of the weighted cdf (`zone_rating.weighted_quantile`). */
+function weightedQuantile(pairs: [number, number][], q: number): number | null {
+  const ordered = pairs.filter(([, w]) => w > 0).sort((a, b) => a[0] - b[0])
+  const total = ordered.reduce((sum, [, w]) => sum + w, 0)
+  if (total <= 0) return null
+  const target = q * total
+  let cumulative = 0
+  for (const [value, weight] of ordered) {
+    cumulative += weight
+    if (cumulative >= target) return value
+  }
+  return ordered[ordered.length - 1][0]
 }
 
-/** `GET /shots/{collection}`: the 10 zones of the team, the player or the whole competition, and with `compare: 'league'` their rating against the league's same zone. */
+/** `entities` are the `[fgm, fga]` of every team (or player) of the competition in the zone. */
+function rateZone(fgm: number, fga: number, entities: [number, number][]): Rating {
+  const low = fga < MIN_FGA
+  const shooters = entities.filter(([, att]) => att > 0)
+  const totalAtt = shooters.reduce((sum, [, att]) => sum + att, 0)
+  const leaguePct = totalAtt > 0 ? (shooters.reduce((sum, [made]) => sum + made, 0) / totalAtt) * 100 : null
+  if (fga <= 0) return { league_pct: leaguePct, delta_pp: null, percentile: null, rating: 'none', low_sample: low }
+  if (totalAtt <= 0) return { league_pct: null, delta_pp: null, percentile: null, rating: 'unknown', low_sample: low }
+  const p = fgm / fga
+  const pairs = shooters.map(([made, att]): [number, number] => [made / att, att])
+  const q1 = weightedQuantile(pairs, LOWER_QUARTILE)!, q3 = weightedQuantile(pairs, UPPER_QUARTILE)!
+  const rating: ShotZoneData['rating'] = p > q3 ? 'above' : p < q1 ? 'below' : 'average'
+  const below = pairs.reduce((sum, [value, att]) => sum + (value < p ? att : 0), 0)
+  const equal = pairs.reduce((sum, [value, att]) => sum + (value === p ? att : 0), 0)
+  return { league_pct: leaguePct, delta_pp: (p - leaguePct! / 100) * 100, percentile: ((below + 0.5 * equal) / totalAtt) * 100, rating, low_sample: low }
+}
+
+/** The zone counts of every team, or of every player, of the competition; a shot of a player nobody can name counts for his team and for no player. */
+function countsByOwner(rows: Shots['shots'], by: 'team' | 'player'): Map<string, Map<string, Counts>> {
+  const owners = new Map<string, Map<string, Counts>>()
+  const known = new Set(ZONES.map(([zone]) => zone))
+  for (const [teamId, playerId, , , made, zone] of rows) {
+    const owner = by === 'team' ? teamId : playerId
+    if (!owner || !known.has(zone)) continue
+    let table = owners.get(owner)
+    if (!table) owners.set(owner, (table = new Map(ZONES.map(([z]) => [z, { fga: 0, fgm: 0 }]))))
+    const count = table.get(zone)!
+    count.fga += 1
+    if (made) count.fgm += 1
+  }
+  return owners
+}
+
+/** `GET /shots/{collection}`: the 10 zones of the team, the player or the whole competition, and with `compare: 'league'` their rating against how the competition's teams (or players, when a player is asked for) shoot there. */
 export function shotZones(shots: Shots, filter: ShotFilter & { compare?: 'league' }): ShotZoneData[] {
   const zones = zoneTable(filtered(shots, filter))
   if (filter.compare !== 'league') return zones
-  const league = filter.team_id !== undefined || filter.player !== undefined ? zoneTable(shots.shots) : zones
-  const byZone = new Map(league.map(zone => [zone.zone, zone]))
-  return zones.map(zone => ({ ...zone, ...rateZone(zone.fgm, zone.fga, byZone.get(zone.zone)?.fgm ?? 0, byZone.get(zone.zone)?.fga ?? 0) }))
+  const owners = [...countsByOwner(shots.shots, filter.player !== undefined ? 'player' : 'team').values()]
+  return zones.map(zone => ({
+    ...zone,
+    ...rateZone(zone.fgm, zone.fga, owners.map((table): [number, number] => [table.get(zone.zone)!.fgm, table.get(zone.zone)!.fga])),
+  }))
 }
 
 /** `GET /shots/{collection}/raw`: the first `limit` shots (5000 by default, 10000 at most) in the order of the competition. */
