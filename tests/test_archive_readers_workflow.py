@@ -2,7 +2,7 @@
 
 Both used to read Atlas. Now they download the private archive, restore it into an ephemeral Mongo and read from there, through ONE composite action
 (``.github/actions/restore-archive``) so that the key handling and the restore are written once. They never write the archive (that is ``archive-refresh.yml``), the live packages
-wait for the refresh that saved it, and Atlas stays as the fallback only until it is retired (step 5), as in ``web-data.yml``.
+wait for the refresh that saved it, and Atlas is no longer a fallback (retired in step 5).
 """
 from pathlib import Path
 
@@ -74,19 +74,18 @@ class TestLivePackages:
     def test_it_restores_the_archive_with_the_shared_action_and_the_ephemeral_mongo_is_a_service(self):
         restore = self.steps["Restore the archive"]
         assert restore["uses"] == "./.github/actions/restore-archive" and restore["with"]["deploy-key"] == "${{ secrets.ARCHIVE_DEPLOY_KEY }}"
-        assert restore["if"] == "steps.source.outputs.archive == 'true'"
+        assert restore["if"] == "github.event_name != 'pull_request'"                # pull requests only validate the entry points
         assert self.wf["jobs"]["publish"]["services"]["mongo"]["image"].startswith("mongo:")
 
-    def test_the_order_is_choose_restore_build_publish_and_a_failed_restore_stops_the_build(self):
+    def test_the_order_is_restore_build_publish_and_a_failed_restore_stops_the_build(self):
         names = [s.get("name", "") for s in _steps(self.wf, "publish")]
-        order = ["Choose the source of the games", "Restore the archive", "Build the packages", "Publish to the live-packages branch"]
+        order = ["Restore the archive", "Build the packages", "Publish to the live-packages branch"]
         assert [names.index(n) for n in order] == sorted(names.index(n) for n in order)
         assert "continue-on-error" not in self.steps["Restore the archive"]
 
-    def test_it_builds_from_the_ephemeral_mongo_and_falls_back_to_atlas_only_without_the_archive_key(self):
+    def test_it_builds_from_the_ephemeral_mongo_and_never_from_atlas(self):
         build = self.steps["Build the packages"]["env"]["MONGODB_CONNECTION_STRING"]
-        assert "EPHEMERAL_MONGO" in build and "ATLAS_READ_URI" in build and "ATLAS_WRITE_URI" in build
-        assert build.index("EPHEMERAL_MONGO") < build.index("ATLAS_READ_URI")
+        assert build == "${{ env.EPHEMERAL_MONGO }}"
 
     def test_it_never_writes_the_archive_and_the_pull_requests_validate_the_new_pieces(self):
         assert "run_archive.py push" not in (ROOT / ".github" / "workflows" / "live-packages.yml").read_text(encoding="utf-8")
@@ -106,11 +105,11 @@ class TestRuleEvaluation:
         assert restore["uses"] == "./.github/actions/restore-archive"
         assert restore["with"]["collection"] == "${{ inputs.collection }}" and restore["with"]["deploy-key"] == "${{ secrets.ARCHIVE_DEPLOY_KEY }}"
 
-    def test_it_evaluates_from_the_ephemeral_mongo_with_atlas_only_as_the_old_fallback(self):
+    def test_it_evaluates_from_the_ephemeral_mongo_and_never_from_atlas(self):
         names = [s.get("name", "") for s in _steps(self.wf, "evaluate")]
         assert names.index("Restore the archive") < names.index("Evaluate")
         mongo = self.steps["Evaluate"]["env"]["MONGODB_CONNECTION_STRING"]
-        assert "EPHEMERAL_MONGO" in mongo and mongo.index("EPHEMERAL_MONGO") < mongo.index("ATLAS_READ_URI")
+        assert mongo == "${{ env.EPHEMERAL_MONGO }}"
         assert self.wf["jobs"]["evaluate"]["services"]["mongo"]["image"].startswith("mongo:")
 
     def test_it_stays_manual_and_never_writes_the_archive(self):
