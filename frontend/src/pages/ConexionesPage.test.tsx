@@ -150,7 +150,7 @@ describe('ConexionesPage', () => {
   })
 
   it('data published before the passer zones existed does not break the page: the passes show and the court says its data is on the way', async () => {
-    const old = { ...ANALYSIS, passers: ANALYSIS.passers.map(({ zones, without_zone, ...rest }) => ({ ...rest, to: rest.to.map(({ zones: _z, without_zone: _w, ...t }) => t) })) }
+    const old = { ...ANALYSIS, passers: ANALYSIS.passers.map(({ zones: _zones, without_zone: _without, ...rest }) => ({ ...rest, to: rest.to.map(({ zones: _z, without_zone: _w, ...t }) => t) })) }
     api.getAssistConnections.mockResolvedValue(old as never)
     renderPage()
     const passers = await screen.findByRole('region', { name: /Pasadores/i })
