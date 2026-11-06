@@ -99,3 +99,11 @@ def test_make_sealer_builds_the_sealer_of_the_mode_from_the_environment():
     assert fallback.master == PASSWORD, "the existing secret is enough to start"
     with pytest.raises(ValueError, match="at least"):
         make_sealer({"mode": "scoped", "open": True, "monthly": False, "scopes": []}, {"PACKAGE_PASSWORD": "corta"}, NOW)
+
+
+def test_the_published_config_seals_by_scope_with_the_open_key_so_the_app_asks_for_no_password():
+    """The app has no password field any more (#774): the shipped config must publish the v2 index with the open scope."""
+    from pathlib import Path
+    shipped = json.loads((Path(__file__).resolve().parents[1] / "config" / "package_publish.json").read_text(encoding="utf-8"))
+    assert shipped["access"]["mode"] == "scoped"
+    assert shipped["access"]["open"] is True

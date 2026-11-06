@@ -2,7 +2,7 @@
   "team_id": "1008631",
   "upcoming": 3,
   "access": {
-    "mode": "legacy",
+    "mode": "scoped",
     "open": true,
     "monthly": false,
     "scopes": []
