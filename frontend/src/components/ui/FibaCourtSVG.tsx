@@ -13,7 +13,7 @@
  * highlightZone  – Key of the zone to highlight with a ring.
  * width / height – Override the default SVG size (default: 450 × 420).
  */
-import { useMemo, type RefObject } from 'react'
+import { useMemo, type ReactNode, type RefObject } from 'react'
 import type { ShotZoneData, ShotRawData } from '@/api/client'
 import { useChartTheme, type ChartTheme } from '@/lib/chartTheme'
 import { RATING_LABEL, ratingColor, zoneColours } from '@/lib/zoneRating'
@@ -43,7 +43,7 @@ const BRK  = (14 - BREAK_FIBA) * S   // ≈ 330.3 — break y in SVG
 // ---------------------------------------------------------------------------
 // Zone metadata: approximate bubble centre in SVG pixels
 // ---------------------------------------------------------------------------
-const ZONE_CENTERS: Record<string, { x: number; y: number; label: string }> = {
+export const ZONE_CENTERS: Record<string, { x: number; y: number; label: string }> = {
   restricted_area: { x: BX,       y: (14 - 2.0) * S,  label: 'Zona Restringida'   },
   paint:           { x: BX,       y: (14 - 3.8) * S,  label: 'Pintura'            },
   mid_left:        { x: 3.2 * S,  y: (14 - 4.0) * S,  label: 'Media Izq.'         },
@@ -84,6 +84,8 @@ interface Props {
   rawShots?: ShotRawData[]
   /** The colours to draw with instead of the theme in use (the DOCX is printed on white paper whatever the screen shows, issue #717). */
   theme?: ChartTheme
+  /** Extra marks drawn over the court (a page's own bubbles); the coordinates are those of `ZONE_CENTERS`. */
+  children?: ReactNode
 }
 
 const LINE_W = 2
@@ -98,6 +100,7 @@ export default function FibaCourtSVG({
   vizMode = 'zones',
   rawShots,
   theme: given,
+  children,
 }: Props) {
   // Every colour is a token of the theme in use (issue #196): the court is the page's, light or dark, and an export copies what is drawn
   const screenTheme = useChartTheme()
@@ -272,6 +275,7 @@ export default function FibaCourtSVG({
           fill={theme.axis} fillOpacity={0.08} stroke={theme.axis} strokeOpacity={0.2} strokeWidth={1}
         />
       ))}
+      {children}
     </svg>
   )
 }
