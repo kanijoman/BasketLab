@@ -83,11 +83,11 @@ describe('PlayerStatsPage on the base components (issue #192)', () => {
   it('the stats of the trend panel are toggle buttons that say whether they are on, and pressing one turns it off and on', async () => {
     renderPage('/?from=2026-10-01')
     await chooseTeam()
-    const points = await screen.findByRole('button', { name: 'PTS' })
-    expect(points).toHaveAttribute('aria-pressed', 'true')                      // the three of the start are on
+    // the table has a sort button called «PTS» too (#777): the toggle is the one that says whether it is pressed
+    const points = await screen.findByRole('button', { name: 'PTS', pressed: true })       // the three of the start are on
     fireEvent.click(points)
-    expect(screen.getByRole('button', { name: 'PTS' })).toHaveAttribute('aria-pressed', 'false')
-    fireEvent.click(screen.getByRole('button', { name: 'PTS' }))
-    expect(screen.getByRole('button', { name: 'PTS' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'PTS', pressed: false })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'PTS', pressed: false }))
+    expect(screen.getByRole('button', { name: 'PTS', pressed: true })).toBeInTheDocument()
   })
 })
