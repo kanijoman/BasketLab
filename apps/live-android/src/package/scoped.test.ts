@@ -55,7 +55,7 @@ describe('decryptScoped', () => {
 
   it('tells a scoped file from a password one', () => {
     expect(isScoped(demo.package.file)).toBe(true)
-    expect(isScoped(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo.bpkg'), 'utf8'))).toBe(false)
+    expect(isScoped('{"v":1}')).toBe(false)
     expect(isScoped('not json')).toBe(false)
   })
 })

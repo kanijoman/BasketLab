@@ -444,20 +444,31 @@ describe('delay of the feed (issue #411)', () => {
 // Feedback 0.4.0 (#557): another match was loaded while the connection of the previous one was still running, so the feed kept serving Getafe - Cultural to the package of
 // Caja Rural - Xiria («el paquete corresponde a otro partido»). Whatever loads a package takes the connection down first, and what was being followed is kept (#556).
 describe('loading another package while connected (issue #557)', () => {
-  const bpkg = fs.readFileSync(path.join(import.meta.dirname, '../../../../tests/live_vectors/demo.bpkg'), 'utf8')
+  // the package comes from the published list, opened with the key of the open scope: no password
+  const scoped = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '../../../../tests/live_vectors/demo_scoped.json'), 'utf8'))
+  const publishedList = async () => {
+    const digest = await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(scoped.package.file))
+    const index = { v: 2, open_key: scoped.open_key, packages: [{
+      team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg', bytes: 100, wraps: scoped.package.wraps,
+      sha256: Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join(''),
+      match: { code: '2524470', start: '2026-10-10T17:00', round: 2, home: { id: '1008898', name: 'RECOLETAS ZAMORA' }, away: { id: '1008631', name: 'LEON' } },
+    }], rounds: [] }
+    return vi.fn(async (url: string) => {
+      const body = url.endsWith('index.json') ? JSON.stringify(index) : scoped.package.file
+      return { ok: true, status: 200, text: async () => body, json: async () => JSON.parse(body) }
+    })
+  }
 
   it('disconnects the match that was being followed, keeps it, and says so', async () => {
     vi.stubGlobal('crypto', webcrypto)
     const feb = new FakeFeb(pack)
     feb.at = 0
     const finishedStore = memoryFinishedStore()
-    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} />)
+    render(<App initialTab="partido" engine={fakeEngine()} loadDemo={loadDemo} store={memoryStore()} febHttp={feb.get} feedTiming={instant} finishedStore={finishedStore} remoteFetcher={await publishedList()} />)
     fireEvent.click(await screen.findByRole('button', { name: /conectar con feb/i }))
     await screen.findByText(/en directo/i)
     fireEvent.click(screen.getByRole('tab', { name: 'Partidos' }))
-    fireEvent.change(await screen.findByLabelText(/contraseña del paquete/i), { target: { value: 'clave-de-prueba-1' } })
-    fireEvent.change(screen.getByLabelText(/fichero del paquete/i), { target: { files: [new File([bpkg], 'live.bpkg')] } })
-    fireEvent.click(screen.getByRole('button', { name: /importar/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /^descargar$/i }))
     await waitFor(() => expect(screen.getByRole('tab', { name: 'Partido' }).getAttribute('aria-selected')).toBe('true'))
     expect(screen.queryByRole('button', { name: /desconectar/i })).toBeNull()                 // the old connection is gone
     expect(await screen.findByRole('button', { name: /conectar con feb/i })).toBeTruthy()      // the new package waits to be connected to its own match

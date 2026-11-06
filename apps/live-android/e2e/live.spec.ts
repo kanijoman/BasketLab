@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
@@ -72,25 +73,25 @@ test('the engine update stays fluid (well under a second per update on this mach
   expect(ms).toBeLessThan(1000)
 })
 
-test('importing an encrypted package in a real browser: WebCrypto + engine validation + persistence', async ({ page }) => {
-  const bpkg = fileURLToPath(new URL('../../../tests/live_vectors/demo.bpkg', import.meta.url))
+test('downloading a published package in a real browser, with no password: WebCrypto + engine validation + persistence', async ({ page }) => {
+  const demo = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../../../tests/live_vectors/demo_scoped.json', import.meta.url)), 'utf8'))
+  const sha256 = createHash('sha256').update(demo.package.file).digest('hex')
+  const index = {
+    v: 2, open_key: demo.open_key, rounds: [], packages: [{
+      team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg', sha256, bytes: demo.package.file.length, wraps: demo.package.wraps,
+      match: { code: '2524470', start: '2026-10-10T17:00', round: 2, home: { id: '1008898', name: 'RECOLETAS ZAMORA' }, away: { id: '1008631', name: 'LEON' } },
+    }],
+  }
+  await page.route('**/live-packages/**', route => (route.request().url().endsWith('index.json')
+    ? route.fulfill({ json: index }) : route.fulfill({ body: demo.package.file, contentType: 'application/json' })))
   await openApp(page)
   await expect(page.getByRole('button', { name: 'Reproducir' })).toBeVisible({ timeout: 90_000 })
 
-  // the import is in the Partidos tab (issue #224)
+  // the list is in the Partidos tab (issue #224); nothing asks for a password or a file
   await page.getByRole('tab', { name: 'Partidos' }).click()
-
-  // the import is a folded option with its steps (issue #338): unfold it
-  await page.getByText(/Importar un fichero \.bpkg/).click()
-
-  // wrong password first: a clear error and nothing stored
-  await page.getByLabel('Fichero del paquete (.bpkg)').setInputFiles(bpkg)
-  await page.getByLabel('Contraseña del paquete').fill('contraseña-incorrecta')
-  await page.getByRole('button', { name: 'Importar' }).click()
-  await expect(page.getByRole('alert')).toContainText('contraseña')
-
-  await page.getByLabel('Contraseña del paquete').fill('clave-de-prueba-1')
-  await page.getByRole('button', { name: 'Importar' }).click()
+  await expect(page.getByLabel(/contraseña/i)).toHaveCount(0)
+  await expect(page.locator('input[type="file"]')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Descargar', exact: true }).click()
   await expect(page.getByRole('tab', { name: 'Partido', exact: true })).toHaveAttribute('aria-selected', 'true', { timeout: 30_000 })
   await page.getByRole('tab', { name: 'Partidos' }).click()                 // loading a package takes the user to the match tab
   await expect(page.getByText(/partidos: 1 propios/)).toBeVisible({ timeout: 30_000 })   // the summary of the loaded package
