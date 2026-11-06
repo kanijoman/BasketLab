@@ -23,6 +23,7 @@ python tests/live_vectors/generate.py       # regenerar vectores live tras cambi
 python tests/local_vectors/generate.py      # regenerar los vectores de paridad de las tablas locales (#327) tras cambiar los pipelines de temporada o `games.py`
 cd tests/pyodide && npm ci && node run_vectors.mjs   # motor dentro de Pyodide
 ```
+**App live (`apps/live-android`)**: usa `npm run test:run`, no `npx vitest run` a pelo: el motor que prueban `bridge.test.ts` y los vectores es `public/engine/live_core.json`, **generado** (git-ignored) desde `src/live_core` por `npm run sync-engine`, que `test:run` lanza antes. Con un bundle viejo los vectores fallan con avisos «que faltan» que parecen un fallo del motor (#776); `engine/engineBundleFresh.test.ts` lo dice con su causa.
 Dependencias: `pip install -r requirements-dev.txt` (el servidor de la API usa solo `requirements.txt`). Tests con marker `ml` (`test_backtesting`, `test_game_prediction`, `test_player_prediction`, `test_predictive`, 2 de `test_regression_formulas`) se **saltan** solos sin `scikit-learn`; en CI corren. Frontend en Windows: si vitest no arranca por el binding de rolldown, `rm -rf frontend/node_modules && npm ci`.
 
 ## Mapa de tests (≈ 254 archivos, 4.746 tests backend, cobertura 84 % medida el 23/10/2026; frontend 23 archivos / 146 tests)
