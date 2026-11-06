@@ -149,6 +149,19 @@ describe('ConexionesPage', () => {
     await waitFor(() => expect(scrolled).toHaveBeenCalled())
   })
 
+  it('data published before the passer zones existed does not break the page: the passes show and the court says its data is on the way', async () => {
+    const old = { ...ANALYSIS, passers: ANALYSIS.passers.map(({ zones, without_zone, ...rest }) => ({ ...rest, to: rest.to.map(({ zones: _z, without_zone: _w, ...t }) => t) })) }
+    api.getAssistConnections.mockResolvedValue(old as never)
+    renderPage()
+    const passers = await screen.findByRole('region', { name: /Pasadores/i })
+    fireEvent.click(within(passers).getByText('BEA'))
+    const section = await screen.findByRole('region', { name: /como pasador/i })
+    expect(within(section).getByText('ANA')).toBeInTheDocument()
+    expect(within(section).getByText(/todavía no están publicadas las zonas/i)).toBeInTheDocument()
+    fireEvent.click(within(section).getByRole('button', { name: /^ANA/ }))
+    expect(within(section).getByText(/todavía no están publicadas las zonas/i)).toBeInTheDocument()
+  })
+
   it('a player who passes but never scored still opens, with his passes and a note for the scoring side', async () => {
     api.getAssistConnections.mockResolvedValue({ ...ANALYSIS, receivers: ANALYSIS.receivers.filter(r => r.player_id !== 'c') })
     renderPage()

@@ -8,8 +8,10 @@ import { pct, plural } from './format'
 export default function PasserSection({ passer }: { passer: Passer }) {
   const [targetId, setTargetId] = useState<string | null>(null)
   const target = passer.to.find(t => t.player_id === targetId) ?? null
-  const zones = target ? target.zones : passer.zones
-  const withoutZone = target ? target.without_zone : passer.without_zone
+  // a publication from before the zones of the passers existed has neither `zones` nor `without_zone`: the passes show and the court says its data is on the way
+  const published = (target ?? passer).zones !== undefined
+  const zones = (target ?? passer).zones ?? []
+  const withoutZone = (target ?? passer).without_zone ?? 0
   return (
     <section aria-label="Como pasador" className="space-y-3 border-t border-line pt-4">
       <h3 className="text-sm font-semibold text-ink">
@@ -28,7 +30,9 @@ export default function PasserSection({ passer }: { passer: Passer }) {
       </div>
       <div className="space-y-1">
         <h4 className="text-sm font-semibold text-ink">{target ? `Desde dónde anota ${target.name} con sus pases` : 'Desde dónde anotan los jugadores a los que asiste'}</h4>
-        <PassZoneCourt zones={zones} withoutZone={withoutZone} />
+        {published
+          ? <PassZoneCourt zones={zones} withoutZone={withoutZone} />
+          : <p className="text-sm text-ink-muted py-4">Todavía no están publicadas las zonas de los pases de esta competición: aparecerán con la próxima publicación de datos.</p>}
       </div>
     </section>
   )
