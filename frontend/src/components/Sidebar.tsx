@@ -9,7 +9,8 @@ import { NavLink, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IconButton } from '@/components/ui/Button'
-import { NAV_GROUPS, SUMMARY, type NavItem } from '@/lib/nav'
+import { SUMMARY, type NavItem } from '@/lib/nav'
+import { useVisibleNavGroups } from '@/lib/useVisibleNav'
 
 const STORAGE_KEY = 'sidebar-collapsed'
 
@@ -21,7 +22,8 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   )
 
 /** The groups of links; `compact` is the icons-only column, `onNavigate` lets the menu of the phone close itself. */
-function NavList({ base, compact = false, onNavigate }: { base: string; compact?: boolean; onNavigate?: () => void }) {
+function NavList({ base, collection, compact = false, onNavigate }: { base: string; collection: string; compact?: boolean; onNavigate?: () => void }) {
+  const groups = useVisibleNavGroups(collection)             // a page whose data is not published for this competition is not offered (#780)
   const link = (item: NavItem) => (
     <NavLink
       key={item.subPath}
@@ -38,7 +40,7 @@ function NavList({ base, compact = false, onNavigate }: { base: string; compact?
   return (
     <nav aria-label="Páginas de la competición" className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-2 py-3">
       <div>{link(SUMMARY)}</div>
-      {NAV_GROUPS.map(group => (
+      {groups.map(group => (
         <div key={group.label} className="space-y-0.5">
           {compact
             ? <div className="mx-2 border-t border-line" aria-hidden="true" />
@@ -64,7 +66,7 @@ export default function Sidebar() {
 
   return (
     <aside className={cn('flex h-full flex-col overflow-hidden border-r border-line bg-surface transition-[width] duration-200 ease-in-out', collapsed ? 'w-14' : 'w-56')}>
-      <NavList base={`/${encodeURIComponent(collection)}`} compact={collapsed} />
+      <NavList base={`/${encodeURIComponent(collection)}`} collection={collection} compact={collapsed} />
       <div className="border-t border-line px-2 pb-3 pt-2">
         <IconButton icon={collapsed ? ChevronRight : ChevronLeft} label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
           onClick={() => setCollapsed(c => !c)} className="w-full justify-center px-3 py-2" />
@@ -102,7 +104,7 @@ export function MobileNav({ open, onClose }: { open: boolean; onClose: () => voi
           <span className="text-sm font-semibold text-ink">Menú</span>
           <IconButton icon={X} label="Cerrar menú" onClick={onClose} />
         </div>
-        <NavList base={`/${encodeURIComponent(collection)}`} onNavigate={onClose} />
+        <NavList base={`/${encodeURIComponent(collection)}`} collection={collection} onNavigate={onClose} />
       </div>
     </div>
   )

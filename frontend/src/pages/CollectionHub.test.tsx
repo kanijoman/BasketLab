@@ -1,6 +1,9 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+const published = vi.hoisted(() => ({ publishedSectionsOf: vi.fn() }))
+vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), ...published }))
+
 import CollectionHub from './CollectionHub'
 import { CollectionProvider } from '@/context/CollectionContext'
 import * as client from '@/api/client'
@@ -15,6 +18,10 @@ function hub() {
     </MemoryRouter>)
 }
 
+beforeEach(() => {
+  localStorage.setItem('basketlab.data', 'local')
+  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(['rows']))
+})
 afterEach(() => vi.restoreAllMocks())
 
 // Issue #191 (U4): the summary of a competition is the cards of EVERY page, in the groups of the menu, each one a link.
@@ -24,8 +31,9 @@ describe('CollectionHub (issue #191)', () => {
     await screen.findByRole('heading', { level: 1 })
     for (const group of NAV_GROUPS) {
       const section = screen.getByRole('region', { name: group.label })
-      expect(within(section).getAllByRole('link')).toHaveLength(group.items.length)
-      for (const item of group.items) {
+      const offered = group.items.filter(item => !item.requires)                       // the pages that need a published section are not offered here (#780, below)
+      expect(within(section).getAllByRole('link')).toHaveLength(offered.length)
+      for (const item of offered) {
         expect(within(section).getByRole('link', { name: new RegExp(item.title ?? item.label) })).toHaveAttribute('href', `/LF2_2025_A/${item.subPath}`)
       }
     }
@@ -37,5 +45,21 @@ describe('CollectionHub (issue #191)', () => {
     for (const page of ['pbp', 'multiphase', 'matches', 'rotaciones']) {
       expect(document.querySelector(`a[href="/LF2_2025_A/${page}"]`), page).not.toBeNull()
     }
+  })
+})
+
+// Issue #780: the card of a page that needs a section of the publication appears only when the competition has it.
+describe('CollectionHub: pages that need published data (issue #780)', () => {
+  it('has no card for Conexiones while the competition has not the section published', async () => {
+    hub()
+    await screen.findByRole('heading', { level: 1 })
+    await vi.waitFor(() => expect(published.publishedSectionsOf).toHaveBeenCalledWith('LF2_2025_A'))
+    expect(document.querySelector('a[href="/LF2_2025_A/conexiones"]')).toBeNull()
+  })
+
+  it('has it once the publication has the section', async () => {
+    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'assist_connections']))
+    hub()
+    expect(await screen.findByRole('link', { name: /Conexiones de asistencia/ })).toHaveAttribute('href', '/LF2_2025_A/conexiones')
   })
 })

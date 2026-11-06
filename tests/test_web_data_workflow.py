@@ -35,3 +35,33 @@ def test_the_build_reads_the_ephemeral_mongo_and_never_atlas():
 def test_the_ephemeral_mongo_is_a_service_container_and_the_build_reads_it():
     assert WORKFLOW["jobs"]["publish"]["services"]["mongo"]["image"].startswith("mongo:")
     assert WORKFLOW["jobs"]["publish"]["env"]["EPHEMERAL_MONGO"] == "mongodb://localhost:27017"      # the action restores into the default of its `mongo-uri`
+
+
+# ---- issue #781: a change that shapes the published files publishes them when it is merged, not when somebody remembers --------
+def _triggers():
+    return WORKFLOW.get("on") or WORKFLOW.get(True)               # YAML 1.1 reads the key `on` as True
+
+
+def test_a_push_to_main_publishes_when_the_code_that_shapes_the_files_changes():
+    push = _triggers()["push"]
+    assert push["branches"] == ["main"]
+    paths = push["paths"]
+    assert "src/**" in paths and "run_web_data.py" in paths and "config/competitions.json" in paths
+    assert "!src/api/**" in paths, "the routers do not shape a published file (build_cache._OUT_OF_THE_BUILD): changing one must not rebuild everything"
+
+
+def test_the_push_trigger_does_not_fire_for_the_web_or_the_docs():
+    paths = _triggers()["push"]["paths"]
+    assert not [p for p in paths if p.startswith(("frontend", "docs", "apps", "tests"))]
+
+
+def test_the_paths_of_the_push_are_the_ones_that_change_the_code_version_of_the_build_cache():
+    """If a new source folder joined the fingerprint (``build_cache.code_version``), the push trigger must follow."""
+    from src.local_data.build_cache import _OUT_OF_THE_BUILD
+
+    assert {p[1:].split("/")[1] for p in _triggers()["push"]["paths"] if p.startswith("!src/")} == set(_OUT_OF_THE_BUILD)
+
+
+def test_a_push_run_publishes_like_a_manual_one_and_runs_one_at_a_time():
+    assert STEPS["Build the artifacts"]["if"] == "github.event_name != 'pull_request'"      # push is not a pull request: it builds and publishes
+    assert WORKFLOW["concurrency"] == {"group": "web-data", "cancel-in-progress": False}
