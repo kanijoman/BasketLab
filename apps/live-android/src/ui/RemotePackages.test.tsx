@@ -9,11 +9,12 @@ import type { PackageStore, StoredPackage } from '../package/storage'
 import type { EngineApi } from '../engine/client'
 import { PACKAGES_BASE_URL } from '../package/remote'
 
+// The packages open with the key of the scope the index publishes: nobody types a password (the password of the packages was removed).
 const repoRoot = path.resolve(import.meta.dirname, '../../../..')
-const fixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo.bpkg'), 'utf8')
+const demo = JSON.parse(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo_scoped.json'), 'utf8'))
+const fixture: string = demo.package.file
 const demoPackage: string = JSON.parse(fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/vectors.json'), 'utf8')).engine.package
-const PASS = 'clave-de-prueba-1'
-const PASS_KEY = 'basketlab-live-passphrase'
+const OLD_PASS_KEY = 'basketlab-live-passphrase'
 
 async function sha(text: string) {
   const buf = await webcrypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
@@ -32,12 +33,12 @@ function memoryStore(): PackageStore & { saved: StoredPackage | null } {
 const META = { team: { id: '1', name: 'A' }, rival: { id: '2', name: 'B' } }
 const engine = () => ({ start: vi.fn().mockResolvedValue(META) }) as unknown as EngineApi & { start: ReturnType<typeof vi.fn> }
 
-async function fetcher(over: { sha?: string } = {}) {
+async function fetcher(over: { sha?: string; legacy?: boolean } = {}) {
   const index = {
-    v: 1, generated_at: '2026-10-09T11:42:25+00:00',
+    v: over.legacy ? 1 : 2, generated_at: '2026-10-09T11:42:25+00:00', ...(over.legacy ? {} : { open_key: demo.open_key }),
     packages: [{
       team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg',
-      sha256: over.sha ?? (await sha(fixture)), bytes: 100,
+      sha256: over.sha ?? (await sha(fixture)), bytes: 100, ...(over.legacy ? {} : { wraps: demo.package.wraps }),
       match: { code: '2524470', start: '2026-10-10T17:00', round: 2, home: { id: '1008898', name: 'RECOLETAS ZAMORA' }, away: { id: '1008631', name: 'LEON' } },
     }],
   }
@@ -64,7 +65,6 @@ describe('RemotePackages: feedback of the download (issue #342)', () => {
   it('says the match is loaded and turns its button into «Ya disponible», disabled', async () => {
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
     await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
     download()
     const done = await screen.findByRole('status')
     expect(done.textContent).toMatch(/descargado/i)
@@ -85,16 +85,6 @@ describe('RemotePackages: feedback of the download (issue #342)', () => {
     await screen.findByText(/RECOLETAS ZAMORA/)
     expect(screen.queryByRole('button', { name: /ya disponible/i })).toBeNull()
   })
-
-  it('a failed download says nothing is available and keeps the button', async () => {
-    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
-    await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
-    download()
-    await screen.findByRole('alert')
-    expect(screen.queryByRole('status')).toBeNull()
-    expect(screen.queryByRole('button', { name: /ya disponible/i })).toBeNull()
-  })
 })
 
 describe('RemotePackages', () => {
@@ -104,71 +94,39 @@ describe('RemotePackages', () => {
     expect(screen.getByText(/10\/10\/2026/)).toBeTruthy()
   })
 
-  it('marks the list and the password field with the classes the styles use (issue #210)', async () => {
+  it('marks the list with the classes the styles use (issue #210)', async () => {
     const { container } = render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
     await screen.findByText(/RECOLETAS ZAMORA/)
     expect(container.querySelector('ul.remote-packages > li > span')).toBeTruthy()
     expect(container.querySelector('ul.remote-packages > li > button')).toBeTruthy()
-    expect(container.querySelector('label.remote-packages-pass input[type="password"]')).toBeTruthy()
   })
 
-  it('a wrong password says how many characters were typed, so a missing letter or a stray space shows (issue #337)', async () => {
-    const store = memoryStore()
-    render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await fetcher()} />)
-    await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
-    download()
-    const alert = await screen.findByRole('alert')
-    expect(alert.textContent).toMatch(/contraseña/i)
-    expect(alert.textContent).toMatch(/escribiste 19 caracteres/i)
-    expect(store.saved).toBeNull()
-  })
-
-  it('has a button to see the password and tolerates the spaces of a keyboard', async () => {
-    const store = memoryStore()
-    const onLoaded = vi.fn()
-    render(<RemotePackages engine={engine()} store={store} onLoaded={onLoaded} fetcher={await fetcher()} />)
-    await screen.findByText(/RECOLETAS ZAMORA/)
-    expect(screen.getByRole('button', { name: /mostrar contraseña/i })).toBeTruthy()
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: ` ${PASS} ` } })
-    download()
-    await waitFor(() => expect(onLoaded).toHaveBeenCalled())
-  })
-
-  it('downloads, decrypts, installs and remembers the password', async () => {
+  it('downloads, decrypts and installs with no password anywhere on the screen', async () => {
     const store = memoryStore()
     const eng = engine()
     const onLoaded = vi.fn()
     const f = await fetcher()
-    render(<RemotePackages engine={eng} store={store} onLoaded={onLoaded} fetcher={f} />)
+    const { container } = render(<RemotePackages engine={eng} store={store} onLoaded={onLoaded} fetcher={f} />)
     await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
+    expect(screen.queryByLabelText(/contraseña/i)).toBeNull()
+    expect(container.querySelector('input[type="password"]')).toBeNull()
     download()
     await waitFor(() => expect(onLoaded).toHaveBeenCalled())
     expect(f).toHaveBeenCalledWith(`${PACKAGES_BASE_URL}/1008631/1008898.bpkg`, expect.anything())
     expect(eng.start).toHaveBeenCalledWith(demoPackage)
     expect(store.saved?.plaintext).toBe(demoPackage)
-    expect(localStorage.getItem(PASS_KEY)).toBe(PASS)
+    expect(localStorage.getItem(OLD_PASS_KEY)).toBeNull()
   })
 
-  it('uses the remembered password without asking again', async () => {
-    localStorage.setItem(PASS_KEY, PASS)
-    const onLoaded = vi.fn()
-    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={onLoaded} fetcher={await fetcher()} />)
-    await screen.findByText(/RECOLETAS ZAMORA/)
-    download()
-    await waitFor(() => expect(onLoaded).toHaveBeenCalled())
-  })
-
-  it('a wrong password shows an error and neither installs nor remembers it', async () => {
+  it('a package of an old publication (sealed with a password) is not offered: the screen says to wait for the new one, with no password field', async () => {
     const store = memoryStore()
-    render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await fetcher()} />)
+    const { container } = render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await fetcher({ legacy: true })} />)
     await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'incorrecta-123' } })
-    download()
-    expect(await screen.findByText(/contraseña/i, { selector: '[role="alert"]' })).toBeTruthy()
+    expect((screen.getByRole('button', { name: /^descargar$/i }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText(/formato antiguo/i)).toBeTruthy()
+    expect(screen.queryByLabelText(/contraseña/i)).toBeNull()
+    expect(container.querySelector('input[type="password"]')).toBeNull()
     expect(store.saved).toBeNull()
-    expect(localStorage.getItem(PASS_KEY)).toBeNull()
   })
 
   it('offline: says so and keeps the installed package untouched', async () => {
@@ -183,7 +141,6 @@ describe('RemotePackages', () => {
     const store = memoryStore()
     render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await fetcher({ sha: 'deadbeef' })} />)
     await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
     download()
     expect(await screen.findByText(/no coincide/i, { selector: '[role="alert"]' })).toBeTruthy()
     expect(store.saved).toBeNull()
@@ -196,23 +153,32 @@ describe('RemotePackages', () => {
   })
 })
 
-describe('RemotePackages help (issue #225)', () => {
-  it('explains where the password of the published packages comes from', async () => {
-    render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await fetcher()} />)
-    await screen.findByText(/RECOLETAS ZAMORA/)
-    fireEvent.click(screen.getByRole('button', { name: /ayuda sobre los paquetes publicados/i }))
-    const text = screen.getByRole('note').textContent ?? ''
-    expect(text).toMatch(/van cifrados/i)
-    expect(text).toMatch(/PACKAGE_PASSWORD/)
-    expect(text).toMatch(/queda guardada en este dispositivo/i)
-  })
-})
-
 // --- the whole round of every competition (issues #286, #172) ---------------------------------------------------------------------
 
-const roundFixture = fs.readFileSync(path.join(repoRoot, 'tests/live_vectors/demo_round.bpkgz'), 'utf8')
+const b64 = (bytes: ArrayBuffer | Uint8Array) => Buffer.from(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)).toString('base64')
+
+/** Seals a text by scope as the publisher does (src/live_prep/package_scopes.py): a random key for the file, wrapped with the key of the open scope. */
+async function sealOpen(plaintext: string) {
+  const subtle = webcrypto.subtle
+  const cek = webcrypto.getRandomValues(new Uint8Array(32))
+  const iv = webcrypto.getRandomValues(new Uint8Array(12))
+  const wrapIv = webcrypto.getRandomValues(new Uint8Array(12))
+  const body = await subtle.encrypt({ name: 'AES-GCM', iv }, await subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']), new TextEncoder().encode(plaintext))
+  const openKey = await subtle.importKey('raw', Buffer.from(demo.open_key, 'base64'), 'AES-GCM', false, ['encrypt'])
+  const wrapped = await subtle.encrypt({ name: 'AES-GCM', iv: wrapIv, additionalData: new TextEncoder().encode('abierto') }, openKey, cek)
+  return { file: JSON.stringify({ v: 2, alg: 'AES-256-GCM', iv: b64(iv), ciphertext: b64(body) }), wraps: [{ scope: 'abierto', iv: b64(wrapIv), key: b64(wrapped) }] }
+}
+
+/** The bundle of a round: every match once per team, each with the demo package. */
+async function sealedRound() {
+  const rows = (code: string, a: string, b: string) => [a, b].map(own => ({ match: { code }, own_id: own, rival_id: own === a ? b : a, is_club: false, package: demoPackage }))
+  const plain = JSON.stringify({ v: 1, collection: 'DEMO_2026', round: 4, matches: [...rows('101', '11', '12'), ...rows('102', '1008631', '1008898'), ...rows('103', '31', '32')] })
+  const sealed = await sealOpen(plain)
+  return { ...sealed, sha: await sha(sealed.file) }
+}
 
 async function roundFetcher(over: { club?: boolean; withPackage?: boolean } = {}) {
+  const round = await sealedRound()
   const side = (id: string, name: string) => ({ id, name })
   const matches = [
     { code: '101', start: '2027-10-17T12:00', home: side('11', 'EQ 11'), away: side('12', 'EQ 12'), own_id: '11', own_ids: ['11', '12'], is_club: false },
@@ -220,17 +186,17 @@ async function roundFetcher(over: { club?: boolean; withPackage?: boolean } = {}
     { code: '103', start: '2027-10-17T19:00', home: side('31', 'EQ 31'), away: side('32', 'EQ 32'), own_id: '31', own_ids: ['31', '32'], is_club: false },
   ]
   const index = {
-    v: 1, club_team_id: '1008631', packages: over.withPackage ? [{
-      team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg', sha256: 'x', bytes: 100,
+    v: 2, open_key: demo.open_key, club_team_id: '1008631', packages: over.withPackage ? [{
+      team_id: '1008631', rival_id: '1008898', rival: 'RECOLETAS ZAMORA', file: '1008631/1008898.bpkg', sha256: 'x', bytes: 100, wraps: demo.package.wraps,
       match: { code: '102', start: '2027-10-17T17:00', round: 2, home: side('1008631', 'LEON'), away: side('1008898', 'RECOLETAS ZAMORA') },
     }] : [], rounds: [
-      { collection: 'OTRA_COMPETICION_2026', round: 2, file: 'rounds/OTRA__r2.bpkgz', sha256: 'x', bytes: 1000, club: false,
+      { collection: 'OTRA_COMPETICION_2026', round: 2, file: 'rounds/OTRA__r2.bpkgz', sha256: 'x', bytes: 1000, club: false, wraps: round.wraps,
         matches: [{ code: '900', start: '2027-10-17T10:00', home: side('91', 'LOCAL 91'), away: side('92', 'VISIT 92'), own_id: '91', is_club: false }] },
-      { collection: 'DEMO_2026', round: 4, file: 'rounds/DEMO__r4.bpkgz', sha256: await sha(roundFixture), bytes: 70000, club: over.club ?? true, matches },
+      { collection: 'DEMO_2026', round: 4, file: 'rounds/DEMO__r4.bpkgz', sha256: round.sha, bytes: 70000, club: over.club ?? true, wraps: round.wraps, matches },
     ],
   }
   return vi.fn(async (url: string) => {
-    const body = url.endsWith('index.json') ? JSON.stringify(index) : roundFixture
+    const body = url.endsWith('index.json') ? JSON.stringify(index) : round.file
     return { ok: true, status: 200, text: async () => body, json: async () => JSON.parse(body) }
   })
 }
@@ -256,14 +222,14 @@ describe('RemotePackages: the round of every competition', () => {
     expect(container.querySelectorAll('li.round-match[data-code="900"] .round-sides button')).toHaveLength(1)
   })
 
-  it('downloads the bundle once, decrypts it once and installs the package of the chosen match', async () => {
+  it('downloads the bundle once, decrypts it once and installs the package of the chosen match, with no password', async () => {
     const store = memoryStore()
     const eng = engine()
     const onLoaded = vi.fn()
     const f = await roundFetcher()
     render(<RemotePackages engine={eng} store={store} onLoaded={onLoaded} fetcher={f} />)
     await screen.findAllByText(/EQ 31/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
+    expect(screen.queryByLabelText(/contraseña/i)).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
     await waitFor(() => expect(onLoaded).toHaveBeenCalledTimes(1))
     expect(eng.start).toHaveBeenCalledWith(demoPackage)
@@ -271,17 +237,7 @@ describe('RemotePackages: the round of every competition', () => {
     fireEvent.click(screen.getByRole('button', { name: /descargar EQ 11 contra EQ 12 como EQ 12/i }))
     await waitFor(() => expect(onLoaded).toHaveBeenCalledTimes(2))
     expect(f.mock.calls.filter(c => String(c[0]).endsWith('.bpkgz'))).toHaveLength(1)     // the bundle is not downloaded twice
-    expect(localStorage.getItem(PASS_KEY)).toBe(PASS)
-  })
-
-  it('a wrong password says so and installs nothing', async () => {
-    const store = memoryStore()
-    render(<RemotePackages engine={engine()} store={store} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
-    await screen.findAllByText(/EQ 31/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'otra-clave-distinta' } })
-    fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/contraseña/i)
-    expect(store.saved).toBeNull()
+    expect(localStorage.getItem(OLD_PASS_KEY)).toBeNull()
   })
 
   it('an index without rounds shows only the club packages, as before', async () => {
@@ -295,7 +251,6 @@ describe('RemotePackages: feedback of a round download (issue #342)', () => {
   it('only the side that was downloaded is «Ya disponible»; the other side of the match can still be followed', async () => {
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} />)
     await screen.findAllByText(/EQ 31/)
-    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: PASS } })
     fireEvent.click(screen.getByRole('button', { name: /descargar EQ 31 contra EQ 32 como EQ 31/i }))
     expect((await screen.findByRole('status')).textContent).toMatch(/descargado/i)
     const done = screen.getByRole('button', { name: /EQ 31 contra EQ 32 como EQ 31/i }) as HTMLButtonElement
@@ -307,7 +262,6 @@ describe('RemotePackages: feedback of a round download (issue #342)', () => {
   })
 
   it('a loaded package of a round match shows its side as available from the start', async () => {
-    localStorage.setItem(PASS_KEY, PASS)
     render(<RemotePackages engine={engine()} store={memoryStore()} onLoaded={vi.fn()} fetcher={await roundFetcher()} loaded={loadedSummary('103', '32')} />)
     await screen.findAllByText(/EQ 31/)
     expect((screen.getByRole('button', { name: /EQ 31 contra EQ 32 como EQ 32/i }) as HTMLButtonElement).textContent).toMatch(/ya disponible/i)

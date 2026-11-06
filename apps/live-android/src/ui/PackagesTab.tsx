@@ -45,7 +45,7 @@ export default function PackagesTab({ engine, store, loaded, onLoaded, onRemoved
       {kind === 'live' && (
         <>
           <RemotePackages engine={engine} store={store} onLoaded={onLoaded} fetcher={fetcher} loaded={loaded} viewing={viewing} onOpenLoaded={onOpenLoaded} />
-          <PackagePanel engine={engine} store={store} loaded={loaded} onLoaded={onLoaded} onRemoved={onRemoved} viewing={viewing} onOpenLoaded={onOpenLoaded} />
+          <PackagePanel store={store} loaded={loaded} onRemoved={onRemoved} viewing={viewing} onOpenLoaded={onOpenLoaded} />
         </>
       )}
       {kind === 'demo' && demos}

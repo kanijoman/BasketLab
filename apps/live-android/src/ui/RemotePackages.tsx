@@ -1,11 +1,8 @@
 /** Packages published by BasketLab for the next matches: list, download, decrypt and install (issues #175, #410). */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { EngineApi } from '../engine/client'
-import { decryptPackage, decryptScoped, isScoped, type Wrap } from '../package/crypto'
+import { decryptScoped, failureText, isScoped, type Wrap } from '../package/crypto'
 import { installPackage } from '../package/install'
-import HelpHint from './HelpHint'
-import { failureText, loadPassphrase, savePassphrase } from '../package/passphrase'
-import PasswordField from './PasswordField'
 import { fetchIndex, fetchPackageText, fetchRoundText, parseRoundBundle, pickPackage, type Fetcher, type PackageIndexEntry, type RoundBundle, type RoundIndexEntry, type RoundMatch } from '../package/remote'
 import { RIGHTS_EVENT, addRight, loadRights, parseInvite, scopeKeys } from '../package/rights'
 import RoundPackages from './RoundPackages'
@@ -23,6 +20,9 @@ interface Props {
   viewing?: boolean
   onOpenLoaded?: () => void
 }
+
+/** A publication from before the access by scope: sealed with a password the app no longer asks for. */
+const OLD_FORMAT = 'Estos partidos están en un formato antiguo (con contraseña). Espera a la próxima publicación y pulsa «Actualizar lista».'
 
 function when(entry: PackageIndexEntry): string {
   const start = entry.match.start
@@ -47,16 +47,18 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
   const [rights, setRights] = useState(() => loadRights())
   const [invite, setInvite] = useState('')
   const bundles = useRef(new Map<string, RoundBundle>())   // a bundle is downloaded and decrypted once, however many of its matches are used
-  const [pass, setPass] = useState(loadPassphrase)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   // what was just downloaded: the message and which match and side it was (issue #342)
   const [got, setGot] = useState<{ code: string; ownId: string; text: string } | null>(null)
 
   const keys = useMemo(() => scopeKeys({ open_key: openKey }, rights), [openKey, rights])
-  /** Sealed by scope (issue #410): the right of the device decides. Without `wraps` it is the old password. */
-  const canOpen = useCallback((wraps?: Wrap[]) => (wraps ? wraps.some(w => keys.some(k => k.scope === w.scope)) : !!pass), [keys, pass])
-  const open = (text: string, wraps?: Wrap[]) => (isScoped(text) ? decryptScoped(text, wraps ?? [], keys) : decryptPackage(text, pass))
+  /** Sealed by scope (issue #410): the right of the device decides. Without `wraps` it is the old password format, which is not offered. */
+  const canOpen = useCallback((wraps?: Wrap[]) => (wraps ? wraps.some(w => keys.some(k => k.scope === w.scope)) : false), [keys])
+  const open = (text: string, wraps?: Wrap[]) => {
+    if (!isScoped(text)) throw new Error(OLD_FORMAT)
+    return decryptScoped(text, wraps ?? [], keys)
+  }
 
   useEffect(() => {
     const reload = () => setRights(loadRights())
@@ -93,11 +95,10 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
       const text = await fetchPackageText(entry, fetcher)
       const plaintext = await open(text, entry.wraps)
       const summary = await installPackage(engine, store, plaintext)
-      if (!isScoped(text)) savePassphrase(pass) // only once it is known to be right
       setGot({ code: entry.match.code, ownId: entry.team_id, text: `${summary.team} contra ${summary.rival}` })
       onLoaded(summary)
     } catch (e) {
-      setError(failureText(e, pass))
+      setError(failureText(e))
     } finally {
       setBusy(null)
     }
@@ -109,21 +110,18 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
     setGot(null)
     try {
       let bundle = bundles.current.get(round.file)
-      let sealed = false
       if (!bundle) {
         const text = await fetchRoundText(round, fetcher)
-        sealed = isScoped(text)
         bundle = parseRoundBundle(await open(text, round.wraps))
         bundles.current.set(round.file, bundle)
       }
       const text = pickPackage(bundle, match.code, ownId)
       if (!text) throw new Error('El partido ya no está en la jornada publicada. Actualiza la lista.')
       const summary = await installPackage(engine, store, text)
-      if (!sealed) savePassphrase(pass)
       setGot({ code: match.code, ownId, text: `${summary.team} contra ${summary.rival}` })
       onLoaded(summary)
     } catch (e) {
-      setError(failureText(e, pass))
+      setError(failureText(e))
     } finally {
       setBusy(null)
     }
@@ -151,15 +149,7 @@ export default function RemotePackages({ engine, store, onLoaded, fetcher, loade
       {entries?.length === 0 && rounds.length === 0 && <p className="detail">No hay partidos publicados todavía.</p>}
       {anything && (
         <>
-          {withPassword && (
-            <>
-              <PasswordField className="remote-packages-pass" label="Contraseña de los paquetes publicados" value={pass} onChange={setPass} />
-              <HelpHint label="Ayuda sobre los paquetes publicados">
-                Los paquetes publicados van cifrados. Es la contraseña que fijó quien los genera (BasketLab → Preparación live o el
-                secreto PACKAGE_PASSWORD). Se escribe una vez y queda guardada en este dispositivo.
-              </HelpHint>
-            </>
-          )}
+          {withPassword && <p className="detail">{OLD_FORMAT}</p>}
           {sealed && (
             <>
               {hasOpen
