@@ -30,8 +30,12 @@ const ANALYSIS: AssistConnections = {
     receiver('d', 'DORA', { unassisted: 2, fgm: 2, points: 4 }),
   ],
   passers: [
-    { player_id: 'b', name: 'BEA', assists: 8, share_pct: 80, to: [{ player_id: 'a', name: 'ANA', count: 4 }, { player_id: 'c', name: 'CLARA', count: 4 }] },
-    { player_id: 'c', name: 'CLARA', assists: 2, share_pct: 20, to: [{ player_id: 'a', name: 'ANA', count: 2 }] },
+    { player_id: 'b', name: 'BEA', assists: 8, share_pct: 80, without_zone: 1,
+      zones: [{ zone: 'paint', count: 5 }, { zone: 'top_three', count: 2 }],
+      to: [{ player_id: 'a', name: 'ANA', count: 4, without_zone: 0, zones: [{ zone: 'paint', count: 3 }, { zone: 'top_three', count: 1 }] },
+           { player_id: 'c', name: 'CLARA', count: 4, without_zone: 1, zones: [{ zone: 'paint', count: 2 }, { zone: 'top_three', count: 1 }] }] },
+    { player_id: 'c', name: 'CLARA', assists: 2, share_pct: 20, without_zone: 0, zones: [{ zone: 'paint', count: 2 }],
+      to: [{ player_id: 'a', name: 'ANA', count: 2, without_zone: 0, zones: [{ zone: 'paint', count: 2 }] }] },
   ],
 }
 
@@ -98,7 +102,73 @@ describe('ConexionesPage', () => {
     await screen.findAllByTestId('receiver-name')
     fireEvent.change(screen.getByLabelText('Jugador'), { target: { value: 'c' } })
     const detail = await screen.findByRole('region', { name: /CLARA/ })
-    expect(within(detail).getByText(/da 2 asistencias/i)).toBeInTheDocument()
+    expect(within(detail).getByRole('region', { name: /como pasador/i })).toBeInTheDocument()
+  })
+
+  it('given a passer, shows who he passes to and from where they score, on a court of his own', async () => {
+    const { container } = renderPage()
+    const passers = await screen.findByRole('region', { name: /Pasadores/i })
+    fireEvent.click(within(passers).getByText('BEA'))
+    const section = await screen.findByRole('region', { name: /como pasador/i })
+    expect(within(section).getByText('ANA')).toBeInTheDocument()                           // who he passes to
+    expect(within(section).getByText('CLARA')).toBeInTheDocument()
+    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('5')    // from where his receivers score
+    expect(container.querySelector('[data-pass-zone="top_three"]')!.textContent).toContain('2')
+  })
+
+  it('one of the players he passes to can be looked at alone: the court shows only the zones of those assists, and «Todos» goes back', async () => {
+    const { container } = renderPage()
+    const passers = await screen.findByRole('region', { name: /Pasadores/i })
+    fireEvent.click(within(passers).getByText('BEA'))
+    const section = await screen.findByRole('region', { name: /como pasador/i })
+    fireEvent.click(within(section).getByRole('button', { name: /^ANA/ }))
+    expect(within(section).getByRole('button', { name: /^ANA/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('3')    // 3 of his 4 to ANA end in the paint
+    fireEvent.click(within(section).getByRole('button', { name: /todos/i }))
+    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('5')
+  })
+
+  it('the player filter opens the same passer section, and a player who is only a receiver has none', async () => {
+    renderPage()
+    await screen.findAllByTestId('receiver-name')
+    fireEvent.change(screen.getByLabelText('Jugador'), { target: { value: 'b' } })
+    expect(await screen.findByRole('region', { name: /como pasador/i })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Jugador'), { target: { value: 'd' } })
+    await screen.findByRole('region', { name: /Detalle de DORA/ })
+    expect(screen.queryByRole('region', { name: /como pasador/i })).toBeNull()
+  })
+
+  it('pressing a passer of the table brings the detail into view and the table says that it can be pressed (it was not found)', async () => {
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled
+    renderPage()
+    const passers = await screen.findByRole('region', { name: /Pasadores/i })
+    expect(within(passers).getByText(/pulsa un pasador/i)).toBeInTheDocument()
+    fireEvent.click(within(passers).getByText('BEA'))
+    await screen.findByRole('region', { name: /como pasador/i })
+    await waitFor(() => expect(scrolled).toHaveBeenCalled())
+  })
+
+  it('data published before the passer zones existed does not break the page: the passes show and the court says its data is on the way', async () => {
+    const old = { ...ANALYSIS, passers: ANALYSIS.passers.map(({ zones: _zones, without_zone: _without, ...rest }) => ({ ...rest, to: rest.to.map(({ zones: _z, without_zone: _w, ...t }) => t) })) }
+    api.getAssistConnections.mockResolvedValue(old as never)
+    renderPage()
+    const passers = await screen.findByRole('region', { name: /Pasadores/i })
+    fireEvent.click(within(passers).getByText('BEA'))
+    const section = await screen.findByRole('region', { name: /como pasador/i })
+    expect(within(section).getByText('ANA')).toBeInTheDocument()
+    expect(within(section).getByText(/todavía no están publicadas las zonas/i)).toBeInTheDocument()
+    fireEvent.click(within(section).getByRole('button', { name: /^ANA/ }))
+    expect(within(section).getByText(/todavía no están publicadas las zonas/i)).toBeInTheDocument()
+  })
+
+  it('a player who passes but never scored still opens, with his passes and a note for the scoring side', async () => {
+    api.getAssistConnections.mockResolvedValue({ ...ANALYSIS, receivers: ANALYSIS.receivers.filter(r => r.player_id !== 'c') })
+    renderPage()
+    await screen.findAllByTestId('receiver-name')
+    fireEvent.change(screen.getByLabelText('Jugador'), { target: { value: 'c' } })
+    expect(await screen.findByRole('region', { name: /como pasador/i })).toBeInTheDocument()
+    expect(screen.getByText(/no figura entre los anotadores/i)).toBeInTheDocument()
   })
 
   it('a receiver with no assisted basket still opens, saying so instead of drawing an empty court', async () => {

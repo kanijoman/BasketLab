@@ -29,6 +29,11 @@ def _ranked(counter: Counter, names: Dict[str, str]) -> List[Dict[str, Any]]:
     return [{"player_id": pid, "name": names.get(pid, pid), "count": n} for pid, n in rows]
 
 
+def _pass_zones(zones: Counter) -> List[Dict[str, Any]]:
+    """The zones of the baskets a passer created (``None`` is the basket whose zone is unknown: it is counted apart, not here)."""
+    return [{"zone": zone, "count": n} for zone, n in sorted(((z, n) for z, n in zones.items() if z is not None), key=lambda kv: (-kv[1], kv[0]))]
+
+
 def _zone_rows(zones: Dict[str, Counter]) -> List[Dict[str, Any]]:
     rows = []
     for zone, c in zones.items():
@@ -44,6 +49,8 @@ def aggregate(games: Iterable[GameLinks], team_id: str, player_id: Optional[str]
     unlinked = 0
     by_scorer: Dict[str, Dict[str, Any]] = {}
     passes: Dict[str, Counter] = {}
+    pass_zones: Dict[str, Counter] = {}                 # passer -> zone of the basket he created (None: unknown)
+    pair_zones: Dict[Any, Counter] = {}                 # (passer, scorer) -> the same, for one receiver
     for links in games:
         names.update(links.names)
         lost = sum(1 for t in links.unlinked_team_ids if t == str(team_id))
@@ -66,6 +73,8 @@ def aggregate(games: Iterable[GameLinks], team_id: str, player_id: Optional[str]
             if b["passer"]:
                 row["from"][b["passer"]] += 1
                 passes.setdefault(b["passer"], Counter())[b["scorer"]] += 1
+                pass_zones.setdefault(b["passer"], Counter())[b["zone"]] += 1
+                pair_zones.setdefault((b["passer"], b["scorer"]), Counter())[b["zone"]] += 1
         count += played                         # the games of THIS team: a competition is read once for all of its teams
     assisted_total = sum(r["assisted"] for r in by_scorer.values())
     receivers = [{
@@ -76,7 +85,8 @@ def aggregate(games: Iterable[GameLinks], team_id: str, player_id: Optional[str]
     } for pid, r in by_scorer.items()]
     receivers.sort(key=lambda r: (-r["received"], -r["fgm"], r["player_id"]))
     passers = [{"player_id": pid, "name": names.get(pid, pid), "assists": sum(c.values()), "share_pct": _pct(sum(c.values()), assisted_total) or 0.0,
-                "to": _ranked(c, names)} for pid, c in passes.items()]
+                "to": [{**link, "zones": _pass_zones(pair_zones[(pid, link["player_id"])]), "without_zone": pair_zones[(pid, link["player_id"])][None]} for link in _ranked(c, names)],
+                "zones": _pass_zones(pass_zones[pid]), "without_zone": pass_zones[pid][None]} for pid, c in passes.items()]
     passers.sort(key=lambda p: (-p["assists"], p["player_id"]))
     result: Dict[str, Any] = {
         "team_id": str(team_id), "games": count, "assisted_baskets": assisted_total,

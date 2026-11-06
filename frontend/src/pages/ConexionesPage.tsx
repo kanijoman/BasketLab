@@ -1,5 +1,5 @@
 /** Conexiones de asistencia (issue #773): who passes, who receives and from which zones the receiver scores, assisted against not assisted. FEB and FBCYL. */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAssistConnections, type AssistConnections } from '@/api/assistConnections'
 import { getTeamStats } from '@/api/client'
@@ -25,6 +25,7 @@ export default function ConexionesPage() {
   const { collection } = useCollection()
   const [teamId, setTeamId] = useState<string | null>(null)
   const [playerId, setPlayerId] = useState<string | null>(null)
+  const detailRef = useRef<HTMLDivElement>(null)
 
   const { data: teamData } = useQuery({
     queryKey: ['team-list-conexiones', collection?.name],
@@ -46,6 +47,9 @@ export default function ConexionesPage() {
     staleTime: 10 * 60_000,
     retry: false,
   })
+
+  // a player chosen in a table far from the detail: take the view to it, or the click seems to do nothing
+  useEffect(() => { if (playerId !== null) detailRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }) }, [playerId])
 
   const selected = useMemo(() => {
     if (!data || playerId === null) return null
@@ -94,9 +98,11 @@ export default function ConexionesPage() {
               <p className="text-xs text-ink-muted">Todos los jugadores que han anotado; pulsa una columna para ordenar y un jugador para ver su detalle.</p>
               <ReceiverTable receivers={data.receivers} selectedId={playerId} onSelect={setPlayerId} />
             </section>
-            {selected
-              ? <ReceiverDetail name={selected.name} receiver={selected.receiver} passer={selected.passer} />
-              : <p className="text-sm text-ink-muted">Elige un jugador (en la tabla o en el filtro) para ver cuánto anota con asistencia, quién le surte y desde dónde.</p>}
+            <div ref={detailRef} className="scroll-mt-4">
+              {selected
+                ? <ReceiverDetail name={selected.name} receiver={selected.receiver} passer={selected.passer} />
+                : <p className="text-sm text-ink-muted">Elige un jugador (en la tabla de receptores, en la de pasadores o en el filtro) para ver cuánto anota con asistencia, quién le surte, a quién le pasa y desde dónde anotan.</p>}
+            </div>
             <PassersTable passers={data.passers} onSelect={setPlayerId} />
           </>
         )}

@@ -39,12 +39,27 @@ export interface Receiver {
   from: ConnectionLink[]
 }
 
+/** A zone of the court and the assists of a passer that end in a basket scored there. */
+export interface PassZone {
+  zone: string
+  count: number
+}
+
+/** One player a passer finds: how many assists, and the zones those baskets were scored from (``without_zone``: no shot coordinates). */
+export interface PassTarget extends ConnectionLink {
+  zones: PassZone[]
+  without_zone: number
+}
+
 export interface Passer {
   player_id: string
   name: string
   assists: number
   share_pct: number
-  to: ConnectionLink[]
+  to: PassTarget[]
+  /** Where the baskets he created were scored from, and how many of his assists have no known zone. */
+  zones: PassZone[]
+  without_zone: number
 }
 
 export interface AssistConnections {
