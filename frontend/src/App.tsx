@@ -17,6 +17,7 @@
  *   /:collection/inout        → InOutPage
  *   /:collection/lineups      → LineupsPage
  *   /:collection/rotaciones   → RotacionesPage
+ *   /:collection/conexiones   → ConexionesPage
  *   /admin                    → redirects to / (the Administration page is gone, #724)
  *
  * AnimatePresence wraps routes for page transition animations.
@@ -45,6 +46,7 @@ import InOutPage from '@/pages/InOutPage'
 import MatchAnalysisPage from '@/pages/MatchAnalysisPage'
 import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
 import RotacionesPage from '@/pages/RotacionesPage'
+import ConexionesPage from '@/pages/ConexionesPage'
 
 export default function App() {
   const location = useLocation()
@@ -78,6 +80,7 @@ export default function App() {
               <Route path="matches"    element={<MatchAnalysisPage />} />
               <Route path="multiphase"  element={<MultiPhaseStatsPage />} />
               <Route path="rotaciones" element={<RotacionesPage />} />
+              <Route path="conexiones" element={<ConexionesPage />} />
             </Route>
 
             {/* The Administration page is gone (#724: the data is loaded by the scheduled refresh of the archive); its old address goes to the home */}

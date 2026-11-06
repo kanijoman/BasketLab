@@ -4,7 +4,7 @@
 // browser (`localStorage`). Anything else in `?data=` is ignored. Without storage (private window, blocked) the default applies, and `?data=api` still works for the page.
 
 /** What a page reads, by the answer it needs (the pages that share an answer share its switch). Which pages read what: docs/ARCHITECTURE.md. */
-export const DATASETS = ['collections', 'team-stats', 'player-stats', 'team-comparison', 'multi-phase', 'evolution', 'pbp', 'shots', 'rotations', 'lineups', 'inout', 'player-consistency', 'rival-adjusted', 'matches', 'possessions', 'team-report', 'report-teams', 'scouting', 'weekly-report'] as const
+export const DATASETS = ['collections', 'team-stats', 'player-stats', 'team-comparison', 'multi-phase', 'evolution', 'pbp', 'shots', 'rotations', 'lineups', 'inout', 'player-consistency', 'rival-adjusted', 'assist-connections', 'matches', 'possessions', 'team-report', 'report-teams', 'scouting', 'weekly-report'] as const
 export type Dataset = (typeof DATASETS)[number]
 
 export const DATA_FLAG_KEY = 'basketlab.data'

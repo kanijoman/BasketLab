@@ -1,6 +1,7 @@
 // The local data source (issue #327, step 2): the tables of the web computed from the files `run_local_export.py` writes, instead of the API.
 // Which datasets read it is the switch of `datasource/switch` (`?data=local`, `?data=local:team-stats,…`, `?data=api`). Every function answers `null` when it cannot (switch off,
 // competition not exported, no player rows, file missing or of another format) so that `fromSource` says there is no answer (it never asks the API in its place, #334).
+import type { AssistConnections } from '@/api/assistConnections'
 import type { InOutResult, LineupRow, PlayerStat } from '@/api/client'
 import { aggregatePlayers, type PlayerGameRow, type PlayerTableFilter } from './aggregatePlayers'
 import { aggregatePlayersFbcyl, type FbcylPlayerGameRow } from './aggregatePlayersFbcyl'
@@ -19,7 +20,7 @@ import type { DerivedCoverage, OriginRow, PeriodRow, SituationRow, TimeoutRow } 
 import { shotRaw, shotZones, type ShotFilter, type Shots } from './shots'
 import type { MatchAnalysis, MatchSummary, PossessionStat, RotationResult, TeamConsistencyResponse, ShotRawData, ShotZoneData } from '@/api/client'
 import { collectionList } from './collections'
-import { loadWebCollectionInfos, loadWebCollections, loadWebConsistency, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRivalAdjusted, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedConsistency, type PublishedInOut, type PublishedMatches, type PublishedRivalAdjusted, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
+import { loadWebCollectionInfos, loadWebAssistConnections, loadWebCollections, loadWebConsistency, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRivalAdjusted, loadWebRotations, loadWebRows, loadWebShots, WebDataUnavailable, type PublishedAssistConnections, type PublishedConsistency, type PublishedInOut, type PublishedMatches, type PublishedRivalAdjusted, type PublishedPossessionCsv, type PublishedPossessions, type Rotations } from '@/webdata/client'
 
 // the switch lives in `datasource/switch` (issue #329); these two are what this module's callers and tests have always imported from here
 export { DATA_FLAG_KEY, localDataEnabled } from '@/datasource/switch'
@@ -32,6 +33,7 @@ const competitions = new Map<string, Promise<Competition | null>>()
 const derivedLoads = new Map<string, Promise<Derived | null>>()
 const shotLoads = new Map<string, Promise<Shots | null>>()
 const rotationLoads = new Map<string, Promise<Rotations | null>>()
+const assistLoads = new Map<string, Promise<PublishedAssistConnections | null>>()
 const lineupLoads = new Map<string, Promise<Lineups | null>>()
 const inOutLoads = new Map<string, Promise<PublishedInOut | null>>()
 const matchLoads = new Map<string, Promise<PublishedMatches | null>>()
@@ -47,6 +49,7 @@ export function resetLocalData(): void {
   derivedLoads.clear()
   shotLoads.clear()
   rotationLoads.clear()
+  assistLoads.clear()
   lineupLoads.clear()
   inOutLoads.clear()
   matchLoads.clear()
@@ -283,6 +286,14 @@ export async function localRotation(collection: string, teamId: string): Promise
   if (dataSourceOf('rotations') !== 'local') return null
   const rotations = await loadOnce(rotationLoads, collection, loadWebRotations)
   return rotations?.teams.find(team => team.team_id === String(teamId))?.analysis ?? null
+}
+
+/** Conexiones (issue #773): the assist connections of a team as `GET /assist-connections/{collection}/{team_id}` answers them, computed when the competition was published; `null` to
+ *  use the API (it is not published, or the team is not in it). */
+export async function localAssistConnections(collection: string, teamId: string): Promise<AssistConnections | null> {
+  if (dataSourceOf('assist-connections') !== 'local') return null
+  const published = await loadOnce(assistLoads, collection, loadWebAssistConnections)
+  return published?.teams.find(team => team.team_id === String(teamId))?.analysis ?? null
 }
 
 /** Combinaciones (issue #686): the table of a team as `GET /lineups/{collection}/{team_id}` answers it, merged on the device from the per-game counters of the publication; `null`

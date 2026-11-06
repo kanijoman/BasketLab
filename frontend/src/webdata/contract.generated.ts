@@ -54,6 +54,7 @@ export interface WebDataManifest {
   inout?: RowsEntry[]
   consistency?: RowsEntry[]
   rival_adjusted?: RowsEntry[]
+  assist_connections?: RowsEntry[]
   reports: ReportIndexEntry[]
 }
 

@@ -62,8 +62,17 @@ def _fast_rival_adjusted(handler, name):
             "teams": {} if fbcyl else {"ALPHA": {"ortg": {"raw_avg": 100.0, "adj_avg": 101.5, "adj": 1.5, "sos": 99.0, "n": 6}}, "BRAVO": {}}}
 
 
+def _fast_assist_connections(handler, name):
+    from src.local_data.export import FORMAT
+
+    fbcyl = "FBCYL" in name
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb",
+            "teams": [] if fbcyl else [{"team_id": "1", "team_name": "ALPHA", "analysis": {"receivers": [], "passers": []}}]}
+
+
 @pytest.fixture(autouse=True)
 def cheap_lineups(monkeypatch):
+    monkeypatch.setattr("src.local_data.web_data.export_assist_connections", _fast_assist_connections)
     monkeypatch.setattr("src.local_data.web_data.export_lineups", _fast_lineups)
     monkeypatch.setattr("src.local_data.web_data.export_inout", _fast_inout)
     monkeypatch.setattr("src.local_data.web_data.export_consistency", _fast_consistency)
@@ -321,6 +330,18 @@ def test_the_rival_adjusted_figures_are_published_sealed_for_the_competition_tha
     entry = entries[0]
     assert entry["file"].startswith("rival_adjusted/") and entry["games"] == 2
     assert _open(tmp_path, entry, f"competicion:{FEB}") == _fast_rival_adjusted(handler, FEB)
+    with pytest.raises(Exception):
+        _open(tmp_path, entry, "club:101")
+
+
+def test_the_assist_connections_are_published_sealed_for_the_competition_that_has_them(handler, tmp_path):
+    """#773: ``games`` counts the teams; the real exporter is tested in ``test_local_assist_connections_export.py``."""
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB, FBCYL])
+    entries = _manifest(tmp_path)["assist_connections"]
+    assert [e["collection"] for e in entries] == [FEB]
+    entry = entries[0]
+    assert entry["file"].startswith("assist_connections/") and entry["games"] == 1
+    assert _open(tmp_path, entry, f"competicion:{FEB}") == _fast_assist_connections(handler, FEB)
     with pytest.raises(Exception):
         _open(tmp_path, entry, "club:101")
 

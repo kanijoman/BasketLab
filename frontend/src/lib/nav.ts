@@ -6,7 +6,7 @@
 import type { ComponentType } from 'react'
 import {
   Activity, ArrowLeftRight, BarChart2, ClipboardList, FileSearch, FileText, Layers, LayoutDashboard, Microscope, RotateCcw,
-  Scale, Swords, Target, TrendingUp, Trophy, Users, Users2,
+  Scale, Share2, Swords, Target, TrendingUp, Trophy, Users, Users2,
 } from 'lucide-react'
 
 type Icon = ComponentType<{ className?: string }>
@@ -44,6 +44,7 @@ export const NAV_GROUPS: NavGroup[] = [
     { subPath: 'inout', label: 'IN/OUT', description: 'Impacto por jugador dentro y fuera de la cancha', icon: ArrowLeftRight },
     { subPath: 'lineups', label: 'Combinaciones', description: 'Mejores y peores combinaciones de jugadores por estadística', icon: Users2 },
     { subPath: 'rotaciones', label: 'Rotaciones', title: 'Análisis de rotaciones', description: 'Distribución de minutos por jugadora, titularidades y amplitud de la rotación', icon: RotateCcw },
+    { subPath: 'conexiones', label: 'Conexiones', title: 'Conexiones de asistencia', description: 'Quién da las asistencias, quién las recibe y desde qué zonas anota con y sin asistencia', icon: Share2 },
   ] },
   { label: 'Partido', items: [
     { subPath: 'matches', label: 'Análisis de partido', description: 'Un partido concreto: marcador y comparativa de estadísticas de los dos equipos', icon: Swords },

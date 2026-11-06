@@ -57,6 +57,7 @@ class WebDataManifest(TypedDict):
     inout: NotRequired[List[RowsEntry]]
     consistency: NotRequired[List[RowsEntry]]
     rival_adjusted: NotRequired[List[RowsEntry]]
+    assist_connections: NotRequired[List[RowsEntry]]
     reports: List[ReportIndexEntry]
 
 
