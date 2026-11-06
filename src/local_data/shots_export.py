@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from src.local_data.export import FORMAT
+from src.local_data.payload_format import FORMAT
 from src.shotcharts.owned_shots import iter_owned_shots
 from src.utils.collection_utils import is_fbcyl
 

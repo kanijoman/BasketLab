@@ -16,7 +16,7 @@ on:
     workflows: ["Archive refresh", "Archive purge"]
     types: [completed]
     branches: [main]
-  # issue #781: what shapes the published files is published when it is merged (the same folders that change `build_cache.code_version`: `src/` except the routers); one run at a time
+  # issue #781: what shapes the published files is published when it is merged (the folders whose code can change a section: `src/` except the routers, see `build_cache.section_versions`); one run at a time
   push:
     branches: [main]
     paths:
@@ -48,7 +48,7 @@ jobs:
     # a red archive refresh (missing matches) must not block the data; a cancelled one does
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # #700: the first build after a change of code computes every competition again (about 50 minutes); the rest reuse what did not change
+    timeout-minutes: 120   # #700, #783: the first build after a change of the memory format computes everything (about 50 minutes); then only the sections whose code changed
     services:
       mongo:
         image: mongo:7

@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src.live_prep.package_sealing import Sealer
 from src.local_data import build_cache
-from src.local_data.build_cache import code_version
+from src.local_data.build_cache import section_versions
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
 from src.local_data.export import export_collection, export_derived, file_name
@@ -38,6 +38,18 @@ ROWS, REPORTS, SCOUTING, DERIVED, IMAGES = "rows/", "reports/", "scouting/", "de
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
             "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/", "consistency": "consistency/", "rival_adjusted": "rival_adjusted/",
             "assist_connections": "assist_connections/"}
+HANDLER = "src.database"   # the exporters are handed the database handler and call its methods without importing it: its code is a dependency of every section that uses it
+# The module that computes each section (#783): the version of the code of a section is the hash of what that module imports, so the cache recomputes only the sections whose code changed.
+# A new section must be declared here (``test_build_cache_sections`` fails otherwise): without it nothing would notice a change in its exporter. ``derived`` is not cached (it is the fingerprint).
+# What a version does NOT see: the rules of ``_section_payload`` (when a section has nothing to publish) and how files are sealed (``team_reports.seal_file``): changing them needs ``build_cache.EPOCH`` raised.
+SECTION_MODULES = {
+    "shots": "src.local_data.shots_export",                                                     # reads the games' collection directly: its imports are all it depends on
+    "rotations": ["src.local_data.rotations_export", HANDLER], "matches": ["src.local_data.matches_export", HANDLER],
+    "possessions": ["src.local_data.possessions_export", HANDLER], "possession_csv": ["src.local_data.possessions_export", HANDLER],
+    "lineups": ["src.local_data.lineups_export", HANDLER], "inout": ["src.local_data.inout_export", HANDLER],
+    "consistency": ["src.local_data.consistency_export", HANDLER], "rival_adjusted": ["src.local_data.rival_adjusted_export", HANDLER],
+    "assist_connections": ["src.local_data.assist_connections_export", HANDLER],
+}
 
 
 def _json(value: Any) -> str:
@@ -140,9 +152,12 @@ def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: 
 
 
 def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: Any, out_dir: Path, sealer: Sealer, kept_sections: Dict[str, Dict[str, Any]],
-                      remembered: Optional[Dict[str, Any]], on_section: Optional[Callable[[str, str, float, bool], None]]) -> Dict[str, Dict[str, Any]]:
-    """The entries of the files of a competition besides its rows, by section, and what to remember of it (#700): the derived figures are always read (they are cheap and part of
-    the fingerprint); when the fingerprint of the rows and the derived is the one of the previous publication, the heavy sections reuse their sealed files and compute nothing."""
+                      remembered: Optional[Dict[str, Any]], on_section: Optional[Callable[[str, str, float, bool], None]],
+                      versions: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, Any]]:
+    """The entries of the files of a competition besides its rows, by section, and what to remember of it (#700, #783): the derived figures are always read (they are cheap and part of
+    the fingerprint); a section reuses its sealed file and computes nothing when the fingerprint of the rows and the derived is the one of the previous publication AND the version of
+    the code of that section (the hash of the modules its exporter imports) is too; a section whose code changed, or that the memory never saw, is the only one computed."""
+    versions = versions or {}
     entries: Dict[str, Dict[str, Any]] = {}
     started = time.time()
     derived = _publish_section("derived", handler, db, name, out_dir, sealer, kept_sections["derived"].get(name))
@@ -152,21 +167,24 @@ def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: A
         on_section(name, "derived", time.time() - started, False)
     fp = build_cache.fingerprint(rows_entry["sha256"], derived["sha256"] if derived else None)
     had = [s for s in (remembered or {}).get("sections", []) if s in SECTIONS and s != "derived"]
-    reuse = bool(remembered) and remembered.get("fingerprint") == fp and all(
-        kept_sections[s].get(name) and (out_dir / kept_sections[s][name]["file"]).is_file() for s in had)
+    same_data = bool(remembered) and remembered.get("fingerprint") == fp
+    old_versions = (remembered or {}).get("versions") or {}
     for section in SECTIONS:
         if section == "derived":
             continue
         started = time.time()
+        kept_entry = kept_sections[section].get(name)
+        reuse = (same_data and section in versions and old_versions.get(section) == versions[section]
+                 and (section not in had or bool(kept_entry and (out_dir / kept_entry["file"]).is_file())))
         if reuse:
-            entry = kept_sections[section].get(name) if section in had else None
+            entry = kept_entry if section in had else None
         else:
             entry = _publish_section(section, handler, db, name, out_dir, sealer, kept_sections[section].get(name))
         if entry:
             entries[section] = entry
         if on_section:
             on_section(name, section, time.time() - started, reuse)
-    entries["_memory"] = {"fingerprint": fp, "sections": [s for s in SECTIONS if s in entries]}
+    entries["_memory"] = {"fingerprint": fp, "sections": [s for s in SECTIONS if s in entries], "versions": {s: versions[s] for s in SECTIONS if s in versions}}
     return entries
 
 
@@ -200,16 +218,23 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     sections = {s: {e["collection"]: e for e in (previous or {}).get(s, []) if keep_others and e["collection"] not in names} for s in SECTIONS}
     kept_sections = {s: {e["collection"]: e for e in (previous or {}).get(s, [])} for s in SECTIONS}
     imaged = current_season_collections(names) if image_source is not None else set()
-    memory, code = build_cache.load(out_dir), code_version()
-    remembered = {k: v for k, v in memory["competitions"].items() if keep_others and k not in names}
+    memory, versions = build_cache.load(out_dir), section_versions(SECTION_MODULES)
+    trusted = memory["epoch"] == build_cache.EPOCH                       # another epoch, or the old format with one version for all the code: compute everything once
+    remembered = {k: v for k, v in memory["competitions"].items() if trusted and keep_others and k not in names}
     for name in names:
+        started = time.time()
         rows[name] = _publish_rows(db, name, out_dir, sealer, kept_rows.get(name))
+        if on_section:
+            on_section(name, "rows", time.time() - started, False)
         entries = _publish_sections(name, rows[name], handler, db, out_dir, sealer, kept_sections,
-                                    memory["competitions"].get(name) if memory["code"] == code else None, on_section)
+                                    memory["competitions"].get(name) if trusted else None, on_section, versions)
         remembered[name] = entries.pop("_memory")
         for section, entry in entries.items():
             sections[section][name] = entry
+        started = time.time()
         reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports, name in scouted, scouting_service, image_source if name in imaged else None)
+        if on_section:
+            on_section(name, "reports", time.time() - started, False)
         if on_collection:
             on_collection(name)
     manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(),
@@ -217,7 +242,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                 "reports": [reports[n] for n in sorted(reports)]}
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))
     _write_if_changed(out_dir / INDEX, (_json(manifest) + "\n").encode("utf-8"))
-    _write_if_changed(out_dir / build_cache.CACHE, build_cache.save(out_dir, code, remembered))
+    _write_if_changed(out_dir / build_cache.CACHE, build_cache.save(out_dir, remembered))
     keep = _referenced(out_dir, manifest)
     for folder in (ROWS, *SECTIONS.values(), REPORTS, SCOUTING, IMAGES):
         for stale in (out_dir / folder).glob("*.json"):

@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import quote
 
+from src.local_data.payload_format import FORMAT  # noqa: F401  (re-exported: the exporters and the tests import it from here)
 from src.database.aggregation import AggregationPipelineBuilder
 from src.database.aggregation.fbcyl_per_game_pipeline import build_fbcyl_season_rows_pipeline
 from src.database.aggregation.fbcyl_player_rows import build_fbcyl_season_player_rows_pipeline
 from src.utils.collection_utils import is_fbcyl
 
-FORMAT = 1
 INDEX = "index.json"
 
 
