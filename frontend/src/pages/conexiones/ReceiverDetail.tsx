@@ -1,7 +1,8 @@
-/** The detail of one player: how much of his scoring comes from assists, who feeds him, where he scores with and without an assist and, as a passer, who he finds (issue #773). */
+/** The detail of one player (issue #773): as a receiver, how much of his scoring comes from assists, who feeds him and where he scores with and without an assist; as a passer (``PasserSection``), who he finds and from where they score. */
 import type { Passer, Receiver } from '@/api/assistConnections'
 import AssistZoneCourt from '@/components/AssistZoneCourt'
-import { pct, plural } from './format'
+import PasserSection from './PasserSection'
+import { pct } from './format'
 
 function Figure({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
@@ -55,11 +56,7 @@ export default function ReceiverDetail({ name, receiver, passer }: Props) {
       ) : (
         <p className="text-sm text-ink-muted">{name} no figura entre los anotadores de este equipo.</p>
       )}
-      {passer && (
-        <p className="text-sm text-ink">
-          Como pasador {name} da {plural(passer.assists, 'asistencia', 'asistencias')}: {passer.to.map(t => `${t.name} (${t.count})`).join(', ')}.
-        </p>
-      )}
+      {passer && <PasserSection key={passer.player_id} passer={passer} />}
     </section>
   )
 }

@@ -68,8 +68,37 @@ def test_who_passes_to_each_receiver_and_who_each_passer_finds():
     result = aggregate([game(basket("a", "b"), basket("a", "b"), basket("a", "c"), basket("c", "b"))], "10")
     assert receivers(result)["a"]["from"] == [{"player_id": "b", "name": "BEA", "count": 2}, {"player_id": "c", "name": "CLARA", "count": 1}]
     passers = {p["player_id"]: p for p in result["passers"]}
-    assert passers["b"]["assists"] == 3 and passers["b"]["to"][0] == {"player_id": "a", "name": "ANA", "count": 2}
+    assert passers["b"]["assists"] == 3 and {k: passers["b"]["to"][0][k] for k in ("player_id", "name", "count")} == {"player_id": "a", "name": "ANA", "count": 2}
     assert [p["player_id"] for p in result["passers"]] == ["b", "c"]               # most assists first
+
+
+def passer_rows(result):
+    return {p["player_id"]: p for p in result["passers"]}
+
+
+def test_a_passer_carries_the_zones_where_the_players_he_found_score_issue_773():
+    """The other side of the study: given a passer, from where do his receivers score."""
+    result = aggregate([game(basket("a", "b", "paint"), basket("a", "b", "top_three"), basket("c", "b", "paint"), basket("a", "b", None), basket("a", None, "paint"))], "10")
+    row = passer_rows(result)["b"]
+    assert row["zones"] == [{"zone": "paint", "count": 2}, {"zone": "top_three", "count": 1}]
+    assert row["without_zone"] == 1 and sum(z["count"] for z in row["zones"]) + row["without_zone"] == row["assists"], "every assist is in a zone or in «without zone»"
+
+
+def test_each_player_a_passer_finds_has_his_own_zones_so_one_receiver_can_be_looked_at_alone():
+    result = aggregate([game(basket("a", "b", "paint"), basket("a", "b", "top_three"), basket("a", "b", None), basket("c", "b", "paint"))], "10")
+    found = {t["player_id"]: t for t in passer_rows(result)["b"]["to"]}
+    assert found["a"]["count"] == 3 and found["a"]["zones"] == [{"zone": "paint", "count": 1}, {"zone": "top_three", "count": 1}] and found["a"]["without_zone"] == 1
+    assert found["c"]["zones"] == [{"zone": "paint", "count": 1}] and found["c"]["without_zone"] == 0
+
+
+def test_an_unassisted_basket_belongs_to_no_passer_zone():
+    row = passer_rows(aggregate([game(basket("a", "b", "paint"), basket("a", None, "top_three"))], "10"))["b"]
+    assert row["zones"] == [{"zone": "paint", "count": 1}]
+
+
+def test_the_zones_of_a_passer_do_not_depend_on_the_order_of_the_games():
+    a, b = game(basket("a", "b", "paint")), game(basket("c", "b", "top_three"), basket("a", "b", "paint"))
+    assert aggregate([a, b], "10")["passers"] == aggregate([b, a], "10")["passers"]
 
 
 def test_only_the_baskets_of_the_team_count():

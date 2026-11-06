@@ -1,0 +1,46 @@
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+import PassZoneCourt from './PassZoneCourt'
+
+// Issue #773, the passer's side: from where the players a passer finds score. One bubble per zone: its size is the number of assists that end there.
+const ZONES = [
+  { zone: 'paint', count: 6 },
+  { zone: 'top_three', count: 3 },
+  { zone: 'corner_left', count: 1 },
+]
+
+describe('PassZoneCourt', () => {
+  it('draws one bubble per zone with the assists that end there and their share of all the assists of the passer', () => {
+    const { container } = render(<PassZoneCourt zones={ZONES} />)
+    expect(container.querySelectorAll('[data-pass-zone]')).toHaveLength(3)
+    const paint = container.querySelector('[data-pass-zone="paint"]')!
+    expect(paint.textContent).toContain('6')
+    expect(paint.textContent).toContain('60%')                                   // 6 of the 10 assists
+    expect(container.querySelector('[data-pass-zone="corner_left"]')!.textContent).toContain('10%')
+  })
+
+  it('the share counts the assists with no known zone too, so the percentages are not inflated', () => {
+    const { container } = render(<PassZoneCourt zones={ZONES} withoutZone={10} />)
+    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('30%')           // 6 of 20
+  })
+
+  it('draws no bubble for a zone without assists', () => {
+    const { container } = render(<PassZoneCourt zones={[...ZONES, { zone: 'wing_left', count: 0 }]} />)
+    expect(container.querySelectorAll('[data-pass-zone]')).toHaveLength(3)
+  })
+
+  it('says in its caption what the size and the small figure are, so nothing has to be guessed', () => {
+    render(<PassZoneCourt zones={ZONES} />)
+    expect(screen.getByText(/tamaño.*asistencias/i)).toBeInTheDocument()
+  })
+
+  it('says how many of his assists end in a basket with no known zone', () => {
+    render(<PassZoneCourt zones={ZONES} withoutZone={2} />)
+    expect(screen.getByText(/2 asistencias sin zona/i)).toBeInTheDocument()
+  })
+
+  it('without any zone it says there is nothing to draw instead of an empty court', () => {
+    render(<PassZoneCourt zones={[]} />)
+    expect(screen.getByText(/sin asistencias con zona/i)).toBeInTheDocument()
+  })
+})

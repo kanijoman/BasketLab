@@ -18,6 +18,7 @@ export default function PassersTable({ passers, onSelect }: { passers: Passer[];
   return (
     <section aria-label="Pasadores" className="space-y-2">
       <h2 className="text-lg font-semibold text-ink">Pasadores</h2>
+      <p className="text-xs text-ink-muted">Pulsa un pasador para ver a quién le pasa y desde dónde anotan los que reciben sus pases.</p>
       <DataTable columns={columns} data={passers} onRowClick={row => onSelect(row.original.player_id)} ariaLabel="Tabla de quien da las asistencias" density="compact" emptyMessage="Ningún pase de asistencia se ha podido enlazar a una canasta." />
     </section>
   )
