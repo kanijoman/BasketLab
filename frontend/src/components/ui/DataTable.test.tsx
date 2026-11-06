@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import type { ColumnDef } from '@tanstack/react-table'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import DataTable from './DataTable'
@@ -107,5 +108,72 @@ describe('DataTable v2 (issue #184)', () => {
     phone(false)
     render(<DataTable columns={columns} data={rows} searchable={false} />)
     expect(document.querySelector('table')).not.toBeNull()
+  })
+})
+
+
+// Issue #777: the sortable headers were a click on the <th>: no focus, no Enter/Space, no aria-sort. Now a real button inside the header, and the header says how it is sorted.
+describe('DataTable sortable headers (issue #777)', () => {
+  const ROWS: Row[] = [{ name: 'Beta', a: 2, b: 0, c: 0 }, { name: 'Alfa', a: 3, b: 0, c: 0 }, { name: 'Gamma', a: 1, b: 0, c: 0 }]
+  const COLUMNS: ColumnDef<Row, unknown>[] = [
+    { id: 'name', accessorKey: 'name', header: 'Equipo' },
+    { id: 'a', accessorKey: 'a', header: 'Puntos' },
+    { id: 'c', accessorKey: 'c', header: 'Fija', enableSorting: false },
+  ]
+  const names = () => Array.from(document.querySelectorAll('tbody tr td:first-child')).map(td => td.textContent)
+  const header = (name: string) => screen.getByRole('columnheader', { name: new RegExp(name) })
+
+  it('a sortable header holds a button named after the column, and says it is not sorted yet', () => {
+    render(<DataTable columns={COLUMNS} data={ROWS} searchable={false} density="compact" />)
+    expect(within(header('Puntos')).getByRole('button', { name: 'Puntos' })).toBeInTheDocument()
+    expect(header('Puntos')).toHaveAttribute('aria-sort', 'none')
+  })
+
+  it('a column that cannot be sorted has neither button nor aria-sort', () => {
+    render(<DataTable columns={COLUMNS} data={ROWS} searchable={false} />)
+    expect(within(header('Fija')).queryByRole('button')).toBeNull()
+    expect(header('Fija')).not.toHaveAttribute('aria-sort')
+  })
+
+  it('a group header is not a sort control', () => {
+    render(<DataTable columns={GROUPED} data={DATA} searchable={false} />)
+    expect(within(header('Rápidas')).queryByRole('button')).toBeNull()
+    expect(header('Rápidas')).not.toHaveAttribute('aria-sort')
+  })
+
+  it('a click sorts once (not twice through the header), ascending then descending, and aria-sort follows', async () => {
+    const user = userEvent.setup()
+    render(<DataTable columns={COLUMNS} data={ROWS} searchable={false} />)
+    await user.click(within(header('Equipo')).getByRole('button'))
+    expect(names()).toEqual(['Alfa', 'Beta', 'Gamma'])
+    expect(header('Equipo')).toHaveAttribute('aria-sort', 'ascending')
+    await user.click(within(header('Equipo')).getByRole('button'))
+    expect(names()).toEqual(['Gamma', 'Beta', 'Alfa'])
+    expect(header('Equipo')).toHaveAttribute('aria-sort', 'descending')
+  })
+
+  it('sorting another column leaves the first one as «none»', async () => {
+    const user = userEvent.setup()
+    render(<DataTable columns={COLUMNS} data={ROWS} searchable={false} />)
+    await user.click(within(header('Equipo')).getByRole('button'))
+    await user.click(within(header('Puntos')).getByRole('button'))
+    expect(header('Equipo')).toHaveAttribute('aria-sort', 'none')
+    expect(header('Puntos')).not.toHaveAttribute('aria-sort', 'none')                 // a number sorts from the highest first
+  })
+
+  it.each([['{Enter}'], [' ']])('the keyboard sorts it: Tab to the header button and %j', async key => {
+    const user = userEvent.setup()
+    render(<DataTable columns={COLUMNS} data={ROWS} searchable={false} />)
+    await user.tab()                                                                  // the scrollable region of the table takes the first Tab (it can be scrolled with the keys)
+    await user.tab()
+    expect(within(header('Equipo')).getByRole('button')).toHaveFocus()
+    await user.keyboard(key)
+    expect(names()).toEqual(['Alfa', 'Beta', 'Gamma'])
+    expect(header('Equipo')).toHaveAttribute('aria-sort', 'ascending')
+  })
+
+  it('the button shows where the focus is', () => {
+    render(<DataTable columns={COLUMNS} data={ROWS} searchable={false} />)
+    expect(within(header('Equipo')).getByRole('button').className).toMatch(/focus-visible:ring/)
   })
 })

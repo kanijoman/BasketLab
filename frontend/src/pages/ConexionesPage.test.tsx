@@ -66,9 +66,10 @@ describe('ConexionesPage', () => {
   it('lets the user choose the order: a click on a column header sorts by it', async () => {
     renderPage()
     await screen.findAllByTestId('receiver-name')
-    fireEvent.click(screen.getByRole('columnheader', { name: /% puntos asistidos/i }))
+    const sortBy = () => fireEvent.click(within(screen.getByRole('columnheader', { name: /% puntos asistidos/i })).getByRole('button'))
+    sortBy()
     const first = rowNames()
-    fireEvent.click(screen.getByRole('columnheader', { name: /% puntos asistidos/i }))
+    sortBy()
     expect(rowNames()).toEqual([...first].reverse())
   })
 

@@ -202,30 +202,40 @@ export default function DataTable<TData>({
                     )
                   }
                   const isGroup = header.subHeaders.length > 0
+                  const canSort = header.column.getCanSort()
+                  const sorted = header.column.getIsSorted()
+                  const label = flexRender(header.column.columnDef.header, header.getContext())
                   return (
                     <th
                       key={header.id}
                       colSpan={header.colSpan}
                       style={{ width: header.getSize() }}
+                      // the header says how it is sorted (#777); the sorting itself is the button inside, which has focus and answers to Enter and Space
+                      aria-sort={canSort ? (sorted === 'asc' ? 'ascending' : sorted === 'desc' ? 'descending' : 'none') : undefined}
                       className={cn(
-                        'px-2 py-2.5 text-xs font-medium text-ink-muted',
+                        'text-xs font-medium text-ink-muted',
+                        canSort ? 'p-0' : 'px-2 py-2.5',
                         'bg-surface border-b border-line select-none',
                         isGroup ? 'text-center border-l border-line' : 'text-left',
                         i === 0 && 'sticky left-0 z-10 bg-surface',
-                        header.column.getCanSort() && 'cursor-pointer hover:text-ink',
                       )}
-                      onClick={header.column.getToggleSortingHandler()}
                     >
-                      <span className={cn('flex items-center gap-1', isGroup && 'justify-center')}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && (
-                          <span className="text-ink-faint">
-                            {header.column.getIsSorted() === 'asc'  && <ArrowUp className="w-3 h-3" />}
-                            {header.column.getIsSorted() === 'desc' && <ArrowDown className="w-3 h-3" />}
-                            {!header.column.getIsSorted()           && <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                      {canSort ? (
+                        <button
+                          type="button"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="flex w-full items-center gap-1 px-2 py-2.5 text-left font-medium hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus"
+                        >
+                          {label}
+                          <span className="text-ink-faint" aria-hidden="true">
+                            {sorted === 'asc'  && <ArrowUp className="w-3 h-3" />}
+                            {sorted === 'desc' && <ArrowDown className="w-3 h-3" />}
+                            {!sorted           && <ArrowUpDown className="w-3 h-3 opacity-30" />}
                           </span>
-                        )}
-                      </span>
+                        </button>
+                      ) : (
+                        <span className={cn('flex items-center gap-1', isGroup && 'justify-center')}>{label}</span>
+                      )}
                     </th>
                   )
                 })}
