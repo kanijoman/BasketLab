@@ -1,13 +1,19 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+const published = vi.hoisted(() => ({ publishedSectionsOf: vi.fn() }))
+vi.mock('@/webdata/client', async importOriginal => ({ ...(await importOriginal<object>()), ...published }))
+
 import Sidebar, { MobileNav } from './Sidebar'
 import { NAV_ITEMS } from '@/lib/nav'
 
 const at = (path: string, ui: React.ReactNode) => render(
   <MemoryRouter initialEntries={[path]}><Routes><Route path="/:collection/*" element={ui} /></Routes></MemoryRouter>)
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  published.publishedSectionsOf.mockReset().mockResolvedValue(new Set(['rows']))        // a publication without the section of Conexiones (#780)
+})
 
 // Issue #191 (U4): the navigation is grouped; on a phone it is a menu that opens over the page.
 describe('Sidebar (issue #191)', () => {
@@ -17,11 +23,23 @@ describe('Sidebar (issue #191)', () => {
     for (const group of ['Equipos', 'Jugadores', 'Partido', 'Live', 'Informes']) {
       expect(within(nav).getByRole('heading', { name: group })).toBeInTheDocument()
     }
-    expect(within(nav).getAllByRole('link')).toHaveLength(NAV_ITEMS.length)                  // the Administration page is gone: the data is loaded by the scheduled refresh
+    expect(within(nav).getAllByRole('link')).toHaveLength(NAV_ITEMS.filter(item => !item.requires).length)                  // the Administration page is gone: the data is loaded by the scheduled refresh
     expect(within(nav).queryByRole('link', { name: 'Administración' })).toBeNull()
     expect(within(nav).getByRole('link', { name: 'Equipo' })).toHaveAttribute('href', '/LF2/teams')
     expect(within(nav).getByRole('link', { name: 'Resumen' })).toHaveAttribute('href', '/LF2')
     expect(within(nav).getByRole('link', { name: 'Equipo' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('offers a page that needs a section of the publication only when the competition has it (issue #780)', async () => {
+    at('/LF2/teams', <Sidebar />)
+    await waitFor(() => expect(published.publishedSectionsOf).toHaveBeenCalledWith('LF2'))
+    expect(screen.queryByRole('link', { name: 'Conexiones' })).toBeNull()
+  })
+
+  it('and shows it as soon as the section is published (issue #780)', async () => {
+    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'assist_connections']))
+    at('/LF2/teams', <Sidebar />)
+    expect(await screen.findByRole('link', { name: 'Conexiones' })).toHaveAttribute('href', '/LF2/conexiones')
   })
 
   it('collapsed it shows the icons only, with the names as titles, and remembers it', () => {

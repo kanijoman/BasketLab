@@ -13,7 +13,7 @@ import StatCard from '@/components/ui/StatCard'
 import Button from '@/components/ui/Button'
 import PageHeader from '@/components/ui/PageHeader'
 import PageTransition from '@/components/ui/PageTransition'
-import { NAV_GROUPS } from '@/lib/nav'
+import { useVisibleNavGroups } from '@/lib/useVisibleNav'
 import { fmt } from '@/lib/utils'
 
 // ── Highlights derived from data ──────────────────────────────────────────────
@@ -48,6 +48,7 @@ export default function CollectionHub() {
   const [highlights, setHighlights] = useState<Highlights | null>(null)
 
   const collectionName = collection?.name
+  const navGroups = useVisibleNavGroups(collectionName)      // the pages whose data is not published for this competition have no card (#780)
   useEffect(() => {
     if (!collectionName) return
     setLoading(true)
@@ -123,7 +124,7 @@ export default function CollectionHub() {
         )}
 
         {/* A card for every page, in the groups of the menu */}
-        {NAV_GROUPS.map(group => (
+        {navGroups.map(group => (
           <section key={group.label} aria-labelledby={`hub-${group.label}`}>
             <h2 id={`hub-${group.label}`} className="text-xs font-semibold text-ink-faint uppercase tracking-wider mb-3">{group.label}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">

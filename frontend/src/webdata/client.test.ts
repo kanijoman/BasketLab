@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
-import { loadWebImages, loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable } from './client'
+import { loadWebImages, loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable, publishedSectionsOf } from './client'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
@@ -369,5 +369,28 @@ describe('the possessions of web-data, opened in the browser', () => {
     await expect(loadWebPossessions(FEB)).rejects.toBeInstanceOf(ScopedAccessError)
     addRight(await invitation(`competicion:${FEB}`))
     expect((await loadWebPossessions(FEB)).table.length).toBeGreaterThan(0)
+  })
+})
+
+
+// Issue #780: a page that depends on a section of the publication is only offered where the competition has it (the menu, the card and the route read this).
+describe('the sections a competition has published', () => {
+  it('lists the sections whose entry is for the competition, and not the ones of another competition', async () => {
+    const manifest = JSON.parse(read('index.json'))
+    manifest.assist_connections = [{ collection: FEB, league: 'feb', games: 1, file: 'assist_connections/x.json', bytes: 1, sha256: 'x', wraps: [] }]
+    override['index.json'] = JSON.stringify(manifest)
+    const feb = await publishedSectionsOf(FEB)
+    expect(feb.has('assist_connections')).toBe(true)
+    expect(feb.has('rows')).toBe(true)
+    expect((await publishedSectionsOf(FBCYL)).has('assist_connections')).toBe(false)
+  })
+
+  it('a publication without the section (the page was deployed before its data) does not list it', async () => {
+    expect((await publishedSectionsOf(FEB)).has('assist_connections')).toBe(false)
+  })
+
+  it('an unreachable publication lists nothing instead of failing: the pages that need data stay hidden', async () => {
+    override['index.json'] = null
+    expect((await publishedSectionsOf(FEB)).size).toBe(0)
   })
 })

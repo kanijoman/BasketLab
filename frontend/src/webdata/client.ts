@@ -228,6 +228,20 @@ export interface PublishedAssistConnections {
 export const loadWebAssistConnections = (collection: string): Promise<PublishedAssistConnections> =>
   openSealed<PublishedAssistConnections>(() => sealedSection('assist_connections', collection, 'Esta competición no tiene las conexiones de asistencia publicadas.'), 'El fichero')
 
+/** The sections a competition has published (`rows`, `shots`, `assist_connections`…), read from the manifest; empty when the publication cannot be read (issue #780: the pages that need a section stay hidden). */
+export async function publishedSectionsOf(collection: string): Promise<Set<string>> {
+  const sections = new Set<string>()
+  try {
+    const manifest = await loadManifest()
+    for (const [key, entries] of Object.entries(manifest)) {
+      if (Array.isArray(entries) && entries.some(e => (e as { collection?: string })?.collection === collection)) sections.add(key)
+    }
+  } catch {
+    sections.clear()
+  }
+  return sections
+}
+
 /** The per-game counters of the lineups of every team of a competition (`lineups/`), issue #686: the browser merges them into the tables of Combinaciones. */
 export const loadWebLineups = (collection: string): Promise<Lineups> =>
   openSealed<Lineups>(() => sealedSection('lineups', collection, 'Esta competición no tiene las combinaciones publicadas.'), 'El fichero')

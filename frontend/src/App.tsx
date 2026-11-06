@@ -47,6 +47,11 @@ import MatchAnalysisPage from '@/pages/MatchAnalysisPage'
 import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
 import RotacionesPage from '@/pages/RotacionesPage'
 import ConexionesPage from '@/pages/ConexionesPage'
+import RequirePublished from '@/components/RequirePublished'
+import { NAV_ITEMS } from '@/lib/nav'
+
+/** What the Conexiones page needs from the publication: the menu says it (issue #780), the route asks the same. */
+const CONEXIONES_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'conexiones')!.requires!
 
 export default function App() {
   const location = useLocation()
@@ -80,7 +85,7 @@ export default function App() {
               <Route path="matches"    element={<MatchAnalysisPage />} />
               <Route path="multiphase"  element={<MultiPhaseStatsPage />} />
               <Route path="rotaciones" element={<RotacionesPage />} />
-              <Route path="conexiones" element={<ConexionesPage />} />
+              <Route path="conexiones" element={<RequirePublished requires={CONEXIONES_REQUIRES}><ConexionesPage /></RequirePublished>} />
             </Route>
 
             {/* The Administration page is gone (#724: the data is loaded by the scheduled refresh of the archive); its old address goes to the home */}
