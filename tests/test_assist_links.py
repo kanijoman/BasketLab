@@ -189,3 +189,38 @@ def test_fbcyl_the_real_game_links_nearly_all_its_assists():
     assisted = sum(1 for b in links.baskets if b["passer"])
     assert assisted + links.unlinked_assists == assists and assisted >= assists - 2
     assert all(b["scorer"] != b["passer"] for b in links.baskets)
+
+
+# ---- a malformed line of the real archive must not stop the publication of everything (web-data run of 06/11/2026: ``int(None)`` on a line with no team) ----
+def test_feb_a_line_without_team_does_not_break_the_game_regression():
+    """LF Endesa 2026-27 in the CI archive had a made shot (and an assist) with ``team: None``: the whole web-data publication failed on ``int(None)``."""
+    lines = [_line(1, "shoot", None, "p2"), _line(2, "assist", None, "p1"), _line(3, "shoot", "1", "p2", time="05:00"), _line(4, "assist", "1", "p1", time="05:00")]
+    links = extract_links(feb_doc(lines, [shot(5, 4, 50, time="05:00")]), fbcyl=False)
+    assert [(b["scorer"], b["passer"]) for b in links.baskets] == [("p2", "p1")], "only the basket whose team is known is attributed"
+    assert links.unlinked_assists == 1
+
+
+@pytest.mark.parametrize("field, value", [("idPlayer", None), ("num", None), ("time", None), ("quarter", None), ("text", None), ("action", None)])
+def test_feb_a_line_with_an_empty_field_never_raises(field, value):
+    lines = [_line(1, "shoot", "1", "p2"), _line(2, "assist", "1", "p1")]
+    lines[0][field] = value
+    extract_links(feb_doc([{**l, "num": l["num"] or "9"} for l in lines]), fbcyl=False)
+
+
+def test_feb_a_basket_or_an_assist_of_nobody_is_not_credited_to_a_ghost_player():
+    links = extract_links(feb_doc([_line(1, "shoot", "1", None), _line(2, "assist", "1", "p1")]), fbcyl=False)
+    assert links.baskets == [] and links.unlinked_assists == 1
+    links = extract_links(feb_doc([_line(1, "shoot", "1", "p2"), _line(2, "assist", "1", None)]), fbcyl=False)
+    assert [(b["scorer"], b["passer"]) for b in links.baskets] == [("p2", None)] and links.unlinked_assists == 1
+
+
+def test_feb_a_shot_of_the_shotchart_with_an_empty_result_or_team_is_ignored():
+    doc = feb_doc([_line(1, "shoot", "1", "p2")], [{**shot(5, 4, 50), "m": None}, {**shot(5, 4, 50), "team": None}, shot(5, 4, 50)])
+    assert extract_links(doc, fbcyl=False).baskets[0]["zone"] == "restricted_area"
+
+
+def test_fbcyl_a_move_without_actor_or_team_never_raises_nor_makes_a_ghost_player():
+    doc = fb_doc([mv("Canasta de 2", 1, None, "e1"), mv("Asistencia", 1, None, "e2"), mv("Canasta de 2", None, 12, "e3"), mv("Asistencia", 1, 11, "e4")])
+    links = extract_links(doc, fbcyl=True)
+    assert all(b["scorer"] not in (None, "None") and b["passer"] not in ("None",) for b in links.baskets)
+    assert links.unlinked_assists >= 1

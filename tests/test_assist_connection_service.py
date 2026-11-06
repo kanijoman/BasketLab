@@ -192,3 +192,20 @@ def test_every_team_of_a_competition_comes_from_one_pass_over_the_games():
     assert len(calls) == 1, "the competition is read once, not once per team"
     assert [r["team_id"] for r in rows] == ["10"], "a team with no baskets in the games is not listed"
     assert rows[0]["team_name"] == "ALFA" and rows[0]["analysis"]["assisted_baskets"] == 1
+
+
+def test_a_game_that_cannot_be_read_is_skipped_and_logged_and_the_rest_still_counts(monkeypatch, caplog):
+    """One odd game must not stop the publication of every competition (web-data run of 06/11/2026)."""
+    import logging
+    from src.services import assist_connection_service as module
+
+    db = new_mock_db()
+    good, odd = feb_game(), feb_game()
+    odd["_id"] = "odd"
+    db[FEB].insert_many([good, odd])
+    real = module.extract_links
+    monkeypatch.setattr(module, "extract_links", lambda doc, fbcyl: (_ for _ in ()).throw(ValueError("odd")) if doc["_id"] == "odd" else real(doc, fbcyl))
+    with caplog.at_level(logging.WARNING):
+        result = AssistConnectionService(Handler(db)).get_connections(FEB, "10")
+    assert result["games"] == 1 and result["assisted_baskets"] == 1
+    assert any("odd" in r.getMessage() for r in caplog.records), "the skipped game is said in the log, not hidden"

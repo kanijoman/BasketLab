@@ -6,12 +6,15 @@ listed (those with no assisted basket have ``received: 0``) and the user chooses
 """
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from typing import Any, Dict, Iterable, Iterator, List, Optional
 
 from src.services.assist_links import GameLinks, extract_links
 from src.shotcharts.fbcyl_zones import _tid_query as _fbcyl_team_query
 from utils.collection_utils import is_fbcyl
+
+log = logging.getLogger(__name__)
 
 _FEB_PROJECTION = {"PLAYBYPLAY.LINES": 1, "SHOTCHART": 1, "HEADER.TEAM.id": 1, "BOXSCORE.TEAM.PLAYER.id": 1, "BOXSCORE.TEAM.PLAYER.name": 1}
 _FBCYL_PROJECTION = {"moves": 1, "stats.teams": 1}
@@ -100,7 +103,10 @@ class AssistConnectionService:
         else:
             cursor = coll.find({} if team_id is None else {"HEADER.TEAM.id": str(team_id)}, _FEB_PROJECTION)
         for doc in cursor:
-            yield extract_links(doc, fbcyl)
+            try:
+                yield extract_links(doc, fbcyl)
+            except Exception as error:                                # one odd game must not stop the publication of every competition (web-data, 06/11/2026)
+                log.warning("assist connections: game %s of %s skipped: %r", doc.get("_id") or doc.get("uuid"), collection, error)
 
     def get_connections(self, collection: str, team_id: str, player_id: Optional[str] = None) -> Dict[str, Any]:
         fbcyl = is_fbcyl(collection)
