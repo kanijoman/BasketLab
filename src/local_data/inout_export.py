@@ -11,7 +11,8 @@ import json
 from typing import Any, Dict
 
 from src.database.aggregation import AggregationPipelineBuilder
-from src.local_data.export import FORMAT, _rows, fbcyl_player_rows
+from src.local_data.export import _rows, fbcyl_player_rows
+from src.local_data.payload_format import FORMAT
 from src.utils.collection_utils import is_fbcyl
 
 

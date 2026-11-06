@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from src.local_data.export import FORMAT
+from src.local_data.payload_format import FORMAT
 from src.utils.collection_utils import is_fbcyl
 from src.utils.time_utils import fbcyl_game_instant
 

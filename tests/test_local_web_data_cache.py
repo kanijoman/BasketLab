@@ -12,7 +12,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
-from src.local_data import web_data  # noqa: E402
+from src.local_data import build_cache, web_data  # noqa: E402
 from src.local_data.web_data import SECTIONS, publish_web_data  # noqa: E402
 from tests.test_local_web_data import FBCYL, FEB, MASTER, cheap_lineups, handler  # noqa: E402,F401  (fixtures)
 
@@ -70,10 +70,64 @@ def test_a_competition_with_a_changed_game_is_computed_again_and_the_other_is_no
     assert {c for _, c in calls} == {FEB} and {s for s, _ in calls} >= {"matches", "lineups", "inout"}
 
 
-def test_new_code_computes_everything_again(handler, tmp_path, calls, monkeypatch):
+def _with_versions(monkeypatch, **changed):
+    """The next publication sees these sections with another version of their code (the others keep theirs)."""
+    real = build_cache.section_versions
+    monkeypatch.setattr(web_data, "section_versions", lambda modules, *a, **k: {**real(modules, *a, **k), **changed})
+
+
+def test_new_code_in_every_section_computes_everything_again(handler, tmp_path, calls, monkeypatch):
     _publish(handler, tmp_path)
     calls[:] = []
-    monkeypatch.setattr(web_data, "code_version", lambda: "another-version")
+    _with_versions(monkeypatch, **{s: "another-version" for s in HEAVY})
+    _publish(handler, tmp_path)
+    assert {c for _, c in calls} == {FEB, FBCYL} and {s for s, _ in calls} == set(HEAVY)
+
+
+def test_new_code_in_one_section_recomputes_only_that_section_in_every_competition_issue_783(handler, tmp_path, calls, monkeypatch):
+    """The point of #783: the code of ONE exporter changed, the other sections (and the 25 minutes they cost) are not computed again."""
+    _publish(handler, tmp_path)
+    calls[:] = []
+    _with_versions(monkeypatch, inout="another-version")
+    _publish(handler, tmp_path)
+    assert {s for s, _ in calls} == {"inout"} and {c for _, c in calls} == {FEB, FBCYL}
+
+
+def test_a_section_the_memory_never_saw_is_computed_and_the_others_are_not_issue_783(handler, tmp_path, calls, monkeypatch):
+    """A section added to the publication: the memory of the previous one has no version for it."""
+    _publish(handler, tmp_path)
+    memory = json.loads((tmp_path / "build-cache.json").read_text(encoding="utf-8"))
+    for entry in memory["competitions"].values():
+        entry["versions"].pop("lineups")
+        entry["sections"] = [x for x in entry["sections"] if x != "lineups"]
+    (tmp_path / "build-cache.json").write_text(json.dumps(memory), encoding="utf-8")
+    calls[:] = []
+    _publish(handler, tmp_path)
+    assert {s for s, _ in calls} == {"lineups"}
+
+
+def test_a_changed_game_recomputes_every_section_whatever_their_versions(handler, tmp_path, calls):
+    _publish(handler, tmp_path)
+    calls[:] = []
+    handler.connection.client["BASKETBALL"][FEB].delete_one({})
+    _publish(handler, tmp_path)
+    assert {s for s, c in calls if c == FEB} >= {"matches", "lineups", "inout"}
+
+
+def test_the_memory_of_the_old_format_one_version_for_all_the_code_is_not_trusted(handler, tmp_path, calls):
+    _publish(handler, tmp_path)
+    memory = json.loads((tmp_path / "build-cache.json").read_text(encoding="utf-8"))
+    old = {"code": "abc", "competitions": {k: {"fingerprint": v["fingerprint"], "sections": v["sections"]} for k, v in memory["competitions"].items()}}
+    (tmp_path / "build-cache.json").write_text(json.dumps(old), encoding="utf-8")
+    calls[:] = []
+    _publish(handler, tmp_path)
+    assert {c for _, c in calls} == {FEB, FBCYL}
+
+
+def test_raising_the_epoch_forces_everything_to_be_computed_again(handler, tmp_path, calls, monkeypatch):
+    _publish(handler, tmp_path)
+    calls[:] = []
+    monkeypatch.setattr(build_cache, "EPOCH", build_cache.EPOCH + 1)
     _publish(handler, tmp_path)
     assert {c for _, c in calls} == {FEB, FBCYL}
 
@@ -111,8 +165,9 @@ def test_a_section_that_had_nothing_to_publish_is_not_asked_again(handler, tmp_p
 def test_the_memory_is_not_a_readable_copy_of_anything_it_only_has_hashes(handler, tmp_path):
     _publish(handler, tmp_path)
     memory = json.loads((tmp_path / "build-cache.json").read_text(encoding="utf-8"))
-    assert set(memory) >= {"code", "competitions"} and set(memory["competitions"]) == {FEB, FBCYL}
-    assert all(set(v) == {"fingerprint", "sections"} for v in memory["competitions"].values())
+    assert set(memory) == {"epoch", "competitions"} and set(memory["competitions"]) == {FEB, FBCYL}
+    assert all(set(v) == {"fingerprint", "sections", "versions"} for v in memory["competitions"].values())
+    assert all(set(v["versions"]) == set(HEAVY) for v in memory["competitions"].values()), "one version per section, hashes only"
 
 
 def test_a_partial_refresh_keeps_the_memory_of_the_competitions_it_did_not_touch(handler, tmp_path, calls):
@@ -121,3 +176,12 @@ def test_a_partial_refresh_keeps_the_memory_of_the_competitions_it_did_not_touch
     calls[:] = []
     publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB, FBCYL])
     assert calls == []
+
+
+def test_the_log_also_says_what_the_rows_and_the_reports_of_each_competition_cost_issue_783(handler, tmp_path):
+    """Not everything is a section: the rows and the reports (scouting, images) are computed on every publication; the next saving needs to know what they cost."""
+    seen = []
+    publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB, FBCYL], on_section=lambda name, section, seconds, reused: seen.append((name, section)))
+    for name in (FEB, FBCYL):
+        assert (name, "rows") in seen and (name, "reports") in seen
+        assert seen.index((name, "rows")) < seen.index((name, "derived")) < seen.index((name, "reports"))

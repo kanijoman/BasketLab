@@ -56,7 +56,7 @@ def test_the_push_trigger_does_not_fire_for_the_web_or_the_docs():
 
 
 def test_the_paths_of_the_push_are_the_ones_that_change_the_code_version_of_the_build_cache():
-    """If a new source folder joined the fingerprint (``build_cache.code_version``), the push trigger must follow."""
+    """If a new source folder stopped counting for the versions of the sections (``build_cache._OUT_OF_THE_BUILD``), the push trigger must follow."""
     from src.local_data.build_cache import _OUT_OF_THE_BUILD
 
     assert {p[1:].split("/")[1] for p in _triggers()["push"]["paths"] if p.startswith("!src/")} == set(_OUT_OF_THE_BUILD)

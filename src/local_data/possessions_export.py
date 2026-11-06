@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict
 
-from src.local_data.export import FORMAT
+from src.local_data.payload_format import FORMAT
 from src.utils.collection_utils import is_fbcyl
 
 
