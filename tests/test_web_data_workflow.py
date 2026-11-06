@@ -65,3 +65,17 @@ def test_the_paths_of_the_push_are_the_ones_that_change_the_code_version_of_the_
 def test_a_push_run_publishes_like_a_manual_one_and_runs_one_at_a_time():
     assert STEPS["Build the artifacts"]["if"] == "github.event_name != 'pull_request'"      # push is not a pull request: it builds and publishes
     assert WORKFLOW["concurrency"] == {"group": "web-data", "cancel-in-progress": False}
+
+
+# ---- issue #789: a failed build must not publish what it had computed (run 42212803334, 06/11/2026, pushed 23 orphan files to the branch) ----------
+def test_a_failed_build_publishes_nothing_regression():
+    """The publish step ran with ``!cancelled()`` after a red build and pushed the files of the competitions it had finished (the manifest, written last, stayed the old one)."""
+    build, publish = STEPS["Build the artifacts"], STEPS["Publish to the web-data branch"]
+    assert build.get("id") == "build" and "continue-on-error" not in build
+    assert "steps.build.conclusion == 'success'" in publish["if"], "publish only when the build succeeded"
+    assert "github.event_name != 'pull_request'" in publish["if"]
+
+
+def test_the_step_that_publishes_is_after_the_build_and_nothing_between_can_swallow_its_failure():
+    between = ORDER[ORDER.index("Build the artifacts") + 1:ORDER.index("Publish to the web-data branch")]
+    assert between == [] and "continue-on-error" not in STEPS["Build the artifacts"]

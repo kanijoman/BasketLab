@@ -78,13 +78,15 @@ jobs:
         run: |
           git clone -q --depth 1 --branch web-data "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" web-out || mkdir web-out
       - name: Build the artifacts
+        id: build
         if: github.event_name != 'pull_request'
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
           PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY || secrets.PACKAGE_PASSWORD }}
         run: python run_web_data.py --out web-out
       - name: Publish to the web-data branch
-        if: ${{ !cancelled() && github.event_name != 'pull_request' && hashFiles('web-out/index.json') != '' }}
+        # only when the build succeeded (#789): after a red build the folder holds the files of the competitions it had finished and a push would leave them orphan in the branch
+        if: ${{ steps.build.conclusion == 'success' && github.event_name != 'pull_request' && hashFiles('web-out/index.json') != '' }}
         run: |
           cd web-out
           [ -d .git ] || git init -q
