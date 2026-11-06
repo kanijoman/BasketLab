@@ -57,7 +57,7 @@ El usuario añade ahí necesidades y bugs de pruebas manuales. **Antes de propon
 ## Tras integrar un PR: limpieza obligatoria (antes de seguir con nada más)
 1. **Git**: `git fetch --prune`, ff de `main`, borrar ramas locales fusionadas (`git branch --merged main`); comprobar que no quedan ramas remotas ni PRs sin integrar (`git branch -r`, `gh pr list`).
 2. **Issues**: cerrar los resueltos, comentar los parciales (`Refs #N`), actualizar épicas/sub-issues y ROADMAP/docs si cambió el estado, crear **issues** para hallazgos nuevos o trabajo diferido (no solo en el chat), revisar duplicados/obsoletos y issues nuevos del usuario.
-3. **CI en `main`**: `gh run list --branch main` (deploy, vectores, APK); un fallo = arreglo o issue.
+3. **CI en `main`**: `gh run list --branch main` (deploy, vectores, APK); un fallo = arreglo o issue. Si el PR tocó datos de la web, comprobar también el run de `Web data` (se lanza solo, #781; protocolo en OPERATIONS).
 4. Resumir al usuario (ramas, issues, CI) y proponer la siguiente tarea.
 
 ## Definición de hecho (sincronizar docs — obligatorio)
