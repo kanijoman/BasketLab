@@ -1,0 +1,2053 @@
+{
+ "epoch": 1,
+ "competitions": {
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_A": {
+   "fingerprint": "3b2998ce32595113a0da86769cece1a43a905f3e71bae8bd52cce1287f00593c",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_B": {
+   "fingerprint": "42ba866e7e7312e96968de3ad1313ea63d62efccd5d836fee7354a1768d6b89c",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_C": {
+   "fingerprint": "e4c39f25d002166229a1d28a4989240bc92746808c4de89eff12470be2c0ddfa",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_D": {
+   "fingerprint": "0257f0d6b6acf376b4a03cee6899641e31879b99d2753093db6b079e8c701c8e",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_E": {
+   "fingerprint": "203b3270efa9374613b34e48c21647024b9787f6268c266a6a4e55c0a496bca5",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_F": {
+   "fingerprint": "61678fc66a990fdfda4c96c5fee81f89d18712393ff190ba3cf7f4e4f5c7493a",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_G": {
+   "fingerprint": "9dd42e2308d0837a7c2acacd9dad6402609b561de424133d75aa9437a10dddb6",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_FASE_DE_GRUPOS_H": {
+   "fingerprint": "58e946488678447f7140c8bf66a1902a5feb45daf73f9c617eaaaba8017b6103",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_PLAYOFFS_1_2_Final": {
+   "fingerprint": "498e48087eca7e0b1ad062d2f7effe14f77182507fe52784978f224d2a36ea8c",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_PLAYOFFS_1_4_Final": {
+   "fingerprint": "0398fe03984031a99387eb15be48d50bb1e9286872444878ba4cf851d25d7c77",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2024_2025_PLAYOFFS_Final": {
+   "fingerprint": "78d04d9e3a97b9f30d712ee397a81ca846ea7ed6d686e5e46078203de1751e4c",
+   "sections": [],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_A": {
+   "fingerprint": "33f53020a52930f14fe8e4830eebd64176f19dd15c68d57f418d84f354322de3",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_B": {
+   "fingerprint": "17fdae051ba8fa6db741dc2db27c0869fefb65340c9cc7795787cb5d3c758d41",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_C": {
+   "fingerprint": "a990d0742b77fc4a9602a10d7be76361bde0f7b3ecdc3b80f1f8859a1ccf920e",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_D": {
+   "fingerprint": "1b5a86f22afd656c3621eab2805d2653fcf7e5c8dde7466e4c35b91789761815",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_E": {
+   "fingerprint": "79cd3ad581c47d202f07aea33b538b16612f00c95db0f5eb488885a9789322b1",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_F": {
+   "fingerprint": "5029fea5f31f23ba6cfe2c364dd81f8088aa354f6aa70c38c8948a9eac612dac",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_FASE_DE_GRUPOS_G": {
+   "fingerprint": "74327a6e27a777475ae7594c06ba66e6ab2026bee56c96ba5eb74224abc19ce0",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_Play-offs_1_16_Final": {
+   "fingerprint": "5c33404a11e787da1fb48cc5f1aa8c202ff0d41186a89498c314bedb4c335c63",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_Play-offs_1_2_Final": {
+   "fingerprint": "26866d8ae84b847fa4fce6d6f8af0bea64e995920613d48351615915b5b74d2a",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_Play-offs_1_4_Final": {
+   "fingerprint": "94c899a56e50af78f530c90e752e6ba77189bdca9f848a8a5ecc6ea5f4dc964f",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_Play-offs_1_8_Final": {
+   "fingerprint": "9a0870e5d235bef93998c1950d88100413ff9f11d65f5bd24bda6602bf2a2c1d",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2025_2026_Play-offs_Final": {
+   "fingerprint": "0dbc983edb463d32a11b7e4d86cb7d671806cc5d62b1e14bd1a6f6a526bf6851",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_A": {
+   "fingerprint": "d2f925f61c2a5464499fc4ae060ed295ae628c4c1eae42ce93e8b52909b98919",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_B": {
+   "fingerprint": "14458c0d1fe4bca5599be6ff132537c3b003f7597ce329165fc9e67d4fb0ac0b",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_C": {
+   "fingerprint": "7f180669761a9b4077262f5b436a4dfce98aeba94627c209eac9aa19b0b4ef3d",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_D": {
+   "fingerprint": "4770bd0ed877f0543568440591de70eca8ba75e701b6c749da7eedef9dfab6fc",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_E": {
+   "fingerprint": "39c3b2a665a328a4508cf6603afa3c96ae0a33752c9fdaf87d0400f3a441dffe",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_F": {
+   "fingerprint": "0293bac2afdeda94815a08c1e71513e945334e00ea3dc801151992bca514382f",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_FASE_DE_GRUPOS_G": {
+   "fingerprint": "5685a1e5e2b9ca2dedf74c18856148c7599addb35a26367991b8a41475719480",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_Play-offs_1_16_Final": {
+   "fingerprint": "6a7695f5d1637969e7abdd13525e4fc60bb471c82eab7fe6b3ad65622cc38d9d",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "COPA_ESPA\u00d1A_2026_2027_Play-offs_1_8_Final": {
+   "fingerprint": "55722c85a66f73d14aecc148800cf50c94b6fea29134a4c0aa9c1d54f53fec12",
+   "sections": [],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "FBCYL_1\u00aa_FASE-GRUPO_A-1_2026_": {
+   "fingerprint": "b7749d9aed48abd74fa94488730681294878a07752e47f1c977aa48493b59171",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "FBCYL_1\u00aa_FASE-GRUPO_A-2_2026_": {
+   "fingerprint": "d6757587395419da8fc1960ad4315f3a4657ac7417fdc54caaecbe9739c69e8a",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "LF_CHALLENGE_2026_2027_Liga_Regular_\u00danico": {
+   "fingerprint": "8a0fa80065d739d14c23059bed38402d1dd4dbc9aca387bb9d808fe15b9213d4",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "LF_ENDESA_2026_2027_Liga_Regular_\u00danico": {
+   "fingerprint": "3440af28fe3bc6babad471486129ae4dfbe16bed39e2f088cee443849be7e075",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "LF_ENDESA_2026_2027_Supercopa_1_2_Final": {
+   "fingerprint": "a8ca5b66f987f8f2b973429809a047f8e66793049ad538f2ac2ab8ec1e935129",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "LF_ENDESA_2026_2027_Supercopa_Final": {
+   "fingerprint": "88601a221ddcf344b7fadc9fa456773c115322b2ba36efcf99e00b6d2b6819e3",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_A": {
+   "fingerprint": "2e56a8cda6689dc97a4f8c6a96d2ef97c870b7930d229a41140f91eede5ec8d9",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "LIGA_U_2026_2027_LIGA_REGULAR_GRUPO_B": {
+   "fingerprint": "5746cb2d9ee7f1d2b18c275f8714352aacc4c758deee4183bee669a65db8f3d2",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "L_F_-2_2026_2027_Liga_Regular_A": {
+   "fingerprint": "b5336272233bc5a838bc6dee51c09335440e1a38c5e9764a917e3f82d3b16628",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "L_F_-2_2026_2027_Liga_Regular_B": {
+   "fingerprint": "ae8cff113adce0cacf5f8ca1c497615379319a9122a463b1660b20b82f22a893",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2024_2025_Liga_Regular_\u00danico": {
+   "fingerprint": "4e197a92f6da96da0f1833a4c3fa27d02fbc0ca8a9533c23aadff8987dedbc76",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2024_2025_Play-Offs_1_2_Final": {
+   "fingerprint": "56bade682f1f6be69dc5a7457a919609c529e887e7df6e26bcdb8673b0b4d32e",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2024_2025_Play-Offs_1_4_Final": {
+   "fingerprint": "a28cf2537104954d17f20069d2ec1e3e06c4cbf5d66bd73faad504d4fc5940ad",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2024_2025_Play-Offs_Final": {
+   "fingerprint": "9e9b40246d1b60df3a734af9b3e92b541b13da65d533e6fd6bd5ee436a77eedf",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2025_2026_Liga_Regular_\u00danico": {
+   "fingerprint": "eeb38b093169a4b8d5cd499d5d5e9ac0ae4517e95cc9af998483662a0e36cace",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2025_2026_Play-offs_1_2_Final": {
+   "fingerprint": "b03c819d23da9ef0d59e540f08bc3f3c1f2ea191ce1e1a6f97ef795874c40d2f",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2025_2026_Play-offs_1_4_Final": {
+   "fingerprint": "7f03c40cc4b5883337e2e0057f924fe4f591e84340089ca008c4058fc322f985",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2025_2026_Play-offs_Final": {
+   "fingerprint": "d485b4b02d4e0dfa09f37d1cd7d43de765a1a18d09f9b213963b897965503589",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "PRIMERA_FEB_2026_2027_Liga_Regular_\u00danico": {
+   "fingerprint": "863687d6b2a2fe12a761dfac41cc008b7b10f63f382297410c740a9b633ba695",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_1\u00baE-1\u00baO_Final": {
+   "fingerprint": "7f4c2423a33350f312d22831ebeb22257ca478d59ef5e41b0ea1820cb103505b",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_2_Final": {
+   "fingerprint": "3ac97fd94e6ee6eafdf3b7b3472f6f5f3cedd813648e2c658a6bd7c974e3e6e0",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_4_Final": {
+   "fingerprint": "b55a33ca405317154304816957fe69821bb904e53cf7667eb1fb25d3a05dc4fc",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_ELIMINATORIAS_1_8_Final": {
+   "fingerprint": "05bb281063a6b44dfc517bbcdc2cc64798df08738bc371bf9e8b86dbf160b723",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_Liga_Regular_ESTE": {
+   "fingerprint": "a958fe8fdd4f36dfbbf36a2a09ab3421c250909da52e5224db15293166dcafad",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_Liga_Regular_OESTE": {
+   "fingerprint": "f0e7e56defd9e43a7e5d31a159b89504c64a69155231097ccba7ab08b06a4346",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2024_2025_PERMANENCIA_1_2_Final": {
+   "fingerprint": "c77218c6a6e714636db2b65d0c118772659694d8039a876a1a75497427e3c286",
+   "sections": [
+    "derived",
+    "shots",
+    "matches",
+    "possessions",
+    "inout",
+    "consistency",
+    "rival_adjusted"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_1\u00baE-1\u00baO_Final": {
+   "fingerprint": "c32ae2b175b3157fe362d1cd008e8cb0288836934d4950c1daf0721292e8c520",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_2_Final": {
+   "fingerprint": "936ce9dc90e50c38202a5de7e3ff293f3f9f97eac63417411c21cf938e29bb1c",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_4_Final": {
+   "fingerprint": "3d6a7cbf1fb1427ce45319d348d8169b9a89d21706c1634c5d7bac53ec298f41",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_ELIMINATORIAS_1_8_Final": {
+   "fingerprint": "8eb23afba9a5d377c685a10f28ead8a690ff477be3078b5f7b1c986193da39fc",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_Liga_Regular_ESTE": {
+   "fingerprint": "dbc3cd5e2073c6835bfc8b9ce6b5082f24287c05940b82c9b10fa919bae3fdd5",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_Liga_Regular_OESTE": {
+   "fingerprint": "b37b68c51abfe37bbe1fc5adc95baae683d2c13984ade15d792d5ca78b25297c",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2025_2026_PERMANENCIA_Final": {
+   "fingerprint": "42fc4d7e44c63dc5b97682f573369f1fc35e5310801eba36bc35d414c1f27b51",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2026_2027_Liga_Regular_A": {
+   "fingerprint": "1b091d34a8a1f9e9cbb3af84db7f683c8085a192220a149706314de2e7ecd673",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "SEGUNDA_FEB_2026_2027_Liga_Regular_B": {
+   "fingerprint": "d90c1d75b36138bfe34187cb7b982bee5bbc497813de33104d3e02ebc50eb811",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_A-A": {
+   "fingerprint": "fa3e4172cfad8dadafe812580c16d5efd1124c3ca2703ece733c77deca778385",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_A-B": {
+   "fingerprint": "95660c5307ee83b29a4f8a007f96abb7a4d2ad41ce8634fc98e8750b3338bd43",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_B-A": {
+   "fingerprint": "5b539d44303cff4cf91b5079f2b68ba9ec5d5b6bb57a98aaef05200a0345f659",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_B-B": {
+   "fingerprint": "9c7a049195b5c4f75067cadbf2791f77aa26998b092b1fdc440e30e4d69e6b22",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_C-A": {
+   "fingerprint": "5315a8d64d90defc54a3a7973ed628c5be1f95c3fc6c0484c79890b9c2892b31",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_C-B": {
+   "fingerprint": "c34983e345f1d3ece13589fd95abc757306a5e8a4fc9c00f0e81715fdb2470cd",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_D-A": {
+   "fingerprint": "6de4e2e01f7584dc555231f7706a6dae408a10dc7a3724750ebdf8351793ec1f",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_D-B": {
+   "fingerprint": "ebc09fd83a1752fb0ad86e4f8c62677c157d82873fd821acaa13001859a31e8f",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_E-A": {
+   "fingerprint": "36d32a28de58e4dfbffec7e8ee8fe95dae3406c39c01027e0c229a3bdaea940f",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  },
+  "TERCERA_FEB_2026_2027_Liga_Regular_E-B": {
+   "fingerprint": "34c6d39a48e4c9ef39e1d36b3ae084d3616c47424c3c574b30583d5a83f03d69",
+   "sections": [
+    "derived",
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "consistency",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "d06a4b0e1afd5cea",
+    "rotations": "ae7ed0909d878bbb",
+    "matches": "d3d876b1d6ccb303",
+    "possessions": "daba36d5d17cbb65",
+    "possession_csv": "daba36d5d17cbb65",
+    "lineups": "13c02092e84d3e19",
+    "inout": "b8491ba795f4f966",
+    "consistency": "de80c2169299e87d",
+    "rival_adjusted": "9ed16fa4c4c94f14",
+    "assist_connections": "c1f6c4feead35668"
+   }
+  }
+ }
+}
