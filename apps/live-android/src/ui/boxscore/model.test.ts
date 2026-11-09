@@ -152,8 +152,22 @@ describe('the colours that were missing (issue #699)', () => {
     expect(['ts', 'ftr', 'tov_pct', 'ast_pct', 'stl_pct', 'blk_pct', 'drb_pct', 'orb_pct'].map(id => deviationOf(by(id), row))).toEqual([0.5, -0.2, -0.4, 0.3, 0.1, 0.2, -0.6, 0.7])
   })
 
-  it('the ones with no side or no reference in the package stay without colour', () => {
-    const row = { ...players[0], entry: { ...ENTRIES.p1, dev: { pts: 0.5, ts: 0.5 } } }
-    expect(['usage', 'orating', 'drating', 'net_rtg', 'three_pr', 'pie'].map(id => deviationOf(by(id), row))).toEqual([null, null, null, null, null, null])
+  // Feedback of the 0.5.2: «sigue habiendo campos no coloreados, revisar básicos y avanzados». The package now has his season for the rest (live_prep.season_figures).
+  it('every column with a reference of his season is coloured: T2, TC, FR, +/- and Val, and Usg%, ORtg, DRtg, NetRtg, 3Pr and PIE%', () => {
+    const dev = { fg2: 0.4, fg: -0.3, fd: 0.2, pm: -0.6, val: 0.5, usage: 0.3, orating: 0.7, drating: -0.2, net_rtg: 0.5, three_pr: -0.1, pie: 0.9 }
+    const row = { ...players[0], entry: { ...ENTRIES.p1, dev } }
+    expect(['t2', 'tc', 'fr', 'pm', 'val'].map(id => deviationOf(by(id), row))).toEqual([0.4, -0.3, 0.2, -0.6, 0.5])
+    expect(['usage', 'orating', 'drating', 'net_rtg', 'three_pr', 'pie'].map(id => deviationOf(by(id), row))).toEqual([0.3, 0.7, -0.2, 0.5, -0.1, 0.9])
+  })
+
+  it('only the minutes have no colour (playing more is not better); a package without his season leaves the new columns without colour', () => {
+    expect([...NORMAL_COLUMNS, ...ADVANCED_COLUMNS].filter(c => !c.dev).map(c => c.id)).toEqual(['min', 'min'])
+    const before = { ...players[0], entry: { ...ENTRIES.p1, dev: { pts: 0.5, ts: 0.5 } } }
+    expect(['t2', 'fr', 'val', 'usage', 'pie'].map(id => deviationOf(by(id), before))).toEqual([null, null, null, null, null])
+  })
+
+  it('the totals row takes T2, TC, FR and Val from the team against the rival, and has no +/-', () => {
+    const { totals } = teamRows(SNAP, 'A', players, { fg2: 0.3, fg: 0.2, fd: -0.4, val: 0.6, pm: 0.9 })
+    expect(['t2', 'tc', 'fr', 'val', 'pm'].map(id => deviationOf(by(id), totals))).toEqual([0.3, 0.2, -0.4, 0.6, null])
   })
 })
