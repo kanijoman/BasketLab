@@ -43,4 +43,34 @@ describe('PassZoneCourt', () => {
     render(<PassZoneCourt zones={[]} />)
     expect(screen.getByText(/sin asistencias con zona/i)).toBeInTheDocument()
   })
+
+  // Issue #803: the orange ring was always a full circle. It is an arc from the top, clockwise, of the share that is written inside (as in AssistZoneCourt).
+  describe('the ring says the share (issue #803)', () => {
+    /** Degrees of the circle that the arc of a bubble covers, read from its path `M cx cy-r A r r 0 large 1 x y` (null: no arc). */
+    const sweep = (container: HTMLElement, zone: string): number | null => {
+      const d = container.querySelector(`[data-pass-zone="${zone}"] path`)?.getAttribute('d')
+      if (!d) return null
+      const [cx, top, r, large, x, y] = d.match(/M (\S+) (\S+) A (\S+) \S+ 0 ([01]) 1 (\S+) (\S+)/)!.slice(1).map(Number)
+      const degrees = (Math.atan2(x - cx, top + r - y) * 180) / Math.PI                // clockwise from the top, in (-180, 180]
+      return large === 1 ? (degrees + 360) % 360 : degrees
+    }
+
+    it('covers the share of each zone: 60 % of the circle for 6 of 10, 10 % for 1 of 10', () => {
+      const { container } = render(<PassZoneCourt zones={ZONES} />)
+      expect(sweep(container, 'paint')).toBeCloseTo(0.6 * 360, 0)
+      expect(sweep(container, 'top_three')).toBeCloseTo(0.3 * 360, 0)
+      expect(sweep(container, 'corner_left')).toBeCloseTo(0.1 * 360, 0)
+    })
+
+    it('counts the assists with no known zone in the total, as the figure does', () => {
+      const { container } = render(<PassZoneCourt zones={ZONES} withoutZone={10} />)
+      expect(sweep(container, 'paint')).toBeCloseTo(0.3 * 360, 0)           // 6 of 20
+    })
+
+    it('a zone with all the assists is a full ring of one colour, with no arc', () => {
+      const { container } = render(<PassZoneCourt zones={[{ zone: 'paint', count: 4 }]} />)
+      expect(container.querySelector('[data-pass-zone="paint"] path')).toBeNull()
+      expect(container.querySelectorAll('[data-pass-zone="paint"] circle')).toHaveLength(2)
+    })
+  })
 })

@@ -43,6 +43,8 @@ Gráficos (recharts, SVG): `useChartTheme()` de `lib/chartTheme.ts` (colores ya 
 
 **La pista de tiro (U6, #196)** no tiene colores propios: suelo, líneas, aro, calor, aciertos y fallos salen del tema activo (`useChartTheme`) y las zonas se colorean con `zoneColours(tema)` (`ok`/`warn`/`bad` según el rating contra la liga); la tinta sobre una burbuja es `--on-data`.
 
+**Pistas de burbujas por zona (#773, #803)**: `components/ZoneBubbleCourt` dibuja **una sola vez** la burbuja de zona —tamaño por `sqrt` del total, anillo en arco desde arriba en sentido horario con la parte `share` sobre una pista tenue del círculo entero, y la cifra pequeña— y `AssistZoneCourt` (canastas con y sin asistencia) y `PassZoneCourt` (a dónde llegan las asistencias del pasador) solo le dan datos, textos y leyenda. Una pista nueva de este estilo se hace con ese componente, no copiándolo: el anillo de `PassZoneCourt` salía siempre completo porque era una copia sin el arco. El test de `PassZoneCourt` comprueba la geometría del arco, no solo los textos.
+
 **Informe de equipo y scouting del rival (#627)**: el scouting de un rival tiene su página completa («Scouting del rival», en FEB y, desde #635, en FBCYL). «Informe de equipo» es el análisis propio, en las dos ligas, y enlaza a ella (el modo «Scouting rival» por reglas que solo tenía FBCYL se retiró).
 
 ## Accesibilidad (U7, #197)
