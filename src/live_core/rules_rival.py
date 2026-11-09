@@ -8,8 +8,8 @@ from typing import Any, Dict, List
 from .advice_types import Advice, RuleContext
 from .profiles import DEFAULT_IMPACT_LEAGUE, IMPACT_METRICS
 from .zones import DEFAULT_FAMILY_SHARE, default_family_pps, family_totals
+from .clock import GAME_SECONDS
 
-GAME_SECONDS = 2400
 
 # metric -> (Spanish noun for the message, tactical response)
 _TEXT = {

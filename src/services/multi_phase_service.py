@@ -16,6 +16,7 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from src.services._team_id import with_team_id
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 # Fields that are simple totals (sum across phases)
 _SUM_FIELDS = (
@@ -262,7 +263,7 @@ def _recompute_derived(row: Dict) -> None:
         row["three_point_rate"] = round(fg3a / fga * 100, 2)
 
     # TOV% (four-factors formula)
-    tov_denom = fga + 0.44 * fta + tov
+    tov_denom = fga + FT_POSSESSION_COST * fta + tov
     if tov_denom:
         row["turnover_rate"] = round(tov / tov_denom * 100, 2)
 
@@ -271,7 +272,7 @@ def _recompute_derived(row: Dict) -> None:
         row["free_throw_rate"] = round(fta / fga * 100, 2)
 
     # True shooting %
-    ts_denom = 2 * (fga + 0.44 * fta)
+    ts_denom = 2 * (fga + FT_POSSESSION_COST * fta)
     if ts_denom and pts:
         row["true_shooting"] = round(pts / ts_denom * 100, 2)
 

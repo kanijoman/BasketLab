@@ -12,6 +12,7 @@ both leagues without branching.
 from __future__ import annotations
 
 from typing import Dict, List
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 def build_fbcyl_team_per_game_pipeline() -> List[Dict]:
@@ -146,8 +147,8 @@ def enrich_fbcyl_team_row(row: Dict) -> Dict:
     row["fg3_pct_game"] = _pct(fg3m, fg3a)
     row["ft_pct_game"]  = _pct(row.get("ft_made", 0), fta)
     row["efg_pct_game"] = _pct(fg2m + 1.5 * fg3m, fga)
-    row["ts_pct_game"]  = _pct(pts, 2 * (fga + 0.44 * fta))
-    row["tov_pct_game"] = _pct(tov, fga + 0.44 * fta + tov)
+    row["ts_pct_game"]  = _pct(pts, 2 * (fga + FT_POSSESSION_COST * fta))
+    row["tov_pct_game"] = _pct(tov, fga + FT_POSSESSION_COST * fta + tov)
     row["possessions"]  = poss if poss > 0 else None
     row["oer_game"]     = _pct(pts, poss)
     row["der_game"]     = _pct(opp, poss)
@@ -170,8 +171,8 @@ def enrich_fbcyl_team_row(row: Dict) -> Dict:
     row["opp_fg3_pct_game"]         = _pct(o_fg3m, o_fg3a)
     row["opp_ft_pct_game"]          = _pct(row.get("opp_ft_made", 0), o_fta)
     row["opp_efg_pct_game"]         = _pct(o_fg2m + 1.5 * o_fg3m, o_fga)
-    row["opp_ts_pct_game"]          = _pct(o_pts, 2 * (o_fga + 0.44 * o_fta))
-    row["opp_tov_pct_game"]         = _pct(o_tov, o_fga + 0.44 * o_fta + o_tov)
+    row["opp_ts_pct_game"]          = _pct(o_pts, 2 * (o_fga + FT_POSSESSION_COST * o_fta))
+    row["opp_tov_pct_game"]         = _pct(o_tov, o_fga + FT_POSSESSION_COST * o_fta + o_tov)
     row["opp_possessions"]          = opp_poss if opp_poss > 0 else None
     row["opp_oer_game"]             = _pct(o_pts, opp_poss)
     row["opp_der_game"]             = _pct(pts, opp_poss)
@@ -294,10 +295,10 @@ def enrich_fbcyl_player_row(row: Dict) -> Dict:
     row["fg2_pct_game"] = _pct(p2m, p2a)
     row["fg3_pct_game"] = _pct(p3m, p3a)
     row["efg_pct_game"] = _pct(p2m + 1.5 * p3m, fga)
-    row["ts_pct_game"]  = _pct(pts, 2 * (fga + 0.44 * p1a))
+    row["ts_pct_game"]  = _pct(pts, 2 * (fga + FT_POSSESSION_COST * p1a))
     row["ftr_game"]     = _pct(p1a, fga)
     row["three_pr_game"] = _pct(p3a, fga)
-    row["tov_pct_game"] = _pct(row.get("to", 0), fga + 0.44 * p1a + (row.get("to") or 0))
+    row["tov_pct_game"] = _pct(row.get("to", 0), fga + FT_POSSESSION_COST * p1a + (row.get("to") or 0))
 
     return row
 

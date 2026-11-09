@@ -16,6 +16,16 @@ _SHOT_KINDS = ("fg2", "fg3", "ft")
 _FIELD_GOALS = ("fg2", "fg3")
 
 
+def player_name(p: Dict[str, Any]) -> str:
+    """The name of a player of a snapshot, trimmed (the feed pads them)."""
+    return p["name"].strip()
+
+
+def names_of(snap: Dict[str, Any]) -> Dict[str, str]:
+    """Player id -> name (trimmed) of a snapshot: what the alerts say instead of an id."""
+    return {pid: player_name(p) for pid, p in snap.get("players", {}).items()}
+
+
 def player_of(entry: Sequence[Any]) -> Optional[str]:
     return entry[4] if len(entry) > 4 else None
 
@@ -150,12 +160,13 @@ _WEIGHT = {"turnovers": 1.0, "rival_orb": 1.0, "own_free_throws": 1.0, "rival_th
 _COLD_FG_PCT = 0.30
 
 
-def _n(count: int, one: str, many: str) -> str:
+def count_text(count: int, one: str, many: str) -> str:
+    """``(1, "pérdida", "pérdidas")`` -> ``1 pérdida``; ``(3, ...)`` -> ``3 pérdidas``."""
     return f"{count} {one if count == 1 else many}"
 
 
 def _turnover_text(own: Dict[str, Any], names: Dict[str, str]) -> str:
-    text = _n(own["tov"], "pérdida", "pérdidas")
+    text = count_text(own["tov"], "pérdida", "pérdidas")
     if own["tov_by_player"]:
         pid, k = max(sorted(own["tov_by_player"].items()), key=lambda kv: kv[1])
         if k >= 2:
@@ -175,10 +186,10 @@ def run_causes(own: Dict[str, Any], rival: Dict[str, Any], names: Dict[str, str]
     ft_miss = own["ft"][1] - own["ft"][0]
     found = [
         ("turnovers", own["tov"], _turnover_text(own, names)),
-        ("rival_orb", rival["orb"], _n(rival["orb"], "rebote ofensivo del rival", "rebotes ofensivos del rival")),
-        ("own_free_throws", ft_miss, _n(ft_miss, "tiro libre fallado", "tiros libres fallados")),
-        ("rival_threes", rival["fg3"][0], _n(rival["fg3"][0], "triple del rival", "triples del rival")),
-        ("rival_free_throws", rival["ft"][1], _n(rival["ft"][1], "tiro libre del rival", "tiros libres del rival")),
+        ("rival_orb", rival["orb"], count_text(rival["orb"], "rebote ofensivo del rival", "rebotes ofensivos del rival")),
+        ("own_free_throws", ft_miss, count_text(ft_miss, "tiro libre fallado", "tiros libres fallados")),
+        ("rival_threes", rival["fg3"][0], count_text(rival["fg3"][0], "triple del rival", "triples del rival")),
+        ("rival_free_throws", rival["ft"][1], count_text(rival["ft"][1], "tiro libre del rival", "tiros libres del rival")),
     ]
     causes = [{"kind": k, "count": c, "points": round(c * _WEIGHT[k], 2), "text": t} for k, c, t in found if c >= need]
     if fga >= 2 * need and fgm / fga < _COLD_FG_PCT:

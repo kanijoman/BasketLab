@@ -8,10 +8,8 @@ from .advice_types import Advice, RuleContext
 from .config import RuleConfig
 from .game_context import game_phase
 from .rules_players import orb_dominant
-from .clock import period_start
+from .clock import clock_text, GAME_SECONDS, period_start
 from .windows import player_form, run_start, window_stats
-
-GAME_SECONDS = 2400
 
 
 def _clamp(value: float) -> float:
@@ -63,10 +61,6 @@ def fatigue_index(
     total_weight = sum(weights.values())
     index = sum(weights[k] * parts[k] for k in parts) / total_weight * 100 if total_weight else 0.0
     return round(index, 2), {k: round(v, 3) for k, v in parts.items()}
-
-
-def _clock(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
 
 
 _LEVELS = ("critical", "warning", "info")     # most to least urgent
@@ -137,7 +131,7 @@ def fatigue_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         usual = (baseline or {}).get("avg_stint") if trusted else None
         usual = usual or ctx.config.fatigue_default_avg_stint_s
         message = (f"{p['name']}: riesgo de fatiga {'muy alto' if level == 'critical' else 'alto'}, "
-                   f"{_clock(p['stint'])} seguidos en pista (su tramo habitual: {_clock(int(usual))}) y {p['minutes'] // 60} min jugados. "
+                   f"{clock_text(p['stint'])} seguidos en pista (su tramo habitual: {clock_text(int(usual))}) y {p['minutes'] // 60} min jugados. "
                    + ("Cambio recomendado." if level == "critical" else "Valorar descanso."))
         if reason:
             message += f" Se baja un nivel: {reason}."

@@ -18,8 +18,8 @@ from .profiles import role_distance
 from .rules_fouls import FOUL_OUT, evaluate_player_fouls
 from .rules_lineup import roster_known
 from .rules_rotation import fatigue_index
+from .clock import GAME_SECONDS
 
-GAME_SECONDS = 2400
 
 # lever -> (profile metric, or metrics averaged, +1 if higher is better else -1, Spanish label)
 LEVER_METRIC = {

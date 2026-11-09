@@ -22,13 +22,13 @@ from typing import Any, Dict
 
 from .clock import period_length, period_start
 from .config import RuleConfig
+from .four_factors import FT_POSSESSION_COST
 
 FIELDS = ("fga", "fta", "ftm", "tov", "pts", "sec")
 MIN_SECONDS = 240          # clutch (or 4th-period) seconds needed to say anything
 SHRINK_SECONDS = 600       # responsibility: prior weight of 10 minutes
 PPS_PRIOR_SHOTS = 60       # accuracy: a much stronger prior than the 30 attempts of the efficiency rates
 FT_PRIOR_ATTEMPTS = 10     # free-throw percentage: prior weight in attempts
-FT_POSSESSION_COST = 0.44
 LAST_REGULATION_PERIOD = 4
 
 _CFG = RuleConfig()

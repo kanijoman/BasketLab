@@ -13,6 +13,7 @@ from typing import Dict, Optional
 from utils.numeric_utils import safe_int, safe_float
 
 from src.pbp.game_possessions import estimate_possessions
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class StatsCalculator:
@@ -140,7 +141,7 @@ class StatsCalculator:
         efg_pct = ((fg2_made + 1.5 * fg3_made) / (fg2_att + fg3_att) * 100) if (fg2_att + fg3_att) > 0 else 0
 
         # True Shooting %
-        ts_pct = (pts / (2 * (fg2_att + fg3_att + 0.44 * ft_att)) * 100) if (fg2_att + fg3_att + ft_att) > 0 else 0
+        ts_pct = (pts / (2 * (fg2_att + fg3_att + FT_POSSESSION_COST * ft_att)) * 100) if (fg2_att + fg3_att + ft_att) > 0 else 0
 
         # Three Point Rate (3PA / FGA)
         three_pt_rate = (fg3_att / (fg2_att + fg3_att) * 100) if (fg2_att + fg3_att) > 0 else 0
@@ -369,7 +370,7 @@ class StatsCalculator:
             total_att = fg2_att + fg3_att
             return ((fg2_made + 1.5 * fg3_made) / total_att * 100) if total_att > 0 else 0
         elif stat_field == "true_shooting":
-            total_att = fg2_att + fg3_att + 0.44 * ft_att
+            total_att = fg2_att + fg3_att + FT_POSSESSION_COST * ft_att
             return (pts / (2 * total_att) * 100) if total_att > 0 else 0
         elif stat_field == "three_point_rate":
             total_att = fg2_att + fg3_att

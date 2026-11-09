@@ -12,8 +12,8 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 from .four_factors import FT_POSSESSION_COST
 from .windows import window_stats
+from .clock import GAME_SECONDS
 
-GAME_SECONDS = 2400
 MIN_POSSESSIONS = 8        # fewer possessions per team in the window say nothing about the pace
 
 
