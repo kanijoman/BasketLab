@@ -213,6 +213,9 @@ export interface WinLever {
   proposal?: Proposal[]
 }
 
+/** What the engine says of a reading of the FBCYL streaming: the output of the update, or ``stale`` when the reading goes back against the best seen (issue #446) and there is nothing to show. */
+export type StreamingOutput = EngineOutput | { stale: true }
+
 export interface EngineOutput {
   snapshot: Snapshot
   alerts: Alert[]

@@ -1,6 +1,6 @@
 /** Promise-based client for the engine Web Worker (keeps the UI thread free while Python runs). */
 import type { WorkerRequest, WorkerResponse } from './protocol'
-import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
+import type { EngineOutput, LoggedAlert, StreamingOutput, PostMatchReport, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
 
 export interface EngineApi {
   start(packageText: string): Promise<SessionMeta>
@@ -10,6 +10,10 @@ export interface EngineApi {
   replay(elapsed: number): Promise<EngineOutput>
   /** ``at``: seconds since the first poll of the feed; with it the document is recorded (issue #416). */
   update(docJson: string, at?: number): Promise<EngineOutput>
+  /** A reading of the FBCYL streaming (issue #446): ``{stale: true}`` when it goes back against the best seen, else the output of the update. */
+  updateStreaming(bodyJson: string, at?: number): Promise<StreamingOutput>
+  /** The definitive moves and stats of msstats once a FBCYL match is over: they replace what the stream gave. */
+  updateFbcylFinal(movesJson: string, statsJson: string, at?: number): Promise<EngineOutput>
   /** Starts keeping a recording of the feed (the format of the CI recorder) from the documents ``update`` is given a time for. */
   beginRecording(match: string, startedIso: string): Promise<void>
   recordGap(endpoint: string, at: number): Promise<void>
@@ -71,6 +75,8 @@ export class EngineClient implements EngineApi {
   loadReplay(gameJson: string) { return this.call<ReplayInfo>({ type: 'loadReplay', payload: gameJson }) }
   replay(elapsed: number) { return this.call<EngineOutput>({ type: 'replay', payload: elapsed }) }
   update(docJson: string, at?: number) { return this.call<EngineOutput>({ type: 'update', payload: { doc: docJson, at } }) }
+  updateStreaming(bodyJson: string, at?: number) { return this.call<StreamingOutput>({ type: 'updateStreaming', payload: { body: bodyJson, at } }) }
+  updateFbcylFinal(movesJson: string, statsJson: string, at?: number) { return this.call<EngineOutput>({ type: 'updateFbcylFinal', payload: { moves: movesJson, stats: statsJson, at } }) }
   async beginRecording(match: string, startedIso: string) { await this.call<unknown>({ type: 'beginRecording', payload: { match, startedIso } }) }
   async recordGap(endpoint: string, at: number) { await this.call<unknown>({ type: 'recordGap', payload: { endpoint, at } }) }
   recording() { return this.call<unknown>({ type: 'recording' }) }

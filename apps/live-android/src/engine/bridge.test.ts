@@ -5,7 +5,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { loadPyodide } from 'pyodide'
+import zlib from 'node:zlib'
 import { LiveBridge, type EngineBundle } from './bridge'
+import type { EngineOutput } from './types'
 
 const appRoot = path.resolve(import.meta.dirname, '../..')
 const repoRoot = path.resolve(appRoot, '../..')
@@ -133,4 +135,31 @@ describe('real recorded match on Pyodide (issue #174)', () => {
     expect(last!.analysis.pace?.reliable).toBe(true)
   }, 120_000)
 })
+})
+
+
+// Issue #446 (PR 3): a FBCYL match followed from the streaming service. The REAL end of Salamanca–UNILEON (7/11/2026): the service answers readings that go backwards mixed with the right
+// ones; the real engine inside Pyodide ignores them and closes with the moves of msstats.
+describe('LiveBridge on a FBCYL match (issue #446)', () => {
+  const fixture = (name: string) => JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(repoRoot, 'tests/fixtures', name))).toString('utf8'))
+  const ending: { body: Record<string, unknown> }[] = fixture('fbcyl_streaming_end_20261107.json.gz').readings
+  const full = fixture('fbcyl_streaming_20261107.json.gz')
+  const HOME = '39731'
+  const AWAY = '39609'
+
+  it('ignores the readings that go backwards and shows the 4th period at 81-75 at the end', () => {
+    bridge.start(realPackage)
+    const outputs = ending.map((r, i) => bridge.updateStreaming(JSON.stringify(r.body), i * 10))
+    expect(outputs.map(o => 'stale' in o)).toEqual([false, true, false, true, false, true, true])
+    const shown = outputs.filter((o): o is EngineOutput => !('stale' in o))
+    expect(shown.map(o => [o.snapshot.period, o.snapshot.score[HOME], o.snapshot.score[AWAY]])).toEqual([[4, 77, 75], [4, 81, 75], [4, 81, 75]])
+  })
+
+  it('closes the match with the definitive moves and stats of msstats', () => {
+    bridge.start(realPackage)
+    for (const r of ending) bridge.updateStreaming(JSON.stringify(r.body))
+    const final = bridge.updateFbcylFinal(JSON.stringify(full.msstats_moves), JSON.stringify(full.readings[full.readings.length - 1]), 60)
+    expect([final.snapshot.period, final.snapshot.score[HOME], final.snapshot.score[AWAY]]).toEqual([4, 81, 75])
+    expect(bridge.updateStreaming(JSON.stringify(ending[2].body))).toEqual({ stale: true })           // nothing of the stream is followed after the closing
+  })
 })
