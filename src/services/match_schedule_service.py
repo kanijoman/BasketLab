@@ -22,6 +22,7 @@ from src.scraper.schedule_client import (  # noqa: F401  (re-exported for caller
     madrid_now as _madrid_now,
     normalize_name,
 )
+from src.scraper.fbcyl_calendar import http_matches as http_fbcyl_matches
 from src.utils.collection_utils import is_fbcyl
 
 STALE_AFTER = timedelta(hours=3)   # a dated match older than this has surely been played
@@ -54,10 +55,14 @@ class MatchScheduleService:
                  match_status: Callable[[str], str] = feb_status,
                  now: Callable[[], datetime] = _madrid_now,
                  competitions: Callable[[], List[Dict[str, str]]] = feb_competitions,
-                 fetch_group_calendar: Callable[[str, str, str], List[CalendarMatch]] = http_group_calendar) -> None:
+                 fetch_group_calendar: Callable[[str, str, str], List[CalendarMatch]] = http_group_calendar,
+                 fetch_fbcyl_calendar: Callable[[str], List[CalendarMatch]] = http_fbcyl_matches,
+                 fbcyl_groups: Optional[Dict[str, str]] = None) -> None:
         self._db, self._fetch, self._status, self._now = db, fetch_calendar, match_status, now
         self._competitions = competitions
         self._fetch_group = fetch_group_calendar
+        self._fetch_fbcyl = fetch_fbcyl_calendar
+        self._fbcyl_groups = fbcyl_groups or {}      # FBCYL collection -> the id of its group in the ESB calendar (the catalogue says it: ``competition_catalogue.fbcyl_groups``)
 
     # -- collection metadata -------------------------------------------------------------
 
@@ -136,7 +141,14 @@ class MatchScheduleService:
         """
         empty = {"rounds": [], "calendar_url": None}
         if is_fbcyl(collection):
-            return {**empty, "warning": "Los partidos en directo solo están disponibles para competiciones FEB"}
+            group = self._fbcyl_groups.get(collection)
+            if not group:
+                return {**empty, "warning": "No se conoce el grupo de FBCYL de esta colección (no está en el catálogo de competiciones)"}
+            try:
+                calendar = self._fetch_fbcyl(group)
+            except Exception as exc:  # noqa: BLE001 - the ESB API down: report, do not fail
+                return {**empty, "warning": f"No se pudo leer el calendario de FBCYL: {exc}"}
+            return self._next_rounds_of(calendar, None)
         url = self.calendar_url(collection)
         if not url:
             return {**empty, "warning": "No se conoce el calendario de la competición (sin partidos ni metadatos)"}
@@ -144,6 +156,11 @@ class MatchScheduleService:
             calendar = self.calendar(collection, url)
         except Exception as exc:  # noqa: BLE001 - FEB down / layout change: report, do not fail
             return {**empty, "calendar_url": url, "warning": f"No se pudo leer el calendario de FEB: {exc}"}
+        return self._next_rounds_of(calendar, url)
+
+    def _next_rounds_of(self, calendar: List[CalendarMatch], url: Optional[str]) -> Dict[str, Any]:
+        """The rule that picks the next rounds, the same for the calendar of FEB and the one of FBCYL."""
+        empty = {"rounds": [], "calendar_url": None}
         limit = self._now() - STALE_AFTER
         pending = [m for m in calendar if m.kind == "scheduled" and m.start and datetime.fromisoformat(m.start) >= limit]
         if not pending:

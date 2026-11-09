@@ -114,6 +114,13 @@ def package_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
     return [_refresh_entry(e, list(e["packages_groups"])) for e in catalogue if e["active"] and e["league"] == "feb"]
 
 
+def fbcyl_groups(catalogue: List[Dict[str, Any]]) -> Dict[str, str]:
+    """``{collection name: id of the group in the ESB calendar}`` of the active FBCYL entries: the matches of a FBCYL competition come from that calendar (issue #446)."""
+    from src.database import get_collection_name
+
+    return {get_collection_name(f"FBCYL_{e['competition']}", e["season_value"], ""): str(e["fbcyl"]["competition_id"]) for e in catalogue if e["active"] and e["league"] == "fbcyl"}
+
+
 def package_catalog(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """The ``competitions`` the packages match by name (level, gender, clubs, rules): one per competition, the active entry if there is one, else the latest. Pausing keeps it."""
     from src.live_prep.competition_info import normalize_catalog
