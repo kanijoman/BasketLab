@@ -16,10 +16,10 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from .config import RuleConfig
+from .clock import GAME_SECONDS
 
 WEIGHTS = {"efg": 0.40, "tov": 0.25, "orb": 0.20, "ftr": 0.15}
 FT_POSSESSION_COST = 0.44
-GAME_SECONDS = 2400
 
 # Spread (standard deviation) of single-game differentials. Placeholders until calibrated
 # with history by ``live_prep`` (they travel in the package baselines).

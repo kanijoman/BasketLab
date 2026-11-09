@@ -21,11 +21,8 @@ from typing import Any, Dict, List
 from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import field_goal_gap, points_after_turnovers, recent_text, run_causes, run_start, scoring_gap, scores_after_timeouts, window_stats
-
-
-def _clock(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
+from .windows import field_goal_gap, names_of, points_after_turnovers, recent_text, run_causes, run_start, scores_after_timeouts, scoring_gap, window_stats
+from .clock import clock_text
 
 
 def _quiet(snap: Dict[str, Any], ctx: RuleContext) -> bool:
@@ -33,21 +30,17 @@ def _quiet(snap: Dict[str, Any], ctx: RuleContext) -> bool:
     return timeout_within(snap, ctx.own_team_id, ctx.config.after_timeout_quiet_s)
 
 
-def _names(snap: Dict[str, Any]) -> Dict[str, str]:
-    return {pid: p["name"].strip() for pid, p in snap.get("players", {}).items()}
-
-
 def _own_drought(snap: Dict[str, Any], ctx: RuleContext, gap: int) -> Advice:
     log, now, cfg = snap.get("log", []), snap["elapsed"], ctx.config
     own = window_stats(log, ctx.own_team_id, now - gap, now)
     rival = window_stats(log, ctx.rival_team_id or "", now - gap, now)
-    causes = "; ".join(c["text"] for c in run_causes(own, rival, _names(snap), cfg))
+    causes = "; ".join(c["text"] for c in run_causes(own, rival, names_of(snap), cfg))
     left = timeouts_left(snap, ctx.own_team_id)
     proposal = ([timeout_proposal(left)] if left > 0 else []) + [tactic_proposal("Cambio de sistema")]
     return Advice(
         key=f"drought:{episode(snap, ctx.own_team_id)}", id="own_drought",
         severity="critical" if gap >= cfg.drought_critical_s else "warning", category="gestion",
-        message=(f"Sequía de {_clock(gap)} sin anotar" + (f" ({causes})" if causes else "")
+        message=(f"Sequía de {clock_text(gap)} sin anotar" + (f" ({causes})" if causes else "")
                  + "."),
         evidence={"gap_s": gap, "causes": causes}, proposal=proposal)
 
@@ -62,13 +55,13 @@ def drought_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if fg_gap >= cfg.drought_fg_s and own_gap < fg_gap and not _quiet(snap, ctx):   # free throws kept the score moving
         out.append(Advice(
             key=f"fg_drought:{episode(snap, own)}", id="fg_drought", severity="warning", category="gestion",
-            message=f"Sin canasta de campo en {_clock(fg_gap)} (solo tiros libres).",
+            message=f"Sin canasta de campo en {clock_text(fg_gap)} (solo tiros libres).",
             evidence={"gap_s": fg_gap}, proposal=[tactic_proposal("Atacar el aro y cambiar de sistema")]))
     rival_gap = scoring_gap(log, rival, now) if rival else 0
     if rival and rival_gap >= cfg.drought_rival_s and own_gap < rival_gap:
         out.append(Advice(
             key=f"rival_drought:{episode(snap, rival)}", id="rival_drought", severity="info", category="rival",
-            message=f"El rival lleva {_clock(rival_gap)} sin anotar.",
+            message=f"El rival lleva {clock_text(rival_gap)} sin anotar.",
             evidence={"gap_s": rival_gap, "team_id": rival}, proposal=[tactic_proposal("Correr: transición y ritmo alto")]))
     return out
 
@@ -91,7 +84,7 @@ def long_run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if net >= cfg.own_run_net:
         out.append(Advice(
             key=f"own_run:{episode(snap, rival)}", id="own_run", severity="info", category="gestion",
-            message=(f"Parcial a favor: +{net} de diferencia en los últimos {_clock(cfg.run_window_s)}. No romper el quinteto "
+            message=(f"Parcial a favor: +{net} de diferencia en los últimos {clock_text(cfg.run_window_s)}. No romper el quinteto "
                      "y preparar la defensa tras el tiempo muerto del rival."),
             evidence={"net": net, "window_s": cfg.run_window_s}))
     return out

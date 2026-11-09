@@ -3,6 +3,7 @@
 from typing import List, Dict
 
 from .pipeline_player_stats import player_game_fields
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class PlayerPerGamePipelineMixin:
@@ -48,7 +49,7 @@ class PlayerPerGamePipelineMixin:
         """
         _fga_game = {"$add": ["$p2a", "$p3a"]}
         _fgm_game = {"$add": ["$p2m", "$p3m"]}
-        _denom_ts  = {"$add": ["$p2a", "$p3a", {"$multiply": [0.44, "$p1a"]}]}
+        _denom_ts  = {"$add": ["$p2a", "$p3a", {"$multiply": [FT_POSSESSION_COST, "$p1a"]}]}
 
         return [
             {
@@ -178,7 +179,7 @@ class PlayerPerGamePipelineMixin:
                         "$cond": {
                             "if": {
                                 "$gt": [
-                                    {"$add": [_fga_game, {"$multiply": [0.44, "$p1a"]}, "$to"]},
+                                    {"$add": [_fga_game, {"$multiply": [FT_POSSESSION_COST, "$p1a"]}, "$to"]},
                                     0,
                                 ]
                             },
@@ -187,7 +188,7 @@ class PlayerPerGamePipelineMixin:
                                     {
                                         "$divide": [
                                             "$to",
-                                            {"$add": [_fga_game, {"$multiply": [0.44, "$p1a"]}, "$to"]},
+                                            {"$add": [_fga_game, {"$multiply": [FT_POSSESSION_COST, "$p1a"]}, "$to"]},
                                         ]
                                     },
                                     100,
@@ -200,12 +201,12 @@ class PlayerPerGamePipelineMixin:
                     # Usage: player's share of team possessions (FGA+0.44FTA+TO denominator)
                     "usg_pct_game": {
                         "$cond": {
-                            "if": {"$gt": [{"$add": ["$tm_p2a", "$tm_p3a", {"$multiply": [0.44, "$tm_p1a"]}, "$tm_to"]}, 0]},
+                            "if": {"$gt": [{"$add": ["$tm_p2a", "$tm_p3a", {"$multiply": [FT_POSSESSION_COST, "$tm_p1a"]}, "$tm_to"]}, 0]},
                             "then": {
                                 "$multiply": [
                                     {"$divide": [
-                                        {"$add": [_fga_game, {"$multiply": [0.44, "$p1a"]}, "$to"]},
-                                        {"$add": ["$tm_p2a", "$tm_p3a", {"$multiply": [0.44, "$tm_p1a"]}, "$tm_to"]},
+                                        {"$add": [_fga_game, {"$multiply": [FT_POSSESSION_COST, "$p1a"]}, "$to"]},
+                                        {"$add": ["$tm_p2a", "$tm_p3a", {"$multiply": [FT_POSSESSION_COST, "$tm_p1a"]}, "$tm_to"]},
                                     ]},
                                     100,
                                 ]

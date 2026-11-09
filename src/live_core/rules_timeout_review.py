@@ -13,34 +13,26 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
-from .clock import period_and_remaining, period_length, period_start
+from .clock import clock_text, period_and_remaining, period_length, period_start
 from .proposals import tactic_proposal, timeout_proposal
 from .score_text import own_first, plain_score
 from .rules_rotation import _level as fatigue_level, fatigue_index
 from .timeout_review import proposals_for, reason_of, well_and_bad
 from .timeouts import timeouts_left
-from .windows import window_stats
+from .windows import names_of, window_stats
 
 _ORDINAL = {1: "1.er cuarto", 2: "2.º cuarto", 3: "3.er cuarto", 4: "4.º cuarto"}
 
 
-def _clock(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
-
-
 def _when(at: int) -> str:
     period, remaining = period_and_remaining(at)
-    return f"{_ORDINAL.get(period, 'prórroga')}, {_clock(remaining)}"
+    return f"{_ORDINAL.get(period, 'prórroga')}, {clock_text(remaining)}"
 
 
 def _timeouts(snap: Dict[str, Any], ctx: RuleContext) -> List[Tuple[str, int]]:
     """The timeouts of both teams already in the feed, ``(team, game-second)``, oldest first."""
     found = [(tid, t) for tid in (ctx.own_team_id, ctx.rival_team_id) if tid for t in (snap["teams"].get(tid) or {}).get("timeouts", []) if t <= snap["elapsed"]]
     return sorted(found, key=lambda x: x[1])
-
-
-def _names(snap: Dict[str, Any]) -> Dict[str, str]:
-    return {pid: p["name"].strip() for pid, p in snap.get("players", {}).items()}
 
 
 def _on_court(snap: Dict[str, Any], team: str) -> List[Tuple[str, Dict[str, Any]]]:
@@ -77,7 +69,7 @@ def timeout_review_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         score = snap.get("score") or {}
         text = (f"Tiempo muerto {'propio' if team == own else 'del rival'} ({_when(at)}, {plain_score(snap, own, score.get(own, 0), score.get(rival, 0))}): {reason}."
                 + (f" Ha ido bien: {'; '.join(well)}." if well else "") + (f" Ha ido mal: {'; '.join(bad)}." if bad else ""))
-        proposal = proposals_for(kind, team, own, own_w, rival_w, _names(snap), cfg, who, ids)
+        proposal = proposals_for(kind, team, own, own_w, rival_w, names_of(snap), cfg, who, ids)
         if team == own and kind == "fatigue" and ctx.recommender is not None:
             for pid in ids or []:
                 proposal += ctx.recommender.suggest_swaps(snap, pid, max_results=1)

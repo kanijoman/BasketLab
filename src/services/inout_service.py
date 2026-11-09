@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 from src.pbp.game_possessions import estimate_possessions
 from src.services import PlayerStatsService
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 def enrich_stat_block(block: Dict) -> Dict:
@@ -48,7 +49,7 @@ def enrich_stat_block(block: Dict) -> Dict:
     def _pct(a, b): return round(a / b * 100, 2) if b > 0 else 0.0
 
     efg_pct   = _pct(fgm + 0.5 * fg3m, fga)
-    ts_pct    = _pct(pts, 2 * (fga + 0.44 * fta))
+    ts_pct    = _pct(pts, 2 * (fga + FT_POSSESSION_COST * fta))
     fg2_pct   = _pct(fg2m, fg2a)
     fg3_pct   = _pct(fg3m, fg3a)
     ft_pct    = _pct(ftm, fta)

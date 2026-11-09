@@ -11,10 +11,11 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional
 
+from .clock import GAME_SECONDS
+from .four_factors import FT_POSSESSION_COST
+
 League = Dict[str, Dict[str, float]]  # metric -> {"mean", "sd"}
 
-GAME_SECONDS = 2400
-FT_POSSESSION_COST = 0.44
 
 METRICS = ("orb40", "drb40", "ast40", "tov40", "stl40", "blk40", "fg3a40", "fg2a40", "usage40", "efg", "ftr")
 ROLE_DIMS = ("orb40", "drb40", "ast40", "blk40", "fg3a40", "fg2a40", "usage40")

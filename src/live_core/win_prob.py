@@ -19,8 +19,8 @@ from .config import RuleConfig
 from .four_factors import WEIGHTS, points_per_unit, side_of
 from .summary_pace import window_pace
 from .windows import window_stats
+from .clock import GAME_SECONDS
 
-GAME_SECONDS = 2400
 DEFAULT_PACE_PER_40 = 70.0   # possessions per 40 min when the package has no pace
 
 

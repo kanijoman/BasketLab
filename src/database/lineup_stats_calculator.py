@@ -2,6 +2,7 @@
 
 from typing import Dict, List, FrozenSet, Tuple, Optional
 from collections import defaultdict
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class LineupStatsCalculator:
@@ -538,8 +539,8 @@ class LineupStatsCalculator:
         opp_fta = stats['opp_fta']
         
         # Possessions formula: FGA - ORB + TOV + 0.44*FTA
-        team_poss = fga - orb + tov + 0.44 * fta
-        opp_poss = opp_fga - opp_orb + opp_tov + 0.44 * opp_fta
+        team_poss = fga - orb + tov + FT_POSSESSION_COST * fta
+        opp_poss = opp_fga - opp_orb + opp_tov + FT_POSSESSION_COST * opp_fta
         
         # Average possessions
         possessions = (team_poss + opp_poss) / 2.0 if team_poss + opp_poss > 0 else 0
@@ -571,7 +572,7 @@ class LineupStatsCalculator:
             result['efg_pct'] = 0.0
         
         # TOV% = TOV / (FGA + 0.44*FTA + TOV)
-        denominator = fga + 0.44 * fta + tov
+        denominator = fga + FT_POSSESSION_COST * fta + tov
         if denominator > 0:
             result['tov_pct'] = round((tov / denominator) * 100, 1)
         else:

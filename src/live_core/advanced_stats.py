@@ -8,6 +8,7 @@ from typing import Dict, Any, List
 import math
 
 from .advanced_ratings import defensive_rating, net_rating, offensive_rating, pie, team_minutes
+from .four_factors import FT_POSSESSION_COST
 
 
 class AdvancedStatsCalculator:
@@ -47,13 +48,13 @@ class AdvancedStatsCalculator:
         fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)  # Don't include FTA in FGA
         fta = player.get('total_p1a', 0)
         tov = player.get('total_to', 0)
-        player_plays = fga + 0.44 * fta + tov
+        player_plays = fga + FT_POSSESSION_COST * fta + tov
 
         # Team's plays
         team_fga = team_stats.get('fg2_attempted', 0) + team_stats.get('fg3_attempted', 0)
         team_fta = team_stats.get('ft_attempted', 0)
         team_tov = team_stats.get('turnovers', 0)
-        team_plays = team_fga + 0.44 * team_fta + team_tov
+        team_plays = team_fga + FT_POSSESSION_COST * team_fta + team_tov
 
         if team_plays == 0:
             return 0.0
@@ -81,7 +82,7 @@ class AdvancedStatsCalculator:
         fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)  # FGA = 2PA + 3PA (no FTA)
         fta = player.get('total_p1a', 0)
 
-        tsa = fga + 0.44 * fta  # True shooting attempts
+        tsa = fga + FT_POSSESSION_COST * fta  # True shooting attempts
 
         if tsa == 0:
             return 0.0
@@ -213,7 +214,7 @@ class AdvancedStatsCalculator:
         fga = player.get('total_p2a', 0) + player.get('total_p3a', 0)
         fta = player.get('total_p1a', 0)
 
-        denominator = fga + 0.44 * fta + tov
+        denominator = fga + FT_POSSESSION_COST * fta + tov
 
         if denominator == 0:
             return 0.0

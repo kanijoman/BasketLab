@@ -17,10 +17,7 @@ from .advice_types import Advice, RuleContext
 from .game_context import game_phase
 from .proposals import tactic_proposal
 from .rules_fouls import CRITICAL_PF, game_end_quiet
-
-
-def _name(p: Dict[str, Any]) -> str:
-    return p["name"].strip()
+from .windows import player_name
 
 
 def disqualification_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
@@ -33,11 +30,11 @@ def disqualification_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice
         kind = "antideportiva" if unsports else "técnica"
         evidence = {"player_id": pid, "team_id": p["team_id"], "unsportsmanlike": unsports, "technical": technical}
         if own:
-            message = f"{_name(p)}: tiene una falta {kind}: otra más y queda descalificada."
-            proposal = [tactic_proposal(f"Evitar la falta de {_name(p)}: defender sin riesgo", pid, _name(p))]
+            message = f"{player_name(p)}: tiene una falta {kind}: otra más y queda descalificada."
+            proposal = [tactic_proposal(f"Evitar la falta de {player_name(p)}: defender sin riesgo", pid, player_name(p))]
         else:
-            message = f"Rival {_name(p)} tiene una falta {kind}: otra más y queda descalificada."
-            proposal = [tactic_proposal(f"Atacar a {_name(p)}: una sanción más y se va", pid, _name(p))]
+            message = f"Rival {player_name(p)} tiene una falta {kind}: otra más y queda descalificada."
+            proposal = [tactic_proposal(f"Atacar a {player_name(p)}: una sanción más y se va", pid, player_name(p))]
         out.append(Advice(
             key=f"sanction:{pid}:{unsports}{technical}", id="disqualification_risk", severity="warning" if own else "info",
             category="faltas", message=message, evidence=evidence, proposal=proposal))
@@ -56,9 +53,9 @@ def key_fouls_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         out.append(Advice(
             key=f"key_fouls:{pid}", id="key_fouls_close", severity="warning", category="faltas",
-            message=f"{_name(p)} (clave) con 4 faltas en el cierre igualado.",
+            message=f"{player_name(p)} (clave) con 4 faltas en el cierre igualado.",
             evidence={"player_id": pid, "team_id": p["team_id"], "pf": p["pf"]},
-            proposal=[tactic_proposal(f"Defender sin riesgo con {_name(p)}: sin faltas innecesarias", pid, _name(p))]))
+            proposal=[tactic_proposal(f"Defender sin riesgo con {player_name(p)}: sin faltas innecesarias", pid, player_name(p))]))
     return out
 
 
@@ -69,7 +66,7 @@ def rival_pair_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
                   if p["team_id"] == ctx.rival_team_id and p["on_court"] and p["pf"] >= ctx.config.rival_pair_pf)
     if len(pair) < 2:
         return []
-    names = ", ".join(_name(p) for _, p in pair)
+    names = ", ".join(player_name(p) for _, p in pair)
     key = "rival_pair:" + ":".join(pid for pid, _ in pair)
     last = ctx.memory.get("rival_pair")
     if last and last["key"] != key and snap["elapsed"] - last["at"] < ctx.config.rival_pair_gap_s:

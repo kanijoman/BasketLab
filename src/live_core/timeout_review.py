@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import RuleConfig
 from .proposals import tactic_proposal
-from .windows import run_causes, scoring_gap, window_stats
+from .windows import count_text, run_causes, scoring_gap, window_stats
 
 # the usual way to answer the cause of a run against us (the kinds of ``windows.run_causes``)
 _ANSWER = {
@@ -22,10 +22,6 @@ _ANSWER = {
     "own_free_throws": "Los tiros libres: el balón a los mejores tiradores de tiros libres",
     "own_cold": "Cambiar el sistema ofensivo: buscar el aro y cambiar de tirador",
 }
-
-
-def _n(count: int, one: str, many: str) -> str:
-    return f"{count} {one if count == 1 else many}"
 
 
 def other_team(team: str, own: str, rival: str) -> str:
@@ -43,7 +39,7 @@ def reason_of(team: str, own: str, rival: str, mine: Dict[str, Any], theirs: Dic
     if 0 < remaining <= cfg.timeout_last_possession_s:
         return "last_possession", "para preparar la última posesión del cuarto", None
     if mine["tov"] >= cfg.timeout_tov_n:
-        return "turnovers", f"tras {_n(mine['tov'], 'pérdida', 'pérdidas')}" + (" propias" if team == own else " del rival"), None
+        return "turnovers", f"tras {count_text(mine['tov'], 'pérdida', 'pérdidas')}" + (" propias" if team == own else " del rival"), None
     gap = scoring_gap(log, team, now, now - cfg.timeout_review_window_s)
     if gap >= cfg.timeout_drought_s:
         clock = ("más de " if gap >= cfg.timeout_review_window_s else "") + f"{gap // 60}:{gap % 60:02d}"
@@ -77,15 +73,15 @@ def well_and_bad(own_w: Dict[str, Any], rival_w: Dict[str, Any], cfg: RuleConfig
         elif efg <= cfg.timeout_efg_bad:
             bad.append(f"tiro propio {fgm}/{fga}")
     if rival_w["tov"] >= cfg.timeout_tov_n:
-        well.append(_n(rival_w["tov"], "pérdida del rival", "pérdidas del rival"))
+        well.append(count_text(rival_w["tov"], "pérdida del rival", "pérdidas del rival"))
     if own_w["orb"] >= cfg.timeout_tov_n:
-        well.append(_n(own_w["orb"], "rebote ofensivo propio", "rebotes ofensivos propios"))
+        well.append(count_text(own_w["orb"], "rebote ofensivo propio", "rebotes ofensivos propios"))
     if own_w["tov"] >= cfg.timeout_tov_n:
-        bad.append(_n(own_w["tov"], "pérdida propia", "pérdidas propias"))
+        bad.append(count_text(own_w["tov"], "pérdida propia", "pérdidas propias"))
     if rival_w["orb"] >= cfg.timeout_tov_n:
-        bad.append(_n(rival_w["orb"], "rebote ofensivo del rival", "rebotes ofensivos del rival"))
+        bad.append(count_text(rival_w["orb"], "rebote ofensivo del rival", "rebotes ofensivos del rival"))
     if rival_w["fg3"][0] >= cfg.timeout_tov_n:
-        bad.append(_n(rival_w["fg3"][0], "triple del rival", "triples del rival"))
+        bad.append(count_text(rival_w["fg3"][0], "triple del rival", "triples del rival"))
     return well[:3], bad[:3]
 
 

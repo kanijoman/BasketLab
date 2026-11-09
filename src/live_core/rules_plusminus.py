@@ -16,10 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
 from .lineups import lineup_key
-
-
-def _clock(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
+from .clock import clock_text
 
 
 def _swaps(snap: Dict[str, Any], ctx: RuleContext, player_id: str) -> List[Dict[str, Any]]:
@@ -38,7 +35,7 @@ def lineup_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     net = now["pts_for"] - now["pts_against"]
     players = snap["players"]
     names = ", ".join(players[pid]["name"].strip() for pid in now["players"] if pid in players)
-    message = f"El quinteto en pista ({names}) lleva {net:+d} en {_clock(now['seconds'])}. Valorar cambio."
+    message = f"El quinteto en pista ({names}) lleva {net:+d} en {clock_text(now['seconds'])}. Valorar cambio."
     season = ctx.lineups.get(lineup_key(now["players"]))
     if season and season["seconds"] >= cfg.lineup_season_min_s:
         message += f" En la temporada: {season['net40']:+.1f} por 40 min en {season['seconds'] // 60} min juntos."
@@ -67,7 +64,7 @@ def player_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         out.append(Advice(
             key=f"pm:{pid}:{snap['elapsed'] - p['stint']}", id="player_plus_minus", severity="info", category="rotacion",
-            message=f"{p['name'].strip()} lleva {pm:+d} desde que entró ({_clock(p['stint'])} en pista). Valorar relevo.",
+            message=f"{p['name'].strip()} lleva {pm:+d} desde que entró ({clock_text(p['stint'])} en pista). Valorar relevo.",
             evidence={"player_id": pid, "team_id": p["team_id"], "stint_pm": pm, "stint_s": p["stint"]},
             proposal=_swaps(snap, ctx, pid)))
     return out

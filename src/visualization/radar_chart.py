@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.projections import PolarAxes
 from typing import Dict, List, Tuple, Optional, Any
 import math
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class RadarChart:
@@ -343,7 +344,7 @@ class RadarChart:
             usage = count('usage')
 
             # AST Ratio = Porcentaje de posesiones que terminan en asistencia
-            possessions = fga + (0.44 * fta) + assists + turnovers
+            possessions = fga + (FT_POSSESSION_COST * fta) + assists + turnovers
             metrics['ast_ratio'] = (100 * assists / possessions) if possessions > 0 else 0
 
             # AST/TO Ratio = Simple ratio de asistencias por pérdida

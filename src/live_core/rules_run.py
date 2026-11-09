@@ -18,15 +18,8 @@ from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .score_text import plain_score
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import recent_text, run_causes, run_start, window_stats
-
-
-def _clock(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
-
-
-def _names(snap: Dict[str, Any]) -> Dict[str, str]:
-    return {pid: p["name"].strip() for pid, p in snap.get("players", {}).items()}
+from .windows import names_of, recent_text, run_causes, run_start, window_stats
+from .clock import clock_text
 
 
 def _run_level(rival: int, own: int, cfg: Any) -> Optional[str]:
@@ -49,11 +42,11 @@ def run_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     level = _run_level(rival["pts"], own["pts"], cfg)
     if level is None:
         return []
-    causes = "; ".join(c["text"] for c in run_causes(own, rival, _names(snap), cfg))
+    causes = "; ".join(c["text"] for c in run_causes(own, rival, names_of(snap), cfg))
     left = timeouts_left(snap, ctx.own_team_id)
     return [Advice(
         key=f"rival_run:{episode(snap, ctx.own_team_id)}:{level}", id="rival_run", severity=level, category="gestion",
-        message=(f"Parcial de {plain_score(snap, ctx.own_team_id, own['pts'], rival['pts'])} en contra en los últimos {_clock(cfg.run_window_s)}"
+        message=(f"Parcial de {plain_score(snap, ctx.own_team_id, own['pts'], rival['pts'])} en contra en los últimos {clock_text(cfg.run_window_s)}"
                  + (f" ({causes})" if causes else "") + "."),
         evidence={"rival_points": rival["pts"], "own_points": own["pts"], "window_s": cfg.run_window_s,
                   "net": rival["pts"] - own["pts"], "causes": causes},
@@ -71,7 +64,7 @@ def turnover_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     main = max(sorted(own["tov_by_player"].items()), key=lambda kv: kv[1], default=(None, 0))
     named = main[0] is not None and main[1] >= cfg.turnover_player_min
-    name = _names(snap).get(main[0], main[0]) if named else ""
+    name = names_of(snap).get(main[0], main[0]) if named else ""
     left = timeouts_left(snap, ctx.own_team_id)
     proposal: List[Dict[str, Any]] = [timeout_proposal(left)] if left > 0 else []
     if named:

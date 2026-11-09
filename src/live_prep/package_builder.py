@@ -12,6 +12,7 @@ import math
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from src.live_core.clock import GAME_SECONDS
 from src.live_core.engine import LiveEngine
 from .category_strength import adjust, team_level
 from .game_sources import LEAGUE_KEY, LEVEL_KEY
@@ -40,7 +41,6 @@ FT_PRIOR_ATTEMPTS = 10    # free-throw attempts of weight the league mean has wh
 DEFAULT_FT_PCT = 0.72     # league mean when nobody has attempted a free throw yet (placeholder)
 PRIOR_SHRINK_GAMES = 6             # prior weight: games / (games + 6)
 SPREAD_FLOOR = 0.5                 # never below half of the default spread
-GAME_SECONDS = 2400
 MIN_LEAGUE_SECONDS = 300           # players below this do not shape the league distribution
 
 

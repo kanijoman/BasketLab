@@ -7,6 +7,7 @@ Extracted from repository_inout.py to reduce its size.
 from typing import Dict, Iterable, List, Tuple
 
 from src.pbp.game_possessions import estimate_possessions
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class InOutHelpersMixin:
@@ -294,7 +295,7 @@ class InOutHelpersMixin:
             'fg3_pct': (fgm3 / fga3 * 100) if fga3 > 0 else 0,
             'ft_pct':  (ftm  / fta  * 100) if fta  > 0 else 0,
             'efg_pct': ((fgm2 + 1.5 * fgm3) / (fga2 + fga3) * 100) if (fga2 + fga3) > 0 else 0,
-            'ts_pct':  (pts / (2 * (fga2 + fga3 + 0.44 * fta)) * 100)
+            'ts_pct':  (pts / (2 * (fga2 + fga3 + FT_POSSESSION_COST * fta)) * 100)
                        if (fga2 + fga3 + fta) > 0 else 0,
         }
 

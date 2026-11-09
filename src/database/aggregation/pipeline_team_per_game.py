@@ -5,6 +5,7 @@ from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin
 from .possession_expr import game_minutes
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class TeamPerGamePipelineMixin:
@@ -117,14 +118,14 @@ class TeamPerGamePipelineMixin:
                     # TS% = PTS / (2 * (FGA + 0.44*FTA)) * 100
                     "ts_pct_game": {
                         "$cond": {
-                            "if":  {"$gt": [{"$add": ["$fga_game", {"$multiply": ["$ft_attempts", 0.44]}]}, 0]},
+                            "if":  {"$gt": [{"$add": ["$fga_game", {"$multiply": ["$ft_attempts", FT_POSSESSION_COST]}]}, 0]},
                             "then": {
                                 "$multiply": [
                                     {"$divide": [
                                         "$points",
                                         {"$multiply": [
                                             2,
-                                            {"$add": ["$fga_game", {"$multiply": ["$ft_attempts", 0.44]}]}
+                                            {"$add": ["$fga_game", {"$multiply": ["$ft_attempts", FT_POSSESSION_COST]}]}
                                         ]}
                                     ]},
                                     100
@@ -136,12 +137,12 @@ class TeamPerGamePipelineMixin:
                     # TOV% = TOV / (FGA + 0.44*FTA + TOV) * 100
                     "tov_pct_game": {
                         "$cond": {
-                            "if":  {"$gt": [{"$add": ["$fga_game", {"$multiply": ["$ft_attempts", 0.44]}, "$turnovers"]}, 0]},
+                            "if":  {"$gt": [{"$add": ["$fga_game", {"$multiply": ["$ft_attempts", FT_POSSESSION_COST]}, "$turnovers"]}, 0]},
                             "then": {
                                 "$multiply": [
                                     {"$divide": [
                                         "$turnovers",
-                                        {"$add": ["$fga_game", {"$multiply": ["$ft_attempts", 0.44]}, "$turnovers"]}
+                                        {"$add": ["$fga_game", {"$multiply": ["$ft_attempts", FT_POSSESSION_COST]}, "$turnovers"]}
                                     ]},
                                     100
                                 ]
@@ -242,15 +243,15 @@ class TeamPerGamePipelineMixin:
                     },
                     "opp_ts_pct_game": {
                         "$cond": {
-                            "if": {"$gt": [{"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}]}, 0]},
-                            "then": {"$multiply": [{"$divide": ["$opponent_points", {"$multiply": [2, {"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}]}]}]}, 100]},
+                            "if": {"$gt": [{"$add": ["$opp_fga_game", {"$multiply": [FT_POSSESSION_COST, "$opp_ft_attempts"]}]}, 0]},
+                            "then": {"$multiply": [{"$divide": ["$opponent_points", {"$multiply": [2, {"$add": ["$opp_fga_game", {"$multiply": [FT_POSSESSION_COST, "$opp_ft_attempts"]}]}]}]}, 100]},
                             "else": None
                         }
                     },
                     "opp_tov_pct_game": {
                         "$cond": {
-                            "if": {"$gt": [{"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}, "$opp_turnovers"]}, 0]},
-                            "then": {"$multiply": [{"$divide": ["$opp_turnovers", {"$add": ["$opp_fga_game", {"$multiply": [0.44, "$opp_ft_attempts"]}, "$opp_turnovers"]}]}, 100]},
+                            "if": {"$gt": [{"$add": ["$opp_fga_game", {"$multiply": [FT_POSSESSION_COST, "$opp_ft_attempts"]}, "$opp_turnovers"]}, 0]},
+                            "then": {"$multiply": [{"$divide": ["$opp_turnovers", {"$add": ["$opp_fga_game", {"$multiply": [FT_POSSESSION_COST, "$opp_ft_attempts"]}, "$opp_turnovers"]}]}, 100]},
                             "else": None
                         }
                     },

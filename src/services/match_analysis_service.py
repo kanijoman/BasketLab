@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.pbp.game_possessions import estimate_possessions, team_game_possessions
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -307,7 +308,7 @@ def _compute_advanced(stats: Dict, opp: Dict, poss: Optional[float] = None, opp_
     opp_poss = max(estimate_possessions(opp["fga"], opp["orb"], opp["tov"], opp["p1a"]) if opp_poss is None else opp_poss, 1.0)
 
     efg_pct = round((fgm + 0.5 * p3m) / fga * 100, 2) if fga else 0.0
-    tov_pct = round(tov / (fga + 0.44 * p1a + tov) * 100, 2) if (fga + 0.44 * p1a + tov) else 0.0
+    tov_pct = round(tov / (fga + FT_POSSESSION_COST * p1a + tov) * 100, 2) if (fga + FT_POSSESSION_COST * p1a + tov) else 0.0
     orb_pct = round(orb / (orb + opp_drb) * 100, 2) if (orb + opp_drb) else 0.0
     ftr     = round(p1a / fga, 3) if fga else 0.0
 

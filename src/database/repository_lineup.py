@@ -5,6 +5,7 @@ from pymongo.errors import PyMongoError
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 from src.utils.time_utils import fbcyl_game_day
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 class LineupRepositoryMixin:
@@ -281,7 +282,7 @@ class LineupRepositoryMixin:
         
         tov = existing.get('tov', 0)
         fta = existing.get('fta', 0)
-        denominator = fga + 0.44 * fta + tov
+        denominator = fga + FT_POSSESSION_COST * fta + tov
         if denominator > 0:
             existing['tov_pct'] = round((tov / denominator) * 100, 1)
 

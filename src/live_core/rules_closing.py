@@ -24,18 +24,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
-from .clock import game_seconds_left
+from .clock import clock_text, GAME_SECONDS, game_seconds_left
 from .game_context import game_phase
 from .proposals import tactic_proposal, timeout_proposal
 from .rules_winflip import pace_reason_text
 from .timeouts import timeouts_left
 
 LAST_PERIOD = 4
-GAME_SECONDS = 2400
-
-
-def _clock(seconds: int) -> str:
-    return f"{seconds // 60}:{seconds % 60:02d}"
 
 
 def _times(n: int) -> str:
@@ -91,7 +86,7 @@ def _ft_reminder(snap: Dict[str, Any], ctx: RuleContext, context: Dict[str, Any]
     every = max(1, ctx.config.closing_ft_every_s)
     return [Advice(
         key=f"closing_ft:{snap['period']}:{snap['remaining'] // every}:{who}", id="closing_ft_reminder", severity="info", category="gestion",
-        message=f"Tiros libres en el cierre ({context['margin']:+d} a {_clock(context['remaining_s'])}): " + "; ".join(parts) + ".",
+        message=f"Tiros libres en el cierre ({context['margin']:+d} a {clock_text(context['remaining_s'])}): " + "; ".join(parts) + ".",
         evidence={"margin": context["margin"], "shooters": shooters, "foul_targets": targets},
         proposal=([tactic_proposal(f"Balón a {' y '.join(s['name'] for s in shooters)} (tiros libres)")] if shooters else []) + (
             [tactic_proposal(f"Hacer falta a {targets[0]['name']} ({targets[0]['ft_pct']} % en tiros libres)", targets[0]["player_id"], targets[0]["name"])] if targets else []))]
@@ -136,7 +131,7 @@ def closing_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     reminder = _ft_reminder(snap, ctx, context, shooters, targets)
     return [*reminder, Advice(
         key=f"closing:{snap['period']}", id="closing_briefing", severity="warning", category="gestion",
-        message=f"Cierre igualado ({context['margin']:+d} a {_clock(context['remaining_s'])}): " + "; ".join(parts) + ".",
+        message=f"Cierre igualado ({context['margin']:+d} a {clock_text(context['remaining_s'])}): " + "; ".join(parts) + ".",
         evidence={"margin": context["margin"], "own_timeouts": own_left, "rival_timeouts": rival_left, "fouls": fouls,
                   "shooters": shooters, "foul_targets": targets, "rival_clutch": rival_clutch, "own_clutch": own_clutch},
         proposal=proposal)]
@@ -153,7 +148,7 @@ def advantage_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         return []
     return [Advice(
         key=f"advantage:{LAST_PERIOD}", id="advantage_management", severity="info", category="gestion",
-        message=f"Gestión de ventaja (+{margin} a {_clock(snap['remaining'])}).",
+        message=f"Gestión de ventaja (+{margin} a {clock_text(snap['remaining'])}).",
         evidence={"margin": margin, "remaining_s": snap["remaining"]},
         proposal=[tactic_proposal("Gastar reloj en cada ataque"), tactic_proposal("No conceder triples: defender el perímetro"),
                   tactic_proposal("Evitar faltas innecesarias")])]

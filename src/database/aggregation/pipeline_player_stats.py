@@ -3,6 +3,7 @@
 from typing import List, Dict, Optional
 
 from .fbcyl_date_expr import parse_day_stages
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 def player_game_fields() -> Dict:
@@ -350,11 +351,11 @@ class PlayerStatsPipelineMixin:
                     },
                     "true_shooting": {
                         "$cond": [
-                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}, 0]},
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a", {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}]}, 0]},
                             {"$multiply": [
                                 {"$divide": [
                                     "$total_pts",
-                                    {"$multiply": [2.0, {"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}]},
+                                    {"$multiply": [2.0, {"$add": ["$total_p2a", "$total_p3a", {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}]}]},
                                 ]},
                                 100,
                             ]},
@@ -383,11 +384,11 @@ class PlayerStatsPipelineMixin:
                     },
                     "turnover_rate": {
                         "$cond": [
-                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}, "$total_to"]}, 0]},
+                            {"$gt": [{"$add": ["$total_p2a", "$total_p3a", {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}, "$total_to"]}, 0]},
                             {"$multiply": [
                                 {"$divide": [
                                     "$total_to",
-                                    {"$add": ["$total_p2a", "$total_p3a", {"$multiply": [0.44, "$total_p1a"]}, "$total_to"]},
+                                    {"$add": ["$total_p2a", "$total_p3a", {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}, "$total_to"]},
                                 ]},
                                 100,
                             ]},

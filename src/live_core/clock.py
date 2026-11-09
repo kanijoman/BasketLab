@@ -12,6 +12,7 @@ from typing import Optional
 REGULATION_PERIODS = 4
 REGULATION_LENGTH = 600
 OVERTIME_LENGTH = 300
+GAME_SECONDS = REGULATION_LENGTH * REGULATION_PERIODS      # a game of four quarters: the length every per-40 rate and fraction of the game is measured against
 
 _CLOCK_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
 
@@ -49,3 +50,8 @@ def period_and_remaining(elapsed: int) -> "tuple[int, int]":
     while elapsed >= period_start(period) + period_length(period):
         period += 1
     return period, period_start(period) + period_length(period) - max(elapsed, 0)
+
+
+def clock_text(seconds: int) -> str:
+    """``125`` -> ``2:05``: a clock or a length of time as the staff read it (minutes and two-digit seconds)."""
+    return f"{seconds // 60}:{seconds % 60:02d}"

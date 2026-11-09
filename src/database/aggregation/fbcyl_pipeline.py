@@ -22,6 +22,7 @@ from datetime import datetime, time
 
 from .fbcyl_date_expr import parse_day_stages
 from .fbcyl_possession_expr import team_possessions
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 def _start_of_day(date_filter: Dict) -> Dict:
@@ -441,11 +442,11 @@ class FBCYLPipelineBuilder:
                 },
                 "true_shooting": {
                     "$cond": {
-                        "if": {"$gt": [{"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [0.44, "$ft_attempted"]}]}, 0]},
+                        "if": {"$gt": [{"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [FT_POSSESSION_COST, "$ft_attempted"]}]}, 0]},
                         "then": {"$multiply": [
                             {"$divide": [
                                 "$points_scored",
-                                {"$multiply": [2, {"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [0.44, "$ft_attempted"]}]}]}
+                                {"$multiply": [2, {"$add": [{"$add": ["$fg2_attempted", "$fg3_attempted"]}, {"$multiply": [FT_POSSESSION_COST, "$ft_attempted"]}]}]}
                             ]},
                             100
                         ]},
@@ -1062,11 +1063,11 @@ class FBCYLPipelineBuilder:
                 # True Shooting Percentage
                 "ts": {
                     "$cond": [
-                        {"$gt": [{"$add": [{"$add": ["$total_p2a", "$total_p3a"]}, {"$multiply": [0.44, "$total_p1a"]}]}, 0]},
+                        {"$gt": [{"$add": [{"$add": ["$total_p2a", "$total_p3a"]}, {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}]}, 0]},
                         {"$multiply": [
                             {"$divide": [
                                 "$total_pts",
-                                {"$multiply": [2, {"$add": [{"$add": ["$total_p2a", "$total_p3a"]}, {"$multiply": [0.44, "$total_p1a"]}]}]}
+                                {"$multiply": [2, {"$add": [{"$add": ["$total_p2a", "$total_p3a"]}, {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}]}]}
                             ]},
                             100
                         ]},
@@ -1183,7 +1184,7 @@ class FBCYLPipelineBuilder:
                             {"$divide": [
                                 {"$add": [
                                     {"$add": ["$total_p2a", "$total_p3a"]},
-                                    {"$multiply": [0.44, "$total_p1a"]},
+                                    {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]},
                                     "$total_to"
                                 ]},
                                 {"$multiply": ["$games_played", 100]}
@@ -1196,11 +1197,11 @@ class FBCYLPipelineBuilder:
                 # Offensive Rating (approximation: points per 100 possessions)
                 "orating": {
                     "$cond": [
-                        {"$gt": [{"$add": ["$total_p2a", {"$add": ["$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}]}, 0]},
+                        {"$gt": [{"$add": ["$total_p2a", {"$add": ["$total_p3a", {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}]}]}, 0]},
                         {"$multiply": [
                             {"$divide": [
                                 "$total_pts",
-                                {"$add": ["$total_p2a", {"$add": ["$total_p3a", {"$multiply": [0.44, "$total_p1a"]}]}]}
+                                {"$add": ["$total_p2a", {"$add": ["$total_p3a", {"$multiply": [FT_POSSESSION_COST, "$total_p1a"]}]}]}
                             ]},
                             100
                         ]},

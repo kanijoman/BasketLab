@@ -2,6 +2,7 @@
 
 from typing import Dict, Any
 from ..utils import safe_divide
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 
 def _percentage_metric(numerator, denominator) -> Dict:
@@ -89,7 +90,7 @@ def get_advanced_shooting_metrics() -> dict:
         "three_point_rate": _percentage_metric("$fg3_attempted", total_fga),
         "true_shooting": _percentage_metric(
             "$points_scored",
-            {"$multiply": [2, {"$add": [total_fga, {"$multiply": [0.44, "$ft_attempted"]}]}]}
+            {"$multiply": [2, {"$add": [total_fga, {"$multiply": [FT_POSSESSION_COST, "$ft_attempted"]}]}]}
         )
     }
 

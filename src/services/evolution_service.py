@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from src.database.aggregation.fbcyl_date_expr import parse_day_stages
 from src.database.aggregation.pipeline_team_stats import TeamStatsPipelineMixin
 from utils.collection_utils import is_fbcyl as _is_fbcyl
+from src.live_core.four_factors import FT_POSSESSION_COST
 
 # ---------------------------------------------------------------------------
 # All stat keys supported by the evolution endpoints
@@ -428,8 +429,8 @@ class EvolutionService:
         fga = fg2a + fg3a
         fgm = fg2m + fg3m
         opp_fga = opp_fg2a + opp_fg3a
-        poss     = row.get("poss") or max(fga     + 0.44 * fta     + tov     - orb,     1.0)
-        opp_poss = row.get("opp_poss") or max(opp_fga + 0.44 * opp_fta + opp_tov - opp_orb, 1.0)
+        poss     = row.get("poss") or max(fga     + FT_POSSESSION_COST * fta     + tov     - orb,     1.0)
+        opp_poss = row.get("opp_poss") or max(opp_fga + FT_POSSESSION_COST * opp_fta + opp_tov - opp_orb, 1.0)
 
         lookup: Dict[str, Any] = {
             # Basic — counting
@@ -458,7 +459,7 @@ class EvolutionService:
             "defensive_rating":  opp_pts / opp_poss * 100,
             "net_rating":        (pts / poss * 100) - (opp_pts / opp_poss * 100),
             "efg_percentage":    ((fgm + 0.5 * fg3m) / fga * 100)       if fga > 0 else None,
-            "true_shooting":     (pts / (2 * (fga + 0.44 * fta)) * 100) if (fga + 0.44 * fta) > 0 else None,
+            "true_shooting":     (pts / (2 * (fga + FT_POSSESSION_COST * fta)) * 100) if (fga + FT_POSSESSION_COST * fta) > 0 else None,
             "three_point_rate":  (fg3a / fga * 100)  if fga  > 0 else None,
             "free_throw_rate":   (fta  / fga * 100)  if fga  > 0 else None,
             "assist_fg_rate":    (ast  / fgm * 100)  if fgm  > 0 else None,
