@@ -144,7 +144,7 @@ class TestInTheEngine:
         assert later["players"] == LiveEngine().update(doc)["players"]                     # the same as a fresh engine: nothing depends on the order of the polls
 
     def test_without_a_shot_chart_nothing_is_inferred_and_nothing_fails(self):
-        from src.live_prep.fbcyl_adapter import to_feb_document
+        from src.live_core.fbcyl_adapter import to_feb_document
         import gzip
         raw = json.loads(gzip.open(ROOT / "fixtures" / "fbcyl_game_ok.json.gz").read())
         snap = LiveEngine().update(to_feb_document(raw))

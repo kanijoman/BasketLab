@@ -168,7 +168,7 @@ class TestBothFormats:
 
     @pytest.fixture(scope="class")
     def fbcyl(self):
-        from src.live_prep.fbcyl_adapter import to_feb_document
+        from src.live_core.fbcyl_adapter import to_feb_document
         raw = json.loads(gzip.open(Path(__file__).parent / "fixtures" / "fbcyl_game_ok.json.gz").read())
         return LiveEngine().update(to_feb_document(raw))
 

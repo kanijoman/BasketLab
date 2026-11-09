@@ -64,7 +64,7 @@ def _fbcyl_games(mongo: Any) -> Iterator[Dict[str, Any]]:
     """The games of a FBCYL collection with moves, adapted to the FEB document, in date order.
 
     The kick-off is text (``Oct 3, 2026, 6:30:00 PM``) that the server cannot parse: only ids and that text are read first and sorted here."""
-    from .fbcyl_adapter import starttime
+    from src.live_core.fbcyl_adapter import starttime
     from .game_sources import FBCYL
 
     def when(stats: Dict[str, Any]):

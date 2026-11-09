@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.live_prep.fbcyl_adapter import to_feb_document
+from src.live_core.fbcyl_adapter import to_feb_document
 from src.services.scouting_rival_service import ScoutingRivalService
 
 RAW = json.loads(gzip.open(Path(__file__).parent / "fixtures" / "fbcyl_game_ok.json.gz").read())

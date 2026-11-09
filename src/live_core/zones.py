@@ -98,7 +98,8 @@ def classify_fiba(x: float, y: float) -> Dict[str, Any]:
 
 def classify_shot(shot: Dict[str, Any]) -> Dict[str, Any]:
     """Zone of a FEB SHOTCHART entry (x, y percentages and ``team``)."""
-    x, y = feb_to_fiba(float(shot["x"]), float(shot["y"]), int(shot.get("team", 0)))
+    team = 0 if shot.get("folded") else int(shot.get("team", 0))      # FBCYL folds both teams into one half court (``fbcyl_adapter``): mirroring the second team would be wrong
+    x, y = feb_to_fiba(float(shot["x"]), float(shot["y"]), team)
     return classify_fiba(x, y)
 
 
