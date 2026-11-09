@@ -1,6 +1,6 @@
 # Evaluación: ¿publica FBCYL los partidos mientras se juegan? (spike #444)
 
-Parte de la épica #435. Grabación del **7/11/2026, Universidad de Salamanca Meins Avenida – Unileón B.F. León** (1ª División Femenina, grupo A-1, 19:30 en Madrid, final 81–75), hecha por `fbcyl-record.yml` (run 42398409432, artefacto `fbcyl-recording-7298-39731-39609`, 90 días de retención). El grabador sondeó cada ~10,6 s el servicio de streaming de la web de la FBCyL (`streaming.optimalwayconsulting.com/fbcyl/streaming/match-id/{adGameId}`, sin token): 699 lecturas, 681 de ese flujo, 0 errores, 99 cuerpos guardados. Los números de abajo salen de esa grabación; es **un solo partido** y no se sondeó el canal SSE, solo el REST.
+Parte de la épica #435. Grabación del **7/11/2026, Universidad de Salamanca Meins Avenida – Unileón B.F. León** (1ª División Femenina, grupo A-1, 19:30 en Madrid, final 81–75), hecha por `fbcyl-record.yml` (run 42398409432, artefacto `fbcyl-recording-7298-39731-39609`, 90 días de retención). El grabador sondeó cada ~10,6 s el servicio de streaming de la web de la FBCyL (`streaming.optimalwayconsulting.com/fbcyl/streaming/match-id/{adGameId}`, sin token): 699 lecturas, 681 de ese flujo, 0 errores, 99 cuerpos guardados. Los números de abajo salen de esa grabación; es **un solo partido** y no se sondeó el canal SSE, solo el REST. El SSE se evalúa aparte (#805): una petición sin credenciales da **403**, mientras el REST responde 200 sin ellas.
 
 **Veredicto: GO.** El flujo crece durante el partido y lleva lo que la app necesita. Condiciones para usarlo, al final.
 
@@ -27,15 +27,15 @@ Parte de la épica #435. Grabación del **7/11/2026, Universidad de Salamanca Me
 ## Límites de esta evaluación
 
 - Un solo partido, de una sola competición; no se compara con vídeo.
-- Solo se sondeó el REST: el **canal SSE** (empuja cada jugada) podría tener menos latencia y no se ha medido.
+- Solo se sondeó el REST. El **canal SSE** (empuja cada jugada) podría tener menos latencia, pero no se ha medido y puede que no sea de acceso libre (403 sin credenciales): se decide en #805, sin bloquear #446.
 - El grabador pide el flujo cuando el calendario marca el partido en directo o llega su hora, así que no se sabe si hay datos antes del saque (titulares anticipados).
 - La hora de cada movimiento está en hora de Madrid (UTC+1 ese día).
 
 ## Qué implica para #446
 
-1. **Fuente de directo**: el flujo REST de streaming (y, si se mide mejor, el SSE), sin token; `adGameId` sale de la fila del calendario ESB.
+1. **Fuente de directo**: el flujo REST de streaming, sin token; `adGameId` sale de la fila del calendario ESB. El SSE queda para #805.
 2. **Descartar lecturas que retroceden** (menos movimientos o un periodo menor que lo ya visto): el cliente nunca debe reiniciar el partido por una respuesta vieja.
 3. **El cierre lo da `msstats`**: al terminar, el cliente debe reemplazar lo visto por el documento definitivo, que puede traer movimientos que el flujo no tuvo.
 4. **No fiarse del calendario para el final**: va ~6 min detrás de lo que dice el flujo.
 5. **Las coordenadas de los tiros vienen en directo**: las zonas de la app se pueden alimentar durante el partido, como en FEB.
-6. Medir el SSE y la latencia real con un partido y una referencia externa antes de ajustar las reglas de tiempo reciente.
+6. La latencia real respecto a la pista **no se va a medir** (decisión del 9/11: no es viable); se asume el retraso que haya, con bloques de ~1 min.
