@@ -98,6 +98,31 @@ class TestTheClosingWithMsstats:
         assert session.update_streaming(ending[-3]) == {"stale": True}
 
 
+class TestTheLastDocument:
+    """The app keeps the match followed to review it later: it needs the FEB document of the last reading, which only the engine has (the stream is not FEB-shaped)."""
+
+    def test_there_is_none_before_a_reading_and_it_is_the_feb_document_of_the_last_accepted_one_after(self, session, ending):
+        assert session.last_document() is None
+        session.update_streaming(ending[2])
+        doc = session.last_document()
+        assert doc["HEADER"]["status"] == "2" and len(doc["PLAYBYPLAY"]["LINES"]) > 500
+        session.update_streaming(ending[3])                              # stale: the document is still the 609 one
+        assert session.last_document() == doc
+
+    def test_after_the_closing_it_is_the_final_document(self, session, recording, ending):
+        session.update_streaming(ending[2])
+        session.update_fbcyl_final(recording["msstats_moves"], recording["readings"][-1])
+        assert session.last_document()["HEADER"]["status"] == "3"
+
+    def test_the_entry_point_gives_json_or_null(self, package, ending):
+        from src.live_core.session import last_document_json
+
+        start_json(package)
+        assert json.loads(last_document_json()) is None
+        update_streaming_json(json.dumps(ending[2]))
+        assert json.loads(last_document_json())["HEADER"]["source"] == "fbcyl"
+
+
 class TestThePyodideEntryPoints:
     def test_the_json_entry_points_do_the_same_and_say_stale_as_json(self, package, ending, recording):
         start_json(package)

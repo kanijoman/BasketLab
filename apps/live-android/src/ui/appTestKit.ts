@@ -29,6 +29,7 @@ export function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
     update: vi.fn(),
     updateStreaming: vi.fn(),
     updateFbcylFinal: vi.fn(),
+    lastDocument: vi.fn(),
     loadRecording: vi.fn().mockResolvedValue({ duration: 100, status: 'GRABACION', match: '2524470', frames: 10 }),
     // seconds 0-2: the match is not there yet; 3-5: FEB answers 404; afterwards the engine output (with an alert)
     playRecording: vi.fn(async (s: number) =>

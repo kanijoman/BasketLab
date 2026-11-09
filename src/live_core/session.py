@@ -34,6 +34,7 @@ class LiveSession:
         self._replay_doc: Optional[Dict[str, Any]] = None
         self._feed: Optional[RecordedFeed] = None
         self._recording: Optional[RecordingBuilder] = None
+        self._last_document: Optional[Dict[str, Any]] = None   # the FEB document of the last reading of the FBCYL streaming (or of its closing)
         self._stream_best: Tuple[int, int] = (0, 0)      # (period, moves) of the best reading of the FBCYL streaming: a reading with less than that is ignored
         self.replay_info: Dict[str, Any] = {}
 
@@ -98,14 +99,20 @@ class LiveSession:
         if mark < self._stream_best:
             return {"stale": True}
         self._stream_best = mark
-        return self.update(from_streaming(body), at)
+        self._last_document = from_streaming(body)
+        return self.update(self._last_document, at)
 
     def update_fbcyl_final(self, moves: Any, stats: Dict[str, Any], at: Optional[float] = None) -> Dict[str, Any]:
         """Close a FBCYL match with the definitive moves and stats of ``msstats`` (they exist once the match is over; the stream lacked 2 moves in the real match): what was seen is
         replaced by them, and no later reading of the stream is followed."""
         doc = to_feb_document({"uuid": stats.get("uuid"), "moves": moves, "stats": stats})
         self._stream_best = (10 ** 6, 10 ** 9)
+        self._last_document = doc
         return self.update(doc, at)
+
+    def last_document(self) -> Optional[Dict[str, Any]]:
+        """The FEB document of the last FBCYL reading accepted (or of its closing), None before the first: what the app keeps to review the match later (issue #407)."""
+        return self._last_document
 
     def report(self, game_doc: Dict[str, Any], alerts: Optional[Any] = None) -> Dict[str, Any]:
         """The post-match report (issue #409) of a finished game, from the point of view of the package's team."""
@@ -198,6 +205,10 @@ def update_streaming_json(body_json: str, at: Optional[float] = None) -> str:
 
 def update_fbcyl_final_json(moves_json: str, stats_json: str, at: Optional[float] = None) -> str:
     return _dump(_session().update_fbcyl_final(json.loads(moves_json), json.loads(stats_json), at))
+
+
+def last_document_json() -> str:
+    return _dump(_session().last_document())
 
 
 def begin_recording_json(match: str, started: str) -> str:

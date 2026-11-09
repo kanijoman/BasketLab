@@ -67,6 +67,23 @@ class TestTheNextRounds:
         assert starts[0] >= NOW and (starts[-1] - starts[0]).days < 5                  # the next block, not the whole season
         assert all(m["code"].startswith("fbcyl-") and m["home"]["id"].isdigit() and m["away"]["name"] for m in matches)
 
+    def test_every_match_carries_the_group_of_its_calendar_so_the_app_can_find_it_when_it_is_about_to_start(self, rows):
+        matches = [m for r in service(rows).next_rounds(COLLECTION)["rounds"] for m in r["matches"]]
+        assert matches and {m["fbcyl_group"] for m in matches} == {"7298"}
+
+    def test_the_package_of_the_match_keeps_the_group(self, rows):
+        from src.live_prep.round_packages import build_round_packages
+
+        match = next(m for r in service(rows).next_rounds(COLLECTION)["rounds"] for m in r["matches"])
+        built = build_round_packages([], COLLECTION, "2026", [match], created_at="2026-11-09T00:00:00Z")
+        assert built[0]["match"]["fbcyl_group"] == "7298" and built[0]["package"].competition_meta["match"]["fbcyl_group"] == "7298"
+
+    def test_a_feb_match_has_no_group(self):
+        from src.live_prep.round_packages import build_round_packages
+
+        feb = {"code": "1", "start": "2026-11-14T17:00", "round": 4, "home": {"id": "9001", "name": "A"}, "away": {"id": "9002", "name": "B"}}
+        assert "fbcyl_group" not in build_round_packages([], "LF_X", "2026", [feb], created_at="2026-11-09T00:00:00Z")[0]["match"]
+
     def test_the_played_matches_are_not_listed(self, rows):
         played = {f"fbcyl-{r['idMatch']}" for r in rows if str(r["state"]) == "1"}
         assert not played & {m["code"] for r in service(rows).next_rounds(COLLECTION)["rounds"] for m in r["matches"]}

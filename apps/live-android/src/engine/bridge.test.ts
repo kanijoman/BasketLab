@@ -155,6 +155,16 @@ describe('LiveBridge on a FBCYL match (issue #446)', () => {
     expect(shown.map(o => [o.snapshot.period, o.snapshot.score[HOME], o.snapshot.score[AWAY]])).toEqual([[4, 77, 75], [4, 81, 75], [4, 81, 75]])
   })
 
+  it('keeps the FEB document of the last reading to review the match later, and has none before the first', () => {
+    bridge.start(realPackage)
+    expect(bridge.lastDocument()).toBeNull()
+    bridge.updateStreaming(JSON.stringify(ending[2].body), 0)
+    const doc = JSON.parse(bridge.lastDocument()!)
+    expect([doc.HEADER.source, doc.HEADER.status, doc.PLAYBYPLAY.LINES.length > 500]).toEqual(['fbcyl', '2', true])
+    bridge.updateStreaming(JSON.stringify(ending[3].body), 10)                                          // stale: the document is still the 609 one
+    expect(JSON.parse(bridge.lastDocument()!).PLAYBYPLAY.LINES.length).toBe(doc.PLAYBYPLAY.LINES.length)
+  })
+
   it('closes the match with the definitive moves and stats of msstats', () => {
     bridge.start(realPackage)
     for (const r of ending) bridge.updateStreaming(JSON.stringify(r.body))

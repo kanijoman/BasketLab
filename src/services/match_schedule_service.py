@@ -148,7 +148,7 @@ class MatchScheduleService:
                 calendar = self._fetch_fbcyl(group)
             except Exception as exc:  # noqa: BLE001 - the ESB API down: report, do not fail
                 return {**empty, "warning": f"No se pudo leer el calendario de FBCYL: {exc}"}
-            return self._next_rounds_of(calendar, None)
+            return self._next_rounds_of(calendar, None, {"fbcyl_group": group})
         url = self.calendar_url(collection)
         if not url:
             return {**empty, "warning": "No se conoce el calendario de la competición (sin partidos ni metadatos)"}
@@ -158,7 +158,7 @@ class MatchScheduleService:
             return {**empty, "calendar_url": url, "warning": f"No se pudo leer el calendario de FEB: {exc}"}
         return self._next_rounds_of(calendar, url)
 
-    def _next_rounds_of(self, calendar: List[CalendarMatch], url: Optional[str]) -> Dict[str, Any]:
+    def _next_rounds_of(self, calendar: List[CalendarMatch], url: Optional[str], extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """The rule that picks the next rounds, the same for the calendar of FEB and the one of FBCYL."""
         empty = {"rounds": [], "calendar_url": None}
         limit = self._now() - STALE_AFTER
@@ -171,7 +171,7 @@ class MatchScheduleService:
             if block_start <= first + ROUND_START_WINDOW:
                 chosen.setdefault(rnd, []).extend(block)
         rounds = sorted(chosen.items(), key=lambda item: min(m.start for m in item[1]))
-        listed = [{"round": rnd, "matches": [self._next_match(m) for m in pending if m in set(ms)]} for rnd, ms in rounds]
+        listed = [{"round": rnd, "matches": [{**self._next_match(m), **(extra or {})} for m in pending if m in set(ms)]} for rnd, ms in rounds]
         return {"rounds": listed, "calendar_url": url, "warning": None}
 
     @staticmethod

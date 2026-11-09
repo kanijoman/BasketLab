@@ -14,6 +14,8 @@ export interface EngineApi {
   updateStreaming(bodyJson: string, at?: number): Promise<StreamingOutput>
   /** The definitive moves and stats of msstats once a FBCYL match is over: they replace what the stream gave. */
   updateFbcylFinal(movesJson: string, statsJson: string, at?: number): Promise<EngineOutput>
+  /** The FEB document (JSON text) of the last FBCYL reading accepted, or null before the first (issue #446): what is kept to review the match later. */
+  lastDocument(): Promise<string | null>
   /** Starts keeping a recording of the feed (the format of the CI recorder) from the documents ``update`` is given a time for. */
   beginRecording(match: string, startedIso: string): Promise<void>
   recordGap(endpoint: string, at: number): Promise<void>
@@ -77,6 +79,7 @@ export class EngineClient implements EngineApi {
   update(docJson: string, at?: number) { return this.call<EngineOutput>({ type: 'update', payload: { doc: docJson, at } }) }
   updateStreaming(bodyJson: string, at?: number) { return this.call<StreamingOutput>({ type: 'updateStreaming', payload: { body: bodyJson, at } }) }
   updateFbcylFinal(movesJson: string, statsJson: string, at?: number) { return this.call<EngineOutput>({ type: 'updateFbcylFinal', payload: { moves: movesJson, stats: statsJson, at } }) }
+  lastDocument() { return this.call<string | null>({ type: 'lastDocument' }) }
   async beginRecording(match: string, startedIso: string) { await this.call<unknown>({ type: 'beginRecording', payload: { match, startedIso } }) }
   async recordGap(endpoint: string, at: number) { await this.call<unknown>({ type: 'recordGap', payload: { endpoint, at } }) }
   recording() { return this.call<unknown>({ type: 'recording' }) }
