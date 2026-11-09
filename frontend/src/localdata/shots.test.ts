@@ -53,3 +53,36 @@ describe('the shot tables: the corners', () => {
     expect(shotRaw(many, { limit: 10000 })).toHaveLength(10000)
   })
 })
+
+// Issue #452, block 2 (zones): the files that carry `zone_system: 'engine'` use the zones of `live_core.zones` (the ones the app and the scouting reports say); a file without it is the old
+// system (the vectors above). The reader knows both so the data can change after the web does (deployment protocol: first the one that reads, then the one that writes).
+describe('the zone system of a file', () => {
+  const ENGINE = ['restricted_area', 'key_area', 'short_mid_range', 'medium_mid_range', 'long_mid_range', 'left_corner_three', 'left_wing_three', 'center_three', 'right_wing_three', 'right_corner_three']
+  const file = (rows: Shots['shots'], zoneSystem?: string) => ({ format: 1, collection: 'X', league: 'feb', games: 1, columns: [], shots: rows, ...(zoneSystem ? { zone_system: zoneSystem } : {}) }) as unknown as Shots
+  const rows: Shots['shots'] = [['T1', 'P1', 7.5, 3, true, 'key_area'], ['T1', 'P1', 7.5, 3, false, 'key_area'], ['T1', 'P2', 0.4, 1, true, 'left_corner_three'], ['T1', 'P2', 1, 1, true, 'paint']]
+
+  it('a file of the engine system lists the 10 zones of the engine, in its order, with their labels and points', () => {
+    const zones = shotZones(file(rows, 'engine'), {})
+    expect(zones.map(z => z.zone)).toEqual(ENGINE)
+    expect(zones.map(z => z.points)).toEqual([2, 2, 2, 2, 2, 3, 3, 3, 3, 3])
+    expect(zones.find(z => z.zone === 'key_area')).toMatchObject({ zone_label: 'Zona', fga: 2, fgm: 1, fg_pct: 50 })
+    expect(zones.find(z => z.zone === 'left_corner_three')).toMatchObject({ zone_label: 'Esquina Izq.', fga: 1, fgm: 1 })
+  })
+
+  it('a shot of the other system in a file of the engine counts for no zone (it cannot be told apart, and a wrong zone is worse)', () => {
+    expect(shotZones(file(rows, 'engine'), {}).reduce((sum, z) => sum + z.fga, 0)).toBe(3)
+  })
+
+  it('a file without zone_system is the old system: its zones and not the engine ones', () => {
+    const zones = shotZones(file(rows), {})
+    expect(zones.map(z => z.zone)).toEqual(['restricted_area', 'paint', 'mid_left', 'mid_center', 'mid_right', 'corner_left', 'wing_left', 'top_three', 'wing_right', 'corner_right'])
+    expect(zones.find(z => z.zone === 'paint')!.fga).toBe(1)
+  })
+
+  it('the rating against the league uses the zones of the file too', () => {
+    const many: Shots['shots'] = Array.from({ length: 24 }, (_, i) => [i % 2 ? 'T1' : 'T2', `P${i % 4}`, 7.5, 3, i % 3 === 0, 'key_area'])
+    const rated = shotZones(file(many, 'engine'), { team_id: 'T1', compare: 'league' })
+    expect(rated.find(z => z.zone === 'key_area')).toMatchObject({ rating: expect.stringMatching(/above|below|average/) })
+    expect(rated.find(z => z.zone === 'left_corner_three')).toMatchObject({ rating: 'none' })
+  })
+})

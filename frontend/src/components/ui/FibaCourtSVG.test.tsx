@@ -96,3 +96,31 @@ describe('FibaCourtSVG theme (issue #196)', () => {
     expect(html).not.toMatch(/rgba\(255,\s*255,\s*255/)
   })
 })
+
+// Issue #452, block 2 (zones): the court draws a bubble for each zone of the engine (what the app and the scouting say) and, while published data still has them, of the old system.
+describe('the zones of the engine on the court', () => {
+  const ENGINE = ['restricted_area', 'key_area', 'short_mid_range', 'medium_mid_range', 'long_mid_range', 'left_corner_three', 'left_wing_three', 'center_three', 'right_wing_three', 'right_corner_three']
+  const LEGACY = ['paint', 'mid_left', 'mid_center', 'mid_right', 'corner_left', 'wing_left', 'top_three', 'wing_right', 'corner_right']
+
+  it('draws one bubble per zone of the engine', () => {
+    const container = court(ENGINE.map(key => zone(key)))
+    expect(Array.from(container.querySelectorAll('g[data-zone]')).map(g => g.getAttribute('data-zone'))).toEqual(ENGINE)
+  })
+
+  it('still draws the zones of the old system for data published before the change', () => {
+    const container = court(LEGACY.map(key => zone(key)))
+    expect(container.querySelectorAll('g[data-zone]')).toHaveLength(LEGACY.length)
+  })
+
+  it('no bubble is on top of another one: the anchors of the engine zones are apart', () => {
+    const container = court(ENGINE.map(key => zone(key, { fga: 1 })))
+    const centres = Array.from(container.querySelectorAll('g[data-zone]')).map(g => {
+      const c = g.querySelector('circle')!
+      return [Number(c.getAttribute('cx')), Number(c.getAttribute('cy'))]
+    })
+    for (let i = 0; i < centres.length; i++) for (let j = i + 1; j < centres.length; j++) {
+      expect(Math.hypot(centres[i][0] - centres[j][0], centres[i][1] - centres[j][1])).toBeGreaterThan(40)
+    }
+  })
+})
+
