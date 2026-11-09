@@ -63,3 +63,32 @@ describe('LiveConnect', () => {
     expect(onStop).toHaveBeenCalled()
   })
 })
+
+
+// Issue #446 (PR 3): a match of FBCYL is connected like one of FEB, and nothing on the screen says «FEB» about it: the league is transparent to the staff.
+describe('LiveConnect with a match of FBCYL', () => {
+  it('offers to connect to FBCYL with the code the federation shows, and connects with the code of the package', () => {
+    const { onStart } = view({ kind: 'idle' }, { matchCode: 'fbcyl-149388' })
+    expect(screen.getByText(/partido de fbcyl/i)).toBeTruthy()
+    expect(screen.getByText('149388')).toBeTruthy()
+    expect(screen.queryByText(/FEB/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /conectar con fbcyl/i }))
+    expect(onStart).toHaveBeenCalledWith('fbcyl-149388')
+  })
+
+  it('says FBCYL, not FEB, in every state of the connection', () => {
+    const { rerender } = render(<LiveConnect matchCode="fbcyl-149388" state={{ kind: 'connecting' }} running onStart={vi.fn()} onStop={vi.fn()} />)
+    expect(screen.getByText(/conectando con fbcyl/i)).toBeTruthy()
+    rerender(<LiveConnect matchCode="fbcyl-149388" state={{ kind: 'gap', lastOkAt: NOW - 5_000 }} running onStart={vi.fn()} onStop={vi.fn()} />)
+    expect(screen.getByText(/FBCYL no responde/)).toBeTruthy()
+    rerender(<LiveConnect matchCode="fbcyl-149388" state={{ kind: 'idle' }} running={false} onStart={vi.fn()} onStop={vi.fn()} />)
+    expect(screen.getByText(/conecta con fbcyl cuando empiece/i)).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/FEB/)
+  })
+
+  it('a match of FEB keeps saying FEB', () => {
+    view({ kind: 'idle' })
+    expect(screen.getByText(/partido de feb/i)).toBeTruthy()
+    expect(screen.getByRole('button', { name: /conectar con feb/i })).toBeTruthy()
+  })
+})

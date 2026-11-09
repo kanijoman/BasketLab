@@ -17,7 +17,7 @@ export default function RecordingsPanel({ recordings, onShare, onRemove }: Props
   return (
     <section className="panel recordings" aria-label="Grabaciones del partido en directo">
       <h2>Grabaciones del directo</h2>
-      <p className="detail">La app graba lo que recibe de FEB mientras sigues un partido. Compártela para tener los datos completos aunque la grabación del servidor llegue tarde.</p>
+      <p className="detail">La app graba lo que recibe de la federación (FEB o FBCYL) mientras sigues un partido. Compártela para tener los datos completos aunque la grabación del servidor llegue tarde.</p>
       <ul className="remote-packages">
         {recordings.map(r => (
           <li key={r.code}>

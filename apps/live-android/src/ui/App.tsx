@@ -455,7 +455,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
 
       {liveMode && (
         <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake} lag={live.lag}
-          onStart={code => void live.connect(code)} onStop={live.disconnect} />
+          onStart={code => void live.connect(code, { fbcylGroup: pkg.match?.fbcyl_group })} onStop={live.disconnect} />
       )}
 
       {shownFeedback.length > 0 && (
