@@ -16,7 +16,7 @@ from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .coherence import Coherence
 from .boxscore import build as box_score, team_totals
 from .config import RuleConfig
-from .four_factors import FourFactorsModel
+from .four_factors import FourFactorsModel, side_of
 from .recent_timeout import adapt_for_recent_timeout
 from .lineup_settle import LINEUP_RULES, lineup_unsettled
 from .score_settle import RECENT_ACTION_RULES, log_lags
@@ -26,7 +26,7 @@ from .pace import PaceModel
 from .proposals import timeout_proposal
 from .lineups import lineup_key
 from .modes import mode_overrides
-from .recommender import Recommender
+from .recommender import Recommender, lever_for
 from .rules_four_factors import four_factors_rule
 from .rules_lineup import departure_note, formation_counts, formation_rule, roster_known
 from .rules_closing import advantage_rule, closing_rule, comeback_rule, pace_rule
@@ -154,7 +154,12 @@ class AdviceEngine:
         levers = self._win_prob.levers(snapshot, four_factors)
         if self._recommender is None:
             return levers
-        return [{**lv, "proposal": self._recommender.suggest_for_lever(snapshot, lv["id"])} if lv["id"] != "pace" else lv for lv in levers]
+        return [{**lv, "proposal": self._lever_proposal(snapshot, lv["id"], lv.get("side"))} if lv["id"] != "pace" else lv for lv in levers]
+
+    def _lever_proposal(self, snapshot: Dict[str, Any], factor: str, side: Optional[str]) -> List[Dict[str, Any]]:
+        """The swaps for a Four Factors lever: the attacker's profile, or the defender's when the points are lost in our defence (feedback 0.5.2); none without a metric."""
+        lever = lever_for(factor, side)
+        return self._recommender.suggest_for_lever(snapshot, lever) if self._recommender is not None and lever else []
 
     def _formation_status(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
         """For the app: the minimum, whether the roster tells who is formación, and how many are on court now."""
@@ -232,9 +237,9 @@ class AdviceEngine:
         if advice.id in ("foul_trouble", "fatigue_high"):
             proposal = self._relief(snapshot, advice)
         elif advice.id == "win_flip" and advice.evidence["lever"] not in (None, "pace"):
-            proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
+            proposal = self._lever_proposal(snapshot, advice.evidence["lever"], advice.evidence.get("lever_side"))
         elif advice.id == "four_factors_lever":
-            proposal = self._recommender.suggest_for_lever(snapshot, advice.evidence["lever"])
+            proposal = self._lever_proposal(snapshot, advice.evidence["lever"], advice.evidence.get("side"))
         elif advice.id == "rival_orb_window":
             proposal = self._recommender.suggest_for_lever(snapshot, "def_reb")
         elif advice.id == "turnover_streak":
@@ -265,4 +270,6 @@ class AdviceEngine:
 
     def _current_lever(self, snapshot: Dict[str, Any]) -> Optional[str]:
         result = self._model.evaluate(snapshot) if self._model else None
-        return result["lever"] if result and result["reliable"] else None
+        if not result or not result["reliable"] or not result["lever"]:
+            return None
+        return lever_for(result["lever"], side_of(result.get("sides"), result["lever"]))     # who comes in for a tired player also defends when it is the defence

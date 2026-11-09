@@ -15,6 +15,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 from src.live_core.engine import LiveEngine
 from .category_strength import adjust, team_level
 from .game_sources import LEAGUE_KEY, LEVEL_KEY
+from .season_figures import league_shooting, season_context, season_figures
 from .team_rating import TeamRatings
 from src.live_core.four_factors import DEFAULT_SD, WEIGHTS, differentials, factors, possessions
 from src.live_core.package import PreparationPackage
@@ -81,6 +82,7 @@ class _PlayerAcc:
         self.dorsal: Optional[str] = None      # the jersey number of his most recent match (the games are replayed in order): the live app needs it for the players the roster lacks
         self.minutes: List[int] = []
         self.stint_sum = self.stints = self.pf = 0
+        self.fd = self.pm = 0                  # fouls drawn and plus/minus: the season of the box score's columns (feedback 0.5.2)
         self.stats = {k: 0 for k in PLAYER_STAT_KEYS}
         self.clutch, self.q4 = clutch_mod.empty(), clutch_mod.empty()
 
@@ -91,6 +93,8 @@ class _PlayerAcc:
             self.dorsal = str(p["no"]).strip()
         self.minutes.append(p["minutes"])
         self.pf += p["pf"]
+        self.fd += p.get("fd", 0)
+        self.pm += p.get("pm") or 0
         for key in PLAYER_STAT_KEYS:
             self.stats[key] += p["stats"][key]
         for bucket, key in ((self.clutch, "clutch"), (self.q4, "q4")):
@@ -99,7 +103,7 @@ class _PlayerAcc:
         self.stint_sum += p["stint_sum"] + (p["stint"] if p["on_court"] else 0)
         self.stints += p["stints_done"] + (1 if p["on_court"] else 0)
 
-    def baseline(self, league: "League", impact_means: Dict[str, float], ft_mean: float = 0.0) -> Dict[str, Any]:
+    def baseline(self, league: "League", impact_means: Dict[str, float], ft_mean: float = 0.0, season: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         total = sum(self.minutes)
         rates = raw_rates(self.stats, total)
         fga = self.stats["fg2a"] + self.stats["fg3a"]
@@ -121,6 +125,7 @@ class _PlayerAcc:
             "fta": self.stats["fta"],
             "ft_pct": round((self.stats["ftm"] + FT_PRIOR_ATTEMPTS * ft_mean) / (self.stats["fta"] + FT_PRIOR_ATTEMPTS), 3),
             "clutch": self._clutch(total, ft_mean),
+            **(season_figures(self.stats, total, self.pf, self.fd, self.pm, len(self.minutes), season) if season else {}),
         }
 
     def _clutch(self, total: int, ft_mean: float) -> Dict[str, Any]:
@@ -209,6 +214,7 @@ class SeasonAccumulator:
         for side, source in (("for", tid), ("against", other)):
             for key, value in stats[source].items():
                 sums[side][key] = sums[side].get(key, 0) + value
+            sums[side]["pf"] = sums[side].get("pf", 0) + sum(p["pf"] for p in snap["players"].values() if p["team_id"] == source)
         for row in snap["lineups"].get(tid, []):
             total = self.lineup_totals.setdefault(tid, {}).setdefault(
                 tuple(row["players"]), {"seconds": 0, "pts_for": 0, "pts_against": 0, "stints": 0, "games": 0})
@@ -317,8 +323,11 @@ class SeasonAccumulator:
         baselines["league_rates"] = {m: {k: round(v, 4) for k, v in d.items()} for m, d in league_rates.items()}
         baselines["impact_league"] = {m: round(v, 3) for m, v in impact_means.items()}
 
+        shooting = league_shooting(a.stats for a in qualified)
+
         def table(tid: str) -> Dict[str, Dict[str, Any]]:
-            return {pid: acc.baseline(league_rates, impact_means, ft_mean)
+            season = season_context(self.team_sums.get(tid), self.played(tid), shooting)
+            return {pid: acc.baseline(league_rates, impact_means, ft_mean, season)
                     for pid, acc in self.players.get(tid, {}).items() if acc.minutes}
 
         tables: Dict[str, Any] = {

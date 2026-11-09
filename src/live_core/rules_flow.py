@@ -8,7 +8,7 @@
 * ``static_offense`` (G4, issue #252): ``static_min_fgm`` or more made baskets with an assist share of ``static_ast_share`` or less:
   move the ball. Said once per half.
 * ``game_flow_windows``: G2 rival offensive rebounds, G3 rival points right after our turnovers, G5 rival turnovers,
-  all in the last three minutes.
+  all in the last three minutes and never before the start of the quarter (feedback 0.5.2).
 
 Droughts and runs are said once per episode (``timeouts.episode``: the stretch since the team's last timeout of the period)
 and not in the minute after our own timeout. Thresholds are provisional, in ``RuleConfig``.
@@ -21,7 +21,7 @@ from typing import Any, Dict, List
 from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import field_goal_gap, points_after_turnovers, run_causes, run_start, scoring_gap, scores_after_timeouts, window_stats
+from .windows import field_goal_gap, points_after_turnovers, recent_text, run_causes, run_start, scoring_gap, scores_after_timeouts, window_stats
 
 
 def _clock(seconds: int) -> str:
@@ -102,19 +102,21 @@ def window_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     if not rival:
         return []
     cfg, own, now, log, out = ctx.config, ctx.own_team_id, snap["elapsed"], snap.get("log", []), []
-    window, minutes = cfg.flow_window_s, cfg.flow_window_s // 60
+    window = cfg.flow_window_s
+    recent = recent_text(snap, window)                  # «en los últimos 3 min», or what the quarter has had when it is younger (feedback 0.5.2)
     said = ctx.memory.setdefault("flow_said", {})       # alert id -> where its last window ended: the same events are never counted for it twice (issue #517)
 
     def counted(alert_id: str) -> int:
-        # the second after the last one said: the windows include both ends, and an event of that very second was already counted (#619)
-        return max(now - window, said.get(alert_id, -2) + 1)
+        # the second after the last one said: the windows include both ends, and an event of that very second was already counted (#619); never before the
+        # start of the quarter (feedback 0.5.2, as the runs of #515)
+        return max(run_start(snap, window), said.get(alert_id, -2) + 1)
 
     theirs = window_stats(log, rival, counted("rival_orb_window"), now)
     if theirs["orb"] >= cfg.rival_orb_n:
         said["rival_orb_window"] = now
         out.append(Advice(
             key=f"rival_orb:{episode(snap, own)}", id="rival_orb_window", severity="warning", category="four_factors",
-            message=f"El rival lleva {theirs['orb']} rebotes ofensivos en los últimos {minutes} min. Cerrar el rebote y meter un reboteador.",
+            message=f"El rival lleva {theirs['orb']} rebotes ofensivos {recent}. Cerrar el rebote y meter un reboteador.",
             evidence={"orb": theirs["orb"], "window_s": cfg.flow_window_s},
             proposal=[tactic_proposal("Cerrar el rebote: bloqueo y balance")]))
     points = points_after_turnovers(log, own, rival, counted("points_off_turnovers"), now, cfg.tov_points_horizon_s)
@@ -122,7 +124,7 @@ def window_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         said["points_off_turnovers"] = now
         out.append(Advice(
             key=f"tov_points:{episode(snap, own)}", id="points_off_turnovers", severity="warning", category="four_factors",
-            message=f"El rival ha anotado {points} puntos tras nuestras pérdidas en los últimos {minutes} min. Balance defensivo.",
+            message=f"El rival ha anotado {points} puntos tras nuestras pérdidas {recent}. Balance defensivo.",
             evidence={"points": points, "window_s": cfg.flow_window_s},
             proposal=[tactic_proposal("Balance defensivo tras pérdida")]))
     turnovers = window_stats(log, rival, counted("rival_turnovers"), now)["tov"]
@@ -130,7 +132,7 @@ def window_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         said["rival_turnovers"] = now
         out.append(Advice(
             key=f"rival_tov:{episode(snap, rival)}", id="rival_turnovers", severity="info", category="rival",
-            message=f"El rival suma {turnovers} pérdidas en los últimos {minutes} min. Mantener la presión.",
+            message=f"El rival suma {turnovers} pérdidas {recent}. Mantener la presión.",
             evidence={"turnovers": turnovers, "window_s": cfg.flow_window_s, "team_id": rival},
             proposal=[tactic_proposal("Mantener la presión defensiva")]))
     return out

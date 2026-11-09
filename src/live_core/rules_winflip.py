@@ -1,7 +1,8 @@
 """Flip of the win probability (issue #258), W1 ``win_flip``.
 
 The probability of winning falls ``wp_flip_drop`` (20 points) or more within ``wp_flip_window_s`` (5 minutes): a warning with the
-main lever of the win probability (#256) and, for a Four Factors lever, the recommender's proposal (``AdviceEngine._with_proposal``).
+main lever of the win probability (#256) and, for a Four Factors lever, the recommender's proposal (``AdviceEngine._with_proposal``); a lever whose points are lost
+in our defence (``side``, #586) says the defence's action and its proposal looks for defenders (feedback 0.5.2).
 The rule remembers the probability of every evaluation in ``ctx.memory`` and compares the current one with the highest of the
 window, so a fall spread over more than the window says nothing, and the same fall is said once (``rearm_s`` is the window: it
 cannot repeat while the high point is still inside it). The probability is experimental (#257): the threshold is provisional.
@@ -12,7 +13,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .advice_types import Advice, RuleContext
-from .rules_four_factors import _LABELS
+from .rules_four_factors import lever_words
 
 _PACE_TEXT = {"up": "subir el ritmo", "down": "bajar el ritmo"}
 
@@ -46,7 +47,7 @@ def _lever_text(lever: Optional[Dict[str, Any]]) -> str:
     if lever["id"] == "pace":
         why = pace_reason_text(lever)
         return f" Palanca principal: {_PACE_TEXT.get(lever.get('direction'), 'cambiar el ritmo')}{' (' + why + ')' if why else ''}."
-    title, _metric, action = _LABELS[lever["id"]]
+    title, action = lever_words(lever["id"], lever.get("side"))      # the defence's action when the points are lost in our defence (feedback 0.5.2)
     return f" Palanca principal: {title.lower()}. {action}"
 
 
@@ -73,6 +74,7 @@ def win_flip_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         evidence={"p_before": round(before, 4), "p_now": current["p"], "drop": round(drop, 4), "window_s": window,
                   "projected_margin": current["projected_margin"],
                   "lever": lever["id"] if lever else None, "lever_gain": lever["gain"] if lever else None,
-                  **({"lever_direction": lever["direction"]} if lever and lever.get("direction") else {})},
+                  **({"lever_direction": lever["direction"]} if lever and lever.get("direction") else {}),
+                  **({"lever_side": lever["side"]} if lever and lever.get("side") else {})},
         rearm_s=window,
     )]

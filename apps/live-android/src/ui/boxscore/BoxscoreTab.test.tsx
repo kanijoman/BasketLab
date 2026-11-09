@@ -99,6 +99,14 @@ describe('BoxscoreTab (issue #593)', () => {
       expect(rowOf('A. PRIMERA').querySelector('td[data-col="ftr"]')!.getAttribute('data-dev')).toBe('down')
       expect(rowOf('A. PRIMERA').querySelector('td[data-col="orating"]')!.getAttribute('data-dev')).toBeNull()
     })
+
+    it('with his season in the package the rest of the columns are coloured too, basic and advanced (feedback 0.5.2)', () => {
+      render(view({ entries: { p1: { ...ENTRIES.p1, dev: { ...ENTRIES.p1.dev, fg2: 0.5, fd: -0.5, val: 0.6, pm: 0.4, orating: 0.7, drating: -0.6, usage: 0.3 } } } }))
+      const p1 = (column: string) => rowOf('A. PRIMERA').querySelector(`td[data-col="${column}"]`)!.getAttribute('data-dev')
+      expect(['t2', 'fr', 'val', 'pm', 'min'].map(p1)).toEqual(['up', 'down', 'up', 'up', null])
+      fireEvent.click(screen.getByRole('radio', { name: 'Avanzada' }))
+      expect(['orating', 'drating', 'usage'].map(p1)).toEqual(['up', 'down', 'up'])
+    })
   })
 
   describe('against his own average', () => {

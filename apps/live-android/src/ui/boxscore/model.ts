@@ -81,9 +81,9 @@ const only = (rows: Row['kind'][], text: (r: Row) => string) => (r: Row): string
 export const NORMAL_COLUMNS: Column[] = [
   { id: 'min', label: 'Min', title: 'Minutos jugados', text: only(['player', 'total'], r => mmss(r.minutes)) },
   { id: 'pts', label: 'Pts', title: 'Puntos', dev: 'pts', keys: ['pts'], text: only(['player', 'total'], r => String(r.pts)) },
-  { id: 't2', label: 'T2', title: 'Tiros de 2 anotados/intentados', keys: ['fg2m', 'fg2a'], text: only(['player', 'total'], r => ratio(r.stats.fg2m, r.stats.fg2a)) },
+  { id: 't2', label: 'T2', title: 'Tiros de 2 anotados/intentados', dev: 'fg2', keys: ['fg2m', 'fg2a'], text: only(['player', 'total'], r => ratio(r.stats.fg2m, r.stats.fg2a)) },
   { id: 't3', label: 'T3', title: 'Triples anotados/intentados', dev: 'fg3m', keys: ['fg3m', 'fg3a'], text: only(['player', 'total'], r => ratio(r.stats.fg3m, r.stats.fg3a)) },
-  { id: 'tc', label: 'TC', title: 'Tiros de campo anotados/intentados', keys: SHOOTING, text: only(['player', 'total'], r => ratio(fg(r.stats).made, fg(r.stats).attempted)) },
+  { id: 'tc', label: 'TC', title: 'Tiros de campo anotados/intentados', dev: 'fg', keys: SHOOTING, text: only(['player', 'total'], r => ratio(fg(r.stats).made, fg(r.stats).attempted)) },
   { id: 'tl', label: 'TL', title: 'Tiros libres anotados/intentados', dev: 'ftm', keys: ['ftm', 'fta'], text: only(['player', 'total'], r => ratio(r.stats.ftm, r.stats.fta)) },
   { id: 'ro', label: 'RO', title: 'Rebotes ofensivos', dev: 'orb', keys: ['orb'], text: r => String(r.stats.orb) },
   { id: 'rd', label: 'RD', title: 'Rebotes defensivos', dev: 'drb', keys: ['drb'], text: r => String(r.stats.drb) },
@@ -93,9 +93,9 @@ export const NORMAL_COLUMNS: Column[] = [
   { id: 'blk', label: 'Tap', title: 'Tapones', dev: 'blk', keys: ['blk'], text: only(['player', 'total'], r => String(r.stats.blk)) },
   { id: 'tov', label: 'Per', title: 'Pérdidas (más es peor)', dev: 'tov', keys: ['tov'], text: r => String(r.stats.tov) },
   { id: 'fc', label: 'FC', title: 'Faltas cometidas (más es peor)', dev: 'pf', keys: ['pf'], text: only(['player', 'total'], r => String(r.pf)) },
-  { id: 'fr', label: 'FR', title: 'Faltas recibidas', keys: ['fd'], text: only(['player', 'total'], r => String(r.fd)) },
-  { id: 'pm', label: '+/-', title: 'Diferencia de puntos de su equipo con el rival mientras está en pista', text: only(['player'], r => signed(r.pm)) },
-  { id: 'val', label: 'Val', title: 'Valoración como la del PDF de FEB, sin descontar los tapones recibidos', text: only(['player', 'total'], r => (r.entry ? String(r.entry.val) : '')) },
+  { id: 'fr', label: 'FR', title: 'Faltas recibidas', dev: 'fd', keys: ['fd'], text: only(['player', 'total'], r => String(r.fd)) },
+  { id: 'pm', label: '+/-', title: 'Diferencia de puntos de su equipo con el rival mientras está en pista', dev: 'pm', text: only(['player'], r => signed(r.pm)) },
+  { id: 'val', label: 'Val', title: 'Valoración como la del PDF de FEB, sin descontar los tapones recibidos', dev: 'val', text: only(['player', 'total'], r => (r.entry ? String(r.entry.val) : '')) },
 ]
 
 const advanced = (id: AdvancedKey, label: string, title: string, dev?: string): Column =>
@@ -103,28 +103,28 @@ const advanced = (id: AdvancedKey, label: string, title: string, dev?: string): 
 
 export const ADVANCED_COLUMNS: Column[] = [
   NORMAL_COLUMNS[0], NORMAL_COLUMNS[NORMAL_COLUMNS.length - 2],
-  advanced('usage', 'Usg%', 'Tasa de uso: porcentaje de posesiones del equipo utilizadas por el jugador mientras está en pista'),
-  advanced('orating', 'ORtg', 'Rating ofensivo: puntos producidos por cada 100 posesiones individuales'),
-  advanced('drating', 'DRtg', 'Rating defensivo: puntos permitidos por cada 100 posesiones cuando está en pista (menor es mejor)'),
-  advanced('net_rtg', 'NetRtg', 'Net rating individual: rating ofensivo menos defensivo'),
+  advanced('usage', 'Usg%', 'Tasa de uso: porcentaje de posesiones del equipo utilizadas por el jugador mientras está en pista (más que su media, en verde)', 'usage'),
+  advanced('orating', 'ORtg', 'Rating ofensivo: puntos producidos por cada 100 posesiones individuales', 'orating'),
+  advanced('drating', 'DRtg', 'Rating defensivo: puntos permitidos por cada 100 posesiones cuando está en pista (menor es mejor)', 'drating'),
+  advanced('net_rtg', 'NetRtg', 'Net rating individual: rating ofensivo menos defensivo', 'net_rtg'),
   advanced('efg', 'eFG%', 'Acierto de tiro de campo ajustado por los triples', 'efg'),
   advanced('ts', 'TS%', 'Acierto real de tiro: puntos por tiro de campo y tiro libre intentados', 'ts'),
   advanced('ftr', 'FTr', 'Tasa de tiro libre: tiros libres intentados por intento de campo', 'ftr'),
-  advanced('three_pr', '3Pr', 'Tasa de triple: proporción de intentos de campo que son triples'),
+  advanced('three_pr', '3Pr', 'Tasa de triple: proporción de intentos de campo que son triples (más que su media, en verde)', 'three_pr'),
   advanced('ast_pct', '%AST', 'Porcentaje de canastas del equipo con asistencia del jugador mientras está en pista', 'ast'),
   advanced('tov_pct', '%TO', 'Porcentaje de posesiones del jugador que acaban en pérdida (menor es mejor)', 'tov'),
   advanced('stl_pct', '%ROB', 'Porcentaje de posesiones del rival que acaban en robo del jugador', 'stl'),
   advanced('blk_pct', '%TAP', 'Porcentaje de intentos de 2 del rival tapados por el jugador', 'blk'),
   advanced('drb_pct', '%RD', 'Porcentaje de rebotes defensivos disponibles capturados por el jugador', 'drb'),
   advanced('orb_pct', '%RO', 'Porcentaje de rebotes ofensivos disponibles capturados por el jugador', 'orb'),
-  advanced('pie', 'PIE%', 'Impacto relativo del jugador en el partido (Player Impact Estimate)'),
+  advanced('pie', 'PIE%', 'Impacto relativo del jugador en el partido (Player Impact Estimate)', 'pie'),
 ]
 
 export const cellText = (column: Column, row: Row): string => column.text(row)
 
-/** How far a cell is from the average of its player, in [-1, 1] with the sign of good (null: nothing to compare with). */
+/** How far a cell is from the average of its player, in [-1, 1] with the sign of good (null: nothing to compare with, or a cell that says nothing, like the +/- of the totals). */
 export function deviationOf(column: Column, row: Row): number | null {
-  const value = column.dev && row.kind !== 'team' ? row.entry?.dev?.[column.dev] : null
+  const value = column.dev && row.kind !== 'team' && column.text(row) !== '' ? row.entry?.dev?.[column.dev] : null
   return typeof value === 'number' ? value : null
 }
 

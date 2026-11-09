@@ -4,6 +4,7 @@
  * everything is tested without a device; in a browser it is simply unavailable. Limit: if the app is not opened after a round is published it does
  * not know the match yet.
  */
+import type { ScheduleOptions } from '@capacitor/local-notifications'
 import { DEFAULT_LEAD_MIN, LEAD_OPTIONS, type Reminder } from './schedule'
 
 const KEY = 'basketlab-live-reminders'
@@ -77,12 +78,26 @@ export async function syncReminders(plugin: ReminderPlugin, reminders: Reminder[
   }
 }
 
-/** The real plugin, loaded only when it is used (the web build and the tests never load it); null in a browser. */
+/** The real plugin, loaded only when it is used (the web build and the tests never load it); null in a browser.
+ *
+ *  A Capacitor plugin is a Proxy that answers EVERY property, `then` included: returned as it is from an async function, the promise takes it for a thenable, calls
+ *  its `then` (a native method that does not exist) and never settles, so nothing was asked or scheduled (feedback of the 0.5.2, after #697). A plain object of its
+ *  methods is returned instead. */
 export async function capacitorReminderPlugin(): Promise<ReminderPlugin | null> {
   try {
     const { Capacitor } = await import('@capacitor/core')
     if (!Capacitor.isNativePlatform()) return null
-    return (await import('@capacitor/local-notifications')).LocalNotifications as unknown as ReminderPlugin
+    const { LocalNotifications: native } = await import('@capacitor/local-notifications')
+    return {
+      checkPermissions: () => native.checkPermissions(),
+      requestPermissions: () => native.requestPermissions(),
+      schedule: options => native.schedule(options as unknown as ScheduleOptions),
+      cancel: options => native.cancel(options),
+      getPending: () => native.getPending(),
+      checkExactNotificationSetting: () => native.checkExactNotificationSetting(),
+      changeExactNotificationSetting: () => native.changeExactNotificationSetting(),
+      addListener: (name, callback) => native.addListener(name, callback),
+    }
   } catch {
     return null
   }
