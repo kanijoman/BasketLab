@@ -1,118 +1,25 @@
-"""FEB shot-zone helpers: FIBA geometry, zone classification and per-zone counting.
+"""FEB shot-zone helpers: zone classification and per-zone counting.
 
 Extracted from the shots router so services (team report, scouting) can reuse them.
-Zones (10 total, FIBA half-court): restricted_area, paint, mid_left, mid_center,
-mid_right, corner_left, wing_left, top_three, wing_right, corner_right.
-FBCYL collections carry no shot coordinates.
+
+The zones are the ones of the engine, ``live_core.zones`` (issue #452, block 2): restricted_area, key_area, short_mid_range, medium_mid_range, long_mid_range, left_corner_three,
+left_wing_three, center_three, right_wing_three, right_corner_three. The web used to have its own geometry (paint, mid_left/center/right, wing_left, top_three...) and the same shot fell in
+a different zone in the web and in the app; there is ONE geometry now and this module only keeps the API the router, the services and the exporters call.
+FBCYL carries its coordinates in the players' stats (``fbcyl_zones``).
 """
 from __future__ import annotations
 
-import math
 from typing import Any, Dict, Iterator, List, Optional
 
-# ---------------------------------------------------------------------------
-# FIBA half-court geometry constants (metres)
-# ---------------------------------------------------------------------------
-_BASKET_X = 7.5
-_BASKET_Y = 1.575
-_THREE_RADIUS = 6.75
-_THREE_CORNER_X_LEFT = 0.9     # Left straight side of 3pt line
-_THREE_CORNER_X_RIGHT = 14.1   # Right straight side
-_RESTRICTED_RADIUS = 1.25
-_KEY_HALF_WIDTH = 2.45         # Key is 4.9 m wide
-_KEY_DEPTH = 5.8               # Key depth from baseline
+from src.live_core.zones import ZONES, classify_fiba, feb_to_fiba  # noqa: F401  (feb_to_fiba is re-exported: the services and the exporters import it from here)
 
-# Height at which the 3pt arc meets the straight-side segments
-_BREAK_Y = _BASKET_Y + math.sqrt(
-    _THREE_RADIUS ** 2 - (_BASKET_X - _THREE_CORNER_X_LEFT) ** 2
-)
-
-# Zone metadata: (id, label, is_three_point)
-ZONE_META: Dict[str, Dict[str, Any]] = {
-    "restricted_area": {"label": "Zona Restringida",   "points": 2},
-    "paint":           {"label": "Pintura",            "points": 2},
-    "mid_left":        {"label": "Media Izquierda",    "points": 2},
-    "mid_center":      {"label": "Media Centro",       "points": 2},
-    "mid_right":       {"label": "Media Derecha",      "points": 2},
-    "corner_left":     {"label": "Triple Esquina Izq", "points": 3},
-    "wing_left":       {"label": "Triple Ala Izq",     "points": 3},
-    "top_three":       {"label": "Triple Centro",      "points": 3},
-    "wing_right":      {"label": "Triple Ala Der",     "points": 3},
-    "corner_right":    {"label": "Triple Esquina Der", "points": 3},
-}
-
-# ---------------------------------------------------------------------------
-# Zone classification (pure geometry, no Shapely dependency)
-# ---------------------------------------------------------------------------
-
-def _dist(x: float, y: float) -> float:
-    return math.sqrt((x - _BASKET_X) ** 2 + (y - _BASKET_Y) ** 2)
-
-
-def _is_three_pt(x: float, y: float) -> bool:
-    """True if FIBA-coordinate shot (x, y) is beyond the 3-point line."""
-    if y <= _BREAK_Y:
-        # Straight-side zone: 3pt if outside the side lines
-        return x < _THREE_CORNER_X_LEFT or x > _THREE_CORNER_X_RIGHT
-    return _dist(x, y) >= _THREE_RADIUS
+# Zone metadata, in the order of the engine: (label, points)
+ZONE_META: Dict[str, Dict[str, Any]] = {key: {"label": zone["name"], "points": zone["points"]} for key, zone in ZONES.items()}
 
 
 def classify_zone(x: float, y: float) -> str:
-    """Return the zone key for a FIBA-coordinate shot at (x, y)."""
-    d = _dist(x, y)
-
-    if d <= _RESTRICTED_RADIUS:
-        return "restricted_area"
-
-    three = _is_three_pt(x, y)
-
-    if not three:
-        # Two-point shot — determine sub-zone
-        in_key_x = (_BASKET_X - _KEY_HALF_WIDTH) <= x <= (_BASKET_X + _KEY_HALF_WIDTH)
-        in_key_y = y <= _KEY_DEPTH
-        if in_key_x and in_key_y:
-            return "paint"
-        if x < _BASKET_X - _KEY_HALF_WIDTH:
-            return "mid_left"
-        if x > _BASKET_X + _KEY_HALF_WIDTH:
-            return "mid_right"
-        return "mid_center"
-
-    # Three-point shot — determine sub-zone
-    if y <= _BREAK_Y:
-        return "corner_left" if x < _THREE_CORNER_X_LEFT else "corner_right"
-    if x < _BASKET_X - 1.5:
-        return "wing_left"
-    if x > _BASKET_X + 1.5:
-        return "wing_right"
-    return "top_three"
-
-
-# ---------------------------------------------------------------------------
-# Coordinate conversion (FEB 0-100 → FIBA metres)
-# ---------------------------------------------------------------------------
-
-_COURT_LENGTH = 28.0
-_COURT_WIDTH = 15.0
-
-
-def feb_to_fiba(x_feb: float, y_feb: float, team: int) -> tuple[float, float]:
-    """Convert FEB percentage coords to FIBA half-court metres."""
-    x_m = (x_feb / 100.0) * _COURT_LENGTH
-    y_m = (y_feb / 100.0) * _COURT_WIDTH
-
-    # Distance from attacking basket
-    dist = x_m if team == 0 else (_COURT_LENGTH - x_m)
-
-    # Mirror defensive-half shots to offensive half
-    if dist > _COURT_LENGTH / 2:
-        y_fiba = _COURT_LENGTH - dist
-        x_fiba = _COURT_WIDTH - y_m
-    else:
-        y_fiba = dist
-        x_fiba = y_m
-
-    return (x_fiba, y_fiba)
+    """Return the zone key for a FIBA-coordinate shot at (x, y) (metres on the half court)."""
+    return classify_fiba(x, y)["zone"]
 
 
 # ---------------------------------------------------------------------------

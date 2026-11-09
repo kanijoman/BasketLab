@@ -20,4 +20,5 @@ def export_shots(collection: Any, name: str) -> Dict[str, Any]:
     fbcyl = is_fbcyl(name)
     rows = [list(row) for row in iter_owned_shots(collection, fbcyl)]
     games = collection.count_documents({"stats.teams": {"$exists": True}} if fbcyl else {"SHOTCHART.SHOTS": {"$exists": True}})
-    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb", "games": games, "columns": list(COLUMNS), "shots": rows}
+    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb", "games": games, "columns": list(COLUMNS), "shots": rows,
+            "zone_system": "engine"}      # the zones of live_core.zones (#452): the frontend counts in them; a file without the field is the old system of the web

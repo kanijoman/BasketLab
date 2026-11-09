@@ -178,8 +178,8 @@ class TestStreamingZoneCounts:
         result = _stream_zone_counts_feb(coll, team_id="1", player_filter=None)
         assert isinstance(result, dict)
         assert "restricted_area" in result
-        assert "paint" in result
-        assert "corner_left" in result
+        assert "key_area" in result
+        assert "left_corner_three" in result
         for zone, counts in result.items():
             assert "fga" in counts
             assert "fgm" in counts
