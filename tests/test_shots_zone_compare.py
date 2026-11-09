@@ -22,8 +22,8 @@ def _accum(**zones):
     return acc
 
 
-# eight teams of the competition: the paint at 40, 42, … 54 % on 100 shots each and the top three at 30 % on 50
-COMPETITION = {str(i): _accum(paint=(40 + 2 * i, 100), top_three=(15, 50)) for i in range(8)}
+# eight teams of the competition: the key_area at 40, 42, … 54 % on 100 shots each and the top three at 30 % on 50
+COMPETITION = {str(i): _accum(key_area=(40 + 2 * i, 100), center_three=(15, 50)) for i in range(8)}
 TEAM = COMPETITION["7"]                       # 54 %
 LOW = COMPETITION["0"]                        # 40 %
 MID = COMPETITION["3"]                        # 46 %
@@ -60,34 +60,34 @@ def test_compare_league_rates_a_team_against_the_distribution_of_the_teams(clien
         r = client.get(f"{URL}?team_id=7&compare=league")
     assert r.status_code == 200 and owners.call_args.args[2] == "team" and owners.call_count == 1
     zones = _by_zone(r)
-    assert zones["paint"]["rating"] == "above" and zones["paint"]["league_pct"] == pytest.approx(47.0)
-    assert zones["paint"]["percentile"] == pytest.approx(100 * 7.5 / 8)
-    assert zones["top_three"]["rating"] == "average"                         # every team shoots alike there: nobody is above or below
-    assert zones["corner_left"]["rating"] == "none"                           # the team did not shoot there
+    assert zones["key_area"]["rating"] == "above" and zones["key_area"]["league_pct"] == pytest.approx(47.0)
+    assert zones["key_area"]["percentile"] == pytest.approx(100 * 7.5 / 8)
+    assert zones["center_three"]["rating"] == "average"                         # every team shoots alike there: nobody is above or below
+    assert zones["left_corner_three"]["rating"] == "none"                           # the team did not shoot there
 
 
 def test_the_lowest_team_is_below_and_the_middle_one_is_average(client):
     with _stream(LOW), _owners():
-        assert _by_zone(client.get(f"{URL}?team_id=0&compare=league"))["paint"]["rating"] == "below"
+        assert _by_zone(client.get(f"{URL}?team_id=0&compare=league"))["key_area"]["rating"] == "below"
     with _stream(MID), _owners():
-        assert _by_zone(client.get(f"{URL}?team_id=3&compare=league"))["paint"]["rating"] == "average"
+        assert _by_zone(client.get(f"{URL}?team_id=3&compare=league"))["key_area"]["rating"] == "average"
 
 
 def test_compare_league_without_filters_rates_the_competition_against_its_teams_once(client):
-    league = _accum(paint=(376, 800), top_three=(120, 400))
+    league = _accum(key_area=(376, 800), center_three=(120, 400))
     with _stream(league), _owners() as owners:
         r = client.get(f"{URL}?compare=league")
     assert owners.call_count == 1 and owners.call_args.args[2] == "team"
-    assert _by_zone(r)["paint"]["rating"] == "average"
+    assert _by_zone(r)["key_area"]["rating"] == "average"
 
 
 def test_compare_league_for_a_player_uses_the_distribution_of_the_players(client):
-    players = {f"p{i}": _accum(paint=(m, 50)) for i, m in enumerate((15, 17, 19, 21, 23, 25))}
-    players["rookie"] = _accum(paint=(1, 1))                                  # a single shot at 100 %: it weighs one shot
+    players = {f"p{i}": _accum(key_area=(m, 50)) for i, m in enumerate((15, 17, 19, 21, 23, 25))}
+    players["rookie"] = _accum(key_area=(1, 1))                                  # a single shot at 100 %: it weighs one shot
     with _stream(players["p5"]), _owners(players) as owners:
         r = client.get(f"{URL}?player=p5&compare=league")
     assert owners.call_args.args[2] == "player"
-    assert _by_zone(r)["paint"]["rating"] == "above"
+    assert _by_zone(r)["key_area"]["rating"] == "above"
 
 
 def test_invalid_compare_value_is_422(client):
@@ -117,19 +117,19 @@ def fbcyl_client():
 def test_fbcyl_collections_now_return_zones(fbcyl_client):
     r = fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=1")
     zones = _by_zone(r)
-    assert len(zones) == 10 and zones["paint"]["fga"] == 10 and zones["paint"]["fgm"] == 3
+    assert len(zones) == 10 and zones["key_area"]["fga"] == 10 and zones["key_area"]["fgm"] == 3
 
 
 def test_fbcyl_compare_league_rates_against_the_distribution_of_the_fbcyl_teams(fbcyl_client):
-    top = _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=7&compare=league"))["paint"]
+    top = _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=7&compare=league"))["key_area"]
     assert top["league_pct"] == pytest.approx(55.0) and top["rating"] == "above"                 # 9 of 10 against teams from 2 to 9 of 10
-    assert _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=0&compare=league"))["paint"]["rating"] == "below"
-    assert _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=4&compare=league"))["paint"]["rating"] == "average"
+    assert _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=0&compare=league"))["key_area"]["rating"] == "below"
+    assert _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?team_id=4&compare=league"))["key_area"]["rating"] == "average"
 
 
 def test_fbcyl_player_is_rated_against_the_players_by_uuid(fbcyl_client):
     zones = _by_zone(fbcyl_client.get("/api/v1/shots/FBCYL_U16_2025_A?player=u7&compare=league"))
-    assert zones["paint"]["rating"] == "above" and zones["paint"]["fga"] == 10
+    assert zones["key_area"]["rating"] == "above" and zones["key_area"]["fga"] == 10
 
 
 def test_fbcyl_raw_shots_are_returned(fbcyl_client):

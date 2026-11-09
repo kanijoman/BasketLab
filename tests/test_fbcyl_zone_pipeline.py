@@ -50,4 +50,4 @@ def test_team_report_loads_fbcyl_zones_rated_against_the_league():
     db.connection.get_collection.return_value = _coll()
     svc = TeamReportService(db, stats=MagicMock())
     zones = {z["zone"]: z for z in svc._load_zones("FBCYL_1A_2026", "1")}
-    assert zones["paint"]["fga"] == 10 and zones["paint"]["rating"] == "above"
+    assert zones["key_area"]["fga"] == 10 and zones["key_area"]["rating"] == "above"

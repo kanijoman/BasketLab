@@ -1,5 +1,5 @@
 {
- "code": "e28f134362ee9897",
+ "epoch": 1,
  "competitions": {
   "FBCYL_1\u00aa_FASE-GRUPO_A-1_2026_": {
    "fingerprint": "62905622d1d22ac4888d259cb3f276fd8f172a7766a09a67c8ead68d28be653c",
@@ -11,7 +11,19 @@
     "inout",
     "consistency",
     "rival_adjusted"
-   ]
+   ],
+   "versions": {
+    "shots": "459fb53703c1b4f9",
+    "rotations": "85e2b0af5b922e32",
+    "matches": "4f59f15b6e1f8eff",
+    "possessions": "3a8d5044780886bc",
+    "possession_csv": "3a8d5044780886bc",
+    "lineups": "7fbadcafbcb94a8f",
+    "inout": "43d5513460558fa6",
+    "consistency": "ae33e24431e880ac",
+    "rival_adjusted": "dcf2978fafd07578",
+    "assist_connections": "5e01f7ad876861c3"
+   }
   },
   "L_F_-2_2025_2026_Liga_Regular_B": {
    "fingerprint": "576032d989bac41f8c824856397ab28f1c149d02a47f7ce868e9a999ce2dda3b",
@@ -23,8 +35,21 @@
     "possessions",
     "lineups",
     "inout",
-    "rival_adjusted"
-   ]
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "459fb53703c1b4f9",
+    "rotations": "85e2b0af5b922e32",
+    "matches": "4f59f15b6e1f8eff",
+    "possessions": "3a8d5044780886bc",
+    "possession_csv": "3a8d5044780886bc",
+    "lineups": "7fbadcafbcb94a8f",
+    "inout": "43d5513460558fa6",
+    "consistency": "ae33e24431e880ac",
+    "rival_adjusted": "dcf2978fafd07578",
+    "assist_connections": "5e01f7ad876861c3"
+   }
   }
  }
 }

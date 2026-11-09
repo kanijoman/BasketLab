@@ -45,9 +45,9 @@ def test_player_filter_uses_uuid(coll):
     assert len(extract_shots_fbcyl(coll, team_id=None, player_filter="c")) == 1
 
 
-def test_shot_next_to_the_basket_is_classified_in_the_paint(coll):
+def test_shot_next_to_the_basket_is_classified_in_the_key_area(coll):
     shots = extract_shots_fbcyl(coll, team_id="10", player_filter=None)
-    assert {s["zone"] for s in shots} == {"paint"}
+    assert {s["zone"] for s in shots} == {"key_area"}
 
 
 def test_both_teams_share_the_same_orientation_regression():
@@ -70,7 +70,7 @@ def test_stream_counts_have_the_feb_shape(coll):
     assert set(acc) == set(ZONE_META)
     zones = {z["zone"]: z for z in aggregate_zones(acc)}
     assert sum(z["fga"] for z in zones.values()) == 4
-    assert zones["paint"]["fga"] == 2 and zones["paint"]["fgm"] == 1
+    assert zones["key_area"]["fga"] == 2 and zones["key_area"]["fgm"] == 1
 
 
 def test_malformed_points_are_skipped():

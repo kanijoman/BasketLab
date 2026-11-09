@@ -36,12 +36,12 @@ def shot(dorsal, x, y, team=0, made=1, time="08:35", quarter="3"):
 
 
 def test_feb_an_assist_right_after_a_made_basket_links_passer_scorer_and_zone():
-    doc = feb_doc([_line(1, "shoot", "1", "p2"), _line(2, "assist", "1", "p1")], [shot(5, 4, 50)])
+    doc = feb_doc([_line(1, "shoot", "1", "p2"), _line(2, "assist", "1", "p1")], [shot(5, 6, 50)])
     links = extract_links(doc, fbcyl=False)
     assert len(links.baskets) == 1
     b = links.baskets[0]
     assert (b["team_id"], b["scorer"], b["passer"]) == ("10", "p2", "p1")
-    assert b["zone"] == "restricted_area"                       # x 4 %, y 50 %: under the rim
+    assert b["zone"] == "restricted_area"                       # x 6 %, y 50 %: under the rim (at 4 % it is behind the backboard: the engine says key_area)
     assert links.unlinked_assists == 0
     assert links.names == {"p1": "ANA", "p2": "BEA", "q1": "EVA"}
 
@@ -215,7 +215,7 @@ def test_feb_a_basket_or_an_assist_of_nobody_is_not_credited_to_a_ghost_player()
 
 
 def test_feb_a_shot_of_the_shotchart_with_an_empty_result_or_team_is_ignored():
-    doc = feb_doc([_line(1, "shoot", "1", "p2")], [{**shot(5, 4, 50), "m": None}, {**shot(5, 4, 50), "team": None}, shot(5, 4, 50)])
+    doc = feb_doc([_line(1, "shoot", "1", "p2")], [{**shot(5, 6, 50), "m": None}, {**shot(5, 6, 50), "team": None}, shot(5, 6, 50)])
     assert extract_links(doc, fbcyl=False).baskets[0]["zone"] == "restricted_area"
 
 
