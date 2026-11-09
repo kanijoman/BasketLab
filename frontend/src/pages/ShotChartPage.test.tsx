@@ -76,3 +76,28 @@ describe('ShotChartPage on the base components (issue #194)', () => {
     expect(within(screen.getByRole('radiogroup', { name: 'Resultado del tiro' })).getByRole('radio', { name: 'Fallos' })).toHaveAttribute('aria-checked', 'true')
   })
 })
+// Issue #811: the legend of the zones said «Bajo (<25%) / Medio (25–35%) / Alto (>35%)» but the colour of a bubble is the rating against the league (#760), and the court already draws that
+// legend: the page repeated an outdated one under it.
+describe('the legend of the zones on the shot chart page (issue #811)', () => {
+  beforeEach(() => {
+    Object.values(api).forEach(f => f.mockReset())
+    api.getLiveTeamNames.mockResolvedValue([{ id: '1', name: 'Equipo FBCYL' }])
+    api.getShotZones.mockResolvedValue([])
+    api.getShotRaw.mockResolvedValue([])
+    api.getPlayerStats.mockResolvedValue([])
+    api.getPlayerQuartiles.mockResolvedValue({})
+  })
+
+  it('does not show fixed percentage thresholds: the colour is not a percentage but the rating against the league regression', () => {
+    renderPage()
+    expect(screen.queryByText(/Bajo \(/)).toBeNull()
+    expect(screen.queryByText(/Medio \(/)).toBeNull()
+    expect(screen.queryByText(/Alto \(/)).toBeNull()
+    expect(document.body.textContent).not.toMatch(/25%|35%/)
+  })
+
+  it('says what size and colour mean, with the league as the reference', () => {
+    renderPage()
+    expect(screen.getByText(/tamaño.*volumen.*color.*promedio de la liga/i)).toBeInTheDocument()
+  })
+})

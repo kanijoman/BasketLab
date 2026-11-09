@@ -5,7 +5,7 @@ import type { TeamReport } from '@/api/teamReport'
 
 const base: TeamReport = {
   team: 'Equipo A', mode: 'own', games_played: 20, low_sample: false,
-  zones: [{ zone: 'paint', label: 'Pintura', points: 2, fga: 40, fg_pct: 60, league_pct: 45, delta_pp: 15, low_sample: false, kind: 'hot', text: 'Zona caliente.' }],
+  zones: [{ zone: 'key_area', label: 'Pintura', points: 2, fga: 40, fg_pct: 60, league_pct: 45, delta_pp: 15, low_sample: false, kind: 'hot', text: 'Zona caliente.' }],
   strengths: [{ key: 'points_per_game', label: 'Puntos por partido', formatted: '90.0', quartile: 4, diff_pct: 15.4, kind: 'strength', text: 'Buena anotación.' }],
   weaknesses: [{ key: 'turnovers_per_game', label: 'Pérdidas por partido', formatted: '18.0', quartile: 4, diff_pct: 38, kind: 'weakness', text: 'Pierde demasiados balones.' }],
   differentials: [{ key: 'points_per_game', label: 'Puntos por partido', formatted: '90.0', diff_pct: 15.4, advantage: true }],

@@ -50,7 +50,7 @@ describe('the weekly report', () => {
 
   it('on, asking the shots of a team and of each of its players for the charts', async () => {
     browserData()
-    const shots = vi.spyOn(client, 'getShotRaw').mockImplementation(async (_c, p) => (p.player ? [] : [{ x: 7, y: 3, made: true, zone: 'paint' }]))
+    const shots = vi.spyOn(client, 'getShotRaw').mockImplementation(async (_c, p) => (p.player ? [] : [{ x: 7, y: 3, made: true, zone: 'key_area' }]))
     await downloadWeeklyReport(COLLECTION, '101', '102')
     expect(shots).toHaveBeenCalledWith(COLLECTION, expect.objectContaining({ team_id: '101' }))
     expect(shots).toHaveBeenCalledWith(COLLECTION, expect.objectContaining({ team_id: '101', player: 'p0' }))

@@ -75,8 +75,8 @@ describe('the DOCX of the individual scouting', () => {
   })
 
   describe('the charts of each player', () => {
-    const ZONES = [{ zone: 'paint', zone_label: 'Pintura', points: 2, fga: 5, fgm: 3, fg_pct: 60, rating: 'average', low_sample: true }]
-    const SHOT = [{ x: 7, y: 3, made: true, zone: 'paint' }]
+    const ZONES = [{ zone: 'key_area', zone_label: 'Pintura', points: 2, fga: 5, fgm: 3, fg_pct: 60, rating: 'average', low_sample: true }]
+    const SHOT = [{ x: 7, y: 3, made: true, zone: 'key_area' }]
     function setUp(collection: string) {
       localStorage.setItem(DATA_FLAG_KEY, 'local')
       vi.spyOn(client, 'getPlayerStats').mockResolvedValue(PLAYERS)

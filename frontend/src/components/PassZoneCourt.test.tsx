@@ -4,28 +4,28 @@ import PassZoneCourt from './PassZoneCourt'
 
 // Issue #773, the passer's side: from where the players a passer finds score. One bubble per zone: its size is the number of assists that end there.
 const ZONES = [
-  { zone: 'paint', count: 6 },
-  { zone: 'top_three', count: 3 },
-  { zone: 'corner_left', count: 1 },
+  { zone: 'key_area', count: 6 },
+  { zone: 'center_three', count: 3 },
+  { zone: 'left_corner_three', count: 1 },
 ]
 
 describe('PassZoneCourt', () => {
   it('draws one bubble per zone with the assists that end there and their share of all the assists of the passer', () => {
     const { container } = render(<PassZoneCourt zones={ZONES} />)
     expect(container.querySelectorAll('[data-pass-zone]')).toHaveLength(3)
-    const paint = container.querySelector('[data-pass-zone="paint"]')!
+    const paint = container.querySelector('[data-pass-zone="key_area"]')!
     expect(paint.textContent).toContain('6')
     expect(paint.textContent).toContain('60%')                                   // 6 of the 10 assists
-    expect(container.querySelector('[data-pass-zone="corner_left"]')!.textContent).toContain('10%')
+    expect(container.querySelector('[data-pass-zone="left_corner_three"]')!.textContent).toContain('10%')
   })
 
   it('the share counts the assists with no known zone too, so the percentages are not inflated', () => {
     const { container } = render(<PassZoneCourt zones={ZONES} withoutZone={10} />)
-    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('30%')           // 6 of 20
+    expect(container.querySelector('[data-pass-zone="key_area"]')!.textContent).toContain('30%')           // 6 of 20
   })
 
   it('draws no bubble for a zone without assists', () => {
-    const { container } = render(<PassZoneCourt zones={[...ZONES, { zone: 'wing_left', count: 0 }]} />)
+    const { container } = render(<PassZoneCourt zones={[...ZONES, { zone: 'left_wing_three', count: 0 }]} />)
     expect(container.querySelectorAll('[data-pass-zone]')).toHaveLength(3)
   })
 
@@ -57,20 +57,20 @@ describe('PassZoneCourt', () => {
 
     it('covers the share of each zone: 60 % of the circle for 6 of 10, 10 % for 1 of 10', () => {
       const { container } = render(<PassZoneCourt zones={ZONES} />)
-      expect(sweep(container, 'paint')).toBeCloseTo(0.6 * 360, 0)
-      expect(sweep(container, 'top_three')).toBeCloseTo(0.3 * 360, 0)
-      expect(sweep(container, 'corner_left')).toBeCloseTo(0.1 * 360, 0)
+      expect(sweep(container, 'key_area')).toBeCloseTo(0.6 * 360, 0)
+      expect(sweep(container, 'center_three')).toBeCloseTo(0.3 * 360, 0)
+      expect(sweep(container, 'left_corner_three')).toBeCloseTo(0.1 * 360, 0)
     })
 
     it('counts the assists with no known zone in the total, as the figure does', () => {
       const { container } = render(<PassZoneCourt zones={ZONES} withoutZone={10} />)
-      expect(sweep(container, 'paint')).toBeCloseTo(0.3 * 360, 0)           // 6 of 20
+      expect(sweep(container, 'key_area')).toBeCloseTo(0.3 * 360, 0)           // 6 of 20
     })
 
     it('a zone with all the assists is a full ring of one colour, with no arc', () => {
-      const { container } = render(<PassZoneCourt zones={[{ zone: 'paint', count: 4 }]} />)
-      expect(container.querySelector('[data-pass-zone="paint"] path')).toBeNull()
-      expect(container.querySelectorAll('[data-pass-zone="paint"] circle')).toHaveLength(2)
+      const { container } = render(<PassZoneCourt zones={[{ zone: 'key_area', count: 4 }]} />)
+      expect(container.querySelector('[data-pass-zone="key_area"] path')).toBeNull()
+      expect(container.querySelectorAll('[data-pass-zone="key_area"] circle')).toHaveLength(2)
     })
   })
 })

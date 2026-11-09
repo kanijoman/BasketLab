@@ -48,14 +48,14 @@ describe('the shot tables: the corners', () => {
   })
 
   it('the raw shots are cut at the limit the API caps (10000) and default to 5000', () => {
-    const many: Shots = { ...none, shots: Array.from({ length: 12000 }, () => ['1', 'p', 7.5, 3, true, 'paint']) }
+    const many: Shots = { ...none, shots: Array.from({ length: 12000 }, () => ['1', 'p', 7.5, 3, true, 'key_area']) }
     expect(shotRaw(many, {})).toHaveLength(5000)
     expect(shotRaw(many, { limit: 10000 })).toHaveLength(10000)
   })
 })
 
-// Issue #452, block 2 (zones): the files that carry `zone_system: 'engine'` use the zones of `live_core.zones` (the ones the app and the scouting reports say); a file without it is the old
-// system (the vectors above). The reader knows both so the data can change after the web does (deployment protocol: first the one that reads, then the one that writes).
+// Issue #452, block 2 (zones): the zones are the ones of `live_core.zones` (the ones the app and the scouting reports say). Until step 3 the reader also knew the old system of the web, for
+// files published before the change; the data was republished with `zone_system: 'engine'` and the old system is gone.
 describe('the zone system of a file', () => {
   const ENGINE = ['restricted_area', 'key_area', 'short_mid_range', 'medium_mid_range', 'long_mid_range', 'left_corner_three', 'left_wing_three', 'center_three', 'right_wing_three', 'right_corner_three']
   const file = (rows: Shots['shots'], zoneSystem?: string) => ({ format: 1, collection: 'X', league: 'feb', games: 1, columns: [], shots: rows, ...(zoneSystem ? { zone_system: zoneSystem } : {}) }) as unknown as Shots
@@ -73,10 +73,10 @@ describe('the zone system of a file', () => {
     expect(shotZones(file(rows, 'engine'), {}).reduce((sum, z) => sum + z.fga, 0)).toBe(3)
   })
 
-  it('a file without zone_system is the old system: its zones and not the engine ones', () => {
+  it('there is no old system any more: a file without zone_system counts in the zones of the engine too', () => {
     const zones = shotZones(file(rows), {})
-    expect(zones.map(z => z.zone)).toEqual(['restricted_area', 'paint', 'mid_left', 'mid_center', 'mid_right', 'corner_left', 'wing_left', 'top_three', 'wing_right', 'corner_right'])
-    expect(zones.find(z => z.zone === 'paint')!.fga).toBe(1)
+    expect(zones.map(z => z.zone)).toEqual(ENGINE)
+    expect(zones.reduce((sum, z) => sum + z.fga, 0)).toBe(3)                    // the shot of the old system counts for no zone
   })
 
   it('the rating against the league uses the zones of the file too', () => {

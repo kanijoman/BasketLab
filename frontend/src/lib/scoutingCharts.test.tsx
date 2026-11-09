@@ -8,10 +8,10 @@ import type { ShotRawData, ShotZoneData } from '@/api/client'
 // image the DOCX can hold. The drawing is the web's own `FibaCourtSVG`; here it is checked for what the document needs from it.
 const ZONES: ShotZoneData[] = [
   { zone: 'restricted_area', zone_label: 'Zona Restringida', points: 2, fga: 20, fgm: 14, fg_pct: 70, rating: 'above', low_sample: false },
-  { zone: 'top_three', zone_label: 'Triple Centro', points: 3, fga: 12, fgm: 3, fg_pct: 25, rating: 'below', low_sample: false },
-  { zone: 'mid_left', zone_label: 'Media Izquierda', points: 2, fga: 4, fgm: 2, fg_pct: 50, rating: 'average', low_sample: true },
+  { zone: 'center_three', zone_label: 'Triple Centro', points: 3, fga: 12, fgm: 3, fg_pct: 25, rating: 'below', low_sample: false },
+  { zone: 'short_mid_range', zone_label: 'Media Izquierda', points: 2, fga: 4, fgm: 2, fg_pct: 50, rating: 'average', low_sample: true },
 ] as ShotZoneData[]
-const SHOTS: ShotRawData[] = [{ x: 7.5, y: 2, made: true, zone: 'restricted_area' }, { x: 3, y: 5, made: false, zone: 'mid_left' }, { x: 7.5, y: 9, made: false, zone: 'top_three' }]
+const SHOTS: ShotRawData[] = [{ x: 7.5, y: 2, made: true, zone: 'restricted_area' }, { x: 3, y: 5, made: false, zone: 'short_mid_range' }, { x: 7.5, y: 9, made: false, zone: 'center_three' }]
 
 describe('the colours are those of the paper', () => {
   it('has every colour of the chart theme from design/paper.ts, none from the screen', () => {

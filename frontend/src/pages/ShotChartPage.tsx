@@ -200,20 +200,9 @@ export default function ShotChartPage() {
             )}
             {/* Legend */}
             {vizMode === 'zones' ? (
+              // the colours are the rating against the league and the court draws their legend (issue #811): the page only says what the court does not, the size
               <div className="flex items-center gap-4 mt-1 text-xs text-ink-muted">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-bad opacity-80" />
-                  Bajo (&lt;25%)
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-warn opacity-80" />
-                  Medio (25–35%)
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full inline-block bg-ok opacity-80" />
-                  Alto (&gt;35%)
-                </span>
-                <span className="ml-2 italic">Tamaño = volumen</span>
+                <span className="italic">Tamaño = volumen de tiros · color = rendimiento frente al promedio de la liga</span>
               </div>
             ) : vizMode === 'scatter' ? (
               <div className="flex items-center gap-4 mt-1 text-xs text-ink-muted">
