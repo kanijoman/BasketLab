@@ -1,5 +1,6 @@
 ﻿"""Player statistics aggregation pipeline builders."""
 
+from .feb_date_expr import feb_start_date
 from typing import List, Dict, Optional
 
 from .fbcyl_date_expr import parse_day_stages
@@ -60,14 +61,7 @@ class PlayerStatsPipelineMixin:
             # Stage 1: Parse date and add match-level fields BEFORE unwinding
             {
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    },
+                    "parsedDate": feb_start_date(),
                     "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
                     "awayPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}}
                 }

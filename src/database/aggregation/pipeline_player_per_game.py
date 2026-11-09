@@ -1,5 +1,6 @@
 """Per-player per-game aggregation pipeline (FEB format only)."""
 
+from .feb_date_expr import feb_start_date
 from typing import List, Dict
 
 from .pipeline_player_stats import player_game_fields
@@ -54,13 +55,7 @@ class PlayerPerGamePipelineMixin:
         return [
             {
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None, "onNull": None,
-                        }
-                    },
+                    "parsedDate": feb_start_date(),
                     "localPoints": {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 0]}},
                     "awayPoints":  {"$toInt": {"$arrayElemAt": ["$BOXSCORE.TEAM.TOTAL.pts", 1]}},
                 }

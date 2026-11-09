@@ -1,5 +1,6 @@
 """Opponent-stats and team-timeline pipeline builders."""
 
+from .feb_date_expr import feb_start_date
 from typing import List, Dict, Optional
 from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
@@ -38,14 +39,7 @@ class OpponentStatsPipelineMixin:
             # First, add a field that converts the string date to a date object
             pipeline.append({
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    }
+                    "parsedDate": feb_start_date()
                 }
             })
             # Then filter using the parsed date
@@ -148,34 +142,7 @@ class OpponentStatsPipelineMixin:
         Returns:
             $group stage
         """
-        return {
-            "$group": {
-                "_id": "$team_id",
-                "team_name": {"$first": "$team_name"},
-                "total_games": {"$sum": 1},
-                "games_home": {"$sum": {"$cond": ["$is_local", 1, 0]}},
-                "games_away": {"$sum": {"$cond": ["$is_local", 0, 1]}},
-                "points_scored": {"$sum": "$points"},
-                "points_received": {"$sum": "$opponent_points"},
-                "fg2_made": {"$sum": "$fg2_made"},
-                "fg2_attempted": {"$sum": "$fg2_attempts"},
-                "fg3_made": {"$sum": "$fg3_made"},
-                "fg3_attempted": {"$sum": "$fg3_attempts"},
-                "ft_made": {"$sum": "$ft_made"},
-                "ft_attempted": {"$sum": "$ft_attempts"},
-                "rebounds_def": {"$sum": "$def_rebounds"},
-                "rebounds_off": {"$sum": "$off_rebounds"},
-                "opponent_rebounds_def": {"$sum": "$opponent_def_rebounds"},
-                "opponent_rebounds_off": {"$sum": "$opponent_off_rebounds"},
-                "assists": {"$sum": "$assists"},
-                "steals": {"$sum": "$steals"},
-                "turnovers": {"$sum": "$turnovers"},
-                "blocks": {"$sum": "$blocks"},
-                "total_possessions": {"$sum": "$possessions"},
-                "opponent_possessions": {"$sum": "$opponent_possessions"},
-                "match_list": {"$push": "$match_id"}
-            }
-        }
+        return TeamStatsPipelineMixin._group_by_team()  # the same stage: the opponent rows carry the same fields
 
 
     @staticmethod
@@ -208,14 +175,7 @@ class OpponentStatsPipelineMixin:
             # Stage 1: Parse date field
             {
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    }
+                    "parsedDate": feb_start_date()
                 }
             },
             # Stage 2: Filter matches where team participated

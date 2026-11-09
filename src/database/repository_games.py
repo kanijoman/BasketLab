@@ -4,6 +4,7 @@ Extracted from repository.py (FASE OOM / deuda técnica).
 Provides methods that retrieve full game documents from MongoDB.
 """
 
+from src.database.aggregation.feb_date_expr import feb_start_date
 from typing import Dict, Iterable, List, Optional
 from pymongo.errors import PyMongoError
 
@@ -259,14 +260,7 @@ class GamesRepositoryMixin:
             pipeline = [
                 {
                     "$addFields": {
-                        "parsedDate": {
-                            "$dateFromString": {
-                                "dateString": "$HEADER.starttime",
-                                "format": "%d-%m-%Y - %H:%M",
-                                "onError": None,
-                                "onNull": None,
-                            }
-                        }
+                        "parsedDate": feb_start_date()
                     }
                 },
                 {
@@ -307,14 +301,7 @@ class GamesRepositoryMixin:
         return [
             {
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None,
-                        }
-                    }
+                    "parsedDate": feb_start_date()
                 }
             },
             {"$match": {"HEADER.TEAM.name": team_name}},
@@ -344,14 +331,7 @@ class GamesRepositoryMixin:
             {"$match": team_match_filter},
             {
                 "$addFields": {
-                    "_parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None,
-                        }
-                    }
+                    "_parsedDate": feb_start_date()
                 }
             },
         ]
