@@ -2,6 +2,7 @@
 // as `src/shotcharts/feb_zones.py` (`aggregate_zones`), `zone_rating.py` (`rate_zone`) and the router of `GET /shots/{collection}[/raw]` answer them. The zone of each shot is
 // already in the row (the exporter classified it with the same geometry); what is here is the counting and the rating. Parity: `shots.test.ts` against `tests/local_vectors/shots_*.json`.
 import type { ShotRawData, ShotZoneData } from '@/api/client'
+import engineZones from '@/lib/engineZones.json'
 import { pyRound } from './pyMath'
 
 /** What the exporter publishes of a competition (`export_shots`): one row per shot, in the order of the competition. */
@@ -13,22 +14,32 @@ export interface Shots {
   columns: string[]
   /** `[team_id, player_id | null, x, y, made, zone]` */
   shots: [string, string | null, number, number, boolean, string][]
+  /** `engine`: the zones of `live_core.zones` (issue #452); absent: the old system of the web (`feb_zones`), for files published before the change. */
+  zone_system?: 'engine'
 }
 
 export interface ShotFilter { team_id?: string; player?: string }
 
-/** The 10 zones of the FIBA half court, in the order the API lists them (`ZONE_META`). */
-const ZONES: [string, string, number][] = [
+type ZoneList = [string, string, number][]
+
+/** The 10 zones of the OLD system of the web, in the order the API listed them (`ZONE_META` of `feb_zones`): files without `zone_system`. It goes with the change of the data (issue #452). */
+const LEGACY_ZONES: ZoneList = [
   ['restricted_area', 'Zona Restringida', 2], ['paint', 'Pintura', 2], ['mid_left', 'Media Izquierda', 2], ['mid_center', 'Media Centro', 2], ['mid_right', 'Media Derecha', 2],
   ['corner_left', 'Triple Esquina Izq', 3], ['wing_left', 'Triple Ala Izq', 3], ['top_three', 'Triple Centro', 3], ['wing_right', 'Triple Ala Der', 3], ['corner_right', 'Triple Esquina Der', 3],
 ]
+
+/** The 10 zones of the engine (`live_core.zones`), in its order: the one file of `lib/engineZones.json` says them for the web. */
+const ENGINE_ZONES: ZoneList = Object.entries(engineZones).map(([zone, z]) => [zone, z.label, z.points])
+
+/** The zones a file counts in: its system says which. */
+const zonesOf = (shots: Shots): ZoneList => (shots.zone_system === 'engine' ? ENGINE_ZONES : LEGACY_ZONES)
 
 /** The shots that pass the team and the player filters (the player is the one of the shot, resolved when the file was made). */
 function filtered(shots: Shots, filter: ShotFilter): Shots['shots'] {
   return shots.shots.filter(shot => (filter.team_id === undefined || shot[0] === filter.team_id) && (filter.player === undefined || shot[1] === filter.player))
 }
 
-function zoneTable(rows: Shots['shots']): ShotZoneData[] {
+function zoneTable(rows: Shots['shots'], ZONES: ZoneList): ShotZoneData[] {
   const counts = new Map(ZONES.map(([zone]) => [zone, { fga: 0, fgm: 0 }]))
   for (const [, , , , made, zone] of rows) {
     const count = counts.get(zone)
@@ -83,7 +94,7 @@ function rateZone(fgm: number, fga: number, entities: [number, number][]): Ratin
 }
 
 /** The zone counts of every team, or of every player, of the competition; a shot of a player nobody can name counts for his team and for no player. */
-function countsByOwner(rows: Shots['shots'], by: 'team' | 'player'): Map<string, Map<string, Counts>> {
+function countsByOwner(rows: Shots['shots'], by: 'team' | 'player', ZONES: ZoneList): Map<string, Map<string, Counts>> {
   const owners = new Map<string, Map<string, Counts>>()
   const known = new Set(ZONES.map(([zone]) => zone))
   for (const [teamId, playerId, , , made, zone] of rows) {
@@ -100,9 +111,9 @@ function countsByOwner(rows: Shots['shots'], by: 'team' | 'player'): Map<string,
 
 /** `GET /shots/{collection}`: the 10 zones of the team, the player or the whole competition, and with `compare: 'league'` their rating against how the competition's teams (or players, when a player is asked for) shoot there. */
 export function shotZones(shots: Shots, filter: ShotFilter & { compare?: 'league' }): ShotZoneData[] {
-  const zones = zoneTable(filtered(shots, filter))
+  const zones = zoneTable(filtered(shots, filter), zonesOf(shots))
   if (filter.compare !== 'league') return zones
-  const owners = [...countsByOwner(shots.shots, filter.player !== undefined ? 'player' : 'team').values()]
+  const owners = [...countsByOwner(shots.shots, filter.player !== undefined ? 'player' : 'team', zonesOf(shots)).values()]
   return zones.map(zone => ({
     ...zone,
     ...rateZone(zone.fgm, zone.fga, owners.map((table): [number, number] => [table.get(zone.zone)!.fgm, table.get(zone.zone)!.fga])),

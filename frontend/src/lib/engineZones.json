@@ -1,0 +1,12 @@
+{
+  "restricted_area": { "x": 7.5, "y": 2.0, "points": 2, "label": "Área Restringida" },
+  "key_area": { "x": 7.5, "y": 3.8, "points": 2, "label": "Zona" },
+  "short_mid_range": { "x": 4.4, "y": 1.9, "points": 2, "label": "Tiro Corto" },
+  "medium_mid_range": { "x": 7.5, "y": 6.2, "points": 2, "label": "Tiro Medio" },
+  "long_mid_range": { "x": 7.5, "y": 7.7, "points": 2, "label": "Tiro Largo" },
+  "left_corner_three": { "x": 0.45, "y": 1.5, "points": 3, "label": "Esquina Izq." },
+  "left_wing_three": { "x": 2.3, "y": 6.5, "points": 3, "label": "45° Izq." },
+  "center_three": { "x": 7.5, "y": 9.5, "points": 3, "label": "Centro Tres" },
+  "right_wing_three": { "x": 12.7, "y": 6.5, "points": 3, "label": "45° Der." },
+  "right_corner_three": { "x": 14.55, "y": 1.5, "points": 3, "label": "Esquina Der." }
+}

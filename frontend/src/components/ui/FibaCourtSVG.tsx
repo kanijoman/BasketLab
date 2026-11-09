@@ -17,6 +17,7 @@ import { useMemo, type ReactNode, type RefObject } from 'react'
 import type { ShotZoneData, ShotRawData } from '@/api/client'
 import { useChartTheme, type ChartTheme } from '@/lib/chartTheme'
 import { RATING_LABEL, ratingColor, zoneColours } from '@/lib/zoneRating'
+import engineZones from '@/lib/engineZones.json'
 
 // ---------------------------------------------------------------------------
 // Court geometry (all measurements in SVG pixels, 1 px = 1/30 m)
@@ -41,10 +42,18 @@ const BREAK_FIBA = 1.575 + Math.sqrt(6.75 ** 2 - (7.5 - 0.9) ** 2) // ≈ 2.99 m
 const BRK  = (14 - BREAK_FIBA) * S   // ≈ 330.3 — break y in SVG
 
 // ---------------------------------------------------------------------------
-// Zone metadata: approximate bubble centre in SVG pixels
+// Zone metadata: bubble centre in SVG pixels
 // ---------------------------------------------------------------------------
-export const ZONE_CENTERS: Record<string, { x: number; y: number; label: string }> = {
-  restricted_area: { x: BX,       y: (14 - 2.0) * S,  label: 'Zona Restringida'   },
+type ZoneCentre = { x: number; y: number; label: string }
+
+/** The zones of the engine (`live_core.zones`: what the app and the scouting reports say, issue #452). Their anchors are in metres in `lib/engineZones.json`, chosen by hand (the zones are
+ *  rings and columns: a centroid is often outside the zone) and checked against the classifier by `tests/test_zone_anchors.py`. */
+const ENGINE_CENTERS: Record<string, ZoneCentre> = Object.fromEntries(
+  Object.entries(engineZones).map(([zone, a]) => [zone, { x: a.x * S, y: (14 - a.y) * S, label: a.label }]),
+)
+
+/** The zones of the old system of the web (`feb_zones`), drawn only for data published before the change; it goes with it (issue #452, last step). */
+const LEGACY_CENTERS: Record<string, ZoneCentre> = {
   paint:           { x: BX,       y: (14 - 3.8) * S,  label: 'Pintura'            },
   mid_left:        { x: 3.2 * S,  y: (14 - 4.0) * S,  label: 'Media Izq.'         },
   mid_center:      { x: BX,       y: (14 - 6.5) * S,  label: 'Media Centro'       },
@@ -55,6 +64,8 @@ export const ZONE_CENTERS: Record<string, { x: number; y: number; label: string 
   wing_right:      { x: 13.0 * S, y: (14 - 5.5) * S,  label: 'Triple Ala Der'    },
   corner_right:    { x: 14.55 * S,y: (14 - 1.5) * S,  label: 'Triple Esq. Der'   },
 }
+
+export const ZONE_CENTERS: Record<string, ZoneCentre> = { ...ENGINE_CENTERS, ...LEGACY_CENTERS }
 
 // ---------------------------------------------------------------------------
 // Colour helpers
@@ -234,6 +245,7 @@ export default function FibaCourtSVG({
 
         return (
           <g key={zoneKey}
+            data-zone={zoneKey}
             data-low-sample={zData.low_sample ? 'true' : undefined}
             onClick={() => onZoneClick?.(zoneKey)}
             className={onZoneClick ? 'cursor-pointer' : ''}
@@ -270,7 +282,7 @@ export default function FibaCourtSVG({
       )}
 
       {/* Empty-state zone placeholders — only in 'zones' mode when no data */}
-      {vizMode === 'zones' && (!zones || zones.length === 0) && Object.entries(ZONE_CENTERS).map(([key, c]) => (
+      {vizMode === 'zones' && (!zones || zones.length === 0) && Object.entries(ENGINE_CENTERS).map(([key, c]) => (
         <circle key={key} cx={c.x} cy={c.y} r={10}
           fill={theme.axis} fillOpacity={0.08} stroke={theme.axis} strokeOpacity={0.2} strokeWidth={1}
         />
