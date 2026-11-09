@@ -117,7 +117,7 @@ python run_api.py                    # API :8000 (BASKETLAB_DEV=1 → reload)
 cd frontend && npm run dev           # Vite :5173
 pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite completa la corre el CI (en paralelo: python -m pytest -n auto)
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
-python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core
+python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core (y, si cambia el paquete, los fixtures sellados: make_demo_bpkg.py y make_demo_scoped.py; correr la suite COMPLETA de la app después)
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
 PYTHONPATH=".;src" python -m src.live_prep.demo_builder --collection <col> --team <id>   # demo desde un partido terminado
 cd apps/live-android && npm ci && npm run test:run   # app live: tests con Pyodide real (e2e: npm run e2e)
