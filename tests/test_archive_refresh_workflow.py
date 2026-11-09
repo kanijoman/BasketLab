@@ -149,3 +149,61 @@ class TestThePurgeWorkflow:
     def test_it_does_not_touch_the_database_or_atlas(self):
         text = (WORKFLOWS / "archive-purge.yml").read_text(encoding="utf-8")
         assert "MONGODB_CONNECTION_STRING" not in text and "secrets.ATLAS" not in text
+
+
+# --- the weekend (feedback of the 0.5.2) -------------------------------------------------------------------------------------------------------------------------------
+
+def _field(spec, value):
+    """Whether a value matches one field of a cron expression (``*``, ``*/n``, ``a-b``, ``a,b``: what the schedules use)."""
+    for part in spec.split(","):
+        if part == "*" or (part.startswith("*/") and value % int(part[2:]) == 0):
+            return True
+        low, _, high = part.partition("-")
+        if int(low) <= value <= int(high or low):
+            return True
+    return False
+
+
+def _runs_between(start, end):
+    """Every minute (UTC) a schedule of the refresh starts between ``start`` and ``end``, once per schedule that matches it."""
+    from datetime import timedelta
+    crons, out, t = [s["cron"].split() for s in _triggers(TestTheRefresh.wf)["schedule"]], [], start
+    while t <= end:
+        out += [t for minute, hour, dom, month, dow in crons
+                if _field(minute, t.minute) and _field(hour, t.hour) and _field(dom, t.day) and _field(month, t.month) and _field(dow, t.isoweekday() % 7)]
+        t += timedelta(minutes=1)
+    return out
+
+
+class TestTheWeekend:
+    """«Aumentar la tasa de refresco de datos web durante el fin de semana para tener antes estadísticas. Desde las 18:00 del sábado hasta las 23:30 del domingo el refresco debería
+    ser cada hora.» The schedules of GitHub are in UTC: the window must hold in Madrid both in winter (UTC+1) and in summer (UTC+2) time. ``web-data.yml`` follows every refresh."""
+
+    @staticmethod
+    def _madrid_weekend(saturday):
+        from datetime import datetime, timedelta, timezone
+        from zoneinfo import ZoneInfo
+        madrid = ZoneInfo("Europe/Madrid")
+        start = datetime(saturday.year, saturday.month, saturday.day, 18, 0, tzinfo=madrid)
+        end = start + timedelta(days=1, hours=5, minutes=30)                               # Sunday 23:30
+        runs = _runs_between((start - timedelta(hours=2)).astimezone(timezone.utc).replace(tzinfo=None), (end + timedelta(hours=2)).astimezone(timezone.utc).replace(tzinfo=None))
+        return [r.replace(tzinfo=timezone.utc).astimezone(madrid) for r in runs], start, end
+
+    def test_from_saturday_18_00_to_sunday_23_30_in_madrid_the_refresh_runs_every_hour_in_winter_and_in_summer(self):
+        from datetime import date, timedelta
+        for saturday in (date(2026, 11, 14), date(2027, 4, 17)):                          # winter time, summer time
+            runs, start, end = self._madrid_weekend(saturday)
+            inside = [r for r in runs if start <= r <= end]
+            points = [start, *inside, end]
+            assert max(b - a for a, b in zip(points, points[1:])) <= timedelta(hours=1), saturday
+            assert inside[-1] >= end - timedelta(hours=1)                                   # the last one of Sunday night, not before
+
+    def test_no_minute_starts_two_refreshes(self):
+        from datetime import datetime
+        runs = _runs_between(datetime(2026, 11, 9), datetime(2026, 11, 16))                 # a whole week
+        assert len(runs) == len(set(runs))
+
+    def test_from_monday_to_friday_it_stays_at_three_a_day(self):
+        from datetime import datetime
+        runs = _runs_between(datetime(2026, 11, 9), datetime(2026, 11, 13, 23, 59))         # Monday to Friday, UTC
+        assert len(runs) == 5 * 3
