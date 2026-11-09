@@ -386,6 +386,9 @@ describe('the sections a competition has published', () => {
   })
 
   it('a publication without the section (the page was deployed before its data) does not list it', async () => {
+    const manifest = JSON.parse(read('index.json'))
+    delete manifest.assist_connections                       // the case is built here: the committed fixture is the real publication, which may have the section
+    override['index.json'] = JSON.stringify(manifest)
     expect((await publishedSectionsOf(FEB)).has('assist_connections')).toBe(false)
   })
 

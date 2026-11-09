@@ -4,20 +4,18 @@ Returns zone-level shooting summaries (FGA, FGM, FG%) for a team or player
 across all games in a collection.  Coordinate conversion follows the same
 FIBA half-court system used by the desktop shot-chart module.
 
-FBCYL collections do not carry individual shot coordinates, so an empty
-list is returned for those collections.
+FBCYL carries its coordinates in the players' stats (``fbcyl_zones``): same zones, same answer.
 
-Zones (10 total, FIBA half-court):
-    1  restricted_area   — distance ≤ 1.25 m from basket
-    2  paint             — key area (non-restricted)
-    3  mid_left          — 2pt, left of the key
-    4  mid_center        — 2pt, above the key
-    5  mid_right         — 2pt, right of the key
-    6  corner_left       — 3pt corner, left side (x < 0.9 m)
-    7  wing_left         — 3pt left wing (above break)
-    8  top_three         — 3pt near the top of the arc
-    9  wing_right        — 3pt right wing (above break)
-    10 corner_right      — 3pt corner, right side (x > 14.1 m)
+Zones (10 total, FIBA half-court): those of the engine, ``live_core.zones`` (issue #452), the same ones the app
+and the scouting reports say; ``feb_zones`` only classifies through it:
+    restricted_area    — the rim, in front of the backboard (≤ 1.25 m from the basket)
+    key_area           — the key (and what is behind the backboard)
+    short_mid_range    — 2pt within 3.5 m of the basket, outside the key
+    medium_mid_range   — 2pt between 3.5 and 5 m
+    long_mid_range     — 2pt beyond 5 m
+    left_corner_three, right_corner_three — 3pt corners (x < 0.9 m or x > 14.1 m)
+    left_wing_three, right_wing_three     — 3pt wings (above the break)
+    center_three       — 3pt in front of the key
 """
 
 from __future__ import annotations
