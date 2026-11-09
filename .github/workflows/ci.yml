@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload the coverage data of this share (main)
         if: ${{ !cancelled() && env.WITH_COVERAGE == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.group }}
           path: .coverage.share${{ matrix.group }}
@@ -192,7 +192,7 @@ jobs:
       # captures of the key pages in both themes and three widths (issue #197): not compared yet, kept to review a change of look in the pull request
       - name: Upload the captures of the pages
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-visual-captures
           path: frontend/test-results/**/*.png
@@ -201,7 +201,7 @@ jobs:
 
       - name: Upload the report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-e2e-results
           path: frontend/test-results
