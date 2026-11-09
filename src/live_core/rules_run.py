@@ -3,7 +3,7 @@
 * ``rival_run``: levels by net points in ``run_window_s`` (info from ``run_net_info``, warning from ``run_points``, critical
   when the rival scores ``run_points`` or more and we score nothing); says why (``windows.run_causes``) and proposes a timeout
   if there are any left.
-* ``turnover_streak``: ``turnover_streak`` own turnovers in ``turnover_window_s``; proposes a timeout, names the player who
+* ``turnover_streak``: ``turnover_streak`` own turnovers in ``turnover_window_s``, not before the start of the quarter (feedback 0.5.2); proposes a timeout, names the player who
   concentrates them (``turnover_player_min`` or more) and proposes taking him off the ball handling.
 
 Neither repeats by time: each level of a run, and each streak, is said once per episode (``timeouts.episode``: the stretch since our
@@ -18,7 +18,7 @@ from .advice_types import Advice, RuleContext
 from .proposals import tactic_proposal, timeout_proposal
 from .score_text import plain_score
 from .timeouts import episode, timeout_within, timeouts_left
-from .windows import run_causes, run_start, window_stats
+from .windows import recent_text, run_causes, run_start, window_stats
 
 
 def _clock(seconds: int) -> str:
@@ -65,7 +65,8 @@ def turnover_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     cfg, now = ctx.config, snap["elapsed"]
     if timeout_within(snap, ctx.own_team_id, cfg.after_timeout_quiet_s):
         return []
-    own = window_stats(snap.get("log", []), ctx.own_team_id, now - cfg.turnover_window_s, now)
+    start = run_start(snap, cfg.turnover_window_s)          # it does not cross the change of quarter (feedback 0.5.2)
+    own = window_stats(snap.get("log", []), ctx.own_team_id, start, now)
     if own["tov"] < cfg.turnover_streak:
         return []
     main = max(sorted(own["tov_by_player"].items()), key=lambda kv: kv[1], default=(None, 0))
@@ -77,8 +78,8 @@ def turnover_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
         proposal.append(tactic_proposal(f"Sacar a {name} del manejo del balón", main[0], name))
     return [Advice(
         key=f"tov_streak:{episode(snap, ctx.own_team_id)}", id="turnover_streak", severity="warning", category="gestion",
-        message=(f"{own['tov']} pérdidas propias en los últimos {cfg.turnover_window_s // 60} min"
+        message=(f"{own['tov']} pérdidas propias {recent_text(snap, cfg.turnover_window_s)}"
                  + (f" ({main[1]} de {name})" if named else "") + ". Asegurar el balón."),
-        evidence={"turnovers": own["tov"], "window_s": cfg.turnover_window_s, "main_player_id": main[0] if named else None},
+        evidence={"turnovers": own["tov"], "window_s": now - start, "main_player_id": main[0] if named else None},
         proposal=proposal,
     )]

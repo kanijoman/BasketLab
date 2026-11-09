@@ -21,8 +21,18 @@ def player_of(entry: Sequence[Any]) -> Optional[str]:
 
 
 def run_start(snap: Dict[str, Any], length: int) -> int:
-    """Where the window of a run of ``length`` seconds starts: a run does not cross the change of quarter (issue #515: «parcial 1-9» 30 s into a quarter was a 1-7 of the previous one)."""
+    """Where the window of a run of ``length`` seconds starts: a run does not cross the change of quarter (issue #515: «parcial 1-9» 30 s into a quarter was a 1-7 of the previous one).
+    The turnover alerts and the flow windows use it too (feedback of the 0.5.2: «5 pérdidas en los últimos 5 min» 1:40 into a quarter counted three of the previous one)."""
     return max(snap["elapsed"] - length, period_start(snap.get("period", 1)))
+
+
+def recent_text(snap: Dict[str, Any], length: int) -> str:
+    """What a window of ``length`` seconds cut by ``run_start`` covered, in words: «en los últimos 5 min», or «en lo que va de cuarto (1:40)» when the period is younger."""
+    now, period = snap["elapsed"], snap.get("period", 1)
+    span = now - run_start(snap, length)
+    if span >= length:
+        return f"en los últimos {length // 60} min"
+    return f"en lo que va de {'prórroga' if period > 4 else 'cuarto'} ({span // 60}:{span % 60:02d})"
 
 
 def window_stats(log: Iterable[Sequence[Any]], team_id: str, start: int, end: int) -> Dict[str, Any]:

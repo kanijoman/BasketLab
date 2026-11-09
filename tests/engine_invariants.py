@@ -14,20 +14,30 @@ def _points(log: list, team: str, start: int, end: int) -> int:
     return sum(e[3] for e in log if e[1] == team and e[2] == "pts" and start <= e[0] <= end)
 
 
+FLOW_COUNTS = {"rival_turnovers": ("turnovers", "tov"), "rival_orb_window": ("orb", "orb")}
+
+
+def _count(log: list, team: str, kind: str, start: int, end: int) -> int:
+    return sum(1 for e in log if e[1] == team and e[2] == kind and start <= e[0] <= end)
+
+
 def check_runs(snap: Dict[str, Any], alerts: list, own_id: str = OWN, rival_id: str = RIVAL) -> None:
-    """#515: a run counts no point the team scored before the quarter in play began."""
+    """#515: a run counts no point the team scored before the quarter in play began; nor do the turnover streak and the flow windows count an earlier turnover or
+    rebound (feedback 0.5.2: «5 pérdidas en los últimos 5 min» 1:40 into a quarter)."""
     now, start, log = snap["elapsed"], period_start(snap["period"]), snap["log"]
     own, rival = _points(log, own_id, start, now), _points(log, rival_id, start, now)
     for a in alerts:
+        if a.id == "turnover_streak":
+            assert a.evidence["turnovers"] <= _count(log, own_id, "tov", start, now), f"0.5.2 {a.message} (pérdidas en el cuarto: {_count(log, own_id, 'tov', start, now)})"
+        elif a.id in FLOW_COUNTS:
+            field, kind = FLOW_COUNTS[a.id]
+            assert a.evidence[field] <= _count(log, rival_id, kind, start, now), f"0.5.2 {a.message} (en el cuarto: {_count(log, rival_id, kind, start, now)})"
         if a.id == "rival_run":
             assert a.evidence["rival_points"] <= rival and a.evidence["own_points"] <= own, f"#515 {a.message} (en el cuarto: {own}-{rival})"
         elif a.id == "own_run":
             assert a.evidence["net"] <= own, f"#515 {a.message} (el equipo lleva {own} en el cuarto)"
         elif a.id == "long_run":
             assert a.evidence["net"] <= rival, f"#515 {a.message} (el rival lleva {rival} en el cuarto)"
-
-
-FLOW_COUNTS = {"rival_turnovers": ("turnovers", "tov"), "rival_orb_window": ("orb", "orb")}
 
 
 def check_flow_repeats(snap: Dict[str, Any], alerts: list, said: Dict[str, int], rival_id: str = RIVAL) -> None:
