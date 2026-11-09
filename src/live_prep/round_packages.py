@@ -74,7 +74,7 @@ def build_round_packages(
         acc.add_game(game)
     rosters, built = _Rosters(roster_source), []
     for match in matches:
-        meta = {k: match[k] for k in ("code", "start", "round", "home", "away")}
+        meta = {k: match[k] for k in ("code", "start", "round", "home", "away", "fbcyl_group") if k in match}      # fbcyl_group: where the app finds the match in the calendar when it is about to start (#446)
         plays = bool(club_team_id) and str(club_team_id) in (str(match["home"]["id"]), str(match["away"]["id"]))
         for i, (own, rival) in enumerate(_perspectives(match, club_team_id)):
             package = acc.to_package(collection, season, own, rival, {"match": meta}, created_at, roster=rosters.both(own, rival), rule_config=rule_config)

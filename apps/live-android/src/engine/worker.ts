@@ -26,6 +26,9 @@ function run(bridge: LiveBridge, msg: WorkerRequest): unknown {
     case 'loadReplay': return bridge.loadReplay(msg.payload)
     case 'replay': return bridge.replay(msg.payload)
     case 'update': return bridge.update(msg.payload.doc, msg.payload.at)
+    case 'updateStreaming': return bridge.updateStreaming(msg.payload.body, msg.payload.at)
+    case 'updateFbcylFinal': return bridge.updateFbcylFinal(msg.payload.moves, msg.payload.stats, msg.payload.at)
+    case 'lastDocument': return bridge.lastDocument()
     case 'beginRecording': bridge.beginRecording(msg.payload.match, msg.payload.startedIso); return {}
     case 'recordGap': bridge.recordGap(msg.payload.endpoint, msg.payload.at); return {}
     case 'recording': return bridge.recording()

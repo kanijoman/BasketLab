@@ -9,12 +9,13 @@ can follow a real FEB feed (``update``) or replay a finished game at any game-cl
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from .advice import AdviceEngine
 from .clock import period_and_remaining, period_length, period_start
 from .engine import LiveEngine, _teams
 from .events import parse_line
+from .fbcyl_adapter import from_streaming, to_feb_document
 from .package import PreparationPackage
 from .postmatch import build_report
 from .replay import truncate_doc
@@ -33,6 +34,8 @@ class LiveSession:
         self._replay_doc: Optional[Dict[str, Any]] = None
         self._feed: Optional[RecordedFeed] = None
         self._recording: Optional[RecordingBuilder] = None
+        self._last_document: Optional[Dict[str, Any]] = None   # the FEB document of the last reading of the FBCYL streaming (or of its closing)
+        self._stream_best: Tuple[int, int] = (0, 0)      # (period, moves) of the best reading of the FBCYL streaming: a reading with less than that is ignored
         self.replay_info: Dict[str, Any] = {}
 
     def set_mode(self, mode: Optional[str]) -> None:
@@ -85,6 +88,31 @@ class LiveSession:
             "analysis": self._advice.analyze(snapshot) if match["ok"] else {},
             "package_match": match,
         })
+
+    def update_streaming(self, body: Dict[str, Any], at: Optional[float] = None) -> Dict[str, Any]:
+        """Process a reading of the FBCYL streaming service (``streaming/match-id/{adGameId}``, issue #446): the same as ``update`` on its FEB-shaped document.
+
+        The service, at the end of a match, also answers responses that go BACKWARDS mixed with the right ones (period 1 with 48 moves after 593 of the 4th period, 525 moves after 609:
+        seen on the real match of 7/11/2026) and the engine would follow them and put the clock back. A reading with a lower period, or the same one with fewer moves, than the best
+        seen is ``{"stale": True}`` (nothing to show; the session is not touched); an equal one is processed, as the engine is idempotent."""
+        mark = (int(body.get("period") or 1), len(body.get("moves") or []))
+        if mark < self._stream_best:
+            return {"stale": True}
+        self._stream_best = mark
+        self._last_document = from_streaming(body)
+        return self.update(self._last_document, at)
+
+    def update_fbcyl_final(self, moves: Any, stats: Dict[str, Any], at: Optional[float] = None) -> Dict[str, Any]:
+        """Close a FBCYL match with the definitive moves and stats of ``msstats`` (they exist once the match is over; the stream lacked 2 moves in the real match): what was seen is
+        replaced by them, and no later reading of the stream is followed."""
+        doc = to_feb_document({"uuid": stats.get("uuid"), "moves": moves, "stats": stats})
+        self._stream_best = (10 ** 6, 10 ** 9)
+        self._last_document = doc
+        return self.update(doc, at)
+
+    def last_document(self) -> Optional[Dict[str, Any]]:
+        """The FEB document of the last FBCYL reading accepted (or of its closing), None before the first: what the app keeps to review the match later (issue #407)."""
+        return self._last_document
 
     def report(self, game_doc: Dict[str, Any], alerts: Optional[Any] = None) -> Dict[str, Any]:
         """The post-match report (issue #409) of a finished game, from the point of view of the package's team."""
@@ -169,6 +197,18 @@ def replay_json(elapsed: int) -> str:
 
 def update_json(doc_json: str, at: Optional[float] = None) -> str:
     return _dump(_session().update(unwrap_extended_json(json.loads(doc_json)), at))
+
+
+def update_streaming_json(body_json: str, at: Optional[float] = None) -> str:
+    return _dump(_session().update_streaming(json.loads(body_json), at))
+
+
+def update_fbcyl_final_json(moves_json: str, stats_json: str, at: Optional[float] = None) -> str:
+    return _dump(_session().update_fbcyl_final(json.loads(moves_json), json.loads(stats_json), at))
+
+
+def last_document_json() -> str:
+    return _dump(_session().last_document())
 
 
 def begin_recording_json(match: str, started: str) -> str:

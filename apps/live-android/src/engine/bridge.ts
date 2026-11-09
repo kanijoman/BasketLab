@@ -4,7 +4,7 @@
  * Runs wherever a Pyodide instance exists (the Web Worker in the app, Node in the tests).
  * Only strings cross the boundary: JSON in, JSON out.
  */
-import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta } from './types'
+import type { EngineOutput, LoggedAlert, PostMatchReport, RecordingFrame, RecordingInfo, ReplayInfo, SessionMeta, StreamingOutput } from './types'
 
 /** The part of the Pyodide API the bridge uses. */
 export interface PyodideLike {
@@ -22,7 +22,7 @@ type PyFn = (...args: unknown[]) => string
 export class LiveBridge {
   private readonly fn: Record<
     'start_json' | 'set_mode_json' | 'load_replay_json' | 'replay_json' | 'update_json' | 'load_recording_json' | 'play_recording_json' | 'report_json'
-    | 'begin_recording_json' | 'record_gap_json' | 'recording_json',
+    | 'update_streaming_json' | 'update_fbcyl_final_json' | 'last_document_json' | 'begin_recording_json' | 'record_gap_json' | 'recording_json',
     PyFn
   >
 
@@ -40,6 +40,9 @@ export class LiveBridge {
       load_replay_json: get('load_replay_json'),
       replay_json: get('replay_json'),
       update_json: get('update_json'),
+      update_streaming_json: get('update_streaming_json'),
+      update_fbcyl_final_json: get('update_fbcyl_final_json'),
+      last_document_json: get('last_document_json'),
       load_recording_json: get('load_recording_json'),
       play_recording_json: get('play_recording_json'),
       report_json: get('report_json'),
@@ -76,6 +79,22 @@ export class LiveBridge {
   /** ``at``: seconds since the first poll of the feed; with it the document goes into the recording that ``beginRecording`` started (issue #416). */
   update(docJson: string, at?: number): EngineOutput {
     return JSON.parse(at === undefined ? this.fn.update_json(docJson) : this.fn.update_json(docJson, at))
+  }
+
+  /** A reading of the FBCYL streaming (issue #446): ``{stale: true}`` when it goes back against the best seen, else the output of the update. */
+  updateStreaming(bodyJson: string, at?: number): StreamingOutput {
+    return JSON.parse(at === undefined ? this.fn.update_streaming_json(bodyJson) : this.fn.update_streaming_json(bodyJson, at))
+  }
+
+  /** The definitive moves and stats of msstats once a FBCYL match is over: they replace what the stream gave. */
+  updateFbcylFinal(movesJson: string, statsJson: string, at?: number): EngineOutput {
+    return JSON.parse(at === undefined ? this.fn.update_fbcyl_final_json(movesJson, statsJson) : this.fn.update_fbcyl_final_json(movesJson, statsJson, at))
+  }
+
+  /** The FEB document (JSON text) of the last FBCYL reading accepted, or null before the first: what is kept to review the match later. */
+  lastDocument(): string | null {
+    const doc = this.fn.last_document_json()
+    return doc === 'null' ? null : doc
   }
 
   /** The documents ``update`` is given a time for are kept as a recording of this feed (same format as the CI recorder's). */

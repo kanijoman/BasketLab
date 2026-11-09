@@ -7,6 +7,9 @@ export type WorkerRequest =
   | { id: number; type: 'loadReplay'; payload: string }
   | { id: number; type: 'replay'; payload: number }
   | { id: number; type: 'update'; payload: { doc: string; at?: number } }
+  | { id: number; type: 'updateStreaming'; payload: { body: string; at?: number } }
+  | { id: number; type: 'updateFbcylFinal'; payload: { moves: string; stats: string; at?: number } }
+  | { id: number; type: 'lastDocument' }
   | { id: number; type: 'loadRecording'; payload: string }
   | { id: number; type: 'playRecording'; payload: number }
   | { id: number; type: 'beginRecording'; payload: { match: string; startedIso: string } }

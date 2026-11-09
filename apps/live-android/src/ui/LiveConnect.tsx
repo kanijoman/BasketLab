@@ -1,17 +1,18 @@
-/** Live mode of the app: connect to FEB for the match of the loaded package and see what the connection is doing. */
+/** Live mode of the app: connect to the federation (FEB or FBCYL, whichever the match belongs to) for the match of the loaded package and see what the connection is doing. */
 import { useEffect, useState } from 'react'
 import { lagText, type LagSummary } from '../feed/feedLag'
+import { isConnectable, shownCode, sourceOf, type FeedSource } from '../feed/feedSource'
 import type { FeedState } from '../feed/liveFeed'
 import HelpHint from './HelpHint'
 
 interface Props {
-  /** FEB match code the package was prepared for (null: the user types it). */
+  /** Code of the match the package was prepared for: FEB's digits or a FBCYL code (null: the user types a FEB code). */
   matchCode: string | null
   state: FeedState
   running: boolean
   /** Whether the screen is being kept on while connected (null: not connected). */
   awake?: boolean | null
-  /** How late the data of FEB is on this connection (issue #411). */
+  /** How late the data of the federation is on this connection (issue #411; FBCYL gives nothing to measure it with). */
   lag?: LagSummary | null
   onStart: (code: string) => void
   onStop: () => void
@@ -33,15 +34,15 @@ function useNow(active: boolean): number {
   return now
 }
 
-function Status({ state, now }: { state: FeedState; now: number }) {
+function Status({ state, now, source }: { state: FeedState; now: number; source: FeedSource }) {
   switch (state.kind) {
-    case 'connecting': return <p className="status">Conectando con FEB…</p>
+    case 'connecting': return <p className="status">Conectando con {source}…</p>
     case 'waiting': return <p className="status">Esperando el inicio del partido…</p>
     case 'live': return <p className="status">En directo · último dato hace {ago(now - state.lastOkAt)}</p>
     case 'gap':
       return (
         <p className="status warn">
-          {state.message ?? 'FEB no responde'}: se mantiene el último estado.
+          {state.message ?? `${source} no responde`}: se mantiene el último estado.
           {state.lastOkAt !== null ? ` Último dato hace ${ago(now - state.lastOkAt)}.` : ''}
         </p>
       )
@@ -55,14 +56,15 @@ export default function LiveConnect({ matchCode, state, running, awake = null, l
   const [typed, setTyped] = useState('')
   const now = useNow(state.kind === 'live' || state.kind === 'gap')
   const code = (matchCode ?? typed).trim()
-  const valid = /^\d+$/.test(code)
+  const valid = isConnectable(code)
+  const source = sourceOf(code)
 
   return (
     <section className="panel" aria-label="Partido en directo">
       <h2>Partido en directo</h2>
-      {state.kind === 'idle' && <p className="detail">Paquete cargado. Conecta con FEB cuando empiece el partido.</p>}
+      {state.kind === 'idle' && <p className="detail">Paquete cargado. Conecta con {source} cuando empiece el partido.</p>}
       {matchCode ? (
-        <p className="detail">Partido de FEB: <strong>{matchCode}</strong></p>
+        <p className="detail">Partido de {source}: <strong>{shownCode(matchCode)}</strong></p>
       ) : (
         <label>
           Código del partido (FEB)
@@ -75,7 +77,7 @@ export default function LiveConnect({ matchCode, state, running, awake = null, l
           descargados de la lista ya lo traen y no hace falta escribirlo.
         </HelpHint>
       )}
-      <Status state={state} now={now} />
+      <Status state={state} now={now} source={source} />
       {running && lag && lagText(lag) && <p className="detail">{lagText(lag)}</p>}
       {running && awake === true && <p className="detail">Pantalla encendida mientras dure la conexión.</p>}
       {running && awake === false && (
@@ -83,7 +85,7 @@ export default function LiveConnect({ matchCode, state, running, awake = null, l
       )}
       {running
         ? <button className="secondary" onClick={onStop}>Desconectar</button>
-        : <button disabled={!valid} onClick={() => onStart(code)}>Conectar con FEB</button>}
+        : <button disabled={!valid} onClick={() => onStart(code)}>Conectar con {source}</button>}
     </section>
   )
 }

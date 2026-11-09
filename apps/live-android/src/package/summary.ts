@@ -23,6 +23,8 @@ export interface PackageMatch {
   code: string
   start?: string
   round?: number
+  /** FBCYL only: the id of the group of the match in the calendar of the federation, where the app finds it when it is about to start (issue #446). */
+  fbcyl_group?: string
   home?: { id: string; name: string }
   away?: { id: string; name: string }
 }

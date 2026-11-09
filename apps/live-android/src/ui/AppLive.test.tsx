@@ -41,7 +41,7 @@ function fakeEngine(over: Partial<EngineApi> = {}): EngineApi {
     playRecording: vi.fn(),
     report: vi.fn(),
     beginRecording: vi.fn().mockResolvedValue(undefined),
-    recordGap: vi.fn().mockResolvedValue(undefined),
+    recordGap: vi.fn(), updateStreaming: vi.fn(), updateFbcylFinal: vi.fn(), lastDocument: vi.fn().mockResolvedValue(undefined),
     recording: vi.fn().mockResolvedValue(null),
     setMode: vi.fn().mockResolvedValue(undefined),
     dispose: vi.fn(),
