@@ -23,19 +23,19 @@ const ANALYSIS: AssistConnections = {
   team_id: '1', games: 5, assisted_baskets: 10, total_baskets: 20, assists_total: 12, assists_linked: 10, linked_pct: 83.3, format: 'feb',
   receivers: [
     receiver('a', 'ANA', { received: 6, unassisted: 4, fgm: 10, points: 22, assisted_points: 13, assisted_points_pct: 59.1, share_pct: 60, assisted_pct: 60,
-      zones: [{ zone: 'paint', assisted: 4, unassisted: 1, assisted_pct: 80 }, { zone: 'top_three', assisted: 2, unassisted: 3, assisted_pct: 40 }],
+      zones: [{ zone: 'key_area', assisted: 4, unassisted: 1, assisted_pct: 80 }, { zone: 'center_three', assisted: 2, unassisted: 3, assisted_pct: 40 }],
       from: [{ player_id: 'b', name: 'BEA', count: 4 }, { player_id: 'c', name: 'CLARA', count: 2 }] }),
     receiver('c', 'CLARA', { received: 4, unassisted: 6, fgm: 10, points: 20, assisted_points: 8, assisted_points_pct: 40, share_pct: 40, assisted_pct: 40,
-      zones: [{ zone: 'paint', assisted: 4, unassisted: 6, assisted_pct: 40 }], from: [{ player_id: 'b', name: 'BEA', count: 4 }] }),
+      zones: [{ zone: 'key_area', assisted: 4, unassisted: 6, assisted_pct: 40 }], from: [{ player_id: 'b', name: 'BEA', count: 4 }] }),
     receiver('d', 'DORA', { unassisted: 2, fgm: 2, points: 4 }),
   ],
   passers: [
     { player_id: 'b', name: 'BEA', assists: 8, share_pct: 80, without_zone: 1,
-      zones: [{ zone: 'paint', count: 5 }, { zone: 'top_three', count: 2 }],
-      to: [{ player_id: 'a', name: 'ANA', count: 4, without_zone: 0, zones: [{ zone: 'paint', count: 3 }, { zone: 'top_three', count: 1 }] },
-           { player_id: 'c', name: 'CLARA', count: 4, without_zone: 1, zones: [{ zone: 'paint', count: 2 }, { zone: 'top_three', count: 1 }] }] },
-    { player_id: 'c', name: 'CLARA', assists: 2, share_pct: 20, without_zone: 0, zones: [{ zone: 'paint', count: 2 }],
-      to: [{ player_id: 'a', name: 'ANA', count: 2, without_zone: 0, zones: [{ zone: 'paint', count: 2 }] }] },
+      zones: [{ zone: 'key_area', count: 5 }, { zone: 'center_three', count: 2 }],
+      to: [{ player_id: 'a', name: 'ANA', count: 4, without_zone: 0, zones: [{ zone: 'key_area', count: 3 }, { zone: 'center_three', count: 1 }] },
+           { player_id: 'c', name: 'CLARA', count: 4, without_zone: 1, zones: [{ zone: 'key_area', count: 2 }, { zone: 'center_three', count: 1 }] }] },
+    { player_id: 'c', name: 'CLARA', assists: 2, share_pct: 20, without_zone: 0, zones: [{ zone: 'key_area', count: 2 }],
+      to: [{ player_id: 'a', name: 'ANA', count: 2, without_zone: 0, zones: [{ zone: 'key_area', count: 2 }] }] },
   ],
 }
 
@@ -92,7 +92,7 @@ describe('ConexionesPage', () => {
     expect(within(detail).getByText(/59%/)).toBeInTheDocument()                           // of his points
     expect(within(detail).getByText('BEA')).toBeInTheDocument()
     expect(within(detail).getByText('CLARA')).toBeInTheDocument()
-    expect(container.querySelector('[data-zone="paint"]')).not.toBeNull()
+    expect(container.querySelector('[data-zone="key_area"]')).not.toBeNull()
     expect(within(detail).getByText('Con asistencia')).toBeInTheDocument()
     expect(within(detail).getByText('Sin asistencia')).toBeInTheDocument()
   })
@@ -112,8 +112,8 @@ describe('ConexionesPage', () => {
     const section = await screen.findByRole('region', { name: /como pasador/i })
     expect(within(section).getByText('ANA')).toBeInTheDocument()                           // who he passes to
     expect(within(section).getByText('CLARA')).toBeInTheDocument()
-    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('5')    // from where his receivers score
-    expect(container.querySelector('[data-pass-zone="top_three"]')!.textContent).toContain('2')
+    expect(container.querySelector('[data-pass-zone="key_area"]')!.textContent).toContain('5')    // from where his receivers score
+    expect(container.querySelector('[data-pass-zone="center_three"]')!.textContent).toContain('2')
   })
 
   it('one of the players he passes to can be looked at alone: the court shows only the zones of those assists, and «Todos» goes back', async () => {
@@ -123,9 +123,9 @@ describe('ConexionesPage', () => {
     const section = await screen.findByRole('region', { name: /como pasador/i })
     fireEvent.click(within(section).getByRole('button', { name: /^ANA/ }))
     expect(within(section).getByRole('button', { name: /^ANA/ })).toHaveAttribute('aria-pressed', 'true')
-    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('3')    // 3 of his 4 to ANA end in the paint
+    expect(container.querySelector('[data-pass-zone="key_area"]')!.textContent).toContain('3')    // 3 of his 4 to ANA end in the paint
     fireEvent.click(within(section).getByRole('button', { name: /todos/i }))
-    expect(container.querySelector('[data-pass-zone="paint"]')!.textContent).toContain('5')
+    expect(container.querySelector('[data-pass-zone="key_area"]')!.textContent).toContain('5')
   })
 
   it('the player filter opens the same passer section, and a player who is only a receiver has none', async () => {

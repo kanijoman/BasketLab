@@ -31,9 +31,9 @@ const fills = (container: HTMLElement) => Array.from(container.querySelectorAll(
 describe('FibaCourtSVG zone colours', () => {
   it('colours zones by their rating against the league, not by a fixed FG%', () => {
     const colours = fills(court([
-      zone('paint', { rating: 'above', fg_pct: 30 }),   // 30 % but above league → green
-      zone('mid_left', { rating: 'below', fg_pct: 70 }), // 70 % but below league → red
-      zone('mid_right', { rating: 'average' }),
+      zone('key_area', { rating: 'above', fg_pct: 30 }),   // 30 % but above league → green
+      zone('short_mid_range', { rating: 'below', fg_pct: 70 }), // 70 % but below league → red
+      zone('medium_mid_range', { rating: 'average' }),
     ]))
     expect(colours).toContain('#1a7f37')                 // ok
     expect(colours).toContain('#cf222e')                 // bad
@@ -41,25 +41,25 @@ describe('FibaCourtSVG zone colours', () => {
   })
 
   it('does not use a hue computed from the raw percentage', () => {
-    expect(court([zone('paint', { rating: 'average', fg_pct: 38 })]).innerHTML).not.toMatch(/hsl\(/)
+    expect(court([zone('key_area', { rating: 'average', fg_pct: 38 })]).innerHTML).not.toMatch(/hsl\(/)
   })
 
   it('shows a legend with the three ratings in zones mode', () => {
-    const text = court([zone('paint', { rating: 'above' })]).textContent ?? ''
+    const text = court([zone('key_area', { rating: 'above' })]).textContent ?? ''
     expect(text).toMatch(/encima/i)
     expect(text).toMatch(/promedio/i)
     expect(text).toMatch(/debajo/i)
   })
 
   it('flags zones with a small sample', () => {
-    expect(court([zone('paint', { rating: 'above', low_sample: true, fga: 3 })]).querySelector('[data-low-sample="true"]')).not.toBeNull()
+    expect(court([zone('key_area', { rating: 'above', low_sample: true, fga: 3 })]).querySelector('[data-low-sample="true"]')).not.toBeNull()
   })
 })
 
 // Issue #196 (U6): the court is the page's, not a dark box: its floor, lines, rim and data colours are the tokens of the theme in use.
 describe('FibaCourtSVG theme (issue #196)', () => {
   it('light: a light floor with dark lines, and the data tones of the light theme', () => {
-    const c = court([zone('paint', { rating: 'above' })])
+    const c = court([zone('key_area', { rating: 'above' })])
     const svg = c.querySelector('svg') as SVGElement
     expect(svg.style.background).toBe('rgb(240, 243, 246)')                       // --surface-raised
     expect(c.querySelector('line')?.getAttribute('stroke')).toBe('#59636e')       // --text-muted
@@ -69,7 +69,7 @@ describe('FibaCourtSVG theme (issue #196)', () => {
 
   it('dark: the same court with the tokens of the dark theme', () => {
     inTheme('dark')
-    const c = court([zone('paint', { rating: 'above' })])
+    const c = court([zone('key_area', { rating: 'above' })])
     expect((c.querySelector('svg') as SVGElement).style.background).toBe('rgb(28, 33, 40)')
     expect(c.querySelector('line')?.getAttribute('stroke')).toBe('#8b949e')
     expect(c.querySelector('circle[r="6.75"]')?.getAttribute('stroke')).toBe('#f97316')
@@ -77,9 +77,9 @@ describe('FibaCourtSVG theme (issue #196)', () => {
   })
 
   it('the text on a bubble is the ink made for data colours: readable on both', () => {
-    const light = court([zone('paint', { rating: 'above' })]).querySelector('text')?.getAttribute('fill')
+    const light = court([zone('key_area', { rating: 'above' })]).querySelector('text')?.getAttribute('fill')
     inTheme('dark')
-    const dark = court([zone('paint', { rating: 'above' })]).querySelector('text')?.getAttribute('fill')
+    const dark = court([zone('key_area', { rating: 'above' })]).querySelector('text')?.getAttribute('fill')
     expect([light, dark]).toEqual(['#ffffff', '#0d1117'])
   })
 
@@ -91,13 +91,13 @@ describe('FibaCourtSVG theme (issue #196)', () => {
   })
 
   it('has no colour of its own in its markup: no hex outside the tokens', () => {
-    const html = court([zone('paint', { rating: 'above' })]).innerHTML
+    const html = court([zone('key_area', { rating: 'above' })]).innerHTML
     expect(html).not.toMatch(/#(?:cccccc|1a1a2e|ff8c00|4ade80|f87171|2E9E4F)/i)
     expect(html).not.toMatch(/rgba\(255,\s*255,\s*255/)
   })
 })
 
-// Issue #452, block 2 (zones): the court draws a bubble for each zone of the engine (what the app and the scouting say) and, while published data still has them, of the old system.
+// Issue #452, block 2 (zones): the court draws a bubble for each zone of the engine (what the app and the scouting say); the old system of the web is gone (step 3).
 describe('the zones of the engine on the court', () => {
   const ENGINE = ['restricted_area', 'key_area', 'short_mid_range', 'medium_mid_range', 'long_mid_range', 'left_corner_three', 'left_wing_three', 'center_three', 'right_wing_three', 'right_corner_three']
   const LEGACY = ['paint', 'mid_left', 'mid_center', 'mid_right', 'corner_left', 'wing_left', 'top_three', 'wing_right', 'corner_right']
@@ -107,9 +107,9 @@ describe('the zones of the engine on the court', () => {
     expect(Array.from(container.querySelectorAll('g[data-zone]')).map(g => g.getAttribute('data-zone'))).toEqual(ENGINE)
   })
 
-  it('still draws the zones of the old system for data published before the change', () => {
+  it('draws nothing for the zones of the old system: only those of the engine are known (the data was republished with them, step 3)', () => {
     const container = court(LEGACY.map(key => zone(key)))
-    expect(container.querySelectorAll('g[data-zone]')).toHaveLength(LEGACY.length)
+    expect(container.querySelectorAll('g[data-zone]')).toHaveLength(0)
   })
 
   it('no bubble is on top of another one: the anchors of the engine zones are apart', () => {

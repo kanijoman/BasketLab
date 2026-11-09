@@ -52,20 +52,7 @@ const ENGINE_CENTERS: Record<string, ZoneCentre> = Object.fromEntries(
   Object.entries(engineZones).map(([zone, a]) => [zone, { x: a.x * S, y: (14 - a.y) * S, label: a.label }]),
 )
 
-/** The zones of the old system of the web (`feb_zones`), drawn only for data published before the change; it goes with it (issue #452, last step). */
-const LEGACY_CENTERS: Record<string, ZoneCentre> = {
-  paint:           { x: BX,       y: (14 - 3.8) * S,  label: 'Pintura'            },
-  mid_left:        { x: 3.2 * S,  y: (14 - 4.0) * S,  label: 'Media Izq.'         },
-  mid_center:      { x: BX,       y: (14 - 6.5) * S,  label: 'Media Centro'       },
-  mid_right:       { x: 11.8 * S, y: (14 - 4.0) * S,  label: 'Media Der.'         },
-  corner_left:     { x: 0.45 * S, y: (14 - 1.5) * S,  label: 'Triple Esq. Izq'   },
-  wing_left:       { x: 2.0 * S,  y: (14 - 5.5) * S,  label: 'Triple Ala Izq'    },
-  top_three:       { x: BX,       y: (14 - 9.0) * S,  label: 'Triple Centro'      },
-  wing_right:      { x: 13.0 * S, y: (14 - 5.5) * S,  label: 'Triple Ala Der'    },
-  corner_right:    { x: 14.55 * S,y: (14 - 1.5) * S,  label: 'Triple Esq. Der'   },
-}
-
-export const ZONE_CENTERS: Record<string, ZoneCentre> = { ...ENGINE_CENTERS, ...LEGACY_CENTERS }
+export const ZONE_CENTERS: Record<string, ZoneCentre> = ENGINE_CENTERS
 
 // ---------------------------------------------------------------------------
 // Colour helpers
