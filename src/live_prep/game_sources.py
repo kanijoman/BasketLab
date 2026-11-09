@@ -52,7 +52,7 @@ def _fbcyl_ids(team_ids: Sequence[str]) -> List[Any]:
 
 
 def _fbcyl_adapt(game: Dict[str, Any]) -> Dict[str, Any]:
-    from .fbcyl_adapter import to_feb_document
+    from src.live_core.fbcyl_adapter import to_feb_document
 
     return to_feb_document(game)
 

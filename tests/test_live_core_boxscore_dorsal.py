@@ -51,7 +51,7 @@ class TestFromTheDocument:
         assert LiveEngine().update(doc)["players"]["2817524"]["no"] is None
 
     def test_a_fbcyl_player_has_his_dorsal_through_the_adapter(self):
-        from src.live_prep.fbcyl_adapter import to_feb_document
+        from src.live_core.fbcyl_adapter import to_feb_document
         raw = json.loads(gzip.open(ROOT / "tests" / "fixtures" / "fbcyl_game_ok.json.gz").read())
         played = [p for p in LiveEngine().update(to_feb_document(raw))["players"].values() if p["minutes"] > 0]
         assert len(played) >= 10 and all(p["no"] for p in played)

@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 from db_helpers import new_mock_db
 
-from src.live_prep.fbcyl_adapter import to_feb_document
+from src.live_core.fbcyl_adapter import to_feb_document
 from src.live_prep.package_sealing import ScopedSealer
 from src.local_data.contract import validate_manifest, validate_report_index
 from src.local_data.scouting_export import fbcyl_interest_clubs, scouting_collections, seal_scouting

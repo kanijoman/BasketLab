@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from src.live_core.engine import LiveEngine
-from src.live_prep.fbcyl_adapter import to_feb_document
+from src.live_core.fbcyl_adapter import to_feb_document
 
 FIXTURE = Path(__file__).parent / "fixtures" / "fbcyl_game_ok.json.gz"
 HOME, AWAY = "39675", "40288"      # teamIdExtern (stable), home first
@@ -107,7 +107,7 @@ class TestLines:
 
     def test_a_move_that_is_not_known_is_kept_as_other_not_lost(self, raw):
         odd = copy.deepcopy(raw)
-        odd["moves"].insert(5, {**odd["moves"][5], "move": "Algo nuevo", "actorId": 0, "teamAction": True})
+        odd["moves"].insert(5, {**odd["moves"][5], "move": "Algo nuevo", "idMove": None, "actorId": 0, "teamAction": True})
         lines = to_feb_document(odd)["PLAYBYPLAY"]["LINES"]
         assert any(l["text"].endswith("Algo nuevo") and l["action"] == "other" for l in lines)
 
@@ -119,7 +119,7 @@ class TestLines:
     def test_the_other_foul_types_are_told_apart(self, raw):
         doc = copy.deepcopy(raw)
         base = next(m for m in doc["moves"] if m["move"].startswith("Falta, "))
-        doc["moves"] += [{**base, "move": t} for t in ("Falta antideportiva", "Falta técnica", "Falta en ataque")]
+        doc["moves"] += [{**base, "move": t, "idMove": None} for t in ("Falta antideportiva", "Falta técnica", "Falta en ataque")]       # a move of another kind has its own idMove (#446)
         from src.live_core.events import parse_line
 
         types = [parse_line(l).foul_type for l in to_feb_document(doc)["PLAYBYPLAY"]["LINES"][-3:]]
@@ -127,8 +127,13 @@ class TestLines:
 
 
 class TestShotChartAndInput:
-    def test_the_shot_chart_is_empty_so_the_zone_rules_stay_off(self, game):
-        assert game["SHOTCHART"]["SHOTS"] == []
+    def test_the_shot_chart_has_the_shots_with_coordinates_so_the_zone_rules_work_as_in_feb(self, raw, game):
+        """Until #446 it was empty (the zone rules stayed quiet in FBCYL). The coordinates are in the players' stats; the adapter writes them as FEB's chart, folded to one half court."""
+        points = sum(len(p["data"].get(k) or []) for t in raw["stats"]["teams"] for p in t["players"] for k in
+                     ("shootingOfTwoSuccessfulPoint", "shootingOfTwoFailedPoint", "shootingOfThreeSuccessfulPoint", "shootingOfThreeFailedPoint"))
+        shots = game["SHOTCHART"]["SHOTS"]
+        assert points > 0 and len(shots) == points
+        assert all(s["folded"] and s["team"] in ("0", "1") and s["m"] in ("0", "1") and s["player"] for s in shots)
 
     def test_the_source_document_is_not_modified(self, raw):
         before = json.dumps(raw, sort_keys=True)
