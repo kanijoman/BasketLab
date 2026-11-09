@@ -1,6 +1,6 @@
 /**
  * Live feed of a FEB match (issue #217): polls BoxScore + KeyFacts + ShotChart and hands the engine ONE merged
- * document per successful round (the same merge the recorder's replay uses). Built from what the first real
+ * document per successful round (the same merge the recorder's replay uses). The loop (states, waits, stop, poke, tail) is `FeedLoop`, shared with the FBCYL feed. Built from what the first real
  * recording showed (docs/LIVE.md):
  *  - 404 before the match -> "waiting", polled once a minute (the recorder starts ~5 min before kick-off);
  *  - a 404 or a network error IN THE MIDDLE of the match (62 s on BoxScore, 11 s on KeyFacts) is a "gap": no
@@ -10,40 +10,21 @@
  */
 import type { Endpoint, FebClient } from './febClient'
 import type { LagInfo } from './feedLag'
+import { FeedLoop, type FeedLoopOptions, type Round } from './feedLoop'
 
-export type FeedState =
-  | { kind: 'idle' }
-  | { kind: 'connecting' }
-  | { kind: 'waiting' }
-  | { kind: 'live'; lastOkAt: number }
-  | { kind: 'gap'; lastOkAt: number | null; message?: string }
-  | { kind: 'finished' }
-  | { kind: 'stopped' }  // set by the UI when the user disconnects (a stopped feed reports nothing)
+export type { FeedState } from './feedLoop'
 
-export interface LiveFeedOptions {
+export interface LiveFeedOptions extends Omit<FeedLoopOptions, 'onState'> {
   client: FebClient
   code: string
   /** Receives the merged document (JSON text); an exception is reported as a gap and does not stop the feed. */
   onDocument: (docJson: string, info: LagInfo) => void | Promise<void>
-  onState: (state: FeedState) => void
+  onState: FeedLoopOptions['onState']
   /** An endpoint failed in the middle of the match (issue #416): the recording keeps the gap. Network errors count as the box score. */
   onFailure?: (endpoint: Endpoint) => void
-  intervalMs?: number
-  waitingIntervalMs?: number
-  /** Extra rounds after the final status. */
-  tailPolls?: number
-  sleep?: (ms: number) => Promise<void>
-  now?: () => number
 }
 
 const FINAL_STATUS = '3'
-
-interface Round {
-  /** Match status of the document that was delivered, when the round succeeded. */
-  status: string | null
-  failure?: string
-  notStarted: boolean
-}
 
 /** What the delay meter needs of a document (issue #411): when it arrived, the oldest cache age FEB announced and when each line was logged. */
 function lagInfo(receivedAt: number, ages: (number | undefined)[], playByPlay: unknown): LagInfo {
@@ -55,50 +36,30 @@ function lagInfo(receivedAt: number, ages: (number | undefined)[], playByPlay: u
   }
 }
 
-export class LiveFeed {
-  private stopped = false
-  /** Ends the current wait between rounds (set only while the loop is waiting). */
-  private wake: (() => void) | null = null
-  private readonly o: Required<LiveFeedOptions>
+export class LiveFeed extends FeedLoop {
+  private readonly source: LiveFeedOptions
+  private readonly onFailure: (endpoint: Endpoint) => void
 
   constructor(options: LiveFeedOptions) {
-    this.o = {
-      intervalMs: 10_000, waitingIntervalMs: 60_000, tailPolls: 3, onFailure: () => undefined,
-      sleep: ms => new Promise(resolve => setTimeout(resolve, ms)), now: () => Date.now(), ...options,
-    }
+    super(options)
+    this.source = options
+    this.onFailure = options.onFailure ?? (() => undefined)
   }
 
-  stop(): void {
-    this.stopped = true
-    this.poke()
-  }
-
-  /** Polls now instead of waiting out the rest of the sleep (issue #220: the app is back in the foreground or the network is back,
-   *  and the WebView had frozen its timers). It does nothing while a round is running: that one is already asking FEB. */
-  poke(): void {
-    this.wake?.()
-  }
-
-  private wait(ms: number): Promise<void> {
-    return new Promise<void>(resolve => {
-      this.wake = () => { this.wake = null; resolve() }
-      void this.o.sleep(ms).then(() => this.wake?.())
-    })
-  }
-
-  private async round(seenLive: boolean): Promise<Round> {
-    const { client, code, onDocument } = this.o
+  /** One round of FEB: the three endpoints, merged into one document for the engine. */
+  protected async round(seenLive: boolean): Promise<Round> {
+    const { client, code, onDocument } = this.source
     try {
       const box = await client.fetch(code, 'boxscore')
       if (box.status !== 200) {
-        if (seenLive) this.o.onFailure('boxscore')
-        return { status: null, notStarted: box.status === 404 && !seenLive, failure: `FEB no responde (BoxScore ${box.status})` }
+        if (seenLive) this.onFailure('boxscore')
+        return { live: false, notStarted: box.status === 404 && !seenLive, failure: `FEB no responde (BoxScore ${box.status})` }
       }
       const [shots, facts] = await Promise.all((['shotchart', 'keyfacts'] as Endpoint[]).map(e => client.fetch(code, e)))
       if (shots.status !== 200 || facts.status !== 200) {
         const bad = shots.status !== 200 ? ['ShotChart', shots.status] : ['KeyFacts', facts.status]
-        this.o.onFailure(shots.status !== 200 ? 'shotchart' : 'keyfacts')
-        return { status: null, notStarted: false, failure: `FEB no responde (${bad[0]} ${bad[1]})` }
+        this.onFailure(shots.status !== 200 ? 'shotchart' : 'keyfacts')
+        return { live: false, notStarted: false, failure: `FEB no responde (${bad[0]} ${bad[1]})` }
       }
       const header = (box.json as { HEADER?: { status?: unknown } }).HEADER
       const doc = {
@@ -106,48 +67,12 @@ export class LiveFeed {
         PLAYBYPLAY: (facts.json as { PLAYBYPLAY?: unknown }).PLAYBYPLAY ?? {},
         SHOTCHART: (shots.json as { SHOTCHART?: unknown }).SHOTCHART ?? {},
       }
-      if (this.stopped) return { status: null, notStarted: false } // stopped while FEB was answering
-      await onDocument(JSON.stringify(doc), lagInfo(this.o.now(), [box.age, shots.age, facts.age], doc.PLAYBYPLAY))
-      return { status: String(header?.status ?? ''), notStarted: false }
+      if (this.stopped) return { live: false, notStarted: false } // stopped while FEB was answering
+      await onDocument(JSON.stringify(doc), lagInfo(this.loop.now(), [box.age, shots.age, facts.age], doc.PLAYBYPLAY))
+      return { live: true, final: String(header?.status ?? '') === FINAL_STATUS, notStarted: false }
     } catch (error) {
-      if (seenLive) this.o.onFailure('boxscore')
-      return { status: null, notStarted: false, failure: error instanceof Error ? error.message : String(error) }
-    }
-  }
-
-  /** Reports a state unless the feed was stopped: after ``stop()`` nothing is reported any more (the UI may be gone). */
-  private report(state: FeedState): void {
-    if (!this.stopped) this.o.onState(state)
-  }
-
-  /** Runs until the match is over or ``stop()`` (then it is silent: no state, no document); never rejects. */
-  async start(): Promise<void> {
-    const { now } = this.o
-    let lastOkAt: number | null = null
-    let seenLive = false
-    let tailLeft: number | null = null
-    this.report({ kind: 'connecting' })
-
-    while (!this.stopped) {
-      const round = await this.round(seenLive)
-      if (this.stopped) break
-      if (round.status !== null) {
-        seenLive = true
-        lastOkAt = now()
-        this.report({ kind: 'live', lastOkAt })
-        if (round.status === FINAL_STATUS) {
-          tailLeft = tailLeft === null ? this.o.tailPolls : tailLeft - 1
-          if (tailLeft <= 0) {
-            this.report({ kind: 'finished' })
-            return
-          }
-        }
-      } else if (round.notStarted) {
-        this.report({ kind: 'waiting' })
-      } else {
-        this.report({ kind: 'gap', lastOkAt, message: round.failure })
-      }
-      await this.wait(round.notStarted ? this.o.waitingIntervalMs : this.o.intervalMs)
+      if (seenLive) this.onFailure('boxscore')
+      return { live: false, notStarted: false, failure: error instanceof Error ? error.message : String(error) }
     }
   }
 }

@@ -168,7 +168,7 @@ describe('LiveBridge on a FBCYL match (issue #446)', () => {
   it('closes the match with the definitive moves and stats of msstats', () => {
     bridge.start(realPackage)
     for (const r of ending) bridge.updateStreaming(JSON.stringify(r.body))
-    const final = bridge.updateFbcylFinal(JSON.stringify(full.msstats_moves), JSON.stringify(full.readings[full.readings.length - 1]), 60)
+    const final = bridge.updateFbcylFinal(JSON.stringify(full.msstats_moves), JSON.stringify(full.msstats_stats), 60)
     expect([final.snapshot.period, final.snapshot.score[HOME], final.snapshot.score[AWAY]]).toEqual([4, 81, 75])
     expect(bridge.updateStreaming(JSON.stringify(ending[2].body))).toEqual({ stale: true })           // nothing of the stream is followed after the closing
   })

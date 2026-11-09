@@ -36,7 +36,7 @@ def ending():
 @pytest.fixture(scope="module")
 def package(recording):
     """The package of the match: one game of the two teams (the very match, through the adapter of msstats), as the publisher would have built it from their season."""
-    final = recording["readings"][-1]
+    final = recording["msstats_stats"]
     acc = SeasonAccumulator()
     acc.add_game(to_feb_document({"uuid": "u", "moves": recording["msstats_moves"], "stats": final}))
     return acc.to_package(collection="FBCYL_TEST", season="2026", team_id=AWAY, rival_id=HOME, competition_meta=None, created_at="2026-11-09T00:00:00Z").dumps()
@@ -88,13 +88,13 @@ class TestTheClosingWithMsstats:
     def test_the_definitive_moves_replace_what_the_stream_gave_and_have_the_two_moves_it_lacked(self, session, recording, ending):
         session.update_streaming(ending[-3])                                # the stream's best reading: 609 moves of which 2 are not in msstats' 609 distinct ones
         stream_lines = len(session.update_streaming(ending[-3])["snapshot"]["log"])
-        final = session.update_fbcyl_final(recording["msstats_moves"], recording["readings"][-1])
+        final = session.update_fbcyl_final(recording["msstats_moves"], recording["msstats_stats"])
         assert _shown(final) == (4, 81, 75) and len(final["snapshot"]["log"]) >= stream_lines
         assert final["snapshot"]["players"]                                   # the roster of the definitive stats
 
     def test_after_the_closing_no_reading_of_the_stream_is_followed(self, session, recording, ending):
         session.update_streaming(ending[-3])
-        session.update_fbcyl_final(recording["msstats_moves"], recording["readings"][-1])
+        session.update_fbcyl_final(recording["msstats_moves"], recording["msstats_stats"])
         assert session.update_streaming(ending[-3]) == {"stale": True}
 
 
@@ -111,7 +111,7 @@ class TestTheLastDocument:
 
     def test_after_the_closing_it_is_the_final_document(self, session, recording, ending):
         session.update_streaming(ending[2])
-        session.update_fbcyl_final(recording["msstats_moves"], recording["readings"][-1])
+        session.update_fbcyl_final(recording["msstats_moves"], recording["msstats_stats"])
         assert session.last_document()["HEADER"]["status"] == "3"
 
     def test_the_entry_point_gives_json_or_null(self, package, ending):
@@ -129,7 +129,7 @@ class TestThePyodideEntryPoints:
         ok = json.loads(update_streaming_json(json.dumps(ending[2]), 12.5))
         assert _shown(ok) == (4, 81, 75)
         assert json.loads(update_streaming_json(json.dumps(ending[3]), 22.5)) == {"stale": True}
-        final = json.loads(update_fbcyl_final_json(json.dumps(recording["msstats_moves"]), json.dumps(recording["readings"][-1]), 30.0))
+        final = json.loads(update_fbcyl_final_json(json.dumps(recording["msstats_moves"]), json.dumps(recording["msstats_stats"]), 30.0))
         assert _shown(final) == (4, 81, 75)
 
     def test_the_recording_of_the_feed_keeps_what_was_followed(self, session, ending):
