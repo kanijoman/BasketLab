@@ -8,7 +8,7 @@ nothing repeats by time and getting better and worse again says nothing new.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 from .advice_types import Advice, RuleContext
 from .four_factors import side_of
@@ -20,6 +20,25 @@ _LABELS = {
     "orb": ("Rebote ofensivo", "Rebote ofensivo: recuperamos el {own} de nuestros fallos de tiro frente al {rival} del rival", "Reforzar el rebote ofensivo."),
     "ftr": ("Tiros libres", "Tiros libres: lanzamos {own} tiros libres por tiro de campo frente a {rival} del rival", "Atacar el aro y forzar faltas."),
 }
+
+
+# lever -> (title, action) when the game loses its points in OUR DEFENCE (#586): the action is the defence's (feedback 0.5.2: «hay que meter defensa, no ataque»)
+_DEFENCE_WORDS = {
+    "efg": ("Defensa del tiro", "Defender mejor el tiro: puntear y cerrar el aro."),
+    "tov": ("Presión", "Presionar para forzar pérdidas del rival."),
+    "orb": ("Rebote defensivo", "Cerrar el rebote defensivo: bloquear antes de saltar."),
+    "ftr": ("Faltas en defensa", "Defender sin faltas: sin saltar ni meter la mano."),
+}
+
+
+def lever_words(lever: str, side: Optional[str]) -> Tuple[str, str]:
+    """(title, action) of a Four Factors lever for the side that loses its points: our attack (or no diagnosis), our defence, or both (the two actions)."""
+    title, _template, action = _LABELS[lever]
+    if side == "defence":
+        return _DEFENCE_WORDS[lever]
+    if side == "both":
+        return title, f"{action} {_DEFENCE_WORDS[lever][1]}"
+    return title, action
 
 
 def _own_vs_rival(lever: str, result: Dict[str, Any]) -> Dict[str, str]:
@@ -84,7 +103,7 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     pts100 = result["pts100"][lever]
     if pts100 > -ctx.config.ff_lever_min_pts100:
         return []
-    _title, template, action = _LABELS[lever]
+    template = _LABELS[lever][1]
     raw = result["pts100_raw"][lever]
     step = int(max(0.0, -raw) // ctx.config.lever_step_pts100)
     memory = ctx.memory.setdefault("lever", {"name": None, "changes": 0, "step": -1})
@@ -97,6 +116,7 @@ def four_factors_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
     memory["name"], memory["step"], memory["at"] = lever, max(step, memory["step"] if memory["name"] == lever else -1), snap["elapsed"]
     side = side_of(result.get("sides"), lever)
     side_text = _side_sentence(lever, side, result) if side else ""
+    action = lever_words(lever, side)[1]
     return [Advice(
         key=f"lever:{lever}:{memory['changes']}:{step}", id="four_factors_lever", severity="info", category="four_factors",
         message=f"{template.format(**_own_vs_rival(lever, result))}: nos cuesta unos {-pts100:.0f} puntos cada 100 posesiones.{side_text} {action}",

@@ -21,14 +21,25 @@ from .rules_rotation import fatigue_index
 
 GAME_SECONDS = 2400
 
-# lever -> (profile metric, +1 if higher is better else -1, Spanish label)
+# lever -> (profile metric, or metrics averaged, +1 if higher is better else -1, Spanish label)
 LEVER_METRIC = {
     "tov": ("tov40", -1.0, "las pérdidas"),
     "orb": ("orb40", 1.0, "el rebote ofensivo"),
     "efg": ("efg", 1.0, "el acierto de tiro"),
     "ftr": ("ftr", 1.0, "los tiros libres"),
     "def_reb": ("drb40", 1.0, "el rebote defensivo"),
+    "def_efg": (("blk40", "stl40"), 1.0, "la defensa del tiro (tapones y robos)"),
+    "def_tov": ("stl40", 1.0, "los robos"),
 }
+
+# A Four Factors lever whose points are lost in OUR DEFENCE (the side of #586) looks for the defender's profile, not the attacker's (feedback 0.5.2: «si el acierto es
+# en el tiro del rival hay que meter defensa»). The rival's free throws have no individual metric of who fouls less in defence: no substitution.
+_DEFENCE_LEVER = {"efg": "def_efg", "tov": "def_tov", "orb": "def_reb", "ftr": None}
+
+
+def lever_for(factor: str, side: Optional[str]) -> Optional[str]:
+    """The recommender's lever for a Four Factors factor and the side that loses its points (attack, both or no diagnosis: the factor itself); None: no substitution."""
+    return _DEFENCE_LEVER.get(factor) if side == "defence" else factor
 
 _CLAIM_GAIN = 0.2  # below this the lever gain is noise: do not mention it
 
@@ -202,7 +213,8 @@ class Recommender:
         gain, label = None, None
         if lever in LEVER_METRIC:
             metric, sign, label = LEVER_METRIC[lever]
-            gain = sign * (z_in[metric] - z_out[metric])
+            metrics = (metric,) if isinstance(metric, str) else metric
+            gain = sign * sum(z_in[m] - z_out[m] for m in metrics) / len(metrics)
             base = gain
         else:  # no lever: prefer efficient, careful players among the role-similar ones
             base = 0.5 * z_in["efg"] - 0.5 * z_in["tov40"]
