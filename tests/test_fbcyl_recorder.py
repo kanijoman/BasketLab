@@ -247,3 +247,26 @@ def test_the_report_says_the_go_no_go_in_words(tmp_path):
     assert "NO-GO" in report(record_live(tmp_path, [0, 0, 0, 0, 0, 0, 520], [0, 0, 0, 0, 0, 0, 520]))
     assert "GO" in report(record_live(tmp_path / "x", [0, 40, 120, 250, 380, 460, 520], [0, 0, 0, 0, 0, 0, 520])) and "NO-GO" not in report(record_live(tmp_path / "y", [0, 40, 120, 250, 380, 460, 520], [0, 40, 120, 250, 380, 460, 520]))
     assert "no concluyente" in report(record(tmp_path / "z", [0, 0, 0, 0, 0, 0, 520]))
+
+
+# --- the workflows that run a recorder install what its imports need (CI of #810) --------------------------------------------------------------------------------------------
+
+def test_every_job_that_runs_a_recorder_installs_the_dependencies_of_the_scraper_package_regression():
+    """The FBCYL recorder started to import ``src.scraper.fbcyl_calendar`` (#446) and the planner of *FBCYL live recorder* failed with «No module named bs4»: importing anything of
+    ``src.scraper`` runs its ``__init__``, which needs requests, beautifulsoup4, cachetools and tenacity. A job that runs a recorder installs them (the FEB workflow already did)."""
+    from pathlib import Path
+
+    import yaml
+
+    needed = {"requests", "beautifulsoup4", "cachetools", "tenacity"}
+    workflows = Path(__file__).resolve().parents[1] / ".github" / "workflows"
+    checked = 0
+    for name in ("fbcyl-record.yml", "feb-record.yml"):
+        for job_name, job in yaml.safe_load((workflows / name).read_text(encoding="utf-8"))["jobs"].items():
+            steps = job.get("steps") or []
+            if not any("live_prep.fbcyl_recorder" in s.get("run", "") or "live_prep.recorder" in s.get("run", "") for s in steps):
+                continue
+            installed = " ".join(s["run"] for s in steps if "pip install" in s.get("run", ""))
+            assert needed <= set(installed.split()), f"{name}:{job_name} runs a recorder but installs only: {installed!r}"
+            checked += 1
+    assert checked == 4                                  # the planner and the recorder of each league
