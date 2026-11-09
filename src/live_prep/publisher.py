@@ -24,7 +24,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from .competition_info import competition_infos, normalize_catalog, public
+from src.utils.collection_utils import is_fbcyl
+
+from .competition_info import competition_infos, fbcyl_infos, normalize_catalog, public
 from .package_sealing import Sealer, as_sealer, make_sealer
 
 DEFAULT_CONFIG = "config/package_publish.json"
@@ -172,7 +174,6 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
     from src.services.match_schedule_service import MatchScheduleService
 
     service = service or MatchScheduleService(db)
-    build = build or functools.partial(build_round_packages_from_db, roster_source=fetch_rosters)
     out = Path(out)
     for old in (out / ROUNDS_DIR).glob("*.bpkgz"):
         old.unlink()
@@ -182,9 +183,11 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
             rounds = service.next_rounds(collection)["rounds"]
             if not rounds:
                 continue
-            # the games are read ONCE for every match of every round that is next; each round then gets its own bundle (issue #450)
-            built = build(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id,
-                          **_rules_kwargs(collection, competitions))
+            # the games are read ONCE for every match of every round that is next; each round then gets its own bundle (issue #450). The rosters are FEB's: a FBCYL team id is not a FEB
+            # team id, and what FEB answered for it would be another team's (issue #446)
+            builder = build or functools.partial(build_round_packages_from_db, roster_source=None if is_fbcyl(collection) else fetch_rosters)
+            built = builder(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id,
+                            **_rules_kwargs(collection, competitions))
             for r in rounds:
                 codes = {m["code"] for m in r["matches"]}
                 entries.append(publish_rounds(out, passphrase, collection, r["round"], [b for b in built if b["match"]["code"] in codes], team_id,
@@ -193,6 +196,14 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
             if errors is not None:
                 errors.append(f"{collection}: {type(exc).__name__}: {exc}")
     return entries
+
+
+def fbcyl_round_collections(db: Any, catalogue: List[Dict[str, Any]]) -> List[str]:
+    """The FBCYL collections of the catalogue whose games are in the archive, sorted: a group not scraped yet has no games to build a package from (issue #446)."""
+    from src.services.competition_catalogue import fbcyl_groups
+
+    connection = db.repository.connection
+    return sorted(name for name in fbcyl_groups(catalogue) if connection.get_collection(name).find_one({}, {"_id": 1}) is not None)
 
 
 def _collections(db: Any = None) -> List[str]:
@@ -234,9 +245,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
     errors: List[str] = []
-    from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue, package_entries
+    from src.scraper.fbcyl_calendar import http_rows
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE, fbcyl_groups, load_catalogue, package_entries
+    from src.services.match_schedule_service import MatchScheduleService
 
-    lacking = competitions_without_phases(db, package_entries(load_catalogue(DEFAULT_CATALOGUE)))
+    catalogue = load_catalogue(DEFAULT_CATALOGUE)
+    lacking = competitions_without_phases(db, package_entries(catalogue))
     if lacking:
         # Nothing is written, so the workflow has nothing to publish and the branch keeps the previous packages: a database that has not seen a COMPLETE refresh (the metadata
         # of the phases comes from the FEB scrape) must never replace a complete publication with a reduced one.
@@ -249,7 +263,12 @@ def main(argv: Optional[List[str]] = None) -> int:
                           upcoming=config["upcoming"], errors=errors, competitions=competitions)
     rounds: List[Dict[str, Any]] = []
     if config["rounds"]:
-        rounds = publish_round_bundles(db, args.out, sealer, collections, config["team_id"], errors=errors, competitions=competitions)
+        # the FBCYL groups of the catalogue that are in the archive publish their rounds too (issue #446); they have no club of the staff, so no per-team packages (``publish_all``)
+        groups = fbcyl_groups(catalogue)
+        fbcyl = fbcyl_round_collections(db, catalogue)
+        competitions = {**competitions, **fbcyl_infos({c: groups[c] for c in fbcyl}, catalogue, http_rows, [config["team_id"]])}
+        rounds = publish_round_bundles(db, args.out, sealer, collections + fbcyl, config["team_id"], service=MatchScheduleService(db, fbcyl_groups=groups), errors=errors,
+                                       competitions=competitions)
         (Path(args.out) / "index.json").write_text(
             json.dumps(build_index(entries, rounds=rounds, club_team_id=config["team_id"], sealer=sealer), ensure_ascii=False, indent=1), encoding="utf-8")
     lines = [f"# Paquetes live ({len(entries)})", ""]

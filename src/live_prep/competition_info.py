@@ -8,7 +8,7 @@ clubs whose packages are prepared in that competition (not published). "De inter
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 GENDERS = ("M", "F")
 
@@ -98,8 +98,31 @@ def competition_infos(db: Any, collections: Iterable[str], catalog: List[Dict[st
         entry = by_name.get(_norm(competition), {})
         out[collection] = {
             "key": collection, "label": f"{competition} · {group}" if group else competition, "competition": competition, "group": group,
-            "season": meta.get("season_label") or "", "level": entry.get("level"), "gender": entry.get("gender"),
+            "season": meta.get("season_label") or "", "level": entry.get("level"), "gender": entry.get("gender"), "league": "FEB",
             "clubs": list(entry.get("clubs") or default_clubs), "rule_config": {**({"gender": entry["gender"]} if entry.get("gender") else {}), **_rules_of(entry, group)},
+        }
+    return out
+
+
+def fbcyl_infos(collections: Dict[str, str], catalogue: List[Dict[str, Any]], fetch_rows: Callable[[str], List[Dict[str, Any]]], default_clubs: List[str]) -> Dict[str, Dict[str, Any]]:
+    """``{collection: info}`` of the FBCYL collections (issue #446), the same shape as ``competition_infos``. ``collections`` maps each one to the id of its group in the ESB calendar,
+    which says the category, the phase and group and the season (a FBCYL collection has no ``COLLECTION_META``); the gender is the one of the catalogue entry of that group. A calendar that
+    cannot be read gives an info labelled with the name of the collection, never an error: the round is still published."""
+    from src.scraper.fbcyl_calendar import competition_of
+
+    gender_of = {str(e["fbcyl"]["competition_id"]): e["fbcyl"].get("gender") or None for e in catalogue if e.get("league") == "fbcyl"}
+    out: Dict[str, Dict[str, Any]] = {}
+    for collection, group in collections.items():
+        try:
+            said = competition_of(fetch_rows(group))
+        except Exception:  # noqa: BLE001 - the ESB API down must not stop a publication
+            said = {"competition": "", "group": "", "season": ""}
+        gender = gender_of.get(str(group))
+        competition = said["competition"] or collection
+        out[collection] = {
+            "key": collection, "label": f"{competition} · {said['group']}" if said["competition"] and said["group"] else competition, "competition": competition,
+            "group": said["group"], "season": said["season"], "level": None, "gender": gender, "league": "FBCYL",
+            "clubs": list(default_clubs), "rule_config": {"gender": gender} if gender else {},
         }
     return out
 

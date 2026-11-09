@@ -19,7 +19,6 @@ CLI: ``python -m src.live_prep.fbcyl_recorder plan --watchlist config/fbcyl_watc
 from __future__ import annotations
 
 import argparse
-import base64
 import gzip
 import hashlib
 import json
@@ -29,30 +28,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from src.scraper.fbcyl_calendar import API, calendar_rows, with_round  # noqa: F401  (the calendar is read in ONE place; the recorder re-exports it)
 from .recorder import Response, _kept
 
-API = "https://esb.optimalwayconsulting.com/fbcyl/1/jR4rgA5K6Chhh5vyfrxo9wTScdg2NT7K/FCBQWeb/getAllGamesByGrupWithMatchRecords/{group}/0"
 STATS = "https://msstats.optimalwayconsulting.com/v1/fbcyl"
 LIVE = "https://streaming.optimalwayconsulting.com/fbcyl/streaming/match-id/{uuid}"            # keyed by ``adGameId``, not by the uuid of the stats
 ENDPOINTS = {"moves": STATS + "/getJsonWithMatchMoves/{uuid}", "stats": STATS + "/getJsonWithMatchStats/{uuid}?currentSeason=true", "live": LIVE}
 KEPT_ROW = ("universallyid", "state", "isLive", "matchDay", "dayTime", "localScore", "visitorScore", "matchStartedHour", "idMatch", "adGameId")
 PLAN_BEFORE, PLAN_AFTER = timedelta(hours=3), timedelta(hours=2)     # as the FEB recorder: a job launched up to 3 h ahead waits for the start
-
-
-def calendar_rows(text: str) -> List[Dict[str, Any]]:
-    """The matches of a group calendar answer (Base64 JSON), each with its ``round`` and ``round_date``; nothing when the answer is not a good one."""
-    try:
-        data = json.loads(base64.b64decode(text).decode("utf-8"))
-        if data.get("result") != "OK":
-            return []
-        rounds = data["messageData"]["rounds"]
-        return [with_round(m, number, r.get("date")) for number, r in rounds.items() for m in (r.get("matches") or {}).values()]
-    except (ValueError, KeyError, TypeError, AttributeError):
-        return []
-
-
-def with_round(row: Dict[str, Any], number: str, date: Optional[str]) -> Dict[str, Any]:
-    return {**row, "round": number, "round_date": date}
 
 
 def _kick_off(row: Dict[str, Any]) -> Optional[datetime]:
