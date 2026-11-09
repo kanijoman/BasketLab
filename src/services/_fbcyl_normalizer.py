@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from src.utils.time_utils import utc_now_naive
 from typing import Any, Dict, List, Optional
 
 from utils.numeric_utils import safe_int
-from src.services._historical_derived import compute_derived, _efg, _efg_ftr
+from src.services._historical_derived import build_team_docs
 
 
 def extract_fbcyl_team_raw(team: Dict[str, Any]) -> Dict[str, Any]:
@@ -69,81 +68,8 @@ def normalize_fbcyl_match(
     raw1 = extract_fbcyl_team_raw(teams[1])
     home_id = raw0["team_id"]
 
-    docs = []
-    for my_raw, opp_raw in ((raw0, raw1), (raw1, raw0)):
-        derived = compute_derived(
-            pts=my_raw["pts"],
-            opp_pts=opp_raw["pts"],
-            fg2m=my_raw["fg2m"],
-            fg2a=my_raw["fg2a"],
-            fg3m=my_raw["fg3m"],
-            fg3a=my_raw["fg3a"],
-            ftm=my_raw["ftm"],
-            fta=my_raw["fta"],
-            oreb=my_raw["oreb"],
-            dreb=my_raw["dreb"],
-            ast=my_raw["ast"],
-            stl=my_raw["stl"],
-            tov=my_raw["tov"],
-            blk=my_raw["blk"],
-            opp_fg2a=opp_raw["fg2a"],
-            opp_fg3a=opp_raw["fg3a"],
-            opp_fta=opp_raw["fta"],
-            opp_oreb=opp_raw["oreb"],
-            opp_tov=opp_raw["tov"],
-            opp_pts_check=opp_raw["pts"],
-        )
-        fga = my_raw["fg2a"] + my_raw["fg3a"]
-        opp_fga = opp_raw["fg2a"] + opp_raw["fg3a"]
-        derived["efg_pct"] = _efg(my_raw["fg2m"] + my_raw["fg3m"], my_raw["fg3m"], fga)
-        derived["opp_efg_pct"] = _efg(opp_raw["fg2m"] + opp_raw["fg3m"], opp_raw["fg3m"], opp_fga)
-
-        poss = derived["poss"]
-        opp_poss = derived["opp_poss"]
-        diff_pts_100 = (my_raw["pts"] - opp_raw["pts"]) / poss * 100.0 if poss else 0.0
-        diff_efg = derived["efg_pct"] - derived["opp_efg_pct"]
-        diff_tov_100 = (my_raw["tov"] / poss - opp_raw["tov"] / opp_poss) * 100.0 if poss and opp_poss else 0.0
-        diff_oreb_100 = (my_raw["oreb"] / poss - opp_raw["oreb"] / opp_poss) * 100.0 if poss and opp_poss else 0.0
-        diff_ftr = derived["ftr"] - _efg_ftr(opp_raw)
-
-        hdoc: Dict[str, Any] = {
-            "match_id": match_id,
-            "date": date,
-            "season": season,
-            "competition": competition,
-            "league": "FBCYL",
-            "gender": gender,
-            "group": group,
-            "team_id": my_raw["team_id"],
-            "team_name": my_raw["team_name"],
-            "is_home": my_raw["team_id"] == home_id,
-            "opp_id": opp_raw["team_id"],
-            "opp_name": opp_raw["team_name"],
-            "pts": my_raw["pts"],
-            "opp_pts": opp_raw["pts"],
-            "fga": fga,
-            "fgm": my_raw["fg2m"] + my_raw["fg3m"],
-            "fg2a": my_raw["fg2a"],
-            "fg2m": my_raw["fg2m"],
-            "fg3a": my_raw["fg3a"],
-            "fg3m": my_raw["fg3m"],
-            "fta": my_raw["fta"],
-            "ftm": my_raw["ftm"],
-            "oreb": my_raw["oreb"],
-            "dreb": my_raw["dreb"],
-            "ast": my_raw["ast"],
-            "stl": my_raw["stl"],
-            "tov": my_raw["tov"],
-            "blk": my_raw["blk"],
-            "pf": my_raw["pf"],
-            **derived,
-            "diff_pts_100": round(diff_pts_100, 3),
-            "diff_efg": round(diff_efg, 3),
-            "diff_tov_100": round(diff_tov_100, 3),
-            "diff_oreb_100": round(diff_oreb_100, 3),
-            "diff_ftr": round(diff_ftr, 3),
-            "source_collection": source_collection,
-            "scraped_at": scraped_at or utc_now_naive(),
-        }
-        docs.append(hdoc)
-    return docs
+    return build_team_docs(
+        (raw0, raw1), None, match_id=match_id, date=date, season=season, competition=competition,
+        league="FBCYL", gender=gender, group=group, home_id=home_id,
+        source_collection=source_collection, scraped_at=scraped_at,
+    )

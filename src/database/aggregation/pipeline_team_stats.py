@@ -1,5 +1,6 @@
 """Team and opponent aggregation pipeline builders."""
 
+from .feb_date_expr import feb_start_date
 from typing import List, Dict, Optional
 from .basic_stats import get_shooting_percentages, get_per_game_stats
 from .advanced_stats import get_all_advanced_stats
@@ -104,14 +105,7 @@ class TeamStatsPipelineMixin:
             # First, add a field that converts the string date to a date object
             pipeline.append({
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None
-                        }
-                    }
+                    "parsedDate": feb_start_date()
                 }
             })
             # Then filter using the parsed date

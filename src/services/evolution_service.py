@@ -6,6 +6,7 @@ supported stat key across all games in a collection, ordered chronologically.
 """
 
 from __future__ import annotations
+from src.database.aggregation.feb_date_expr import feb_start_date
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
@@ -209,14 +210,7 @@ class EvolutionService:
             # Parse match date from string
             {
                 "$addFields": {
-                    "parsedDate": {
-                        "$dateFromString": {
-                            "dateString": "$HEADER.starttime",
-                            "format": "%d-%m-%Y - %H:%M",
-                            "onError": None,
-                            "onNull": None,
-                        }
-                    }
+                    "parsedDate": feb_start_date()
                 }
             },
             # Early filter: only games involving this team (indexed)
