@@ -28,8 +28,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from src.scraper.fbcyl_calendar import API, calendar_rows, with_round  # noqa: F401  (the calendar is read in ONE place; the recorder re-exports it)
-from .recorder import Response, _kept
+from .recorder import Response, _kept   # FIRST: importing it puts ``src`` on the path, which ``src.scraper`` needs (``from utils import …``)
+from src.scraper.fbcyl_calendar import API, calendar_rows, with_round  # noqa: E402,F401  (the calendar is read in ONE place; the recorder re-exports it)
 
 STATS = "https://msstats.optimalwayconsulting.com/v1/fbcyl"
 LIVE = "https://streaming.optimalwayconsulting.com/fbcyl/streaming/match-id/{uuid}"            # keyed by ``adGameId``, not by the uuid of the stats

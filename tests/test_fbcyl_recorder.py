@@ -270,3 +270,17 @@ def test_every_job_that_runs_a_recorder_installs_the_dependencies_of_the_scraper
             assert needed <= set(installed.split()), f"{name}:{job_name} runs a recorder but installs only: {installed!r}"
             checked += 1
     assert checked == 4                                  # the planner and the recorder of each league
+
+
+def test_the_fbcyl_recorder_imports_with_only_the_root_of_the_repository_on_the_path_regression():
+    """The planner of the workflow runs ``python -m src.live_prep.fbcyl_recorder`` with no PYTHONPATH. ``src.scraper`` needs ``src`` itself on the path (``from utils import …``): the FEB recorder
+    adds it when it is imported and the FBCYL one gets it from there, so ``.recorder`` must be imported BEFORE anything of ``src.scraper`` (CI of #810: «No module named 'utils'»)."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    result = subprocess.run([sys.executable, "-c", "import src.live_prep.fbcyl_recorder"], cwd=root, env=env, capture_output=True, text=True, timeout=120)
+    assert result.returncode == 0, result.stderr[-400:]
