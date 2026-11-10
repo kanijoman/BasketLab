@@ -25,7 +25,7 @@ EXPECTED_COLUMNS = [
     for team in ("Local", "Rival")
     for metric in CORE_METRICS
     for source in ("PBP", "BS")
-]
+] + ["Aviso"]                                           # what the audit could not judge (#815); last, so the old positions do not move
 
 
 # ---------------------------------------------------------------------------
