@@ -11,6 +11,7 @@ Computes season-level rotation metrics for a team:
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, TYPE_CHECKING
 
 import math
@@ -32,6 +33,18 @@ _CV_MODERATE = 40.0
 
 # Simultaneous-substitution tolerance in seconds
 _SIMULTANEOUS_WINDOW_S = 1
+
+
+@dataclass
+class _Scan:
+    """What one pass over the games of a team collects (the box minutes of every game and, for the games with play-by-play, starters, substitutions and stints)."""
+    player_acc: Dict[str, Dict] = field(default_factory=dict)                # player_id → {name, total_seconds, games_played}
+    per_game_starters: List[Set[str]] = field(default_factory=list)
+    per_game_minutes: List[Dict[str, float]] = field(default_factory=list)   # per game {player_id: minutes}
+    all_sub_timestamps: List[int] = field(default_factory=list)              # season-level substitution event timestamps
+    pbp_minutes_acc: Dict[str, float] = field(default_factory=dict)          # minutes in PBP games per player
+    pbp_stints_acc: Dict[str, int] = field(default_factory=dict)             # total stints in PBP games per player
+    games_with_pbp: int = 0
 
 
 class RotationService:
@@ -61,43 +74,10 @@ class RotationService:
         if total_games == 0:
             return self._empty_result()
 
-        # Per-player accumulators: player_id → {name, total_seconds, games_played}
-        player_acc: Dict[str, Dict] = {}
-        per_game_starters: List[Set[str]] = []
-        per_game_minutes: List[Dict[str, float]] = []  # per-game {player_id: minutes}
-        all_sub_timestamps: List[int] = []  # season-level substitution event timestamps
-        pbp_minutes_acc: Dict[str, float] = {}   # minutes in PBP games per player
-        pbp_stints_acc: Dict[str, int] = {}      # total stints in PBP games per player
-        games_with_pbp = 0
-
-        for idx, game in enumerate(games):
-            if progress_callback:
-                progress_callback(idx + 1, total_games)
-
-            has_pbp = self._game_has_playbyplay(game, is_fbcyl)
-
-            # --- Player minutes from boxscore (reliable even without PBP) ---
-            game_min = self._accumulate_player_minutes(game, team_id, is_fbcyl, player_acc)
-            if game_min:
-                per_game_minutes.append(game_min)
-
-            # --- PBP-derived data (starters + substitution events) ---
-            if has_pbp:
-                games_with_pbp += 1
-                analyzer = PlayByPlayAnalyzer(game, is_fbcyl=is_fbcyl)
-                extractor = LineupExtractor(analyzer)
-
-                starters = extractor.detect_starting_lineup(team_id)
-                if starters:
-                    per_game_starters.append(starters)
-
-                sub_timestamps = self._extract_sub_timestamps(analyzer, team_id, is_fbcyl)
-                all_sub_timestamps.extend(sub_timestamps)
-
-                # Stint accumulation (requires per-game minutes already captured above)
-                if game_min:
-                    timeline = analyzer.parse_substitutions()
-                    self._accumulate_stints(timeline, game_min, pbp_minutes_acc, pbp_stints_acc)
+        scan = self._scan_games(games, team_id, is_fbcyl, progress_callback)
+        player_acc, per_game_starters, per_game_minutes = scan.player_acc, scan.per_game_starters, scan.per_game_minutes
+        all_sub_timestamps, games_with_pbp = scan.all_sub_timestamps, scan.games_with_pbp
+        pbp_minutes_acc, pbp_stints_acc = scan.pbp_minutes_acc, scan.pbp_stints_acc
 
         if not player_acc:
             return self._empty_result()
@@ -118,25 +98,8 @@ class RotationService:
             reverse=True,
         )
 
-        # Aggregate starting five — returns (top_5_set, per_player_counts)
-        season_starters, starter_counts = self._aggregate_starters(per_game_starters)
-
-        # Re-derive top-5 from significant players only
-        sig_starter_counts = Counter(
-            {pid: c for pid, c in starter_counts.items() if pid in significant_ids}
-        )
-        season_starters = {pid for pid, _ in sig_starter_counts.most_common(5)}
-
-        # How many games did the "most common" starting 5 ALL start together?
+        season_starters, starter_counts, starting_five_games_count, starting_five_games_pct = self._starting_five(per_game_starters, significant_ids)
         games_with_pbp_for_starters = len(per_game_starters)
-        starting_five_games_count = sum(
-            1 for s in per_game_starters
-            if season_starters and season_starters.issubset(s)
-        )
-        starting_five_games_pct = (
-            round(starting_five_games_count / games_with_pbp_for_starters * 100, 1)
-            if games_with_pbp_for_starters else 0.0
-        )
 
         # Mark starters and starter counts for all players
         for pid in player_stats:
@@ -150,22 +113,7 @@ class RotationService:
         team_avg_stint = round(sig_pbp_min / sig_pbp_stints, 1) if sig_pbp_stints > 0 else None
 
         def _make_player_entry(pid: str, stats: Dict, is_marginal: bool) -> Dict:
-            return {
-                "player_id": pid,
-                "player_name": stats["name"],
-                "total_minutes": round(stats["total_minutes"], 1),
-                "games_played": stats["games_played"],
-                "avg_min_per_game": round(stats["avg_min_per_game"], 1),
-                "pct_game_time": round(stats["avg_min_per_game"] / 40.0 * 100, 1),
-                "is_starter": stats["is_starter"],
-                "starter_games": stats["starter_games"],
-                "starter_pct": round(
-                    stats["starter_games"] / games_with_pbp_for_starters * 100, 1
-                ) if games_with_pbp_for_starters else 0.0,
-                "avg_stint_min": stint_avgs.get(pid),
-                "total_pbp_stints": pbp_stints_acc.get(pid, 0),
-                "is_marginal": is_marginal,
-            }
+            return self._player_entry(pid, stats, is_marginal, games_with_pbp_for_starters, stint_avgs, pbp_stints_acc)
 
         # Build significant player list (sorted by total_minutes desc)
         players_list = [
@@ -235,6 +183,62 @@ class RotationService:
             "rotation_label": self._rotation_label(gini),
             "cv_label": self._cv_label(cv),
             "avg_stint_min_team": team_avg_stint,
+        }
+
+    # ------------------------------------------------------------------
+    # Steps of get_rotation_analysis
+    # ------------------------------------------------------------------
+
+    def _scan_games(self, games: List[Dict], team_id: str, is_fbcyl: bool,
+                    progress_callback: Optional[Callable[[int, int], None]]) -> _Scan:
+        """One pass over the games: box minutes always (reliable even without PBP) and, for the games with play-by-play, starters, substitution events and stints."""
+        scan = _Scan()
+        total_games = len(games)
+        for idx, game in enumerate(games):
+            if progress_callback:
+                progress_callback(idx + 1, total_games)
+            game_min = self._accumulate_player_minutes(game, team_id, is_fbcyl, scan.player_acc)
+            if game_min:
+                scan.per_game_minutes.append(game_min)
+            if self._game_has_playbyplay(game, is_fbcyl):
+                scan.games_with_pbp += 1
+                self._scan_playbyplay(game, game_min, team_id, is_fbcyl, scan)
+        return scan
+
+    def _scan_playbyplay(self, game: Dict, game_min: Optional[Dict[str, float]], team_id: str, is_fbcyl: bool, scan: _Scan) -> None:
+        analyzer = PlayByPlayAnalyzer(game, is_fbcyl=is_fbcyl)
+        starters = LineupExtractor(analyzer).detect_starting_lineup(team_id)
+        if starters:
+            scan.per_game_starters.append(starters)
+        scan.all_sub_timestamps.extend(self._extract_sub_timestamps(analyzer, team_id, is_fbcyl))
+        if game_min:       # stint accumulation needs the per-game minutes captured from the box
+            self._accumulate_stints(analyzer.parse_substitutions(), game_min, scan.pbp_minutes_acc, scan.pbp_stints_acc)
+
+    def _starting_five(self, per_game_starters: List[Set[str]], significant_ids: Set[str]):
+        """``(the five most frequent starters among the significant players, the starter count of every player, the games in which those five started together, and their %)``."""
+        _, starter_counts = self._aggregate_starters(per_game_starters)
+        sig_starter_counts = Counter({pid: c for pid, c in starter_counts.items() if pid in significant_ids})
+        season_starters = {pid for pid, _ in sig_starter_counts.most_common(5)}
+        together = sum(1 for s in per_game_starters if season_starters and season_starters.issubset(s))
+        pct = round(together / len(per_game_starters) * 100, 1) if per_game_starters else 0.0
+        return season_starters, starter_counts, together, pct
+
+    @staticmethod
+    def _player_entry(pid: str, stats: Dict, is_marginal: bool, games_with_pbp_for_starters: int,
+                      stint_avgs: Dict[str, Optional[float]], pbp_stints_acc: Dict[str, int]) -> Dict:
+        return {
+            "player_id": pid,
+            "player_name": stats["name"],
+            "total_minutes": round(stats["total_minutes"], 1),
+            "games_played": stats["games_played"],
+            "avg_min_per_game": round(stats["avg_min_per_game"], 1),
+            "pct_game_time": round(stats["avg_min_per_game"] / 40.0 * 100, 1),
+            "is_starter": stats["is_starter"],
+            "starter_games": stats["starter_games"],
+            "starter_pct": round(stats["starter_games"] / games_with_pbp_for_starters * 100, 1) if games_with_pbp_for_starters else 0.0,
+            "avg_stint_min": stint_avgs.get(pid),
+            "total_pbp_stints": pbp_stints_acc.get(pid, 0),
+            "is_marginal": is_marginal,
         }
 
     # ------------------------------------------------------------------
