@@ -3,13 +3,13 @@
  * Impacto de jugadores dentro/fuera de la cancha con cards ON/OFF.
  */
 import { useMemo, useRef, useState } from 'react'
+import { useTeamOptions } from '@/lib/useTeamOptions'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeftRight, Users } from 'lucide-react'
 
 import { useCollection } from '@/context/CollectionContext'
 import {
   getPlayerStats,
-  getTeamStats,
   getInOutAnalysis,
   type InOutStatBlock,
   type PlayerStat,
@@ -18,7 +18,7 @@ import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
 import Tabs from '@/components/ui/Tabs'
 import ExportButton from '@/components/ui/ExportButton'
-import PlayerSelect, { type TeamOption } from '@/components/PlayerSelect'
+import PlayerSelect from '@/components/PlayerSelect'
 import { playerKey } from '@/lib/playerKey'
 import { inoutRows, inoutVsRows } from '@/lib/inoutExport'
 
@@ -146,17 +146,7 @@ export default function InOutPage() {
   })
 
   // Independent team list — available before player data loads; use team_id for stable matching
-  const { data: teamList = [] } = useQuery<TeamOption[]>({
-    queryKey: ['team-list-inout', collection?.name],         // the {id, name} list: LineupsPage keeps the whole answer under its own key (#605)
-    queryFn:  () => getTeamStats(collection!.name).then(d =>
-      (d.team_stats ?? [])
-        .filter(t => t.team_id != null)
-        .map(t => ({ id: String(t.team_id), name: t.team_name }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    ),
-    enabled:  Boolean(collection),
-    staleTime: 10 * 60_000,
-  })
+  const teamList = useTeamOptions(collection?.name, { onlyWithId: true })
 
   const { data: inout, isFetching: inoutLoading } = useQuery({
     queryKey: ['inout', collection?.name, p1],

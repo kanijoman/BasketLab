@@ -1,6 +1,7 @@
 ﻿import { useState, useRef, useMemo, useEffect, type FormEvent } from 'react'
 import { Input, Select } from '@/components/ui/Field'
-import { useQuery } from '@tanstack/react-query'
+import AnalysisProgress from '@/components/ui/AnalysisProgress'
+import { useTeamOptions } from '@/lib/useTeamOptions'
 import { X } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -14,7 +15,7 @@ import Button, { IconButton } from '@/components/ui/Button'
 import ExportButton from '@/components/ui/ExportButton'
 import { EXPORT_HIDE_ATTR, EXPORT_ONLY_ATTR } from '@/lib/exportDom'
 import {
-  getTeamStats, streamLineupAnalysis,
+  streamLineupAnalysis,
   LINEUP_PERIODS,
   LINEUP_STAT_GROUPS,
   type LineupRow, type GameLogEntry,
@@ -155,19 +156,7 @@ export default function LineupsPage() {
   const exportRef = useRef<HTMLDivElement>(null)
 
   // Team list
-  const { data: teamData } = useQuery({
-    queryKey: ['team-list-lineups', collection?.name],
-    queryFn: () => getTeamStats(collection!.name),
-    enabled: Boolean(collection),
-    staleTime: 10 * 60_000,
-  })
-  const teams = useMemo(
-    () =>
-      (teamData?.team_stats ?? [])
-        .map(t => ({ name: t.team_name, id: String(t.team_id ?? t.team_name) }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [teamData],
-  )
+  const teams = useTeamOptions(collection?.name)
   useEffect(() => {
     if (teams.length > 0 && !selectedTeam) setSelectedTeam(teams[0])
   }, [teams, selectedTeam])
@@ -466,25 +455,7 @@ export default function LineupsPage() {
         )}
 
         {/* Loading indicator with progress bar */}
-        {isFetching && (
-          <div className="flex flex-col gap-2 card p-4 text-ink-muted text-sm">
-            <div className="flex items-center gap-3">
-              <span className="inline-block w-4 h-4 border-2 border-secondary-text border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              {`Analizando partidos\u2026`}
-              {progress != null && (
-                <span className="ml-auto text-xs text-ink-faint font-mono">{progress}%</span>
-              )}
-            </div>
-            {progress != null && (
-              <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-secondary rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {isFetching && <AnalysisProgress progress={progress} />}
 
         {/* Results */}
         {!isFetching && lineups.length > 0 && (
