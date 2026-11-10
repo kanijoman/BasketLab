@@ -124,25 +124,3 @@ class TestEvaluator:
 
         evaluation = evaluate(games_from_mongo(Handler(world), COL), collection=COL, season="2026")
         assert evaluation.params["games"] == 2 and evaluation.team_games
-
-
-class TestRouter:
-    def test_the_endpoint_accepts_a_fbcyl_collection(self, world, monkeypatch):
-        from fastapi.testclient import TestClient
-
-        from src.api.app import app
-        from src.api.deps import get_db
-        from src.api.routers import live_package
-
-        handler = Handler(world)
-        handler.get_teams_with_ids = lambda collection: [{"id": HOME, "name": "UNIVERSIDAD DE BURGOS"}, {"id": AWAY, "name": "CAÑADIO"}]
-        monkeypatch.setattr(live_package, "ROSTER_SOURCE", lambda ids: (_ for _ in ()).throw(AssertionError("FBCYL has no FEB roster")))
-        live_package.JOBS.clear()
-        app.dependency_overrides[get_db] = lambda: handler
-        try:
-            client = TestClient(app)
-            body = {"collection": COL, "team_id": HOME, "rival_id": AWAY, "passphrase": "clave-segura-1"}
-            assert client.post("/api/v1/live/package", json=body).status_code == 202
-        finally:
-            app.dependency_overrides.clear()
-            live_package.JOBS.clear()

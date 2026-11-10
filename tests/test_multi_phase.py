@@ -200,40 +200,6 @@ class TestCombinedPlayerStats:
 
 
 # ===========================================================================
-# Breakdown view
-# ===========================================================================
-
-class TestTeamStatsBreakdown:
-    def test_breakdown_has_entry_per_collection(self):
-        db = _mock_db({
-            "COL_A": [_team_row("TeamX")],
-            "COL_B": [_team_row("TeamX")],
-        })
-        svc = MultiPhaseService(db, ["COL_A", "COL_B"])
-        result = svc.get_team_stats_breakdown(is_fbcyl=False)
-        assert "COL_A" in result
-        assert "COL_B" in result
-
-    def test_breakdown_entry_is_list(self):
-        db = _mock_db({"COL_A": [_team_row("TeamX")]})
-        svc = MultiPhaseService(db, ["COL_A"])
-        result = svc.get_team_stats_breakdown(is_fbcyl=False)
-        assert isinstance(result["COL_A"], list)
-
-    def test_breakdown_contains_original_rows(self):
-        row = _team_row("TeamX", games=7)
-        db = _mock_db({"COL_A": [row]})
-        svc = MultiPhaseService(db, ["COL_A"])
-        result = svc.get_team_stats_breakdown(is_fbcyl=False)
-        assert result["COL_A"][0]["games_played"] == 7
-
-    def test_empty_collections_returns_empty_dict(self):
-        svc = MultiPhaseService(_mock_db({}), [])
-        result = svc.get_team_stats_breakdown(is_fbcyl=False)
-        assert result == {}
-
-
-# ===========================================================================
 # Sibling collections (CollectionService helper)
 # ===========================================================================
 

@@ -3,8 +3,6 @@
 Endpoints:
   GET /multi/team-stats?collections=C1,C2[&is_fbcyl=false]
   GET /multi/player-stats?collections=C1,C2
-  GET /multi/team-stats/breakdown?collections=C1,C2
-  GET /multi/player-stats/breakdown?collections=C1,C2
   GET /multi/sibling-collections?collection=FEB_LF2_2025_A
 """
 
@@ -52,34 +50,6 @@ def get_multi_player_stats(
         return []
     svc = MultiPhaseService(db, names)
     return svc.get_combined_player_stats(is_fbcyl=is_fbcyl)
-
-
-@router.get("/team-stats/breakdown", summary="Per-phase team stats breakdown")
-def get_team_stats_breakdown(
-    collections: str = Query(..., description="Comma-separated collection names"),
-    is_fbcyl: bool = Query(False),
-    db=Depends(get_db),
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Return per-collection team stats keyed by collection name."""
-    names = _parse_collections(collections)
-    if not names:
-        return {}
-    svc = MultiPhaseService(db, names)
-    return svc.get_team_stats_breakdown(is_fbcyl=is_fbcyl)
-
-
-@router.get("/player-stats/breakdown", summary="Per-phase player stats breakdown")
-def get_player_stats_breakdown(
-    collections: str = Query(..., description="Comma-separated collection names"),
-    is_fbcyl: bool = Query(False),
-    db=Depends(get_db),
-) -> Dict[str, List[Dict[str, Any]]]:
-    """Return per-collection player stats keyed by collection name."""
-    names = _parse_collections(collections)
-    if not names:
-        return {}
-    svc = MultiPhaseService(db, names)
-    return svc.get_player_stats_breakdown(is_fbcyl=is_fbcyl)
 
 
 @router.get("/sibling-collections", summary="Find sibling phase collections")

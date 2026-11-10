@@ -2,9 +2,6 @@
 Reports router — Phase 5.
 
 Endpoints:
-  GET  /{collection}/player-scouting/{player_id}       → DOCX bytes
-  GET  /{collection}/team-scouting/{team_name}          → PDF bytes
-  GET  /{collection}/season-summary                     → PDF bytes
   POST /{collection}/weekly-report                      → {job_id}
   GET  /weekly-report-progress/{job_id}                 → progress JSON
   GET  /weekly-report-download/{job_id}                 → ZIP bytes
@@ -20,16 +17,10 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.api.deps import get_db
-from src.services.report_service import (
-    build_player_scouting_docx,
-    build_team_scouting_pdf,
-    build_season_summary_pdf,
-)
 
 router = APIRouter(tags=["reports"])
 
 _DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-_PDF_MIME  = "application/pdf"
 
 # In-memory job store (process-scoped, same pattern as SCRAPE_JOBS)
 REPORT_JOBS: Dict[str, Dict[str, Any]] = {}
@@ -128,69 +119,9 @@ def download_individual_scouting_docx(collection: str, team_id: str, db=Depends(
     )
 
 
-class _ExportPDFRequest(BaseModel):
-    html: str
-    team: str = ""
-    analysis_type: str = "own"
-
-
-@router.post("/export-pdf", summary="Convertir un informe HTML a PDF")
-def export_report_pdf(req: _ExportPDFRequest):
-    """Render an HTML report (``req.html``) as a PDF titled with ``req.team``."""
-    try:
-        from src.services.pdf_generator import PDFGenerator
-
-        pdf_bytes = PDFGenerator.generate_bytes_from_html(html_content=req.html, team_name=req.team)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error generando PDF: {exc}") from exc
-
-    label = "Scouting" if req.analysis_type == "scouting" else "Analisis"
-    return Response(
-        content=pdf_bytes, media_type=_PDF_MIME,
-        headers={"Content-Disposition": f'attachment; filename="{label}_{_safe_filename_part(req.team)}.pdf"'},
-    )
-
-
 # ---------------------------------------------------------------------------
 # Per-collection report endpoints
 # ---------------------------------------------------------------------------
-
-@router.get("/{collection}/player-scouting/{player_id}", summary="Player scouting DOCX")
-def player_scouting(collection: str, player_id: str, db=Depends(get_db)):
-    """Generate a one-page individual scouting sheet as DOCX."""
-    data = build_player_scouting_docx(collection, player_id, db)
-    filename = f"scouting_{player_id}.docx"
-    return Response(
-        content=data,
-        media_type=_DOCX_MIME,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
-@router.get("/{collection}/team-scouting/{team_name}", summary="Team scouting PDF")
-def team_scouting(collection: str, team_name: str, db=Depends(get_db)):
-    """Generate an offensive/defensive breakdown scouting PDF for a team."""
-    safe_name = team_name.replace(" ", "_")[:40]
-    filename  = f"scouting_{safe_name}.pdf"
-    data = build_team_scouting_pdf(collection, team_name, db)
-    return Response(
-        content=data,
-        media_type=_PDF_MIME,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
-@router.get("/{collection}/season-summary", summary="Season summary PDF")
-def season_summary(collection: str, db=Depends(get_db)):
-    """Generate a league-wide season efficiency ranking PDF."""
-    data = build_season_summary_pdf(collection, db)
-    filename = f"temporada_{collection[:30]}.pdf"
-    return Response(
-        content=data,
-        media_type=_PDF_MIME,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
 
 class _WeeklyReportRequest(BaseModel):
     team_a: str

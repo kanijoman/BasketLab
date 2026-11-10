@@ -80,12 +80,9 @@ class TestPublicRoutesStayPublic:
 
 # Write endpoints deliberately left public: compute-only (nothing persisted or destroyed).
 PUBLIC_WRITE_ROUTES = {
-    ("POST", "/api/v1/reports/export-pdf"),
     ("POST", "/api/v1/reports/{collection}/weekly-report"),
     ("POST", "/api/v1/analysis/montecarlo/{team_id}"),
     ("POST", "/api/v1/analysis/game-prediction/{team_id}"),
-    # builds + encrypts a live preparation package: compute only, single-flight (src/api/routers/live_package.py)
-    ("POST", "/api/v1/live/package"),
     # the rival scouting report of any team: compute only, single-flight (src/api/routers/scouting_rival.py)
     ("POST", "/api/v1/scouting-rival"),
 }

@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.deps import get_db
 from src.services import CollectionService
-from src.services.data_freshness_service import DataFreshnessService
 
 router = APIRouter()
 
@@ -31,11 +30,6 @@ def list_collections(
     svc = CollectionService(db)
     results = svc.list_available()
     return results[skip: skip + limit]
-
-
-@router.get("/{name}/freshness", summary="Is the collection up to date with FEB's calendar?")
-def collection_freshness(name: str, db=Depends(get_db)):
-    return DataFreshnessService(db).check(name)
 
 
 @router.get("/", summary="List teams inside a collection")
