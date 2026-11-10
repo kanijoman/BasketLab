@@ -2,6 +2,7 @@
 
 import re
 import requests
+from dataclasses import dataclass
 from bs4 import BeautifulSoup
 from typing import List, Dict, NamedTuple, Tuple, Optional
 
@@ -20,6 +21,18 @@ class GroupPage(NamedTuple):
     url: str            # the page the soup comes from (the one the postbacks go to)
     calendar_url: str   # the calendar URL of the season (the year-substituted one when it was visited): key of the Series.aspx cache
     shown: bool         # the page already showed that season and group, no postback was needed to get there
+
+
+@dataclass
+class _GroupNav:
+    """Where ``group_page`` is while it moves the competition page to a season and a group: the page, its URL, the URL of the calendar it began with
+    (the ``Series.aspx`` cache lives under its year), the hidden fields of the form and the season and group the page shows."""
+    soup: BeautifulSoup
+    url: str
+    calendar_url: str
+    hidden: Dict
+    season: Optional[str]
+    group: Optional[str]
 
 
 class FEBWebScraper:
@@ -616,101 +629,78 @@ class FEBWebScraper:
         ``single_group_ok``: a page without group selector counts as the group (a calendar of a single-group competition). None if the page
         cannot be read; a failing postback raises.
         """
-        # Use provided URL or fall back to hardcoded BASE_URL
-        if url is None:
-            norm_year = normalize_year(year or season_value)
-            url = BASE_URL.format(year=norm_year)
-
-        # Remember original calendar URL for fasesDataList fallback
-        original_calendar_url = url
-
-        # Get initial page
+        if url is None:        # the URL of the year of the season
+            url = BASE_URL.format(year=normalize_year(year or season_value))
         response = self.web_client.get(url, timeout=EXTENDED_TIMEOUT)
         if not response:
             return None
-
         soup = BeautifulSoup(response.content, "html.parser")
+        nav = _GroupNav(soup, url, url, {}, self._selected_value(soup, SEASON_DROPDOWN_ID), self._selected_value(soup, GROUP_DROPDOWN_ID))
 
-        # Check if the initial page already has the correct season and group selected
-        season_dropdown = soup.find("select", {"id": SEASON_DROPDOWN_ID})
-        group_dropdown = soup.find("select", {"id": GROUP_DROPDOWN_ID})
+        # A page that already shows both is used as it is. (Selecting the group that is ALREADY selected makes the server answer a page WITHOUT the
+        # calendar: never post it.) A competition with no group selector is its own group, for a calendar.
+        if (nav.season == season_value and nav.group == group_value) or (single_group_ok and soup.find("select", {"id": GROUP_DROPDOWN_ID}) is None):
+            return GroupPage(soup, url, nav.calendar_url, True)
 
-        current_season = None
-        current_group = None
+        nav.hidden = self.get_hidden_fields(soup)
+        if nav.season != season_value:
+            if self._go_to_seasonal_url(nav, season_value, group_value):
+                return GroupPage(nav.soup, nav.url, nav.calendar_url, True)
+            if nav.season != season_value:
+                nav.soup, nav.hidden = self.select_season(session, nav.url, season_value, nav.hidden)
+        if nav.group != group_value:
+            self._look_in_results_page(nav, session, season_value, group_value)
+            nav.soup = self.select_group(session, nav.url, season_value, group_value, nav.hidden)
+        return GroupPage(nav.soup, nav.url, nav.calendar_url, False)
 
-        if season_dropdown:
-            selected_option = season_dropdown.find("option", selected=True)
-            if selected_option:
-                current_season = selected_option.get("value")
+    @staticmethod
+    def _selected_option(soup: BeautifulSoup, dropdown_id: str):
+        """The selected ``<option>`` of a dropdown of the page, or None (no such dropdown, or nothing selected)."""
+        dropdown = soup.find("select", {"id": dropdown_id})
+        return dropdown and dropdown.find("option", selected=True)
 
-        if group_dropdown:
-            selected_option = group_dropdown.find("option", selected=True)
-            if selected_option:
-                current_group = selected_option.get("value")
+    @classmethod
+    def _selected_value(cls, soup: BeautifulSoup, dropdown_id: str) -> Optional[str]:
+        option = cls._selected_option(soup, dropdown_id)
+        return option.get("value") if option else None
 
-        # If the page already has the correct selection, use it directly. (Selecting the group that is ALREADY selected makes the server answer a
-        # page WITHOUT the calendar: never post it.) A competition with no group selector is its own group, for a calendar.
-        if (current_season == season_value and current_group == group_value) or (single_group_ok and group_dropdown is None):
-            return GroupPage(soup, url, original_calendar_url, True)
+    def _go_to_seasonal_url(self, nav: _GroupNav, season_value: str, group_value: str) -> bool:
+        """Before an ASP.NET postback, navigate straight to the URL of that year: ``get_feb_competitions()`` gives the URLs with the CURRENT season year embedded (e.g.
+        ``/lfchallenge/67/2026`` for the 2026/27 page) and a completed past season lives at ``/2025``; a GET is simpler and cannot fail as a postback does. Moves ``nav`` to
+        that page and says whether it shows BOTH the season and the group (otherwise the page shows the default group, usually A)."""
+        seasonal_url = self._derive_seasonal_url(nav.url, season_value)
+        if seasonal_url == nav.url:
+            return False
+        response = self.web_client.get(seasonal_url, timeout=EXTENDED_TIMEOUT)
+        if not response:
+            return False
+        nav.soup = BeautifulSoup(response.content, "html.parser")
+        nav.url = nav.calendar_url = seasonal_url          # keep the Series.aspx cache on the right year
+        nav.hidden = self.get_hidden_fields(nav.soup)
+        season = self._selected_option(nav.soup, SEASON_DROPDOWN_ID)
+        nav.season = season.get("value") if season else season_value
+        group = self._selected_option(nav.soup, GROUP_DROPDOWN_ID)
+        nav.group = group.get("value") if group else nav.group
+        return nav.season == season_value and nav.group == group_value
 
-        # Otherwise, need to select season and group via POST
-        hidden_fields = self.get_hidden_fields(soup)
-
-        # Select season (only if different from current)
-        if current_season != season_value:
-            # Before falling back to ASP.NET POST, try navigating directly to
-            # the year-substituted URL.  get_feb_competitions() returns URLs with
-            # the CURRENT season year embedded (e.g. /lfchallenge/67/2026 for
-            # the 2026/27 page).  The completed past season lives at /2025.
-            # A direct GET is simpler and avoids ASP.NET postback failures.
-            seasonal_url = self._derive_seasonal_url(url, season_value)
-            if seasonal_url != url:
-                resp = self.web_client.get(seasonal_url, timeout=EXTENDED_TIMEOUT)
-                if resp:
-                    soup = BeautifulSoup(resp.content, "html.parser")
-                    url = seasonal_url
-                    original_calendar_url = seasonal_url  # keep Series.aspx cache on correct year
-                    hidden_fields = self.get_hidden_fields(soup)
-                    s_dd = soup.find("select", {"id": SEASON_DROPDOWN_ID})
-                    s_sel = s_dd and s_dd.find("option", selected=True)
-                    current_season = s_sel.get("value") if s_sel else season_value
-                    g_dd = soup.find("select", {"id": GROUP_DROPDOWN_ID})
-                    g_sel = g_dd and g_dd.find("option", selected=True)
-                    current_group = g_sel.get("value") if g_sel else current_group
-                    # Done only when BOTH season and group already match —
-                    # otherwise the page shows the default group (usually A).
-                    if current_season == season_value and current_group == group_value:
-                        return GroupPage(soup, url, original_calendar_url, True)
-            if current_season != season_value:
-                soup, hidden_fields = self.select_season(session, url, season_value, hidden_fields)
-
-        # Select group (only if different from current)
-        if current_group != group_value:
-            # Verify the group exists in the current page's dropdown.
-            # Playoff groups (discovered via /resultados/) are absent from the
-            # /calendario/ dropdown — POSTing an unknown group value causes the
-            # server to return a non-200 response → raise_for_status() → None →
-            # Exception("Failed to select group").
-            grp_dd = soup.find("select", {"id": GROUP_DROPDOWN_ID})
-            in_dropdown = grp_dd and grp_dd.find("option", {"value": group_value})
-            if not in_dropdown:
-                # Switch to the /resultados/ equivalent URL which lists all groups
-                results_url = self._calendar_to_results_url(url, season_value)
-                if results_url != url:
-                    resp = self.web_client.get(results_url, timeout=EXTENDED_TIMEOUT)
-                    if resp:
-                        soup = BeautifulSoup(resp.content, "html.parser")
-                        hidden_fields = self.get_hidden_fields(soup)
-                        # Re-select season on the new page if needed
-                        s_dd = soup.find("select", {"id": SEASON_DROPDOWN_ID})
-                        s_sel = s_dd and s_dd.find("option", selected=True)
-                        if s_sel and s_sel.get("value") != season_value:
-                            soup, hidden_fields = self.select_season(
-                                session, results_url, season_value, hidden_fields
-                            )
-                        url = results_url
-            soup = self.select_group(session, url, season_value, group_value, hidden_fields)
-        return GroupPage(soup, url, original_calendar_url, False)
+    def _look_in_results_page(self, nav: _GroupNav, session: requests.Session, season_value: str, group_value: str) -> None:
+        """A group that is not in the dropdown of the calendar (the playoff groups, found through /resultados/) would make the server answer a non-200 when posted
+        (``raise_for_status`` → None → «Failed to select group»): move ``nav`` to the /resultados/ page that lists every group, with the season selected there."""
+        dropdown = nav.soup.find("select", {"id": GROUP_DROPDOWN_ID})
+        if dropdown and dropdown.find("option", {"value": group_value}):
+            return
+        results_url = self._calendar_to_results_url(nav.url, season_value)
+        if results_url == nav.url:
+            return
+        response = self.web_client.get(results_url, timeout=EXTENDED_TIMEOUT)
+        if not response:
+            return
+        nav.soup = BeautifulSoup(response.content, "html.parser")
+        nav.hidden = self.get_hidden_fields(nav.soup)
+        season = self._selected_option(nav.soup, SEASON_DROPDOWN_ID)
+        if season and season.get("value") != season_value:
+            nav.soup, nav.hidden = self.select_season(session, results_url, season_value, nav.hidden)
+        nav.url = results_url
 
     @staticmethod
     def _derive_seasonal_url(url: str, season_value: str) -> str:
