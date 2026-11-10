@@ -1,7 +1,7 @@
 """PDF Generator — HTML to PDF conversion using fpdf2 native support.
 
 Moved from src/ui/pdf_generator.py (Qt UI layer removed).
-Used by src/api/routers/reports.py for the export-pdf endpoint.
+Used by src/api/routers/team_report.py for the PDF of the team report.
 """
 
 from fpdf import FPDF

@@ -74,7 +74,7 @@ class TestPublicRoutesStayPublic:
 
     def test_compute_only_posts_stay_public(self, client, monkeypatch):
         monkeypatch.setenv("ADMIN_API_KEY", "s3cret")
-        r = client.post("/api/v1/reports/export-pdf", json={"html": "<p>x</p>", "team": "A"})
+        r = client.post("/api/v1/scouting-rival", json={})          # an empty body: 422 from the validation, not 401/503 from the key
         assert r.status_code not in BLOCKED
 
 
