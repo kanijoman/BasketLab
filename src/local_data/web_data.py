@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
@@ -151,6 +152,14 @@ def _publish_report_index(handler: Any, collection: str, out_dir: Path, sealer: 
     return {"collection": collection, "teams": len({r["team_id"] for r in reports}), "file": file, "bytes": len(data), "sha256": sha}
 
 
+def _can_reuse(section: str, same_data: bool, versions: Dict[str, str], old_versions: Dict[str, str], had: List[str],
+               kept_entry: Optional[Dict[str, Any]], out_dir: Path) -> bool:
+    """A section reuses its sealed file when the data and the code of the section are those of the previous publication and, if the section had a file, that file is still there."""
+    if not (same_data and section in versions and old_versions.get(section) == versions[section]):
+        return False
+    return section not in had or bool(kept_entry and (out_dir / kept_entry["file"]).is_file())
+
+
 def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: Any, out_dir: Path, sealer: Sealer, kept_sections: Dict[str, Dict[str, Any]],
                       remembered: Optional[Dict[str, Any]], on_section: Optional[Callable[[str, str, float, bool], None]],
                       versions: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, Any]]:
@@ -169,17 +178,14 @@ def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: A
     had = [s for s in (remembered or {}).get("sections", []) if s in SECTIONS and s != "derived"]
     same_data = bool(remembered) and remembered.get("fingerprint") == fp
     old_versions = (remembered or {}).get("versions") or {}
-    for section in SECTIONS:
-        if section == "derived":
-            continue
+    for section in (s for s in SECTIONS if s != "derived"):
         started = time.time()
         kept_entry = kept_sections[section].get(name)
-        reuse = (same_data and section in versions and old_versions.get(section) == versions[section]
-                 and (section not in had or bool(kept_entry and (out_dir / kept_entry["file"]).is_file())))
+        reuse = _can_reuse(section, same_data, versions, old_versions, had, kept_entry, out_dir)
         if reuse:
             entry = kept_entry if section in had else None
         else:
-            entry = _publish_section(section, handler, db, name, out_dir, sealer, kept_sections[section].get(name))
+            entry = _publish_section(section, handler, db, name, out_dir, sealer, kept_entry)
         if entry:
             entries[section] = entry
         if on_section:
@@ -198,6 +204,60 @@ def _referenced(out_dir: Path, manifest: Dict[str, Any]) -> set:
     return files
 
 
+@dataclass
+class _Context:
+    """What the competitions of ONE publication share: where it writes, what the previous publication left and the memory of the cache (#700, #783)."""
+    handler: Any
+    db: Any
+    out_dir: Path
+    sealer: Sealer
+    kept_rows: Dict[str, Dict[str, Any]]
+    kept_sections: Dict[str, Dict[str, Any]]
+    old_reports: Dict[Any, Dict[str, Any]]
+    memory: Dict[str, Any]
+    trusted: bool
+    versions: Dict[str, str]
+    on_section: Optional[Callable[[str, str, float, bool], None]]
+    scouted: set
+    scouting_service: Optional[Callable[[Any], Any]]
+    image_source: Optional[Source]
+    imaged: set
+
+
+def _carried_over(previous: Optional[Dict[str, Any]], names: List[str], keep_others: bool):
+    """What a partial refresh keeps of the previous publication: the rows, the reports and the sections of the competitions that are NOT being published now (nothing without ``keep_others``)."""
+    def kept(entries: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        return {e["collection"]: e for e in entries if keep_others and e["collection"] not in names}
+
+    before = previous or {}
+    return kept(before.get("rows", [])), kept(before.get("reports", [])), {s: kept(before.get(s, [])) for s in SECTIONS}
+
+
+def _publish_competition(ctx: _Context, name: str):
+    """One competition: its rows, its sections and its report index, in that order (what each cost goes to ``on_section``). Returns the entry of the rows, those of the sections (with ``_memory``) and the report index."""
+    started = time.time()
+    rows_entry = _publish_rows(ctx.db, name, ctx.out_dir, ctx.sealer, ctx.kept_rows.get(name))
+    if ctx.on_section:
+        ctx.on_section(name, "rows", time.time() - started, False)
+    entries = _publish_sections(name, rows_entry, ctx.handler, ctx.db, ctx.out_dir, ctx.sealer, ctx.kept_sections,
+                                ctx.memory["competitions"].get(name) if ctx.trusted else None, ctx.on_section, ctx.versions)
+    started = time.time()
+    report_index = _publish_report_index(ctx.handler, name, ctx.out_dir, ctx.sealer, ctx.old_reports, name in ctx.scouted, ctx.scouting_service,
+                                         ctx.image_source if name in ctx.imaged else None)
+    if ctx.on_section:
+        ctx.on_section(name, "reports", time.time() - started, False)
+    return rows_entry, entries, report_index
+
+
+def _sweep_stale(out_dir: Path, manifest: Dict[str, Any]) -> None:
+    """Remove the sealed files that the manifest no longer references."""
+    keep = _referenced(out_dir, manifest)
+    for folder in (ROWS, *SECTIONS.values(), REPORTS, SCOUTING, IMAGES):
+        for stale in (out_dir / folder).glob("*.json"):
+            if f"{folder}{stale.name}" not in keep:
+                stale.unlink()
+
+
 def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: Iterable[str], keep_others: bool = False,
                      on_collection: Optional[Callable[[str], None]] = None, scouting: Optional[Iterable[str]] = None,
                      scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None,
@@ -208,33 +268,23 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    db = handler.connection.client["BASKETBALL"]
-    names, scouted = list(collections), set(scouting or [])
+    names = list(collections)
     previous = _read(out_dir / INDEX)
-    old_reports = _previous_reports(out_dir, previous)
-    rows = {e["collection"]: e for e in (previous or {}).get("rows", []) if keep_others and e["collection"] not in names}
-    reports = {e["collection"]: e for e in (previous or {}).get("reports", []) if keep_others and e["collection"] not in names}
-    kept_rows = {e["collection"]: e for e in (previous or {}).get("rows", [])}
-    sections = {s: {e["collection"]: e for e in (previous or {}).get(s, []) if keep_others and e["collection"] not in names} for s in SECTIONS}
-    kept_sections = {s: {e["collection"]: e for e in (previous or {}).get(s, [])} for s in SECTIONS}
-    imaged = current_season_collections(names) if image_source is not None else set()
-    memory, versions = build_cache.load(out_dir), section_versions(SECTION_MODULES)
+    rows, reports, sections = _carried_over(previous, names, keep_others)
+    memory = build_cache.load(out_dir)
     trusted = memory["epoch"] == build_cache.EPOCH                       # another epoch, or the old format with one version for all the code: compute everything once
+    ctx = _Context(handler=handler, db=handler.connection.client["BASKETBALL"], out_dir=out_dir, sealer=sealer,
+                   kept_rows={e["collection"]: e for e in (previous or {}).get("rows", [])},
+                   kept_sections={s: {e["collection"]: e for e in (previous or {}).get(s, [])} for s in SECTIONS},
+                   old_reports=_previous_reports(out_dir, previous), memory=memory, trusted=trusted, versions=section_versions(SECTION_MODULES),
+                   on_section=on_section, scouted=set(scouting or []), scouting_service=scouting_service, image_source=image_source,
+                   imaged=current_season_collections(names) if image_source is not None else set())
     remembered = {k: v for k, v in memory["competitions"].items() if trusted and keep_others and k not in names}
     for name in names:
-        started = time.time()
-        rows[name] = _publish_rows(db, name, out_dir, sealer, kept_rows.get(name))
-        if on_section:
-            on_section(name, "rows", time.time() - started, False)
-        entries = _publish_sections(name, rows[name], handler, db, out_dir, sealer, kept_sections,
-                                    memory["competitions"].get(name) if trusted else None, on_section, versions)
+        rows[name], entries, reports[name] = _publish_competition(ctx, name)
         remembered[name] = entries.pop("_memory")
         for section, entry in entries.items():
             sections[section][name] = entry
-        started = time.time()
-        reports[name] = _publish_report_index(handler, name, out_dir, sealer, old_reports, name in scouted, scouting_service, image_source if name in imaged else None)
-        if on_section:
-            on_section(name, "reports", time.time() - started, False)
         if on_collection:
             on_collection(name)
     manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(),
@@ -243,9 +293,5 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))
     _write_if_changed(out_dir / INDEX, (_json(manifest) + "\n").encode("utf-8"))
     _write_if_changed(out_dir / build_cache.CACHE, build_cache.save(out_dir, remembered))
-    keep = _referenced(out_dir, manifest)
-    for folder in (ROWS, *SECTIONS.values(), REPORTS, SCOUTING, IMAGES):
-        for stale in (out_dir / folder).glob("*.json"):
-            if f"{folder}{stale.name}" not in keep:
-                stale.unlink()
+    _sweep_stale(out_dir, manifest)
     return manifest
