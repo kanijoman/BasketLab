@@ -2,7 +2,7 @@
 possessions and validated rebounds / turnovers (#379): the weekly report's last match, the player sheet and the IN/OUT blocks."""
 import pytest
 
-from src.api.routers.players import _enrich_stat_block
+from src.services.inout_service import enrich_stat_block as _enrich_stat_block
 from src.services.weekly_report_service import WeeklyReportService
 from src.stats.match_derived import with_derived
 from src.stats.stats_calculator import StatsCalculator

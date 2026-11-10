@@ -1,5 +1,5 @@
 """
-Phase 4 quality-gate tests: IN/OUT and players-together endpoints.
+Phase 4 quality-gate tests: IN/OUT endpoints.
 """
 from __future__ import annotations
 
@@ -69,34 +69,3 @@ class TestInOutEndpoint:
             MockSvc.return_value.get_in_out_analysis.return_value = {}
             r = client.get(self._url("FEB_test", "nonexistent"))
         assert r.status_code in (200, 404)
-
-
-# ---------------------------------------------------------------------------
-# Together endpoint (/api/v1/players/{collection}/together/{p1}/{p2})
-# ---------------------------------------------------------------------------
-
-class TestPlayersTogetherEndpoint:
-    def _url(self, col: str, p1: str, p2: str) -> str:
-        return f"/api/v1/players/{col}/together/{p1}/{p2}"
-
-    def test_returns_together_and_apart_keys(self, client):
-        mock_result = {
-            "together": {"points_for": 108.0, "points_against": 100.0, "minutes": 180.0, "net_rating": 8.0},
-            "apart":    {"points_for":  99.0, "points_against": 103.0, "minutes": 220.0, "net_rating": -4.0},
-        }
-        with patch("src.api.routers.players.PlayerStatsService") as MockSvc:
-            MockSvc.return_value.get_players_together.return_value = mock_result
-            r = client.get(self._url("FEB_test", "11", "22"))
-        assert r.status_code == 200
-        body = r.json()
-        assert "together" in body and "apart" in body
-
-    def test_together_block_has_net_rating(self, client):
-        mock_result = {
-            "together": {"points_for": 108.0, "points_against": 100.0, "minutes": 180.0, "net_rating": 8.0},
-            "apart":    {"points_for":  99.0, "points_against": 103.0, "minutes": 220.0, "net_rating": -4.0},
-        }
-        with patch("src.api.routers.players.PlayerStatsService") as MockSvc:
-            MockSvc.return_value.get_players_together.return_value = mock_result
-            r = client.get(self._url("FEB_test", "11", "22"))
-        assert r.json()["together"]["net_rating"] == 8.0
