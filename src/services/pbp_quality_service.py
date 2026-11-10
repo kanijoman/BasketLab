@@ -18,12 +18,14 @@ class PBPQualityService:
         for team in ("Local", "Rival")
         for metric in ("T2M", "T2A", "T3M", "T3A", "T1M", "T1A", "RebO", "RebD", "TOV")
         for source in ("PBP", "BS")
-    ]
+    ] + ["Aviso"]
 
     _QUALITY_METRICS = [
         "T2M", "T2A", "T3M", "T3A", "T1M", "T1A",
         "RebO", "RebD", "TOV",
     ]
+    # FBCYL: the box rebounds are the sum of the PLAYERS (the PBP counts no team rebounds), so they are only a reference when the player list is complete (#815)
+    _PLAYER_SUM_METRICS = ("RebO", "RebD")
 
     def __init__(
         self,
@@ -59,6 +61,7 @@ class PBPQualityService:
             "Equipo_Local": local_info["name"],
             "Equipo_Rival": rival_info["name"],
             "Quality_Score": f"{score:.2f}%",
+            "Aviso": self._incomplete_box_warning(teams),
         }
         row.update(self._team_audit_values("Local", local_info, pbp_counts.get(local_id, {})))
         row.update(self._team_audit_values("Rival", rival_info, pbp_counts.get(rival_id, {})))
@@ -89,8 +92,15 @@ class PBPQualityService:
             accuracies.extend(
                 self._accuracy(pbp.get(metric, 0), boxscore.get(metric, 0))
                 for metric in self._QUALITY_METRICS
+                if not (info.get("incomplete_box") and metric in self._PLAYER_SUM_METRICS)
             )
         return accuracies
+
+    @staticmethod
+    def _incomplete_box_warning(teams: Dict[str, Dict]) -> str:
+        """What the audit could not judge: the teams whose players do not add up to the points of the team, and so their player-sum rebounds are not scored."""
+        parts = [f"{info['name']}: sus jugadoras suman {info['incomplete_box'][0]} de {info['incomplete_box'][1]} puntos" for info in teams.values() if info.get("incomplete_box")]
+        return "Caja incompleta (rebotes sin puntuar) - " + "; ".join(parts) if parts else ""
 
     @classmethod
     def csv_chunks(cls, db_handler: Any, collection_name: str):
@@ -138,6 +148,7 @@ class PBPQualityService:
                 result[tid] = {
                     "name": team.get("name") or team.get("shortName") or tid,
                     "boxscore": self._fbcyl_boxscore(team),
+                    "incomplete_box": self._incomplete_box(team),
                 }
         else:
             header_teams = self.game_data.get("HEADER", {}).get("TEAM", [])
@@ -169,6 +180,16 @@ class PBPQualityService:
             "ST": int(tot.get("st") or 0),
             "TOV": int(tot.get("to") or 0),
         }
+
+    @staticmethod
+    def _incomplete_box(team: Dict):
+        """``(points of its players, points of the team)`` when the player list of the team does not add up to its score (the source delivered it truncated); None when it does or
+        the team has no score to compare with. It holds in every complete box (136 of 138 team-games of a group) and fails in the truncated ones."""
+        team_score = (team.get("data") or {}).get("score")
+        if team_score is None:
+            return None
+        players_score = sum(int((p.get("data") or {}).get("score") or 0) for p in team.get("players") or [])
+        return (players_score, int(team_score)) if players_score != int(team_score) else None
 
     @staticmethod
     def _fbcyl_boxscore(team: Dict) -> Dict[str, int]:
