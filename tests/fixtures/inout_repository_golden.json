@@ -1,0 +1,3576 @@
+{
+ "fbcyl by name": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "VIRGINIA IBAÑEZ BARREIRO",
+   "player_team_id": null
+  }
+ },
+ "fbcyl no games": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 0,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "ab280249-d022-4ec8-bb33-a05fecefce05",
+   "player_team_id": null
+  }
+ },
+ "fbcyl no minutes": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 0,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "ab280249-d022-4ec8-bb33-a05fecefce05",
+   "player_team_id": null
+  }
+ },
+ "fbcyl phantom": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 0,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "ab280249-d022-4ec8-bb33-a05fecefce05",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 19041bdc-4243-4415-90fc-c64c94df0090": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "19041bdc-4243-4415-90fc-c64c94df0090",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 211575dc-7169-4e57-ad78-37b4123d40f1": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "211575dc-7169-4e57-ad78-37b4123d40f1",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 303b2132-deb3-404f-b44a-577770d2ae92": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "303b2132-deb3-404f-b44a-577770d2ae92",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 4f3a6ef7-493d-4dff-97cc-f3ac3e4d945e": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "4f3a6ef7-493d-4dff-97cc-f3ac3e4d945e",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 50f1d0cd-6245-40e0-9206-c8093d7a0c0d": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "50f1d0cd-6245-40e0-9206-c8093d7a0c0d",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 6774dec8-54a9-427b-88d3-cba557164a25": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "6774dec8-54a9-427b-88d3-cba557164a25",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 7935b85f-f81d-42db-98e4-6f53fc30880d": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "7935b85f-f81d-42db-98e4-6f53fc30880d",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 7f3796f2-5657-42b7-b8da-e2824cdfa17e": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "7f3796f2-5657-42b7-b8da-e2824cdfa17e",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82d70e20-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82d70e20-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82d74b27-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82d74b27-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82d75ff1-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82d75ff1-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82d7d7fc-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82d7d7fc-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82ed60a0-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82ed60a0-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82f1aba8-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82f1aba8-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 82ff9bb8-eb38-11e9-83ca-0216824770c2": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "82ff9bb8-eb38-11e9-83ca-0216824770c2",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real 8a644f1b-eab8-40ed-bfe7-db738e6f3d72": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "8a644f1b-eab8-40ed-bfe7-db738e6f3d72",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real a3a3e545-5743-49a8-b1ae-cc66062a806c": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "a3a3e545-5743-49a8-b1ae-cc66062a806c",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real ab280249-d022-4ec8-bb33-a05fecefce05": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 45,
+    "fga_3": 22,
+    "fgm_2": 16,
+    "fgm_3": 4,
+    "fta": 19,
+    "ftm": 11,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 40,
+    "opp_fga_3": 26,
+    "opp_fgm_2": 22,
+    "opp_fgm_3": 7,
+    "opp_fta": 12,
+    "opp_ftm": 10,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 20,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 75,
+    "points_for": 55,
+    "stl": 0,
+    "tov": 24
+   },
+   "player_id": "ab280249-d022-4ec8-bb33-a05fecefce05",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real cb0f694e-69fb-4bc8-b1d7-36ad2b345ddb": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "cb0f694e-69fb-4bc8-b1d7-36ad2b345ddb",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real ec8694dc-6b45-4588-8ba5-d704d4b9ac41": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "ec8694dc-6b45-4588-8ba5-d704d4b9ac41",
+   "player_team_id": null
+  }
+ },
+ "fbcyl real fd5ad15d-0ac1-4161-b1b9-8f8ef26aa4c9": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 40,
+    "fga_3": 26,
+    "fgm_2": 22,
+    "fgm_3": 7,
+    "fta": 12,
+    "ftm": 10,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 45,
+    "opp_fga_3": 22,
+    "opp_fgm_2": 16,
+    "opp_fgm_3": 4,
+    "opp_fta": 19,
+    "opp_ftm": 11,
+    "opp_orb": 0,
+    "opp_pf": 37,
+    "opp_stl": 0,
+    "opp_tov": 24,
+    "orb": 0,
+    "pf": 37,
+    "points_against": 55,
+    "points_for": 75,
+    "stl": 0,
+    "tov": 20
+   },
+   "player_id": "fd5ad15d-0ac1-4161-b1b9-8f8ef26aa4c9",
+   "player_team_id": null
+  }
+ },
+ "fbcyl team without players": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 0,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "ab280249-d022-4ec8-bb33-a05fecefce05",
+   "player_team_id": null
+  }
+ },
+ "fbcyl two games": {
+  "progress": [
+   [
+    0,
+    2
+   ],
+   [
+    1,
+    2
+   ],
+   [
+    0,
+    2
+   ],
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    2
+   ]
+  ],
+  "result": {
+   "games_analyzed": 2,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 2,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 90,
+    "fga_3": 44,
+    "fgm_2": 32,
+    "fgm_3": 8,
+    "fta": 38,
+    "ftm": 22,
+    "games": 2,
+    "minutes": 80.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 80,
+    "opp_fga_3": 52,
+    "opp_fgm_2": 44,
+    "opp_fgm_3": 14,
+    "opp_fta": 24,
+    "opp_ftm": 20,
+    "opp_orb": 0,
+    "opp_pf": 74,
+    "opp_stl": 0,
+    "opp_tov": 40,
+    "orb": 0,
+    "pf": 74,
+    "points_against": 150,
+    "points_for": 110,
+    "stl": 0,
+    "tov": 48
+   },
+   "player_id": "ab280249-d022-4ec8-bb33-a05fecefce05",
+   "player_team_id": null
+  }
+ },
+ "fbcyl unknown player": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 0,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "no-such-player",
+   "player_team_id": null
+  }
+ },
+ "feb bench player": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 0.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 1,
+    "minutes": 40.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 3,
+    "stl": 0,
+    "tov": 1
+   },
+   "player_id": "P2",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes broken": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 0,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes none": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 0,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes number": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 1,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes plain string": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 1,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes seconds only": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 0,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes string": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 1,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes text": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 0,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb minutes zero": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 0,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb no games": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    0,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 0,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "out": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 0,
+    "minutes": 0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 0,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb player in no team": {
+  "progress": [
+   [
+    0,
+    1
+   ]
+  ],
+  "result": {}
+ },
+ "feb player not found": {
+  "progress": [
+   [
+    0,
+    1
+   ]
+  ],
+  "result": {}
+ },
+ "feb rival team without players": {
+  "progress": [
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ],
+   [
+    0,
+    1
+   ],
+   [
+    1,
+    1
+   ]
+  ],
+  "result": {
+   "games_analyzed": 1,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 1,
+    "fga_2": 1,
+    "fga_3": 1,
+    "fgm_2": 1,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 1,
+    "minutes": 5.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 1,
+    "opp_fga_3": 1,
+    "opp_fgm_2": 1,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 1,
+    "pf": 0,
+    "points_against": 2,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 1
+   },
+   "out": {
+    "ast": 1,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 1,
+    "ftm": 1,
+    "games": 1,
+    "minutes": 35.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 1,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 1,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "feb two games": {
+  "progress": [
+   [
+    0,
+    2
+   ],
+   [
+    1,
+    2
+   ],
+   [
+    0,
+    2
+   ],
+   [
+    1,
+    2
+   ],
+   [
+    2,
+    2
+   ]
+  ],
+  "result": {
+   "games_analyzed": 2,
+   "in": {
+    "ast": 0,
+    "blk": 0,
+    "drb": 2,
+    "fga_2": 2,
+    "fga_3": 2,
+    "fgm_2": 2,
+    "fgm_3": 0,
+    "fta": 0,
+    "ftm": 0,
+    "games": 2,
+    "minutes": 10.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 2,
+    "opp_fga_3": 2,
+    "opp_fgm_2": 2,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 0,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 2,
+    "pf": 0,
+    "points_against": 4,
+    "points_for": 4,
+    "stl": 0,
+    "tov": 2
+   },
+   "out": {
+    "ast": 2,
+    "blk": 0,
+    "drb": 0,
+    "fga_2": 0,
+    "fga_3": 0,
+    "fgm_2": 0,
+    "fgm_3": 0,
+    "fta": 2,
+    "ftm": 2,
+    "games": 2,
+    "minutes": 70.0,
+    "opp_ast": 0,
+    "opp_blk": 0,
+    "opp_drb": 0,
+    "opp_fga_2": 0,
+    "opp_fga_3": 0,
+    "opp_fgm_2": 0,
+    "opp_fgm_3": 0,
+    "opp_fta": 0,
+    "opp_ftm": 0,
+    "opp_orb": 0,
+    "opp_pf": 2,
+    "opp_stl": 0,
+    "opp_tov": 0,
+    "orb": 0,
+    "pf": 0,
+    "points_against": 0,
+    "points_for": 2,
+    "stl": 0,
+    "tov": 0
+   },
+   "player_id": "P1",
+   "player_team_id": "A"
+  }
+ },
+ "not connected": {
+  "progress": [],
+  "result": {}
+ }
+}
