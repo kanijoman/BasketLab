@@ -8,7 +8,7 @@ Parte de la épica #435 y sigue a [la evaluación del directo de FBCYL](2026-11-
 3. Al terminar el partido (calendario con `universallyid`) cierra el canal con `GET {streaming}/unregister/{conexión}/{sesión}` y redirige a las estadísticas.
 
 ## Qué dice de la credencial
-- La cabecera `federation` es un **parámetro de enrutado del servicio**, que atiende a varias federaciones con el mismo servidor (la ruta REST lleva `/fbcyl/` en el camino; la de registro no): no es un secreto ni una identidad de navegador.
+- La cabecera `federation` es un **parámetro de enrutado del servicio**, que atiende a varias federaciones con el mismo servidor (la base `{streaming}` ya lleva `/fbcyl/` en el camino, también la del registro; la cabecera lo repite): no es un secreto ni una identidad de navegador.
 - El HTML de la página incrusta además un **JWT** (`data-jwt`, 15 minutos de vida, emitido por el servidor de la web). Los interceptores `Authorization: Bearer` del bundle son los de las llamadas del cliente REST de la web; **el canal SSE no los lleva**: sus cabeceras son solo las de `federation`. (El nombre minificado `Ra` podría sombrearse en otro módulo; con un bundle plano, como este, es improbable, pero no se ha ejecutado el código para comprobarlo.) Ese token **no se debe usar desde fuera**: está emitido a la sesión de la web de la federación.
 - El `pushClientId` es el único valor que el servidor reparte para registrar un cliente. **No está en nuestras lecturas guardadas** (`fbcyl_streaming_20261107` solo conserva `readings` y `msstats`): no sabemos si el REST lo trae.
 
