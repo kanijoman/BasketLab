@@ -3,6 +3,17 @@
 from typing import Dict, List, FrozenSet, Tuple, Optional
 from collections import defaultdict
 from src.live_core.four_factors import FT_POSSESSION_COST
+from .pbp_stat_counters import add_points, bump, count_rebound, count_shot, empty_stats, first_match
+
+# FBCYL writes the action as Spanish text in ``move``; a row is (phrases, (points, made)) and the first one that matches wins (an ``elif`` chain).
+_FBCYL_SHOTS = (
+    (('Canasta de 2', 'canasta de 2'), (2, True)),
+    (('Intento fallado de 2',), (2, False)),
+    (('Canasta de 3', 'canasta de 3'), (3, True)),
+    (('Intento fallado de 3',), (3, False)),
+    (('Tiro libre anotado', 'Canasta de 1'), (1, True)),
+    (('Intento fallado de 1',), (1, False)),
+)
 
 
 class LineupStatsCalculator:
@@ -121,36 +132,7 @@ class LineupStatsCalculator:
 
     def _empty_stats(self) -> Dict:
         """Create empty statistics dictionary."""
-        return {
-            'points_for': 0,
-            'points_against': 0,
-            'fgm_2': 0,
-            'fga_2': 0,
-            'fgm_3': 0,
-            'fga_3': 0,
-            'ftm': 0,
-            'fta': 0,
-            'orb': 0,
-            'drb': 0,
-            'ast': 0,
-            'stl': 0,
-            'blk': 0,
-            'tov': 0,
-            'pf': 0,
-            'opp_fgm_2': 0,
-            'opp_fga_2': 0,
-            'opp_fgm_3': 0,
-            'opp_fga_3': 0,
-            'opp_ftm': 0,
-            'opp_fta': 0,
-            'opp_orb': 0,
-            'opp_drb': 0,
-            'opp_ast': 0,
-            'opp_stl': 0,
-            'opp_blk': 0,
-            'opp_tov': 0,
-            'opp_pf': 0,
-        }
+        return empty_stats()
 
     def _get_lineup_segments(
         self,
@@ -308,207 +290,65 @@ class LineupStatsCalculator:
         """Process FBCYL format action with rebound classification."""
         move_text = action.get('move', '')
         action_team = str(action.get('idTeam', ''))
-        
-        # Points
-        points = 0
-        if 'Canasta de 2' in move_text or 'canasta de 2' in move_text:
-            points = 2
-            if is_team_action:
-                stats['fga_2'] += 1
-                stats['fgm_2'] += 1
-            else:
-                stats['opp_fga_2'] += 1
-                stats['opp_fgm_2'] += 1
-        elif 'Intento fallado de 2' in move_text:
-            if is_team_action:
-                stats['fga_2'] += 1
-            else:
-                stats['opp_fga_2'] += 1
-        elif 'Canasta de 3' in move_text or 'canasta de 3' in move_text:
-            points = 3
-            if is_team_action:
-                stats['fga_3'] += 1
-                stats['fgm_3'] += 1
-            else:
-                stats['opp_fga_3'] += 1
-                stats['opp_fgm_3'] += 1
-        elif 'Intento fallado de 3' in move_text:
-            if is_team_action:
-                stats['fga_3'] += 1
-            else:
-                stats['opp_fga_3'] += 1
-        elif 'Tiro libre anotado' in move_text or 'Canasta de 1' in move_text:
-            points = 1
-            if is_team_action:
-                stats['fta'] += 1
-                stats['ftm'] += 1
-            else:
-                stats['opp_fta'] += 1
-                stats['opp_ftm'] += 1
-        elif 'Intento fallado de 1' in move_text:
-            if is_team_action:
-                stats['fta'] += 1
-            else:
-                stats['opp_fta'] += 1
-        
-        # Update points for/against
-        if points > 0:
-            if is_team_action:
-                stats['points_for'] += points
-            else:
-                stats['points_against'] += points
-        
-        # Other stats
+
+        shot = first_match(move_text, _FBCYL_SHOTS)
+        if shot:
+            points, made = shot
+            count_shot(stats, points, made, is_team_action)
+            if made:
+                add_points(stats, points, is_team_action)
+
         if 'Pérdida' in move_text or 'pérdida' in move_text:
-            if is_team_action:
-                stats['tov'] += 1
-            else:
-                stats['opp_tov'] += 1
-        
+            bump(stats, 'tov', is_team_action)
         if 'Personal' in move_text or 'Falta' in move_text:
-            if is_team_action:
-                stats['pf'] += 1
-            else:
-                stats['opp_pf'] += 1
-        
-        # Assists (FBCYL)
+            bump(stats, 'pf', is_team_action)
         if 'Asistencia' in move_text or 'asistencia' in move_text:
-            if is_team_action:
-                stats['ast'] += 1
-            else:
-                stats['opp_ast'] += 1
-        
-        # Steals (FBCYL)
+            bump(stats, 'ast', is_team_action)
         if 'Robo' in move_text or 'robo' in move_text:
-            if is_team_action:
-                stats['stl'] += 1
-            else:
-                stats['opp_stl'] += 1
-        
-        # Blocks (FBCYL)
+            bump(stats, 'stl', is_team_action)
         if 'Tapón' in move_text or 'tapón' in move_text or 'Tapon' in move_text:
-            if is_team_action:
-                stats['blk'] += 1
-            else:
-                stats['opp_blk'] += 1
-        
-        # Rebounds (FBCYL format) - use last_shot_team for classification
+            bump(stats, 'blk', is_team_action)
         if 'Rebote' in move_text or 'rebote' in move_text:
-            # If last shot was by same team → offensive rebound
-            # Otherwise (or if no last_shot_team tracked) → defensive rebound
-            is_offensive = (last_shot_team is not None and last_shot_team == action_team)
-            
-            if is_offensive:
-                if is_team_action:
-                    stats['orb'] += 1
-                else:
-                    stats['opp_orb'] += 1
-            else:
-                if is_team_action:
-                    stats['drb'] += 1
-                else:
-                    stats['opp_drb'] += 1
+            # offensive when the last shot (a miss) was by the same team; otherwise (or with no shot tracked) defensive
+            count_rebound(stats, last_shot_team is not None and last_shot_team == action_team, is_team_action)
 
     def _process_feb_action(self, action: Dict, is_team_action: bool, stats: Dict, last_shot_team: str = None) -> None:
         """Process FEB format action with rebound classification."""
         text = action.get('text', '').upper()
         action_type = action.get('action', '')
         action_team = str(action.get('idTeam', ''))
-        
-        # Points and shooting
-        points = 0
-        if 'TIRO DE 2' in text or 'CANASTA DE 2' in text:
-            if is_team_action:
-                stats['fga_2'] += 1
-                if 'FALLADO' not in text:
-                    stats['fgm_2'] += 1
-                    points = 2
-            else:
-                stats['opp_fga_2'] += 1
-                if 'FALLADO' not in text:
-                    stats['opp_fgm_2'] += 1
-                    points = 2
-        elif 'TIRO DE 3' in text or 'TRIPLE' in text or 'CANASTA DE 3' in text:
-            if is_team_action:
-                stats['fga_3'] += 1
-                if 'FALLADO' not in text:
-                    stats['fgm_3'] += 1
-                    points = 3
-            else:
-                stats['opp_fga_3'] += 1
-                if 'FALLADO' not in text:
-                    stats['opp_fgm_3'] += 1
-                    points = 3
-        elif 'TIRO LIBRE' in text or 'TIRO DE 1' in text:
-            if is_team_action:
-                stats['fta'] += 1
-                if 'ANOTADO' in text:
-                    stats['ftm'] += 1
-                    points = 1
-            else:
-                stats['opp_fta'] += 1
-                if 'ANOTADO' in text:
-                    stats['opp_ftm'] += 1
-                    points = 1
-        
-        # Update points for/against
-        if points > 0:
-            if is_team_action:
-                stats['points_for'] += points
-            else:
-                stats['points_against'] += points
-        
-        # Rebounds - use last_shot_team for classification (same logic as playbyplay_analyzer)
+
+        shot = self._feb_shot(text)
+        if shot:
+            points, made = shot
+            count_shot(stats, points, made, is_team_action)
+            if made:
+                add_points(stats, points, is_team_action)
+
         if action_type == 'rebound' or 'REBOTE' in text:
-            # If last shot was by same team → offensive rebound
-            # Otherwise → defensive rebound
-            is_offensive = (last_shot_team is not None and last_shot_team == action_team)
-            
-            if is_offensive:
-                if is_team_action:
-                    stats['orb'] += 1
-                else:
-                    stats['opp_orb'] += 1
-            else:
-                if is_team_action:
-                    stats['drb'] += 1
-                else:
-                    stats['opp_drb'] += 1
-        
-        # Assists
+            # offensive when the last shot (a miss) was by the same team; otherwise defensive (as playbyplay_analyzer)
+            count_rebound(stats, last_shot_team is not None and last_shot_team == action_team, is_team_action)
         if 'ASISTENCIA' in text or action_type == 'assist':
-            if is_team_action:
-                stats['ast'] += 1
-            else:
-                stats['opp_ast'] += 1
-        
-        # Steals
+            bump(stats, 'ast', is_team_action)
         if 'ROBO' in text or action_type == 'steal':
-            if is_team_action:
-                stats['stl'] += 1
-            else:
-                stats['opp_stl'] += 1
-        
-        # Blocks
+            bump(stats, 'stl', is_team_action)
         if 'TAPÓN' in text or action_type == 'block':
-            if is_team_action:
-                stats['blk'] += 1
-            else:
-                stats['opp_blk'] += 1
-        
-        # Turnovers
+            bump(stats, 'blk', is_team_action)
         if 'PÉRDIDA' in text or 'PERDIDA' in text or action_type == 'turnover':
-            if is_team_action:
-                stats['tov'] += 1
-            else:
-                stats['opp_tov'] += 1
-        
-        # Fouls
+            bump(stats, 'tov', is_team_action)
         if 'FALTA' in text or action_type == 'foul':
-            if is_team_action:
-                stats['pf'] += 1
-            else:
-                stats['opp_pf'] += 1
+            bump(stats, 'pf', is_team_action)
+
+    @staticmethod
+    def _feb_shot(text: str) -> Optional[Tuple[int, bool]]:
+        """(points of the shot, made) from the upper-case text of a FEB line; None when it is not a shot. Unlike the IN/OUT, only «FALLADO» is a miss."""
+        if 'TIRO DE 2' in text or 'CANASTA DE 2' in text:
+            return 2, 'FALLADO' not in text
+        if 'TIRO DE 3' in text or 'TRIPLE' in text or 'CANASTA DE 3' in text:
+            return 3, 'FALLADO' not in text
+        if 'TIRO LIBRE' in text or 'TIRO DE 1' in text:
+            return 1, 'ANOTADO' in text
+        return None
 
     def _calculate_final_stats(self, stats: Dict, minutes: float) -> Dict:
         """
