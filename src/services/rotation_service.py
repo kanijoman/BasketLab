@@ -202,11 +202,29 @@ class RotationService:
     def _scan_playbyplay(self, game: Dict, game_min: Optional[Dict[str, float]], team_id: str, is_fbcyl: bool, scan: _Scan) -> None:
         analyzer = PlayByPlayAnalyzer(game, is_fbcyl=is_fbcyl)
         starters = LineupExtractor(analyzer).detect_starting_lineup(team_id)
+        timeline = analyzer.parse_substitutions()
+        if is_fbcyl:           # the moves know a player by her licence id and the analysis by what the box gives (#839)
+            key_of = self._fbcyl_key_by_licence(game, analyzer)
+            starters = {key_of.get(pid, pid) for pid in starters}
+            timeline = {key_of.get(pid, pid): events for pid, events in timeline.items()}
         if starters:
             scan.per_game_starters.append(starters)
         scan.all_sub_timestamps.extend(self._extract_sub_timestamps(analyzer, team_id, is_fbcyl))
         if game_min:       # stint accumulation needs the per-game minutes captured from the box
-            self._accumulate_stints(analyzer.parse_substitutions(), game_min, scan.pbp_minutes_acc, scan.pbp_stints_acc)
+            self._accumulate_stints(timeline, game_min, scan.pbp_minutes_acc, scan.pbp_stints_acc)
+
+    @staticmethod
+    def _fbcyl_key_by_licence(game: Dict, analyzer: PlayByPlayAnalyzer) -> Dict[str, str]:
+        """``{licence id: the key ``_accumulate_fbcyl`` gives the player}`` of this game: the moves carry ``actorId`` + ``licenseId`` and the box ``actorId`` + ``uuid`` (a box
+        that has ``licenseId`` keeps it, so the key is the licence itself)."""
+        mapping: Dict[str, str] = {}
+        for team in game.get("stats", {}).get("teams", []):
+            for player in team.get("players", []):
+                licence = analyzer._fbcyl_actor_to_license.get(player.get("actorId"))
+                key = str(player.get("licenseId") or player.get("uuid", ""))
+                if licence and key:
+                    mapping[str(licence)] = key
+        return mapping
 
     def _starting_five(self, per_game_starters: List[Set[str]], significant_ids: Set[str], minutes: Dict[str, float]):
         """``(the five most frequent starters among the significant players, the starter count of every player, the games in which those five started together,
