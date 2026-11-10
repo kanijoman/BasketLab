@@ -122,6 +122,16 @@ class PlayByPlayAnalyzer:
         """Licence id (persistent) of a game-scoped actor id, as the lineup keys use it."""
         return self._fbcyl_actor_to_license.get(actor_id) or str(actor_id)
 
+    def _timeline_key(self, player_id):
+        """The key a player has in the timeline. FBCYL keys it by licence id, but the callers also have the game-scoped ``actorId`` (the IN/OUT of a
+        player, the box): a known actor id is translated, a licence id (or anything else) is left as it is (issue #818)."""
+        if not self.is_fbcyl:
+            return player_id
+        mapped = self._fbcyl_actor_to_license.get(player_id)
+        if mapped is None and isinstance(player_id, str) and player_id.isdigit():
+            mapped = self._fbcyl_actor_to_license.get(int(player_id))
+        return mapped if mapped is not None else player_id
+
     def _fbcyl_timeline_from_moves(self) -> Dict[str, List[Tuple[int, bool]]]:
         """``{player: [(second, on_court)]}`` from the ``Entra al campo`` / ``Sale del campo`` moves, in game order.
 
@@ -181,7 +191,7 @@ class PlayByPlayAnalyzer:
         if not getattr(self, '_fbcyl_positions', None):
             return None
         spans, start = [], None
-        for index, on in self._fbcyl_positions.get(str(player_id), []):
+        for index, on in self._fbcyl_positions.get(str(self._timeline_key(player_id)), []):
             if on and start is None:
                 start = index
             elif not on and start is not None:
@@ -267,6 +277,7 @@ class PlayByPlayAnalyzer:
             List of (start_time, end_time) tuples in seconds from game start
         """
         timeline = self.parse_substitutions()
+        player_id = self._timeline_key(player_id)
 
         # Try to find player with both str and int formats
         player_events = timeline.get(player_id, [])
