@@ -5,10 +5,46 @@ from pymongo.errors import PyMongoError
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl
 from database._inout_helpers_mixin import InOutHelpersMixin
+from ._inout_game_lookup import find_fbcyl_player, find_feb_team_id, player_minutes_played, team_participated
+from .pbp_stat_counters import empty_stats
 
 
 class InOutRepositoryMixin(InOutHelpersMixin):
     """Mixin providing per-player IN/OUT and together-stats query methods."""
+
+    def _find_feb_player_team_id(self, collection_name: str, player_id: str):
+        """Team of a FEB player, from ONE game that has play-by-play and the player (iterating the cursor would exhaust it before the main loop)."""
+        player_doc = self.connection.get_collection(collection_name).find_one(
+            {
+                "BOXSCORE.TEAM.PLAYER.id": player_id,
+                "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None},
+            },
+            {"BOXSCORE.TEAM.id": 1, "BOXSCORE.TEAM.PLAYER.id": 1},
+        )
+        return find_feb_team_id(player_doc, player_id)
+
+    @staticmethod
+    def _empty_in_out_totals() -> Dict:
+        totals = empty_stats()
+        totals.update({'minutes': 0, 'games': 0})
+        return totals
+
+    @staticmethod
+    def _add_in_out_game(total: Dict, game_side: Dict) -> None:
+        for key in total:
+            if key in game_side:
+                total[key] += game_side[key]
+
+    @staticmethod
+    def _write_in_out_debug(player_id: str, debug_outputs: List[Dict]) -> None:
+        """Save the debug outputs to a JSON file in the repository root."""
+        try:
+            import json, os
+            debug_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"debug_inout_{player_id}.json")
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                json.dump(debug_outputs, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
 
     def get_player_in_out_stats(self, collection_name: str, player_id: str,
                                  date_filter: Dict = None, debug: bool = False,
@@ -31,322 +67,75 @@ class InOutRepositoryMixin(InOutHelpersMixin):
         try:
             from .playbyplay_analyzer import PlayByPlayAnalyzer, InOutStatsCalculator
 
-            # Detect if this is a FBCYL collection
             is_fbcyl = _is_fbcyl(collection_name)
-
-            # Get total count for progress reporting (count_documents, no docs loaded)
+            # count_documents: no docs loaded
             total_games = self.count_games_with_playbyplay(collection_name, date_filter)
-
             if progress_callback:
                 progress_callback(0, max(total_games, 1))
 
-            # Convert player_id to appropriate type for comparison
-            if is_fbcyl:
-                # FBCYL: player_id is UUID (stats.teams[].players[].uuid)
-                # UUID is stable across games, but actorId changes per game
-                # We extract actorId per game to identify actions in moves[]
-                # We don't need to find player_team_id upfront since both actorId and teamIdIntern
-                # change per game. We'll extract them in the per-game loop below.
-                player_id_compare = player_id  # Keep as string (UUID format)
-                player_team_id = None  # Not used for FBCYL (per-game extraction instead)
-            else:
-                # FEB: player_id is consistent across games.
-                # Find team_id via a single find_one() instead of iterating the cursor
-                # (iterating would exhaust it before the main processing loop).
-                player_id_compare = player_id
-                player_team_id = None
-
-                collection_obj = self.connection.get_collection(collection_name)
-                player_doc = collection_obj.find_one(
-                    {
-                        "BOXSCORE.TEAM.PLAYER.id": player_id,
-                        "PLAYBYPLAY.LINES": {"$exists": True, "$ne": None},
-                    },
-                    {"BOXSCORE.TEAM.id": 1, "BOXSCORE.TEAM.PLAYER.id": 1},
-                )
-                if player_doc:
-                    for team in player_doc.get("BOXSCORE", {}).get("TEAM", []):
-                        for player in team.get("PLAYER", []):
-                            if player.get("id") == player_id_compare:
-                                player_team_id = team.get("id")
-                                break
-                        if player_team_id:
-                            break
-
+            # FBCYL: player_id is the UUID (stable across games), while the actorId and the team id of the moves change per game, so both are
+            # looked up in each game. FEB: the player id is stable and so is its team.
+            player_team_id = None
+            if not is_fbcyl:
+                player_team_id = self._find_feb_player_team_id(collection_name, player_id)
                 if not player_team_id:
                     return {}
 
-            # Lazy cursor — one document in memory at a time
-            games = self.get_games_with_playbyplay(collection_name, date_filter)
-
+            games = self.get_games_with_playbyplay(collection_name, date_filter)     # lazy cursor: one document in memory at a time
             if progress_callback and total_games > 0:
                 progress_callback(1, total_games)
 
-            # Aggregate stats across all games
-            total_stats_in = {
-                'points_for': 0, 'points_against': 0,
-                'fgm_2': 0, 'fga_2': 0, 'fgm_3': 0, 'fga_3': 0,
-                'ftm': 0, 'fta': 0, 'orb': 0, 'drb': 0,
-                'ast': 0, 'stl': 0, 'blk': 0, 'tov': 0, 'pf': 0,
-                'minutes': 0, 'games': 0,
-                # opponent aggregated keys (if provided by analyzer)
-                'opp_fgm_2': 0, 'opp_fga_2': 0, 'opp_fgm_3': 0, 'opp_fga_3': 0,
-                'opp_ftm': 0, 'opp_fta': 0, 'opp_orb': 0, 'opp_drb': 0,
-                'opp_ast': 0, 'opp_stl': 0, 'opp_blk': 0, 'opp_tov': 0, 'opp_pf': 0
-            }
-
-            total_stats_out = {
-                'points_for': 0, 'points_against': 0,
-                'fgm_2': 0, 'fga_2': 0, 'fgm_3': 0, 'fga_3': 0,
-                'ftm': 0, 'fta': 0, 'orb': 0, 'drb': 0,
-                'ast': 0, 'stl': 0, 'blk': 0, 'tov': 0, 'pf': 0,
-                'minutes': 0, 'games': 0,
-                # opponent aggregated keys (if provided by analyzer)
-                'opp_fgm_2': 0, 'opp_fga_2': 0, 'opp_fgm_3': 0, 'opp_fga_3': 0,
-                'opp_ftm': 0, 'opp_fta': 0, 'opp_orb': 0, 'opp_drb': 0,
-                'opp_ast': 0, 'opp_stl': 0, 'opp_blk': 0, 'opp_tov': 0, 'opp_pf': 0
-            }
-
-            games_analyzed = 0
-            debug_outputs = []
-            games_participated = 0
-
-            # Report initial progress
+            total_stats_in, total_stats_out = self._empty_in_out_totals(), self._empty_in_out_totals()
+            games_analyzed = games_participated = 0
+            debug_outputs: List[Dict] = []
             if progress_callback:
                 progress_callback(0, max(total_games, 1))
 
             for game_index, game in enumerate(games):
-                # Report progress at the start of each game
                 if progress_callback:
                     progress_callback(game_index + 1, max(total_games, 1))
-                # Default per-game container (to avoid UnboundLocalError in finally)
-                game_stats = {}
-                game_was_skipped = False
-
-                # For FBCYL: Get actorId AND teamIdIntern for THIS specific game (both change per game)
-                current_game_actor_id = None
-                current_game_team_id = None
 
                 if is_fbcyl:
-                    # Helper function to normalize player names: first initial + surnames
-                    def normalize_name(name):
-                        if not name:
-                            return ""
-                        words = name.split()
-                        if len(words) >= 3:
-                            # First initial + two surnames
-                            return f"{words[0][0]} {words[-2]} {words[-1]}"
-                        elif len(words) >= 2:
-                            # First initial + one surname
-                            return f"{words[0][0]} {words[-1]}"
-                        return name
-
-                    # Try to get normalized name from player_id if it's a name-based identifier
-                    # (in case UUID wasn't available and we're using surnames as fallback)
-                    target_normalized = normalize_name(player_id_compare) if not player_id_compare.count('-') == 4 else None
-
-                    stats = game.get('stats', {})
-                    for team in stats.get('teams', []):
-                        for player in team.get('players', []):
-                            # FBCYL: Match by UUID (stable identifier) OR by normalized name
-                            player_uuid = player.get('uuid')
-                            player_name = player.get('name', '')
-                            player_normalized = normalize_name(player_name)
-
-                            if player_uuid == player_id_compare or \
-                               (target_normalized and player_normalized == target_normalized):
-                                # Extract actorId for THIS game (used in moves[])
-                                current_game_actor_id = player.get('actorId')
-                                current_game_team_id = team.get('teamIdIntern') or team.get('teamIdExtern')
-                                break
-                        if current_game_actor_id:
-                            break
-
-                    # Skip this game if player not found
-                    if not current_game_actor_id or not current_game_team_id:
+                    identity = find_fbcyl_player(game, player_id)
+                    if identity is None:
                         continue
+                    pid_for_game, team_id_for_game = identity
+                else:
+                    pid_for_game, team_id_for_game = player_id, player_team_id
 
-                # Determine if player actually played in this game using BOXSCORE/stats minutes
-                def _player_minutes_played(g, pid) -> float:
-                    if is_fbcyl:
-                        # For FBCYL, pid is the actorId for this specific game
-                        # FBCYL structure: stats.teams[].players[]
-                        stats = g.get('stats', {})
-                        for team in stats.get('teams', []):
-                            for p in team.get('players', []):
-                                p_id = p.get('actorId')
-                                if p_id == pid:
-                                    m = p.get('timePlayed')  # FBCYL uses 'timePlayed' field
-                                    if m is None:
-                                        return 0.0
-                                    minutes = float(m)
-                                    # Phantom player: inscribed but never played.
-                                    # FBCYL assigns timePlayed=40 to these players while
-                                    # every activity stat remains 0.
-                                    if minutes == 40.0:
-                                        data = p.get('data', {}) or {}
-                                        activity = sum(
-                                            data.get(k, 0) or 0
-                                            for k in (
-                                                'score', 'shotsOfTwoAttempted',
-                                                'shotsOfThreeAttempted', 'shotsOfOneAttempted',
-                                                'offensiveRebound', 'defensiveRebound',
-                                                'assists', 'lost', 'block', 'steals',
-                                            )
-                                        )
-                                        if activity == 0:
-                                            return 0.0
-                                    return minutes
-                        return 0.0
-                    else:
-                        # FEB structure: BOXSCORE.TEAM[].PLAYER[]
-                        box = g.get('BOXSCORE', {})
-                        for team in box.get('TEAM', []):
-                            for p in team.get('PLAYER', []):
-                                if p.get('id') == pid:
-                                    m = p.get('min')
-                                    if m is None:
-                                        return 0.0
-                                    if isinstance(m, (int, float)):
-                                        return float(m)
-                                    s = str(m).strip()
-                                    if s in ('0', '0:00', ''):
-                                        return 0.0
-                                    if ':' in s:
-                                        try:
-                                            parts = s.split(':')
-                                            mm = int(parts[0])
-                                            ss = int(parts[1]) if len(parts) > 1 else 0
-                                            return mm + ss / 60.0
-                                        except Exception:
-                                            return 0.0
-                                    try:
-                                        return float(s)
-                                    except Exception:
-                                        return 0.0
-                        return 0.0
-
-                # For FBCYL, use current game's actorId; for FEB use player_id_compare
-                pid_for_game = current_game_actor_id if is_fbcyl else player_id_compare
-                minutes_played = _player_minutes_played(game, pid_for_game)
-
-                # Determine if the player's team participated in this game
-                def _team_participated(g, team_id) -> bool:
-                    if is_fbcyl:
-                        # FBCYL: Use teamIdIntern (matches moves[].idTeam for play-by-play)
-                        stats = g.get('stats', {})
-                        for team in stats.get('teams', []):
-                            t_id = team.get('teamIdIntern') or team.get('teamIdExtern')
-                            if t_id == team_id:
-                                # If there are players listed, consider the team participated
-                                players = team.get('players', [])
-                                if not players:
-                                    return False
-                                # If any player has minutes > 0, the team participated
-                                for p in players:
-                                    m = p.get('timePlayed')
-                                    if m is None:
-                                        continue
-                                    if isinstance(m, (int, float)) and m > 0:
-                                        return True
-                                # If no player has minutes but players exist, assume team participated
-                                return True
-                        return False
-                    else:
-                        # FEB structure: BOXSCORE.TEAM[]
-                        box = g.get('BOXSCORE', {})
-                        for team in box.get('TEAM', []):
-                            if team.get('id') == team_id:
-                                # If there are players listed, consider the team participated
-                                players = team.get('PLAYER', [])
-                                if not players:
-                                    return False
-                                # If any player has minutes > 0, the team participated
-                                for p in players:
-                                    m = p.get('min')
-                                    if m is None:
-                                        continue
-                                    if isinstance(m, (int, float)) and m > 0:
-                                        return True
-                                    s = str(m).strip()
-                                    if s and s not in ('0', '0:00'):
-                                        # treat presence of a non-zero string minute as participation
-                                        return True
-                                # If no player has minutes but players exist, assume team participated
-                                return True
-                        return False
-
-                # Use current game's team_id for FBCYL, or player_team_id for FEB
-                team_id_for_game = current_game_team_id if is_fbcyl else player_team_id
-                team_played = _team_participated(game, team_id_for_game)
-
-                # Count games where the player actually participated (min > 0)
+                minutes_played = player_minutes_played(game, pid_for_game, is_fbcyl)
+                team_played = team_participated(game, team_id_for_game, is_fbcyl)
                 if minutes_played > 0.0:
-                    games_participated += 1
+                    games_participated += 1          # the games where the player actually played (min > 0): the denominator of Min/J
 
+                game_stats = {}
                 try:
-                    # Skip games where the player's team did not participate
                     if not team_played:
-                        game_was_skipped = True
                         if debug:
-                            debug_outputs.append({
-                                'game_id': game.get('_id'),
-                                'skipped': True,
-                                'reason': 'team_not_participating',
-                                'in': None,
-                                'out': None,
-                                'minutes_played': minutes_played,
-                                'player_id': player_id
-                            })
+                            debug_outputs.append({'game_id': game.get('_id'), 'skipped': True, 'reason': 'team_not_participating',
+                                                  'in': None, 'out': None, 'minutes_played': minutes_played, 'player_id': player_id})
                         continue
-                    analyzer = PlayByPlayAnalyzer(game, is_fbcyl=is_fbcyl)
-                    calculator = InOutStatsCalculator(analyzer)
-
-                    # For FBCYL: use actorId and teamIdIntern for this specific game
+                    calculator = InOutStatsCalculator(PlayByPlayAnalyzer(game, is_fbcyl=is_fbcyl))
                     game_stats = calculator.calculate_in_out_stats(pid_for_game, team_id_for_game)
-
-                    # Accumulate IN stats
-                    for key in list(total_stats_in.keys()):
-                        if key in game_stats.get('in', {}):
-                            total_stats_in[key] += game_stats['in'][key]
-
-                    # Accumulate OUT stats
-                    for key in list(total_stats_out.keys()):
-                        if key in game_stats.get('out', {}):
-                            total_stats_out[key] += game_stats['out'][key]
-
+                    self._add_in_out_game(total_stats_in, game_stats.get('in', {}))
+                    self._add_in_out_game(total_stats_out, game_stats.get('out', {}))
                     games_analyzed += 1
-
-                except Exception as e:
+                except Exception:
                     if debug:
                         import traceback
                         traceback.print_exc()
                     continue
-
                 finally:
-                    if debug and not game_was_skipped:
+                    if debug and team_played:
                         debug_outputs.append({
-                            'game_id': game.get('_id'),
-                            'skipped': False,
+                            'game_id': game.get('_id'), 'skipped': False,
                             'in': game_stats.get('in') if isinstance(game_stats, dict) else None,
                             'out': game_stats.get('out') if isinstance(game_stats, dict) else None,
-                            'minutes_played': minutes_played,
-                            'player_id': player_id
-                        })
+                            'minutes_played': minutes_played, 'player_id': player_id})
 
-            # Use games_participated as the denominator for per-game minutes (Min/J)
-            total_stats_in['games'] = games_participated
-            total_stats_out['games'] = games_participated
-
+            total_stats_in['games'] = total_stats_out['games'] = games_participated
             if debug:
-                # Save debug outputs to a JSON file in repository root
-                try:
-                    import json, os
-                    debug_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"debug_inout_{player_id}.json")
-                    with open(debug_file, 'w', encoding='utf-8') as f:
-                        json.dump(debug_outputs, f, ensure_ascii=False, indent=2)
-                except Exception as e:
-                    pass
+                self._write_in_out_debug(player_id, debug_outputs)
 
             return {
                 'in': total_stats_in,
@@ -356,7 +145,7 @@ class InOutRepositoryMixin(InOutHelpersMixin):
                 'games_analyzed': games_analyzed
             }
 
-        except PyMongoError as e:
+        except PyMongoError:
             return {}
 
     def get_two_players_together_stats(self, collection_name: str, player1_id: str, 
