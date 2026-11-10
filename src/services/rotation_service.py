@@ -92,13 +92,11 @@ class RotationService:
         significant_stats = {pid: player_stats[pid] for pid in significant_ids}
 
         # Derive ordered lists (significant players only, sorted by total_minutes desc)
-        sorted_ids = sorted(
-            significant_ids,
-            key=lambda k: significant_stats[k]["total_minutes"],
-            reverse=True,
-        )
+        sorted_ids = sorted(significant_ids, key=lambda k: (-significant_stats[k]["total_minutes"], k))
 
-        season_starters, starter_counts, starting_five_games_count, starting_five_games_pct = self._starting_five(per_game_starters, significant_ids)
+        minutes = {pid: stats["total_minutes"] for pid, stats in player_stats.items()}
+        season_starters, starter_counts, starting_five_games_count, starting_five_games_pct, ranked_starters = self._starting_five(
+            per_game_starters, significant_ids, minutes)
         games_with_pbp_for_starters = len(per_game_starters)
 
         # Mark starters and starter counts for all players
@@ -121,17 +119,13 @@ class RotationService:
         ]
 
         # Build marginal player list (sorted by total_minutes desc)
-        marginal_ids = sorted(
-            set(player_stats.keys()) - significant_ids,
-            key=lambda k: player_stats[k]["total_minutes"],
-            reverse=True,
-        )
+        marginal_ids = sorted(set(player_stats.keys()) - significant_ids, key=lambda k: (-player_stats[k]["total_minutes"], k))
         marginal_list = [
             _make_player_entry(pid, player_stats[pid], True) for pid in marginal_ids
         ]
 
         # Percentages
-        starting_ids = list(season_starters) if season_starters else sorted_ids[:5]
+        starting_ids = ranked_starters if season_starters else sorted_ids[:5]
         # starting_five: season-level (fixed group of identified starters)
         pcts = self._compute_percentages(significant_stats, starting_ids)
         # top5/top8: per-game (in each game take the N highest-minute players)
@@ -214,14 +208,15 @@ class RotationService:
         if game_min:       # stint accumulation needs the per-game minutes captured from the box
             self._accumulate_stints(analyzer.parse_substitutions(), game_min, scan.pbp_minutes_acc, scan.pbp_stints_acc)
 
-    def _starting_five(self, per_game_starters: List[Set[str]], significant_ids: Set[str]):
-        """``(the five most frequent starters among the significant players, the starter count of every player, the games in which those five started together, and their %)``."""
+    def _starting_five(self, per_game_starters: List[Set[str]], significant_ids: Set[str], minutes: Dict[str, float]):
+        """``(the five most frequent starters among the significant players, the starter count of every player, the games in which those five started together,
+        their %, and the five in order)``. The rule is fixed so that a rebuild publishes the same five (#828): games as a starter (desc), total minutes (desc), player id."""
         _, starter_counts = self._aggregate_starters(per_game_starters)
-        sig_starter_counts = Counter({pid: c for pid, c in starter_counts.items() if pid in significant_ids})
-        season_starters = {pid for pid, _ in sig_starter_counts.most_common(5)}
+        ranked = sorted((pid for pid in starter_counts if pid in significant_ids), key=lambda pid: (-starter_counts[pid], -minutes.get(pid, 0.0), pid))[:5]
+        season_starters = set(ranked)
         together = sum(1 for s in per_game_starters if season_starters and season_starters.issubset(s))
         pct = round(together / len(per_game_starters) * 100, 1) if per_game_starters else 0.0
-        return season_starters, starter_counts, together, pct
+        return season_starters, starter_counts, together, pct, ranked
 
     @staticmethod
     def _player_entry(pid: str, stats: Dict, is_marginal: bool, games_with_pbp_for_starters: int,
@@ -383,9 +378,9 @@ class RotationService:
             return set(), {}
         counter: Counter = Counter()
         for s in per_game_starters:
-            for pid in s:
+            for pid in sorted(s):                    # a set has no order: the tie of the last place would depend on the hash seed (#828)
                 counter[pid] += 1
-        top_5 = {pid for pid, _ in counter.most_common(5)}
+        top_5 = {pid for pid, _ in sorted(counter.items(), key=lambda item: (-item[1], item[0]))[:5]}
         return top_5, dict(counter)
 
     def _filter_significant_players(
