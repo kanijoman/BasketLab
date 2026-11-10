@@ -1,8 +1,8 @@
 /** Conexiones de asistencia (issue #773): who passes, who receives and from which zones the receiver scores, assisted against not assisted. FEB and FBCYL. */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTeamOptions } from '@/lib/useTeamOptions'
 import { useQuery } from '@tanstack/react-query'
 import { getAssistConnections, type AssistConnections } from '@/api/assistConnections'
-import { getTeamStats } from '@/api/client'
 import { useCollection } from '@/context/CollectionContext'
 import PageTransition from '@/components/ui/PageTransition'
 import PageHeader from '@/components/ui/PageHeader'
@@ -27,16 +27,7 @@ export default function ConexionesPage() {
   const [playerId, setPlayerId] = useState<string | null>(null)
   const detailRef = useRef<HTMLDivElement>(null)
 
-  const { data: teamData } = useQuery({
-    queryKey: ['team-list-conexiones', collection?.name],
-    queryFn: () => getTeamStats(collection!.name),
-    enabled: Boolean(collection),
-    staleTime: 10 * 60_000,
-  })
-  const teams = useMemo(
-    () => (teamData?.team_stats ?? []).map(t => ({ name: t.team_name, id: String(t.team_id ?? t.team_name) })).sort((a, b) => a.name.localeCompare(b.name)),
-    [teamData],
-  )
+  const teams = useTeamOptions(collection?.name)
   useEffect(() => { if (teamId === null && teams.length > 0) setTeamId(teams[0].id) }, [teams, teamId])
   useEffect(() => setPlayerId(null), [teamId, collection?.name])
 

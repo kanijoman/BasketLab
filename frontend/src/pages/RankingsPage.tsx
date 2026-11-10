@@ -8,6 +8,7 @@
  * Each row shows the delta relative to the league leader.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import NoCollection from '@/components/ui/NoCollection'
 import { useQuery } from '@tanstack/react-query'
 import { Trophy, Medal, Award } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -187,11 +188,7 @@ export default function RankingsPage() {
   ]
 
   if (!collection) {
-    return (
-      <PageTransition>
-        <p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p>
-      </PageTransition>
-    )
+    return <NoCollection />
   }
 
   return (

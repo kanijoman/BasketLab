@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo, useEffect, type FormEvent } from 'react'
 import { Select } from '@/components/ui/Field'
-import { useQuery } from '@tanstack/react-query'
+import AnalysisProgress from '@/components/ui/AnalysisProgress'
+import { useTeamOptions } from '@/lib/useTeamOptions'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell,
@@ -12,7 +13,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import ExportButton from '@/components/ui/ExportButton'
 import {
-  getTeamStats, streamRotacionesAnalysis,
+  streamRotacionesAnalysis,
   type RotationPlayer, type RotationResult,
 } from '@/api/client'
 
@@ -111,20 +112,7 @@ export default function RotacionesPage() {
 
   // ── Team list ──────────────────────────────────────────────────────────────
 
-  const { data: teamData } = useQuery({
-    queryKey: ['team-list-rotaciones', collection?.name],
-    queryFn: () => getTeamStats(collection!.name),
-    enabled: Boolean(collection),
-    staleTime: 10 * 60_000,
-  })
-
-  const teams = useMemo(
-    () =>
-      (teamData?.team_stats ?? [])
-        .map(t => ({ name: t.team_name, id: String(t.team_id ?? t.team_name) }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [teamData],
-  )
+  const teams = useTeamOptions(collection?.name)
 
   useEffect(() => {
     if (teams.length > 0 && !pendingTeam) {
@@ -249,25 +237,7 @@ export default function RotacionesPage() {
         )}
 
         {/* Progress bar */}
-        {isFetching && (
-          <div className="flex flex-col gap-2 card p-4 text-ink-muted text-sm">
-            <div className="flex items-center gap-3">
-              <span className="inline-block w-4 h-4 border-2 border-secondary-text border-t-transparent rounded-full animate-spin flex-shrink-0" />
-              Analizando partidos…
-              {progress != null && (
-                <span className="ml-auto text-xs text-ink-faint font-mono">{progress}%</span>
-              )}
-            </div>
-            {progress != null && (
-              <div className="h-1.5 bg-surface-raised rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-secondary rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            )}
-          </div>
-        )}
+        {isFetching && <AnalysisProgress progress={progress} />}
 
         {/* Results */}
         {!isFetching && result && (

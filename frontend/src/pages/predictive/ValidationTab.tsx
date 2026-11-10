@@ -2,10 +2,11 @@
 import { Field, Select } from '@/components/ui/Field'
 import { useState, useEffect } from 'react'
 import { useCollection } from '@/context/CollectionContext'
-import { getLiveTeamNames, getHistoricalSeasons, getHistoricalTeams, getBacktesting, getBacktestingLive, type HistoricalTeamEntry, type BacktestingResult, type TeamEntry } from '@/api/client'
+import { getLiveTeamNames, getBacktesting, getBacktestingLive, type BacktestingResult, type TeamEntry } from '@/api/client'
 import { STAT_LABELS } from '@/lib/statLabels'
 import Button from '@/components/ui/Button'
 import SegmentedControl from '@/components/ui/SegmentedControl'
+import { HistoricalFields, useHistoricalPicker } from './shared'
 
 // ── Validation tab (Admin > Modelos predictivos) ────────────────────────────
 export function ValidationTab() {
@@ -15,10 +16,8 @@ export function ValidationTab() {
   const [mode, setMode]         = useState<'historical' | 'live'>('historical')
 
   // historical mode state
-  const [seasons, setSeasons]   = useState<string[]>([])
-  const [teams, setTeams]       = useState<HistoricalTeamEntry[]>([])
-  const [season, setSeason]     = useState('')
-  const [teamId, setTeamId]     = useState('')
+  const picker = useHistoricalPicker()
+  const { season, teamId } = picker
 
   // live mode state
   const [liveTeams, setLiveTeams] = useState<TeamEntry[]>([])
@@ -27,24 +26,6 @@ export function ValidationTab() {
   const [result, setResult]     = useState<BacktestingResult | null>(null)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
-
-  // load historical seasons
-  useEffect(() => {
-    if (mode !== 'historical') return
-    getHistoricalSeasons().then(s => {
-      setSeasons(s)
-      if (s.length) setSeason(s[0])
-    }).catch(() => {})
-  }, [mode])
-
-  // load historical teams when season changes
-  useEffect(() => {
-    if (mode !== 'historical' || !season) return
-    getHistoricalTeams(season).then(t => {
-      setTeams(t)
-      if (t.length) setTeamId(t[0].team_id)
-    }).catch(() => {})
-  }, [season, mode])
 
   // load live team names when switching to live mode
   useEffect(() => {
@@ -99,18 +80,7 @@ export function ValidationTab() {
       {/* Controls */}
       <div className="flex flex-wrap gap-3 items-end">
         {mode === 'historical' ? (
-          <>
-            <Field label="Temporada" className="w-40">
-              <Select value={season} onChange={e => setSeason(e.target.value)}>
-                {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-              </Select>
-            </Field>
-            <Field label="Equipo" className="w-56">
-              <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
-                {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
-              </Select>
-            </Field>
-          </>
+          <HistoricalFields picker={picker} />
         ) : (
           <Field label={`Equipo — ${collection?.name ?? '…'}`} className="w-64">
             <Select value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>

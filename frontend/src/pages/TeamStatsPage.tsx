@@ -8,6 +8,7 @@
  * Export: CSV / PNG / PDF via DataTable > ExportButton
  */
 import { teamColumn } from '@/components/ui/TeamCell'
+import NoCollection from '@/components/ui/NoCollection'
 import Tabs from '@/components/ui/Tabs'
 import SegmentedControl from '@/components/ui/SegmentedControl'
 import { useMemo, useRef, useState } from 'react'
@@ -324,13 +325,7 @@ export default function TeamStatsPage() {
   )
 
   if (!collection) {
-    return (
-      <PageTransition>
-        <p className="text-center text-ink-faint mt-16">
-          Selecciona una colección para continuar.
-        </p>
-      </PageTransition>
-    )
+    return <NoCollection />
   }
 
   return (

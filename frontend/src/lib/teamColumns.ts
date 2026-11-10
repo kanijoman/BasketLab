@@ -35,6 +35,9 @@ export const BASIC_COL_DEFS: ColDef[] = [
   { key: 'blocks_per_game',              header: 'Tap',    size: 48 },
 ]
 
+/** The multiphase table: the basic one without the home/away split (the phases are added up, not split by venue). */
+export const MULTIPHASE_BASIC_COL_DEFS: ColDef[] = BASIC_COL_DEFS.filter(d => d.key !== 'games_home' && d.key !== 'games_away')
+
 export const ADVANCED_COL_DEFS: ColDef[] = [
   { key: 'total_games',               header: 'PJ',     decimals: 0, count: true, size: 44 },
   { key: 'possessions_per_game',      header: 'Pos',    size: 52 },

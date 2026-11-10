@@ -5,6 +5,7 @@
  * (issue #608: no arrows); green when it is good, red when it is bad. The view of the rivals swaps good and bad: what they did against a team is good for them.
  */
 import { teamColumn } from '@/components/ui/TeamCell'
+import NoCollection from '@/components/ui/NoCollection'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
@@ -100,7 +101,7 @@ export default function ComparativasPage() {
   const reverseColumns = useMemo(() => defs.filter(d => Boolean(d.reverse) !== rivals).map(d => d.key as string), [defs, rivals])
 
   if (!collection) {
-    return <PageTransition><p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p></PageTransition>
+    return <NoCollection />
   }
 
   const shortcut = (days: number) => { setFrom(isoDay(days - 1)); setTo(isoDay(0)) }
