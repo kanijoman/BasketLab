@@ -9,6 +9,7 @@
  * - Export: CSV / PNG / PDF via DataTable
  */
 import { teamColumn } from '@/components/ui/TeamCell'
+import NoCollection from '@/components/ui/NoCollection'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
@@ -455,11 +456,7 @@ export default function PlayerStatsPage() {
   }, [tab, players, activeCols])
 
   if (!collection) {
-    return (
-      <PageTransition>
-        <p className="text-center text-ink-faint mt-16">Selecciona una colección para continuar.</p>
-      </PageTransition>
-    )
+    return <NoCollection />
   }
 
   return (

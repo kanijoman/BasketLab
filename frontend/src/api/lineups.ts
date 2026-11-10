@@ -1,5 +1,6 @@
 /** Lineups: the analysis, its stat groups and the SSE stream (issue #201). */
 import { fromSource } from '@/datasource/resolve'
+import { streamResult } from './sseStream'
 import { localLineups } from '@/localdata/source'
 import { BASE, get } from './http'
 import type { GameLogEntry } from './players'
@@ -133,32 +134,7 @@ function streamLineupsFromApi(
   const qs = lineupQuery(teamName, size, stat, period, includeGameLog, minMinutes, minGames)
   const url = `${BASE}/lineups/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
 
-  return new Promise((resolve, reject) => {
-    const es = new EventSource(url)
-
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.done) {
-          es.close()
-          if (data.error) {
-            reject(new Error(data.error))
-          } else {
-            resolve(data.result ?? [])
-          }
-        } else if (data.progress !== undefined && onProgress) {
-          onProgress(data.progress as number, data.current as number, data.total as number)
-        }
-      } catch {
-        // ignore malformed frames
-      }
-    }
-
-    es.onerror = () => {
-      es.close()
-      reject(new Error('SSE connection error'))
-    }
-  })
+  return streamResult<LineupRow[] | undefined>(url, onProgress).then(r => r ?? [])
 }
 
 export interface LineupRow {

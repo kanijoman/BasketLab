@@ -2,6 +2,7 @@
 import { fromSource } from '@/datasource/resolve'
 import { localRotation } from '@/localdata/source'
 import { BASE } from './http'
+import { streamResult } from './sseStream'
 
 // ── Rotaciones ───────────────────────────────────────────────────────────────
 
@@ -80,30 +81,5 @@ function streamRotationsFromApi(
   const qs = new URLSearchParams({ team_name: teamName })
   const url = `${BASE}/rotaciones/${encodeURIComponent(collection)}/${encodeURIComponent(teamId)}/stream?${qs}`
 
-  return new Promise((resolve, reject) => {
-    const es = new EventSource(url)
-
-    es.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.done) {
-          es.close()
-          if (data.error) {
-            reject(new Error(data.error))
-          } else {
-            resolve(data.result as RotationResult)
-          }
-        } else if (data.progress !== undefined && onProgress) {
-          onProgress(data.progress as number, data.current as number, data.total as number)
-        }
-      } catch {
-        // ignore malformed frames
-      }
-    }
-
-    es.onerror = () => {
-      es.close()
-      reject(new Error('SSE connection error'))
-    }
-  })
+  return streamResult<RotationResult>(url, onProgress)
 }
