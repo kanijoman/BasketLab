@@ -2,9 +2,10 @@
 import { Field, Input, Select } from '@/components/ui/Field'
 import { useState, useEffect } from 'react'
 import { useCollection } from '@/context/CollectionContext'
-import { getLiveTeamNames, getHistoricalSeasons, getHistoricalTeams, postGamePrediction, type HistoricalTeamEntry, type GamePredictionResult, type TeamEntry } from '@/api/client'
+import { getLiveTeamNames, postGamePrediction, type GamePredictionResult, type TeamEntry } from '@/api/client'
 import Button from '@/components/ui/Button'
 import SegmentedControl from '@/components/ui/SegmentedControl'
+import { HistoricalFields, useHistoricalPicker } from './shared'
 
 // ── Friendly labels for classifier feature names ─────────────────────────────
 const FEAT_LABELS: Record<string, string> = {
@@ -28,10 +29,8 @@ export function GamePredictionTab() {
 
   const [mode, setMode] = useState<'historical' | 'live'>('historical')
 
-  const [seasons, setSeasons]     = useState<string[]>([])
-  const [teams, setTeams]         = useState<HistoricalTeamEntry[]>([])
-  const [season, setSeason]       = useState('')
-  const [teamId, setTeamId]       = useState('')
+  const picker = useHistoricalPicker()
+  const { season, teamId } = picker
 
   const [liveTeams, setLiveTeams] = useState<TeamEntry[]>([])
   const [liveTeam, setLiveTeam]   = useState('')
@@ -41,21 +40,6 @@ export function GamePredictionTab() {
   const [result, setResult]       = useState<GamePredictionResult | null>(null)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
-
-  useEffect(() => {
-    getHistoricalSeasons().then(s => {
-      setSeasons(s)
-      if (s.length) setSeason(s[0])
-    }).catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    if (!season) return
-    getHistoricalTeams(season).then(t => {
-      setTeams(t)
-      if (t.length) setTeamId(t[0].team_id)
-    }).catch(() => {})
-  }, [season])
 
   useEffect(() => {
     if (mode !== 'live' || !collection) return
@@ -110,18 +94,7 @@ export function GamePredictionTab() {
       {/* Controls */}
       <div className="flex flex-wrap gap-3 items-end">
         {mode === 'historical' ? (
-          <>
-            <Field label="Temporada" className="w-40">
-              <Select value={season} onChange={e => setSeason(e.target.value)}>
-                {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-              </Select>
-            </Field>
-            <Field label="Equipo" className="w-56">
-              <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
-                {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
-              </Select>
-            </Field>
-          </>
+          <HistoricalFields picker={picker} />
         ) : collection ? (
           <Field label="Equipo (temporada actual)" className="w-64">
             <Select value={liveTeam} onChange={e => setLiveTeam(e.target.value)}>

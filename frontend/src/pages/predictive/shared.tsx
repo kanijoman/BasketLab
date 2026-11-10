@@ -1,5 +1,5 @@
 /** What the tabs of the predictive analysis share: number formats and the season + team picker (issue #193). */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Field, Select } from '@/components/ui/Field'
 import { useQuery } from '@tanstack/react-query'
 import { getHistoricalSeasons, getHistoricalTeams, type HistoricalTeamEntry } from '@/api/client'
@@ -9,6 +9,49 @@ export const fmt = (v: number | null | undefined, d = 1) =>
 
 export const pct = (v: number | null | undefined) =>
   v == null ? '—' : `${(v * 100).toFixed(1)} %`
+
+// ── Season + team of the historical models: the state and the two loads the tabs shared by hand (issue #452) ──
+export function useHistoricalPicker() {
+  const [seasons, setSeasons] = useState<string[]>([])
+  const [teams, setTeams]     = useState<HistoricalTeamEntry[]>([])
+  const [season, setSeason]   = useState('')
+  const [teamId, setTeamId]   = useState('')
+
+  useEffect(() => {
+    getHistoricalSeasons().then(s => {
+      setSeasons(s)
+      if (s.length) setSeason(s[0])
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!season) return
+    getHistoricalTeams(season).then(t => {
+      setTeams(t)
+      if (t.length) setTeamId(t[0].team_id)
+    }).catch(() => {})
+  }, [season])
+
+  return { seasons, teams, season, setSeason, teamId, setTeamId }
+}
+
+/** The two selects of that state. */
+export function HistoricalFields({ picker: { seasons, teams, season, setSeason, teamId, setTeamId } }: { picker: ReturnType<typeof useHistoricalPicker> }) {
+  return (
+    <>
+      <Field label="Temporada" className="w-40">
+        <Select value={season} onChange={e => setSeason(e.target.value)}>
+          {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+        </Select>
+      </Field>
+      <Field label="Equipo" className="w-56">
+        <Select value={teamId} onChange={e => setTeamId(e.target.value)}>
+          {teams.map(t => <option key={t.team_id} value={t.team_id}>{t.team_name}</option>)}
+        </Select>
+      </Field>
+    </>
+  )
+}
 
 // ── Shared season + team picker ───────────────────────────────────────────────
 export function TeamPicker({
