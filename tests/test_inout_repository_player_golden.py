@@ -3,8 +3,8 @@
 Characterization, not specification: ``tests/fixtures/inout_repository_golden.json`` holds what the code did with each scenario of
 ``tests/inout_repo_corpus.py`` (43 scenarios: a real FBCYL match with every player, two games, a team without players, a phantom player, a player
 without minutes, the surnames fallback; a FEB game with every minutes format, the rival without players, a player not found; no connection).
-It pins, among others, the bug of #818 (the FBCYL «IN» side comes out at zero): the arreglo changes those scenarios and regenerates the file in its
-commit (``PYTHONPATH=".;src" python tests/inout_repo_corpus.py``). A refactor must leave it as it is.
+#818 changed the 25 FBCYL scenarios with the player found (their «IN» side was at zero) and regenerated the file; a refactor must leave it as it is
+(``PYTHONPATH=".;src" python tests/inout_repo_corpus.py`` after a change of rule on purpose).
 """
 import json
 
