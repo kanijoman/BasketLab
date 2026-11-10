@@ -96,3 +96,51 @@ def test_a_clean_tree_says_so(tmp_path, capsys):
     write(tmp_path, "src/a.py", "x = 1\n")
     assert dc.main(["--root", str(tmp_path)]) == 0
     assert "sin bloques duplicados" in capsys.readouterr().out
+
+
+# ── Files over the size limit (issue #452, absorbed from #112) ───────────────────────────────────
+
+def lines_of(n):
+    return "\n".join(f"x_{i} = {i}" for i in range(n)) + "\n"
+
+
+def test_a_file_over_the_limit_is_listed_with_its_lines_and_one_at_the_limit_is_not(tmp_path):
+    write(tmp_path, "src/big.py", lines_of(501))
+    write(tmp_path, "src/exact.py", lines_of(500))
+    write(tmp_path, "frontend/src/Page.tsx", lines_of(700))
+    assert dc.find_large_files(tmp_path, 500) == [("frontend/src/Page.tsx", 700), ("src/big.py", 501)]       # biggest first
+
+
+def test_tests_dependencies_build_output_and_declaration_files_are_not_counted_as_large(tmp_path):
+    for rel in ("tests/test_big.py", "frontend/node_modules/x/big.ts", "dist/big.js", "src/big.test.ts", "src/types.d.ts"):
+        write(tmp_path, rel, lines_of(900))
+    assert dc.find_large_files(tmp_path, 500) == []
+
+
+def test_the_report_lists_the_large_files_even_when_nothing_is_duplicated(tmp_path):
+    write(tmp_path, "src/big.py", lines_of(520))
+    text = dc.report(dc.find_duplicates(tmp_path), 8, 12, dc.find_large_files(tmp_path, 500), 500)
+    assert "sin bloques duplicados" in text
+    assert "1 fichero" in text and "`src/big.py` 520" in text
+
+
+def test_the_report_counts_and_orders_the_large_files_after_the_duplicates(tmp_path):
+    twin(tmp_path)
+    write(tmp_path, "src/big.py", lines_of(520))
+    write(tmp_path, "src/bigger.py", lines_of(900))
+    text = dc.report(dc.find_duplicates(tmp_path), 8, 12, dc.find_large_files(tmp_path, 500), 500)
+    assert text.index("Código duplicado") < text.index("más de 500 líneas")
+    assert "2 ficheros" in text
+    assert text.index("`src/bigger.py` 900") < text.index("`src/big.py` 520")
+
+
+def test_without_large_files_the_report_says_none(tmp_path):
+    twin(tmp_path)
+    text = dc.report(dc.find_duplicates(tmp_path), 8, 12, [], 500)
+    assert "ningún fichero de más de 500 líneas" in text
+
+
+def test_main_takes_the_limit_from_the_command_line(tmp_path, capsys):
+    write(tmp_path, "src/mid.py", lines_of(300))
+    assert dc.main(["--root", str(tmp_path), "--max-lines", "200"]) == 0
+    assert "`src/mid.py` 300" in capsys.readouterr().out

@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Set, Tuple, Optional, Any
 from collections import defaultdict
+from src.live_core.clock import GAME_SECONDS
 import re
 
 from .event_helpers import get_timestamp
@@ -307,7 +308,7 @@ class PlayByPlayAnalyzer:
         # If player was still on court at game end
         if current_start is not None:
             # Game ends at 40 minutes (2400 seconds) for regular time
-            segments.append((current_start, 2400))
+            segments.append((current_start, GAME_SECONDS))
 
         return segments
 

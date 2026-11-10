@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from src.live_core.clock import GAME_SECONDS
+
 # Play-by-play derived fields that stay None when the team has no play-by-play data
 _PBP_FIELDS = (
     "avg_duration", "pct_fast", "pct_medium", "pct_slow", "oer_fast", "oer_medium", "oer_slow",
@@ -67,7 +69,7 @@ def apply_pbp_fields(entry: Dict[str, Any], poss: Optional[Dict[str, Any]]) -> N
     entry["oer_fast"] = fast.get("oer")
     entry["oer_medium"] = medium.get("oer")
     entry["oer_slow"] = slow.get("oer")
-    entry["est_possessions_per_game"] = round(2400 / avg_dur / 2, 1) if avg_dur and avg_dur > 0 else None
+    entry["est_possessions_per_game"] = round(GAME_SECONDS / avg_dur / 2, 1) if avg_dur and avg_dur > 0 else None
 
     # Reconciliation metadata — general OER is untouched (already boxscore-formula from pipeline)
     entry["data_quality_score"] = poss.get("data_quality_score", 100)

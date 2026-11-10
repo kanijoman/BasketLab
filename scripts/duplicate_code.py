@@ -2,7 +2,8 @@
 
 The quality issues of the repo measure size and complexity, none measures duplicated functionality. This takes ``src/`` and the frontends (not tests, dependencies or build output),
 drops blank lines, comments, imports and indentation, and reports every maximal run of at least ``--min-lines`` identical lines that appears in two or more places.
-``python scripts/duplicate_code.py [--root .] [--min-lines 8] [--top 12]``: informative (always exit 0); it writes a markdown summary to ``$GITHUB_STEP_SUMMARY`` when it is set,
+It also lists the own-code files over ``--max-lines`` (500, the limit of CLAUDE.md; issue #112, absorbed by #452).
+``python scripts/duplicate_code.py [--root .] [--min-lines 8] [--top 12] [--max-lines 500]``: informative (always exit 0); it writes a markdown summary to ``$GITHUB_STEP_SUMMARY`` when it is set,
 so the CI shows the baseline and its trend. Standard library only.
 """
 from __future__ import annotations
@@ -96,13 +97,38 @@ def find_duplicates(root: Path, min_lines: int = 8) -> Dict[str, List[Block]]:
     return result
 
 
+def find_large_files(root: Path, max_lines: int = 500) -> List[Tuple[str, int]]:
+    """``(path, lines)`` of every own-code file (the same ones the duplicates are looked for in) with more than ``max_lines`` lines, biggest first."""
+    large = []
+    for suffixes, _ in LANGUAGES.values():
+        for path in _source_files(root, suffixes):
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                count = sum(1 for _ in fh)
+            if count > max_lines:
+                large.append((path.relative_to(root).as_posix(), count))
+    return sorted(large, key=lambda item: (-item[1], item[0]))
+
+
+def _large_files_section(large: List[Tuple[str, int]], max_lines: int) -> List[str]:
+    if not large:
+        return ["", f"### Tamaño: ningún fichero de más de {max_lines} líneas"]
+    noun = "fichero" if len(large) == 1 else "ficheros"
+    return ["", f"### Tamaño: {len(large)} {noun} de más de {max_lines} líneas (refactor al tocarlos, CLAUDE.md)", ""] + [f"- `{path}` {count}" for path, count in large]
+
+
 def summarize(found: Dict[str, List[Block]]) -> Dict[str, Dict[str, int]]:
     return {language: {"blocks": len(blocks), "redundant_lines": sum(b.length * (len(b.places) - 1) for b in blocks),
                        "across_files": sum(b.across_files for b in blocks), "within_file": sum(not b.across_files for b in blocks)}
             for language, blocks in found.items()}
 
 
-def report(found: Dict[str, List[Block]], min_lines: int, top: int) -> str:
+def report(found: Dict[str, List[Block]], min_lines: int, top: int,
+           large: Optional[List[Tuple[str, int]]] = None, max_lines: int = 500) -> str:
+    text = _duplicates_report(found, min_lines, top)
+    return text if large is None else "\n".join([text] + _large_files_section(large, max_lines))
+
+
+def _duplicates_report(found: Dict[str, List[Block]], min_lines: int, top: int) -> str:
     summary = summarize(found)
     if not any(s["blocks"] for s in summary.values()):
         return f"## Código duplicado\n\nsin bloques duplicados de {min_lines} líneas o más."
@@ -122,8 +148,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--root", default=".")
     parser.add_argument("--min-lines", type=int, default=8)
     parser.add_argument("--top", type=int, default=12)
+    parser.add_argument("--max-lines", type=int, default=500)
     args = parser.parse_args(argv)
-    text = report(find_duplicates(Path(args.root), args.min_lines), args.min_lines, args.top)
+    root = Path(args.root)
+    text = report(find_duplicates(root, args.min_lines), args.min_lines, args.top, find_large_files(root, args.max_lines), args.max_lines)
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
