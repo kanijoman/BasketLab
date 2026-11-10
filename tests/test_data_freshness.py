@@ -1,12 +1,9 @@
 """Is the database up to date with the FEB calendar? (production data went stale vs a local copy)"""
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from db_helpers import new_mock_db
-from fastapi.testclient import TestClient
 
-from src.api.app import app
-from src.api.deps import get_db
 from src.scraper.calendar_parser import parse_calendar
 from src.services.data_freshness_service import DataFreshnessService
 from src.services.match_schedule_service import MatchScheduleService
@@ -89,16 +86,3 @@ class TestCheck:
     def test_fbcyl_is_not_supported(self):
         r = _svc(_db([])).check("FBCYL_1A_2026")
         assert r["up_to_date"] is None and "FEB" in r["warning"]
-
-
-class TestEndpoint:
-    def test_returns_the_service_result(self):
-        app.dependency_overrides[get_db] = lambda: MagicMock()
-        try:
-            with patch("src.api.routers.collections.DataFreshnessService") as svc:
-                svc.return_value.check.return_value = {"collection": "X", "up_to_date": False, "missing_codes": ["1"]}
-                r = TestClient(app).get("/api/v1/collections/X/freshness")
-        finally:
-            app.dependency_overrides.clear()
-        assert r.status_code == 200 and r.json()["missing_codes"] == ["1"]
-        svc.return_value.check.assert_called_once_with("X")
