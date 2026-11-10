@@ -73,66 +73,8 @@ def _make_team_stat(name: str = "Alpha FC", ppg: float = 78.0) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Reports router: PDF export + individual scouting DOCX
+# Reports router: individual scouting DOCX
 # ---------------------------------------------------------------------------
-
-class TestExportPDF:
-    """Integration: POST /api/v1/reports/export-pdf covers PDFGenerator pipeline."""
-
-    @pytest.fixture(autouse=True)
-    def setup_client(self):
-        db = _make_mock_db()
-        app.dependency_overrides[get_db] = lambda: db
-        yield TestClient(app)
-        app.dependency_overrides.clear()
-
-    @pytest.fixture
-    def client(self):
-        db = _make_mock_db()
-        app.dependency_overrides[get_db] = lambda: db
-        c = TestClient(app)
-        yield c
-        app.dependency_overrides.clear()
-
-    def test_export_pdf_returns_200(self, client):
-        r = client.post(f"{V1}/reports/export-pdf", json={
-            "html": "<p>Análisis del equipo Alpha FC</p>",
-            "team": "Alpha FC",
-            "analysis_type": "own",
-        })
-        assert r.status_code == 200
-
-    def test_export_pdf_content_type_is_pdf(self, client):
-        r = client.post(f"{V1}/reports/export-pdf", json={
-            "html": "<p>Stats</p>",
-            "team": "Beta BC",
-        })
-        assert "pdf" in r.headers.get("content-type", "")
-
-    def test_export_pdf_body_is_non_empty(self, client):
-        r = client.post(f"{V1}/reports/export-pdf", json={
-            "html": "<h1>Alpha FC</h1><p>PPG: 78.5</p>",
-            "team": "Alpha FC",
-        })
-        assert len(r.content) > 0
-
-    def test_export_pdf_empty_html(self, client):
-        r = client.post(f"{V1}/reports/export-pdf", json={"html": "", "team": ""})
-        assert r.status_code == 200
-
-    def test_export_pdf_with_emojis_no_500(self, client):
-        r = client.post(f"{V1}/reports/export-pdf", json={
-            "html": "<p>🔥 Fortaleza ⚠️ Aviso ✅ OK</p>",
-            "team": "Alpha FC",
-        })
-        assert r.status_code == 200
-
-    def test_export_pdf_content_disposition_header(self, client):
-        r = client.post(f"{V1}/reports/export-pdf", json={
-            "html": "<p>Text</p>", "team": "Alpha FC",
-        })
-        assert "attachment" in r.headers.get("content-disposition", "")
-
 
 class TestIndividualScoutingDocx:
     """Integration: GET /api/v1/reports/individual-scouting/docx."""

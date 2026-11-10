@@ -9,6 +9,7 @@ from src.api.app import app
 from src.database import MongoDBHandler
 from src.database.repository_inout import InOutRepositoryMixin
 from src.services.player_stats_service import PlayerStatsService
+from tests.api_routes import api_operations
 
 REMOVED_METHODS = ("get_two_players_together_stats", "get_player_individual_stats_with_teammate", "_process_game_with_teammate",
                    "get_players_together", "get_player_with_teammate")
@@ -20,7 +21,7 @@ def test_the_together_and_teammate_methods_are_gone(owner):
 
 
 def test_the_together_endpoint_is_gone():
-    assert not [route.path for route in app.routes if "together" in getattr(route, "path", "")]
+    assert not [path for _, path in api_operations(app) if "together" in path]      # from the OpenAPI schema: app.routes is nested in the FastAPI of the CI
 
 
 @pytest.mark.parametrize("module", ["src.database._inout_helpers_mixin", "src.database.inout_repository_helper"])

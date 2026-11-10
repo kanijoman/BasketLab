@@ -117,18 +117,6 @@ class MultiPhaseService:
         return _merge_by_key(rows_by_coll, key="player_name")
 
     # ------------------------------------------------------------------
-    # Public API — breakdown views
-    # ------------------------------------------------------------------
-
-    def get_team_stats_breakdown(self, is_fbcyl: bool) -> Dict[str, List[Dict]]:
-        """Return raw per-collection team stats keyed by collection name."""
-        return self._load_team_stats(is_fbcyl)
-
-    def get_player_stats_breakdown(self, is_fbcyl: bool) -> Dict[str, List[Dict]]:
-        """Return raw per-collection player stats keyed by collection name."""
-        return self._load_player_stats(is_fbcyl)
-
-    # ------------------------------------------------------------------
     # Private loaders
     # ------------------------------------------------------------------
 

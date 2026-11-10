@@ -3,8 +3,6 @@
 HTTP contract for:
   GET /api/v1/multi/team-stats?collections=C1,C2[&is_fbcyl=false]
   GET /api/v1/multi/player-stats?collections=C1,C2
-  GET /api/v1/multi/team-stats/breakdown?collections=C1,C2
-  GET /api/v1/multi/player-stats/breakdown?collections=C1,C2
   GET /api/v1/multi/sibling-collections?collection=FEB_LF2_2025_A
 """
 
@@ -164,56 +162,6 @@ class TestMultiPlayerStats:
         )
         names = {row["player_name"] for row in r.json()}
         assert "P1" in names and "P2" in names and "P3" in names
-
-
-# ===========================================================================
-# GET /api/v1/multi/team-stats/breakdown
-# ===========================================================================
-
-class TestTeamStatsBreakdown:
-    def test_returns_200(self, client_two_colls):
-        r = client_two_colls.get(
-            f"{V1}/multi/team-stats/breakdown",
-            params={"collections": "FEB_LF2_2025_A,FEB_LF2_2025_B"},
-        )
-        assert r.status_code == 200
-
-    def test_response_is_dict_keyed_by_collection(self, client_two_colls):
-        r = client_two_colls.get(
-            f"{V1}/multi/team-stats/breakdown",
-            params={"collections": "FEB_LF2_2025_A,FEB_LF2_2025_B"},
-        )
-        body = r.json()
-        assert "FEB_LF2_2025_A" in body
-        assert "FEB_LF2_2025_B" in body
-
-    def test_each_phase_is_list(self, client_two_colls):
-        r = client_two_colls.get(
-            f"{V1}/multi/team-stats/breakdown",
-            params={"collections": "FEB_LF2_2025_A,FEB_LF2_2025_B"},
-        )
-        for v in r.json().values():
-            assert isinstance(v, list)
-
-
-# ===========================================================================
-# GET /api/v1/multi/player-stats/breakdown
-# ===========================================================================
-
-class TestPlayerStatsBreakdown:
-    def test_returns_200(self, client_two_colls):
-        r = client_two_colls.get(
-            f"{V1}/multi/player-stats/breakdown",
-            params={"collections": "FEB_LF2_2025_A,FEB_LF2_2025_B"},
-        )
-        assert r.status_code == 200
-
-    def test_response_keyed_by_collection(self, client_two_colls):
-        r = client_two_colls.get(
-            f"{V1}/multi/player-stats/breakdown",
-            params={"collections": "FEB_LF2_2025_A,FEB_LF2_2025_B"},
-        )
-        assert "FEB_LF2_2025_A" in r.json()
 
 
 # ===========================================================================
