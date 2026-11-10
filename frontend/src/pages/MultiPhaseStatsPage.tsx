@@ -28,62 +28,18 @@ import Button from '@/components/ui/Button'
 import Tabs from '@/components/ui/Tabs'
 import DataTable, { type QuartileMap } from '@/components/ui/DataTable'
 import { tippedHeader } from '@/components/ui/Tooltip'
+import { ADVANCED_COL_DEFS, MULTIPHASE_BASIC_COL_DEFS as BASIC_COL_DEFS, REVERSE_ADV, REVERSE_BASIC, type ColDef } from '@/lib/teamColumns'
+import { computeQuartileMap } from '@/lib/quartiles'
 
-// ---------------------------------------------------------------------------
-// Column metadata (mirrors TeamStatsPage ColDef)
-// ---------------------------------------------------------------------------
-
-interface ColDef {
-  key: keyof TeamStat
-  header: string
-  decimals?: number
-  pct?: boolean
-  reverse?: boolean
-  count?: boolean
-  size?: number
-}
-
-const BASIC_COL_DEFS: ColDef[] = [
-  { key: 'total_games',                 header: 'PJ',    decimals: 0, count: true, size: 44 },
-  { key: 'points_per_game',             header: 'PPP',   size: 58 },
-  { key: 'points_against_per_game',     header: 'PPC',   reverse: true, size: 58 },
-  { key: 'fg2_percentage',              header: '%T2',   pct: true, size: 62 },
-  { key: 'fg3_percentage',              header: '%T3',   pct: true, size: 62 },
-  { key: 'ft_percentage',               header: '%TL',   pct: true, size: 62 },
-  { key: 'rebounds_per_game',           header: 'Reb',   size: 56 },
-  { key: 'offensive_rebounds_per_game', header: 'RO',    size: 48 },
-  { key: 'defensive_rebounds_per_game', header: 'RD',    size: 48 },
-  { key: 'assists_per_game',            header: 'Ast',   size: 48 },
-  { key: 'steals_per_game',             header: 'Rob',   size: 48 },
-  { key: 'turnovers_per_game',          header: 'Perd',  reverse: true, size: 52 },
-  { key: 'blocks_per_game',             header: 'Tap',   size: 48 },
-]
-
-const ADVANCED_COL_DEFS: ColDef[] = [
-  { key: 'total_games',            header: 'PJ',     decimals: 0, count: true, size: 44 },
-  { key: 'possessions_per_game',   header: 'Pos',    size: 52 },
-  { key: 'offensive_rating',       header: 'OER',    size: 56 },
-  { key: 'defensive_rating',       header: 'DER',    reverse: true, size: 56 },
-  { key: 'net_rating',             header: 'Net',    size: 56 },
-  { key: 'efg_percentage',         header: 'eFG%',   pct: true, size: 62 },
-  { key: 'true_shooting',          header: 'TS%',    pct: true, size: 58 },
-  { key: 'three_point_rate',       header: '3Pr%',   pct: true, size: 58 },
-  { key: 'free_throw_rate',        header: 'FTr%',   pct: true, size: 58 },
-  { key: 'assist_fg_rate',         header: 'AST/FG', pct: true, size: 68 },
-  { key: 'assist_rate',            header: 'AST%',   pct: true, size: 60 },
-  { key: 'turnover_rate',          header: 'TOV%',   pct: true, reverse: true, size: 62 },
-  { key: 'steal_rate',             header: 'ROB%',   pct: true, size: 62 },
-  { key: 'block_rate',             header: 'TAP%',   pct: true, size: 62 },
-  { key: 'offensive_rebound_rate', header: 'ORB%',   pct: true, size: 62 },
-  { key: 'defensive_rebound_rate', header: 'RD%',    pct: true, size: 60 },
-]
-
-const REVERSE_BASIC = BASIC_COL_DEFS.filter(d => d.reverse).map(d => d.key as string)
-const REVERSE_ADV   = ADVANCED_COL_DEFS.filter(d => d.reverse).map(d => d.key as string)
 
 // ---------------------------------------------------------------------------
 // Team column builders
 // ---------------------------------------------------------------------------
+
+/** Columns that get quartile colouring (counts do not). */
+function quartileKeys(defs: ColDef[]): string[] {
+  return defs.filter(d => !d.count).map(d => d.key as string)
+}
 
 function buildTeamCol(def: ColDef): ColumnDef<TeamStat, unknown> {
   const { key, header, decimals = 1, pct = false, size = 60 } = def
@@ -182,28 +138,7 @@ const REVERSE_PLAYER_ADV = ['turnover_rate']
 // Client-side quartile computation (no dedicated API endpoint for multi-phase)
 // ---------------------------------------------------------------------------
 
-function computeTeamQuartiles(data: TeamStat[], defs: ColDef[]): QuartileMap {
-  const map: QuartileMap = {}
-  for (const def of defs) {
-    if (def.count) continue
-    const key = def.key as string
-    const vals = data
-      .map(d => d[key] as number | undefined)
-      .filter((v): v is number => typeof v === 'number' && !isNaN(v))
-      .sort((a, b) => a - b)
-    if (vals.length < 4) continue
-    const q = (p: number) => {
-      const idx = (vals.length - 1) * p
-      const lo = Math.floor(idx), hi = Math.ceil(idx)
-      return vals[lo] + (vals[hi] - vals[lo]) * (idx - lo)
-    }
-    map[key] = [q(0.25), q(0.5), q(0.75)]
-  }
-  return map
-}
-
 function computePlayerQuartiles(data: PlayerStat[]): QuartileMap {
-  const map: QuartileMap = {}
   const numericKeys = [
     'games_played', 'minutes_per_game', 'points_per_game', 'rebounds_per_game',
     'assists_per_game', 'steals_per_game', 'turnovers_per_game', 'blocks_per_game',
@@ -213,20 +148,7 @@ function computePlayerQuartiles(data: PlayerStat[]): QuartileMap {
     'turnover_rate', 'assist_fg_rate', 'offensive_rebound_rate', 'defensive_rebound_rate',
     'offensive_rebounds_per_game', 'defensive_rebounds_per_game',
   ]
-  for (const key of numericKeys) {
-    const vals = data
-      .map(d => d[key as keyof PlayerStat] as number | undefined)
-      .filter((v): v is number => typeof v === 'number' && !isNaN(v))
-      .sort((a, b) => a - b)
-    if (vals.length < 4) continue
-    const q = (p: number) => {
-      const idx = (vals.length - 1) * p
-      const lo = Math.floor(idx), hi = Math.ceil(idx)
-      return vals[lo] + (vals[hi] - vals[lo]) * (idx - lo)
-    }
-    map[key] = [q(0.25), q(0.5), q(0.75)]
-  }
-  return map
+  return computeQuartileMap(data, numericKeys)
 }
 
 // ---------------------------------------------------------------------------
@@ -333,8 +255,8 @@ export default function MultiPhaseStatsPage() {
   const playerRows = playerData as PlayerStat[]
 
   // Client-side quartiles (computed from merged data)
-  const basicQuartiles    = useMemo(() => computeTeamQuartiles(teamRows, BASIC_COL_DEFS),    [teamRows])
-  const advancedQuartiles = useMemo(() => computeTeamQuartiles(teamRows, ADVANCED_COL_DEFS), [teamRows])
+  const basicQuartiles    = useMemo(() => computeQuartileMap(teamRows, quartileKeys(BASIC_COL_DEFS)),    [teamRows])
+  const advancedQuartiles = useMemo(() => computeQuartileMap(teamRows, quartileKeys(ADVANCED_COL_DEFS)), [teamRows])
   const playerQuartiles   = useMemo(() => computePlayerQuartiles(playerRows),                [playerRows])
 
   const teamCols      = useMemo(() => buildTeamCols(statTab === 'basic' ? BASIC_COL_DEFS : ADVANCED_COL_DEFS), [statTab])
