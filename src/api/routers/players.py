@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query
 
 from src.api.deps import get_db
 from src.services import PlayerStatsService
-from src.services.inout_service import enrich_stat_block as _enrich_stat_block, inout_analysis
+from src.services.inout_service import inout_analysis
 from src.utils.time_utils import end_of_day
 
 router = APIRouter()
@@ -97,30 +97,3 @@ def get_inout_analysis(
         rebounding, assists, turnovers and net rating.
     """
     return inout_analysis(db, collection, player_id)
-
-
-@router.get("/{collection}/together/{player1_id}/{player2_id}", summary="Two-player together analysis")
-def get_players_together(
-    collection: str,
-    player1_id: str,
-    player2_id: str,
-    db=Depends(get_db),
-) -> Dict[str, Any]:
-    """Return team stats when two specific players are simultaneously on court.
-
-    Args:
-        collection: MongoDB collection name.
-        player1_id: First player identifier.
-        player2_id: Second player identifier.
-
-    Returns:
-        Combined stat dict for the shared court time.
-    """
-    svc = PlayerStatsService(db)
-    result = svc.get_players_together(collection, player1_id, player2_id)
-    if result:
-        if "together" in result:
-            result["together"] = _enrich_stat_block(result["together"])
-        if "apart" in result:
-            result["apart"] = _enrich_stat_block(result["apart"])
-    return result

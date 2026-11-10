@@ -149,12 +149,6 @@ export interface InOutResult {
   /** @deprecated use on/off */
   out?: InOutStatBlock
 }
-
-export interface PlayersTogetherResult {
-  together: InOutStatBlock
-  apart: InOutStatBlock
-}
-
 export interface GameLogEntry {
   date: string
   net_rating: number

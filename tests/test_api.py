@@ -38,7 +38,6 @@ def _mock_db(
     handler.get_aggregated_opponent_stats.return_value = {}
     handler.get_league_stats.return_value = {}
     handler.get_player_in_out_stats.return_value = {"in": {}, "out": {}}
-    handler.get_two_players_together_stats.return_value = {}
     handler.get_lineup_analysis.return_value = []
     mock_collection = MagicMock()
     mock_collection.count_documents.return_value = 1
@@ -232,10 +231,6 @@ class TestPlayersRouter:
 
     def test_inout_analysis_returns_200(self, client):
         r = client.get(f"{V1}/players/FEB_LF2_2025_A/inout/12345")
-        assert r.status_code == 200
-
-    def test_together_analysis_returns_200(self, client):
-        r = client.get(f"{V1}/players/FEB_LF2_2025_A/together/12/34")
         assert r.status_code == 200
 
     def test_player_quartiles_returns_200_and_dict(self, client):

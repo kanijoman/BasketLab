@@ -26,8 +26,6 @@ def _make_db_handler(
     handler.get_aggregated_opponent_stats.return_value = {}
     handler.get_league_stats.return_value = {}
     handler.get_player_in_out_stats.return_value = {}
-    handler.get_two_players_together_stats.return_value = {}
-    handler.get_player_individual_stats_with_teammate.return_value = {}
     handler.get_lineup_analysis.return_value = []
     return handler
 
@@ -409,22 +407,6 @@ class TestPlayerStatsServiceInOut:
         handler.get_player_in_out_stats.return_value = None
         svc = PlayerStatsService(handler)
         assert svc.get_in_out_analysis("X", "p1") == {}
-
-
-class TestPlayerStatsServiceTogether:
-    def test_get_players_together_called(self):
-        from src.services import PlayerStatsService
-        handler = _make_db_handler()
-        svc = PlayerStatsService(handler)
-        svc.get_players_together("COL", "p1", "p2")
-        handler.get_two_players_together_stats.assert_called_once()
-
-    def test_none_return_yields_empty_dict(self):
-        from src.services import PlayerStatsService
-        handler = _make_db_handler()
-        handler.get_two_players_together_stats.return_value = None
-        svc = PlayerStatsService(handler)
-        assert svc.get_players_together("X", "p1", "p2") == {}
 
 
 # ---------------------------------------------------------------------------
