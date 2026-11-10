@@ -10,6 +10,7 @@ import pytest
 
 from src.api.app import app
 from src.services.multi_phase_service import MultiPhaseService
+from tests.api_routes import api_operations
 
 REMOVED_ROUTES = [
     "/api/v1/reports/export-pdf",
@@ -23,7 +24,8 @@ REMOVED_ROUTES = [
 
 
 def paths():
-    return {getattr(route, "path", "") for route in app.routes}
+    """From the OpenAPI schema: ``app.routes`` is nested in the FastAPI of the CI and a loop over it sees no ``/api/v1`` route (see ``tests/api_routes.py``)."""
+    return {path for _, path in api_operations(app)}
 
 
 @pytest.mark.parametrize("path", REMOVED_ROUTES)
