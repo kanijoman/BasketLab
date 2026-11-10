@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, Optional
 
+from src.live_core.clock import GAME_SECONDS
 from src.live_core.boxscore import figures, valuation, valuation_gross, web_player, web_team
 from src.live_core.four_factors import possessions
 
@@ -53,7 +54,7 @@ def season_figures(stats: Dict[str, int], seconds: int, pf: int, fd: int, pm: in
     if seconds <= 0:
         return {}
     p = {"stats": stats, "minutes": seconds, "pts": 2 * stats["fg2m"] + 3 * stats["fg3m"] + stats["ftm"], "pf": pf, "fd": fd}
-    scale, league = 2400 / seconds, context["league"]
+    scale, league = GAME_SECONDS / seconds, context["league"]
     out: Dict[str, Any] = {
         "fd_per40": round(fd * scale, 3), "pm_per40": round(pm * scale, 3),
         "val_per40": round(valuation(p) * scale, 3), "val_gross_per40": round(valuation_gross(p) * scale, 3),
@@ -61,7 +62,7 @@ def season_figures(stats: Dict[str, int], seconds: int, pf: int, fd: int, pm: in
         "fg_pct": _shrunk(stats["fg2m"] + stats["fg3m"], stats["fg2a"] + stats["fg3a"], league["fg"]),
     }
     if context.get("games"):
-        out["min_share"] = round(seconds / (context["games"] * 2400), 4)
+        out["min_share"] = round(seconds / (context["games"] * GAME_SECONDS), 4)
     if "team" in context:
         adv = figures(web_player(p, games), context["team"], context["rival"])
         out["adv"] = {k: (round(adv[k], 2) if adv[k] is not None else None) for k in SEASON_ADV_KEYS}

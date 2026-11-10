@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Set, Tuple, FrozenSet, Optional
 from collections import defaultdict
+from src.live_core.clock import GAME_SECONDS
 from .playbyplay_analyzer import PlayByPlayAnalyzer
 
 
@@ -196,7 +197,7 @@ class LineupExtractor:
         
         # Each quarter is 600 seconds (10 minutes)
         # Overtime periods are 300 seconds (5 minutes)
-        regulation_time = 2400  # 4 quarters
+        regulation_time = GAME_SECONDS  # 4 quarters
         if max_quarter > 4:
             overtime_periods = max_quarter - 4
             return regulation_time + (overtime_periods * 300)
