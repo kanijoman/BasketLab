@@ -240,6 +240,35 @@ def _start_key(game: Dict[str, Any]) -> datetime:
     return parse_starttime(game) or datetime.min
 
 
+def _scope_map(extra: Dict[str, Iterable[Dict[str, Any]]]):
+    """``(scope of each game code, the games of the other competitions)``; the names of the league and of the grouped scope are reserved."""
+    if any(name in (LEAGUE, ALL) for name in extra):
+        raise ValueError(f"Los nombres de alcance {LEAGUE!r} y {ALL!r} están reservados")
+    scope_of: Dict[str, str] = {}
+    others: List[Dict[str, Any]] = []
+    for name, items in extra.items():
+        for game in items:
+            scope_of[game_code(game)] = name
+            others.append(game)
+    return scope_of, others
+
+
+def _scout_game(game: Dict[str, Any], scope: Optional[str], team_id: str, acc: Any, league: "_League", aggs: Dict[str, "_Agg"], collection: str,
+                poll_s: float, levels: Optional[Dict[str, int]], noted: bool) -> None:
+    """One game: it feeds the league's figures (when it is a league game) and, when the team played it, is replayed from its side and counted in its scope and in ``todo``."""
+    ids = [str(t["id"]) for t in (game.get("HEADER") or {}).get("TEAM", [])]
+    derived = _reliable_teams(game) if len(ids) == 2 else None
+    if derived and scope is None:
+        league.add(derived)
+    if len(ids) == 2 and team_id in ids:
+        opp = ids[1] if ids[0] == team_id else ids[0]
+        replayed = _replay(game, acc, team_id, opp, collection, poll_s)
+        if replayed:
+            note = _note(scope or LEAGUE, team_id, opp, levels) if noted else None
+            for name in {scope or LEAGUE, ALL}:
+                aggs.setdefault(name, _Agg(team_id)).add(game, opp, *replayed, derived=derived, note=note)
+
+
 def scout_team_scopes(games: Iterable[Dict[str, Any]], team_id: str, collection: str = "FEB", poll_s: float = 30.0,
                       progress: Optional[Callable[[int], None]] = None, extra: Optional[Dict[str, Iterable[Dict[str, Any]]]] = None,
                       levels: Optional[Dict[str, int]] = None) -> Dict[str, Dict[str, Any]]:
@@ -253,30 +282,12 @@ def scout_team_scopes(games: Iterable[Dict[str, Any]], team_id: str, collection:
     ``level_gap``: the rival's category minus the team's). Raises ``ValueError`` when the team has no game at all.
     """
     team_id, extra = str(team_id), extra or {}
-    if any(name in (LEAGUE, ALL) for name in extra):
-        raise ValueError(f"Los nombres de alcance {LEAGUE!r} y {ALL!r} están reservados")
-    scope_of: Dict[str, str] = {}
-    others: List[Dict[str, Any]] = []
-    for name, items in extra.items():
-        for game in items:
-            scope_of[game_code(game)] = name
-            others.append(game)
+    scope_of, others = _scope_map(extra)
     merged = heapq.merge(games, sorted(others, key=_start_key), key=_start_key) if others else games
     acc, league, aggs, done = SeasonAccumulator(), _League(), {}, 0
     for group in same_start_groups(merged):
         for game in group:       # all of them before any is learned: games that start together do not see each other
-            scope = scope_of.get(game_code(game))                        # None: a game of the league
-            ids = [str(t["id"]) for t in (game.get("HEADER") or {}).get("TEAM", [])]
-            derived = _reliable_teams(game) if len(ids) == 2 else None
-            if derived and scope is None:
-                league.add(derived)
-            if len(ids) == 2 and team_id in ids:
-                opp = ids[1] if ids[0] == team_id else ids[0]
-                replayed = _replay(game, acc, team_id, opp, collection, poll_s)
-                if replayed:
-                    note = _note(scope or LEAGUE, team_id, opp, levels) if (others or levels) else None
-                    for name in {scope or LEAGUE, ALL}:
-                        aggs.setdefault(name, _Agg(team_id)).add(game, opp, *replayed, derived=derived, note=note)
+            _scout_game(game, scope_of.get(game_code(game)), team_id, acc, league, aggs, collection, poll_s, levels, bool(others or levels))
         for game in group:
             if game_code(game) not in scope_of:                          # only the league teaches the season
                 acc.add_game(game)
