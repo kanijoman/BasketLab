@@ -68,3 +68,15 @@ def test_the_same_results_in_the_same_order_give_the_same_ratings():
         first.update(*g)
         second.update(*g)
     assert {t: first.rating(t) for t in "ABC"} == {t: second.rating(t) for t in "ABC"}
+
+
+def test_the_variance_of_a_team_is_public_a_new_team_has_the_prior_one_and_a_result_makes_it_surer_before_the_season_drift():
+    """The browser port needs it (the simulation of the league draws each team's strength from its mean and variance, #848)."""
+    from src.live_prep.team_rating import Q_GAME
+
+    ratings = TeamRatings()
+    assert ratings.variance("A") == P0                              # never seen
+    ratings.update("A", "B", 7)
+    gain = P0 / (P0 + P0 + NOISE)
+    assert ratings.variance("A") == pytest.approx(P0 * (1 - gain) + Q_GAME) and ratings.variance("B") == pytest.approx(P0 * (1 - gain) + Q_GAME)
+    assert ratings.variance("A") < P0 and ratings.variance("C") == P0

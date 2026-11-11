@@ -465,55 +465,35 @@ def _write(path: Path, vectors: dict, compact: bool = False) -> None:
     path.write_text(text + "\n", encoding="utf-8")
 
 
-def main() -> None:
-    _write(OUT, build_vectors())
-    _write(PLAYERS_OUT, build_player_vectors())
-    _write(FBCYL_OUT, build_fbcyl_vectors())
-    _write(COMPARISON_OUT, build_comparison_vectors())
-    _write(COMPARISON_FBCYL_OUT, build_fbcyl_comparison_vectors())
-    _write(MULTI_OUT, build_multi_vectors())
-    _write(EVOLUTION_OUT, build_evolution_vectors())
-    _write(EVOLUTION_FBCYL_OUT, build_fbcyl_evolution_vectors())
-    _write(TEAM_EVOLUTION_OUT, build_team_evolution_vectors(), compact=True)
-    _write(TEAM_EVOLUTION_FBCYL_OUT, build_fbcyl_team_evolution_vectors(), compact=True)
-    _write(PBP_OUT, build_pbp_vectors())
-    _write(PBP_FBCYL_OUT, build_fbcyl_pbp_vectors())
-    _write(SHOTS_OUT, build_shots_vectors())
-    _write(SHOTS_FBCYL_OUT, build_fbcyl_shots_vectors())
-    from lineup_vectors import build as build_lineups
-    from collection_vectors import build as build_collections
+# (file, builder, compact): the vectors of this module, written first
+EARLY = [(OUT, build_vectors, False), (PLAYERS_OUT, build_player_vectors, False), (FBCYL_OUT, build_fbcyl_vectors, False),
+         (COMPARISON_OUT, build_comparison_vectors, False), (COMPARISON_FBCYL_OUT, build_fbcyl_comparison_vectors, False), (MULTI_OUT, build_multi_vectors, False),
+         (EVOLUTION_OUT, build_evolution_vectors, False), (EVOLUTION_FBCYL_OUT, build_fbcyl_evolution_vectors, False), (TEAM_EVOLUTION_OUT, build_team_evolution_vectors, True),
+         (TEAM_EVOLUTION_FBCYL_OUT, build_fbcyl_team_evolution_vectors, True), (PBP_OUT, build_pbp_vectors, False), (PBP_FBCYL_OUT, build_fbcyl_pbp_vectors, False),
+         (SHOTS_OUT, build_shots_vectors, False), (SHOTS_FBCYL_OUT, build_fbcyl_shots_vectors, False)]
 
-    _write(COLLECTIONS_OUT, build_collections())
+FORECAST_OUT = Path(__file__).resolve().parent / "forecast.json"
+# (module with a ``build()``, its file, compact): the vectors written after the ones above, in this order
+LATER = [("collection_vectors", COLLECTIONS_OUT, False), ("quartile_vectors", QUARTILES_OUT, False), ("report_vectors", REPORT_HTML_OUT, True), ("scouting_compare_vectors", SCOUTING_COMPARE_OUT, False),
+         ("scouting_pdf_vectors", SCOUTING_PDF_OUT, True), ("scouting_docx_vectors", SCOUTING_DOCX_OUT, True), ("weekly_report_vectors", WEEKLY_ROWS_OUT, True),
+         ("forecast_vectors", FORECAST_OUT, True)]
+
+
+def main() -> None:
+    for out, build, compact in EARLY:
+        _write(out, build(), compact=compact)
+    from lineup_vectors import build as build_lineups
+
     _write(LINEUPS_OUT, build_lineups("feb"), compact=True)
     _write(LINEUPS_FBCYL_OUT, build_lineups("fbcyl"), compact=True)
-    print("wrote", OUT, PLAYERS_OUT, FBCYL_OUT, COMPARISON_OUT, COMPARISON_FBCYL_OUT, MULTI_OUT, EVOLUTION_OUT, EVOLUTION_FBCYL_OUT, PBP_OUT, PBP_FBCYL_OUT, SHOTS_OUT, SHOTS_FBCYL_OUT)
+    print("wrote the vectors of", OUT.parent)
+    import importlib
+
     import generate_fbcyl_players                                    # imports this module: only here, once it is loaded
 
     generate_fbcyl_players.main()
-
-    from quartile_vectors import build as build_quartiles              # reads the player vectors written above
-
-    _write(QUARTILES_OUT, build_quartiles())
-
-    from report_vectors import build as build_report_html
-
-    _write(REPORT_HTML_OUT, build_report_html(), compact=True)
-
-    from scouting_compare_vectors import build as build_scouting_compare
-
-    _write(SCOUTING_COMPARE_OUT, build_scouting_compare())
-
-    from scouting_pdf_vectors import build as build_scouting_pdf
-
-    _write(SCOUTING_PDF_OUT, build_scouting_pdf(), compact=True)
-
-    from scouting_docx_vectors import build as build_scouting_docx
-
-    _write(SCOUTING_DOCX_OUT, build_scouting_docx(), compact=True)
-
-    from weekly_report_vectors import build as build_weekly_rows
-
-    _write(WEEKLY_ROWS_OUT, build_weekly_rows(), compact=True)
+    for module, out, compact in LATER:                                  # each builds its own file; the quartiles read the player vectors written above
+        _write(out, importlib.import_module(module).build(), compact=compact)
 
 
 if __name__ == "__main__":
