@@ -156,7 +156,9 @@ class SeasonAccumulator:
     evaluator relies on that; ``build_package`` is the one-pair wrapper.
     """
 
-    def __init__(self, track: Optional[Iterable[str]] = None) -> None:
+    def __init__(self, track: Optional[Iterable[str]] = None, carry: Optional[Dict[str, float]] = None) -> None:
+        self._carry = dict(carry or {})   # teamCode -> final rating of the previous season (#825)
+        self.codes: Dict[str, str] = {}   # team id -> teamCode
         self._track = {str(t) for t in track} if track is not None else None
         self.players: Dict[str, Dict[str, _PlayerAcc]] = {}
         self.league_players: Dict[str, _PlayerAcc] = {}
@@ -184,6 +186,7 @@ class SeasonAccumulator:
 
     def add_game(self, game: Dict[str, Any]) -> None:
         header = [(str(t["id"]), (t.get("name") or str(t["id"])).strip()) for t in game["HEADER"]["TEAM"]]
+        self._seed_ratings(game["HEADER"]["TEAM"])
         ids = [tid for tid, _ in header]
         if len(ids) != 2:
             return
@@ -204,6 +207,18 @@ class SeasonAccumulator:
                 self.levels.setdefault(tid, {}).update({level: self.levels.get(tid, {}).get(level, 0) + 1})
             if self.tracked(tid):
                 self._add_team(tid, ids[1] if ids[0] == tid else ids[0], snap, stats)
+
+    def _seed_ratings(self, teams: List[Dict[str, Any]]) -> None:
+        for t in teams:
+            code = str(t.get("teamCode") or "")
+            if code:
+                self.codes[str(t["id"])] = code
+                if code in self._carry:
+                    self.ratings.seed(str(t["id"]), self._carry[code])
+
+    def final_by_code(self) -> Dict[str, float]:
+        """The rating of each team by ``teamCode``: what the next season starts from (issue #825)."""
+        return {code: self.ratings.rating(tid) for tid, code in self.codes.items() if tid in self.ratings.known()}
 
     def _add_league(self, ids: List[str], snap: Dict[str, Any], stats: Dict[str, Any]) -> None:
         self.total_games += 1

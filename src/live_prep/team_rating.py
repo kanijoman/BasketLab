@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Dict
 
 P0 = 60.0             # variance (points per game squared) of a team never seen: about +-8 points
+CARRY_VARIANCE = 50.0  # variance of a team that comes with its final rating of the last season (issue #825: 45-60 was the optimum, k = 1)
 Q_GAME = 0.3          # variance added to a team after each of its games: the season moves
 NOISE = 144.0         # variance of the margin of one game around its expectation (12 points)
 HOME_PRIOR = 3.0      # home court (points) before any result is known
@@ -32,6 +33,16 @@ class TeamRatings:
     def variance(self, team: str) -> float:
         """How unsure the rating of ``team`` is, in points per game squared (``P0`` for a team never seen)."""
         return self._var.get(str(team), P0)
+
+    def seed(self, team: str, rating: float, variance: float = CARRY_VARIANCE) -> None:
+        """Start ``team`` from the final rating of the previous season (issue #825). A team already known keeps what this season taught it."""
+        team = str(team)
+        if team not in self._mean:
+            self._mean[team], self._var[team] = float(rating), float(variance)
+
+    def known(self) -> Dict[str, float]:
+        """Every team seen or seeded with its rating."""
+        return dict(self._mean)
 
     def home_advantage(self) -> float:
         return self._home_sum / self._home_n
