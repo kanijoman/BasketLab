@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src.live_prep.package_sealing import Sealer
 from src.local_data import build_cache
+from src.local_data.calendar_export import CalendarSource, calendar_collections, export_calendar
 from src.local_data.build_cache import section_versions
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
@@ -25,12 +27,16 @@ from src.local_data.images_export import Source, current_season_collections, sea
 from src.local_data.sections import section_payload
 from src.local_data.team_reports import seal_file, seal_reports
 
+log = logging.getLogger(__name__)
 INDEX = "index.json"
 ROWS, REPORTS, SCOUTING, DERIVED, IMAGES = "rows/", "reports/", "scouting/", "derived/", "images/"
 # The files of a competition besides its rows (#676, #684, #685): the manifest key and the folder of each (sealed for the competition, named after their hash)
 SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "matches": "matches/",
             "possessions": "possessions/", "possession_csv": "possession_csv/", "lineups": "lineups/", "inout": "inout/", "consistency": "consistency/", "rival_adjusted": "rival_adjusted/",
-            "assist_connections": "assist_connections/"}
+            "assist_connections": "assist_connections/", "calendar": "calendar/"}
+# What is not part of the build cache: the derived figures are its fingerprint, and the calendar (#842) changes without a new game, so it is read on every publication
+UNCACHED = {"derived", "calendar"}
+CACHED = [s for s in SECTIONS if s not in UNCACHED]
 HANDLER = "src.database"   # the exporters are handed the database handler and call its methods without importing it: its code is a dependency of every section that uses it
 # The module that computes each section (#783): the version of the code of a section is the hash of what that module imports, so the cache recomputes only the sections whose code changed.
 # A new section must be declared here (``test_build_cache_sections`` fails otherwise): without it nothing would notice a change in its exporter. ``derived`` is not cached (it is the fingerprint).
@@ -83,7 +89,10 @@ def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept:
 
 
 def _publish_section(section: str, handler: Any, db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    payload = section_payload(section, handler, db, collection)
+    return _seal_section(section, section_payload(section, handler, db, collection), collection, out_dir, sealer, kept)
+
+
+def _seal_section(section: str, payload: Optional[Dict[str, Any]], collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     if payload is None:
         return None
     fields = seal_file(out_dir, f"{collection}", _json(payload), [f"competicion:{collection}"], sealer, kept, SECTIONS[section])
@@ -131,10 +140,10 @@ def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: A
     if on_section:
         on_section(name, "derived", time.time() - started, False)
     fp = build_cache.fingerprint(rows_entry["sha256"], derived["sha256"] if derived else None)
-    had = [s for s in (remembered or {}).get("sections", []) if s in SECTIONS and s != "derived"]
+    had = [s for s in (remembered or {}).get("sections", []) if s in CACHED]
     same_data = bool(remembered) and remembered.get("fingerprint") == fp
     old_versions = (remembered or {}).get("versions") or {}
-    for section in (s for s in SECTIONS if s != "derived"):
+    for section in CACHED:
         started = time.time()
         kept_entry = kept_sections[section].get(name)
         reuse = _can_reuse(section, same_data, versions, old_versions, had, kept_entry, out_dir)
@@ -178,6 +187,24 @@ class _Context:
     scouting_service: Optional[Callable[[Any], Any]]
     image_source: Optional[Source]
     imaged: set
+    calendar_source: Optional[CalendarSource]
+    calendar_names: set
+    groups: Dict[str, str]
+
+
+def _publish_calendar(ctx: _Context, name: str) -> Optional[Dict[str, Any]]:
+    """The sealed calendar of a competition of the newest season (#842), read now; one that cannot be read keeps the previous entry (its file is still there) and, with none, publishes nothing."""
+    if ctx.calendar_source is None or name not in ctx.calendar_names:
+        return None
+    started = time.time()
+    kept = ctx.kept_sections["calendar"].get(name)
+    entry = _seal_section("calendar", export_calendar(ctx.calendar_source, ctx.handler, name, ctx.groups.get(name)), name, ctx.out_dir, ctx.sealer, kept)
+    if entry is None and kept and (ctx.out_dir / kept["file"]).is_file():
+        log.warning("%s: calendar unavailable, the previous one is kept", name)
+        entry = kept
+    if ctx.on_section:
+        ctx.on_section(name, "calendar", time.time() - started, False)
+    return entry
 
 
 def _carried_over(previous: Optional[Dict[str, Any]], names: List[str], keep_others: bool):
@@ -197,6 +224,9 @@ def _publish_competition(ctx: _Context, name: str):
         ctx.on_section(name, "rows", time.time() - started, False)
     entries = _publish_sections(name, rows_entry, ctx.handler, ctx.db, ctx.out_dir, ctx.sealer, ctx.kept_sections,
                                 ctx.memory["competitions"].get(name) if ctx.trusted else None, ctx.on_section, ctx.versions)
+    calendar = _publish_calendar(ctx, name)
+    if calendar:
+        entries["calendar"] = calendar
     started = time.time()
     report_index = _publish_report_index(ctx.handler, name, ctx.out_dir, ctx.sealer, ctx.old_reports, name in ctx.scouted, ctx.scouting_service,
                                          ctx.image_source if name in ctx.imaged else None)
@@ -217,11 +247,12 @@ def _sweep_stale(out_dir: Path, manifest: Dict[str, Any]) -> None:
 def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: Iterable[str], keep_others: bool = False,
                      on_collection: Optional[Callable[[str], None]] = None, scouting: Optional[Iterable[str]] = None,
                      scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None,
-                     image_source: Optional[Source] = None) -> Dict[str, Any]:
+                     image_source: Optional[Source] = None, calendar_source: Optional[CalendarSource] = None,
+                     fbcyl_groups: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """Write the artifacts of ``collections`` and the manifest (returned). With ``keep_others`` the competitions of the previous publication that are
     not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``. ``scouting`` lists the
     collections whose teams also get their full scouting by scope (``scouting_export``; ``scouting_service`` builds the service, for tests). A competition that has not
-    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700)."""
+    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700); ``calendar_source`` (the federations, or a fake) makes the competitions of the newest season publish their calendar (#842; ``fbcyl_groups`` maps a FBCYL competition to its ESB group), always read again."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     names = list(collections)
@@ -234,7 +265,8 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                    kept_sections={s: {e["collection"]: e for e in (previous or {}).get(s, [])} for s in SECTIONS},
                    old_reports=_previous_reports(out_dir, previous), memory=memory, trusted=trusted, versions=section_versions(SECTION_MODULES),
                    on_section=on_section, scouted=set(scouting or []), scouting_service=scouting_service, image_source=image_source,
-                   imaged=current_season_collections(names) if image_source is not None else set())
+                   imaged=current_season_collections(names) if image_source is not None else set(),
+                   calendar_source=calendar_source, calendar_names=calendar_collections(names, fbcyl_groups or {}) if calendar_source is not None else set(), groups=fbcyl_groups or {})
     remembered = {k: v for k, v in memory["competitions"].items() if trusted and keep_others and k not in names}
     for name in names:
         rows[name], entries, reports[name] = _publish_competition(ctx, name)

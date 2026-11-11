@@ -24,8 +24,10 @@ import games  # noqa: E402
 
 from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
+from src.local_data.calendar_export import CalendarSource  # noqa: E402
 from src.local_data.images_export import Source  # noqa: E402
 from src.local_data.web_data import publish_web_data  # noqa: E402
+from src.scraper.calendar_parser import CalendarMatch  # noqa: E402
 from src.services.scouting_rival_service import ScoutingRivalService  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "web_data"
@@ -118,11 +120,44 @@ class FixtureFeb(Source):
         return f"https://fixture.test/crest/{team_id}"
 
 
+class FixtureCalendar(CalendarSource):
+    """The federations of the fixtures (#842): the FEB calendar is the 12 games of the league as results (the code is the game's ``_id``) plus six still to play; the FBCYL one has the shape of the ESB rows
+    (a played match carries its ``universallyid`` and kick-off too) with four still to play. Nobody asks the live API: no status."""
+
+    PENDING = [("101", "102"), ("103", "104"), ("101", "103"), ("102", "104"), ("101", "104"), ("102", "103")]
+
+    def feb(self, handler, collection):
+        done = []
+        for i, game in enumerate(games.build_games()):
+            home, away = game["HEADER"]["TEAM"]
+            done.append(CalendarMatch(code=str(game["_id"]), kind="result", round_index=i // 2 + 1, home_id=home["id"], home_name=home["name"], away_id=away["id"], away_name=away["name"],
+                                      score=f"{home['pts']}-{away['pts']}"))
+        names = {t["id"]: t["name"] for g in games.build_games() for t in g["HEADER"]["TEAM"]}
+        todo = [CalendarMatch(code=str(9101 + i), kind="scheduled", round_index=7 + i // 2, home_id=h, home_name=names[h], away_id=a, away_name=names[a], start=f"2026-12-{12 + i // 2 * 7:02d}T{18 + i % 2 * 2}:00")
+                for i, (h, a) in enumerate(self.PENDING)]
+        return done + todo
+
+    def fbcyl_rows(self, group_id):
+        rows = []
+        for i, game in enumerate(fbcyl_games.build_games()):
+            home, away = game["stats"]["teams"][:2]
+            rows.append({"idMatch": str(200 + i), "universallyid": game["_id"], "round": str(i // 2 + 1), "state": "1", "tiedAllowed": "0", "matchDay": f"2026-10-{3 + i:02d} 12:30:00",
+                         "idLocalTeam": str(home["teamIdExtern"]), "idVisitorTeam": str(away["teamIdExtern"]), "nameLocalTeam": home["name"], "nameVisitorTeam": away["name"],
+                         "localScore": str(home["data"]["score"]), "visitorScore": str(away["data"]["score"])})
+        ids = [str(t["teamIdExtern"]) for t in fbcyl_games.build_games()[0]["stats"]["teams"]] + ["34003", "34004"]
+        for i in range(4):
+            home, away = ids[i % 4], ids[(i + 1) % 4]
+            rows.append({"idMatch": str(300 + i), "universallyid": f"{i + 1:024x}", "round": str(7 + i // 2), "state": "0", "tiedAllowed": "0", "matchDay": f"2026-12-{5 + i // 2 * 7:02d} 12:30:00",
+                         "idLocalTeam": home, "idVisitorTeam": away, "nameLocalTeam": f"T{home}", "nameVisitorTeam": f"T{away}", "localScore": None, "visitorScore": None})
+        return rows
+
+
 def main() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
     manifest = publish_web_data(fixture_handler(), OUT, ScopedSealer(SECRET, open_access=True), [FEB, FBCYL], scouting=[FEB],
-                                scouting_service=fixture_scouting_service, image_source=FixtureFeb())
+                                scouting_service=fixture_scouting_service, image_source=FixtureFeb(),
+                                calendar_source=FixtureCalendar(), fbcyl_groups={FBCYL: "7298"})
     print("wrote", OUT, sum(1 for p in OUT.rglob("*") if p.is_file()), "files,", len(manifest["rows"]), "competitions")
 
 

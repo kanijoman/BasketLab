@@ -13,10 +13,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.local_data import build_cache, sections, web_data  # noqa: E402
-from src.local_data.web_data import SECTIONS, publish_web_data  # noqa: E402
+from src.local_data.web_data import SECTIONS, UNCACHED, publish_web_data  # noqa: E402
 from tests.test_local_web_data import FBCYL, FEB, MASTER, cheap_lineups, handler  # noqa: E402,F401  (fixtures)
 
-HEAVY = [s for s in SECTIONS if s != "derived"]
+HEAVY = [s for s in SECTIONS if s not in UNCACHED]
 
 
 @pytest.fixture(autouse=True)

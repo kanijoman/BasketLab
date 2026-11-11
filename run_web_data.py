@@ -1,6 +1,6 @@
 """Entry point of the web artifacts (#328): ``python run_web_data.py --out DIR [--collection NAME ...] [--closed]``.
 
-Writes what the web reads (``src/local_data/web_data``): the sealed rows and reports of every games collection and the manifest ``index.json``. Needs
+Writes what the web reads (``src/local_data/web_data``): the sealed rows, reports and calendars of every games collection and the manifest ``index.json``. Needs
 ``PACKAGE_MASTER_KEY`` (or ``PACKAGE_PASSWORD``, >= 8 characters) like the live packages. The workflow ``web-data.yml`` starts from the previous
 publication so that what did not change keeps its bytes, and a competition whose games and code are the same as in it is not computed again (#700, ``build_cache``). ``--closed`` leaves the open scope out (the beta is over).
 """
@@ -20,14 +20,17 @@ def main(argv=None) -> int:
     parser.add_argument("--closed", action="store_true", help="do not wrap for the open scope")
     parser.add_argument("--scouting", action="append", help="also scout the teams of this collection (repeatable); default: the competitions where a club of interest plays")
     parser.add_argument("--no-images", action="store_true", help="do not publish the crest and the photos of the teams of the newest season (the DOCX of the individual scouting, #717)")
+    parser.add_argument("--no-calendar", action="store_true", help="do not publish the calendar of the competitions of the newest season (#842: it is read from the federations on every run, about a minute)")
     parser.add_argument("--no-scouting", action="store_true", help="do not publish the full scouting of the rival (it takes about ten seconds per team)")
     args = parser.parse_args(argv)
 
     from src.database.shared_handler import shared_handler
     from src.live_prep.package_sealing import make_sealer
+    from src.local_data.calendar_export import CalendarSource
     from src.local_data.images_export import Source
     from src.local_data.web_data import publish_web_data
     from src.local_data.scouting_export import fbcyl_interest_clubs, interest_clubs, scouting_collections
+    from src.services.competition_catalogue import DEFAULT_CATALOGUE, fbcyl_groups, load_catalogue
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
 
     handler = shared_handler()
@@ -44,7 +47,8 @@ def main(argv=None) -> int:
     manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection), scouting=scouting,
                                 on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"),
                                 on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True),
-                                image_source=None if args.no_images else Source())
+                                image_source=None if args.no_images else Source(),
+                                calendar_source=None if args.no_calendar else CalendarSource(), fbcyl_groups=fbcyl_groups(load_catalogue(DEFAULT_CATALOGUE)))
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")
     return 0
