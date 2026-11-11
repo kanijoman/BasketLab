@@ -16,11 +16,19 @@ beforeEach(() => {
 })
 
 describe('useVisibleNavGroups', () => {
-  it('hides Conexiones while the competition has not the section published, and keeps every other page', async () => {
+  it('hides Conexiones and the preview of the match while the competition has not their sections published, and keeps every other page', async () => {
     const { result } = renderHook(() => useVisibleNavGroups('LF2'))
     await waitFor(() => expect(published.publishedSectionsOf).toHaveBeenCalledWith('LF2'))
     expect(subPaths(result.current)).not.toContain('conexiones')
-    expect(subPaths(result.current)).toHaveLength(NAV_ITEMS.length - 2)                      // - Conexiones - the summary, which is not in a group
+    expect(subPaths(result.current)).not.toContain('previa')
+    expect(subPaths(result.current)).toHaveLength(NAV_ITEMS.length - 3)                      // - Conexiones - the preview - the summary, which is not in a group
+  })
+
+  it('shows the preview of the match when the competition has its calendar published (#849)', async () => {
+    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'calendar']))
+    const { result } = renderHook(() => useVisibleNavGroups('LF2'))
+    await waitFor(() => expect(subPaths(result.current)).toContain('previa'))
+    expect(subPaths(result.current)).not.toContain('conexiones')
   })
 
   it('shows it as soon as the publication has the section for that competition', async () => {

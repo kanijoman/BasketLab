@@ -5,7 +5,7 @@
 // more of its games. Each match is then played from those strengths plus the home court of the family, with the spread of a game minus what the ratings are already unsure of, so that the
 // result of one match is still as spread as the model validated for the win probability. The ratings come from the results of the calendar too (they can be newer than the archive).
 import type { Calendar } from '@/webdata/calendar'
-import { matchupPace } from './gameLog'
+import { matchupPace, type GameResult } from './gameLog'
 import type { ForecastModel } from './pool'
 import { hashSeed, mulberry32, normalSampler } from './prng'
 import { addResult, cloneLeague, newLeague, rankLeague, standingsOf, type StandingRow } from './standings'
@@ -47,8 +47,9 @@ export interface SeasonSim {
 /** The spread of one simulated match: that of a game of the family minus what the two ratings are unsure of, never under the noise of a game (12 points). */
 export const gameSpread = (sigma: number, varHome: number, varAway: number): number => Math.sqrt(Math.max(sigma * sigma - varHome - varAway, NOISE))
 
-function fixturesOf(model: ForecastModel, calendar: Calendar): Fixture[] {
-  const played = new Set(model.games.map(g => g.id))
+/** The matches of the calendar still to play (`live` ones too), leaving out any the games already have. */
+export function pendingFixtures(games: GameResult[], calendar: Calendar): Fixture[] {
+  const played = new Set(games.map(g => g.id))
   return calendar.matches
     .filter(m => (m.kind === 'scheduled' || m.kind === 'live') && !played.has(m.match_id))
     .map((m): Fixture => ({ code: m.code, round: m.round, start: m.start, home: String(m.home.id), away: String(m.away.id), homeName: m.home.name, awayName: m.away.name, kind: m.kind as Fixture['kind'] }))
@@ -59,7 +60,7 @@ export const pTop = (sim: SeasonSim, team: number, k: number): number => sim.pos
 export const pBottom = (sim: SeasonSim, team: number, k: number): number => (k <= 0 ? 0 : sim.positionCounts[team].slice(-k).reduce((a, b) => a + b, 0) / sim.n)
 
 export function simulateSeason(model: ForecastModel, calendar: Calendar, { n = SIMULATIONS, seed = calendar.collection }: { n?: number; seed?: string } = {}): SeasonSim {
-  const remaining = fixturesOf(model, calendar)
+  const remaining = pendingFixtures(model.games, calendar)
   const names: Record<string, string> = {}
   for (const g of model.games) { names[g.home] = g.homeName; names[g.away] = g.awayName }
   for (const f of remaining) { names[f.home] = f.homeName; names[f.away] = f.awayName }
