@@ -2,7 +2,7 @@
 import { confidenceText, pct } from '@/forecast/copy'
 import type { MatchPreview } from '@/forecast/preview'
 import StatCard from '@/components/ui/StatCard'
-import ToneBadge from './ToneBadge'
+import Badge from '@/components/ui/Badge'
 import { signed } from './format'
 
 export default function Forecast({ preview, ownName }: { preview: MatchPreview; ownName: string }) {
@@ -17,7 +17,7 @@ export default function Forecast({ preview, ownName }: { preview: MatchPreview; 
         <StatCard label="Rango habitual" value={`de ${signed(headline.range80[0], 0)} a ${signed(headline.range80[1], 0)}`} sub="el 80 % de los partidos como este" />
       </div>
       <div className="flex flex-wrap items-start gap-2">
-        <ToneBadge tone={confidence.level === 'baja' ? 'warn' : 'ok'}>{confidence.level === 'baja' ? 'Confianza baja' : 'Confianza normal'}</ToneBadge>
+        <Badge tone={confidence.level === 'baja' ? 'warn' : 'ok'}>{confidence.level === 'baja' ? 'Confianza baja' : 'Confianza normal'}</Badge>
         {confidence.reasons.length > 0 && (
           <ul className="text-sm text-ink-muted">
             {confidence.reasons.map((reason, i) => <li key={i}>{confidenceText(reason)}</li>)}

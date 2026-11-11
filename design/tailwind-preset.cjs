@@ -6,7 +6,7 @@
  *   ink (text) · ink-muted (secondary text) · ink-faint (hints, placeholders)
  *   accent (orange: actions, selection) · accent-text (orange text) · accent-solid / accent-hover (filled buttons, with accent-ink on them)
  *   secondary (blue: the other league, links) · focus (focus ring)
- *   ok / bad / warn (good, bad and borderline DATA; never for alerts: sev-*) · q1..q4 (quartiles) · chart-1..8 (series)
+ *   ok / bad / warn (good, bad and borderline DATA; never for alerts: sev-*) · ok-text / bad-text / warn-text (their text on their own tint, AA: the pills, #856) · q1..q4 (quartiles) · chart-1..8 (series)
  */
 const channel = (name) => `rgb(var(--${name}-rgb) / <alpha-value>)`
 
@@ -25,9 +25,9 @@ module.exports = {
         },
         secondary: { DEFAULT: channel('secondary'), text: channel('secondary-text'), solid: 'var(--secondary-solid)', hover: 'var(--secondary-hover)' },
         focus: channel('focus'),
-        ok: channel('ok'),
-        bad: channel('bad'),
-        warn: channel('warn'),
+        ok: { DEFAULT: channel('ok'), text: channel('ok-text') },
+        bad: { DEFAULT: channel('bad'), text: channel('bad-text') },
+        warn: { DEFAULT: channel('warn'), text: channel('warn-text') },
         sev: { critical: channel('sev-critical'), warning: channel('sev-warning'), info: channel('sev-info') },
         cat: {
           faltas: 'var(--cat-faltas)', rotacion: 'var(--cat-rotacion)', rival: 'var(--cat-rival)',

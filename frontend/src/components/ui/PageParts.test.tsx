@@ -45,8 +45,8 @@ describe('page parts (issue #190)', () => {
     expect(skeleton?.children).toHaveLength(3)
   })
 
-  // Badge and StatCard speak the same tones as the rest of the system (accent, secondary, ok, warn, bad)
-  it.each([['accent', 'text-accent-text'], ['secondary', 'text-secondary-text'], ['ok', 'text-ok'], ['warn', 'text-warn'], ['bad', 'text-bad']] as const)(
+  // Badge and StatCard speak the same tones as the rest of the system (accent, secondary, ok, warn, bad); the text of ok, warn and bad is their own text token, AA on their tint (#856)
+  it.each([['accent', 'text-accent-text'], ['secondary', 'text-secondary-text'], ['ok', 'text-ok-text'], ['warn', 'text-warn-text'], ['bad', 'text-bad-text']] as const)(
     'Badge tone %s', (tone, cls) => {
       render(<Badge tone={tone}>FEB</Badge>)
       expect(screen.getByText('FEB')).toHaveClass(cls)
