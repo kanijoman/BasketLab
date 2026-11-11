@@ -69,6 +69,14 @@ def matchup_prior(own: List[Dict[str, float]], rival: List[Dict[str, float]]) ->
     return {f: round((own_mean[f] - rival_mean[f]) * weight, 4) for f in WEIGHTS}
 
 
+def shrunk_team_level(sums: Dict[str, Dict[str, int]], league: Dict[str, float], games: int) -> Dict[str, Dict[str, float]]:
+    """``{attack, defence}``: the four factors a team makes (attack) and lets its opponents make (defence) over its ``games``, each shrunk towards the ``league`` by ``games / (games + 6)``.
+    ``sums`` is ``{"for": the team's stat totals, "against": its opponents'}``. Public since #846: the browser port calls the same formula through the parity vectors."""
+    weight = games / (games + PRIOR_SHRINK_GAMES)
+    return {kind: {f: round(league[f] + (v - league[f]) * weight, 4) for f, v in level.items()}
+            for kind, level in (("attack", factors(sums["for"], sums["against"])), ("defence", factors(sums["against"], sums["for"])))}
+
+
 def _percentile(values: List[int], q: float) -> float:
     ordered = sorted(values)
     pos = (len(ordered) - 1) * q
@@ -283,11 +291,7 @@ class SeasonAccumulator:
 
         def of(tid: str) -> Optional[Dict[str, Dict[str, float]]]:
             sums, games = self.team_sums.get(tid), self.played(tid)
-            if not sums or not games:
-                return None
-            weight = games / (games + PRIOR_SHRINK_GAMES)
-            return {kind: {f: round(league[f] + (v - league[f]) * weight, 4) for f, v in level.items()}
-                    for kind, level in (("attack", factors(sums["for"], sums["against"])), ("defence", factors(sums["against"], sums["for"])))}
+            return shrunk_team_level(sums, league, games) if sums and games else None
 
         out: Dict[str, Any] = {"league": {f: round(v, 4) for f, v in league.items()}, "games": {"own": self.played(team_id), "rival": self.played(rival_id)}}
         for key, tid in (("own", team_id), ("rival", rival_id)):

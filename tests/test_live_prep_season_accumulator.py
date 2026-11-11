@@ -254,3 +254,19 @@ def test_a_player_nobody_numbers_has_no_dorsal_key_and_the_package_is_what_it_wa
 def test_the_number_is_text_and_keeps_its_zero(feb_game_doc):
     pid = played_ids(feb_game_doc)[0]
     assert dorsals(accumulated([numbered(feb_game_doc, {pid: "04"})], A, B))[pid] == "04"
+
+
+def test_the_level_of_a_team_shrunk_to_the_league_is_a_public_function_and_the_package_uses_it(feb_game_doc):
+    """The browser port calls the same formula through the parity vectors (#846): what the package says is what ``shrunk_team_level`` gives for the sums of the accumulator."""
+    from src.live_prep.package_builder import PRIOR_SHRINK_GAMES, shrunk_team_level
+
+    acc = SeasonAccumulator()
+    acc.add_game(feb_game_doc)
+    levels = acc.to_package("FEB_TEST", "2025-2026", A, B, None, STAMP).baselines["team_levels"]
+    from src.live_core.four_factors import factors
+
+    league = factors(acc.league_sums, acc.league_sums)
+    assert shrunk_team_level(acc.team_sums[A], league, acc.played(A)) == levels["own"]
+    assert shrunk_team_level(acc.team_sums[B], league, acc.played(B)) == levels["rival"]
+    assert shrunk_team_level(acc.team_sums[A], league, 0) == {k: {f: round(v, 4) for f, v in league.items()} for k in ("attack", "defence")}      # no games: the league
+    assert PRIOR_SHRINK_GAMES == 6

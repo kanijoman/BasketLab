@@ -98,7 +98,7 @@ async function exportedRows(name: string): Promise<Competition | null> {
   return data?.format === FORMAT ? data : null
 }
 
-function loadCompetition(name: string): Promise<Competition | null> {
+export function loadCompetition(name: string): Promise<Competition | null> {
   let load = competitions.get(name)
   if (!load) {
     load = publishedRows(name).then(published => published ?? exportedRows(name))

@@ -29,6 +29,10 @@ class TeamRatings:
         """Points per game above the average team of the competition (0 for a team never seen)."""
         return self._mean.get(str(team), 0.0)
 
+    def variance(self, team: str) -> float:
+        """How unsure the rating of ``team`` is, in points per game squared (``P0`` for a team never seen)."""
+        return self._var.get(str(team), P0)
+
     def home_advantage(self) -> float:
         return self._home_sum / self._home_n
 

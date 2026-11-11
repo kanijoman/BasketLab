@@ -16,11 +16,34 @@ beforeEach(() => {
 })
 
 describe('useVisibleNavGroups', () => {
-  it('hides Conexiones while the competition has not the section published, and keeps every other page', async () => {
+  it('hides Conexiones, the preview of the match and the simulation of the league while the competition has not their sections published, and keeps every other page', async () => {
     const { result } = renderHook(() => useVisibleNavGroups('LF2'))
     await waitFor(() => expect(published.publishedSectionsOf).toHaveBeenCalledWith('LF2'))
     expect(subPaths(result.current)).not.toContain('conexiones')
-    expect(subPaths(result.current)).toHaveLength(NAV_ITEMS.length - 2)                      // - Conexiones - the summary, which is not in a group
+    expect(subPaths(result.current)).not.toContain('previa')
+    expect(subPaths(result.current)).not.toContain('simulacion')
+    expect(subPaths(result.current)).toHaveLength(NAV_ITEMS.length - 4)                      // - Conexiones - the preview - the simulation - the summary, which is not in a group
+  })
+
+  it('has no group without pages: «Competición» only has the simulation, so without the calendar the menu and the summary do not show its heading alone (#850)', async () => {
+    const { result } = renderHook(() => useVisibleNavGroups('LF2'))
+    await waitFor(() => expect(published.publishedSectionsOf).toHaveBeenCalledWith('LF2'))
+    expect(result.current.map(g => g.label)).not.toContain('Competición')
+    expect(result.current.every(g => g.items.length > 0)).toBe(true)
+  })
+
+  it('has the group again when the calendar is published', async () => {
+    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'calendar']))
+    const { result } = renderHook(() => useVisibleNavGroups('LF2'))
+    await waitFor(() => expect(result.current.map(g => g.label)).toContain('Competición'))
+  })
+
+  it('shows the preview of the match and the simulation of the league when the competition has its calendar published (#849, #850)', async () => {
+    published.publishedSectionsOf.mockResolvedValue(new Set(['rows', 'calendar']))
+    const { result } = renderHook(() => useVisibleNavGroups('LF2'))
+    await waitFor(() => expect(subPaths(result.current)).toContain('previa'))
+    expect(subPaths(result.current)).toContain('simulacion')
+    expect(subPaths(result.current)).not.toContain('conexiones')
   })
 
   it('shows it as soon as the publication has the section for that competition', async () => {

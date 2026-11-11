@@ -30,8 +30,12 @@ describe('CollectionHub (issue #191)', () => {
     hub()
     await screen.findByRole('heading', { level: 1 })
     for (const group of NAV_GROUPS) {
-      const section = screen.getByRole('region', { name: group.label })
       const offered = group.items.filter(item => !item.requires)                       // the pages that need a published section are not offered here (#780, below)
+      if (!offered.length) {                                                           // a group whose pages all need one (Competición, #850) has no card until they are published
+        expect(screen.queryByRole('region', { name: group.label })).toBeNull()
+        continue
+      }
+      const section = screen.getByRole('region', { name: group.label })
       expect(within(section).getAllByRole('link')).toHaveLength(offered.length)
       for (const item of offered) {
         expect(within(section).getByRole('link', { name: new RegExp(item.title ?? item.label) })).toHaveAttribute('href', `/LF2_2025_A/${item.subPath}`)
