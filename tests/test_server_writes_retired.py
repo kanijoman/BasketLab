@@ -1,8 +1,8 @@
 """The server takes no writes from the web any more (issue #724, towards a server that takes no writes: #334).
 
 Loading data is the job of the scheduled refresh of the archive (``archive-refresh.yml``), removing a competition is the purge (``archive-purge.yml``) and the Administration page of
-the web is gone. So the routes that scraped, ingested history or dropped a collection, and the separate scraper service that served them, are gone too. What the kept predictive
-code reads (``/historical/seasons``, ``/historical/teams``) and its training routes (behind ``ADMIN_API_KEY``) stay until the predictive analysis is reworked.
+the web is gone. So the routes that scraped, ingested history or dropped a collection, and the separate scraper service that served them, are gone too. So is the old predictive analysis
+(#853: ``/analysis/*``, ``/historical/*``, scikit-learn, the HISTORICAL and ELASTICITIES collections): the preview of the match and the simulation of the league are computed in the browser.
 """
 import importlib.util
 from pathlib import Path
@@ -45,10 +45,20 @@ def test_no_route_of_the_scrape_router_is_left():
     assert not [path for _, path in _routes() if path.startswith("/api/v1/scrape")]
 
 
-def test_the_reads_the_kept_code_needs_and_the_listing_stay():
-    for route in (("GET", "/api/v1/collections/list"), ("GET", "/api/v1/historical/seasons"), ("GET", "/api/v1/historical/teams"),
-                  ("POST", "/api/v1/analysis/elasticity/train")):
-        assert route in _routes()
+def test_no_route_of_the_old_predictive_analysis_is_left():
+    left = [path for _, path in _routes() if path.startswith(("/api/v1/analysis", "/api/v1/historical"))]
+    assert left == []
+
+
+def test_the_listing_of_the_competitions_stays():
+    assert ("GET", "/api/v1/collections/list") in _routes()
+
+
+def test_the_server_has_no_route_that_needs_the_admin_key_any_more():
+    """Nothing is trained or ingested through the API: the guard (``require_admin``) stays as the pattern for a write endpoint, tested in ``test_admin_auth``."""
+    from api_routes import takes_the_admin_key
+
+    assert [key for key, operation in api_operations(app).items() if takes_the_admin_key(operation)] == []
 
 
 def test_the_separate_scraper_service_is_gone():

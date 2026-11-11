@@ -1,0 +1,5 @@
+# What the research scripts need besides the product (scripts/wp_model_study.py and scripts/wp_study/: the studies of docs/evaluaciones, e.g. the models of the win probability, #567).
+# The product itself does not use scikit-learn (the old predictive analysis that did was removed, #853).
+-r requirements.txt
+scikit-learn>=1.9.1
+joblib>=1.3.0

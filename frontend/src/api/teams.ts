@@ -1,6 +1,6 @@
 /** Teams: tables, comparison, consistency and evolution (issue #201). */
 import { fromSource } from '@/datasource/resolve'
-import { localPlayerConsistency, localTeamEvolution, localCompetitionEvolution, localTeamConsistency, localTeamComparison, localTeamStats } from '@/localdata/source'
+import { localPlayerConsistency, localRivalAdjusted, localTeamEvolution, localCompetitionEvolution, localTeamConsistency, localTeamComparison, localTeamStats } from '@/localdata/source'
 import { get } from './http'
 
 // ── Teams ─────────────────────────────────────────────────────────────────────
@@ -170,3 +170,18 @@ export interface CompetitionEvolutionPoint {
   competition_rolling: number | null
   competition_cumulative: number | null
 }
+
+// ── Rival-adjusted stats (what the opponents each team met let them do: `rival_adjusted/` of the publication) ──
+export interface RivalAdjEntry {
+  raw_avg:  number
+  adj_avg:  number | null
+  adj:      number | null
+  sos:      number | null
+  n:        number
+}
+export type RivalAdjustedResult = Record<string, Record<string, RivalAdjEntry>>
+
+export const getRivalAdjusted = (collection: string) =>
+  fromSource('rival-adjusted', () => localRivalAdjusted(collection), () => get<RivalAdjustedResult>(
+    `/teams/${encodeURIComponent(collection)}/rival-adjusted`,
+  ))

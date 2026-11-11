@@ -33,10 +33,10 @@ describe('navigation of a collection (issue #191)', () => {
     expect(app).not.toMatch(/PrivateRoute requiredRole/)
   })
 
-  it('the old predictive analysis stays out of the web (#849 replaces it): its old address goes to the hub and its page is not imported', () => {
+  it('the old predictive analysis is gone (#852): its old address goes to the preview of the match, which replaces it, and its page is not imported', () => {
     expect(NAV_ITEMS.map(i => i.subPath)).not.toContain('predictive')
     expect(app).not.toMatch(/import PredictivePage/)
-    expect(app).toMatch(/<Route path="predictive"\s+element=\{<Navigate to=".."/)
+    expect(app).toMatch(/<Route path="predictive"\s+element=\{<Navigate to="..\/previa"/)
     expect(allRoutes).toContain('predictive')
   })
 

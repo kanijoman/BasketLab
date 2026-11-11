@@ -105,7 +105,15 @@ def test_obsolete_files_are_gone():
             "coverage_summary.py", "DATABASE_CONFIG.md", "MANUAL_TESTING_PLAN.md", "claude.md",
             "resources", ".github/copilot-instructions.md", ".github/MANDATORY_CHECKS.md",
             ".github/WORKFLOW.md", ".github/workflows/build.yml", "src/utils.py",
-            "scripts/possession_export.py", "tests/test_debug_tipoff.py"]
+            "scripts/possession_export.py", "tests/test_debug_tipoff.py",
+            # the old predictive analysis (#853): Ridge models, Monte Carlo per statistic, player prediction, backtesting, HISTORICAL; the preview and the simulation are computed in the browser
+            *[f"src/services/{n}.py" for n in ("game_prediction_service", "monte_carlo_service", "season_projection_service", "elasticity_service", "_elasticity_models", "_feature_builders", "_gbm_models",
+                                              "_ridge_helpers", "player_prediction_service", "backtesting_service", "live_history_adapter", "historical_ingestion_service", "_feb_normalizer",
+                                              "_fbcyl_normalizer", "_historical_derived")],
+            *[f"src/api/routers/{n}.py" for n in ("analysis", "analysis_predictive", "historical")], "src/database/historical_repository.py",
+            *[f"tests/test_{n}.py" for n in ("backtesting", "elasticity_live", "game_prediction", "historical_ingestion", "historical_normalizers_characterization", "historical_router",
+                                            "live_history_adapter", "player_prediction", "predictive", "season_projection")],
+            "tests/fixtures/historical_normalizers_golden.json"]
     # `claude.md` and `CLAUDE.md` are the same file on case-insensitive systems: compare exact names
     tracked = {p.name for p in ROOT.iterdir()}
     leftovers = [g for g in gone if "/" not in g and g in tracked] + \

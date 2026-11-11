@@ -1,4 +1,5 @@
-"""Admin API key protecting the training endpoints (issue #115; the destructive and ingestion ones were retired, issue #724).
+"""Admin API key, the guard of a write endpoint (issue #115). No endpoint uses it today: the destructive and ingestion ones were retired (#724) and the training ones with the old predictive
+analysis (#853). It stays as the PATTERN for the next write endpoint, so it is tested on a small app that has one.
 
 Policy: set ``ADMIN_API_KEY`` and send it as ``X-Admin-Key``. Without the variable the
 protected routes are open in development (local use) and closed (503) in production.
@@ -6,16 +7,24 @@ protected routes are open in development (local use) and closed (503) in product
 from unittest.mock import MagicMock
 
 import pytest
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from api_routes import api_operations, takes_the_admin_key
 from src.api.app import app
 from src.api.deps import get_db
+from src.api.security import require_admin
 
-PROTECTED = [
-    ("POST", "/api/v1/analysis/elasticity/train", {}),
-    ("POST", "/api/v1/analysis/elasticity/train/stream", {}),
-]
+PROTECTED = [("POST", "/api/v1/write", {}), ("POST", "/api/v1/write/stream", {})]
+GUARDED = FastAPI()
+
+
+@GUARDED.post("/api/v1/write", dependencies=[Depends(require_admin)])
+@GUARDED.post("/api/v1/write/stream", dependencies=[Depends(require_admin)])
+def _write():
+    return {"done": True}
+
+
 BLOCKED = {401, 403, 503}
 
 
@@ -27,6 +36,12 @@ def _env(monkeypatch):
 
 @pytest.fixture()
 def client():
+    """The small app with two guarded endpoints (the real one has none)."""
+    return TestClient(GUARDED)
+
+
+@pytest.fixture()
+def api():
     app.dependency_overrides[get_db] = lambda: MagicMock()
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -66,23 +81,21 @@ class TestKeyNotConfigured:
 
 
 class TestPublicRoutesStayPublic:
-    def test_reads_do_not_need_the_key(self, client, monkeypatch):
+    def test_reads_do_not_need_the_key(self, api, monkeypatch):
         monkeypatch.setenv("ADMIN_API_KEY", "s3cret")
         monkeypatch.setenv("ENVIRONMENT", "production")
-        r = client.get("/api/v1/collections")
+        r = api.get("/api/v1/collections")
         assert r.status_code not in BLOCKED
 
-    def test_compute_only_posts_stay_public(self, client, monkeypatch):
+    def test_compute_only_posts_stay_public(self, api, monkeypatch):
         monkeypatch.setenv("ADMIN_API_KEY", "s3cret")
-        r = client.post("/api/v1/scouting-rival", json={})          # an empty body: 422 from the validation, not 401/503 from the key
+        r = api.post("/api/v1/scouting-rival", json={})          # an empty body: 422 from the validation, not 401/503 from the key
         assert r.status_code not in BLOCKED
 
 
 # Write endpoints deliberately left public: compute-only (nothing persisted or destroyed).
 PUBLIC_WRITE_ROUTES = {
     ("POST", "/api/v1/reports/{collection}/weekly-report"),
-    ("POST", "/api/v1/analysis/montecarlo/{team_id}"),
-    ("POST", "/api/v1/analysis/game-prediction/{team_id}"),
     # the rival scouting report of any team: compute only, single-flight (src/api/routers/scouting_rival.py)
     ("POST", "/api/v1/scouting-rival"),
 }
@@ -93,8 +106,8 @@ def test_every_write_route_is_protected_or_explicitly_public():
     (consciously) to PUBLIC_WRITE_ROUTES above.
 
     Read from the OpenAPI schema: a loop over ``app.routes`` finds nothing in the FastAPI of the CI (included routers are nested there) and the check passed without checking."""
+    assert all(takes_the_admin_key(op) for op in api_operations(GUARDED).values())                    # the detector does see a guarded operation
     operations = api_operations(app)
-    assert ("POST", "/api/v1/analysis/elasticity/train") in operations and takes_the_admin_key(operations[("POST", "/api/v1/analysis/elasticity/train")])   # it does see the guarded ones
     unclassified = [
         (method, path) for (method, path), operation in operations.items()
         if method in {"POST", "PUT", "PATCH", "DELETE"} and (method, path) not in PUBLIC_WRITE_ROUTES and not takes_the_admin_key(operation)

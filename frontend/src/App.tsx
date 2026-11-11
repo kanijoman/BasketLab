@@ -87,8 +87,8 @@ export default function App() {
               <Route path="pbp"         element={<PbpAnalysisPage />} />
               <Route path="inout"       element={<InOutPage />} />
               <Route path="lineups"     element={<LineupsPage />} />
-              {/* The predictive analysis is out of the web while it is reworked (its page and tabs are kept in pages/PredictivePage.tsx and pages/predictive/): the old address goes to the hub */}
-              <Route path="predictive"  element={<Navigate to=".." replace />} />
+              {/* the old predictive analysis is gone (#852): its address goes to the preview of the match, which replaces it */}
+              <Route path="predictive"  element={<Navigate to="../previa" replace />} />
               <Route path="previa"     element={<RequirePublished requires={PREVIA_REQUIRES}><PreviaPage /></RequirePublished>} />
               <Route path="simulacion" element={<RequirePublished requires={SIMULACION_REQUIRES}><SimulacionPage /></RequirePublished>} />
               <Route path="matches"    element={<MatchAnalysisPage />} />
