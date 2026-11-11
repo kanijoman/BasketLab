@@ -26,7 +26,7 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
 2. **Entorno del servidor de la API**: añadir `ADMIN_API_KEY` = la clave.
 3. (El servicio `basketlab-scraper` se retiró en #724: solo la API tiene la clave; el frontend la envía en `X-Admin-Key`.)
 4. **Reiniciar** el servicio para que lea la variable.
-5. **Introducir la clave en la app**: la página Admin se retiró (#724); hoy solo la usa el entrenamiento del predictivo (`pages/predictive/ElasticityTab.tsx`, fuera de la web mientras se rehace), con el campo "Clave de administración" (`AdminKeyField`, `sessionStorage`). Si se reactiva el predictivo, se guarda ahí; por `curl` basta la cabecera `X-Admin-Key`.
+5. **Introducir la clave en la app**: la web ya no tiene ningún campo para ella (la página Admin se retiró en #724 y el entrenamiento del predictivo en #852); por `curl` basta la cabecera `X-Admin-Key`.
 6. **Comprobar** (sustituye URL y clave):
    ```bash
    # sin clave -> 401
