@@ -120,15 +120,16 @@ async function sealedRows(collection: string): Promise<Sealed> {
   return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
 }
 
+/** The files a competition has besides its rows, one folder of the publication each. */
+export type SectionName = 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout' | 'consistency' | 'rival_adjusted' | 'assist_connections' | 'calendar'
+
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
-async function sealedSection(section: 'derived' | 'shots' | 'rotations' | 'matches' | 'possessions' | 'possession_csv' | 'lineups' | 'inout' | 'consistency' | 'rival_adjusted' | 'assist_connections', collection: string, missing: string): Promise<Sealed> {
+async function sealedSection(section: SectionName, collection: string, missing: string): Promise<Sealed> {
   const manifest = await loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
   return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
 }
-
-const sealedDerived = (collection: string) => sealedSection('derived', collection, 'Esta competición no tiene el análisis pbp publicado.')
 
 /**
  * Opens a sealed file of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
@@ -158,6 +159,10 @@ async function openSealed<T>(locate: () => Promise<Sealed>, what: string): Promi
   }
 }
 
+/** The section file of a competition (`shots/`, `lineups/`, `calendar/`…), opened with the open key and the rights of the reader; `missing` is what a competition without it is told. */
+export const loadWebSection = <T>(section: SectionName, collection: string, missing: string): Promise<T> =>
+  openSealed<T>(() => sealedSection(section, collection, missing), 'El fichero')
+
 /** The report of a team (its own analysis or the rule-based report of a rival). */
 export const loadWebReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
   openSealed<TeamReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === mode), 'El informe')
@@ -180,13 +185,11 @@ export const loadWebScouting = (collection: string, teamId: string, scope: Scout
   openSealed<ScoutingReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope), 'El informe')
 
 /** The names of the competitions the publication has rows for (the phases of a competition are found among them), issue #671. */
-export async function loadWebCollections(): Promise<string[]> {
-  return (await loadManifest()).rows.map(r => r.collection)
-}
+export const loadWebCollections = async (): Promise<string[]> => (await loadManifest()).rows.map(r => r.collection)
 
-/** What the manifest says of each published competition (name, league, games): the list of competitions of the web, issue #705. */
-export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: 'feb' | 'fbcyl'; games: number }>> {
-  return (await loadManifest()).rows.map(({ collection, league, games }) => ({ collection, league, games }))
+/** What the manifest says of each published competition (name, league, games and, when it is known, gender): the list of competitions of the web, issue #705; the gender picks the calibrated win probability (#843). */
+export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: 'feb' | 'fbcyl'; games: number; gender?: 'F' | 'M' }>> {
+  return (await loadManifest()).rows.map(({ collection, league, games, gender }) => ({ collection, league, games, ...(gender ? { gender } : {}) }))
 }
 
 /** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
@@ -202,11 +205,10 @@ export async function loadScoutingScopes(collection: string, teamId: string): Pr
 }
 
 /** The `DERIVED` of each game of a competition (what the pbp tables are summed from on the device), issue #676. */
-export const loadWebDerived = (collection: string): Promise<Derived> => openSealed<Derived>(() => sealedDerived(collection), 'El fichero')
+export const loadWebDerived = (collection: string): Promise<Derived> => loadWebSection<Derived>('derived', collection, 'Esta competición no tiene el análisis pbp publicado.')
 
 /** The shots of a competition (the zones, their rating and the scatter are counted from them on the device), issue #685. */
-export const loadWebShots = (collection: string): Promise<Shots> =>
-  openSealed<Shots>(() => sealedSection('shots', collection, 'Esta competición no tiene los tiros publicados.'), 'El fichero')
+export const loadWebShots = (collection: string) => loadWebSection<Shots>('shots', collection, 'Esta competición no tiene los tiros publicados.')
 
 /** What `GET /rotaciones/{collection}/{team_id}` answers for each team of a competition (computed when it was published), issue #684. */
 export interface Rotations {
@@ -215,8 +217,7 @@ export interface Rotations {
   league: 'feb' | 'fbcyl'
   teams: { team_id: string; team_name: string; analysis: RotationResult }[]
 }
-export const loadWebRotations = (collection: string): Promise<Rotations> =>
-  openSealed<Rotations>(() => sealedSection('rotations', collection, 'Esta competición no tiene las rotaciones publicadas.'), 'El fichero')
+export const loadWebRotations = (collection: string) => loadWebSection<Rotations>('rotations', collection, 'Esta competición no tiene las rotaciones publicadas.')
 
 /** The assist connections of every team of a competition (`assist_connections/`, computed when it was published), issue #773. */
 export interface PublishedAssistConnections {
@@ -225,8 +226,7 @@ export interface PublishedAssistConnections {
   league: 'feb' | 'fbcyl'
   teams: { team_id: string; team_name: string; analysis: AssistConnections }[]
 }
-export const loadWebAssistConnections = (collection: string): Promise<PublishedAssistConnections> =>
-  openSealed<PublishedAssistConnections>(() => sealedSection('assist_connections', collection, 'Esta competición no tiene las conexiones de asistencia publicadas.'), 'El fichero')
+export const loadWebAssistConnections = (collection: string) => loadWebSection<PublishedAssistConnections>('assist_connections', collection, 'Esta competición no tiene las conexiones de asistencia publicadas.')
 
 /** The sections a competition has published (`rows`, `shots`, `assist_connections`…), read from the manifest; empty when the publication cannot be read (issue #780: the pages that need a section stay hidden). */
 export async function publishedSectionsOf(collection: string): Promise<Set<string>> {
@@ -243,8 +243,7 @@ export async function publishedSectionsOf(collection: string): Promise<Set<strin
 }
 
 /** The per-game counters of the lineups of every team of a competition (`lineups/`), issue #686: the browser merges them into the tables of Combinaciones. */
-export const loadWebLineups = (collection: string): Promise<Lineups> =>
-  openSealed<Lineups>(() => sealedSection('lineups', collection, 'Esta competición no tiene las combinaciones publicadas.'), 'El fichero')
+export const loadWebLineups = (collection: string) => loadWebSection<Lineups>('lineups', collection, 'Esta competición no tiene las combinaciones publicadas.')
 
 /** What `GET /players/{collection}/inout/{player_id}` answers for each player of a FEB competition (computed when it was published; `{}` for a player it cannot analyse), issue #678. */
 export interface PublishedInOut {
@@ -253,8 +252,7 @@ export interface PublishedInOut {
   league: 'feb' | 'fbcyl'
   players: { player_id: string; analysis: InOutResult | Record<string, never> }[]
 }
-export const loadWebInOut = (collection: string): Promise<PublishedInOut> =>
-  openSealed<PublishedInOut>(() => sealedSection('inout', collection, 'Esta competición no tiene el IN/OUT publicado.'), 'El fichero')
+export const loadWebInOut = (collection: string) => loadWebSection<PublishedInOut>('inout', collection, 'Esta competición no tiene el IN/OUT publicado.')
 
 /** What `GET /players/{collection}/consistency` answers (computed when the competition was published): the mean, deviation, coefficient of variation and games of each stat of each player, issue #709. */
 export interface PublishedConsistency {
@@ -263,8 +261,7 @@ export interface PublishedConsistency {
   league: 'feb' | 'fbcyl'
   players: Record<string, Record<string, { mean: number; std: number; cv: number; n: number }>>
 }
-export const loadWebConsistency = (collection: string): Promise<PublishedConsistency> =>
-  openSealed<PublishedConsistency>(() => sealedSection('consistency', collection, 'Esta competición no tiene la consistencia publicada.'), 'El fichero')
+export const loadWebConsistency = (collection: string) => loadWebSection<PublishedConsistency>('consistency', collection, 'Esta competición no tiene la consistencia publicada.')
 
 /** What `GET /teams/{collection}/rival-adjusted` answers (computed when the competition was published): by team name, the raw and adjusted average, the adjustment, the strength of schedule and the games of each stat, issue #710. */
 export interface PublishedRivalAdjusted {
@@ -273,8 +270,7 @@ export interface PublishedRivalAdjusted {
   league: 'feb' | 'fbcyl'
   teams: Record<string, Record<string, { raw_avg: number | null; adj_avg: number | null; adj: number | null; sos: number | null; n: number }>>
 }
-export const loadWebRivalAdjusted = (collection: string): Promise<PublishedRivalAdjusted> =>
-  openSealed<PublishedRivalAdjusted>(() => sealedSection('rival_adjusted', collection, 'Esta competición no tiene el ajuste por rival publicado.'), 'El fichero')
+export const loadWebRivalAdjusted = (collection: string) => loadWebSection<PublishedRivalAdjusted>('rival_adjusted', collection, 'Esta competición no tiene el ajuste por rival publicado.')
 
 /** The list of the matches of a competition, each with its analysis (computed when it was published), issue #677. */
 export interface PublishedMatches {
@@ -284,8 +280,7 @@ export interface PublishedMatches {
   games: number
   matches: (MatchSummary & { analysis: MatchAnalysis | null })[]
 }
-export const loadWebMatches = (collection: string): Promise<PublishedMatches> =>
-  openSealed<PublishedMatches>(() => sealedSection('matches', collection, 'Esta competición no tiene los partidos publicados.'), 'El fichero')
+export const loadWebMatches = (collection: string) => loadWebSection<PublishedMatches>('matches', collection, 'Esta competición no tiene los partidos publicados.')
 
 /** The possessions page of a competition as the endpoints answer it (computed when it was published), issue #679. */
 export interface PublishedPossessions {
@@ -297,10 +292,8 @@ export interface PublishedPossessions {
   /** The quality CSV, without the BOM (the download adds it once, at its start). */
   quality_csv: string
 }
-export const loadWebPossessions = (collection: string): Promise<PublishedPossessions> =>
-  openSealed<PublishedPossessions>(() => sealedSection('possessions', collection, 'Esta competición no tiene las posesiones publicadas.'), 'El fichero')
+export const loadWebPossessions = (collection: string) => loadWebSection<PublishedPossessions>('possessions', collection, 'Esta competición no tiene las posesiones publicadas.')
 
 /** The per-possession CSV of a competition (the heavy file: it is read only when its button is pressed). */
 export interface PublishedPossessionCsv { format: number; collection: string; league: 'feb' | 'fbcyl'; games: number; csv: string }
-export const loadWebPossessionCsv = (collection: string): Promise<PublishedPossessionCsv> =>
-  openSealed<PublishedPossessionCsv>(() => sealedSection('possession_csv', collection, 'Esta competición no tiene el CSV de posesiones publicado.'), 'El fichero')
+export const loadWebPossessionCsv = (collection: string) => loadWebSection<PublishedPossessionCsv>('possession_csv', collection, 'Esta competición no tiene el CSV de posesiones publicado.')

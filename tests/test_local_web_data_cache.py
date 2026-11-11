@@ -12,11 +12,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
-from src.local_data import build_cache, web_data  # noqa: E402
-from src.local_data.web_data import SECTIONS, publish_web_data  # noqa: E402
+from src.local_data import build_cache, sections, web_data  # noqa: E402
+from src.local_data.web_data import SECTIONS, UNCACHED, publish_web_data  # noqa: E402
 from tests.test_local_web_data import FBCYL, FEB, MASTER, cheap_lineups, handler  # noqa: E402,F401  (fixtures)
 
-HEAVY = [s for s in SECTIONS if s != "derived"]
+HEAVY = [s for s in SECTIONS if s not in UNCACHED]
 
 
 @pytest.fixture(autouse=True)
@@ -25,24 +25,24 @@ def cheap_exporters(monkeypatch):
     def small(**extra):
         return lambda handler, name: {"format": 1, "collection": name, "league": "fbcyl" if "FBCYL" in name else "feb", **extra}
 
-    monkeypatch.setattr(web_data, "export_matches", small(matches=[1]))
-    monkeypatch.setattr(web_data, "export_possessions", small(table=[1]))
-    monkeypatch.setattr(web_data, "export_possession_csv", small(csv="x"))
-    monkeypatch.setattr(web_data, "export_rotations", small(teams=[{"analysis": {"games_with_playbyplay": 1}}]))
+    monkeypatch.setattr(sections, "export_matches", small(matches=[1]))
+    monkeypatch.setattr(sections, "export_possessions", small(table=[1]))
+    monkeypatch.setattr(sections, "export_possession_csv", small(csv="x"))
+    monkeypatch.setattr(sections, "export_rotations", small(teams=[{"analysis": {"games_with_playbyplay": 1}}]))
 
 
 @pytest.fixture()
 def calls(monkeypatch):
     """The heavy sections that are computed, as ``(section, competition)``."""
     seen = []
-    real = web_data._section_payload
+    real = web_data.section_payload
 
     def counting(section, handler, db, collection):
         if section != "derived":
             seen.append((section, collection))
         return real(section, handler, db, collection)
 
-    monkeypatch.setattr(web_data, "_section_payload", counting)
+    monkeypatch.setattr(web_data, "section_payload", counting)
     return seen
 
 

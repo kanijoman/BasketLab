@@ -18,7 +18,7 @@ export interface FileEntry {
 }
 
 /** The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676), its shots (``shots/``, #685) or the rotation analysis of its teams
-    (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players) or the rival-adjusted figures of its teams (``rival_adjusted/``, #710; ``games`` counts its teams): same entry, other content. */
+    (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players) or the rival-adjusted figures of its teams (``rival_adjusted/``, #710; ``games`` counts its teams) or its calendar (``calendar/``, #842: every match with its round, kick-off and score; ``games`` counts its matches; only the competitions of the newest season): same entry, other content. */
 export interface RowsEntry {
   file: string
   bytes: number
@@ -27,6 +27,7 @@ export interface RowsEntry {
   league: 'feb' | 'fbcyl'
   games: number
   wraps: Wrap[]
+  gender?: 'F' | 'M'
 }
 
 /** The (plain) index of the sealed reports of a competition (``reports/``). */
@@ -55,6 +56,7 @@ export interface WebDataManifest {
   consistency?: RowsEntry[]
   rival_adjusted?: RowsEntry[]
   assist_connections?: RowsEntry[]
+  calendar?: RowsEntry[]
   reports: ReportIndexEntry[]
 }
 

@@ -28,11 +28,12 @@ class FileEntry(TypedDict):
 
 class RowsEntry(FileEntry):
     """The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676), its shots (``shots/``, #685) or the rotation analysis of its teams
-    (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players) or the rival-adjusted figures of its teams (``rival_adjusted/``, #710; ``games`` counts its teams): same entry, other content."""
+    (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players) or the rival-adjusted figures of its teams (``rival_adjusted/``, #710; ``games`` counts its teams) or its calendar (``calendar/``, #842: every match with its round, kick-off and score; ``games`` counts its matches; only the competitions of the newest season): same entry, other content."""
     collection: str
     league: Literal["feb", "fbcyl"]
     games: int
     wraps: List[Wrap]
+    gender: NotRequired[Literal["F", "M"]]     # the family of the competition (women's / men's), when it is known (#843): the win probability is calibrated per family
 
 
 class ReportIndexEntry(FileEntry):
@@ -58,6 +59,7 @@ class WebDataManifest(TypedDict):
     consistency: NotRequired[List[RowsEntry]]
     rival_adjusted: NotRequired[List[RowsEntry]]
     assist_connections: NotRequired[List[RowsEntry]]
+    calendar: NotRequired[List[RowsEntry]]
     reports: List[ReportIndexEntry]
 
 

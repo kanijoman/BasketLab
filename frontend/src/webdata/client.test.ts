@@ -1,34 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { ScopedAccessError } from '@live-package/crypto'
 import { addRight, parseInvite, type Right } from '@live-package/rights'
 import { loadWebImages, loadWebConsistency, loadWebRivalAdjusted, loadReportTeams, loadScoutingScopes, loadWebReport, loadWebDerived, loadWebInOut, loadWebLineups, loadWebMatches, loadWebPossessionCsv, loadWebPossessions, loadWebRotations, loadWebRows, loadWebScouting, loadWebShots, resetWebData, setDataBase, WebDataUnavailable, publishedSectionsOf } from './client'
+import { FBCYL, FEB, readPublished as read, serveWebData, WEB_BASE as BASE, type WebDataHost } from '@/test/webDataHost'
 
 // The browser side of `web-data` (issues #328, #639), tested against a REAL publication of the exporter (`tests/local_vectors/web_data`, made by
 // `generate_web_data.py`): sealed rows and reports, the manifest with the open key of the beta, the index of the reports of each competition.
-const DIR = join(__dirname, '../../../tests/local_vectors/web_data')
-const BASE = 'https://data.test/'
-const FEB = 'L_F_-2_2025_2026_Liga_Regular_B'
-const FBCYL = 'FBCYL_1ª_FASE-GRUPO_A-1_2026_'
 const MASTER = 'vector-master-secret-for-the-web-tests'
-
-const read = (file: string) => readFileSync(join(DIR, file), 'utf-8')
-let requested: string[]
-let override: Record<string, string | null>
-
-/** The host: the files of the publication; `override` swaps or removes some (a manifest without the open key, a file that has gone). */
-function serve() {
-  requested = []
-  globalThis.fetch = vi.fn(async (input: string | URL | Request) => {
-    const file = String(input).replace(BASE, '')
-    requested.push(file)
-    const body = file in override ? override[file] : read(file)
-    return body === null
-      ? { ok: false, status: 404, text: async () => '', json: async () => ({}) }
-      : { ok: true, status: 200, text: async () => body, json: async () => JSON.parse(body) }
-  }) as unknown as typeof fetch
-}
+let host: WebDataHost
 
 /** The key of a scope, derived from the master as `package_scopes.scope_key` does (HKDF-SHA256, salt `basketlab-live-scopes-v1`). */
 async function scopeKey(scope: string): Promise<Uint8Array> {
@@ -48,10 +27,10 @@ async function invitation(scope: string): Promise<Right> {
 const withoutOpenKey = () => {
   const manifest = JSON.parse(read('index.json'))
   delete manifest.open_key
-  override['index.json'] = JSON.stringify(manifest)
+  host.override['index.json'] = JSON.stringify(manifest)
 }
 
-beforeEach(() => { localStorage.clear(); resetWebData(); setDataBase(BASE); override = {}; serve() })
+beforeEach(() => { localStorage.clear(); resetWebData(); setDataBase(BASE); host = serveWebData() })
 afterEach(() => { vi.restoreAllMocks() })
 
 describe('the reports of web-data, opened in the browser', () => {
@@ -79,7 +58,7 @@ describe('the reports of web-data, opened in the browser', () => {
     const entry = manifest.reports.find((r: { collection: string }) => r.collection === FEB)
     const index = JSON.parse(read(entry.file))
     index.reports = ['Ñandú', 'álamo', 'Zeta', 'alfa'].map((team, i) => ({ ...index.reports[0], team_id: String(i), team, mode: 'own' }))
-    override[entry.file] = JSON.stringify(index)
+    host.override[entry.file] = JSON.stringify(index)
     expect((await loadReportTeams(FEB)).map(t => t.name)).toEqual(['Zeta', 'alfa', 'Ñandú', 'álamo'])
   })
 
@@ -90,10 +69,10 @@ describe('the reports of web-data, opened in the browser', () => {
   })
 
   it('refuses a manifest of another schema, or a host that is down, as unavailable', async () => {
-    override['index.json'] = JSON.stringify({ ...JSON.parse(read('index.json')), schema: 99 })
+    host.override['index.json'] = JSON.stringify({ ...JSON.parse(read('index.json')), schema: 99 })
     await expect(loadWebReport(FEB, '101', 'own')).rejects.toBeInstanceOf(WebDataUnavailable)
     resetWebData()
-    override = { 'index.json': null }
+    host.override = { 'index.json': null }
     await expect(loadWebReport(FEB, '101', 'own')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
 })
@@ -131,10 +110,10 @@ describe('a manifest that was replaced while the page was open', () => {
     const manifest = JSON.parse(read('index.json'))
     const entry = manifest.reports.find((r: { collection: string }) => r.collection === FEB)
     const old = JSON.parse(read(entry.file)).reports.find((r: { team_id: string; mode: string }) => r.team_id === '101' && r.mode === 'own')
-    override[old.file] = null                                               // the publication moved on: the old file is gone
-    requested.length = 0
+    host.override[old.file] = null                                               // the publication moved on: the old file is gone
+    host.requested.length = 0
     await loadWebReport(FEB, '101', 'own').catch(() => undefined)
-    expect(requested.filter(f => f === 'index.json').length).toBe(1)        // asked again, once
+    expect(host.requested.filter(f => f === 'index.json').length).toBe(1)        // asked again, once
   })
 })
 
@@ -179,7 +158,7 @@ describe('the rows of web-data, opened in the browser', () => {
     expect(rows.games).toBeGreaterThan(0)
     expect(rows.team_rows.length).toBeGreaterThan(0)
     expect(rows.player_rows?.length).toBeGreaterThan(0)
-    expect(requested.filter(f => f.startsWith('rows/'))).toHaveLength(1)
+    expect(host.requested.filter(f => f.startsWith('rows/'))).toHaveLength(1)
   })
 
   it('opens the rows of a FBCYL competition too', async () => {
@@ -208,8 +187,8 @@ describe('the DERIVED of web-data, opened in the browser', () => {
     expect(derived.rows.length).toBeGreaterThan(0)
     expect(derived.total).toBe(derived.games + derived.without_derived.length)
     expect(derived.rows[0].teams).toHaveLength(2)
-    expect(requested.filter(f => f.startsWith('derived/'))).toHaveLength(1)
-    expect(requested.some(f => f.startsWith('rows/'))).toBe(false)                // the team tables do not pay for it, nor it for them
+    expect(host.requested.filter(f => f.startsWith('derived/'))).toHaveLength(1)
+    expect(host.requested.some(f => f.startsWith('rows/'))).toBe(false)                // the team tables do not pay for it, nor it for them
   })
 
   it('opens the DERIVED of a FBCYL competition too', async () => {
@@ -234,8 +213,8 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     const shots = await loadWebShots(FEB)
     expect(shots.columns).toEqual(['team_id', 'player_id', 'x', 'y', 'made', 'zone'])
     expect(shots.shots.length).toBeGreaterThan(0)
-    expect(requested.filter(f => f.startsWith('shots/'))).toHaveLength(1)
-    expect(requested.some(f => f.startsWith('rows/') || f.startsWith('derived/'))).toBe(false)
+    expect(host.requested.filter(f => f.startsWith('shots/'))).toHaveLength(1)
+    expect(host.requested.some(f => f.startsWith('rows/') || f.startsWith('derived/'))).toBe(false)
   })
 
   it('opens the FBCYL shots too', async () => {
@@ -252,13 +231,13 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     const lineups = await loadWebLineups(FEB)
     expect(lineups.columns[0]).toBe('game')
     expect(lineups.teams.length).toBeGreaterThan(0)
-    expect(requested.filter(f => f.startsWith('lineups/'))).toHaveLength(1)
+    expect(host.requested.filter(f => f.startsWith('lineups/'))).toHaveLength(1)
   })
 
   it('opens the IN/OUT of the players of both leagues, the FBCYL ones by uuid (issues #678, #711)', async () => {
     const inout = await loadWebInOut(FEB)
     expect(inout.players.length).toBeGreaterThan(0)
-    expect(requested.filter(f => f.startsWith('inout/'))).toHaveLength(1)
+    expect(host.requested.filter(f => f.startsWith('inout/'))).toHaveLength(1)
     const fbcyl = await loadWebInOut(FBCYL)
     expect(fbcyl.players.length).toBeGreaterThan(0)
     expect(fbcyl.players.every(p => p.player_id.includes('-'))).toBe(true)
@@ -269,7 +248,7 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
     const sample = Object.values(consistency.players)[0]
     expect(Object.keys(consistency.players).length).toBeGreaterThan(0)
     expect(Object.values(sample)[0]).toEqual(expect.objectContaining({ mean: expect.any(Number), std: expect.any(Number), cv: expect.any(Number), n: expect.any(Number) }))
-    expect(requested.filter(f => f.startsWith('consistency/'))).toHaveLength(1)
+    expect(host.requested.filter(f => f.startsWith('consistency/'))).toHaveLength(1)
     await expect(loadWebConsistency(FEB)).rejects.toBeInstanceOf(WebDataUnavailable)
     await expect(loadWebConsistency('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
@@ -280,7 +259,7 @@ describe('the shots and the rotations of web-data, opened in the browser', () =>
       expect(Object.keys(adjusted.teams).length).toBeGreaterThan(1)
       expect(Object.values(adjusted.teams)[0].ortg).toEqual(expect.objectContaining({ raw_avg: expect.any(Number), n: expect.any(Number) }))
     }
-    expect(requested.filter(f => f.startsWith('rival_adjusted/'))).toHaveLength(2)
+    expect(host.requested.filter(f => f.startsWith('rival_adjusted/'))).toHaveLength(2)
     await expect(loadWebRivalAdjusted('NOPE_2030')).rejects.toBeInstanceOf(WebDataUnavailable)
   })
 
@@ -327,7 +306,7 @@ describe('the matches of web-data, opened in the browser', () => {
     expect(published.matches).toHaveLength(12)
     expect(published.matches[0].analysis?.comparison.length).toBeGreaterThan(0)
     expect(published.matches[0].home_team).toBeTruthy()
-    expect(requested.filter(f => f.startsWith('matches/'))).toHaveLength(1)
+    expect(host.requested.filter(f => f.startsWith('matches/'))).toHaveLength(1)
   })
 
   it('opens the FBCYL matches too, and a competition that has none is unavailable, not an access problem', async () => {
@@ -351,8 +330,8 @@ describe('the possessions of web-data, opened in the browser', () => {
     expect(published.table[0]).toHaveProperty('team_name')
     expect(Object.keys(published.consistency).sort()).toEqual(['own', 'rival'])
     expect(published.quality_csv).toContain('ID_Partido')
-    expect(requested.filter(f => f.startsWith('possessions/'))).toHaveLength(1)
-    expect(requested.some(f => f.startsWith('possession_csv/'))).toBe(false)         // the heavy file is only read when the button is pressed
+    expect(host.requested.filter(f => f.startsWith('possessions/'))).toHaveLength(1)
+    expect(host.requested.some(f => f.startsWith('possession_csv/'))).toBe(false)         // the heavy file is only read when the button is pressed
   })
 
   it('opens the FBCYL ones too', async () => {
@@ -378,7 +357,7 @@ describe('the sections a competition has published', () => {
   it('lists the sections whose entry is for the competition, and not the ones of another competition', async () => {
     const manifest = JSON.parse(read('index.json'))
     manifest.assist_connections = [{ collection: FEB, league: 'feb', games: 1, file: 'assist_connections/x.json', bytes: 1, sha256: 'x', wraps: [] }]
-    override['index.json'] = JSON.stringify(manifest)
+    host.override['index.json'] = JSON.stringify(manifest)
     const feb = await publishedSectionsOf(FEB)
     expect(feb.has('assist_connections')).toBe(true)
     expect(feb.has('rows')).toBe(true)
@@ -388,12 +367,12 @@ describe('the sections a competition has published', () => {
   it('a publication without the section (the page was deployed before its data) does not list it', async () => {
     const manifest = JSON.parse(read('index.json'))
     delete manifest.assist_connections                       // the case is built here: the committed fixture is the real publication, which may have the section
-    override['index.json'] = JSON.stringify(manifest)
+    host.override['index.json'] = JSON.stringify(manifest)
     expect((await publishedSectionsOf(FEB)).has('assist_connections')).toBe(false)
   })
 
   it('an unreachable publication lists nothing instead of failing: the pages that need data stay hidden', async () => {
-    override['index.json'] = null
+    host.override['index.json'] = null
     expect((await publishedSectionsOf(FEB)).size).toBe(0)
   })
 })

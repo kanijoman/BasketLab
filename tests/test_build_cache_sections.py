@@ -9,7 +9,7 @@ import pytest
 
 from src.local_data import build_cache
 from src.local_data.build_cache import module_files, section_versions
-from src.local_data.web_data import SECTION_MODULES, SECTIONS
+from src.local_data.web_data import SECTION_MODULES, SECTIONS, UNCACHED
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -126,7 +126,7 @@ def test_the_routers_do_not_count_in_any_section(tmp_path):
 
 # -------------------------------------------------------------------------------------------------- the real tree
 def test_every_section_of_the_publication_declares_the_module_of_its_exporter():
-    assert set(SECTION_MODULES) == set(SECTIONS) - {"derived"}, "a new section must say which module computes it, or its cache would never notice a change"
+    assert set(SECTION_MODULES) == set(SECTIONS) - UNCACHED, "a new section must say which module computes it, or its cache would never notice a change"
     for module in {m for modules in SECTION_MODULES.values() for m in ([modules] if isinstance(modules, str) else modules)}:
         assert (REPO / (module.replace(".", "/") + ".py")).is_file() or (REPO / module.replace(".", "/") / "__init__.py").is_file(), module
 
