@@ -44,11 +44,19 @@ class Feed(NamedTuple):
     with_pbp: Dict[str, Any]
     teams_filter: Callable[[Sequence[str]], Dict[str, Any]]
     adapt: Callable[[Dict[str, Any]], Dict[str, Any]]
+    date_projection: Dict[str, int]
+    date_of: Callable[[Dict[str, Any]], Optional[str]]   # the start of a stored game as FEB's ``dd-mm-yyyy - HH:MM``
 
 
 def _fbcyl_ids(team_ids: Sequence[str]) -> List[Any]:
     """The stable team ids of FBCYL are numbers in the database and strings everywhere else."""
     return [v for t in team_ids for v in ((str(t), int(t)) if str(t).isdigit() else (str(t),))]
+
+
+def _fbcyl_start(stored: Dict[str, Any]) -> Optional[str]:
+    from src.live_core.fbcyl_adapter import starttime
+
+    return starttime(stored.get("stats") or {})
 
 
 def _fbcyl_adapt(game: Dict[str, Any]) -> Dict[str, Any]:
@@ -58,8 +66,9 @@ def _fbcyl_adapt(game: Dict[str, Any]) -> Dict[str, Any]:
 
 
 FEB = Feed(FEB_PROJECTION, {"PLAYBYPLAY.LINES": {"$exists": True, "$ne": None}},
-           lambda ids: {"HEADER.TEAM.id": {"$in": [str(t) for t in ids]}}, lambda game: game)
-FBCYL = Feed(FBCYL_PROJECTION, {"moves.0": {"$exists": True}}, lambda ids: {"stats.teams.teamIdExtern": {"$in": _fbcyl_ids(ids)}}, _fbcyl_adapt)
+           lambda ids: {"HEADER.TEAM.id": {"$in": [str(t) for t in ids]}}, lambda game: game, {"HEADER.starttime": 1}, lambda stored: (stored.get("HEADER") or {}).get("starttime"))
+FBCYL = Feed(FBCYL_PROJECTION, {"moves.0": {"$exists": True}}, lambda ids: {"stats.teams.teamIdExtern": {"$in": _fbcyl_ids(ids)}}, _fbcyl_adapt,
+             {"stats.time": 1}, lambda stored: _fbcyl_start(stored))
 
 
 def feed_of(collection: str) -> Feed:
@@ -121,25 +130,51 @@ def source_collections(handler: Any, collection: str, team_ids: Sequence[str]) -
     return sources
 
 
-def games_of_sources(handler: Any, sources: Sequence[Tuple[str, bool]], team_ids: Sequence[str],
-                     level_of: Optional[Callable[[str], Optional[int]]] = None) -> Iterator[Dict[str, Any]]:
-    """The games of every source as FEB documents, one at a time: all of the own collection, only those of ``team_ids`` in the others; each game once.
+_START = re.compile(r"(\d{1,2})-(\d{1,2})-(\d{4})\D+(\d{1,2}):(\d{2})")
 
-    ``level_of(collection)`` (the catalog division, ``None`` for a cup) tags each game with ``LEVEL_KEY``: the division a team belongs to is where it plays."""
-    seen = set()
-    for name, league in sources:
-        level = level_of(name) if level_of else None
+
+def play_key(start: Optional[str]) -> Tuple[int, Tuple[int, ...]]:
+    """Sort key of a ``dd-mm-yyyy - HH:MM`` start: chronological, and a game whose date cannot be read goes last (issue #854)."""
+    match = _START.search(str(start or ""))
+    if not match:
+        return (1, ())
+    day, month, year, hour, minute = (int(v) for v in match.groups())
+    return (0, (year, month, day, hour, minute))
+
+
+def _in_play_order(handler: Any, sources: Sequence[Tuple[str, bool]], team_ids: Sequence[str]) -> List[Tuple[Any, ...]]:
+    """``[(key, source index, _id)]`` of the games to replay, in the order they were played; only the ``_id`` and the date are read (a game is ~1 MB in memory).
+
+    The Kalman rating depends on the order of its updates: the ``_id`` order is the order of loading, not the calendar (issue #854). The ``_id`` breaks ties, so the order is deterministic."""
+    entries, seen = [], set()
+    for index, (name, league) in enumerate(sources):
         feed = feed_of(name)
-        collection = handler.repository.connection.get_collection(name)
-        cursor = collection.find(feed.with_pbp if league else {**feed.with_pbp, **feed.teams_filter(team_ids)}, {**feed.projection, "_id": 1})
-        for stored in cursor:
-            game = feed.adapt(stored)
-            key = game.get("_id")
+        query = feed.with_pbp if league else {**feed.with_pbp, **feed.teams_filter(team_ids)}
+        for stored in handler.repository.connection.get_collection(name).find(query, {**feed.date_projection, "_id": 1}):
+            key = stored.get("_id")
             if key is not None and key in seen:
                 continue
             seen.add(key)
-            if not league:
-                game[LEAGUE_KEY] = False
-            if level is not None:
-                game[LEVEL_KEY] = level
-            yield game
+            entries.append((play_key(feed.date_of(stored)), type(key).__name__, key, index))
+    entries.sort(key=lambda e: e[:3])
+    return entries
+
+
+def games_of_sources(handler: Any, sources: Sequence[Tuple[str, bool]], team_ids: Sequence[str],
+                     level_of: Optional[Callable[[str], Optional[int]]] = None) -> Iterator[Dict[str, Any]]:
+    """The games of every source as FEB documents, one at a time, in the order they were played: all of the own collection, only those of ``team_ids`` in the others; each game once.
+
+    ``level_of(collection)`` (the catalog division, ``None`` for a cup) tags each game with ``LEVEL_KEY``: the division a team belongs to is where it plays."""
+    for _, _, key, index in _in_play_order(handler, sources, team_ids):
+        name, league = sources[index]
+        level = level_of(name) if level_of else None
+        feed = feed_of(name)
+        stored = handler.repository.connection.get_collection(name).find_one({"_id": key}, {**feed.projection, "_id": 1})
+        if stored is None:
+            continue
+        game = feed.adapt(stored)
+        if not league:
+            game[LEAGUE_KEY] = False
+        if level is not None:
+            game[LEVEL_KEY] = level
+        yield game

@@ -60,8 +60,13 @@ def test_the_roster_is_a_copy_so_later_changes_do_not_reach_the_package(feb_game
 # --- database source ----------------------------------------------------------------------
 
 def _handler(feb_game_doc):
+    from db_helpers import new_mock_db
+
+    db = new_mock_db()
+    db["FEB_TEST"].insert_one(dict(feb_game_doc))      # a real (in-memory) collection: the games are read in two steps, date first (#854)
     handler = MagicMock()
-    handler.repository.connection.get_collection.return_value.find.return_value = iter([feb_game_doc])
+    handler.repository.connection.get_collection.side_effect = lambda name: db[name]
+    handler.repository.connection.get_database.return_value = db
     return handler
 
 

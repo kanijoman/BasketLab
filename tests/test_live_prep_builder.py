@@ -226,12 +226,14 @@ def test_db_source_asks_mongo_for_the_shotchart_too(feb_game_doc):
 
     from src.live_prep.db_source import build_package_from_db
 
+    from db_helpers import new_mock_db
+
+    db = new_mock_db()
+    db["FEB_TEST"].insert_one(dict(feb_game_doc))
     handler = MagicMock()
-    collection = handler.repository.connection.get_collection.return_value
-    collection.find.return_value = iter([feb_game_doc])
+    handler.repository.connection.get_collection.side_effect = lambda name: db[name]
+    handler.repository.connection.get_database.return_value = db
     pkg = build_package_from_db(handler, "FEB_TEST", OWN, RIVAL, "2025-2026")
 
-    projection = collection.find.call_args[0][1]
-    assert projection.get("SHOTCHART.SHOTS") == 1 and projection.get("PLAYBYPLAY.LINES") == 1
     assert sum(c["a"] for c in pkg.tables["zones"]["league"].values()) == 121
 
