@@ -20,7 +20,13 @@ def _stored():
 
 
 def test_the_stored_vectors_are_the_current_reference():
-    assert json.loads(json.dumps(forecast_vectors.build(), sort_keys=True)) == json.loads(json.dumps(_stored(), sort_keys=True))
+    """Everything is the same bit for bit but the grid of ``math.erf``: the C library of each platform (Windows, Linux) gives it with other last bits, so it is compared to 1e-15 (the TypeScript port is
+    compared to 1e-14, which is what a probability rounded to four decimals needs)."""
+    built, stored = json.loads(json.dumps(forecast_vectors.build(), sort_keys=True)), _stored()
+    grid, stored_grid = built.pop("erf"), stored.pop("erf")
+    assert json.loads(json.dumps(built, sort_keys=True)) == json.loads(json.dumps(stored, sort_keys=True))
+    assert [x for x, _ in grid] == [x for x, _ in stored_grid]
+    assert all(abs(a - b) <= 1e-15 for (_, a), (_, b) in zip(grid, stored_grid))
 
 
 def test_the_win_probability_constants_are_the_calibrated_ones_and_an_unknown_gender_has_the_neutral_defaults():
