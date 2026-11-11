@@ -1,5 +1,6 @@
 """Every GitHub Actions workflow must be valid YAML (an unquoted ': ' in a step name broke
 live-vectors.yml: "mapping values are not allowed here")."""
+import re
 from pathlib import Path
 
 import pytest
@@ -362,6 +363,62 @@ class TestAndroidBuildAction:
         job = self._job()
         text = yaml.safe_dump(job)
         assert "steps.build.outputs.signing-mode" in text and "steps.signing.outputs.mode" not in text
+
+
+class TestPlayBundleJob:
+    """Issue #832: the workflow also builds the .aab that Google Play asks for, with the key of the APK, and attaches it to the release of the version (never to the fixed APK link)."""
+
+    PUBLISHING = ("refs/tags/live-android-v", "workflow_dispatch")
+
+    def _workflow(self):
+        return yaml.safe_load((ROOT / ".github" / "workflows" / "live-android.yml").read_text(encoding="utf-8"))
+
+    def _job(self, name="aab"):
+        return self._workflow()["jobs"][name]
+
+    def _step(self, name, job="aab"):
+        return next(s for s in self._job(job)["steps"] if s.get("name", "").startswith(name))
+
+    def test_it_builds_the_bundle_with_the_shared_action_and_the_play_flag_after_the_web_checks(self):
+        job = self._job()
+        build = next(s for s in job["steps"] if "android-build" in str(s.get("uses", "")))
+        assert job["needs"] == "web" and "if" not in job, "it also runs on pull requests that touch the app: it compiles and validates"
+        assert build["with"]["gradle-task"] == "bundleRelease" and build["with"]["distribution"] == "play" and build["id"] == "build"
+        assert build["with"]["keystore-base64"] == "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" and build["with"]["dispatch-version"] == "${{ inputs.version }}"
+
+    def test_a_run_that_publishes_stops_before_building_if_there_is_no_real_key(self):
+        """The throw-away debug key is fine for a pull request and for the APK; Play cannot take a bundle signed with it."""
+        step = self._step("Require the release key")
+        assert all(p in step["if"] for p in self.PUBLISHING) and step["env"]["KEYSTORE_BASE64"] == "${{ secrets.ANDROID_KEYSTORE_BASE64 }}"
+        assert "exit 1" in step["run"] and '-z "$KEYSTORE_BASE64"' in step["run"]
+        names = [s.get("name", "") for s in self._job()["steps"]]
+        assert names.index(step["name"]) < next(i for i, n in enumerate(names) if "android-build" in str(self._job()["steps"][i].get("uses", "")))
+        assert "release-key" in self._step("Name the bundle")["run"]       # and it checks again with what was actually used
+
+    def test_the_bundle_is_validated_with_a_pinned_bundletool_and_its_certificate_is_checked(self):
+        validate = self._step("Validate the bundle")["run"]
+        assert re.search(r"bundletool-all-\d+\.\d+\.\d+\.jar", validate) and "sha256sum -c" in validate and re.search(r"[0-9a-f]{64}", validate)
+        assert "validate --bundle" in validate and "main" not in validate.split("releases/download/")[1].split("/")[0], "a version, never a moving reference"
+        cert = self._step("Certificate of the bundle")
+        assert "keytool -printcert -jarfile" in cert["run"] and cert["env"]["EXPECTED_SHA256"] == "${{ vars.ANDROID_KEY_SHA256 }}"
+        assert "${{ vars" not in cert["run"]
+
+    def test_the_bundle_is_a_file_named_by_version_and_an_artifact(self):
+        assert "basketlab-live-${APP_VERSION_NAME}.aab" in self._step("Name the bundle")["run"]
+        upload = next(s for s in self._job()["steps"] if "upload-artifact" in str(s.get("uses", "")))
+        assert upload["with"]["name"] == "basketlab-live-aab" and upload["with"]["path"].endswith("dist-aab/basketlab-live-*.aab")
+
+    def test_the_bundle_never_goes_to_the_fixed_apk_release(self):
+        text = yaml.safe_dump(self._job()) + yaml.safe_dump(self._job("attach-aab"))
+        assert "live-android-latest" not in text and "latest.json" not in text and "softprops" not in text
+
+    def test_it_is_attached_to_the_release_of_the_version_once_the_apk_job_created_it(self):
+        job = self._job("attach-aab")
+        assert set(job["needs"]) == {"apk", "aab"} and job["permissions"]["contents"] == "write"
+        assert all(p in job["if"] for p in self.PUBLISHING)
+        run = self._step("Attach", "attach-aab")
+        assert "gh release upload" in run["run"] and "--clobber" in run["run"] and "$TAG" in run["run"] and "${{ inputs" not in run["run"]
+        assert "live-android-v{0}" in run["env"]["TAG"] and "inputs.version" in run["env"]["TAG"] and "github.ref_name" in run["env"]["TAG"]
 
 
 class TestBackendTestsRunInParallel:

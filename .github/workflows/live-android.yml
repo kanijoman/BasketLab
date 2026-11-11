@@ -153,3 +153,89 @@ jobs:
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "BasketLab Live (última versión)" \
             --notes "Enlace fijo al APK más reciente: versión ${APP_VERSION_NAME} (${{ steps.build.outputs.signing-mode }}). Releases por versión: etiquetas live-android-v*."
+
+  # The bundle that Google Play asks for (issue #832), built with the same key as the APK (Play App Signing with the existing key, docs/OPERATIONS.md). It compiles and validates on
+  # pull requests; it is attached to the release of the version (attach-aab), never to the fixed APK link `live-android-latest`, whose users update by the app itself.
+  aab:
+    name: Android bundle (Google Play)
+    needs: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Play cannot take a bundle signed with the throw-away debug key (the APK tolerates it): a run that publishes without the real key stops BEFORE building
+      - name: Require the release key to publish
+        if: startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "::error::ANDROID_KEYSTORE_BASE64 is not set: a bundle for Google Play cannot be signed with a debug key"; exit 1; fi
+
+      - name: Build the release bundle
+        id: build
+        uses: ./.github/actions/android-build
+        with:
+          gradle-task: bundleRelease
+          distribution: play
+          dispatch-version: ${{ inputs.version }}
+          keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Name the bundle
+        env:
+          SIGNING_MODE: ${{ steps.build.outputs.signing-mode }}
+          PUBLISHING: ${{ startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "$PUBLISHING" = "true" ] && [ "$SIGNING_MODE" != "release-key" ]; then echo "::error::The bundle to publish was not signed with the release key ($SIGNING_MODE)"; exit 1; fi
+          mkdir -p dist-aab
+          cp android/app/build/outputs/bundle/release/app-release.aab "dist-aab/basketlab-live-${APP_VERSION_NAME}.aab"
+          ls -la dist-aab
+
+      # bundletool of Google, a pinned version whose hash is checked (the one GitHub publishes for the release asset)
+      - name: Validate the bundle
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $RUNNER_TEMP/bundletool.jar" | sha256sum -c -
+          java -jar "$RUNNER_TEMP/bundletool.jar" validate --bundle "dist-aab/basketlab-live-${APP_VERSION_NAME}.aab"
+
+      # the certificate of the bundle must be the one of the APK (a different key would break the update of whoever has the APK). ANDROID_KEY_SHA256 (a repository variable) is optional
+      - name: Certificate of the bundle
+        env:
+          EXPECTED_SHA256: ${{ vars.ANDROID_KEY_SHA256 }}
+        run: |
+          keytool -printcert -jarfile "dist-aab/basketlab-live-${APP_VERSION_NAME}.aab" | tee "$RUNNER_TEMP/cert.txt"
+          if [ -n "$EXPECTED_SHA256" ]; then
+            expected=$(echo "$EXPECTED_SHA256" | tr -d ': ' | tr 'a-f' 'A-F')
+            found=$(grep -m1 'SHA256:' "$RUNNER_TEMP/cert.txt" | sed 's/.*SHA256: *//' | tr -d ': ' | tr 'a-f' 'A-F')
+            if [ "$found" != "$expected" ]; then echo "::error::The certificate of the bundle ($found) is not the expected one"; exit 1; fi
+          else
+            echo "::notice::ANDROID_KEY_SHA256 is not set: the certificate was printed but not compared"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: basketlab-live-aab
+          path: apps/live-android/dist-aab/basketlab-live-*.aab
+
+  # The release of the version is created by the job apk: the bundle is attached once it exists (two jobs creating the same release would race)
+  attach-aab:
+    name: Attach the bundle to the release of the version
+    needs: [apk, aab]
+    if: startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: basketlab-live-aab
+          path: bundle
+
+      - name: Attach to the release of the version
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && format('live-android-v{0}', inputs.version) || github.ref_name }}
+        run: gh release upload "$TAG" bundle/*.aab --clobber --repo "$GITHUB_REPOSITORY"
