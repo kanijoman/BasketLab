@@ -1,0 +1,132 @@
+name: Android build
+description: >
+  What the APK and the Play bundle of apps/live-android share (issue #831): Node, Java and Gradle, `npm ci`, the version (fixed BEFORE the web build: the app shows it and
+  compares it with the published one), the web build synced into the Android project, the signing key from the secrets and the Gradle task. The caller checks the repository out
+  and receives the files in apps/live-android/android/app/build/outputs. A composite action cannot read secrets itself, so the caller passes them.
+
+inputs:
+  gradle-task:
+    description: "assembleRelease (APK) or bundleRelease (Play bundle)"
+    required: true
+  dispatch-version:
+    description: "X.Y.Z of a manual release (workflow_dispatch); empty otherwise"
+    required: false
+    default: ""
+  distribution:
+    description: "VITE_DISTRIBUTION of the web build: 'play' for the Play bundle (the app does not update itself, #830); empty for the APK"
+    required: false
+    default: ""
+  keystore-base64:
+    description: "The ANDROID_KEYSTORE_BASE64 secret (empty means a throw-away debug key signs the build)"
+    required: false
+    default: ""
+  keystore-password:
+    description: The ANDROID_KEYSTORE_PASSWORD secret
+    required: false
+    default: ""
+  key-alias:
+    description: The ANDROID_KEY_ALIAS secret
+    required: false
+    default: ""
+  key-password:
+    description: The ANDROID_KEY_PASSWORD secret
+    required: false
+    default: ""
+
+outputs:
+  signing-mode:
+    description: "release-key, or debug-key when no keystore was given"
+    value: ${{ steps.signing.outputs.mode }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: "22"
+        cache: npm
+        cache-dependency-path: apps/live-android/package-lock.json
+
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    # v6 moved the cache to a proprietary component with its own terms of use; the release is weekly, so the cache is switched off (docs/OPERATIONS.md)
+    - uses: gradle/actions/setup-gradle@v6
+      with:
+        cache-disabled: true
+
+    - name: Install the dependencies
+      shell: bash
+      working-directory: apps/live-android
+      run: npm ci
+
+    # The version is fixed BEFORE the web build: the app shows it and compares it with the published one (issues #226,
+    # #227). versionCode only has to grow with every release; the run number of the workflow does.
+    - name: Version
+      shell: bash
+      working-directory: apps/live-android
+      env:
+        DISPATCH_VERSION: ${{ inputs.dispatch-version }}
+      run: |
+        code="${{ github.run_number }}"
+        if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+          # only main is ever published, and the version must look like one (it ends up in a tag and a file name)
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then echo "::error::Only main can be published"; exit 1; fi
+          if ! [[ "$DISPATCH_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::The version must be X.Y.Z"; exit 1; fi
+          name="$DISPATCH_VERSION"
+        elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+          name="${GITHUB_REF_NAME#live-android-v}"
+        else
+          name="0.1.0-${GITHUB_SHA::7}"
+        fi
+        {
+          echo "APP_VERSION_CODE=$code"
+          echo "APP_VERSION_NAME=$name"
+          echo "VITE_APP_VERSION=$name"
+          echo "VITE_APP_BUILD=$code"
+          echo "VITE_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        } >> "$GITHUB_ENV"
+
+    - name: Distribution
+      shell: bash
+      env:
+        DISTRIBUTION: ${{ inputs.distribution }}
+      run: |
+        if [ -n "$DISTRIBUTION" ]; then echo "VITE_DISTRIBUTION=$DISTRIBUTION" >> "$GITHUB_ENV"; fi
+
+    - name: Build the web app and sync it into the Android project
+      shell: bash
+      working-directory: apps/live-android
+      run: npm run cap:sync
+
+    - name: Signing key
+      id: signing
+      shell: bash
+      env:
+        KEYSTORE_BASE64: ${{ inputs.keystore-base64 }}
+      run: |
+        if [ -n "$KEYSTORE_BASE64" ]; then
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          echo "mode=release-key" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set: signing with a throw-away debug key (the build installs, but a later build cannot update it; see docs/OPERATIONS.md)"
+          mkdir -p ~/.android
+          keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          echo "mode=debug-key" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Gradle task
+      shell: bash
+      working-directory: apps/live-android/android
+      env:
+        GRADLE_TASK: ${{ inputs.gradle-task }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ inputs.keystore-password }}
+        ANDROID_KEY_ALIAS: ${{ inputs.key-alias }}
+        ANDROID_KEY_PASSWORD: ${{ inputs.key-password }}
+      run: |
+        chmod +x gradlew
+        ./gradlew --no-daemon "$GRADLE_TASK"

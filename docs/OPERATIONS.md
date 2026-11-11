@@ -147,6 +147,24 @@ Decisión del 13/10: **cada viernes por la mañana** se publica una versión con
 3. Abrir el APK y pulsar *Instalar*. Si Play Protect avisa de "app no verificada", elegir *Instalar de todos modos*.
 4. Actualizar = descargar el APK nuevo e instalarlo encima (misma clave de firma, `versionCode` mayor). Si el dispositivo es de un MDM del club, puede tener bloqueadas las fuentes desconocidas.
 
+### Google Play: el .aab (épica #454, #830-#833)
+**Alcance acordado (10/11/2026)**: uso **inicialmente cerrado** (pruebas internas de Play para el staff); la vía pública (prueba cerrada de 12 testers durante 14 días) es la fase posterior, #837, diferida. La cuenta de Play ya existe.
+
+**Qué genera el workflow** (`live-android.yml`, job `aab`; lo común con el APK vive en la acción `.github/actions/android-build`): `bundleRelease` con `VITE_DISTRIBUTION=play` (la app no se actualiza por su cuenta, ver LIVE.md), firmado con **la misma clave que el APK**, validado con `bundletool validate` (versión fijada y hash comprobado) y con la huella del certificado impresa y, si existe la variable de repositorio `ANDROID_KEY_SHA256`, **comparada** con la esperada. Sale `basketlab-live-<versión>.aab` como artefacto del run (también en los PR que tocan la app: ahí solo compila y valida) y, en cada release publicada (etiqueta o ejecución manual, o sea la del viernes), el job `attach-aab` lo **adjunta a la release de la versión**, nunca a `live-android-latest` (el enlace fijo del APK). **La subida a Play Console es manual**: descargar el `.aab` de la release y subirlo a *Pruebas internas*. Más adelante puede automatizarse con una cuenta de servicio.
+
+**Sin clave real no se publica**: un run que va a publicar (etiqueta o manual) y no tiene `ANDROID_KEYSTORE_BASE64` **falla antes de compilar el bundle** (Play no admite la clave de depuración efímera que el APK sí tolera). En un PR (sin etiqueta ni ejecución manual) no se exige: uno de un fork no recibe los secretos y compila con la efímera, solo para validar.
+
+**`versionCode`** = `github.run_number`, el mismo para el APK y el AAB de un run y siempre creciente; Play lo acepta mientras sea mayor que el último subido. Si algún día se sube a Play un número y luego el contador se reiniciara (otro repositorio, otro workflow), **no se podría subir**: no cambiar el workflow ni su nombre sin pensarlo.
+
+**Alta en Play (manual, #835)**
+1. *Play App Signing*: al crear la app, elegir **«usar una clave existente»** y subir la exportación de la clave actual con la herramienta PEPK de Play (la clave del APK, secretos `ANDROID_KEYSTORE_*`). Así Play y el APK comparten firma y un dispositivo puede pasar de uno a otro sin desinstalar. Recomendable una **clave de subida distinta** (guardada aparte) para poder rotarla sin perder la clave de firma. **Guardar bien el keystore actual**: es la identidad de la app.
+2. Ficha: nombre, descripción corta y larga, icono 512×512, gráfico de funciones 1024×500, capturas de teléfono y tablet, categoría y correo de contacto.
+3. **Política de privacidad con URL pública** (#834: una página en la web de Vercel), formulario de **Seguridad de los datos** (la app solo usa `INTERNET`; el feedback y los derechos quedan en el dispositivo), clasificación de contenido, público objetivo y declaración de anuncios (ninguno).
+4. **Aviso de las cuentas personales nuevas**: antes de producción exigen una **prueba cerrada con al menos 12 testers durante 14 días** (#837); una cuenta de organización lo evita pero pide verificación de empresa (D-U-N-S).
+5. Primera subida manual del `.aab` a *Pruebas internas* (testers por correo) y comprobación en una tablet (#836): instalar desde Play, ver que *Acerca de* dice «Se actualiza desde Google Play» y que no sale aviso de versión, y que un APK posterior se instala encima (misma firma).
+
+**Si se pierde la clave de subida** (la de Play App Signing sigue en Google): *Play Console → Configuración → Integridad de la app → Firma de apps → Solicitar restablecimiento de la clave de subida*, generar una nueva y poner sus secretos. Si se pierde la **clave de firma del APK** (el keystore actual) y se había exportado a Play, la de Play sigue válida para Play, pero el APK de las releases ya no podrá actualizar los dispositivos instalados (ver «Clave de firma propia»).
+
 ### Clave de firma propia (recomendado antes de la primera tablet "de verdad")
 Sin los secretos de abajo el workflow firma con una clave de depuración **efímera**: el APK se instala, pero el siguiente build no podrá actualizarlo (habría que desinstalar la app y se pierden sus datos). Con la clave propia, todas las versiones son actualizaciones válidas.
 1. Generar el almacén (necesita un JDK; `keytool` viene con él, p. ej. `winget install Microsoft.OpenJDK.21`):

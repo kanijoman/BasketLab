@@ -67,6 +67,13 @@ describe('checkForUpdate', () => {
     expect(fetchJson).not.toHaveBeenCalled()
   })
 
+  it('the Google Play build never checks for an update, not even inside the app: Play updates it and a link to another APK is against its policy (issue #830)', async () => {
+    const fetchJson = vi.fn()
+    const r = await checkForUpdate(deps({ installed: { ...INSTALLED, distribution: 'play' }, fetchJson, force: true }))
+    expect(r.status).toBe('unsupported')
+    expect(fetchJson).not.toHaveBeenCalled()
+  })
+
   it('without connection it simply does not say anything (unknown), it never throws', async () => {
     const r = await checkForUpdate(deps({ fetchJson: vi.fn().mockRejectedValue(new Error('offline')) }))
     expect(r.status).toBe('unknown')

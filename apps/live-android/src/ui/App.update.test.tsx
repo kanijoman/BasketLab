@@ -57,6 +57,19 @@ function withResume(over: Partial<AppUpdateDeps> = {}) {
   return { d, fire: () => resume?.(), listening: () => resume !== null }
 }
 
+describe('the build for Google Play is updated by Play (issue #830)', () => {
+  it('asks nothing, shows no notice, and Acerca de says where it is updated from', async () => {
+    const fetchJson = vi.fn().mockResolvedValue(LATEST)
+    mount(deps({ fetchJson, getInstalled: async () => ({ name: '0.2.0', build: 40, builtAt: null, native: true, distribution: 'play' }) }))
+    await screen.findByText('EQUIPO PROPIO')
+    openAbout()
+    expect(await screen.findByText(/se actualiza desde google play/i)).toBeTruthy()
+    expect(fetchJson).not.toHaveBeenCalled()
+    expect(screen.queryByRole('status', { name: /actualización/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /buscar actualización/i })).toBeNull()
+  })
+})
+
 describe('new versions are noticed without opening Acerca de (issue #335)', () => {
   it('checks again when the app comes back to the foreground, and shows the notice', async () => {
     let now = 1_000_000

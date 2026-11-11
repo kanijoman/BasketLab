@@ -25,6 +25,15 @@ describe('installed version (issues #226 and #227)', () => {
     expect(v).toEqual({ name: 'dev', build: null, builtAt: null, native: false })
   })
 
+  it('the build for Google Play says so (VITE_DISTRIBUTION=play); the APK, a browser and any other value say nothing (issue #830)', async () => {
+    const play = await getInstalledVersion({ native: () => true, getInfo: async () => ({ name: 'x', id: 'x', build: '52', version: '0.3.0' }), env: { VITE_DISTRIBUTION: 'play' } })
+    expect(play).toMatchObject({ name: '0.3.0', build: 52, native: true, distribution: 'play' })
+    for (const env of [{}, { VITE_DISTRIBUTION: 'apk' }, { VITE_DISTRIBUTION: 'PLAY ' }, { VITE_DISTRIBUTION: 'store' }]) {
+      const v = await getInstalledVersion({ native: () => true, getInfo: async () => ({ name: 'x', id: 'x', build: '52', version: '0.3.0' }), env })
+      expect(v.distribution === 'play').toBe(false)
+    }
+  })
+
   it('a failing native call falls back to the compiled version instead of breaking the app', async () => {
     const v = await getInstalledVersion({
       native: () => true,

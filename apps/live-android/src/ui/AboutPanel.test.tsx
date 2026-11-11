@@ -54,6 +54,20 @@ describe('AboutPanel (issues #226 and #227)', () => {
     expect(p.onOpen).toHaveBeenCalledWith(LATEST.apk)
   })
 
+  it('the Google Play build says that Play updates it, with no button and no APK link even if an update were known (issue #830)', () => {
+    const p = panel({ version: { ...VERSION, distribution: 'play' }, update: { status: 'available', latest: LATEST } })
+    expect(screen.getByText(/se actualiza desde google play/i)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /buscar actualización/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /descargar e instalar/i })).toBeNull()
+    expect(p.onOpen).not.toHaveBeenCalled()
+  })
+
+  it('the APK keeps its update line and button (issue #830)', () => {
+    panel()
+    expect(screen.queryByText(/se actualiza desde google play/i)).toBeNull()
+    expect(screen.getByRole('button', { name: /buscar actualización/i })).toBeTruthy()
+  })
+
   it('while checking the button is disabled', () => {
     panel({ checking: true })
     expect((screen.getByRole('button', { name: /buscando/i }) as HTMLButtonElement).disabled).toBe(true)

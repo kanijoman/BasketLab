@@ -91,78 +91,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v7
+      # what the APK and the Play bundle share lives in one action (issue #831)
+      - name: Build the release APK
+        id: build
+        uses: ./.github/actions/android-build
         with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: apps/live-android/package-lock.json
-
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "21"
-
-      # v6 moved the cache to a proprietary component with its own terms of use; the release is weekly, so the cache is switched off (docs/OPERATIONS.md)
-      - uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-disabled: true
-
-      - run: npm ci
-
-      # The version is fixed BEFORE the web build: the app shows it and compares it with the published one (issues #226,
-      # #227). versionCode only has to grow with every release; the run number of the workflow does.
-      - name: Version
-        env:
-          DISPATCH_VERSION: ${{ inputs.version }}
-        run: |
-          code="${{ github.run_number }}"
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            # only main is ever published, and the version must look like one (it ends up in a tag and a file name)
-            if [ "${GITHUB_REF}" != "refs/heads/main" ]; then echo "::error::Only main can be published"; exit 1; fi
-            if ! [[ "$DISPATCH_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::The version must be X.Y.Z"; exit 1; fi
-            name="$DISPATCH_VERSION"
-          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            name="${GITHUB_REF_NAME#live-android-v}"
-          else
-            name="0.1.0-${GITHUB_SHA::7}"
-          fi
-          {
-            echo "APP_VERSION_CODE=$code"
-            echo "APP_VERSION_NAME=$name"
-            echo "VITE_APP_VERSION=$name"
-            echo "VITE_APP_BUILD=$code"
-            echo "VITE_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          } >> "$GITHUB_ENV"
-
-      - name: Build the web app and sync it into the Android project
-        run: npm run cap:sync
-
-      - name: Signing key
-        id: signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
-            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
-            echo "mode=release-key" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set: signing with a throw-away debug key (the APK installs, but a later build cannot update it; see docs/OPERATIONS.md)"
-            mkdir -p ~/.android
-            keytool -genkeypair -keystore ~/.android/debug.keystore -storepass android -keypass android \
-              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            echo "mode=debug-key" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Assemble the release APK
-        working-directory: apps/live-android/android
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon assembleRelease
+          gradle-task: assembleRelease
+          dispatch-version: ${{ inputs.version }}
+          keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       - name: Name the APK
         env:
@@ -198,7 +137,7 @@ jobs:
           # GitHub would still pick the newest one); see docs/OPERATIONS.md
           prerelease: true
           body: |
-            BasketLab Live ${{ env.APP_VERSION_NAME }} (${{ steps.signing.outputs.mode }}).
+            BasketLab Live ${{ env.APP_VERSION_NAME }} (${{ steps.build.outputs.signing-mode }}).
             Instalar: descargar el APK en el dispositivo y permitir "Instalar apps desconocidas" para el navegador/gestor de archivos.
             Si ya tienes la app con el botón de actualizar (desde la 0.3.0), basta con pulsarlo.
 
@@ -213,4 +152,90 @@ jobs:
           gh release create live-android-latest dist-apk/basketlab-live.apk dist-apk/latest.json \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
             --title "BasketLab Live (última versión)" \
-            --notes "Enlace fijo al APK más reciente: versión ${APP_VERSION_NAME} (${{ steps.signing.outputs.mode }}). Releases por versión: etiquetas live-android-v*."
+            --notes "Enlace fijo al APK más reciente: versión ${APP_VERSION_NAME} (${{ steps.build.outputs.signing-mode }}). Releases por versión: etiquetas live-android-v*."
+
+  # The bundle that Google Play asks for (issue #832), built with the same key as the APK (Play App Signing with the existing key, docs/OPERATIONS.md). It compiles and validates on
+  # pull requests; it is attached to the release of the version (attach-aab), never to the fixed APK link `live-android-latest`, whose users update by the app itself.
+  aab:
+    name: Android bundle (Google Play)
+    needs: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Play cannot take a bundle signed with the throw-away debug key (the APK tolerates it): a run that publishes without the real key stops BEFORE building
+      - name: Require the release key to publish
+        if: startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "::error::ANDROID_KEYSTORE_BASE64 is not set: a bundle for Google Play cannot be signed with a debug key"; exit 1; fi
+
+      - name: Build the release bundle
+        id: build
+        uses: ./.github/actions/android-build
+        with:
+          gradle-task: bundleRelease
+          distribution: play
+          dispatch-version: ${{ inputs.version }}
+          keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Name the bundle
+        env:
+          SIGNING_MODE: ${{ steps.build.outputs.signing-mode }}
+          PUBLISHING: ${{ startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "$PUBLISHING" = "true" ] && [ "$SIGNING_MODE" != "release-key" ]; then echo "::error::The bundle to publish was not signed with the release key ($SIGNING_MODE)"; exit 1; fi
+          mkdir -p dist-aab
+          cp android/app/build/outputs/bundle/release/app-release.aab "dist-aab/basketlab-live-${APP_VERSION_NAME}.aab"
+          ls -la dist-aab
+
+      # bundletool of Google, a pinned version whose hash is checked (the one GitHub publishes for the release asset)
+      - name: Validate the bundle
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $RUNNER_TEMP/bundletool.jar" | sha256sum -c -
+          java -jar "$RUNNER_TEMP/bundletool.jar" validate --bundle "dist-aab/basketlab-live-${APP_VERSION_NAME}.aab"
+
+      # the certificate of the bundle must be the one of the APK (a different key would break the update of whoever has the APK). ANDROID_KEY_SHA256 (a repository variable) is optional
+      - name: Certificate of the bundle
+        env:
+          EXPECTED_SHA256: ${{ vars.ANDROID_KEY_SHA256 }}
+        run: |
+          keytool -printcert -jarfile "dist-aab/basketlab-live-${APP_VERSION_NAME}.aab" | tee "$RUNNER_TEMP/cert.txt"
+          if [ -n "$EXPECTED_SHA256" ]; then
+            expected=$(echo "$EXPECTED_SHA256" | tr -d ': ' | tr 'a-f' 'A-F')
+            found=$(grep -m1 'SHA256:' "$RUNNER_TEMP/cert.txt" | sed 's/.*SHA256: *//' | tr -d ': ' | tr 'a-f' 'A-F')
+            if [ "$found" != "$expected" ]; then echo "::error::The certificate of the bundle ($found) is not the expected one"; exit 1; fi
+          else
+            echo "::notice::ANDROID_KEY_SHA256 is not set: the certificate was printed but not compared"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: basketlab-live-aab
+          path: apps/live-android/dist-aab/basketlab-live-*.aab
+
+  # The release of the version is created by the job apk: the bundle is attached once it exists (two jobs creating the same release would race)
+  attach-aab:
+    name: Attach the bundle to the release of the version
+    needs: [apk, aab]
+    if: startsWith(github.ref, 'refs/tags/live-android-v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: basketlab-live-aab
+          path: bundle
+
+      - name: Attach to the release of the version
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && format('live-android-v{0}', inputs.version) || github.ref_name }}
+        run: gh release upload "$TAG" bundle/*.aab --clobber --repo "$GITHUB_REPOSITORY"

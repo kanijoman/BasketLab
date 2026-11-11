@@ -25,7 +25,7 @@ export interface LatestInfo {
 export type UpdateResult =
   | { status: 'available' | 'up_to_date'; latest: LatestInfo }
   | { status: 'unknown' }      // no connection or an answer that is not a release description
-  | { status: 'unsupported' }  // not the Android app: nothing to update
+  | { status: 'unsupported' }  // not the Android app, or the build for Google Play: nothing to update by ourselves
 
 export interface StorageLike {
   getItem(key: string): string | null
@@ -79,7 +79,7 @@ function writeCache(storage: StorageLike | null | undefined, checkedAt: number, 
 }
 
 export async function checkForUpdate(d: UpdateDeps): Promise<UpdateResult> {
-  if (!d.installed || !d.installed.native) return { status: 'unsupported' }
+  if (!d.installed || !d.installed.native || d.installed.distribution === 'play') return { status: 'unsupported' }   // the Play build is updated by Play (issue #830)
   const now = (d.now ?? Date.now)()
   const cached = readCache(d.storage)
   let raw: unknown
