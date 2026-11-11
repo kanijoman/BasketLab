@@ -169,6 +169,7 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
                           build: Optional[Callable[..., Any]] = None, errors: Optional[List[str]] = None,
                           competitions: Optional[Dict[str, Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """One bundle per round that is next in each competition (several when matches were postponed or advanced, #450); a competition that fails is reported in ``errors`` and skipped."""
+    from src.live_prep.club_fetcher import fetch_club_name
     from src.live_prep.roster_fetcher import fetch_rosters
     from src.live_prep.round_packages import ROUNDS_DIR, build_round_packages_from_db, publish_rounds
     from src.services.match_schedule_service import MatchScheduleService
@@ -185,7 +186,8 @@ def publish_round_bundles(db: Any, out: Any, passphrase: Any, collections: List[
                 continue
             # the games are read ONCE for every match of every round that is next; each round then gets its own bundle (issue #450). The rosters are FEB's: a FBCYL team id is not a FEB
             # team id, and what FEB answered for it would be another team's (issue #446)
-            builder = build or functools.partial(build_round_packages_from_db, roster_source=None if is_fbcyl(collection) else fetch_rosters)
+            builder = build or functools.partial(build_round_packages_from_db, roster_source=None if is_fbcyl(collection) else fetch_rosters,
+                                                                  club_source=None if is_fbcyl(collection) else fetch_club_name)
             built = builder(db, collection, [m for r in rounds for m in r["matches"]], club_team_id=team_id,
                             **_rules_kwargs(collection, competitions))
             for r in rounds:

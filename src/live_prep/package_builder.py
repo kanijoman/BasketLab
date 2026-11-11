@@ -216,6 +216,16 @@ class SeasonAccumulator:
                 if code in self._carry:
                     self.ratings.seed(str(t["id"]), self._carry[code])
 
+    def link_clubs(self, team_ids: Iterable[str], linker: Any) -> None:
+        """Teams that have not played yet: their club (``ClubLinker``) gives their teamCode of last season, and so its final rating (issue #862)."""
+        for team_id in dict.fromkeys(str(t) for t in team_ids):
+            if team_id in self.ratings.known():
+                continue
+            code = linker.code_of(team_id)
+            if code is not None and code in self._carry:
+                self.codes.setdefault(team_id, code)
+                self.ratings.seed(team_id, self._carry[code])
+
     def final_by_code(self) -> Dict[str, float]:
         """The rating of each team by ``teamCode``: what the next season starts from (issue #825)."""
         return {code: self.ratings.rating(tid) for tid, code in self.codes.items() if tid in self.ratings.known()}
