@@ -72,11 +72,11 @@ def _fast_assist_connections(handler, name):
 
 @pytest.fixture(autouse=True)
 def cheap_lineups(monkeypatch):
-    monkeypatch.setattr("src.local_data.web_data.export_assist_connections", _fast_assist_connections)
-    monkeypatch.setattr("src.local_data.web_data.export_lineups", _fast_lineups)
-    monkeypatch.setattr("src.local_data.web_data.export_inout", _fast_inout)
-    monkeypatch.setattr("src.local_data.web_data.export_consistency", _fast_consistency)
-    monkeypatch.setattr("src.local_data.web_data.export_rival_adjusted", _fast_rival_adjusted)
+    monkeypatch.setattr("src.local_data.sections.export_assist_connections", _fast_assist_connections)
+    monkeypatch.setattr("src.local_data.sections.export_lineups", _fast_lineups)
+    monkeypatch.setattr("src.local_data.sections.export_inout", _fast_inout)
+    monkeypatch.setattr("src.local_data.sections.export_consistency", _fast_consistency)
+    monkeypatch.setattr("src.local_data.sections.export_rival_adjusted", _fast_rival_adjusted)
 
 
 @pytest.fixture()
@@ -283,7 +283,7 @@ def test_the_lineups_are_published_for_a_competition_with_play_by_play_and_not_f
     """#686: the real exporter (the others of this file run a cheap one) over the games of the fixture, sealed for the competition; ``games`` counts the teams."""
     from src.local_data import lineups_export
 
-    monkeypatch.setattr("src.local_data.web_data.export_lineups", lineups_export.export_lineups)
+    monkeypatch.setattr("src.local_data.sections.export_lineups", lineups_export.export_lineups)
     publish_web_data(handler, tmp_path, ScopedSealer(MASTER, open_access=False), [FEB])
     entry = _manifest(tmp_path)["lineups"][0]
     payload = _open(tmp_path, entry, f"competicion:{FEB}")
@@ -382,7 +382,7 @@ def test_the_possessions_of_every_competition_are_published_sealed_for_it(handle
 
 
 def test_the_per_possession_csv_is_a_section_of_its_own_and_only_where_there_are_possessions(handler, tmp_path, monkeypatch):
-    from src.local_data import web_data
+    from src.local_data import sections as web_data
 
     publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB])
     assert _manifest(tmp_path).get("possession_csv", []) == []                    # the fixture games have no possessions to list: nothing to publish

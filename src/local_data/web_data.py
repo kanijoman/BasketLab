@@ -20,17 +20,9 @@ from src.local_data import build_cache
 from src.local_data.build_cache import section_versions
 from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.contract import SCHEMA
-from src.local_data.export import export_collection, export_derived, file_name
-from src.local_data.consistency_export import export_consistency
+from src.local_data.export import export_collection, file_name
 from src.local_data.images_export import Source, current_season_collections, seal_images
-from src.local_data.inout_export import export_inout
-from src.local_data.lineups_export import export_lineups
-from src.local_data.matches_export import export_matches
-from src.local_data.possessions_export import export_possession_csv, export_possessions
-from src.local_data.assist_connections_export import export_assist_connections
-from src.local_data.rival_adjusted_export import export_rival_adjusted
-from src.local_data.rotations_export import export_rotations
-from src.local_data.shots_export import export_shots
+from src.local_data.sections import section_payload
 from src.local_data.team_reports import seal_file, seal_reports
 
 INDEX = "index.json"
@@ -42,7 +34,7 @@ SECTIONS = {"derived": DERIVED, "shots": "shots/", "rotations": "rotations/", "m
 HANDLER = "src.database"   # the exporters are handed the database handler and call its methods without importing it: its code is a dependency of every section that uses it
 # The module that computes each section (#783): the version of the code of a section is the hash of what that module imports, so the cache recomputes only the sections whose code changed.
 # A new section must be declared here (``test_build_cache_sections`` fails otherwise): without it nothing would notice a change in its exporter. ``derived`` is not cached (it is the fingerprint).
-# What a version does NOT see: the rules of ``_section_payload`` (when a section has nothing to publish) and how files are sealed (``team_reports.seal_file``): changing them needs ``build_cache.EPOCH`` raised.
+# What a version does NOT see: the rules of ``sections.section_payload`` (when a section has nothing to publish) and how files are sealed (``team_reports.seal_file``): changing them needs ``build_cache.EPOCH`` raised.
 SECTION_MODULES = {
     "shots": "src.local_data.shots_export",                                                     # reads the games' collection directly: its imports are all it depends on
     "rotations": ["src.local_data.rotations_export", HANDLER], "matches": ["src.local_data.matches_export", HANDLER],
@@ -90,44 +82,8 @@ def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept:
     return {"collection": collection, "league": payload["league"], "games": payload["games"], **fields}
 
 
-def _section_payload(section: str, handler: Any, db: Any, collection: str) -> Optional[Dict[str, Any]]:
-    """What a competition has for ``section``, or ``None`` when it has nothing to publish: no game with ``DERIVED`` or with shots, or no play-by-play to analyse the rotations or the lineups."""
-    if section == "derived":
-        payload = export_derived(db[collection], collection)
-        return payload if payload["rows"] else None
-    if section == "shots":
-        payload = export_shots(db[collection], collection)
-        return payload if payload["shots"] else None
-    if section == "possessions":
-        payload = export_possessions(handler, collection)
-        return payload if payload["table"] else None
-    if section == "possession_csv":
-        payload = export_possession_csv(handler, collection)
-        return payload if payload["csv"] else None
-    if section == "matches":
-        payload = export_matches(handler, collection)
-        return payload if payload["matches"] else None
-    if section == "inout":
-        payload = export_inout(handler, collection)
-        return payload if payload["players"] else None
-    if section == "consistency":
-        payload = export_consistency(handler, collection)
-        return payload if payload["players"] else None
-    if section == "rival_adjusted":
-        payload = export_rival_adjusted(handler, collection)
-        return payload if payload["teams"] else None
-    if section == "assist_connections":
-        payload = export_assist_connections(handler, collection)
-        return payload if payload["teams"] else None
-    if section == "lineups":
-        payload = export_lineups(handler, collection)
-        return payload if payload["teams"] else None
-    payload = export_rotations(handler, collection)
-    return payload if any(t["analysis"].get("games_with_playbyplay") for t in payload["teams"]) else None
-
-
 def _publish_section(section: str, handler: Any, db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    payload = _section_payload(section, handler, db, collection)
+    payload = section_payload(section, handler, db, collection)
     if payload is None:
         return None
     fields = seal_file(out_dir, f"{collection}", _json(payload), [f"competicion:{collection}"], sealer, kept, SECTIONS[section])
