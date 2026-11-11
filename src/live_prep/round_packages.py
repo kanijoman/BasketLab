@@ -67,9 +67,11 @@ def build_round_packages(
     games: Iterable[Dict[str, Any]], collection: str, season: str, matches: List[Dict[str, Any]],
     club_team_id: Optional[str] = None, created_at: Optional[str] = None, roster_source: Optional[RosterSource] = None,
     rule_config: Optional[Dict[str, Any]] = None, carry: Optional[Dict[str, float]] = None,
+    carry_names: Optional[Dict[str, str]] = None,
 ) -> List[Dict[str, Any]]:
     """``[{match, own_id, rival_id, is_club, default, package}]``, two per match (one from each team), from a single pass over ``games``."""
-    acc = SeasonAccumulator(track=_team_ids(matches), carry=carry)
+    acc = SeasonAccumulator(track=_team_ids(matches), carry=carry, carry_names=carry_names)
+    acc.link_names({str(m[side]["id"]): m[side].get("name") or "" for m in matches for side in ("home", "away")})
     for game in games:
         acc.add_game(game)
     rosters, built = _Rosters(roster_source), []
@@ -88,14 +90,15 @@ def build_round_packages_from_db(handler: Any, collection: str, matches: List[Di
     """``handler`` is a MongoDBHandler; the games are read one at a time (a game document is ~1 MB in memory)."""
     from .db_source import _counted, catalog_level_of, season_of
     from .game_sources import games_of_sources, source_collections
-    from .season_carry import carry_ratings
+    from .season_carry import carry_for
 
+    carry = carry_for(handler, collection)
     mongo = handler.repository.connection.get_collection(collection)
     team_ids = _team_ids(matches)
     sources = source_collections(handler, collection, team_ids)    # the own collection + the other games of the teams of the round (#456)
     games = _counted(games_of_sources(handler, sources, team_ids, level_of or catalog_level_of(handler)), 0, None)
     return build_round_packages(games, collection, season or season_of(mongo, collection), matches, club_team_id,
-                                roster_source=roster_source, rule_config=rule_config, carry=carry_ratings(handler, collection))
+                                roster_source=roster_source, rule_config=rule_config, carry=carry.ratings, carry_names=carry.names)
 
 
 def _summary(built: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

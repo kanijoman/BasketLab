@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict, List
+import unicodedata
+from typing import Any, Dict, List, NamedTuple, Tuple
 
 from .game_sources import is_knockout, is_fbcyl, play_key
 from .team_rating import TeamRatings
@@ -34,26 +35,48 @@ def previous_collections(handler: Any, collection: str) -> List[str]:
     return sorted(n for n in names if n.startswith(prefix) and "Liga_Regular" in n and not is_knockout(n))
 
 
-def _final_by_code(mongo_collection: Any) -> Dict[str, float]:
-    fields = {"HEADER.TEAM.id": 1, "HEADER.TEAM.pts": 1, "HEADER.TEAM.teamCode": 1, "HEADER.starttime": 1}
+class Carry(NamedTuple):
+    ratings: Dict[str, float]   # teamCode -> final rating of the previous season
+    names: Dict[str, str]       # normalised team name -> teamCode, for the teams that have not played yet (issue #862); ambiguous names are left out
+
+
+def normalize_name(name: str) -> str:
+    """``" Peñas  Huesca "`` -> ``"PENAS HUESCA"``: the exact name of a team without case, accents or extra spaces."""
+    plain = "".join(c for c in unicodedata.normalize("NFKD", name or "") if not unicodedata.combining(c))
+    return " ".join(plain.upper().split())
+
+
+def _final_by_code(mongo_collection: Any) -> Tuple[Dict[str, float], Dict[str, set]]:
+    fields = {"HEADER.TEAM.id": 1, "HEADER.TEAM.pts": 1, "HEADER.TEAM.teamCode": 1, "HEADER.TEAM.name": 1, "HEADER.starttime": 1}
     games = sorted((play_key(g["HEADER"].get("starttime")), str(g["_id"]), g["HEADER"]["TEAM"]) for g in mongo_collection.find({"HEADER.TEAM.pts": {"$exists": True}}, fields))
-    ratings, codes = TeamRatings(), {}
+    ratings, codes, names = TeamRatings(), {}, {}
     for _, _, teams in games:
         if len(teams) != 2 or any(t.get("pts") in (None, "") for t in teams):
             continue
         ids = [str(t["id"]) for t in teams]
         codes.update({i: str(t["teamCode"]) for i, t in zip(ids, teams) if t.get("teamCode")})
+        for t in teams:
+            if t.get("teamCode") and normalize_name(t.get("name")):
+                names.setdefault(normalize_name(t["name"]), set()).add(str(t["teamCode"]))
         ratings.update(ids[0], ids[1], float(teams[0]["pts"]) - float(teams[1]["pts"]))      # FEB's header lists the home team first
-    return {code: ratings.rating(i) for i, code in codes.items()}
+    return {code: ratings.rating(i) for i, code in codes.items()}, names
+
+
+def carry_for(handler: Any, collection: str) -> Carry:
+    """The ratings (by teamCode) and the names of the previous season; empty when there is none or anything fails (a package never depends on it)."""
+    try:
+        ratings: Dict[str, float] = {}
+        codes_of: Dict[str, set] = {}
+        for name in previous_collections(handler, collection):
+            found, names = _final_by_code(handler.repository.connection.get_collection(name))
+            ratings.update(found)
+            for key, codes in names.items():
+                codes_of.setdefault(key, set()).update(codes)
+        return Carry(ratings, {key: next(iter(codes)) for key, codes in codes_of.items() if len(codes) == 1})
+    except Exception as exc:  # noqa: BLE001 - the carry only refines the prior
+        log.warning("no carry-over ratings for %s: %s", collection, exc)
+        return Carry({}, {})
 
 
 def carry_ratings(handler: Any, collection: str) -> Dict[str, float]:
-    """``{teamCode: final rating}`` of the previous season; ``{}`` when there is none or anything fails (a package never depends on it)."""
-    try:
-        out: Dict[str, float] = {}
-        for name in previous_collections(handler, collection):
-            out.update(_final_by_code(handler.repository.connection.get_collection(name)))
-        return out
-    except Exception as exc:  # noqa: BLE001 - the carry only refines the prior
-        log.warning("no carry-over ratings for %s: %s", collection, exc)
-        return {}
+    return carry_for(handler, collection).ratings

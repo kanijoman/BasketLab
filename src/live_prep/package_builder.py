@@ -156,7 +156,9 @@ class SeasonAccumulator:
     evaluator relies on that; ``build_package`` is the one-pair wrapper.
     """
 
-    def __init__(self, track: Optional[Iterable[str]] = None, carry: Optional[Dict[str, float]] = None) -> None:
+    def __init__(self, track: Optional[Iterable[str]] = None, carry: Optional[Dict[str, float]] = None,
+                 carry_names: Optional[Dict[str, str]] = None) -> None:
+        self._carry_names = dict(carry_names or {})   # normalised name -> teamCode, to link a team that has not played yet (#862)
         self._carry = dict(carry or {})   # teamCode -> final rating of the previous season (#825)
         self.codes: Dict[str, str] = {}   # team id -> teamCode
         self._track = {str(t) for t in track} if track is not None else None
@@ -215,6 +217,16 @@ class SeasonAccumulator:
                 self.codes[str(t["id"])] = code
                 if code in self._carry:
                     self.ratings.seed(str(t["id"]), self._carry[code])
+
+    def link_names(self, teams: Dict[str, str]) -> None:
+        """Teams that may not have played yet (``{id: name}`` from the calendar): the exact name of a team of last season gives its rating (issue #862)."""
+        from .season_carry import normalize_name
+
+        for team_id, name in teams.items():
+            code = self._carry_names.get(normalize_name(name))
+            if code is not None and code in self._carry:
+                self.codes.setdefault(str(team_id), code)
+                self.ratings.seed(str(team_id), self._carry[code])
 
     def final_by_code(self) -> Dict[str, float]:
         """The rating of each team by ``teamCode``: what the next season starts from (issue #825)."""
