@@ -13,6 +13,7 @@
     "test:run": "vitest run",
     "e2e": "npm run build && playwright test",
     "e2e:ci": "playwright test",
+    "study:forecast": "vitest run --config vitest.study.config.ts",
     "brand": "node scripts/make-brand.mjs"
   },
   "dependencies": {
