@@ -379,8 +379,9 @@ def build_package(
     created_at: Optional[str] = None,
     roster: Optional[Dict[str, Dict[str, Any]]] = None,
     rule_config: Optional[Dict[str, Any]] = None,
+    carry: Optional[Dict[str, float]] = None,
 ) -> PreparationPackage:
-    acc = SeasonAccumulator(track=(str(team_id), str(rival_id)))
+    acc = SeasonAccumulator(track=(str(team_id), str(rival_id)), carry=carry)
     for game in games:
         acc.add_game(game)
     return acc.to_package(collection, season, team_id, rival_id, competition_meta, created_at, roster=roster, rule_config=rule_config)

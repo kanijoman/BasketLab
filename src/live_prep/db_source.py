@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Iterable, Iterator, Optional, Sequence
 from src.live_core.package import PreparationPackage
 from .game_sources import FEB, FEB_PROJECTION, feed_of, games_of_sources, source_collections
 from .package_builder import build_package
+from .season_carry import carry_ratings
 
 # What the builder replays (see game_sources): FEB documents, and FBCYL games adapted to them.
 GAME_PROJECTION: Dict[str, int] = FEB_PROJECTION
@@ -69,7 +70,8 @@ def build_package_from_db(
     sources = source_collections(handler, collection, [team_id, rival_id])    # the own collection + the other games of both teams (#456)
     games = _counted(games_of_sources(handler, sources, [team_id, rival_id], level_of or catalog_level_of(handler)), total, progress)
     return build_package(games, collection, season or season_of(mongo_collection, collection),
-                         team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id), rule_config=rule_config)
+                         team_id, rival_id, competition_meta, roster=_roster(roster_source, team_id, rival_id), rule_config=rule_config,
+                         carry=carry_ratings(handler, collection))
 
 
 def _roster(source: Optional[Callable[..., Any]], team_id: str, rival_id: str) -> Optional[Dict[str, Dict[str, Any]]]:
