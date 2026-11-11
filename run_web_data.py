@@ -30,6 +30,7 @@ def main(argv=None) -> int:
     from src.local_data.images_export import Source
     from src.local_data.web_data import publish_web_data
     from src.local_data.scouting_export import fbcyl_interest_clubs, interest_clubs, scouting_collections
+    from src.local_data.competition_gender import competition_genders
     from src.services.competition_catalogue import DEFAULT_CATALOGUE, fbcyl_groups, load_catalogue
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
 
@@ -42,13 +43,14 @@ def main(argv=None) -> int:
         print(error, file=sys.stderr)
         return 2
     scouting = [] if args.no_scouting else (args.scouting or [n for n in scouting_collections(handler, interest_clubs(), fbcyl_interest_clubs()) if n in names])
+    catalogue = load_catalogue(DEFAULT_CATALOGUE)
     started = time.time()
     # what each section cost, and which ones were reused because nothing changed (#700): the log is how a slow build is told apart from a stuck one
     manifest = publish_web_data(handler, args.out, sealer, names, keep_others=bool(args.collection), scouting=scouting,
                                 on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"),
                                 on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True),
                                 image_source=None if args.no_images else Source(),
-                                calendar_source=None if args.no_calendar else CalendarSource(), fbcyl_groups=fbcyl_groups(load_catalogue(DEFAULT_CATALOGUE)))
+                                calendar_source=None if args.no_calendar else CalendarSource(), fbcyl_groups=fbcyl_groups(catalogue), genders=competition_genders(handler, names, catalogue))
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")
     return 0

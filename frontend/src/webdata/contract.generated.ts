@@ -27,6 +27,7 @@ export interface RowsEntry {
   league: 'feb' | 'fbcyl'
   games: number
   wraps: Wrap[]
+  gender?: 'F' | 'M'
 }
 
 /** The (plain) index of the sealed reports of a competition (``reports/``). */

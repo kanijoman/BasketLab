@@ -33,6 +33,7 @@ class RowsEntry(FileEntry):
     league: Literal["feb", "fbcyl"]
     games: int
     wraps: List[Wrap]
+    gender: NotRequired[Literal["F", "M"]]     # the family of the competition (women's / men's), when it is known (#843): the win probability is calibrated per family
 
 
 class ReportIndexEntry(FileEntry):

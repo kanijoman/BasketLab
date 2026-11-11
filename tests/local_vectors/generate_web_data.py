@@ -25,9 +25,11 @@ import games  # noqa: E402
 from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.local_data.calendar_export import CalendarSource  # noqa: E402
+from src.local_data.competition_gender import competition_genders  # noqa: E402
 from src.local_data.images_export import Source  # noqa: E402
 from src.local_data.web_data import publish_web_data  # noqa: E402
 from src.scraper.calendar_parser import CalendarMatch  # noqa: E402
+from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue  # noqa: E402
 from src.services.scouting_rival_service import ScoutingRivalService  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "web_data"
@@ -155,9 +157,11 @@ class FixtureCalendar(CalendarSource):
 def main() -> None:
     if OUT.exists():
         shutil.rmtree(OUT)
-    manifest = publish_web_data(fixture_handler(), OUT, ScopedSealer(SECRET, open_access=True), [FEB, FBCYL], scouting=[FEB],
+    handler = fixture_handler()
+    manifest = publish_web_data(handler, OUT, ScopedSealer(SECRET, open_access=True), [FEB, FBCYL], scouting=[FEB],
                                 scouting_service=fixture_scouting_service, image_source=FixtureFeb(),
-                                calendar_source=FixtureCalendar(), fbcyl_groups={FBCYL: "7298"})
+                                calendar_source=FixtureCalendar(), fbcyl_groups={FBCYL: "7298"},
+                                genders=competition_genders(handler, [FEB, FBCYL], load_catalogue(DEFAULT_CATALOGUE)))
     print("wrote", OUT, sum(1 for p in OUT.rglob("*") if p.is_file()), "files,", len(manifest["rows"]), "competitions")
 
 
