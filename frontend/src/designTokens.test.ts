@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PAPER } from '@design/paper'
+import { TONE_PILL, type Tone } from '@/components/ui/tone'
 
 // Issue #188: the colours of the web come from design/tokens.css (shared with the live app), so both themes work everywhere.
 // A colour written in a component only fits the theme it was picked for: this guard keeps them out.
@@ -81,7 +82,7 @@ describe('colours of the web (issue #188)', () => {
     const FAMILIES = 'canvas|surface|line|ink|accent|secondary|focus|ok|bad|warn|chart|q[1-4]'
     const NAME = new RegExp(`(?<![\\w-])(?:[\\w\\[\\]&:().-]+:)*(?:bg|text|border(?:-[trblxy])?|ring(?:-offset)?|from|via|to|fill|stroke|divide|outline|placeholder|decoration|caret|shadow)-((?:${FAMILIES})(?:-[a-z0-9]+)?)(?:/\\d+)?(?![\\w-])`, 'g')
     const known = new Set(['canvas', 'surface', 'surface-raised', 'line', 'ink', 'ink-muted', 'ink-faint', 'accent', 'accent-ink', 'accent-text',
-      'accent-solid', 'accent-hover', 'secondary', 'secondary-text', 'secondary-solid', 'secondary-hover', 'focus', 'ok', 'bad', 'warn',
+      'accent-solid', 'accent-hover', 'secondary', 'secondary-text', 'secondary-solid', 'secondary-hover', 'focus', 'ok', 'bad', 'warn', 'ok-text', 'bad-text', 'warn-text',
       ...[1, 2, 3, 4, 5, 6, 7, 8].map(i => `chart-${i}`), ...[1, 2, 3, 4].flatMap(q => [`q${q}-bg`, `q${q}-text`])])
     const unknown = files.flatMap(([name, file]) => [...stripComments(readFileSync(file, 'utf8')).matchAll(NAME)]
       .filter(m => !known.has(m[1])).map(m => `${name} → ${m[0]}`))
@@ -157,6 +158,31 @@ describe('design/tokens.css (issue #188)', () => {
     for (const token of ['--text', '--text-muted', '--text-faint']) {
       for (const bg of surfaces(b)) expect(contrast(b.get(token)!, bg), `${token} on ${bg}`).toBeGreaterThanOrEqual(4.5)
     }
+  })
+
+  // Issue #856: the pills of the system (`Badge`, `TONE_PILL`) are measured as they are drawn, from their own classes: the text of the tone over its tint (or over the grey of the neutral one) over
+  // every surface, in both themes, at AA (4.5: the text is 12 px). The first version of this guard measured a neutral pill that no component draws (`bg-line/60`) and missed the real ones.
+  const TOKEN_OF: Record<string, string> = { 'ink-muted': '--text-muted', line: '--line', accent: '--accent', 'accent-text': '--accent-text', secondary: '--secondary', 'secondary-text': '--secondary-text',
+    ok: '--ok', 'ok-text': '--ok-text', warn: '--warn', 'warn-text': '--warn-text', bad: '--bad', 'bad-text': '--bad-text' }
+  const pillOf = (tone: Tone) => {
+    const classes = TONE_PILL[tone].split(/\s+/)
+    const [, fill, alpha] = classes.map(c => /^bg-([\w-]+)(?:\/(\d+))?$/.exec(c)).find(Boolean)!
+    const text = classes.find(c => c.startsWith('text-'))!.slice(5)
+    return { fill, alpha: alpha ? Number(alpha) / 100 : 1, text }
+  }
+
+  it.each(THEMES)('every pill of the system reads on every surface: its text over its fill, as the classes of TONE_PILL draw it (%s)', theme => {
+    const b = themes[theme]
+    const colour = (name: string) => { const token = TOKEN_OF[name]; expect(b.has(token), `${name} has no token (${token})`).toBe(true); return b.get(token)! }
+    const failing: string[] = []
+    for (const tone of Object.keys(TONE_PILL) as Tone[]) {
+      const { fill, alpha, text } = pillOf(tone)
+      for (const surface of [b.get('--bg')!, b.get('--surface')!, b.get('--surface-raised')!]) {
+        const ratio = contrast(colour(text), mix(colour(fill), surface, alpha))
+        if (ratio < 4.5) failing.push(`${tone}: ${text} on ${fill}/${alpha * 100} over ${surface} is ${ratio.toFixed(2)}`)
+      }
+    }
+    expect(failing).toEqual([])
   })
 
   it.each(THEMES)('the orange text reads on the tint of the active link and the selected tab (%s)', theme => {

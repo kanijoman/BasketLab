@@ -17,7 +17,7 @@ export default function TeamFixtures({ fixtures, selected, onSelect }: { fixture
             <span className="flex min-w-0 flex-col items-start gap-0.5">
               <span className="text-xs text-ink-muted">Jornada {f.round} · {f.live ? 'En juego' : whenText(f.start)}</span>
               <span className="flex flex-wrap items-center gap-1.5">
-                <Badge tone={f.court === 'own' ? 'accent' : 'outline'}>{courtText(f.court)}</Badge>
+                <Badge tone={f.court === 'own' ? 'accent' : 'neutral'}>{courtText(f.court)}</Badge>
                 <span className="truncate text-sm font-medium text-ink">{f.rivalName}</span>
               </span>
             </span>

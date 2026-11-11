@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { FACTOR_NAMES, pct } from '@/forecast/copy'
 import type { MatchupRow } from '@/forecast/matchup'
 import DataTable from '@/components/ui/DataTable'
-import ToneBadge from './ToneBadge'
+import Badge from '@/components/ui/Badge'
 import { signed } from './format'
 
 export default function MatchupTable({ rows }: { rows: MatchupRow[] }) {
@@ -15,7 +15,7 @@ export default function MatchupTable({ rows }: { rows: MatchupRow[] }) {
     { id: 'league', header: 'Media de la liga', enableSorting: false, cell: ({ row }) => pct(row.original.league) },
     { id: 'edge', header: 'Ventaja', size: 190, enableSorting: false, cell: ({ row }) => {
       const { advantage, edge } = row.original
-      return <ToneBadge tone={advantage === 'own' ? 'ok' : advantage === 'rival' ? 'bad' : 'neutral'}>{advantage === 'own' ? 'Nuestra' : advantage === 'rival' ? 'Del rival' : 'Igualado'} ({signed(edge)} por 100 posesiones)</ToneBadge>
+      return <Badge tone={advantage === 'own' ? 'ok' : advantage === 'rival' ? 'bad' : 'neutral'}>{advantage === 'own' ? 'Nuestra' : advantage === 'rival' ? 'Del rival' : 'Igualado'} ({signed(edge)} por 100 posesiones)</Badge>
     } },
   ], [])
   return (
