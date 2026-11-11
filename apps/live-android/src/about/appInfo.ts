@@ -15,12 +15,15 @@ export interface AppVersion {
   builtAt: string | null
   /** True inside the Android app: only there can the app update itself. */
   native: boolean
+  /** ``'play'`` in the build for Google Play (VITE_DISTRIBUTION=play): Play updates it, never the app (issue #830). Absent = the APK of the releases. */
+  distribution?: 'play'
 }
 
 interface Env {
   VITE_APP_VERSION?: string
   VITE_APP_BUILD?: string
   VITE_BUILT_AT?: string
+  VITE_DISTRIBUTION?: string
 }
 
 export interface AppInfoDeps {
@@ -42,11 +45,12 @@ const DEFAULTS: AppInfoDeps = { native: () => Capacitor.isNativePlatform(), getI
 
 export async function getInstalledVersion(deps: AppInfoDeps = DEFAULTS): Promise<AppVersion> {
   const compiled = buildInfo(deps.env)
-  if (!deps.native()) return { ...compiled, native: false }
+  const distribution = deps.env.VITE_DISTRIBUTION === 'play' ? { distribution: 'play' as const } : {}
+  if (!deps.native()) return { ...compiled, native: false, ...distribution }
   try {
     const info = await deps.getInfo()
-    return { name: info.version || compiled.name, build: positiveInt(info.build), builtAt: compiled.builtAt, native: true }
+    return { name: info.version || compiled.name, build: positiveInt(info.build), builtAt: compiled.builtAt, native: true, ...distribution }
   } catch {
-    return { ...compiled, native: true }  // the plugin failed: the numbers compiled into the web build still tell
+    return { ...compiled, native: true, ...distribution }  // the plugin failed: the numbers compiled into the web build still tell
   }
 }

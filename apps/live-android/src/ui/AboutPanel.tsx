@@ -88,6 +88,7 @@ export default function AboutPanel({ sessionLog, experimental, alertMode, engine
   const { preference, setPreference } = useTheme()
   const [note, setNote] = useState<{ text: string; error: boolean } | null>(null)
   const dev = !version || version.name === 'dev'
+  const play = version?.distribution === 'play'      // the Play build never offers an APK (issue #830)
 
   const copy = async () => {
     try {
@@ -112,9 +113,9 @@ export default function AboutPanel({ sessionLog, experimental, alertMode, engine
           {[engineVersion && `Motor ${engineVersion}`, schemaVersion && `esquema de paquete ${schemaVersion}`].filter(Boolean).join(' · ')}
         </p>
       )}
-      <UpdateStatus update={update} onOpen={onOpen} />
+      {play ? <p className="detail">Se actualiza desde Google Play.</p> : <UpdateStatus update={update} onOpen={onOpen} />}
       <div className="about-actions">
-        {update?.status !== 'unsupported' && version?.native && (
+        {!play && update?.status !== 'unsupported' && version?.native && (
           <button type="button" className="secondary" disabled={checking} onClick={onCheck}>
             {checking ? 'Buscando…' : 'Buscar actualización'}
           </button>
