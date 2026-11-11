@@ -13,7 +13,7 @@ describe('navigation of a collection (issue #191)', () => {
   const routes = allRoutes.filter(p => !RETIRED.includes(p))
 
   it('groups the pages by what the staff does with them', () => {
-    expect(NAV_GROUPS.map(g => g.label)).toEqual(['Equipos', 'Jugadores', 'Partido', 'Live', 'Informes'])
+    expect(NAV_GROUPS.map(g => g.label)).toEqual(['Equipos', 'Jugadores', 'Partido', 'Competición', 'Live', 'Informes'])
   })
 
   it('has an entry for every page of a collection and none for a page that does not exist', () => {
@@ -45,6 +45,13 @@ describe('navigation of a collection (issue #191)', () => {
     expect(group.items.map(i => i.subPath)).toEqual(['previa', 'matches'])
     expect(group.items[0].requires).toEqual({ section: 'calendar', dataset: 'forecast' })
     expect(app).toMatch(/<Route path="previa"\s+element=\{<RequirePublished/)
+  })
+
+  it('the simulation of the league has a group of its own, and like the preview it needs the calendar of the competition to be published', () => {
+    const group = NAV_GROUPS.find(g => g.label === 'Competición')!
+    expect(group.items.map(i => i.subPath)).toEqual(['simulacion'])
+    expect(group.items[0].requires).toEqual({ section: 'calendar', dataset: 'forecast' })
+    expect(app).toMatch(/<Route path="simulacion"\s+element=\{<RequirePublished/)
   })
 
   it('every entry says what it is for (the card of the hub)', () => {

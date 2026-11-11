@@ -6,7 +6,7 @@
 import type { ComponentType } from 'react'
 import type { Dataset } from '@/datasource/switch'
 import {
-  Activity, ArrowLeftRight, BarChart2, ClipboardList, Crosshair, FileSearch, FileText, Layers, LayoutDashboard, Microscope, RotateCcw,
+  Activity, ArrowLeftRight, BarChart2, ClipboardList, Crosshair, FileSearch, FileText, Layers, LayoutDashboard, ListOrdered, Microscope, RotateCcw,
   Scale, Share2, Swords, Target, TrendingUp, Trophy, Users, Users2,
 } from 'lucide-react'
 
@@ -61,6 +61,9 @@ export const NAV_GROUPS: NavGroup[] = [
   { label: 'Partido', items: [
     { subPath: 'previa', label: 'Previa del partido', description: 'Elige tu equipo y un partido de su calendario: pronóstico, escenarios y objetivos del partido', icon: Crosshair, requires: CALENDAR },
     { subPath: 'matches', label: 'Análisis de partido', description: 'Un partido concreto: marcador y comparativa de estadísticas de los dos equipos', icon: Swords },
+  ] },
+  { label: 'Competición', items: [
+    { subPath: 'simulacion', label: 'Simulación de la liga', description: 'Cómo puede acabar la liga: puestos finales sobre el calendario real, con las líneas de corte que tú marques', icon: ListOrdered, requires: CALENDAR },
   ] },
   { label: 'Live', items: [
     { subPath: 'scouting-rival', label: 'Scouting del rival', description: 'PDF de cualquier equipo con lo que ve el motor: claves, jugadoras, zonas y plan', icon: FileSearch },

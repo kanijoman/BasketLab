@@ -19,6 +19,7 @@
  *   /:collection/rotaciones   → RotacionesPage
  *   /:collection/conexiones   → ConexionesPage
  *   /:collection/previa       → PreviaPage
+ *   /:collection/simulacion   → SimulacionPage
  *   /admin                    → redirects to / (the Administration page is gone, #724)
  *
  * AnimatePresence wraps routes for page transition animations.
@@ -49,13 +50,15 @@ import MultiPhaseStatsPage from '@/pages/MultiPhaseStatsPage'
 import RotacionesPage from '@/pages/RotacionesPage'
 import ConexionesPage from '@/pages/ConexionesPage'
 import PreviaPage from '@/pages/PreviaPage'
+import SimulacionPage from '@/pages/SimulacionPage'
 import RequirePublished from '@/components/RequirePublished'
 import { NAV_ITEMS } from '@/lib/nav'
 
 /** What the Conexiones page needs from the publication: the menu says it (issue #780), the route asks the same. */
 const CONEXIONES_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'conexiones')!.requires!
-/** The preview of the match needs the calendar of the competition (#849). */
+/** The preview of the match and the simulation of the league need the calendar of the competition (#849, #850). */
 const PREVIA_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'previa')!.requires!
+const SIMULACION_REQUIRES = NAV_ITEMS.find(item => item.subPath === 'simulacion')!.requires!
 
 export default function App() {
   const location = useLocation()
@@ -87,6 +90,7 @@ export default function App() {
               {/* The predictive analysis is out of the web while it is reworked (its page and tabs are kept in pages/PredictivePage.tsx and pages/predictive/): the old address goes to the hub */}
               <Route path="predictive"  element={<Navigate to=".." replace />} />
               <Route path="previa"     element={<RequirePublished requires={PREVIA_REQUIRES}><PreviaPage /></RequirePublished>} />
+              <Route path="simulacion" element={<RequirePublished requires={SIMULACION_REQUIRES}><SimulacionPage /></RequirePublished>} />
               <Route path="matches"    element={<MatchAnalysisPage />} />
               <Route path="multiphase"  element={<MultiPhaseStatsPage />} />
               <Route path="rotaciones" element={<RotacionesPage />} />

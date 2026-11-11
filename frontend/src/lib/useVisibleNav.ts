@@ -27,5 +27,5 @@ const NEEDS_PUBLICATION = NAV_GROUPS.some(g => g.items.some(i => i.requires))
 
 export function useVisibleNavGroups(collection: string | undefined): NavGroup[] {
   const sections = usePublishedSections(collection, NEEDS_PUBLICATION && NAV_GROUPS.some(g => g.items.some(i => i.requires && dataSourceOf(i.requires.dataset) === 'local')))
-  return NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => isOffered(item.requires, sections)) }))
+  return NAV_GROUPS.map(group => ({ ...group, items: group.items.filter(item => isOffered(item.requires, sections)) })).filter(group => group.items.length > 0)      // a group whose pages are all hidden has no heading alone (#850)
 }
