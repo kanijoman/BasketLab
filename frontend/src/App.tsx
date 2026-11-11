@@ -31,6 +31,7 @@ import Layout from '@/components/Layout'
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 import HomePage from '@/pages/HomePage'
+import PrivacyPage from '@/pages/PrivacyPage'
 import CollectionHub from '@/pages/CollectionHub'
 import TeamStatsPage from '@/pages/TeamStatsPage'
 import ComparativasPage from '@/pages/ComparativasPage'
@@ -70,6 +71,9 @@ export default function App() {
           <Route element={<Layout />}>
             {/* ── Landing ── */}
             <Route index element={<HomePage />} />
+
+            {/* The privacy policy of the app (issue #834): a stable address for the Google Play listing, outside any competition */}
+            <Route path="privacidad" element={<PrivacyPage />} />
 
             {/* ── Collection workspace ── */}
             <Route path=":collection">

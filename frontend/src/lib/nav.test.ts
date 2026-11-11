@@ -9,8 +9,9 @@ describe('navigation of a collection (issue #191)', () => {
   const app = readFileSync(join(__dirname, '..', 'App.tsx'), 'utf8')
   // Pages taken out of the web (their code is kept): they redirect to the hub, so they are routes without an entry.
   const RETIRED = ['predictive', 'admin']
+  const OUTSIDE_A_COLLECTION = ['privacidad']                            // the privacy policy of the app (issue #834): a page of the web, not of a competition
   const allRoutes = [...app.matchAll(/<Route path="([a-z-]+)"\s+element/g)].map(m => m[1]).filter(p => p !== 'collection')
-  const routes = allRoutes.filter(p => !RETIRED.includes(p))
+  const routes = allRoutes.filter(p => !RETIRED.includes(p) && !OUTSIDE_A_COLLECTION.includes(p))
 
   it('groups the pages by what the staff does with them', () => {
     expect(NAV_GROUPS.map(g => g.label)).toEqual(['Equipos', 'Jugadores', 'Partido', 'Competición', 'Live', 'Informes'])
