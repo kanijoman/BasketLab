@@ -18,6 +18,7 @@ describe('the games of a complete season (Primera FEB 2025-26)', () => {
       expect(g.homeRow!.is_local).toBe(true)
       expect(g.awayRow!.is_local).toBe(false)
       expect(g.margin).toBe(g.homeRow!.points - g.homeRow!.opponent_points)
+      expect([g.homePoints, g.awayPoints]).toEqual([g.homeRow!.points, g.homeRow!.opponent_points])
       expect(g.margin).toBe(g.awayRow!.opponent_points - g.awayRow!.points)
       expect(String(g.home)).toBe(String(g.homeRow!.team_id))
     }
@@ -102,6 +103,7 @@ describe('the results of the calendar that the archive does not have', () => {
       const g = withCalendar.find(x => x.id === m.match_id)!
       expect([g.home, g.away]).toEqual([m.home.id, m.away.id])
       expect(g.margin).toBe(m.score![0] - m.score![1])
+      expect([g.homePoints, g.awayPoints]).toEqual(m.score)
     }
   })
 

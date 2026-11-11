@@ -16,7 +16,9 @@ export interface GameResult {
   away: string
   homeName: string
   awayName: string
-  /** Points of the home team minus the away team's. */
+  /** Points of each side and the home team's minus the away team's. */
+  homePoints: number
+  awayPoints: number
   margin: number
   /** FBCYL games can end tied. */
   tied: boolean
@@ -48,7 +50,7 @@ function fromRows(id: string, [a, b]: GameRow[]): GameResult | null {
   const [home, away] = a.is_local ? [a, b] : [b, a]
   return {
     id, played: parsePlayed(home.starttime), home: String(home.team_id), away: String(away.team_id), homeName: home.team_name, awayName: away.team_name,
-    margin: home.points - home.opponent_points, tied: Boolean(home.tied), pace: gamePace(home), source: 'rows', homeRow: home, awayRow: away,
+    homePoints: home.points, awayPoints: home.opponent_points, margin: home.points - home.opponent_points, tied: Boolean(home.tied), pace: gamePace(home), source: 'rows', homeRow: home, awayRow: away,
   }
 }
 
@@ -68,7 +70,7 @@ export function buildGames(rows: GameRow[], calendar?: Calendar | null): GameRes
     .sort((x, y) => x.round - y.round || (x.code < y.code ? -1 : 1))
     .map((m): GameResult => ({
       id: m.match_id, played: null, home: String(m.home.id), away: String(m.away.id), homeName: m.home.name, awayName: m.away.name,
-      margin: m.score![0] - m.score![1], tied: m.score![0] === m.score![1], pace: null, source: 'calendar',
+      homePoints: m.score![0], awayPoints: m.score![1], margin: m.score![0] - m.score![1], tied: m.score![0] === m.score![1], pace: null, source: 'calendar',
     }))
   return [...games, ...extra]
 }
