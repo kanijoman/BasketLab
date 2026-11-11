@@ -19,8 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.routers import collections, teams, players, lineups
-from src.api.routers import shots, possessions, reports, historical, analysis
-from src.api.routers import assist_connections, analysis_predictive, matches, multi_phase, rotaciones, team_report, health, scouting_rival
+from src.api.routers import shots, possessions, reports
+from src.api.routers import assist_connections, matches, multi_phase, rotaciones, team_report, health, scouting_rival
 
 
 class UTF8JSONResponse(JSONResponse):
@@ -95,9 +95,6 @@ app.include_router(shots.router,       prefix="/api/v1/shots",       tags=["shot
 app.include_router(possessions.router, prefix="/api/v1/possessions", tags=["possessions"])
 app.include_router(team_report.router,  prefix="/api/v1/reports",     tags=["reports"])  # before reports (literal prefix)
 app.include_router(reports.router,     prefix="/api/v1/reports",     tags=["reports"])
-app.include_router(historical.router,  prefix="/api/v1/historical",  tags=["historical"])
-app.include_router(analysis.router,    prefix="/api/v1/analysis",    tags=["analysis"])
-app.include_router(analysis_predictive.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(matches.router,             prefix="/api/v1/matches",  tags=["matches"])
 app.include_router(multi_phase.router,         prefix="/api/v1/multi",       tags=["multi-phase"])
 app.include_router(rotaciones.router,          prefix="/api/v1/rotaciones",  tags=["rotaciones"])

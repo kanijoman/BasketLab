@@ -2,22 +2,15 @@
 Léelo cuando toques Vercel, variables de entorno, veas un 401/503 en Admin/scrape/ingesta/entrenamiento, o vayas a compilar/publicar/instalar la app Android. Arquitectura general: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Estado actual (decisión consciente)
-**El servidor ya no recibe escrituras de la web (#724).** Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`: **cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*). `ADMIN_API_KEY` **no está definida en producción**, a propósito, y solo protege lo que queda de escritura, el entrenamiento del predictivo (se conserva, fuera de la web mientras se rehace). Consecuencia con la API en producción (`ENVIRONMENT=production`; este repositorio no aloja ninguna, ver *Sin servidor alojado*):
-
-| Funciona | Responde **503** ("ADMIN_API_KEY no está configurada en el servidor") |
-|---|---|
-| Todas las lecturas (equipos, jugadores, tiros, informes, rankings, rotaciones…) | `POST /api/v1/analysis/elasticity/train` y `/train/stream` (entrenar modelos) |
-| Cómputo sin persistir: informe de equipo, export PDF, informe semanal, Monte Carlo, predicción de partido | |
-
-El 503 es el comportamiento diseñado, no un fallo (`src/api/security.py`, probado en `tests/test_admin_auth.py`). En **local** (sin `ENVIRONMENT=production`) esas rutas están abiertas y no hace falta clave.
+**El servidor ya no recibe escrituras de la web (#724).** Se retiraron la página Administración, `DELETE /collections/{name}`, `POST /scrape/*`, `POST /historical/ingest*` y el servicio `basketlab-scraper`: **cargar datos** es el refresco programado del archivo (*Archive refresh*, abajo) y **retirar una competición** es la purga (*Archive purge*). `ADMIN_API_KEY` **no está definida en producción**, a propósito, y **ninguna ruta la usa hoy**: el entrenamiento del predictivo antiguo (`/analysis/elasticity/train`) se retiró con él (#853, el análisis predictivo vive ahora en el navegador y no escribe nada en el servidor). La guarda (`require_admin`, `src/api/security.py`) se conserva como patrón para la próxima ruta de escritura y se prueba sobre una aplicación pequeña (`tests/test_admin_auth.py`); `tests/test_server_writes_retired.py` exige que no quede ninguna ruta que la pida. En producción (`ENVIRONMENT=production`; este repositorio no aloja ninguna API, ver *Sin servidor alojado*) todas las lecturas y el cómputo sin persistir (informe de equipo, export PDF, informe semanal) funcionan; una ruta de escritura futura con la guarda respondería **503** («ADMIN_API_KEY no está configurada en el servidor») hasta que se defina la clave, y en **local** (sin `ENVIRONMENT=production`) estaría abierta.
 
 Para cargar o refrescar datos en local: `python run_archive.py pull` + `load` sobre un Mongo local y `python run_refresh.py --config config/competitions.json` contra él (ver *Refrescar el archivo sin Atlas*); ya no hay página ni ruta de servidor para ello.
 
 ## Sin servidor alojado (#334)
-**BasketLab no depende de ninguna plataforma de alojamiento de la API ni se integra con ella** (Render se retiró del proyecto el 05/11/2026): no hay `render.yaml`, ni job de despliegue en CI, ni comprobación posterior, y `GET /api/v1/health` informa del commit solo si el entorno define `GIT_COMMIT`. La web publicada lee los ficheros de `web-data` (el valor por defecto desde #745) y la API (`python run_api.py`) **se conserva a propósito para desarrollo local, pruebas y el e2e** (decisión del 05/11/2026; eliminarla se decidirá con el rework del predictivo, #641). Quien aloje la API necesita las variables de abajo y `VITE_API_BASE` en la web para que su respaldo la use. **Fuera del repositorio** (a mano, GitHub → *Settings → Secrets and variables → Actions*): borrar la variable `RENDER_API_URL` si existe (nada la lee ya) y, si alguna vez se definieron, los secretos `RENDER_DEPLOY_HOOK_URL` y `RENDER_SCRAPER_DEPLOY_HOOK_URL` (a 05/11/2026 no hay ninguno).
+**BasketLab no depende de ninguna plataforma de alojamiento de la API ni se integra con ella** (Render se retiró del proyecto el 05/11/2026): no hay `render.yaml`, ni job de despliegue en CI, ni comprobación posterior, y `GET /api/v1/health` informa del commit solo si el entorno define `GIT_COMMIT`. La web publicada lee los ficheros de `web-data` (el valor por defecto desde #745) y la API (`python run_api.py`) **se conserva a propósito para desarrollo local, pruebas y el e2e** (decisión del 05/11/2026; eliminarla es una decisión aparte: el rework del predictivo, #641, se resolvió sin ella en #841). Quien aloje la API necesita las variables de abajo y `VITE_API_BASE` en la web para que su respaldo la use. **Fuera del repositorio** (a mano, GitHub → *Settings → Secrets and variables → Actions*): borrar la variable `RENDER_API_URL` si existe (nada la lee ya) y, si alguna vez se definieron, los secretos `RENDER_DEPLOY_HOOK_URL` y `RENDER_SCRAPER_DEPLOY_HOOK_URL` (a 05/11/2026 no hay ninguno).
 
 ## Activar la clave (paso a paso)
-Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producción.
+Hoy ninguna ruta la usa. Hacerlo cuando exista una ruta de escritura con `Depends(require_admin)` y se quiera usarla en producción.
 
 1. **Generar una clave larga y aleatoria** (en cualquier terminal; no la pegues en el chat ni la commitees):
    - PowerShell: `[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))`
@@ -27,30 +20,23 @@ Hacerlo cuando se quiera usar Admin, scrape, ingesta o entrenamiento en producci
 3. (El servicio `basketlab-scraper` se retiró en #724: solo la API tiene la clave; el frontend la envía en `X-Admin-Key`.)
 4. **Reiniciar** el servicio para que lea la variable.
 5. **Introducir la clave en la app**: la web ya no tiene ningún campo para ella (la página Admin se retiró en #724 y el entrenamiento del predictivo en #852); por `curl` basta la cabecera `X-Admin-Key`.
-6. **Comprobar** (sustituye URL y clave):
-   ```bash
-   # sin clave -> 401
-   curl -i -X DELETE https://<api>/api/v1/collections/PRUEBA_INEXISTENTE
-   # con clave -> pasa la guarda (404/200 según exista la colección, pero ya no 401/503)
-   curl -i -X DELETE -H "X-Admin-Key: <clave>" https://<api>/api/v1/collections/PRUEBA_INEXISTENTE
-   ```
-   Cuidado: usa un nombre de colección que **no exista** al probar.
+6. **Comprobar** con la ruta nueva: sin la cabecera `X-Admin-Key` responde **401**; con la clave correcta pasa la guarda (cualquier otro código, pero ya no 401 ni 503). Usa una petición que no destruya nada al probar.
 
 ## Rotar o retirar la clave
 - **Rotar**: cambiar el valor en el entorno del servidor, reiniciar y volver a guardarla donde se use. Las claves antiguas dejan de valer al instante (se lee en cada petición).
-- **Retirar** (volver al estado actual): borrar la variable y reiniciar → vuelven los 503.
+- **Retirar** (volver al estado actual): borrar la variable y reiniciar → las rutas con guarda vuelven a responder 503.
 
 ## Diagnóstico
 | Síntoma | Causa | Solución |
 |---|---|---|
 | 503 "ADMIN_API_KEY no está configurada" | variable sin definir en ese servicio (producción) | Estado actual esperado; pasos de arriba para activarla |
-| 401 "Clave de administración requerida o incorrecta" | sin clave en Admin, clave distinta | Re-guardar la clave en Admin |
+| 401 "Clave de administración requerida o incorrecta" | sin la cabecera `X-Admin-Key` o clave distinta | Enviar la clave correcta |
 | 503 "Base de datos no disponible: …" (o 500 en versiones antiguas) en cualquier endpoint con datos | `MONGODB_CONNECTION_STRING` sin definir, credenciales de Atlas rechazadas, usuario sin permisos o IP no permitida | Abrir `/api/v1/health/db`: `error` = `missing_config` / `auth_failed` / `not_authorized` / `unreachable` / `invalid_config` y `hint`. Revisar las variables de entorno del servicio y Atlas → Database Access / Network Access (`0.0.0.0/0` para Render free) |
 | CORS / `OPTIONS` bloqueado | `ALLOWED_ORIGINS` no incluye la URL de Vercel | Ajustar `ALLOWED_ORIGINS` (la cabecera `X-Admin-Key` está permitida) |
 | Funciona en local pero no en producción | en local no hay guarda (sin `ENVIRONMENT=production`) | Esperado |
 
 ## Variables de entorno (resumen)
-Backend (si se aloja): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional hasta que se decida activarla). Frontend (Vercel): `VITE_API_BASE` (solo para el respaldo de la API). Plantilla: `.env.example`.
+Backend (si se aloja): `ENVIRONMENT=production`, `MONGODB_CONNECTION_STRING`, `ALLOWED_ORIGINS`, `ADMIN_API_KEY` (opcional: ninguna ruta la usa hoy). Frontend (Vercel): `VITE_API_BASE` (solo para el respaldo de la API). Plantilla: `.env.example`.
 
 ## Despliegue (web) y CI
 La web se despliega sola en Vercel (integración nativa de GitHub, con una vista previa por PR). `ci.yml` solo ejecuta los tests (backend repartido en 4 trabajos, web, e2e); **no despliega nada**: los datos y los paquetes los publica GitHub Actions en las ramas `web-data` y `live-packages`. Si se aloja la API en algún sitio, el despliegue es cosa de quien la aloje (ver *Sin servidor alojado*).
@@ -67,8 +53,8 @@ Para registrar el feed real de partidos (datos para calibrar el motor live, #118
 ## Rellenar `DERIVED` en partidos ya guardados (#372)
 Los partidos que entran por el scrape (también el refresco del archivo) llevan `DERIVED` (posesiones exactas y rebotes/pérdidas validados) desde que se insertan. Los de FBCYL (`insert_fbcyl_match`, #373) también. **Cada refresco (el de Atlas y el local, `run_refresh.py`) rellena también `DERIVED` de las colecciones que toca** (#630: el local no lo hacía y dejó 167 partidos fuera de «Análisis pbp»; un fallo ahí nunca convierte el refresco en error) y **el workflow *Atlas refresh* lo vuelve a pasar a toda la base** (último paso, tras cada scrape, aunque el refresco salga en rojo; #382): idempotente, solo toca los partidos sin la versión actual; recorre todas las colecciones de partidos, así que su coste crece con el tamaño de la base (hoy despreciable; si llegara a pesar, indexar `DERIVED.v`). A mano, para los guardados antes o si sube `DERIVED_VERSION` (v2 en #352: puntos por origen; v3 en #353: periodos; v4 en #354 y #355: situaciones y tiempos muertos; v5 en #390: fiabilidad por impacto; v6 en #398: contraataque estimado (**sin la v5 los cuatro endpoints salen vacíos y sin la v6 `points-by-origin`**); **hasta rellenarlos `/possessions/{collection}/points-by-origin`, `/by-period`, `/situations` y `/timeouts` salen vacíos** (Atlas se rellena solo en el siguiente *Atlas refresh*)), se rellenan con `python run_backfill_derived.py [--collection NOMBRE]` (idempotente; solo añade el campo; deshacer: `updateMany({}, {$unset: {DERIVED: ""}})`). Contra Atlas: define `MONGODB_CONNECTION_STRING` en la sesión (PowerShell: `$env:MONGODB_CONNECTION_STRING = '…'`, comillas simples; usuario y contraseña con caracteres especiales codificados con `urllib.parse.quote_plus`; sin la variable usa `db_credentials.txt`, o sea la BD local). Sin `DERIVED` los pipelines usan el respaldo del boxscore. Alternativa si se vacía una colección: el workflow *Atlas refresh* (*Run workflow*) la recrea desde FEB con `DERIVED`.
 
-## Colección `HISTORICAL` (multifase, predictivo) y las posesiones (#379)
-Sus filas por equipo y partido se calculan al ingerir (`POST /api/v1/historical/ingest`, con `DERIVED` si el partido lo trae o calculado desde el pbp). Los partidos ingeridos **antes** de #372 conservan la estimación antigua (0,45) hasta que se vuelven a ingerir con los mismos parámetros: la ingesta es idempotente (`(match_id, team_id)` se actualiza, no se duplica).
+## Colecciones `HISTORICAL` y `ELASTICITIES` (retiradas, #853)
+Eran las del predictivo antiguo (filas por equipo y partido ingeridas con `POST /historical/ingest`, y los modelos entrenados). El código que las leía y las escribía se borró y la ingesta ya no existe (#724); **no hace falta ningún paso**. Si una base antigua aún las tiene, se pueden borrar a mano y no estorban: `CollectionService` las ignora al listar colecciones de partidos (`_SKIP_NAMES`). Las posesiones de cada partido viven en `DERIVED` (ver *Backfill de DERIVED*).
 
 ## Evaluar las reglas de alerta (rule-evaluation.yml)
 *Actions → Rule evaluation → Run workflow* con la colección de la competición (`team` y `min_prior_games` son opcionales). Lee **del archivo** (#724, paso 4: la acción compartida `.github/actions/restore-archive` restaura solo esa colección y sus metadatos en un Mongo efímero, solo lectura), reproduce todos los partidos como en directo desde los dos equipos y usa las grabaciones de `tests/recordings/` en lugar del feed simulado de su partido. El informe sale en el *Summary* y en el artefacto `rule-evaluation` (30 días): `report.md`, `evaluation.json`, `alerts.jsonl`. Detalle: [LIVE.md](LIVE.md) y [LIVE_RULES_CANDIDATES.md](LIVE_RULES_CANDIDATES.md).
@@ -121,13 +107,13 @@ Dos cosas se despliegan por separado: **la web** (Vercel, al integrar el PR) y *
 - **Comprobar a mano**: `cd frontend && npm audit --omit=dev` (la app live: `cd apps/live-android && npm audit --omit=dev`). Estado del 23/10/2026: la app live sin avisos; el frontend sin avisos (0 vulnerabilidades) tras subir `jspdf` (crítico), `axios`, `dompurify`, `lodash`, `form-data` y `react-router-dom` a la 7 (#526). Con una vulnerabilidad `high` o `critical` en producción se actualiza ya, sin esperar a Dependabot.
 
 ## Memoria (servidor pequeño, 512 MB)
-Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: scikit-learn +125 MB al primer uso predictivo, matplotlib +45, pandas +50). Medidas tomadas (issue #163), vigentes si alguien aloja la API en un servidor con poca RAM:
+Un documento de partido pesa ≈ 1 MB en memoria de Python y la app completa ≈ 170 MB en reposo (más: matplotlib +45, pandas +50). Medidas tomadas (issue #163), vigentes si alguien aloja la API en un servidor con poca RAM:
 - **Un solo worker** de uvicorn por defecto (`src/api/runtime.uvicorn_workers`; `WEB_CONCURRENCY` lo sube, tope 4). Antes `run_api.py` lanzaba 4 en Linux → ~500-700 MB en reposo y OOM intermitente al desplegar.
 - `MALLOC_ARENA_MAX=2` (menos fragmentación) y `pip install --no-cache-dir` al instalar.
 - Listado de partidos con **proyección** (no cargar documentos completos), zonas de liga **en streaming** y caducidad (15 min) de los ZIP del informe semanal sin descargar.
 - **Diagnóstico**: poner `LOG_MEMORY=1` en el servicio; los logs mostrarán `WARNING basketlab.memory GET /ruta rss 412 MB (+90 MB)` para peticiones que suben ≥ 25 MB (`LOG_MEMORY_DELTA_MB`) o dejan el RSS ≥ 350 MB (`LOG_MEMORY_HIGH_MB`).
 - Regla de código: nunca `find({})` sin proyección sobre colecciones de partidos; iterar cursores/generadores en vez de materializar listas de documentos o tiros.
-Si aun así se supera el límite: más memoria o separar los endpoints predictivos (scikit-learn) en otro servicio.
+Si aun así se supera el límite: más memoria.
 
 ## App Android (BasketLab Live): APK, firma y publicación
 **Gradle sin caché (#749, 05/11/2026)**: `live-android.yml` usa `gradle/actions/setup-gradle@v6` con `cache-disabled: true`. La versión 6 pasó el caché a un componente propietario (`gradle-actions-caching`) con sus propios términos de uso, que se aceptan al subir de versión; como la release es semanal el caché no compensa y el componente no se carga. Si algún día se quiere el caché, es una decisión sobre esos términos.

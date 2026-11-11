@@ -100,7 +100,7 @@ class CollectionService:
     # Names to skip entirely (internal/system collections, not user-facing)
     _SKIP_NAMES: frozenset = frozenset({
         'test', 'admin', 'local', 'config',
-        'HISTORICAL', 'ELASTICITIES',  # internal predictive-analytics collections
+        'HISTORICAL', 'ELASTICITIES',  # collections of the old predictive analysis (removed, #853): a database that still has them must not read them as games
         'COLLECTION_META',  # per-collection scrape metadata (src/services/collection_meta.py)
     })
     # FBCYL collections are prefixed with FBCYL_; everything else is FEB

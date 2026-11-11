@@ -1,5 +1,5 @@
 # Formatos de datos (para Claude)
-Solo hechos **verificados** contra `src/JSON_samples/feb_game.json` y `fbcyl_game.json` (y el scraper). Fuente de verdad del mapeo entre formatos: `src/services/_feb_normalizer.py` y `_fbcyl_normalizer.py`. Detalle del motor live: [LIVE.md](LIVE.md).
+Solo hechos **verificados** contra `src/JSON_samples/feb_game.json` y `fbcyl_game.json` (y el scraper). Fuente de verdad del mapeo de FBCYL al documento FEB que lee el motor: `src/live_core/fbcyl_adapter.py`. Detalle del motor live: [LIVE.md](LIVE.md).
 
 ## FEB (colecciones sin prefijo `FBCYL_`; `_id` = código de partido)
 Claves raíz: `HEADER, SCOREBOARD, TEAMSTATS, TICKER, OVERVIEW, PLAYBYPLAY, BANNER, BOXSCORE, SHOTCHART, RANKING` (+ `_league`, `_comp_id`, `_competition`, `_group`, `_season` que añade el scraper).

@@ -124,7 +124,7 @@ class MatchAnalysisService:
         """Extract stats for one FEB TEAM block, preferring TOTAL over player sum.
 
         Real FEB documents store authoritative aggregates in the TOTAL sub-dict
-        (used by historical_ingestion_service, evolution_service, etc.).
+        (used by evolution_service, etc.).
         Player-level rows may be incomplete, so we only fall back to summing
         them when TOTAL is absent.
         """
@@ -194,7 +194,7 @@ def _pct(num: float, den: float) -> float:
 def _aggregate_feb_total(total: Dict) -> Dict:
     """Extract team stats from a FEB BOXSCORE.TEAM.TOTAL block.
 
-    This is the authoritative source used by historical_ingestion_service and
+    This is the authoritative source used by
     the aggregation pipelines.  fgm/fga are derived as p2m+p3m / p2a+p3a
     because the TOTAL dict does not always carry an aggregate fgm/fga field.
     """
