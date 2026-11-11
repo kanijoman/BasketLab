@@ -8,11 +8,15 @@ of ``main`` requires, passes only if every share passed, and on ``main`` combine
 """
 from pathlib import Path
 
-import json
+import sys
 
 import yaml
 
 WORKFLOWS = Path(__file__).resolve().parents[1] / ".github" / "workflows"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+
+from store_missing_durations import coverage_message, missing_modules  # noqa: E402
+
 CI = yaml.safe_load((WORKFLOWS / "ci.yml").read_text(encoding="utf-8"))
 SHARD = CI["jobs"]["backend-shard"]
 PYTEST_STEPS = [s for s in SHARD["steps"] if "python -m pytest" in s.get("run", "")]
@@ -52,10 +56,10 @@ def test_the_suite_runs_in_parallel_shares_and_every_share_asks_for_its_own_grou
 
 
 def test_the_stored_durations_cover_the_modules_of_the_suite():
-    stored = json.loads((ROOT / ".test_durations").read_text(encoding="utf-8"))
     modules = {path.name for path in (ROOT / "tests").glob("test_*.py")}
-    stored_modules = {key.split("::")[0].split("/")[-1] for key in stored}
-    assert len(modules & stored_modules) / len(modules) >= 0.95, "recalibrate: python -m pytest tests -n auto --store-durations --durations-path=.test_durations"
+    missing = missing_modules(ROOT)
+    covered = 1 - len(missing) / len(modules)
+    assert covered >= 0.95, coverage_message(missing, covered)      # the message names the modules and the command that calibrates only them (#866)
 
 
 def test_the_gate_job_keeps_the_required_name_and_fails_if_a_share_fails():

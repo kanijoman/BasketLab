@@ -17,7 +17,8 @@ jobs:
   # The suite is the longest job of an integration (issue #741), so it is split into SHARES that run as parallel jobs: `pytest-split` hands each share the tests that
   # add up to a quarter of the time stored in `.test_durations`, and inside a share pytest-xdist uses every CPU of the runner (4). `worksteal` hands tests out one by one
   # and lets an idle worker take them from a busy one (`loadscope` pinned a module to a worker). `--durations` lists the slowest tests of every run.
-  # Recalibrate the split when the suite changes a lot: `python -m pytest tests -n auto --store-durations --durations-path=.test_durations`.
+  # `.test_durations` must cover 95 % of the test modules (tests/test_ci_speed.py). When it does not, `python scripts/store_missing_durations.py` stores only the missing modules (it merges into the file, #866);
+  # recalibrate everything only when the suite changes a lot: `python -m pytest tests -n auto --store-durations --durations-path=.test_durations`.
   # `python -m pytest` (not `pytest`) keeps the repo root on sys.path: some tests import `from tests.x import y`. Override addopts to skip the HTML coverage report.
   # Tests use mongomock (no real DB); ENVIRONMENT=development so db_config does not raise on a missing Atlas URL.
   # The coverage is only measured on main or in a manual run (`workflow_dispatch`), where the tracing cost does not delay a pull request; each share saves its data and the
