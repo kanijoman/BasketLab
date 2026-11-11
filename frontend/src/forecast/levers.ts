@@ -28,7 +28,17 @@ export interface Lever {
   record: { reached: number; won: number }
 }
 
-export interface Levers { attack: Lever[]; defence: Lever[]; pace: Lever | null }
+/** The own games played at a pace that slow or that fast, and how they went. */
+export interface PaceBand { threshold: number; record: { reached: number; won: number } }
+
+/**
+ * The pace is INFORMATION, not an objective (#857): the walk-forward evaluation of 11/11/2026 (2,561 games of 12 competitions, men and women) found no support for a probability of winning at a
+ * given pace: for the men the model says 52 % and the games 44 %, for the women 54 % and 63 %, on a few hundred cases that the standard error leaves in the noise. So the page says what pace is
+ * expected and how the season went at a slow and at a fast one, and no more.
+ */
+export interface PaceInfo { expected: number; slow: PaceBand; fast: PaceBand }
+
+export interface Levers { attack: Lever[]; defence: Lever[]; pace: PaceInfo }
 
 const SHARE = 0.25          // the scenarios that go best, the part that defines a target
 const MIN_GAIN = 0.01       // what an objective must add to the probability to be worth listing
@@ -62,23 +72,41 @@ function leverOf(ev: Evaluation, probs: number[], values: number[], sign: 1 | -1
   return { ...base, direction: sign > 0 ? 'up' : 'down', threshold, pWin, gain: pWin - ev.headline.p, mass: count / values.length, record: record(v => sign * v >= cut) }
 }
 
-/** The objectives of an own team in a matchup: up to three of attack, three of defence and the pace that helps most, each worth at least a point of probability. */
-export function leversOf(model: ForecastModel, ev: Evaluation): Levers {
+/** What the games and the scenarios say about a team in a matchup, for the objectives and for the pace. */
+function context(model: ForecastModel, ev: Evaluation) {
   const probs = ev.mean.map(m => phi(m / ev.sigmaU))
   const mine = ownGames(model, ev.own)
-  const sideValue = (home: boolean, game: GameResult, kind: 'attack' | 'defence', factor: FactorKey): number => {
-    const row = home ? game.homeRow! : game.awayRow!
-    return kind === 'attack' ? factors(boxOf(row, 'own'), boxOf(row, 'opp'))[factor] : factors(boxOf(row, 'opp'), boxOf(row, 'own'))[factor]
-  }
   const recordOf = (value: (g: { game: GameResult; home: boolean }) => number | null) => (past: (v: number) => boolean): Lever['record'] => {
     const reached = mine.filter(g => { const v = value(g); return v !== null && past(v) })
     return { reached: reached.length, won: reached.filter(wins).length }
+  }
+  return { probs, recordOf }
+}
+
+/**
+ * The two pace candidates of a matchup (the fast quarter of the scenarios and the slow one) with the probability of winning in each, as an objective would have: NOT shown by the page (see
+ * `PaceInfo`), kept so that the evaluation can go on measuring whether the pace deserves to be an objective.
+ */
+export function paceCandidates(model: ForecastModel, ev: Evaluation): Lever[] {
+  const { probs, recordOf } = context(model, ev)
+  const base = { side: 'pace' as const, expected: ev.headline.pace }
+  return [1, -1].map(sign => leverOf(ev, probs, ev.pace, sign as 1 | -1, base, recordOf(g => g.game.pace)))
+}
+
+/** The pace candidate that would be listed as an objective (the one that adds most, if it adds a point of probability), or none. */
+export const bestPaceLever = (candidates: Lever[]): Lever | null => candidates.filter(l => l.gain >= MIN_GAIN).sort((a, b) => b.gain - a.gain)[0] ?? null
+
+/** The objectives of an own team in a matchup: up to three of attack and three of defence, each worth at least a point of probability, and the pace as information. */
+export function leversOf(model: ForecastModel, ev: Evaluation): Levers {
+  const { probs, recordOf } = context(model, ev)
+  const sideValue = (home: boolean, game: GameResult, kind: 'attack' | 'defence', factor: FactorKey): number => {
+    const row = home ? game.homeRow! : game.awayRow!
+    return kind === 'attack' ? factors(boxOf(row, 'own'), boxOf(row, 'opp'))[factor] : factors(boxOf(row, 'opp'), boxOf(row, 'own'))[factor]
   }
   const factorLevers = (kind: 'attack' | 'defence'): Lever[] => FACTOR_KEYS
     .map(factor => leverOf(ev, probs, (kind === 'attack' ? ev.fOwn : ev.fRiv).map(f => f[factor]), (GOOD_UP[factor] === (kind === 'attack') ? 1 : -1),
       { side: kind, factor, expected: (kind === 'attack' ? ev.expectedOwn : ev.expectedRival)[factor] }, recordOf(g => sideValue(g.home, g.game, kind, factor))))
     .filter(l => l.gain >= MIN_GAIN).sort((a, b) => b.gain - a.gain).slice(0, PER_SIDE)
-  const pace = [leverOf(ev, probs, ev.pace, 1, { side: 'pace', expected: ev.headline.pace }, recordOf(g => g.game.pace)), leverOf(ev, probs, ev.pace, -1, { side: 'pace', expected: ev.headline.pace }, recordOf(g => g.game.pace))]
-    .filter(l => l.gain >= MIN_GAIN).sort((a, b) => b.gain - a.gain)[0] ?? null
-  return { attack: factorLevers('attack'), defence: factorLevers('defence'), pace }
+  const [fast, slow] = paceCandidates(model, ev)
+  return { attack: factorLevers('attack'), defence: factorLevers('defence'), pace: { expected: ev.headline.pace, slow: { threshold: slow.threshold, record: slow.record }, fast: { threshold: fast.threshold, record: fast.record } } }
 }

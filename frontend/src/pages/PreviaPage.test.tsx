@@ -173,6 +173,11 @@ describe('the analysis', () => {
     expect(list.textContent).not.toMatch(/\+\s*\d[\d,.]*\s*%/)
     expect(within(list).getByText('Ataque')).toBeInTheDocument()
     expect(within(list).getByText('Defensa')).toBeInTheDocument()
+    // the pace is information: what is expected and how the season went, with no probability of winning
+    expect(within(list).getByText('Ritmo (informativo)')).toBeInTheDocument()
+    expect(within(list).getByText(/Se espera un partido de unas \d+ posesiones por 40 minutos\./)).toBeInTheDocument()
+    expect(within(list).getByText(/Esta temporada, a ritmo lento/)).toBeInTheDocument()
+    expect(within(list).getByText(/no se ha podido comprobar que el ritmo cambie la probabilidad de ganar/)).toBeInTheDocument()
   })
 
   it('has a button to export it', async () => {

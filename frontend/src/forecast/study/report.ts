@@ -55,20 +55,28 @@ function scenariosSection(results: CompetitionResult[]): string {
 
 const SIDES: [string, (l: LeverRecord) => boolean][] = [['Todos', () => true], ['Ataque', l => l.side === 'attack'], ['Defensa', l => l.side === 'defence'], ['Ritmo', l => l.side === 'pace']]
 
+function leverRow(label: string, side: string | null, mine: LeverRecord[]): (string | number)[] {
+  const met = mine.filter(l => l.met)
+  const missed = mine.filter(l => !l.met)
+  return [...(side === null ? [label] : [label, side]), mine.length, pc(met.length / (mine.length || NaN), 0), pc(mean(met.map(l => l.pWin))), pc(mean(met.map(l => l.y))), pc(mean(missed.map(l => l.y))),
+    num(mean(met.map(l => brier(l.pWin, l.y)))), num(mean(met.map(l => brier(l.headline, l.y))))]
+}
+
 function leversSection(results: CompetitionResult[]): string {
   const levers = results.flatMap(r => r.previews.levers)
-  const rows = SIDES.map(([label, inside]) => {
-    const mine = levers.filter(inside)
-    const met = mine.filter(l => l.met)
-    const missed = mine.filter(l => !l.met)
-    return [label, mine.length, pc(met.length / (mine.length || NaN), 0), pc(mean(met.map(l => l.pWin))), pc(mean(met.map(l => l.y))), pc(mean(missed.map(l => l.y))),
-      num(mean(met.map(l => brier(l.pWin, l.y)))), num(mean(met.map(l => brier(l.headline, l.y))))]
-  })
+  const rows = SIDES.map(([label, inside]) => leverRow(label, null, levers.filter(inside)))
+  const family = (label: string, gender: string): (string | number)[][] => {
+    const mine = results.filter(r => r.gender === gender).flatMap(r => r.previews.levers)
+    return mine.length ? SIDES.slice(1).map(([side, inside]) => leverRow(label, side, mine.filter(inside))) : []
+  }
+  const byFamily = table(['Familia', 'Lado', 'Objetivos', 'Alcanzados', 'P(victoria) prevista si se alcanza', 'Victorias reales si se alcanza', 'Victorias reales si no', 'Brier de la prevista', 'Brier del pronóstico'],
+    [...family('Masculina', 'M'), ...family('Femenina', 'F')])
   const calibration = calibrationTable(levers.filter(l => l.met).map(l => ({ p: l.pWin, y: l.y })), 5)
   return [
     '## Objetivos del partido',
     'Cada objetivo (hasta tres de ataque, tres de defensa y el ritmo) se comprueba desde el lado de los dos equipos: ¿lo alcanzó el partido que se jugó?, ¿ganó el equipo del objetivo? Lo que se evalúa es **la probabilidad condicional** («si pasa, ganamos tanto»): coincide con la frecuencia real de los partidos en que pasó cuando está calibrada.',
     table(['', 'Objetivos', 'Alcanzados', 'P(victoria) prevista si se alcanza', 'Victorias reales si se alcanza', 'Victorias reales si no', 'Brier de la prevista', 'Brier del pronóstico'], rows),
+    '### Por familia de competición', byFamily,
     '### Calibración de la probabilidad prevista cuando se alcanza el objetivo',
     table(['Prevista', 'Objetivos', 'Prevista (media)', 'Real'], calibration.map(b => [`${pc(b.from, 0)}–${pc(b.to, 0)}`, b.n, pc(b.predicted), pc(b.actual)])),
   ].join('\n\n')

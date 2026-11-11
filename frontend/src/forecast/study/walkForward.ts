@@ -5,8 +5,9 @@ import type { Calendar } from '@/webdata/calendar'
 import { pyRound } from '@/localdata/pyMath'
 import { boxOf, factors } from '../factors'
 import type { GameResult } from '../gameLog'
-import type { Lever } from '../levers'
+import { bestPaceLever, paceCandidates, type Lever } from '../levers'
 import { buildModel } from '../pool'
+import { evaluate } from '../scenarios'
 import { buildPreview } from '../preview'
 import { pTop, simulateSeason } from '../seasonSim'
 import { standingsOf } from '../standings'
@@ -131,7 +132,9 @@ export function walkForwardPreviews(games: GameResult[], gender: string | undefi
           study.buckets.logScoreBaseline += -Math.log(shares[actual])
         }
       }
-      const { attack, defence, pace } = detail.levers
+      const { attack, defence } = detail.levers
+      const ev = evaluate(model, own, rival, court)                                 // the pace is not an objective of the page any more (#857) but the study still measures it
+      const pace = ev ? bestPaceLever(paceCandidates(model, ev)) : null
       study.levers.push(...leverRecords(k, g, own, [...attack, ...defence, ...(pace ? [pace] : [])], preview.headline.p, y))
     }
   }

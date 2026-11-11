@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FACTOR_NAMES, SCENARIO_TEXT, confidenceText, highlightText, leverDetail, leverEvidence, leverTitle, pct } from './copy'
+import { FACTOR_NAMES, SCENARIO_TEXT, confidenceText, highlightText, leverDetail, leverEvidence, leverTitle, paceLines, pct } from './copy'
 import { buildGames } from './gameLog'
 import { buildModel } from './pool'
 import { bucketsOf, evaluate } from './scenarios'
@@ -20,8 +20,20 @@ describe('the objectives, in the words of the page', () => {
     expect(leverTitle(lever({ factor: 'efg', direction: 'down', threshold: 0.465 }))).toBe('Limitar su acierto de tiro (eFG %) a ≤ 46,5 %')
     expect(leverTitle(lever({ factor: 'tov', direction: 'up', threshold: 0.163 }))).toBe('Forzar sus pérdidas: ≥ 16,3 % de sus posesiones')
     expect(leverTitle(lever({ factor: 'ftr', direction: 'down', threshold: 0.276 }))).toBe('Evitar que vayan a la línea: ≤ 28 tiros libres por cada 100 tiros de campo')
-    expect(leverTitle(lever({ side: 'pace', factor: undefined, direction: 'up', threshold: 75.8 }))).toBe('Subir el ritmo: ≥ 76 posesiones por 40 minutos')
-    expect(leverTitle(lever({ side: 'pace', factor: undefined, direction: 'down', threshold: 66.2 }))).toBe('Bajar el ritmo: ≤ 66 posesiones por 40 minutos')
+  })
+
+  it('the pace is told as information: what is expected, how the season went at a slow and at a fast pace, and that nothing says it changes the result', () => {
+    const lines = paceLines({ expected: 73.8, slow: { threshold: 70.2, record: { reached: 7, won: 3 } }, fast: { threshold: 77.9, record: { reached: 6, won: 4 } } })
+    expect(lines.summary).toBe('Se espera un partido de unas 74 posesiones por 40 minutos.')
+    expect(lines.record).toBe('Esta temporada, a ritmo lento (≤ 70 posesiones) ganamos 3 de 7 y a ritmo alto (≥ 78) ganamos 4 de 6.')
+    expect(lines.caveat).toBe('Es solo una referencia: no se ha podido comprobar que el ritmo cambie la probabilidad de ganar.')
+  })
+
+  it('a pace the season has not been played at is said so', () => {
+    const lines = paceLines({ expected: 70, slow: { threshold: 66, record: { reached: 0, won: 0 } }, fast: { threshold: 74, record: { reached: 2, won: 1 } } })
+    expect(lines.record).toBe('Esta temporada aún no hemos jugado a ritmo lento (≤ 66 posesiones) y a ritmo alto (≥ 74) ganamos 1 de 2.')
+    expect(paceLines({ expected: 70, slow: { threshold: 66, record: { reached: 0, won: 0 } }, fast: { threshold: 74, record: { reached: 0, won: 0 } } }).record)
+      .toBe('Esta temporada aún no hemos jugado a ritmo lento (≤ 66 posesiones) ni a ritmo alto (≥ 74).')
   })
 
   it('say how often it happens and how often we win when it does, against how often overall', () => {
@@ -49,7 +61,8 @@ describe('every sentence the page can say on real matchups', () => {
     for (let i = 0; i + 1 < ids.length; i += 2) {
       const ev = evaluate(model, ids[i], ids[i + 1], 'own')!
       const levers = leversOf(model, ev)
-      for (const l of [...levers.attack, ...levers.defence, ...(levers.pace ? [levers.pace] : [])]) sentences.push(leverTitle(l), leverDetail(l, ev.headline.p), leverEvidence(l))
+      for (const l of [...levers.attack, ...levers.defence]) sentences.push(leverTitle(l), leverDetail(l, ev.headline.p), leverEvidence(l))
+      sentences.push(...Object.values(paceLines(levers.pace)))
       for (const b of bucketsOf(ev)) sentences.push(...b.highlights.map(highlightText))
     }
   }

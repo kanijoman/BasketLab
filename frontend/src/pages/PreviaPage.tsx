@@ -6,7 +6,7 @@
 import { useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CalendarX2, Crosshair } from 'lucide-react'
-import { leverEvidence, leverTitle, pct, SCENARIO_TEXT } from '@/forecast/copy'
+import { leverEvidence, leverTitle, paceLines, pct, SCENARIO_TEXT } from '@/forecast/copy'
 import { nextFixture, teamFixtures } from '@/forecast/fixtures'
 import { buildPreview } from '@/forecast/preview'
 import { loadPrefs, savePrefs } from '@/forecast/storage'
@@ -52,7 +52,8 @@ export default function PreviaPage() {
 
   const detail = preview?.detail ?? null
   const csv = detail ? [
-    ...[...detail.levers.attack, ...detail.levers.defence, ...(detail.levers.pace ? [detail.levers.pace] : [])].map(l => ({ tipo: 'Objetivo', texto: leverTitle(l), victorias: pct(l.pWin, 0), temporada: leverEvidence(l) })),
+    ...[...detail.levers.attack, ...detail.levers.defence].map(l => ({ tipo: 'Objetivo', texto: leverTitle(l), victorias: pct(l.pWin, 0), temporada: leverEvidence(l) })),
+    { tipo: 'Ritmo (informativo)', texto: paceLines(detail.levers.pace).summary, victorias: '', temporada: paceLines(detail.levers.pace).record },
     ...detail.scenarios.map(b => ({ tipo: 'Escenario', texto: SCENARIO_TEXT[b.id].title, victorias: pct(b.p, 0), temporada: '' })),
   ] : []
 

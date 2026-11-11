@@ -26,6 +26,14 @@ describe('the report', () => {
     expect(report.match(/^\| --- /gm)!.length).toBeGreaterThanOrEqual(5)
   })
 
+  it('tells the objectives apart by family of competition and by side, the pace included (it decides whether the pace objective is kept, #857)', () => {
+    expect(report).toContain('### Por familia de competición')
+    for (const side of ['Ataque', 'Defensa', 'Ritmo']) expect(report).toContain(`| Masculina | ${side} |`)
+    expect(report).not.toContain('| Femenina |')
+    const both = formatReport([result, { ...result, name: 'LF_X', gender: 'F' }], '2026-11-11')
+    for (const side of ['Ataque', 'Defensa', 'Ritmo']) expect(both).toContain(`| Femenina | ${side} |`)
+  })
+
   it('says what was evaluated and on what, and the date', () => {
     expect(report).toContain('PRIMERA_FEB_2025_2026_Liga_Regular_Único')
     expect(report).toContain('2026-11-11')

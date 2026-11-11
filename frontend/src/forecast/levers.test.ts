@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildGames } from './gameLog'
 import { buildModel, type ForecastModel } from './pool'
 import { evaluate } from './scenarios'
-import { leversOf, quantile, type Lever } from './levers'
+import { bestPaceLever, leversOf, paceCandidates, quantile, type Lever } from './levers'
 import { boxOf, factors, type FactorKey } from './factors'
 import { lfChallenge, lfChallengeCalendar, primera } from '@/test/forecastFixtures'
 
@@ -32,8 +32,8 @@ describe.each([['a complete men season', complete], ['an early women season', ea
 
   it.each(matchups)('every objective is where about a quarter of the scenarios begin, and each one is worth at least a point of probability: %s vs %s', (own, rival) => {
     const ev = evaluate(model, own, rival, 'own')!
-    const { attack, defence, pace } = leversOf(model, ev)
-    for (const l of [...attack, ...defence, ...(pace ? [pace] : [])]) {
+    const { attack, defence } = leversOf(model, ev)
+    for (const l of [...attack, ...defence]) {
       expect(l.mass).toBeGreaterThan(0.2)
       expect(l.mass).toBeLessThan(0.35)
       expect(l.gain).toBeGreaterThanOrEqual(0.01)
@@ -64,11 +64,20 @@ describe.each([['a complete men season', complete], ['an early women season', ea
     }
   })
 
-  it('the pace that helps is the slow one for the team that is behind and the fast one for the favourite', () => {
-    const under = leversOf(model, evaluate(model, worst, best, 'own')!).pace
-    const over = leversOf(model, evaluate(model, best, worst, 'own')!).pace
+  it('the pace that would help, if it were an objective, is the slow one for the team that is behind and the fast one for the favourite (the model, which the evaluation measures: #857)', () => {
+    const [under, over] = [[worst, best], [best, worst]].map(([o, r]) => bestPaceLever(paceCandidates(model, evaluate(model, o, r, 'own')!)))
     if (under) expect(under.direction).toBe('down')
     if (over) expect(over.direction).toBe('up')
+  })
+
+  it('the pace is information, not an objective: the pace expected, the slow and the fast one and how the season went at each, and no probability of winning', () => {
+    const ev = evaluate(model, mid[0], mid[1], 'own')!
+    const { pace } = leversOf(model, ev)
+    expect(Object.keys(pace).sort()).toEqual(['expected', 'fast', 'slow'])
+    expect(pace.expected).toBe(ev.headline.pace)
+    expect(pace.slow.threshold).toBeLessThan(pace.expected)
+    expect(pace.fast.threshold).toBeGreaterThan(pace.expected)
+    for (const band of [pace.slow, pace.fast]) expect(Object.keys(band).sort()).toEqual(['record', 'threshold'])
   })
 
   it('is deterministic', () => {
@@ -96,6 +105,15 @@ describe('the season record of an objective, checked by hand on the real games',
       })
       const won = reached.filter(g => (g.home === mid[0] ? g.margin : -g.margin) > 0)
       expect(l.record).toEqual({ reached: reached.length, won: won.length })
+    }
+  })
+
+  it('the pace bands count the own games at a slow or a fast pace the same way', () => {
+    const { pace } = leversOf(model, ev)
+    const mine = model.games.filter(g => (g.home === mid[0] || g.away === mid[0]) && g.homeRow)
+    for (const [band, past] of [[pace.slow, (p: number) => p <= pace.slow.threshold], [pace.fast, (p: number) => p >= pace.fast.threshold]] as const) {
+      const reached = mine.filter(g => g.pace !== null && past(g.pace))
+      expect(band.record).toEqual({ reached: reached.length, won: reached.filter(g => (g.home === mid[0] ? g.margin : -g.margin) > 0).length })
     }
   })
 

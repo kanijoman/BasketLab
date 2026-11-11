@@ -2,7 +2,7 @@
 // happens, we win this often»: nothing here promises that making it happen wins, and the guard in `copy.test.ts` forbids «+N %», guarantees and causes. Neutral in gender: «el rival», «nuestro».
 import type { BucketId, Highlight } from './scenarios'
 import type { FactorKey } from './factors'
-import type { Lever } from './levers'
+import type { Lever, PaceInfo } from './levers'
 import type { Reason } from './preview'
 
 /** `0.5664` -> `56,6 %` (decimal comma, a space before the sign). */
@@ -30,7 +30,6 @@ const le = '≤'
 /** What to do, with the target: `Dejar su rebote ofensivo en ≤ 28 %`. */
 export function leverTitle(l: Lever): string {
   const t = l.threshold
-  if (l.side === 'pace') return l.direction === 'up' ? `Subir el ritmo: ${ge} ${Math.round(t)} posesiones por 40 minutos` : `Bajar el ritmo: ${le} ${Math.round(t)} posesiones por 40 minutos`
   if (l.side === 'attack') {
     if (l.factor === 'efg') return `Subir nuestro acierto de tiro (eFG %) hasta ${ge} ${pct(t)}`
     if (l.factor === 'tov') return `Cuidar el balón: pérdidas ${le} ${pct(t)} de las posesiones`
@@ -41,6 +40,19 @@ export function leverTitle(l: Lever): string {
   if (l.factor === 'tov') return `Forzar sus pérdidas: ${ge} ${pct(t)} de sus posesiones`
   if (l.factor === 'orb') return `Dejar su rebote ofensivo en ${le} ${pct(t, 0)}`
   return `Evitar que vayan a la línea: ${le} ${per100(t)}`
+}
+
+/** The pace as information (#857): what is expected, how the season went at a slow and at a fast pace, and that nothing says it changes the result. */
+export function paceLines(pace: PaceInfo): { summary: string; record: string; caveat: string } {
+  const slow = `ritmo lento (${le} ${Math.round(pace.slow.threshold)} posesiones)`
+  const fast = `ritmo alto (${ge} ${Math.round(pace.fast.threshold)})`
+  const played = (b: { reached: number; won: number }) => `ganamos ${b.won} de ${b.reached}`
+  const [s, f] = [pace.slow.record, pace.fast.record]
+  const record = !s.reached && !f.reached ? `Esta temporada aún no hemos jugado a ${slow} ni a ${fast}.`
+    : !s.reached ? `Esta temporada aún no hemos jugado a ${slow} y a ${fast} ${played(f)}.`
+    : !f.reached ? `Esta temporada, a ${slow} ${played(s)} y aún no hemos jugado a ${fast}.`
+    : `Esta temporada, a ${slow} ${played(s)} y a ${fast} ${played(f)}.`
+  return { summary: `Se espera un partido de unas ${Math.round(pace.expected)} posesiones por 40 minutos.`, record, caveat: 'Es solo una referencia: no se ha podido comprobar que el ritmo cambie la probabilidad de ganar.' }
 }
 
 /** How often it happens and how often we win when it does, against how often overall. */
