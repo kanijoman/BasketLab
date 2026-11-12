@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      /* The theme before the first paint (issue #188): the key and the default of src/lib/theme.ts (a test keeps them equal) */
+      var t; try { t = localStorage.getItem('basketlab-web-theme') } catch (e) {}
+      if (t !== 'dark' && t !== 'system') t = 'light'
+      if (t !== 'system') document.documentElement.setAttribute('data-theme', t)
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BasketLab Talent · Búsqueda y perfilado de jugadores</title>
+    <meta name="description" content="Búsqueda, perfilado y encaje de jugadores y jugadoras de cualquier edad y competición, para cuerpos técnicos." />
+    <meta name="theme-color" content="#f6f8fa" />
+    <!-- icons and the image to share a link (issue #189): `npm run brand` writes them from design/brand -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BasketLab Talent" />
+    <meta property="og:title" content="BasketLab Talent" />
+    <meta property="og:description" content="Búsqueda, perfilado y encaje de jugadores de cualquier edad y competición." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_ES" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/market/main.tsx"></script>
+  </body>
+</html>
