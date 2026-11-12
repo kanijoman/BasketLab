@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="BasketLab Talent">
+  <!-- one colour (currentColor): print, watermarks, embossing -->
+  <g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="50" cy="50" r="38"/>
+    <path d="M 20.9 25.6 Q 34 50 20.9 74.4"/>
+    <path d="M 50 12 L 50 88"/>
+  </g>
+  <g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <circle data-part="lens" cx="62" cy="60" r="17"/>
+    <path data-part="handle" d="M 76 74 L 92 90"/>
+  </g>
+</svg>

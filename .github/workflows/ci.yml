@@ -149,6 +149,10 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Build BasketLab Talent (second entry, #877)
+        working-directory: frontend
+        run: npm run build:market
+
   # ── Web smoke e2e (issue #111) ─────────────────────────────────────────────
   # Real Chromium against the production build and the real FastAPI app on an in-memory MongoDB
   # (tests/e2e_web/serve_api.py): no credentials, no network.

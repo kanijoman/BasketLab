@@ -1,8 +1,8 @@
-# Evaluación: ScoutingFEB y el módulo «Mercado» (scouting de fichajes)
+# Evaluación: ScoutingFEB y BasketLab Talent (scouting de fichajes)
 
 Evaluación de lectura del 12/11/2026 del repositorio `kanijoman/ScoutingFEB` (detección temprana de talento) y de si integrarlo en BasketLab. **No se ha tocado código ni el repositorio de ScoutingFEB.** Lo legal queda fuera por decisión del usuario (se da por bueno; #637 sigue aparcado).
 
-**Veredicto: no se integra su código; se integra la idea, ampliada, como una app aparte («Mercado») sobre la misma plataforma.** Épica paraguas en GitHub (ver *Backlog*).
+**Veredicto: no se integra su código; se integra la idea, ampliada, como una app aparte («Talent») sobre la misma plataforma.** Épica paraguas en GitHub (ver *Backlog*).
 
 ## 1. Estado de ScoutingFEB (leído del código, sin ejecutarlo)
 
@@ -40,7 +40,7 @@ Se aprovechan sus errores como criterios «a evitar» de las sub-issues.
 
 ## 4. Decisiones
 
-1. **App aparte en la misma plataforma**: segunda entrada de `frontend/` (`market.html`, `frontend/src/market/`, `vite build --mode market`, segundo proyecto de Vercel), compartiendo `components/ui`, `design/`, `localdata/` y las versiones TS de `live_core`. No `apps/market-web/` (obligaría a sacar un paquete compartido sin valor propio). Datos y acceso propios (alcance `mercado`).
+1. **App aparte en la misma plataforma**: segunda entrada de `frontend/` (`market.html`, `frontend/src/market/`, `vite build --mode market`, segundo proyecto de Vercel), compartiendo `components/ui`, `design/`, `localdata/` y las versiones TS de `live_core`. No `apps/market-web/` (obligaría a sacar un paquete compartido sin valor propio). Datos y acceso propios (alcance `talent`).
 2. **Identidad**: `person_id` anclado al `idPlayer` de FEB; enlaces con método, puntuación y estado (FBCYL, ACB, FIBA, NCAA); correcciones desde la app, aplicadas por el pipeline al regenerar el registro (determinista).
 3. **Formato canónico**: ACB, NCAA y FIBA se convierten al documento FEB en la ingesta (`_league` de origen, ids con prefijo de fuente) para no bifurcar pipelines (lección de `is_fbcyl`). Ojo: la NCAA masculina juega 2 × 20 min.
 4. **Datos sin descartar nada, publicados por niveles**: guardar todas las temporadas completas; publicar completo la temporada en curso y la anterior, y para el resto todo lo del jugador más agregados de equipo (~400 MB para NCAA con 17 temporadas, en `basketlab-data-ext`, por debajo de 1 GB). Detalle antiguo por competición (tiros, en pista/fuera, informes) guardado y recalculable. Si hiciera falta publicarlo todo (~2,2 GB solo NCAA) se adelanta la migración a Cloudflare R2/Pages de #640.
@@ -57,4 +57,4 @@ Formato Next.js de ACB y FIBA; *hashes* de NCAA.com que cambian con cada desplie
 
 ## Backlog
 
-Épica paraguas «Mercado: scouting de fichajes» con bloques A (datos e identidad), B (app de solo lectura), C (encaje), D (fuentes externas y almacenamiento), E (estudios) y F (escritura del staff, con #153). Orden: A → B → C → D → E, con F1 (decisión #154) en paralelo.
+Épica paraguas «Talent: scouting de fichajes» con bloques A (datos e identidad), B (app de solo lectura), C (encaje), D (fuentes externas y almacenamiento), E (estudios) y F (escritura del staff, con #153). Orden: A → B → C → D → E, con F1 (decisión #154) en paralelo.
