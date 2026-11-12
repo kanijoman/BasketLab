@@ -4,11 +4,10 @@
 // (rights) of the reader. Unlocking is the live app's (`@live-package`): one implementation until the shared interface (#330).
 // Everything here answers `WebDataUnavailable` when the data cannot be had (host down, schema unknown, not published) so that the caller says there is no answer (no
 // fallback to the API, #334), and lets `ScopedAccessError` through: «you have no key for this» is not «try the API».
-import { decryptScoped, PackageDecryptError, ScopedAccessError } from '@live-package/crypto'
-import { loadRights, scopeKeys } from '@live-package/rights'
+import { createSealedClient, type Sealed as SealedOf } from './sealedClient'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
 import type { ScoutingReport, ScoutingScope } from '@/api/scoutingRival'
-import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type Wrap, type WebDataManifest } from './contract.generated'
+import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
 import type { Lineups } from '@/localdata/lineups'
@@ -26,56 +25,18 @@ export class WebDataUnavailable extends DataUnavailable {}
 // The shape of the manifest and of the report indexes is generated from the Python contract (`src/local_data/contract.py`, issue #328)
 export type { FileEntry, ReportEntry, ReportIndex, ReportIndexEntry, RowsEntry, Wrap, WebDataManifest } from './contract.generated'
 
-let base: string = (import.meta.env.VITE_DATA_BASE as string | undefined) || DEFAULT_BASE
-let manifestLoad: Promise<WebDataManifest> | null = null
+// The generic part (base, manifest, fetch and unlocking) is shared with the other publication, `talent-data` (#878): `./sealedClient.ts`.
+const web = createSealedClient<WebDataManifest>({ base: (import.meta.env.VITE_DATA_BASE as string | undefined) || DEFAULT_BASE, schema: SCHEMA, unavailable: WebDataUnavailable })
 const indexes = new Map<string, Promise<ReportIndex>>()
+web.onReset(() => indexes.clear())
 
 /** Where the publication is (tests, or a host other than the default). */
-export function setDataBase(url: string): void {
-  base = url.endsWith('/') ? url : `${url}/`
-  resetWebData()
-}
+export const setDataBase = web.setBase
 
 /** Forget what was loaded (tests, or a manifest that was replaced). */
-export function resetWebData(): void {
-  manifestLoad = null
-  indexes.clear()
-}
+export const resetWebData = web.reset
 
-class Gone extends Error {}                                      // 404: the file of a publication that has been replaced
-
-async function fetchText(file: string): Promise<string> {
-  let res: Response
-  try {
-    res = await fetch(base + file)
-  } catch {
-    throw new WebDataUnavailable('No se pudo conectar con los datos publicados.')
-  }
-  if (res.status === 404) throw new Gone(file)
-  if (!res.ok) throw new WebDataUnavailable(`Los datos publicados no responden (HTTP ${res.status}).`)
-  return res.text()
-}
-
-async function fetchJson<T>(file: string): Promise<T> {
-  try {
-    return JSON.parse(await fetchText(file)) as T
-  } catch (error) {
-    if (error instanceof Gone) throw new WebDataUnavailable('Los datos publicados no están disponibles.')
-    if (error instanceof WebDataUnavailable) throw error
-    throw new WebDataUnavailable('Los datos publicados están dañados.')
-  }
-}
-
-function loadManifest(): Promise<WebDataManifest> {
-  if (!manifestLoad) {
-    manifestLoad = fetchJson<WebDataManifest>('index.json').then(manifest => {
-      if (manifest?.schema !== SCHEMA) throw new WebDataUnavailable(`Versión de los datos publicados no soportada (${manifest?.schema}). Actualiza la página.`)
-      return manifest
-    })
-    manifestLoad.catch(() => { manifestLoad = null })           // a failed load is not remembered
-  }
-  return manifestLoad
-}
+const { fetchText, fetchJson, loadManifest, openSealed } = web
 
 function loadIndex(entry: ReportIndexEntry): Promise<ReportIndex> {
   let load = indexes.get(entry.file)
@@ -102,7 +63,7 @@ export async function loadReportTeams(collection: string): Promise<Array<{ id: s
 }
 
 /** A sealed file of the publication with the manifest it came from, the wraps of its key and its text. */
-interface Sealed { manifest: WebDataManifest; wraps: Wrap[]; text: string }
+type Sealed = SealedOf<WebDataManifest>
 
 /** The sealed file of the first report of the competition that `find` accepts, with the manifest it came from. */
 async function sealedFile(collection: string, find: (entry: ReportEntry) => boolean): Promise<Sealed> {
@@ -129,34 +90,6 @@ async function sealedSection(section: SectionName, collection: string, missing: 
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
   return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
-}
-
-/**
- * Opens a sealed file of the publication with the open key and the rights of the reader. A file that is gone (the publication moved on while the
- * page was open) makes it read the manifest again, once.
- * @throws ScopedAccessError the reader has no key that opens it (ask for an invitation)
- * @throws WebDataUnavailable it cannot be had from the publication (use the API)
- */
-async function openSealed<T>(locate: () => Promise<Sealed>, what: string): Promise<T> {
-  let sealed
-  try {
-    sealed = await locate()
-  } catch (error) {
-    if (!(error instanceof Gone)) throw error
-    resetWebData()
-    try {
-      sealed = await locate()
-    } catch (again) {
-      throw again instanceof Gone ? new WebDataUnavailable('Los datos publicados han cambiado: recarga la página.') : again
-    }
-  }
-  try {
-    return JSON.parse(await decryptScoped(sealed.text, sealed.wraps, scopeKeys(sealed.manifest, loadRights()))) as T
-  } catch (error) {
-    if (error instanceof ScopedAccessError) throw error
-    if (error instanceof PackageDecryptError || error instanceof SyntaxError) throw new WebDataUnavailable(`${what} publicado está dañado.`)
-    throw error
-  }
 }
 
 /** The section file of a competition (`shots/`, `lineups/`, `calendar/`…), opened with the open key and the rights of the reader; `missing` is what a competition without it is told. */

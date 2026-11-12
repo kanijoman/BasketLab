@@ -17,16 +17,19 @@ export interface WebDataHost {
   override: Record<string, string | null>
 }
 
-/** Installs the host as `fetch` and returns what it was asked and the overrides (empty: the publication as the exporter wrote it). */
-export function serveWebData(): WebDataHost {
+/** Installs a static host over `dir` as `fetch` (the files of a REAL publication of an exporter) and returns what it was asked and the overrides. */
+export function serveDirectory(dir: string, hostBase: string): WebDataHost {
   const host: WebDataHost = { requested: [], override: {} }
   globalThis.fetch = vi.fn(async (input: string | URL | Request) => {
-    const file = String(input).replace(WEB_BASE, '')
+    const file = String(input).replace(hostBase, '')
     host.requested.push(file)
-    const body = file in host.override ? host.override[file] : readPublished(file)
+    const body = file in host.override ? host.override[file] : readFileSync(join(dir, file), 'utf-8')
     return body === null
       ? { ok: false, status: 404, text: async () => '', json: async () => ({}) }
       : { ok: true, status: 200, text: async () => body, json: async () => JSON.parse(body) }
   }) as unknown as typeof fetch
   return host
 }
+
+/** The host of `web-data` for tests (empty overrides: the publication as the exporter wrote it). */
+export const serveWebData = (): WebDataHost => serveDirectory(WEB_DATA_DIR, WEB_BASE)
