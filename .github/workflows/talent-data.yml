@@ -6,13 +6,13 @@ name: Talent data
 # not change keeps its bytes (sealing is random; a file never changes in place); the branch is rewritten with a single commit and only when something changed.
 #
 # Source of the games: the private archive (secret ARCHIVE_DEPLOY_KEY, restored into an ephemeral Mongo like `web-data.yml`); it does NOT scrape or save it. Source of the rosters (birth date,
-# height, position): the private repository `basketlab-archive-ext`, folder `rosters/` (secret ARCHIVE_EXT_DEPLOY_KEY, read only here; the roster sweep, #905, is its only writer). While that
-# repository is empty the rows are published without bio. Runs after each archive refresh or purge (even a red one; a cancelled one does not), when the code that shapes the files is merged to
+# height, position): the private repository `basketlab-archive-ext`, folder `rosters/` (secret ARCHIVE_EXT_DEPLOY_KEY, read only here; the roster sweep `talent-rosters.yml`, #905, is its only writer). While that
+# repository is empty the rows are published without bio. Runs after each archive refresh or purge and after each roster sweep (even a red one; a cancelled one does not), when the code that shapes the files is merged to
 # main and by hand. Needs PACKAGE_MASTER_KEY (or PACKAGE_PASSWORD, >= 8 characters). See docs/OPERATIONS.md.
 
 on:
   workflow_run:
-    workflows: ["Archive refresh", "Archive purge"]
+    workflows: ["Archive refresh", "Archive purge", "Talent rosters"]
     types: [completed]
     branches: [main]
   push:

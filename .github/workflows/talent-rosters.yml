@@ -1,0 +1,100 @@
+name: Talent rosters
+
+# The daily roster sweep (epic #872, A5 #905): asks the FEB for the roster of the teams of the archive (birth date, height, position, nationality, formation, full name) and leaves the result in
+# the folder `rosters/` of the private repository `basketlab-archive-ext` (`run_roster_sweep.py`, `src/market/roster_run.py`). The current season is swept whole every day (signings and
+# departures), the closed seasons once, at most `budget` teams of them per run: a first load of several seasons is thousands of requests, so it finishes over several days without anyone asking
+# twice for anything. It is the ONLY writer of `rosters/` (a second writer on the same folder would race), writes ordinary commits (the history says who was in which roster and when) and only when
+# a file changed. It reads the games from the archive (secret ARCHIVE_DEPLOY_KEY, read only: `archive-refresh.yml` is the only writer of that one) and writes with ARCHIVE_EXT_DEPLOY_KEY.
+# `Talent data` runs after it, so the new bio reaches the rows. See docs/OPERATIONS.md.
+
+on:
+  schedule:
+    - cron: "0 7 * * *"           # after the first refresh of the archive of the day (05:30 UTC, a few minutes): the sweep reads the team ids of the games it has
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Only these seasons (comma separated, the year they start in, e.g. '2025,2024'); empty: all"
+        required: false
+        default: ""
+      budget:
+        description: "Closed-season teams to sweep in this run (the current season is always swept whole)"
+        required: false
+        default: "1500"
+  pull_request:
+    paths:
+      - "run_roster_sweep.py"
+      - "src/market/roster_*.py"
+      - ".github/workflows/talent-rosters.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: talent-rosters
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Sweep the rosters
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate the entry points (pull requests)
+        if: github.event_name == 'pull_request'
+        run: python -c "import run_roster_sweep; from src.market.roster_run import sweep_into, teams_by_season; print('ok')"
+      - name: Restore the archive
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+      - name: Download the rosters
+        if: github.event_name != 'pull_request'
+        env:
+          ARCHIVE_EXT_DEPLOY_KEY: ${{ secrets.ARCHIVE_EXT_DEPLOY_KEY }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$ARCHIVE_EXT_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/ext_key || { echo "::error::ARCHIVE_EXT_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+          chmod 600 ~/.ssh/ext_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
+          git clone -q "git@github.com:${OWNER}/basketlab-archive-ext.git" archive-ext || { echo "::error::basketlab-archive-ext cannot be cloned"; exit 1; }
+          mkdir -p archive-ext/rosters
+      - name: Sweep the rosters
+        if: github.event_name != 'pull_request'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+          SEASONS: ${{ inputs.seasons }}
+          BUDGET: ${{ inputs.budget || '1500' }}
+        run: python run_roster_sweep.py --out archive-ext/rosters --budget "$BUDGET" ${SEASONS:+--seasons "$SEASONS"}
+      - name: Save the rosters
+        # also after a sweep that did not answer for every team: what did answer is saved and the rest is asked again tomorrow; nothing changed means no commit
+        if: ${{ !cancelled() && github.event_name != 'pull_request' && hashFiles('archive-ext/rosters/*.json') != '' }}
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          cd archive-ext
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rosters
+          if git diff --cached --quiet; then
+            echo "Nothing changed: the rosters stay as they are"
+            exit 0
+          fi
+          git commit -q -m "Rosters $(date -u +%Y-%m-%dT%H:%MZ)"
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
+          git push -q origin HEAD
