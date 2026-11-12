@@ -141,3 +141,12 @@ def test_no_collections_is_an_empty_but_valid_manifest(connection, tmp_path):
     manifest = _publish(connection, tmp_path, names=[])
     validate_talent_manifest(manifest)
     assert manifest["competitions"] == [] and not [k for k in _tree(tmp_path) if k.startswith("players/")]
+
+
+def test_the_branch_carries_the_guard_that_keeps_vercel_from_building_it_regression(connection, tmp_path):
+    """Bug found after the first run (#906): Vercel builds every branch of the repo, and ``talent-data`` has no ``frontend`` folder, so both projects (Analytics and Talent) raised
+    "The specified Root Directory frontend does not exist". ``web-data`` has always carried ``frontend/vercel.json`` (the folder exists and the deployments are off); this branch must too."""
+    _publish(connection, tmp_path, names=[LF2])
+    assert json.loads((tmp_path / "frontend" / "vercel.json").read_text(encoding="utf-8")) == {"git": {"deploymentEnabled": False}}
+    _publish(connection, tmp_path, names=[])                                       # an empty publication keeps it too: the branch is never without it
+    assert (tmp_path / "frontend" / "vercel.json").is_file()
