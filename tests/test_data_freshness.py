@@ -86,3 +86,13 @@ class TestCheck:
     def test_fbcyl_is_not_supported(self):
         r = _svc(_db([])).check("FBCYL_1A_2026")
         assert r["up_to_date"] is None and "FEB" in r["warning"]
+
+
+class TestMissingSince:
+    def test_the_missing_matches_say_when_the_calendar_dates_them(self):
+        """#902: the refresh forgives a match without data only after a week, so the check hands over the date of each missing one (None when the calendar has none)."""
+        db = _db(RESULT_CODES[:-1])
+        r = _svc(db).check("LF_CHALLENGE_2026")
+        missing = RESULT_CODES[-1]
+        assert r["missing_codes"] == [missing]
+        assert r["missing_since"] == {missing: next(m.start for m in CAL if m.code == missing)}
