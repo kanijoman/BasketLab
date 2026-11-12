@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional
 
+from src.live_core.clock import GAME_SECONDS
+from src.live_core.four_factors import FT_POSSESSION_COST
 from src.live_core.profiles import ROLE_DIMS, league_distribution, raw_rates, shrink_rates, z_scores
 
 MIN_POPULATION_SECONDS = 300
@@ -30,10 +32,11 @@ def _per40(row: Dict[str, Any], seconds: float) -> Optional[Dict[str, float]]:
     if raw is None:
         return None
     fga = row["p2a"] + row["p3a"]
-    scale = 2400 / seconds
+    scale = GAME_SECONDS / seconds
     out = {_RATES[k]: v for k, v in raw.items()}
     out["pts"] = (2 * row["p2m"] + 3 * row["p3m"] + row["p1m"]) * scale
-    out["ts"] = row["pts"] / (2 * (fga + 0.44 * row["p1a"])) if fga + 0.44 * row["p1a"] else 0.0
+    plays = fga + FT_POSSESSION_COST * row["p1a"]
+    out["ts"] = row["pts"] / (2 * plays) if plays else 0.0
     return out
 
 
