@@ -2,7 +2,7 @@
 
 ``python run_refresh.py`` scrapes every active competition of the catalogue ``config/competitions.json``
 (incremental: only matches that are finished and not stored yet), then compares each collection with FEB's
-calendar. Exit code 1 when a competition failed or still lacks played matches, 2 when the connection
+calendar. Exit code 1 when a competition failed or still lacks played matches (a match that FEB has answered "no data" for more than a week is information, not a problem: #902), 2 when the connection
 string is missing. Runs on a schedule in ``.github/workflows/archive-refresh.yml`` over the archive restored into an ephemeral Mongo.
 """
 
@@ -13,6 +13,7 @@ import json
 import os
 import sys
 from dataclasses import dataclass, field, fields, replace
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -159,7 +160,24 @@ def _fill_derived(db: Any, collection: str) -> None:
         pass
 
 
-def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]]) -> Dict[str, Any]:
+NO_DATA_AFTER = timedelta(days=7)
+_NO_DATA = "No data for match "
+
+
+def forgive_no_data(fresh: Dict[str, Any], job: Dict[str, Any], now: datetime) -> Dict[str, Any]:
+    """#902: FEB lists matches that have no boxscore for ever (youth championships: not played, no report) and the run stayed red on every refresh, hiding real failures. A missing
+    match goes to ``no_data_codes`` when this scrape asked FEB for it and got "no data" AND the calendar dates it more than ``NO_DATA_AFTER`` ago (the boxscore of yesterday's match
+    may just not be up yet). Anything else, an undated match or one missing for another reason (a network error, never asked), stays missing. It is asked again on every run."""
+    asked = {e[len(_NO_DATA):] for e in job["errors"] if e.startswith(_NO_DATA)}
+    since = fresh.get("missing_since") or {}
+    quiet = [c for c in fresh.get("missing_codes") or [] if c in asked and since.get(c) and now - datetime.fromisoformat(since[c]) > NO_DATA_AFTER]
+    if not quiet:
+        return fresh
+    missing = [c for c in fresh["missing_codes"] if c not in quiet]
+    return {**fresh, "missing_codes": missing, "no_data_codes": quiet, "up_to_date": not missing}
+
+
+def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]], now: Callable[[], datetime]) -> Dict[str, Any]:
     from src.services.feb_match_ingest import scrape_feb_collection
 
     label = f"{entry.competition_label}/{entry.season_label}/{entry.group_label}"
@@ -169,7 +187,7 @@ def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Ca
         item.update(collection=job["collection"], job=job)
         _ensure_team_index(db, job["collection"])
         _fill_derived(db, job["collection"])
-        item["freshness"] = check(job["collection"])
+        item["freshness"] = forgive_no_data(check(job["collection"]), job, now())
     except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
         item["fatal"] = f"{type(exc).__name__}: {exc}"
     return item
@@ -191,10 +209,13 @@ def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any]) -> Dict
 
 
 def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = None,
-                freshness: Optional[Callable[[str], Dict[str, Any]]] = None, fbcyl_scraper: Optional[Any] = None) -> List[Dict[str, Any]]:
+                freshness: Optional[Callable[[str], Dict[str, Any]]] = None, fbcyl_scraper: Optional[Any] = None,
+                now: Optional[Callable[[], datetime]] = None) -> List[Dict[str, Any]]:
     from src.services.data_freshness_service import DataFreshnessService
+    from src.services.match_schedule_service import _madrid_now
 
     check = freshness or DataFreshnessService(db).check
+    now = now or _madrid_now
     report = []
     for entry in entries:
         if entry.league == "fbcyl":
@@ -206,7 +227,7 @@ def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = N
             report.append({"collection": f"{entry.competition_label}/{entry.season_label}", "fatal": f"{type(exc).__name__}: {exc}",
                            "job": None, "freshness": None})
             continue
-        report.extend(_refresh_one(db, e, scraper, check) for e in concrete)
+        report.extend(_refresh_one(db, e, scraper, check, now) for e in concrete)
     return report
 
 
@@ -238,6 +259,8 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
             out.append(f"- Aviso: {fresh['warning']}")
         else:
             out.append("- Al día con el calendario de FEB")
+        if fresh.get("no_data_codes"):
+            out.append(f"- Sin datos en FEB (más de {NO_DATA_AFTER.days} días; se vuelven a pedir en cada refresco): {', '.join(fresh['no_data_codes'])}")
         out.extend(f"  - {e}" for e in job["errors"][:10])
     return "\n".join(out)
 

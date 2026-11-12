@@ -4,12 +4,13 @@ Atlas fell behind the local copy because scraping was manual. The refresh job sc
 competitions incrementally (only new, finished matches) and then checks the result against the calendar.
 """
 import json
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
 from db_helpers import new_mock_db
 
-from src.services.competition_refresh import RefreshEntry, load_config, main, refresh_all, to_markdown
+from src.services.competition_refresh import RefreshEntry, load_config, main, needs_attention, refresh_all, to_markdown
 from src.services.feb_match_ingest import is_in_progress, scrape_feb_collection
 
 ENTRY = {"competition_url": "https://x/competicion.aspx?c=1", "season_value": "2026", "group_value": "7",
@@ -108,6 +109,67 @@ class TestRefreshAll:
         report = refresh_all(_db(), [RefreshEntry(**ENTRY)], scraper=_scraper([]), freshness=self._freshness(["9"]))
         text = to_markdown(report)
         assert "LF_CHALLENGE_LF_CHALLENGE_2026_A" in text and "9" in text and "faltan" in text.lower()
+
+
+class TestMatchWithoutData:
+    """#902: FEB lists some matches (youth championships: not played, no report) whose BoxScore answers 404 for ever. Seen in the first refresh of the history: 2 matches of
+    CE SSAA Cadete Fem. 2025/26 left every run red and hid real failures. After a week a match that FEB answers "no data" for is information, not a problem."""
+
+    NOW = datetime(2026, 11, 12, 13, 0)
+
+    def _run(self, since, scraper_codes=("9",), no_data=True):
+        scraper = _scraper(scraper_codes)
+        if no_data:
+            scraper.fetch_boxscore.side_effect = lambda code, session: None            # FEB answers 404: the scraper returns nothing
+        fresh = lambda collection: {"collection": collection, "up_to_date": False, "missing_codes": list(since), "missing_since": dict(since),
+                                    "games_in_db": 2, "calendar_results": 2 + len(since), "last_game": "2026-10-04T14:00", "warning": None}
+        return refresh_all(_db(), [RefreshEntry(**ENTRY)], scraper=scraper, freshness=fresh, now=lambda: self.NOW)
+
+    def test_a_match_without_data_for_more_than_a_week_does_not_turn_the_run_red(self):
+        report = self._run({"9": "2026-11-02T12:00"})
+        assert not needs_attention(report)
+        assert report[0]["freshness"]["up_to_date"] is True and report[0]["freshness"]["no_data_codes"] == ["9"]
+        text = to_markdown(report)
+        assert "Sin datos en FEB" in text and "9" in text and "Faltan" not in text
+
+    def test_a_recent_match_without_data_still_does(self):
+        """The boxscore of yesterday's match may simply not be up yet."""
+        report = self._run({"9": "2026-11-10T20:00"})
+        assert needs_attention(report) and report[0]["freshness"]["missing_codes"] == ["9"]
+        assert "Faltan 1 partidos jugados" in to_markdown(report)
+
+    def test_an_old_match_missing_for_another_reason_still_does(self):
+        """Without 'No data for match' in the scrape (a network error, a match that was never asked for) it is a real hole."""
+        report = self._run({"9": "2026-11-02T12:00"}, scraper_codes=(), no_data=False)
+        assert needs_attention(report) and report[0]["freshness"]["missing_codes"] == ["9"]
+
+    def test_with_one_old_and_one_recent_only_the_recent_one_is_missing(self):
+        report = self._run({"9": "2026-11-02T12:00", "10": "2026-11-11T20:00"}, scraper_codes=("9", "10"))
+        fresh = report[0]["freshness"]
+        assert (fresh["no_data_codes"], fresh["missing_codes"], fresh["up_to_date"]) == (["9"], ["10"], False)
+
+    def test_the_boundary_is_seven_days_and_a_match_without_a_date_is_never_forgiven(self):
+        exactly = self._run({"9": "2026-11-05T13:00"})                                  # exactly 7 days: not yet
+        older = self._run({"9": "2026-11-05T12:59"})
+        undated = self._run({"9": None})
+        assert needs_attention(exactly) and not needs_attention(older) and needs_attention(undated)
+
+    def test_it_is_asked_again_on_every_run_so_a_late_boxscore_still_arrives(self):
+        db = _db()
+        first = refresh_all(db, [RefreshEntry(**ENTRY)], scraper=self._none_scraper(), freshness=self._fresh({"9": "2026-11-02T12:00"}), now=lambda: self.NOW)
+        assert not needs_attention(first) and not db.stored.get("LF_CHALLENGE_LF_CHALLENGE_2026_A")
+        late = _scraper(["9"])                                                         # FEB posts it a week later
+        refresh_all(db, [RefreshEntry(**ENTRY)], scraper=late, freshness=self._fresh({}), now=lambda: self.NOW)
+        assert db.stored["LF_CHALLENGE_LF_CHALLENGE_2026_A"] == {9}
+
+    def _none_scraper(self):
+        scraper = _scraper(["9"])
+        scraper.fetch_boxscore.side_effect = lambda code, session: None
+        return scraper
+
+    def _fresh(self, since):
+        return lambda collection: {"collection": collection, "up_to_date": not since, "missing_codes": list(since), "missing_since": dict(since),
+                                   "games_in_db": 0, "calendar_results": len(since), "last_game": None, "warning": None}
 
 
 class TestConfigAndCli:
