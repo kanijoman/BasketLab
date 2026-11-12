@@ -7,6 +7,7 @@
  */
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Search } from 'lucide-react'
+import talentMark from '@design/brand/talent-mark.svg'
 import BrandLogo from '@/components/BrandLogo'
 import ThemeControl from '@/components/ThemeControl'
 import EmptyState from '@/components/ui/EmptyState'
@@ -30,7 +31,7 @@ export default function MarketApp() {
     <div className="flex h-full flex-col">
       <a href="#contenido" className="sr-only rounded-lg bg-surface px-3 py-2 text-sm font-medium text-ink shadow-panel focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50">Saltar al contenido</a>
       <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-2">
-        <BrandLogo product="Talent" />
+        <BrandLogo product="Talent" markSrc={talentMark} />
         <ThemeControl />
       </header>
       <main id="contenido" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto focus:outline-none">

@@ -71,6 +71,22 @@ const og = `
   </div>`
 fs.writeFileSync(pub('og-image.png'), await render(og, 1200, 630, false))
 
+// BasketLab Talent (#901): the same set in public/talent (market.html links it), from the sources talent-*.svg
+const talentDir = path.join(web, 'public', 'talent')
+fs.mkdirSync(talentDir, { recursive: true })
+const talentIcon = fs.readFileSync(path.join(brand, 'talent-icon.svg'), 'utf8')
+const talentMark = fs.readFileSync(path.join(brand, 'talent-mark.svg'), 'utf8')
+const tpub = (file) => path.join(talentDir, file)
+fs.copyFileSync(path.join(brand, 'talent-mark.svg'), tpub('favicon.svg'))
+fs.writeFileSync(tpub('favicon.ico'), ico(await Promise.all([16, 32, 48].map(async size => ({ size, data: await render(talentMark, size, size) })))))
+fs.writeFileSync(tpub('apple-touch-icon.png'), await render(talentIcon.replace('rx="22"', 'rx="0"'), 180, 180, false))
+fs.writeFileSync(tpub('icon-192.png'), await render(talentIcon, 192, 192))
+fs.writeFileSync(tpub('icon-512.png'), await render(talentIcon, 512, 512))
+const talentOg = og.replace(markSvg, talentMark)
+  .replace('<div class="name">Basket<b>Lab</b></div>', '<div class="name">Basket<b>Lab</b> Talent</div>')
+  .replace('Análisis de baloncesto · FEB y FBCYL<small>Equipos · Jugadoras · Posesiones · Informes</small>', 'Búsqueda y perfilado de jugadores<small>Cualquier edad · Cualquier competición · Encaje con tu plantilla</small>')
+fs.writeFileSync(tpub('og-image.png'), await render(talentOg, 1200, 630, false))
+
 await browser.close()
 fs.rmSync(pub('logo.png'), { force: true })                      // the old 512 px PNG of the header
-console.log('make-brand: favicon.svg/.ico, apple-touch-icon, icon-192/512 and og-image written to public/')
+console.log('make-brand: favicon.svg/.ico, apple-touch-icon, icon-192/512 and og-image written to public/ and public/talent/')

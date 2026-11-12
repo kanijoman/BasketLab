@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="BasketLab Talent">
+  <!-- the ball of the suite (same as the web's and the live app's) -->
+  <circle cx="50" cy="50" r="38" fill="#E8651A"/>
+  <circle cx="50" cy="50" r="38" fill="none" stroke="#111111" stroke-width="3"/>
+  <path d="M 12 50 L 88 50" fill="none" stroke="#111111" stroke-width="3"/>
+  <path d="M 20.9 25.6 Q 34 50 20.9 74.4" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 50 12 L 50 88" fill="none" stroke="#111111" stroke-width="3"/>
+  <path d="M 79.1 25.6 Q 66 50 79.1 74.4" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round"/>
+  <!-- the magnifying glass: the lens over the lower right of the ball and its handle, in the double stroke of the suite (navy under white) so it reads on the orange and on a light page -->
+  <path data-part="handle" d="M 76 74 L 92 90" fill="none" stroke="#1A2744" stroke-width="12" stroke-linecap="round"/>
+  <path data-part="handle" d="M 76 74 L 92 90" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <circle data-part="lens" cx="62" cy="60" r="17" fill="#FFFFFF" fill-opacity="0.18" stroke="#1A2744" stroke-width="12"/>
+  <circle data-part="lens" cx="62" cy="60" r="17" fill="none" stroke="#FFFFFF" stroke-width="6.5"/>
+</svg>

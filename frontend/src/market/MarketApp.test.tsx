@@ -22,4 +22,12 @@ describe('BasketLab Talent (shell, #877)', () => {
     expect(screen.getByRole('main')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Saltar al contenido/i })).toHaveAttribute('href', '#contenido')
   })
+
+  it('shows the mark of Talent (ball and lens) in the header, not the trend mark of Analytics (#901)', () => {
+    const { container } = at('/')
+    const src = container.querySelector('header img')?.getAttribute('src') ?? ''
+    const svg = src.startsWith('data:image/svg+xml;base64,') ? atob(src.split(',')[1]) : src         // Vite inlines small SVGs
+    expect(svg).toContain('data-part="lens"')
+    expect(svg).not.toContain('M 8 70 L 32 58 L 48 64 L 80 34')
+  })
 })
