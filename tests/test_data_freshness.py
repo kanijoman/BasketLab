@@ -96,3 +96,10 @@ class TestMissingSince:
         missing = RESULT_CODES[-1]
         assert r["missing_codes"] == [missing]
         assert r["missing_since"] == {missing: next(m.start for m in CAL if m.code == missing)}
+
+    def test_and_the_score_the_calendar_shows_for_each_of_them(self):
+        """#902: a missing match listed with 0-2 or 2-0 is a forfeit, and the refresh needs the score to know it."""
+        db = _db(RESULT_CODES[:-1])
+        r = _svc(db).check("LF_CHALLENGE_2026")
+        missing = RESULT_CODES[-1]
+        assert r["missing_score"] == {missing: next(m.score for m in CAL if m.code == missing)}
