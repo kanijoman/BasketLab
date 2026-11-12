@@ -28,7 +28,7 @@ class DataFreshnessService:
     @staticmethod
     def _result(collection: str, **fields: Any) -> Dict[str, Any]:
         base = {"collection": collection, "up_to_date": None, "games_in_db": 0, "calendar_results": 0,
-                "missing_codes": [], "missing_since": {}, "last_game": None, "calendar_url": None, "warning": None}
+                "missing_codes": [], "missing_since": {}, "missing_score": {}, "last_game": None, "calendar_url": None, "warning": None}
         return {**base, **fields}
 
     def check(self, collection: str) -> Dict[str, Any]:
@@ -49,6 +49,7 @@ class DataFreshnessService:
                                 warning=f"No se pudo leer el calendario de FEB: {exc}")
         played = [m.code for m in calendar if m.kind == "result"]
         missing = [c for c in played if c not in stored]
-        dated = {m.code: m.start or None for m in calendar if m.kind == "result"}              # #902: the refresh forgives a match without data only after a week
+        dated = {m.code: m.start or None for m in calendar if m.kind == "result"}              # #902: the refresh forgives a match without data only after a week...
+        scores = {m.code: m.score or None for m in calendar if m.kind == "result"}              # ...or at once when the score is a forfeit (0-2, 2-0)
         return self._result(collection, up_to_date=not missing, games_in_db=len(stored), calendar_results=len(played),
-                            missing_codes=missing, missing_since={c: dated.get(c) for c in missing}, last_game=last, calendar_url=url)
+                            missing_codes=missing, missing_since={c: dated.get(c) for c in missing}, missing_score={c: scores.get(c) for c in missing}, last_game=last, calendar_url=url)

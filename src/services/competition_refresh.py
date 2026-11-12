@@ -162,15 +162,19 @@ def _fill_derived(db: Any, collection: str) -> None:
 
 NO_DATA_AFTER = timedelta(days=7)
 _NO_DATA = "No data for match "
+_FORFEIT_SCORES = frozenset({"0-2", "2-0"})              # a basketball game cannot end like this: it is the default score of a forfeit, and nobody plays it, so no boxscore will ever exist
 
 
 def forgive_no_data(fresh: Dict[str, Any], job: Dict[str, Any], now: datetime) -> Dict[str, Any]:
     """#902: FEB lists matches that have no boxscore for ever (youth championships: not played, no report) and the run stayed red on every refresh, hiding real failures. A missing
-    match goes to ``no_data_codes`` when this scrape asked FEB for it and got "no data" AND the calendar dates it more than ``NO_DATA_AFTER`` ago (the boxscore of yesterday's match
-    may just not be up yet). Anything else, an undated match or one missing for another reason (a network error, never asked), stays missing. It is asked again on every run."""
+    match goes to ``no_data_codes`` when this scrape asked FEB for it and got "no data" AND either the calendar shows a FORFEIT score for it (0-2 or 2-0: found in the first scheduled refresh
+    after #902, where the two matches that kept the run red were forfeits with no date) or it dates the match more than ``NO_DATA_AFTER`` ago (the boxscore of yesterday's match may just
+    not be up yet). Anything else, an undated match with a real score or one missing for another reason (a network error, never asked), stays missing. It is asked again on every run."""
     asked = {e[len(_NO_DATA):] for e in job["errors"] if e.startswith(_NO_DATA)}
     since = fresh.get("missing_since") or {}
-    quiet = [c for c in fresh.get("missing_codes") or [] if c in asked and since.get(c) and now - datetime.fromisoformat(since[c]) > NO_DATA_AFTER]
+    score = fresh.get("missing_score") or {}
+    quiet = [c for c in fresh.get("missing_codes") or []
+             if c in asked and (score.get(c) in _FORFEIT_SCORES or (since.get(c) and now - datetime.fromisoformat(since[c]) > NO_DATA_AFTER))]
     if not quiet:
         return fresh
     missing = [c for c in fresh["missing_codes"] if c not in quiet]
@@ -260,7 +264,7 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
         else:
             out.append("- Al día con el calendario de FEB")
         if fresh.get("no_data_codes"):
-            out.append(f"- Sin datos en FEB (más de {NO_DATA_AFTER.days} días; se vuelven a pedir en cada refresco): {', '.join(fresh['no_data_codes'])}")
+            out.append(f"- Sin datos en FEB (incomparecencias o más de {NO_DATA_AFTER.days} días; se vuelven a pedir en cada refresco): {', '.join(fresh['no_data_codes'])}")
         out.extend(f"  - {e}" for e in job["errors"][:10])
     return "\n".join(out)
 

@@ -117,11 +117,11 @@ class TestMatchWithoutData:
 
     NOW = datetime(2026, 11, 12, 13, 0)
 
-    def _run(self, since, scraper_codes=("9",), no_data=True):
+    def _run(self, since, scraper_codes=("9",), no_data=True, scores=None):
         scraper = _scraper(scraper_codes)
         if no_data:
             scraper.fetch_boxscore.side_effect = lambda code, session: None            # FEB answers 404: the scraper returns nothing
-        fresh = lambda collection: {"collection": collection, "up_to_date": False, "missing_codes": list(since), "missing_since": dict(since),
+        fresh = lambda collection: {"collection": collection, "up_to_date": False, "missing_codes": list(since), "missing_since": dict(since), "missing_score": dict(scores or {}),
                                     "games_in_db": 2, "calendar_results": 2 + len(since), "last_game": "2026-10-04T14:00", "warning": None}
         return refresh_all(_db(), [RefreshEntry(**ENTRY)], scraper=scraper, freshness=fresh, now=lambda: self.NOW)
 
@@ -153,6 +153,22 @@ class TestMatchWithoutData:
         older = self._run({"9": "2026-11-05T12:59"})
         undated = self._run({"9": None})
         assert needs_attention(exactly) and not needs_attention(older) and needs_attention(undated)
+
+    def test_a_forfeit_without_data_is_forgiven_at_once_even_without_a_date_regression(self):
+        """Bug found in the first scheduled refresh after #902 (12/11/2026): the two matches of CE SSAA Cadete Fem. 2025/26 that kept the run red are FORFEITS: the calendar lists them
+        with the result 0-2 and no date, so the week rule never applied to them. A basketball game cannot end 0-2 or 2-0: that score is the default one, and no boxscore will ever exist."""
+        report = self._run({"9": None}, scores={"9": "0-2"})
+        assert not needs_attention(report) and report[0]["freshness"]["no_data_codes"] == ["9"]
+        assert not needs_attention(self._run({"9": None}, scores={"9": "2-0"}))
+
+    def test_a_real_score_without_data_is_not_a_forfeit_and_waits_for_the_week(self):
+        recent = self._run({"9": "2026-11-11T20:00"}, scores={"9": "71-64"})
+        assert needs_attention(recent)
+        assert not needs_attention(self._run({"9": "2026-11-02T12:00"}, scores={"9": "71-64"}))
+
+    def test_a_forfeit_the_scrape_did_not_ask_for_is_still_a_hole(self):
+        """Only what FEB answered "no data" for is forgiven: a 0-2 missing for another reason (a network error) must stay red."""
+        assert needs_attention(self._run({"9": None}, scores={"9": "0-2"}, scraper_codes=(), no_data=False))
 
     def test_it_is_asked_again_on_every_run_so_a_late_boxscore_still_arrives(self):
         db = _db()

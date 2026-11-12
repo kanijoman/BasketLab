@@ -4,6 +4,8 @@ A competition's file holds ONE ROW PER PLAYER, TEAM AND COMPETITION (``season_ro
 ``talent`` scope (and the open one while the beta is open, as in ``web-data``) with the same sealing as the rest of the web (``team_reports.seal_file``): the name carries the hash of the content,
 so it never changes in place, and an unchanged competition keeps its bytes (sealing is random, rewriting it would invalidate every cache). ``index.json`` is the only file that keeps its name.
 
+The branch carries ``frontend/vercel.json`` (the same guard as ``web-data``): the Vercel projects of the repository build every branch and this one has no project, so the folder exists and its deployments are off.
+
 It is published in its own branch by its own workflow (``talent-data.yml``): two writers on the branch of ``web-data`` would race, and a failure of this one must not stop that one.
 What costs here is the export of every collection; the output is deterministic, so a run with no new game rewrites nothing. A cache of the export per competition (as ``build_cache`` does for
 ``web-data``) is the next step if the run gets long.
@@ -14,6 +16,7 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence
 
+from src.live_prep.publisher import VERCEL_GUARD
 from src.local_data.export import export_collection
 from src.local_data.team_reports import seal_file
 from src.market.advanced import add_advanced, team_context
@@ -110,6 +113,7 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
         if on_competition:
             on_competition(competition, len(rows), len(members))
     manifest = {"schema": TALENT_SCHEMA, "kind": "talent", "v": sealer.index_version, **sealer.index_extra(), "competitions": entries}
+    _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))      # Vercel builds every branch: this one is data, not a project (#906 regression)
     _write_if_changed(out_dir / INDEX, (json.dumps(manifest, ensure_ascii=False, separators=(",", ":"), default=str) + "\n").encode("utf-8"))
     referenced = {e["file"] for e in entries}
     for path in (out_dir / SUBDIR).glob("*.json"):
