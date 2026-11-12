@@ -251,7 +251,7 @@ class TestCompetitionWithPhases:
         assert names == []   # every competition is complete now (#724): its phases come from COLLECTION_META, which needs the database
 
     def test_the_copa_is_in_the_repository_config_as_one_competition(self):
-        copa = [e for e in load_config("config/competitions.json") if "nm=copaespaa" in e.competition_url]
+        copa = [e for e in load_config("config/competitions.json") if "nm=copaespaa" in e.competition_url and e.season_value == "2026"]      # the older editions of the history (#876) are other entries
         assert len(copa) == 1 and copa[0].groups == "all" and (copa[0].season_value, copa[0].year) == ("2026", "2026")
 
 

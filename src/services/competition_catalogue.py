@@ -128,13 +128,13 @@ def fbcyl_groups(catalogue: List[Dict[str, Any]]) -> Dict[str, str]:
 
 
 def package_catalog(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """The ``competitions`` the packages match by name (level, gender, clubs, rules): one per competition, the active entry if there is one, else the latest. Pausing keeps it."""
+    """The ``competitions`` the packages match by name (level, gender, clubs, rules): one per competition: the entry with packages, then the active one, then the latest. Pausing keeps it."""
     from src.live_prep.competition_info import normalize_catalog
 
     chosen: Dict[str, Dict[str, Any]] = {}
     for entry in (e for e in catalogue if e["league"] == "feb"):          # FBCYL has no packages
         key = _norm(entry["competition"])
-        if key not in chosen or entry["active"] or not chosen[key]["active"]:
+        if key not in chosen or (entry["packages"], entry["active"]) >= (chosen[key]["packages"], chosen[key]["active"]):    # packages first: a past season listed later must not take the clubs and rules of the current one (#876)
             chosen[key] = entry
     return normalize_catalog(chosen.values())
 
