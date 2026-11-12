@@ -15,6 +15,7 @@ import time
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
+from src.market.competitions import competitions_of
 from src.market.roster_store import merge_season, read_swept
 from src.market.roster_sweep import DELAY_S, sweep_rosters
 
@@ -60,3 +61,19 @@ def sweep_into(folder: Any, teams_by_season: Mapping[str, Iterable[str]], get: O
         if merge_season(folder, season, [r for r in rows if r["season"] == season], swept=answered):
             changed.append(season)
     return {"planned": len(plan), "swept": len(plan) - len(missing), "left": len(full) - len(plan), "missing": sorted(missing), "changed": changed}
+
+
+def teams_by_season(connection: Any, names: Iterable[str], catalogue: Iterable[Mapping[str, Any]]) -> Dict[str, List[str]]:
+    """``{season: [team id]}`` of the FEB games of ``names``, sorted. The season is the one ``competitions_of`` gives (the same key the Talent rows use to join the roster); FBCYL has no roster
+    page and a collection that says nothing is left out. Only the ids are read, in Mongo: a game weighs about 1 MB in memory."""
+    names = list(names)
+    metas = {d["_id"]: d for d in connection.get_collection("COLLECTION_META").find({"_id": {"$in": names}})}
+    found, _unknown = competitions_of(names, metas, list(catalogue))
+    out: Dict[str, Set[str]] = defaultdict(set)
+    for competition, members in found.items():
+        if competition.league != "feb":
+            continue
+        for member in members:
+            pipeline = [{"$unwind": "$BOXSCORE.TEAM"}, {"$group": {"_id": "$BOXSCORE.TEAM.id"}}]
+            out[competition.season].update(str(d["_id"]) for d in connection.get_collection(member.collection).aggregate(pipeline) if d["_id"])
+    return {season: sorted(teams) for season, teams in sorted(out.items()) if teams}

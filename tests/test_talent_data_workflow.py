@@ -51,9 +51,9 @@ def test_the_build_reads_the_ephemeral_mongo_and_the_roster_folder_and_has_the_m
     assert WORKFLOW["jobs"]["publish"]["services"]["mongo"]["image"].startswith("mongo:")
 
 
-def test_it_runs_after_every_refresh_and_purge_and_when_the_code_that_shapes_the_files_is_merged():
+def test_it_runs_after_every_refresh_purge_and_roster_sweep_and_when_the_code_that_shapes_the_files_is_merged():
     triggers = _triggers()
-    assert triggers["workflow_run"]["workflows"] == ["Archive refresh", "Archive purge"] and triggers["workflow_run"]["types"] == ["completed"]
+    assert triggers["workflow_run"]["workflows"] == ["Archive refresh", "Archive purge", "Talent rosters"] and triggers["workflow_run"]["types"] == ["completed"]
     assert "workflow_dispatch" in triggers and triggers["push"]["branches"] == ["main"]
     assert "!src/api/**" in triggers["push"]["paths"] and "src/**" in triggers["push"]["paths"] and "run_talent_data.py" in triggers["push"]["paths"]
     assert not [p for p in triggers["push"]["paths"] if p.startswith(("frontend", "docs", "apps", "tests"))]

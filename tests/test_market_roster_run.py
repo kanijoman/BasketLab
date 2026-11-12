@@ -9,7 +9,12 @@ from pathlib import Path
 
 import pytest
 
-from src.market.roster_run import plan_sweep, sweep_into
+import sys
+
+import mongomock
+import pymongo
+
+from src.market.roster_run import plan_sweep, sweep_into, teams_by_season
 from src.market.roster_store import read_rosters, read_swept, write_season
 
 PAGE = gzip.open(Path(__file__).resolve().parent / "fixtures" / "feb_team_page_1008631.html.gz", "rb").read()
@@ -100,3 +105,35 @@ class TestSweepInto:
 
     def test_no_teams_no_files(self, tmp_path):
         assert sweep_into(tmp_path, {}, get=_get(), sleep=lambda s: None, delay=0)["swept"] == 0 and not list(tmp_path.glob("*.json"))
+
+
+class TestTeamsBySeason:
+    """The teams of each season come from the games of the archive, under the SAME season key the Talent rows use (``competitions_of``): a roster stored under another key would never join."""
+
+    @pytest.fixture()
+    def connection(self, monkeypatch):
+        sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
+        import fbcyl_games
+        import games
+
+        monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
+        from src.api import deps
+
+        deps._create_handler.cache_clear()
+        handler = deps._create_handler()
+        db = handler.connection.client["BASKETBALL"]
+        for name, season in (("LF_ENDESA_2025_2026_Liga_Regular_Único", "2025"), ("LF_ENDESA_2024_2025_Liga_Regular_Único", "2024")):
+            db[name].insert_many(games.build_games())
+            db["COLLECTION_META"].insert_one({"_id": name, "league": "FEB", "competition_label": "LF ENDESA", "season_value": season, "season_label": f"{season}/{int(season) + 1}", "group_label": "x"})
+        db["FBCYL_1ª_FASE-GRUPO_A-1_2026_"].insert_many(fbcyl_games.build_games())
+        yield handler.connection
+        deps._create_handler.cache_clear()
+
+    def test_every_team_of_every_season_and_none_of_fbcyl_which_has_no_roster_page(self, connection):
+        names = ["LF_ENDESA_2025_2026_Liga_Regular_Único", "LF_ENDESA_2024_2025_Liga_Regular_Único", "FBCYL_1ª_FASE-GRUPO_A-1_2026_"]
+        assert teams_by_season(connection, names, []) == {"2024": ["101", "102", "103", "104"], "2025": ["101", "102", "103", "104"]}
+
+    def test_a_collection_that_says_nothing_or_has_no_games_adds_no_season(self, connection):
+        connection.client["BASKETBALL"]["archive"].insert_one({"_id": 1})
+        connection.client["BASKETBALL"]["EMPTY_FEB_2025_2026_Liga_Regular_A"].insert_one({"_id": 1, "HEADER": {}})
+        assert teams_by_season(connection, ["archive", "EMPTY_FEB_2025_2026_Liga_Regular_A"], []) == {}
