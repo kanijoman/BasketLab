@@ -1,0 +1,111 @@
+name: Talent data
+
+# Publishes what BasketLab Talent reads (epic #872, B2 #878) to the `talent-data` branch, served through raw.githubusercontent.com (CORS open, no credentials): one sealed file per
+# competition and season with a row per player, team and competition, plus the manifest `index.json` (`run_talent_data.py`, `src/market/publish.py`). It is its OWN workflow and its OWN branch:
+# two writers on the branch of `web-data` would race, and a failure here must not stop the data of Analytics (nor the other way round). Starts from the previous publication so that what did
+# not change keeps its bytes (sealing is random; a file never changes in place); the branch is rewritten with a single commit and only when something changed.
+#
+# Source of the games: the private archive (secret ARCHIVE_DEPLOY_KEY, restored into an ephemeral Mongo like `web-data.yml`); it does NOT scrape or save it. Source of the rosters (birth date,
+# height, position): the private repository `basketlab-archive-ext`, folder `rosters/` (secret ARCHIVE_EXT_DEPLOY_KEY, read only here; the roster sweep, #905, is its only writer). While that
+# repository is empty the rows are published without bio. Runs after each archive refresh or purge (even a red one; a cancelled one does not), when the code that shapes the files is merged to
+# main and by hand. Needs PACKAGE_MASTER_KEY (or PACKAGE_PASSWORD, >= 8 characters). See docs/OPERATIONS.md.
+
+on:
+  workflow_run:
+    workflows: ["Archive refresh", "Archive purge"]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "!src/api/**"
+      - "run_talent_data.py"
+      - "config/competitions.json"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "run_talent_data.py"
+      - "src/market/**"
+      - "config/competitions.json"
+      - ".github/workflows/talent-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: talent-data
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish the talent data
+    # a red archive refresh (missing matches) must not block the data; a cancelled one does
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate the entry points (pull requests)
+        if: github.event_name == 'pull_request'
+        run: python -c "import run_talent_data; from src.market.publish import publish_talent_data; from src.market.roster_store import read_rosters; print('ok')"
+      - name: Restore the archive
+        id: restore
+        if: github.event_name != 'pull_request'
+        uses: ./.github/actions/restore-archive
+        with:
+          deploy-key: ${{ secrets.ARCHIVE_DEPLOY_KEY }}
+      - name: Download the rosters
+        if: github.event_name != 'pull_request'
+        env:
+          ARCHIVE_EXT_DEPLOY_KEY: ${{ secrets.ARCHIVE_EXT_DEPLOY_KEY }}
+          OWNER: ${{ github.repository_owner }}
+        # while basketlab-archive-ext has no rosters yet (the sweep, #905) there is nothing to download: the rows are published without bio and the run stays green
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$ARCHIVE_EXT_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/ext_key || { echo "::error::ARCHIVE_EXT_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+          chmod 600 ~/.ssh/ext_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
+          git clone -q --depth 1 "git@github.com:${OWNER}/basketlab-archive-ext.git" archive-ext || { echo "::error::basketlab-archive-ext cannot be cloned"; exit 1; }
+          mkdir -p archive-ext/rosters
+      - name: Start from the previous publication
+        if: github.event_name != 'pull_request'
+        run: |
+          git clone -q --depth 1 --branch talent-data "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" talent-out || mkdir talent-out
+      - name: Build the artifacts
+        id: build
+        if: github.event_name != 'pull_request'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+          PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY || secrets.PACKAGE_PASSWORD }}
+        run: python run_talent_data.py --out talent-out --rosters archive-ext/rosters
+      - name: Publish to the talent-data branch
+        # only when the build succeeded: after a red build the folder holds the files of the competitions it had finished and a push would leave them orphan in the branch
+        if: ${{ steps.build.conclusion == 'success' && github.event_name != 'pull_request' && hashFiles('talent-out/index.json') != '' }}
+        run: |
+          cd talent-out
+          [ -d .git ] || git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git rev-parse -q --verify HEAD >/dev/null && git diff --cached --quiet; then
+            echo "Nothing changed: the branch stays as it is"
+            exit 0
+          fi
+          git checkout -q --orphan publish
+          git commit -q -m "Talent data $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" publish:talent-data
