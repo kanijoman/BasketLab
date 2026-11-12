@@ -12,6 +12,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
 COUNTS = ("pts", "p1m", "p1a", "p2m", "p2a", "p3m", "p3a", "assist", "ro", "rd", "rt", "st", "to", "bs", "pf", "rf", "val", "pllss")
 FBCYL_SECONDS_PER_MINUTE = 60
+BIO = ("birth", "height", "position", "nationality", "formacion", "dorsal")
 
 
 def _number(value: Any) -> float:
@@ -52,4 +53,22 @@ def season_player_rows(parts: Iterable[Tuple[str, Mapping[str, Any]]]) -> List[D
         out.append({"person_id": person, "name": min(e["names"].items(), key=lambda kv: (-kv[1], kv[0]))[0], "team_id": team,
                     "team_name": min(e["teams"].items(), key=lambda kv: (-kv[1], kv[0]))[0], "league": e["league"], "groups": sorted(e["groups"]),
                     "games": e["games"], "minutes": _whole(e["minutes"]), **{c: _whole(e[c]) for c in COUNTS}})
+    return out
+
+
+def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str) -> List[Dict[str, Any]]:
+    """The rows with ``full_name`` and the bio of the FEB roster (``roster_sweep``): birth date, height, position, nationality, formacion and shirt number.
+
+    The key is the person, the season and the team: the roster of the team of the row wins (position and shirt number belong to it). A team of a transfer that has no roster of its own takes
+    the person's data from another team of the same season; what nobody says is None, never a guess (FBCYL has no roster)."""
+    own: Dict[Tuple[str, str], Mapping[str, Any]] = {}
+    person: Dict[str, Mapping[str, Any]] = {}
+    for r in sorted((r for r in roster if str(r.get("season")) == str(season)), key=lambda r: (r["person_id"], str(r["team_id"]))):
+        own.setdefault((r["person_id"], str(r["team_id"])), r)
+        person.setdefault(r["person_id"], r)
+    out = []
+    for row in rows:
+        mine = own.get((row["person_id"], str(row["team_id"])))
+        anyone = mine or person.get(row["person_id"])
+        out.append({**row, "full_name": (anyone or {}).get("name"), **{f: (anyone or {}).get(f) for f in BIO}})
     return out

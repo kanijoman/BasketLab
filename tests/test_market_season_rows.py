@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from local_vectors import fbcyl_games  # noqa: E402
 from local_vectors.games import build_games  # noqa: E402
 from src.local_data.export import export_collection  # noqa: E402
-from src.market.season_rows import season_player_rows  # noqa: E402
+from src.market.season_rows import attach_bio, season_player_rows  # noqa: E402
 
 COUNTS = ("pts", "p1m", "p1a", "p2m", "p2a", "p3m", "p3a", "assist", "ro", "rd", "rt", "st", "to", "bs", "pf", "rf", "val", "pllss")
 
@@ -120,3 +120,41 @@ def test_the_name_is_the_most_used_one_and_the_order_of_the_rows_does_not_matter
 def test_no_payloads_no_rows_and_the_same_run_twice_is_identical(feb):
     assert season_player_rows([]) == [] and season_player_rows([("g", {"league": "feb", "collection": "X", "player_rows": [], "team_rows": []})]) == []
     assert season_player_rows([("g", feb)]) == season_player_rows([("g", feb)])
+
+
+def _row(person, team, league="feb"):
+    return {"person_id": person, "team_id": team, "league": league, "name": "A. B C"}
+
+
+def _roster(person, team, season="2025", **over):
+    return {"person_id": person, "season": season, "team_id": team, "name": "ANA BEATRIZ CASTRO", "birth": "2004-05-06", "height": 178, "position": "Base",
+            "nationality": "ESPAÑA", "formacion": True, "dorsal": 7, **over}
+
+
+class TestBio:
+    """The date of birth, height and position come from the roster of FEB (A2): the key is the person, the season and the team."""
+
+    def test_the_roster_of_the_same_season_and_team_gives_the_bio(self):
+        (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10")], "2025")
+        assert (row["birth"], row["height"], row["position"], row["nationality"], row["formacion"], row["full_name"]) == ("2004-05-06", 178, "Base", "ESPAÑA", True, "ANA BEATRIZ CASTRO")
+
+    def test_only_the_roster_of_that_season_counts(self):
+        (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10", season="2024", height=170)], "2025")
+        assert row["birth"] is None and row["height"] is None and row["full_name"] is None
+
+    def test_a_team_without_roster_takes_the_person_data_of_the_other_team_and_a_team_with_one_keeps_its_own(self):
+        rows = attach_bio([_row("feb:1", "10"), _row("feb:1", "11")], [_roster("feb:1", "10", position="Escolta")], "2025")
+        assert [(r["team_id"], r["birth"], r["position"]) for r in rows] == [("10", "2004-05-06", "Escolta"), ("11", "2004-05-06", "Escolta")]
+        own = attach_bio([_row("feb:1", "11")], [_roster("feb:1", "10", position="Escolta"), _roster("feb:1", "11", position="Alero")], "2025")
+        assert own[0]["position"] == "Alero"
+
+    def test_fbcyl_and_players_without_roster_keep_their_row_with_nothing_known(self):
+        rows = attach_bio([_row("fbcyl:u1", "7", "fbcyl"), _row("feb:2", "10")], [_roster("feb:1", "10")], "2025")
+        assert [r["person_id"] for r in rows] == ["fbcyl:u1", "feb:2"]
+        assert all(r[f] is None for r in rows for f in ("birth", "height", "position", "nationality", "formacion", "dorsal", "full_name"))
+
+    def test_the_inputs_are_not_changed_and_the_result_is_the_same_in_any_order(self):
+        base, roster = [_row("feb:1", "10"), _row("feb:2", "10")], [_roster("feb:1", "10"), _roster("feb:2", "10", birth="2005-01-01")]
+        before = [dict(r) for r in base]
+        first = attach_bio(base, roster, "2025")
+        assert base == before and first == attach_bio(list(reversed(base)), list(reversed(roster)), "2025")[::-1]
