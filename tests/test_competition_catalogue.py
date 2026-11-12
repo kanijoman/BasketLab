@@ -104,6 +104,25 @@ class TestFbcyl:
         assert record_calendars(catalogue) == ["a"]
 
 
+class TestPackagesFlag:
+    """``packages: false`` (#875): a competition the staff does not play (the youth championships of Mercado) is scraped and published to the web, never given live packages."""
+
+    def test_it_is_scraped_and_known_by_the_web_but_gets_no_packages(self, tmp_path):
+        youth = _entry(competition="C ESP CLUBES JR FEM", gender="F", level=None, packages=False)
+        catalogue = load_catalogue(_write(tmp_path, _entry(), youth))
+        assert [e.competition_label for e in refresh_entries(catalogue)] == ["PRIMERA FEB", "C ESP CLUBES JR FEM"]
+        assert [e.competition_label for e in package_entries(catalogue)] == ["PRIMERA FEB"]
+        assert {c["competition"]: c["gender"] for c in package_catalog(catalogue)} == {"PRIMERA FEB": "M", "C ESP CLUBES JR FEM": "F"}   # the gender of the manifest still comes from here
+
+    def test_it_is_never_recorded_even_with_calendars(self, tmp_path):
+        catalogue = load_catalogue(_write(tmp_path, _entry(competition="C ESP CLUBES JR FEM", packages=False, record=["x"])))
+        assert record_calendars(catalogue) == []
+
+    def test_it_must_be_true_or_false(self, tmp_path):
+        with pytest.raises(ValueError, match="packages"):
+            load_catalogue(_write(tmp_path, _entry(packages="no")))
+
+
 class TestViews:
     def test_the_refresh_takes_the_active_entries_with_what_the_scraper_needs(self, tmp_path):
         path = _write(tmp_path, _entry(), _entry(competition="LF ENDESA", competition_url=URL.replace("primerafeb", "lfendesa"), active=False))
@@ -150,11 +169,23 @@ class TestTheRealCatalogue:
 
     def test_it_loads_with_the_feb_competitions_complete_and_the_fbcyl_groups_to_scrape(self):
         catalogue = load_catalogue(ROOT / DEFAULT_CATALOGUE)
-        feb = [e for e in catalogue if e["league"] == "feb"]
-        assert len(feb) == 8 and all(e["active"] for e in catalogue)
+        feb = [e for e in catalogue if e["league"] == "feb" and e.get("packages", True)]
+        assert len(feb) == 8 and all(e["active"] for e in catalogue if e.get("packages", True))
         assert all(e["groups"] == "all" for e in feb)                             # every competition complete, 3a FEB included (the archive has no 512 MB limit)
         assert all(e["recheck_days"] == 3 for e in feb)                           # the refresh of web-data looks again at the last days
         assert all("packages_groups" not in e or e["packages_groups"] == [] for e in feb)     # and the packages of every group of 3a FEB too (decided 03/11/2026)
+
+    def test_the_youth_championships_of_mercado_are_six_per_season_for_both_genders_and_have_no_packages(self):
+        youth = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True)]
+        assert {e["competition"] for e in youth} == {"C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas."}
+        assert {e["season_value"] for e in youth} == {"2020", "2021", "2022", "2023", "2024", "2025"}       # 2019/20 had no championship
+        assert len(youth) == 36 and all(e["groups"] == "all" and e["record"] == [] for e in youth)
+        assert {e["gender"] for e in youth if "Fem" in e["competition"] or "FEM" in e["competition"]} == {"F"}
+        assert {e["gender"] for e in youth if "Mas" in e["competition"] or "MASC" in e["competition"]} == {"M"}
+
+    def test_the_old_youth_seasons_are_loaded_in_batches_so_the_refresh_of_feb_keeps_its_time(self):
+        youth = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True)]
+        assert {e["season_value"] for e in youth if e["active"]} == {"2024", "2025"}
 
     def test_the_fbcyl_groups_are_primera_nacional_femenina_a_1_and_a_2(self):
         fbcyl = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "fbcyl"]

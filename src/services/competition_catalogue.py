@@ -5,6 +5,9 @@ know of it (``level``, ``gender``, ``clubs``, ``rule_config``, ``group_rules``, 
 calendars the live recorder follows (``record``). Before it these lived in four files that drifted apart (the old refresh config, ``local_refresh.json``, the ``competitions``
 of ``package_publish.json`` and the ``calendars`` of ``feb_watchlist.json``).
 
+``packages: false`` (#875) marks a competition the staff does not play, like the youth championships of Mercado: it is scraped and goes to the web, but gets no live packages and is never recorded; its
+gender and level still come from here (``package_catalog``), because the manifest reads them.
+
 ``active: false`` pauses an entry: it is neither scraped, published nor recorded, and its data stays where it is. Removing an entry never deletes data either: that is the
 purge, a separate order that asks for confirmation. The metadata of the packages (level, gender, rules) survives a pause, because older seasons are still read.
 """
@@ -62,13 +65,16 @@ def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     active = raw.get("active", True)
     if not isinstance(active, bool):
         raise ValueError(f"{where}: active must be true or false, not {active!r}")
+    packages = raw.get("packages", True)
+    if not isinstance(packages, bool):
+        raise ValueError(f"{where}: packages must be true or false, not {packages!r}")
     days = raw.get("recheck_days", 0)
     if isinstance(days, bool) or not isinstance(days, int) or days < 0:
         raise ValueError(f"{where}: recheck_days must be a whole number of days, 0 or more, not {days!r}")
     for key in ("record", "packages_groups"):
         if not isinstance(raw.get(key, []), list) or any(not isinstance(v, str) for v in raw.get(key, [])):
             raise ValueError(f"{where}: {key} must be a list of texts")
-    return {**raw, "league": league, "groups": groups, "active": active, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
+    return {**raw, "league": league, "groups": groups, "active": active, "packages": packages, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
 
 
 def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
@@ -110,8 +116,8 @@ def refresh_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
 
 
 def package_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
-    """What the packages are made for: the active entries, narrowed to ``packages_groups`` (a competition scraped complete can publish only some of its groups)."""
-    return [_refresh_entry(e, list(e["packages_groups"])) for e in catalogue if e["active"] and e["league"] == "feb"]
+    """What the packages are made for: the active entries, narrowed to ``packages_groups`` (a competition scraped complete can publish only some of its groups). ``packages: false`` leaves one out (#875)."""
+    return [_refresh_entry(e, list(e["packages_groups"])) for e in catalogue if e["active"] and e["league"] == "feb" and e["packages"]]
 
 
 def fbcyl_groups(catalogue: List[Dict[str, Any]]) -> Dict[str, str]:
@@ -135,4 +141,4 @@ def package_catalog(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def record_calendars(catalogue: List[Dict[str, Any]]) -> List[str]:
     """The calendars the live recorder scans: those of the active entries, in order, without repeats."""
-    return list(dict.fromkeys(url for e in catalogue if e["active"] and e["league"] == "feb" for url in e["record"]))
+    return list(dict.fromkeys(url for e in catalogue if e["active"] and e["league"] == "feb" and e["packages"] for url in e["record"]))
