@@ -119,6 +119,7 @@ pytest -q --no-cov tests/test_x.py   # backend: solo lo afectado; la suite compl
 cd frontend && npm run lint && npm run type-check && npm run test:run && npm run build
 cd frontend && npm run study:forecast  # evaluación walk-forward de la previa y la simulación (a mano, no en el CI) sobre python run_local_export.py; informe en frontend/test-results/
 python tests/live_vectors/generate.py  # regenerar vectores tras cambiar live_core (y, si cambia el paquete, los fixtures sellados: make_demo_bpkg.py y make_demo_scoped.py; correr la suite COMPLETA de la app después)
+python run_talent_data.py --out DIR [--rosters DIR]   # publicación de BasketLab Talent (rama talent-data); vectores: python tests/local_vectors/generate_talent_data.py
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
 PYTHONPATH=".;src" python -m src.live_prep.demo_builder --collection <col> --team <id>   # demo desde un partido terminado
 cd apps/live-android && npm ci && npm run test:run   # app live: tests con Pyodide real (e2e: npm run e2e)
