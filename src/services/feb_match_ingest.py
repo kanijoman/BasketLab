@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import gc
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
+from src.services.refresh_state import load_state, record_failure, record_success, save_state, should_ask
 from src.utils.time_utils import utc_now_naive
 
 FEB_STATUS_FINISHED = "3"
@@ -80,10 +81,12 @@ def _recheck(job: Dict[str, Any], db: Any, scraper: Any, session: Any, collectio
 
 
 def store_feb_match(job: Dict[str, Any], db: Any, scraper: Any, session: Any, collection_name: str, code: str,
-                    recheck_since: Optional[datetime] = None) -> None:
+                    recheck_since: Optional[datetime] = None, state: Optional[Dict[str, Any]] = None, today: Optional[date] = None) -> None:
     """Fetch and store a single FEB match; update job counters. With ``recheck_since`` a stored game played since then is downloaded again and
-    replaced if it changed (late corrections of FEB, issue #646)."""
+    replaced if it changed (late corrections of FEB, issue #646). With ``state`` (the refresh state of the collection, #924) a match that keeps failing stops being asked: after
+    20 failures over a week it is «unavailable» (``job["unavailable"]``, not an error) and asked once a month."""
     job["current_match"] = code
+    today = today or utc_now_naive().date()
     try:
         if db.document_exists(collection_name, int(code)):
             if recheck_since is None:
@@ -91,16 +94,25 @@ def store_feb_match(job: Dict[str, Any], db: Any, scraper: Any, session: Any, co
             else:
                 _recheck(job, db, scraper, session, collection_name, code, recheck_since)
             return
+        if state is not None and not should_ask(state, code, today):
+            job.setdefault("unavailable", []).append(code)
+            return
         doc = scraper.fetch_boxscore(code, session)
         if doc and is_in_progress(doc):
             # Storing a partial game would block the final one (document_exists).
             job["skipped"] += 1
         elif doc:
             db.insert_boxscore(collection_name, code, doc)
+            if state is not None:
+                record_success(state, code)
         else:
             job["errors"].append(f"No data for match {code}")
+            if state is not None:
+                record_failure(state, code, "No data", today)
     except Exception as exc:
         job["errors"].append(f"Match {code}: {exc}")
+        if state is not None:
+            record_failure(state, code, str(exc), today)
     finally:
         job["done"] += 1
 
@@ -116,7 +128,7 @@ def save_collection_meta(db: Any, collection_name: str, params: Any) -> None:
 
 
 def scrape_feb_collection(db: Any, params: Any, scraper: Optional[Any] = None,
-                          job: Optional[Dict[str, Any]] = None, now: Optional[datetime] = None) -> Dict[str, Any]:
+                          job: Optional[Dict[str, Any]] = None, now: Optional[datetime] = None, today: Optional[date] = None) -> Dict[str, Any]:
     """Download every match of the selection that is not stored yet; returns the (given) job dict. When ``params.recheck_days`` is set, the stored
     games played in the last days are downloaded again and replaced if FEB corrected them (``rechecked`` and ``corrected`` count them).
 
@@ -134,6 +146,7 @@ def scrape_feb_collection(db: Any, params: Any, scraper: Optional[Any] = None,
     job.setdefault("errors", [])
     job.setdefault("rechecked", 0)
     job.setdefault("corrected", 0)
+    job.setdefault("unavailable", [])
     collection_name = get_collection_name(params.competition_label, params.season_label, params.group_label)
     job["collection"] = collection_name
     save_collection_meta(db, collection_name, params)
@@ -146,10 +159,13 @@ def scrape_feb_collection(db: Any, params: Any, scraper: Optional[Any] = None,
     job["status"] = "running"
     days = getattr(params, "recheck_days", 0) or 0
     since = (now or utc_now_naive()) - timedelta(days=days) if days else None
+    state = load_state(db, collection_name)
+    today = today or (now or utc_now_naive()).date()
     for code in match_codes:
-        store_feb_match(job, db, scraper, session, collection_name, code, since)
+        store_feb_match(job, db, scraper, session, collection_name, code, since, state, today)
         if job["done"] % 10 == 0:
             gc.collect()
+    save_state(db, collection_name, state)
     job["status"] = "done"
     job["current_match"] = None
     return job

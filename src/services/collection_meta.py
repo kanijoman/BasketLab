@@ -19,4 +19,4 @@ def save_feb_meta(db: Any, collection_name: str, params: Any) -> None:
         "group_label": params.group_label,
         "saved_at": datetime.now(timezone.utc).isoformat(),
     }
-    db.repository.connection.get_collection(COLLECTION_META).replace_one({"_id": collection_name}, doc, upsert=True)
+    db.repository.connection.get_collection(COLLECTION_META).update_one({"_id": collection_name}, {"$set": doc}, upsert=True)      # $set, not replace: the document also holds the refresh state (#924)
