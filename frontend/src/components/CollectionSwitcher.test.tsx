@@ -26,11 +26,11 @@ afterEach(() => vi.restoreAllMocks())
 
 // Issue #191 (U4): change of competition from the header, staying on the same page.
 describe('CollectionSwitcher (issue #191)', () => {
-  it('shows the same selectors whatever the data: ámbito, temporada, competición and grupo, starting on the current competition (#761, #912)', async () => {
+  it('shows the same selectors whatever the data: ámbito, categoría, temporada, competición and grupo, starting on the current competition (#761, #912)', async () => {
     show('/LF2_2025_A/teams')
     const select = await screen.findByRole('combobox', { name: 'Grupo' })
     expect(select).toHaveValue('A')
-    expect(screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))).toEqual(['Ámbito', 'Temporada', 'Competición', 'Grupo'])      // one ámbito, one season, one competition: still selectors
+    expect(screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))).toEqual(['Ámbito', 'Categoría', 'Temporada', 'Competición', 'Grupo'])      // one ámbito, one season, one competition: still selectors
   })
 
   it('FBCYL shows the same selectors as FEB even with one season and one competition: the header does not change when you choose it (#912)', async () => {

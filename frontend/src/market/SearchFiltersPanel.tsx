@@ -7,6 +7,9 @@ import type { TalentCompetitionEntry } from './data'
 import { METRICS, mixNotice, NO_FILTERS, type Metric, type PositionGroup, type SearchFilters } from './search'
 import { AlertTriangle } from 'lucide-react'
 
+/** The categories of the competitions (#914), Sénior first: a competition the manifest does not give a category is senior (older publications). */
+const CATEGORY_GROUPS = [{ key: 'senior', label: 'Sénior' }, { key: 'formacion', label: 'Formación' }]
+
 const GROUP_LABELS: Record<PositionGroup, string> = { G: 'Bases y escoltas', F: 'Aleros y ala-pívots', C: 'Pívots' }
 
 const numberOrNull = (text: string): number | null => (text.trim() === '' || !Number.isFinite(Number(text)) ? null : Number(text))
@@ -74,13 +77,18 @@ export default function SearchFiltersPanel({ seasons, season, onSeason, competit
           {active && <Button variant="ghost" size="sm" onClick={() => onFilters(NO_FILTERS)}>Limpiar filtros</Button>}
         </div>
       </div>
-      <fieldset className="mt-4 space-y-1.5">
+      <fieldset className="mt-4 space-y-2">
         <legend className="text-xs font-medium text-ink-muted">Competiciones de la temporada</legend>
-        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-          {competitions.map(c => (
-            <Checkbox key={c.key} label={`${c.competition} (${c.players})`} checked={chosen.includes(c.key)} onChange={() => toggle(c.key)} />
-          ))}
-        </div>
+        {CATEGORY_GROUPS.filter(g => competitions.some(c => (c.category ?? 'senior') === g.key)).map(g => (
+          <div key={g.key} role="group" aria-label={g.label} className="space-y-1.5">
+            <p className="text-xs font-semibold text-ink">{g.label}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {competitions.filter(c => (c.category ?? 'senior') === g.key).map(c => (
+                <Checkbox key={c.key} label={`${c.competition_label ?? c.competition} (${c.players})`} checked={chosen.includes(c.key)} onChange={() => toggle(c.key)} />
+              ))}
+            </div>
+          </div>
+        ))}
       </fieldset>
       {notice && (
         <p role="note" className="mt-3 flex items-start gap-2 rounded-card border border-warn/40 bg-warn/10 px-3 py-2 text-xs text-ink">

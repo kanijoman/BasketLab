@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { CollectionInfo } from '@/api/client'
 import { collectionList } from '@/localdata/collections'
@@ -24,7 +26,7 @@ describe('pickCollection (issue #761)', () => {
 
   it('with nothing chosen it preselects the latest season, the first competition and the first group', () => {
     const p = pickCollection(LIST, {})
-    expect(p.selection).toEqual({ ambito: 'FEB', season: '2025/2026', competition: 'LF1', group: '' })
+    expect(p.selection).toEqual({ ambito: 'FEB', category: 'Sénior', season: '2025/2026', competition: 'LF1', group: '' })
     expect(p.seasons).toEqual(['2025/2026', '2024/2025'])
     expect(p.collection?.name).toBe('FEB_LF1_25')
   })
@@ -58,7 +60,7 @@ describe('pickCollection (issue #761)', () => {
   })
 
   it('selectionOf gives the levels of a collection, so the header starts on the current one', () => {
-    expect(selectionOf(LIST[1])).toEqual({ ambito: 'FEB', season: '2025/2026', competition: 'LF2', group: 'B' })
+    expect(selectionOf(LIST[1])).toEqual({ ambito: 'FEB', category: 'Sénior', season: '2025/2026', competition: 'LF2', group: 'B' })
     expect(pickCollection(LIST, selectionOf(LIST[1])).collection?.name).toBe('FEB_LF2_25_B')
   })
 })
@@ -130,14 +132,15 @@ describe('levels of the real competitions', () => {
   })
 })
 
-// Issue #908: the youth competitions of FEB (formation, #875/#900) with the names the data gives them, as the selector shows them. The collections are REAL names of the publication.
+// Issues #908 and #914: the youth competitions of FEB (formación) with the category, age group and name the REAL catalogue (`config/competitions.json`) gives them, as the selector shows them.
+// The collections are REAL names of the publication; what the manifest says of each (`category`, `age_group`, `competition_label`) is read from the catalogue the way `competition_categories` does.
 const FORMATION = [
   'CE_SSAA_Cadete_Fem_2024_2025_11º-12º_11º-12º', 'CE_SSAA_Cadete_Fem_2024_2025_15º-16º_15º-16º', 'CE_SSAA_Cadete_Fem_2024_2025_17º-18º_17º-18º', 'CE_SSAA_Cadete_Fem_2024_2025_3º-4º_3º-4º',
   'CE_SSAA_Cadete_Fem_2024_2025_7º-8º_7º-8º', 'CE_SSAA_Cadete_Fem_2024_2025_Fase_Grupos_A', 'CE_SSAA_Cadete_Fem_2024_2025_Fase_Grupos_B', 'CE_SSAA_Cadete_Fem_2024_2025_Fase_Grupos_C',
   'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_1-8_1_2_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_1-8_1_4_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_1-8_Final',
   'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_13-16_1_2_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_13-16_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_5-8_1_2_Final',
   'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_5-8_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_1_2_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_1_4_Final',
-  'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Puestos_17º-19º_17º-19º',
+  'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Puestos_17º-19º_17º-19º', 'CE_SSAA_Cadete_Fem_2025_2026_Fase_Grupos_A',
   'CE_SSAA_Cadete_Mas_2024_2025_PRIMERA_FASE_A', 'C_ESP_CLUBES_JR_FEM_2024_2025_PRIMERA_FASE_A', 'C_ESP_CLUBES_JR_FEM_2024_2025_3º-4º_3º-4º', 'C_ESP_CLUBES_CAD_MASC_2024_2025_PRIMERA_FASE_A',
   'C_ESP_CLUBES_CAD_FEM_2024_2025_PRIMERA_FASE_A', 'C_ESP_CLUBES_JR_MASC_2024_2025_PRIMERA_FASE_A',
   'LF_ENDESA_2024_2025_Liga_Regular_Único', 'LF_ENDESA_2024_2025_Play-Offs_1_2_Final', 'LF_ENDESA_2024_2025_Play-Offs_1_4_Final', 'LF_ENDESA_2024_2025_Play-Offs_Final',
@@ -145,32 +148,64 @@ const FORMATION = [
   'PRIMERA_FEB_2024_2025_Liga_Regular_Único', 'L_F_-2_2024_2025_Fase_Final_1_2_1_2_Final', 'L_F_-2_2024_2025_Fase_Final_1_4_GR_1', 'L_F_-2_2024_2025_Fase_Final_1_4_GR_2',
   'L_F_-2_2024_2025_Liga_Regular_A', 'LIGA_U_2025_2026_2ª_FASE_Grupo_A', 'LIGA_U_2025_2026_PLAY-OUT_2ºB-7ºA', 'LIGA_U_2025_2026_PLAY-OUT_6ºA-3ºB', 'LIGA_U_2025_2026_LIGA_REGULAR_GRUPO_A',
 ]
-const FORMATION_LIST = collectionList(FORMATION.map(collection => ({ collection, league: 'feb', games: 3 })))
-const groupsOf = (competition: string, season = '2024/2025') => pickCollection(FORMATION_LIST, { ambito: 'FEB', season, competition }).groups
+interface CatalogueEntry { league?: string; competition: string; category?: string; age_group?: string; label?: string }
+const CATALOGUE: CatalogueEntry[] = JSON.parse(readFileSync(join(__dirname, '../../../config/competitions.json'), 'utf8')).competitions
+const plain = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+
+/** What the manifest says of a collection: the facts of its competition in the catalogue (a name the catalogue does not know says nothing). */
+function published(collection: string) {
+  const competition = plain(collection.split('_').slice(0, collection.split('_').findIndex(p => /^\d{4}$/.test(p))).join('_'))
+  const entry = CATALOGUE.find(e => (e.league ?? 'feb') === 'feb' && plain(e.competition) === competition)
+  return { collection, league: 'feb' as const, games: 3, ...(entry ? { category: (entry.category ?? 'senior') as 'senior' | 'formacion', ...(entry.age_group ? { age_group: entry.age_group as 'U16' | 'U18' } : {}), ...(entry.label ? { competition_label: entry.label } : {}) } : {}) }
+}
+const FORMATION_LIST = collectionList(FORMATION.map(published))
 const MAS = 'Selecciones autonómicas · Cadete masculino'
 const FEM = 'Selecciones autonómicas · Cadete femenino'
+const YOUTH_NAMES = new Set(FORMATION_LIST.filter(c => c.category === 'formacion').map(c => c.competition_label))
+const groupsOf = (competition: string, season = '2024/2025') =>
+  pickCollection(FORMATION_LIST, { ambito: 'FEB', category: YOUTH_NAMES.has(competition) ? 'Formación' : 'Sénior', season, competition }).groups
 
-describe('the youth competitions in the selector (issue #908)', () => {
-  it('the codes FEB gives the formation championships have a name people read', () => {
-    const names = pickCollection(FORMATION_LIST, { ambito: 'FEB', season: '2024/2025' }).competitions
-    expect(names).toEqual(expect.arrayContaining([FEM, MAS, 'Campeonato de España de clubes · Cadete femenino', 'Campeonato de España de clubes · Cadete masculino',
-      'Campeonato de España de clubes · Júnior femenino', 'Campeonato de España de clubes · Júnior masculino']))
-    expect(names.some(n => /C ESP CLUBES|CE SSAA/.test(n))).toBe(false)
+describe('the category of a competition in the selector (issue #914)', () => {
+  it('the levels are ámbito, categoría, temporada, competición and grupo, and the category is Sénior or Formación, Sénior first', () => {
+    const p = pickCollection(FORMATION_LIST, { ambito: 'FEB' })
+    expect(p.categories).toEqual(['Sénior', 'Formación'])
+    expect(p.selection).toMatchObject({ ambito: 'FEB', category: 'Sénior', season: '2025/2026' })
+    expect(levelsOf(FORMATION_LIST.find(c => c.name.startsWith('CE_SSAA_Cadete_Fem_2024'))!).category).toBe('Formación')
+    expect(levelsOf(FORMATION_LIST.find(c => c.name.startsWith('PRIMERA_FEB'))!).category).toBe('Sénior')
   })
 
-  it('the senior competitions come first and the formation ones after them, each alphabetically (not mixed with LF Endesa and Primera FEB)', () => {
-    expect(pickCollection(FORMATION_LIST, { ambito: 'FEB', season: '2024/2025' }).competitions).toEqual([
-      'L F -2', 'LF ENDESA', 'PRIMERA FEB',
-      'Campeonato de España de clubes · Cadete femenino', 'Campeonato de España de clubes · Cadete masculino', 'Campeonato de España de clubes · Júnior femenino',
-      'Campeonato de España de clubes · Júnior masculino', FEM, MAS,
-    ])
+  it('each category offers only its own seasons and competitions', () => {
+    const senior = pickCollection(FORMATION_LIST, { ambito: 'FEB', category: 'Sénior', season: '2024/2025' })
+    expect(senior.competitions).toEqual(['L F -2', 'LF ENDESA', 'PRIMERA FEB'])
+    const youth = pickCollection(FORMATION_LIST, { ambito: 'FEB', category: 'Formación', season: '2024/2025' })
+    expect(youth.competitions).toEqual(['Campeonato de España de clubes · Cadete femenino', 'Campeonato de España de clubes · Cadete masculino', 'Campeonato de España de clubes · Júnior femenino',
+      'Campeonato de España de clubes · Júnior masculino', FEM, MAS])
+    expect(pickCollection(FORMATION_LIST, { ambito: 'FEB', category: 'Formación' }).seasons).toEqual(['2025/2026', '2024/2025'])        // LIGA U (2025/2026) is senior: it adds nothing here
   })
 
-  it('a name that is not in the table stays as FEB writes it (never renamed by guessing)', () => {
+  it('a category that has nothing in the season chosen falls back to its default instead of an impossible combination', () => {
+    const p = pickCollection(FORMATION_LIST, { ambito: 'FEB', category: 'Formación', season: '2025/2026', competition: 'LF ENDESA' })
+    expect(p.selection.category).toBe('Formación')
+    expect(p.selection.competition).toBe(FEM)                                       // LF ENDESA is senior: the competition falls back
+    expect(p.collection).not.toBeNull()
+  })
+
+  it('the competition is named by the label of the catalogue and, without it, as FEB writes it (never renamed by guessing)', () => {
+    const names = FORMATION_LIST.filter(c => c.category === 'formacion').map(c => levelsOf(c).competition)
+    expect(names.every(n => /^(Campeonato de España de clubes|Selecciones autonómicas) · /.test(n))).toBe(true)
     const list = collectionList([{ collection: 'C_ESP_CLUBES_INF_FEM_2024_2025_PRIMERA_FASE_A', league: 'feb', games: 1 }])
     expect(levelsOf(list[0]).competition).toBe('C ESP CLUBES INF FEM')
+    expect(levelsOf(list[0]).category).toBe('Sénior')                              // without a category from the manifest it is senior (older publications)
   })
 
+  it('every collection is reachable from its own levels, the category included, and the order does not depend on how they come', () => {
+    for (const c of FORMATION_LIST) expect(pickCollection(FORMATION_LIST, selectionOf(c)).collection?.name).toBe(c.name)
+    const reversed = pickCollection([...FORMATION_LIST].reverse(), { ambito: 'FEB', category: 'Formación', season: '2024/2025', competition: FEM }).groups
+    expect(reversed).toEqual(groupsOf(FEM))
+  })
+})
+
+describe('the groups and the names of the youth competitions in the selector (issue #908)', () => {
   it('the group is not repeated when the phase and the group say the same: «3º-4º», not «3º-4º 3º-4º»', () => {
     expect(groupsOf(FEM)).toEqual(expect.arrayContaining(['3º-4º', '7º-8º', '11º-12º', 'Puestos 17º-19º']))
     expect(groupsOf(FEM).filter(g => /(\S+) \1/.test(g))).toEqual([])
@@ -194,11 +229,5 @@ describe('the youth competitions in the selector (issue #908)', () => {
 
   it('a second phase goes after the first and before the eliminations, and the play-outs after the finals', () => {
     expect(groupsOf('LIGA U', '2025/2026')).toEqual(['LIGA REGULAR GRUPO A', '2ª FASE Grupo A', 'PLAY-OUT 2ºB-7ºA', 'PLAY-OUT 6ºA-3ºB'])
-  })
-
-  it('the order does not depend on the order the collections come in, and every collection is still reachable from its own levels', () => {
-    const reversed = pickCollection([...FORMATION_LIST].reverse(), { ambito: 'FEB', season: '2024/2025', competition: FEM }).groups
-    expect(reversed).toEqual(groupsOf(FEM))
-    for (const c of FORMATION_LIST) expect(pickCollection(FORMATION_LIST, selectionOf(c)).collection?.name).toBe(c.name)
   })
 })

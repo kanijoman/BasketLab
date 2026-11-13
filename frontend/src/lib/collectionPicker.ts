@@ -1,15 +1,16 @@
 /**
- * Choosing a competition by levels (issue #761): ámbito (the league of the data: FEB, FBCYL, and whatever federation is added) → temporada (always the two years: 2026/2027; a name with a single year gives the year the season starts in) → competición
+ * Choosing a competition by levels (issue #761): ámbito (the league of the data: FEB, FBCYL, and whatever federation is added) → categoría (Sénior or Formación, from the catalogue, #914) → temporada (always the two years: 2026/2027; a name with a single year gives the year the season starts in) → competición
  * (its name: PRIMERA FEB, LF ENDESA…) → grupo (what tells the collections of a competition apart: the phase and the group, «Liga Regular A», «Play-offs 1/2 Final»).
  * Each level only offers what the previous ones allow; a choice that does not exist at the new level falls back to the default (the latest season, the first competition and group),
- * so the four levels always name one collection that exists. Pure: the home page and the header selector share it.
+ * so the five levels always name one collection that exists. Pure: the home page and the header selector share it.
  */
 import type { CollectionInfo } from '@/api/client'
 
-export interface Selection { ambito?: string; season?: string; competition?: string; group?: string }
+export interface Selection { ambito?: string; category?: string; season?: string; competition?: string; group?: string }
 
 export interface Picker {
   ambitos: string[]
+  categories: string[]
   seasons: string[]
   competitions: string[]
   groups: string[]
@@ -27,14 +28,6 @@ const ONLY_GROUP = /^[uú]nico$/i
  */
 const FBCYL_NAMES: Record<string, string> = { '1ª': '1ª División Femenina' }
 
-/** FEB writes its youth (formación) championships with a code: the name people read. A code that is not here stays as FEB writes it (never renamed by guessing). */
-const FORMATION_NAMES: Record<string, string> = {
-  'C ESP CLUBES CAD FEM': 'Campeonato de España de clubes · Cadete femenino', 'C ESP CLUBES CAD MASC': 'Campeonato de España de clubes · Cadete masculino',
-  'C ESP CLUBES JR FEM': 'Campeonato de España de clubes · Júnior femenino', 'C ESP CLUBES JR MASC': 'Campeonato de España de clubes · Júnior masculino',
-  'CE SSAA Cadete Fem': 'Selecciones autonómicas · Cadete femenino', 'CE SSAA Cadete Mas': 'Selecciones autonómicas · Cadete masculino',
-}
-const FORMATION = new Set(Object.values(FORMATION_NAMES))
-
 const words = (text: string) => text.split(/[_\s]+/).filter(Boolean)
 /** «1 2» is a round of the draw, 1/2 (only a numerator of 1: «1-8 1 2 Final» is the places 1-8, semifinal). */
 const fractions = (text: string) => text.replace(/\b1\s(2|4|8|16|32)\b/g, '1/$1')
@@ -51,10 +44,14 @@ function withoutRepeats(text: string): string {
 
 const competitionName = (c: CollectionInfo): string => {
   const name = words(c.competition ?? '').join(' ')
-  return c.league === 'FBCYL' ? FBCYL_NAMES[name] ?? name : FORMATION_NAMES[name] ?? name
+  return c.competition_label ?? (c.league === 'FBCYL' ? FBCYL_NAMES[name] ?? name : name)
 }
 
-/** The four levels of a collection as the selectors show them, read from what the name gives (`localdata/collections.parseComponents`): the years of its season, the name of its competition and the rest (phase and group). */
+/** The categories, Sénior first: a collection the manifest says nothing of is senior (older publications and the API do not have the field). */
+const CATEGORIES = ['Sénior', 'Formación']
+const categoryOf = (c: CollectionInfo) => (c.category === 'formacion' ? 'Formación' : 'Sénior')
+
+/** The five levels of a collection as the selectors show them, read from what the name gives (`localdata/collections.parseComponents`): the years of its season, the name of its competition and the rest (phase and group). */
 export function levelsOf(c: CollectionInfo): Required<Selection> {
   const tokens = words(c.season ?? '')
   const years = [...new Set(tokens.filter(t => YEAR.test(t)))].sort()
@@ -62,6 +59,7 @@ export function levelsOf(c: CollectionInfo): Required<Selection> {
   const group = c.group && !ONLY_GROUP.test(c.group) ? c.group : ''
   return {
     ambito: c.league,
+    category: categoryOf(c),
     season: years.length === 1 ? `${years[0]}/${Number(years[0]) + 1}` : years.join('/'),
     competition: competitionName(c),
     group: withoutRepeats([phase, group].filter(Boolean).join(' ')),
@@ -102,9 +100,6 @@ const byGroup = (a: string, b: string): number => {
   return x[0] - y[0] || x[1] - y[1] || collate(x[2], y[2]) || x[3] - y[3] || collate(x[4], y[4])
 }
 
-/** The senior competitions first and the formation ones after them, each in alphabetical order. */
-const byCompetition = (a: string, b: string): number => Number(FORMATION.has(a)) - Number(FORMATION.has(b)) || a.localeCompare(b)
-
 const FIRST = ['FEB', 'FBCYL']
 
 const unique = (values: string[]) => [...new Set(values)]
@@ -122,16 +117,19 @@ export function pickCollection(list: CollectionInfo[], wanted: Selection): Picke
   const ambitos = unique(all.map(x => x.l.ambito)).sort(byAmbito)
   const ambito = resolve(ambitos, wanted.ambito)
   const inAmbito = all.filter(x => x.l.ambito === ambito)
-  const seasons = unique(inAmbito.map(x => x.l.season)).sort((a, b) => b.localeCompare(a))
+  const categories = unique(inAmbito.map(x => x.l.category)).sort((a, b) => CATEGORIES.indexOf(a) - CATEGORIES.indexOf(b))
+  const category = resolve(categories, wanted.category)
+  const inCategory = inAmbito.filter(x => x.l.category === category)
+  const seasons = unique(inCategory.map(x => x.l.season)).sort((a, b) => b.localeCompare(a))
   const season = resolve(seasons, wanted.season)
-  const inSeason = inAmbito.filter(x => x.l.season === season)
-  const competitions = unique(inSeason.map(x => x.l.competition)).sort(byCompetition)
+  const inSeason = inCategory.filter(x => x.l.season === season)
+  const competitions = unique(inSeason.map(x => x.l.competition)).sort((a, b) => a.localeCompare(b))
   const competition = resolve(competitions, wanted.competition)
   const inCompetition = inSeason.filter(x => x.l.competition === competition)
   const groups = unique(inCompetition.map(x => x.l.group)).sort(byGroup)
   const group = resolve(groups, wanted.group)
   const collection = inCompetition.find(x => x.l.group === group)?.c ?? null
-  return { ambitos, seasons, competitions, groups, selection: { ambito, season, competition, group }, collection }
+  return { ambitos, categories, seasons, competitions, groups, selection: { ambito, category, season, competition, group }, collection }
 }
 
 /** The levels of a collection (the header starts on the current one). */

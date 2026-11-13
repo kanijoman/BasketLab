@@ -24,6 +24,7 @@ from src.market.competitions import CompetitionSeason, competitions_of
 from src.market.contract import TALENT_SCHEMA
 from src.market.profile import add_profiles
 from src.market.season_rows import attach_bio, season_player_rows
+from src.services.competition_category import category_facts, category_of_competition
 
 INDEX = "index.json"
 SUBDIR = "players/"
@@ -37,13 +38,18 @@ def _norm(text: str) -> str:
     return normalize_name(text)
 
 
+def _category(facts: Mapping[str, Any]) -> Dict[str, Any]:
+    """``category``, ``age_group`` and ``competition_label`` (the name people read) when the catalogue says them (#914)."""
+    return {**{k: facts[k] for k in ("category", "age_group") if facts.get(k)}, **({"competition_label": facts["label"]} if facts.get("label") else {})}
+
+
 def _attributes(competition: CompetitionSeason, catalogue: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
     """Gender and level from the catalogue: the entry of the competition (FEB) or of its category and territory (FBCYL). What the catalogue does not say is left out, never guessed."""
     if competition.league == "fbcyl":
         key = competition.key.split("|")[1]
         entry = next((e for e in catalogue if e.get("league") == "fbcyl" and f"{e['fbcyl']['category']}-{e['fbcyl'].get('territory', '0')}" == key), None)
         gender = ((entry or {}).get("fbcyl") or {}).get("gender")
-        return {"gender": gender} if gender in ("F", "M") else {}
+        return {**({"gender": gender} if gender in ("F", "M") else {}), **_category(category_facts(entry) if entry else {})}
     from src.services.competition_catalogue import package_catalog
 
     chosen = next((c for c in package_catalog([dict(e, packages=e.get("packages", True)) for e in catalogue if e.get("league", "feb") == "feb"])
@@ -53,7 +59,7 @@ def _attributes(competition: CompetitionSeason, catalogue: Sequence[Mapping[str,
         out["gender"] = chosen["gender"]
     if isinstance(chosen.get("level"), int):
         out["level"] = chosen["level"]
-    return out
+    return {**out, **_category(category_of_competition(competition.competition, catalogue))}
 
 
 def _metas(connection: Any, names: Iterable[str]) -> Dict[str, Dict[str, Any]]:

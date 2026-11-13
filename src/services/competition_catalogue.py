@@ -2,7 +2,8 @@
 
 One entry per competition and season (FEB, or a FBCYL group: ``"league": "fbcyl"`` with the ``fbcyl`` object the scraper needs) says everything about it: what the refresh scrapes (``competition_url``, ``season_*``, ``groups``, ``recheck_days``), what the packages
 know of it (``level``, ``gender``, ``clubs``, ``rule_config``, ``group_rules``, and ``packages_groups``: the groups of the competition that get packages) and which
-calendars the live recorder follows (``record``). Before it these lived in four files that drifted apart (the old refresh config, ``local_refresh.json``, the ``competitions``
+calendars the live recorder follows (``record``). ``category`` (``formacion``; absent is senior), ``age_group`` (``U14``/``U16``/``U18``/``U20``) and ``label`` (the name people read) are
+the category of a youth competition (#914, ``competition_category``). Before it these lived in four files that drifted apart (the old refresh config, ``local_refresh.json``, the ``competitions``
 of ``package_publish.json`` and the ``calendars`` of ``feb_watchlist.json``).
 
 ``packages: false`` (#875) marks a competition the staff does not play, like the youth championships of Mercado: it is scraped and goes to the web, but gets no live packages and is never recorded; its
@@ -44,6 +45,8 @@ def _check_fbcyl(where: str, value: Any) -> None:
 
 def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     """One entry, validated: ``ValueError`` names its position and the field."""
+    from src.services.competition_category import check_category
+
     where = f"competitions entry #{position}"
     league = raw.get("league", "feb")
     if league not in LEAGUES:
@@ -74,7 +77,7 @@ def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     for key in ("record", "packages_groups"):
         if not isinstance(raw.get(key, []), list) or any(not isinstance(v, str) for v in raw.get(key, [])):
             raise ValueError(f"{where}: {key} must be a list of texts")
-    return {**raw, "league": league, "groups": groups, "active": active, "packages": packages, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
+    return {**raw, **check_category(where, raw), "league": league, "groups": groups, "active": active, "packages": packages, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
 
 
 def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:

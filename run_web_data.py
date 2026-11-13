@@ -31,6 +31,7 @@ def main(argv=None) -> int:
     from src.local_data.web_data import publish_web_data
     from src.local_data.scouting_export import fbcyl_interest_clubs, interest_clubs, scouting_collections
     from src.local_data.competition_gender import competition_genders
+    from src.services.competition_category import competition_categories
     from src.services.competition_catalogue import DEFAULT_CATALOGUE, fbcyl_groups, load_catalogue
     from src.services.derived_backfill import fbcyl_collection_names, feb_collection_names
 
@@ -50,7 +51,8 @@ def main(argv=None) -> int:
                                 on_collection=lambda name: print(f"{name}: {time.time() - started:.0f} s"),
                                 on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True),
                                 image_source=None if args.no_images else Source(),
-                                calendar_source=None if args.no_calendar else CalendarSource(), fbcyl_groups=fbcyl_groups(catalogue), genders=competition_genders(handler, names, catalogue))
+                                calendar_source=None if args.no_calendar else CalendarSource(), fbcyl_groups=fbcyl_groups(catalogue), genders=competition_genders(handler, names, catalogue),
+                                categories=competition_categories(names, catalogue))
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")
     return 0

@@ -37,7 +37,7 @@ function columns(many: boolean, metric: string): ColumnDef<SearchRow, unknown>[]
 }
 
 const withCompetition = (entry: TalentCompetitionEntry, rows: Awaited<ReturnType<typeof loadCompetitionRows>>['rows']): SearchRow[] =>
-  rows.map(r => ({ ...r, comp_key: entry.key, competition: entry.competition, season: entry.season, season_label: entry.season_label, gender: entry.gender, level: entry.level, age: ageOn1231(r.birth, entry.season) }))
+  rows.map(r => ({ ...r, comp_key: entry.key, competition: entry.competition_label ?? entry.competition, season: entry.season, season_label: entry.season_label, gender: entry.gender, level: entry.level, age: ageOn1231(r.birth, entry.season) }))
 
 export default function SearchPage() {
   const [params, setParams] = useSearchParams()
@@ -55,7 +55,7 @@ export default function SearchPage() {
     setParams(next, { replace: true })
   }
   const loaded = useQueries({ queries: chosen.map(key => ({ queryKey: ['talent-rows', key], queryFn: () => loadCompetitionRows(key) })) })
-  const failed = chosen.filter((_, i) => loaded[i]?.isError).map(k => ofSeason.find(e => e.key === k)?.competition ?? k)
+  const failed = chosen.filter((_, i) => loaded[i]?.isError).map(k => (ofSeason.find(e => e.key === k)?.competition_label ?? ofSeason.find(e => e.key === k)?.competition) ?? k)
   const loading = loaded.some(q => q.isLoading)
   const all = useMemo(() => loaded.flatMap((q, i) => (q.data ? withCompetition(ofSeason.find(e => e.key === chosen[i])!, q.data.rows) : [])),
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -28,6 +28,11 @@ export interface CollectionInfo {
   season: string
   group: string
   game_count: number
+  /** From the catalogue through the manifest (#914): `formacion` for the youth championships, absent (older publications, the API) is senior */
+  category?: 'senior' | 'formacion'
+  age_group?: 'U14' | 'U16' | 'U18' | 'U20'
+  /** The name people read, when the catalogue has one (the youth codes of FEB do not: `C ESP CLUBES JR FEM`) */
+  competition_label?: string
 }
 
 export const getCollectionList = () =>

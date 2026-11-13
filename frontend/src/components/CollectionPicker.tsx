@@ -1,5 +1,5 @@
 /**
- * The four selectors of a competition (issue #761): Ámbito → Temporada → Competición → Grupo, each filtered by the previous ones (`lib/collectionPicker`).
+ * The five selectors of a competition (issues #761, #914): Ámbito → Categoría (Sénior / Formación) → Temporada → Competición → Grupo, each filtered by the previous ones (`lib/collectionPicker`).
  * All four are shown, the group too when it is the only one (it names the phase: «Liga Regular») unless it has nothing to say (no phase, no group). The same levels in every mode and for every league, with one option or many (#912: FBCYL has one season and one competition and the header must not change when you choose it); `compact` (the header) only drops the labels and narrows the boxes. It reports the resolved selection and its collection.
  */
 import { Select } from '@/components/ui/Field'
@@ -17,6 +17,7 @@ export default function CollectionPicker({ list, value, onChange, compact = fals
   const picker = pickCollection(list, value)
   const levels: { key: keyof Selection; label: string; options: string[] }[] = [
     { key: 'ambito', label: 'Ámbito', options: picker.ambitos },
+    { key: 'category', label: 'Categoría', options: picker.categories },
     { key: 'season', label: 'Temporada', options: picker.seasons },
     { key: 'competition', label: 'Competición', options: picker.competitions },
     { key: 'group', label: 'Grupo', options: picker.groups },

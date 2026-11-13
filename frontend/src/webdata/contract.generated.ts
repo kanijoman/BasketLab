@@ -27,6 +27,9 @@ export interface RowsEntry {
   league: 'feb' | 'fbcyl'
   games: number
   wraps: Wrap[]
+  category?: 'senior' | 'formacion'
+  age_group?: 'U14' | 'U16' | 'U18' | 'U20'
+  competition_label?: string
   gender?: 'F' | 'M'
 }
 

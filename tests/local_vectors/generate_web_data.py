@@ -26,6 +26,7 @@ from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.local_data.calendar_export import CalendarSource  # noqa: E402
 from src.local_data.competition_gender import competition_genders  # noqa: E402
+from src.services.competition_category import competition_categories  # noqa: E402
 from src.local_data.images_export import Source  # noqa: E402
 from src.local_data.web_data import publish_web_data  # noqa: E402
 from src.scraper.calendar_parser import CalendarMatch  # noqa: E402
@@ -161,7 +162,8 @@ def main() -> None:
     manifest = publish_web_data(handler, OUT, ScopedSealer(SECRET, open_access=True), [FEB, FBCYL], scouting=[FEB],
                                 scouting_service=fixture_scouting_service, image_source=FixtureFeb(),
                                 calendar_source=FixtureCalendar(), fbcyl_groups={FBCYL: "7298"},
-                                genders=competition_genders(handler, [FEB, FBCYL], load_catalogue(DEFAULT_CATALOGUE)))
+                                genders=competition_genders(handler, [FEB, FBCYL], load_catalogue(DEFAULT_CATALOGUE)),
+                                categories=competition_categories([FEB, FBCYL], load_catalogue(DEFAULT_CATALOGUE)))
     print("wrote", OUT, sum(1 for p in OUT.rglob("*") if p.is_file()), "files,", len(manifest["rows"]), "competitions")
 
 
