@@ -1,7 +1,6 @@
 """The category of each competition (#914, epic #872): senior or formación, and for formación its age group, normalised once.
 
-The catalogue (``config/competitions.json``) says it with ``category`` (``"formacion"``; absent is senior), ``age_group`` (``U14`` infantil, ``U16`` cadete, ``U18`` júnior, ``U20`` with no
-Spanish equivalent: no match is forced) and ``label`` (the name people read, which the youth codes of FEB do not have: ``C ESP CLUBES JR FEM``). The browser's selector and Talent read them from
+The catalogue (``config/competitions.json``) says it with ``category`` (``"formacion"``; absent is senior), ``age_group`` (``U14`` infantil, ``U16`` cadete with U15, ``U18`` júnior with U17; U19 to U22 are senior and have none, #918) and ``label`` (the name people read, which the youth codes of FEB do not have: ``C ESP CLUBES JR FEM``). The browser's selector and Talent read them from
 the manifests, not from the name of the competition. Whatever a source writes that is not in the table has no age group: it is never guessed (``juvenil`` is not ``júnior``).
 """
 from __future__ import annotations
@@ -11,9 +10,13 @@ import unicodedata
 from typing import Any, Dict, Iterable, List, Optional
 
 CATEGORIES = ("senior", "formacion")
-AGE_GROUPS: Dict[str, Optional[str]] = {"U14": "Infantil", "U16": "Cadete", "U18": "Júnior", "U20": None}      # code -> its Spanish name (U20 has none)
-_ALIASES = {"u14": "U14", "sub14": "U14", "infantil": "U14", "inf": "U14", "u16": "U16", "sub16": "U16", "cadete": "U16", "cad": "U16",
-            "u18": "U18", "sub18": "U18", "junior": "U18", "jr": "U18", "u20": "U20", "sub20": "U20"}
+AGE_GROUPS: Dict[str, str] = {"U14": "Infantil", "U16": "Cadete", "U18": "Júnior"}      # canonical code -> its Spanish name
+# U15 is cadete and U17 júnior (#918): the code of the group is the upper one
+_ALIASES = {"u14": "U14", "sub14": "U14", "infantil": "U14", "inf": "U14",
+            "u15": "U16", "sub15": "U16", "u16": "U16", "sub16": "U16", "cadete": "U16", "cad": "U16",
+            "u17": "U18", "sub17": "U18", "u18": "U18", "sub18": "U18", "junior": "U18", "jr": "U18"}
+# U19 to U22 are players over 18: senior (#918), although they are still thought of as youth with no defined category; they have no age group
+_SENIOR_AGES = {f"{prefix}{age}" for age in range(19, 23) for prefix in ("u", "sub")}
 
 
 def _plain(text: str) -> str:
@@ -21,8 +24,15 @@ def _plain(text: str) -> str:
 
 
 def normalize_age_group(value: Any) -> Optional[str]:
-    """``U14``, ``U16``, ``U18`` or ``U20`` for every way the sources write them (``sub-16``, ``Cadete``, ``JR``, ``Júnior``…); ``None`` for anything else."""
+    """``U14``, ``U16`` or ``U18`` for every way the sources write them (``sub-16``, ``U15``, ``Cadete``, ``JR``, ``U17``, ``Júnior``…); ``None`` for anything else, U19-U22 included (those are senior, not a group)."""
     return _ALIASES.get(_plain(value)) if isinstance(value, str) else None
+
+
+def category_of_age(value: Any) -> Optional[str]:
+    """``formacion`` for U14 to U18 (infantil, cadete, júnior), ``senior`` for U19 to U22 (players over 18, though still thought of as youth) and ``None`` for anything else: not guessed."""
+    if normalize_age_group(value) is not None:
+        return "formacion"
+    return "senior" if isinstance(value, str) and _plain(value) in _SENIOR_AGES else None
 
 
 def check_category(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
@@ -38,7 +48,7 @@ def check_category(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
         return {}
     code = normalize_age_group(age)
     if code is None:
-        raise ValueError(f"{where}: a formacion entry needs an age_group of {tuple(AGE_GROUPS)} (or its Spanish name), not {age!r}")
+        raise ValueError(f"{where}: a formacion entry needs an age_group of {tuple(AGE_GROUPS)} (U15 and U17 too, or the Spanish name; U19 to U22 are senior and carry none), not {age!r}")
     if label is None:
         raise ValueError(f"{where}: a formacion entry needs its label (the name people read)")
     return {"age_group": code}

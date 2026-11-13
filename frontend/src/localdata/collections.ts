@@ -15,7 +15,7 @@ export interface PublishedCollection {
   league: 'feb' | 'fbcyl'
   games: number
   category?: 'senior' | 'formacion'
-  age_group?: 'U14' | 'U16' | 'U18' | 'U20'
+  age_group?: 'U14' | 'U16' | 'U18'
   competition_label?: string
 }
 

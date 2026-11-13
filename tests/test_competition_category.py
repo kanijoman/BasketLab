@@ -1,4 +1,4 @@
-"""The category of each competition (#914, epic #872): senior or formación, and for formación its age group (U14 infantil, U16 cadete, U18 júnior, U20 with no Spanish equivalent).
+"""The category of each competition (#914, #918, epic #872): senior or formación, and for formación its age group (U14 infantil, U15-U16 cadete, U17-U18 júnior; U19-U22 are senior).
 
 It lives in the catalogue (``config/competitions.json``), not in the name of the competition, and goes to the manifest of ``web-data`` and to the one of ``talent-data``. The age groups are
 normalised once, in ``competition_category``; whatever is not in the table is never forced into it.
@@ -14,30 +14,42 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.local_data.web_data import publish_web_data  # noqa: E402
 from src.services.competition_catalogue import DEFAULT_CATALOGUE, load_catalogue  # noqa: E402
-from src.services.competition_category import AGE_GROUPS, CATEGORIES, competition_categories, normalize_age_group  # noqa: E402
+from src.services.competition_category import AGE_GROUPS, CATEGORIES, category_of_age, competition_categories, normalize_age_group  # noqa: E402
 from tests.test_local_web_data import FBCYL, FEB, MASTER, cheap_lineups, handler  # noqa: E402,F401  (fixtures)
 
 CATALOGUE = load_catalogue(DEFAULT_CATALOGUE)
 FORMATION = {"C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas."}
 
 
-def test_the_age_groups_are_the_four_normalised_ones_and_u20_has_no_spanish_name():
-    assert AGE_GROUPS == {"U14": "Infantil", "U16": "Cadete", "U18": "Júnior", "U20": None} and CATEGORIES == ("senior", "formacion")
+def test_the_age_groups_are_infantil_cadete_and_junior_and_u20_is_not_one_of_them():
+    assert AGE_GROUPS == {"U14": "Infantil", "U16": "Cadete", "U18": "Júnior"} and CATEGORIES == ("senior", "formacion")
 
 
 @pytest.mark.parametrize("raw, code", [
     ("U14", "U14"), ("u14", "U14"), ("U-14", "U14"), ("sub14", "U14"), ("Sub-14", "U14"), ("infantil", "U14"), ("INF", "U14"), ("Infantil", "U14"),
-    ("U16", "U16"), ("cadete", "U16"), ("CAD", "U16"), ("Cadete", "U16"), ("sub-16", "U16"),
-    ("U18", "U18"), ("junior", "U18"), ("Júnior", "U18"), ("JR", "U18"), ("JÚNIOR", "U18"), ("sub 18", "U18"),
-    ("U20", "U20"), ("sub20", "U20"), ("u-20", "U20"),
+    ("U16", "U16"), ("cadete", "U16"), ("CAD", "U16"), ("Cadete", "U16"), ("sub-16", "U16"), ("U15", "U16"), ("u-15", "U16"), ("sub15", "U16"),
+    ("U18", "U18"), ("junior", "U18"), ("Júnior", "U18"), ("JR", "U18"), ("JÚNIOR", "U18"), ("sub 18", "U18"), ("U17", "U18"), ("sub-17", "U18"),
 ])
 def test_every_way_of_writing_an_age_group_gives_its_code(raw, code):
     assert normalize_age_group(raw) == code
 
 
-@pytest.mark.parametrize("raw", [None, "", "  ", "senior", "sénior", "U15", "U17", "U21", "U19", "sub23", "juvenil", "alevin", "xyz", 16, True, ["U16"], {}])
-def test_what_is_not_in_the_table_is_none_and_never_forced_into_a_group(raw):
-    assert normalize_age_group(raw) is None            # «juvenil» is not «júnior» and U20 has no Spanish name to match: nothing is guessed
+@pytest.mark.parametrize("raw", [None, "", "  ", "senior", "sénior", "U19", "U20", "u-21", "sub22", "U13", "U23", "sub23", "juvenil", "alevin", "xyz", 16, True, ["U16"], {}])
+def test_what_is_not_an_age_group_is_none_and_never_forced_into_one(raw):
+    assert normalize_age_group(raw) is None            # U19-U22 are senior (no age group), «juvenil» is not «júnior»: nothing is guessed
+
+
+@pytest.mark.parametrize("raw, category", [
+    ("U14", "formacion"), ("infantil", "formacion"), ("U15", "formacion"), ("U16", "formacion"), ("cadete", "formacion"), ("U17", "formacion"), ("U18", "formacion"), ("Júnior", "formacion"),
+    ("U19", "senior"), ("U20", "senior"), ("sub-20", "senior"), ("u21", "senior"), ("U-22", "senior"), ("sub 22", "senior"),
+])
+def test_the_category_of_an_age_u14_to_u18_is_formacion_and_u19_to_u22_are_senior_players_over_18(raw, category):
+    assert category_of_age(raw) == category
+
+
+@pytest.mark.parametrize("raw", [None, "", "U13", "U23", "sub23", "juvenil", "senior", "xyz", 20, True])
+def test_an_age_that_is_not_in_the_table_has_no_category(raw):
+    assert category_of_age(raw) is None
 
 
 def _entry(**over):
@@ -55,9 +67,19 @@ def test_the_catalogue_validates_the_category_and_the_age_group_of_an_entry(tmp_
     assert (ok["category"], ok["age_group"], ok["label"]) == ("formacion", "U16", "Cadete test")        # normalised on load
     (plain,) = _load(tmp_path, _entry())
     assert "category" not in plain or plain["category"] == "senior"
-    for bad in ({"category": "juvenil"}, {"category": "senior", "age_group": "U16"}, {"category": "formacion", "age_group": "juvenil"}, {"age_group": "U16"}, {"label": 5}, {"category": "formacion", "label": " "}):
+    (u15,) = _load(tmp_path, _entry(category="formacion", age_group="U15", label="Cadete U15"))
+    assert u15["age_group"] == "U16"                                                       # U15 is cadete
+    for bad in ({"category": "juvenil"}, {"category": "senior", "age_group": "U16"}, {"category": "formacion", "age_group": "juvenil"}, {"category": "formacion", "age_group": "U20", "label": "x"},
+                {"age_group": "U16"}, {"label": 5}, {"category": "formacion", "label": " "}):
         with pytest.raises(ValueError, match="competitions entry #1"):
             _load(tmp_path, _entry(**bad))
+
+
+def test_u19_to_u22_are_senior_so_a_formacion_entry_cannot_say_u20(tmp_path):
+    with pytest.raises(ValueError, match="U19"):
+        _load(tmp_path, _entry(category="formacion", age_group="U20", label="Mundial U20"))
+    (senior,) = _load(tmp_path, _entry(label="Campeonato U20"))
+    assert senior.get("category", "senior") == "senior" and "age_group" not in senior
 
 
 def test_a_youth_entry_needs_its_age_group_and_its_name(tmp_path):
