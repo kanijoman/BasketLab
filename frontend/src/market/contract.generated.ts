@@ -17,6 +17,9 @@ export interface TalentCompetitionEntry extends FileEntry {
   wraps: Wrap[]
   gender?: 'F' | 'M'
   level?: number
+  category?: 'senior' | 'formacion'
+  age_group?: 'U14' | 'U16' | 'U18' | 'U20'
+  competition_label?: string
 }
 
 /** ``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope). */

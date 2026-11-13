@@ -10,7 +10,7 @@ const LIST = [c('A25', 'FEB', 'LF2', '2025', 'A'), c('B25', 'FEB', 'LF2', '2025'
 describe('CollectionPicker (issue #761)', () => {
   it('shows the four levels, the group too when it is the only one (it names the phase: «Liga Regular»)', () => {
     const { rerender } = render(<CollectionPicker list={LIST} value={{ ambito: 'FEB' }} onChange={() => {}} />)
-    for (const name of ['Ámbito', 'Temporada', 'Competición', 'Grupo']) expect(screen.getByRole('combobox', { name })).toBeInTheDocument()
+    for (const name of ['Ámbito', 'Categoría', 'Temporada', 'Competición', 'Grupo']) expect(screen.getByRole('combobox', { name })).toBeInTheDocument()
     rerender(<CollectionPicker list={[c('P', 'FEB', 'PRIMERA FEB', '2026_2027_Liga_Regular_Único')]} value={{}} onChange={() => {}} />)
     expect(screen.getByRole('combobox', { name: 'Grupo' })).toHaveValue('Liga Regular')
   })
@@ -24,18 +24,18 @@ describe('CollectionPicker (issue #761)', () => {
     const onChange = vi.fn()
     render(<CollectionPicker list={LIST} value={{ ambito: 'FEB' }} onChange={onChange} />)
     fireEvent.change(screen.getByRole('combobox', { name: 'Ámbito' }), { target: { value: 'FBCYL' } })
-    expect(onChange).toHaveBeenCalledWith({ ambito: 'FBCYL', season: '2025/2026', competition: 'U16', group: '' }, expect.objectContaining({ name: 'F25' }))
+    expect(onChange).toHaveBeenCalledWith({ ambito: 'FBCYL', category: 'Sénior', season: '2025/2026', competition: 'U16', group: '' }, expect.objectContaining({ name: 'F25' }))
   })
 
   it('compact mode shows the same levels as the full one, with one option or many, and hides only a group with nothing to say (#912)', () => {
     const labels = () => screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))
     const feb = render(<CollectionPicker list={[LIST[0], LIST[1]]} value={{}} onChange={() => {}} compact />)
-    expect(labels()).toEqual(['Ámbito', 'Temporada', 'Competición', 'Grupo'])
+    expect(labels()).toEqual(['Ámbito', 'Categoría', 'Temporada', 'Competición', 'Grupo'])
     feb.unmount()
     const fbcyl = render(<CollectionPicker list={[LIST[2]]} value={{}} onChange={() => {}} compact />)
-    expect(labels()).toEqual(['Ámbito', 'Temporada', 'Competición'])               // one FBCYL competition without a group: still the levels it has
+    expect(labels()).toEqual(['Ámbito', 'Categoría', 'Temporada', 'Competición'])               // one FBCYL competition without a group: still the levels it has
     fbcyl.unmount()
     render(<CollectionPicker list={[c('P', 'FEB', 'PRIMERA FEB', '2026_2027_Liga_Regular_Único')]} value={{}} onChange={() => {}} compact />)
-    expect(labels()).toEqual(['Ámbito', 'Temporada', 'Competición', 'Grupo'])
+    expect(labels()).toEqual(['Ámbito', 'Categoría', 'Temporada', 'Competición', 'Grupo'])
   })
 })

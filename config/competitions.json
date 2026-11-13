@@ -176,6 +176,9 @@
       "active": true,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior femenino",
       "record": [],
       "note": "Campeonato de España de clubes júnior femenino (Mercado, #875)"
     },
@@ -190,6 +193,9 @@
       "active": true,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior masculino",
       "record": [],
       "note": "Campeonato de España de clubes júnior masculino (Mercado, #875)"
     },
@@ -204,6 +210,9 @@
       "active": true,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de clubes cadete femenino (Mercado, #875)"
     },
@@ -218,6 +227,9 @@
       "active": true,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de clubes cadete masculino (Mercado, #875)"
     },
@@ -232,6 +244,9 @@
       "active": true,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete femenino (Mercado, #875)"
     },
@@ -246,6 +261,9 @@
       "active": true,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete masculino (Mercado, #875)"
     },
@@ -260,6 +278,9 @@
       "active": true,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior femenino",
       "record": [],
       "note": "Campeonato de España de clubes júnior femenino (Mercado, #875)"
     },
@@ -274,6 +295,9 @@
       "active": true,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior masculino",
       "record": [],
       "note": "Campeonato de España de clubes júnior masculino (Mercado, #875)"
     },
@@ -288,6 +312,9 @@
       "active": true,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de clubes cadete femenino (Mercado, #875)"
     },
@@ -302,6 +329,9 @@
       "active": true,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de clubes cadete masculino (Mercado, #875)"
     },
@@ -316,6 +346,9 @@
       "active": true,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete femenino (Mercado, #875)"
     },
@@ -330,6 +363,9 @@
       "active": true,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete masculino (Mercado, #875)"
     },
@@ -344,6 +380,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior femenino",
       "record": [],
       "note": "Campeonato de España de clubes júnior femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -358,6 +397,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior masculino",
       "record": [],
       "note": "Campeonato de España de clubes júnior masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -372,6 +414,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de clubes cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -386,6 +431,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de clubes cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -400,6 +448,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -414,6 +465,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -428,6 +482,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior femenino",
       "record": [],
       "note": "Campeonato de España de clubes júnior femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -442,6 +499,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior masculino",
       "record": [],
       "note": "Campeonato de España de clubes júnior masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -456,6 +516,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de clubes cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -470,6 +533,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de clubes cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -484,6 +550,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -498,6 +567,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -512,6 +584,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior femenino",
       "record": [],
       "note": "Campeonato de España de clubes júnior femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -526,6 +601,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior masculino",
       "record": [],
       "note": "Campeonato de España de clubes júnior masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -540,6 +618,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de clubes cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -554,6 +635,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de clubes cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -568,6 +652,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -582,6 +669,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -596,6 +686,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior femenino",
       "record": [],
       "note": "Campeonato de España de clubes júnior femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -610,6 +703,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U18",
+      "label": "Campeonato de España de clubes · Júnior masculino",
       "record": [],
       "note": "Campeonato de España de clubes júnior masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -624,6 +720,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de clubes cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -638,6 +737,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Campeonato de España de clubes · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de clubes cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -652,6 +754,9 @@
       "active": false,
       "packages": false,
       "gender": "F",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete femenino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete femenino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },
@@ -666,6 +771,9 @@
       "active": false,
       "packages": false,
       "gender": "M",
+      "category": "formacion",
+      "age_group": "U16",
+      "label": "Selecciones autonómicas · Cadete masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas cadete masculino; temporada antigua, se activa por tandas (OPERATIONS) (Mercado, #875)"
     },

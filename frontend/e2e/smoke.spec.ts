@@ -132,7 +132,7 @@ test('the API behind the page is healthy', async ({ request }) => {
   expect(await db.json()).toMatchObject({ connected: true })
 })
 
-test('the header keeps its four selectors, FEB or FBCYL, and fits at 768 px without scrolling sideways (#912)', async ({ page }) => {
+test('the header keeps its five selectors, FEB or FBCYL, and fits at 768 px without scrolling sideways (#912)', async ({ page }) => {
   const errors = collectErrors(page)
   const list = [
     { name: COLLECTION, league: 'FEB', competition: 'L_F_-2', season: '2025_2026', group: 'B', game_count: 30 },
@@ -145,11 +145,11 @@ test('the header keeps its four selectors, FEB or FBCYL, and fits at 768 px with
     await page.setViewportSize({ width, height: 800 })
     await page.goto(`/${COLLECTION}/teams`)
     const header = page.getByRole('banner')
-    for (const name of ['Ámbito', 'Temporada', 'Competición', 'Grupo']) await expect(header.getByRole('combobox', { name })).toBeVisible()
+    for (const name of ['Ámbito', 'Categoría', 'Temporada', 'Competición', 'Grupo']) await expect(header.getByRole('combobox', { name })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     const boxes = await header.getByRole('combobox').evaluateAll(els => els.map(e => e.getBoundingClientRect()))
     expect(Math.max(...boxes.map(b => b.right))).toBeLessThanOrEqual(width)
-    expect(Math.min(...boxes.slice(0, 3).map(b => b.width))).toBeGreaterThanOrEqual(70)         // ámbito, temporada and competición wide enough to read, not a sliver (the group is as wide as its value)
+    expect(Math.min(...boxes.slice(0, 4).map(b => b.width))).toBeGreaterThanOrEqual(70)         // ámbito, categoría, temporada and competición wide enough to read, not a sliver (the group is as wide as its value)
   }
   expect(errors).toEqual([])
 })

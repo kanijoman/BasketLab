@@ -33,6 +33,9 @@ class RowsEntry(FileEntry):
     league: Literal["feb", "fbcyl"]
     games: int
     wraps: List[Wrap]
+    category: NotRequired[Literal["senior", "formacion"]]     # #914: from the catalogue (the selector groups the competitions with it)
+    age_group: NotRequired[Literal["U14", "U16", "U18", "U20"]]     # only in formacion
+    competition_label: NotRequired[str]        # the name people read (the youth codes of FEB are not)
     gender: NotRequired[Literal["F", "M"]]     # the family of the competition (women's / men's), when it is known (#843): the win probability is calibrated per family
 
 

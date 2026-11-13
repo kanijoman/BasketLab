@@ -25,6 +25,14 @@ const sameSeason = () => {
   host.override['index.json'] = JSON.stringify(manifest)
 }
 
+/** The manifest as if LF2 were a youth competition (the real catalogue marks the six youth championships of FEB the same way), to see how the page names and groups it. */
+const youthLf2 = () => {
+  const manifest = JSON.parse(readTalent('index.json'))
+  const lf2 = manifest.competitions.find((c: { key: string }) => c.key === LF2_KEY)
+  Object.assign(lf2, { category: 'formacion', age_group: 'U16', competition_label: 'Campeonato juvenil de prueba · Cadete femenino' })
+  host.override['index.json'] = JSON.stringify(manifest)
+}
+
 describe('the search page', () => {
   it('starts on the latest season published with its competitions, and says how many players it found', async () => {
     open()
@@ -104,5 +112,26 @@ describe('the search page', () => {
     open('/?s=2025')
     const table = await screen.findByRole('region', { name: /Jugadores encontrados/i })
     expect(await within(table).findByText('ANA PRUEBA UNO')).toBeInTheDocument()
+  })
+
+  it('groups the competitions by category and names them as the catalogue does, in the boxes and in the table (#914)', async () => {
+    youthLf2()
+    open('/?s=2025')
+    const youth = await screen.findByRole('group', { name: 'Formación' })
+    expect(within(youth).getByRole('checkbox', { name: /Campeonato juvenil de prueba · Cadete femenino/ })).toBeChecked()
+    expect(screen.queryByRole('checkbox', { name: /^L\.F\.-2/ })).not.toBeInTheDocument()            // its name is the label, not the code
+    expect(screen.queryByRole('group', { name: 'Sénior' })).not.toBeInTheDocument()                    // nothing senior in this season
+    expect(await screen.findByText('ANA PRUEBA UNO')).toBeInTheDocument()
+  })
+
+  it('a season with both categories shows both groups, Sénior first, and the senior one is what a competition without category is', async () => {
+    const manifest = JSON.parse(readTalent('index.json'))
+    manifest.competitions.forEach((c: { season: string; season_label: string }) => { c.season = '2026'; c.season_label = '2026/2027' })
+    Object.assign(manifest.competitions.find((c: { key: string }) => c.key === LF2_KEY), { category: 'formacion', age_group: 'U18', competition_label: 'Júnior de prueba' })
+    host.override['index.json'] = JSON.stringify(manifest)
+    open('/?s=2026')
+    await screen.findByText(/encontrad/i)
+    expect(screen.getAllByRole('group').map(g => g.getAttribute('aria-label')).filter(Boolean)).toEqual(['Sénior', 'Formación'])
+    expect(within(screen.getByRole('group', { name: 'Sénior' })).getByRole('checkbox', { name: /Primera Nacional Femenina/ })).toBeInTheDocument()     // FBCYL has no category in the manifest
   })
 })

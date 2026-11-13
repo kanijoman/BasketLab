@@ -150,3 +150,20 @@ def test_the_branch_carries_the_guard_that_keeps_vercel_from_building_it_regress
     assert json.loads((tmp_path / "frontend" / "vercel.json").read_text(encoding="utf-8")) == {"git": {"deploymentEnabled": False}}
     _publish(connection, tmp_path, names=[])                                       # an empty publication keeps it too: the branch is never without it
     assert (tmp_path / "frontend" / "vercel.json").is_file()
+
+
+def test_the_manifest_says_the_category_age_group_and_name_of_each_competition_from_the_catalogue(connection, tmp_path):
+    """#914: a youth competition is ``formacion`` with its age group and the name people read; the others are senior, FBCYL included; the manifest still satisfies the contract."""
+    youth = [dict(e, category="formacion", age_group="U16", label="Campeonato juvenil de prueba") if e["competition"] == "LF CHALLENGE" else e for e in CATALOGUE]
+    manifest = publish_talent_data(connection, tmp_path, ScopedSealer(MASTER, open_access=False), [LF2, CHALLENGE, FBCYL], youth)
+    validate_talent_manifest(manifest)
+    challenge = _by(manifest, "LF CHALLENGE")
+    assert (challenge["category"], challenge["age_group"], challenge["competition_label"]) == ("formacion", "U16", "Campeonato juvenil de prueba")
+    for senior in (_by(manifest, "L.F.-2"), _by(manifest, "Primera Nacional Femenina")):
+        assert senior["category"] == "senior" and "age_group" not in senior and "competition_label" not in senior
+
+
+def test_a_competition_the_catalogue_does_not_know_has_no_category_it_is_not_guessed(connection, tmp_path):
+    without = [e for e in CATALOGUE if e["competition"] != "LF CHALLENGE"]
+    manifest = publish_talent_data(connection, tmp_path, ScopedSealer(MASTER, open_access=False), [LF2, CHALLENGE, FBCYL], without)
+    assert "category" not in _by(manifest, "LF CHALLENGE") and _by(manifest, "L.F.-2")["category"] == "senior"

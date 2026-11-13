@@ -82,10 +82,17 @@ def _previous_reports(out_dir: Path, manifest: Optional[Dict[str, Any]]) -> Dict
     return old
 
 
-def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]], gender: Optional[str] = None) -> Dict[str, Any]:
+def _category_fields(category: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """``category``, ``age_group`` and ``competition_label`` of a competition (#914), when the catalogue says them: the selector of the browser groups and names the competitions with them."""
+    said = category or {}
+    return {**{k: said[k] for k in ("category", "age_group") if said.get(k)}, **({"competition_label": said["label"]} if said.get("label") else {})}
+
+
+def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]], gender: Optional[str] = None,
+                  category: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     payload = export_collection(db[collection], collection)
     fields = seal_file(out_dir, f"{collection}", _json(payload), [f"competicion:{collection}"], sealer, kept, ROWS)
-    return {"collection": collection, "league": payload["league"], "games": payload["games"], **({"gender": gender} if gender else {}), **fields}      # ``gender`` (#843): the family of the win probability
+    return {"collection": collection, "league": payload["league"], "games": payload["games"], **({"gender": gender} if gender else {}), **_category_fields(category), **fields}      # ``gender`` (#843): the family of the win probability
 
 
 def _publish_section(section: str, handler: Any, db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -191,6 +198,7 @@ class _Context:
     calendar_names: set
     groups: Dict[str, str]
     genders: Dict[str, str]
+    categories: Dict[str, Dict[str, Any]]
 
 
 def _publish_calendar(ctx: _Context, name: str) -> Optional[Dict[str, Any]]:
@@ -220,7 +228,7 @@ def _carried_over(previous: Optional[Dict[str, Any]], names: List[str], keep_oth
 def _publish_competition(ctx: _Context, name: str):
     """One competition: its rows, its sections and its report index, in that order (what each cost goes to ``on_section``). Returns the entry of the rows, those of the sections (with ``_memory``) and the report index."""
     started = time.time()
-    rows_entry = _publish_rows(ctx.db, name, ctx.out_dir, ctx.sealer, ctx.kept_rows.get(name), ctx.genders.get(name))
+    rows_entry = _publish_rows(ctx.db, name, ctx.out_dir, ctx.sealer, ctx.kept_rows.get(name), ctx.genders.get(name), ctx.categories.get(name))
     if ctx.on_section:
         ctx.on_section(name, "rows", time.time() - started, False)
     entries = _publish_sections(name, rows_entry, ctx.handler, ctx.db, ctx.out_dir, ctx.sealer, ctx.kept_sections,
@@ -249,7 +257,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                      on_collection: Optional[Callable[[str], None]] = None, scouting: Optional[Iterable[str]] = None,
                      scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None,
                      image_source: Optional[Source] = None, calendar_source: Optional[CalendarSource] = None,
-                     fbcyl_groups: Optional[Dict[str, str]] = None, genders: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+                     fbcyl_groups: Optional[Dict[str, str]] = None, genders: Optional[Dict[str, str]] = None, categories: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Write the artifacts of ``collections`` and the manifest (returned). With ``keep_others`` the competitions of the previous publication that are
     not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``. ``scouting`` lists the
     collections whose teams also get their full scouting by scope (``scouting_export``; ``scouting_service`` builds the service, for tests). A competition that has not
@@ -267,7 +275,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                    old_reports=_previous_reports(out_dir, previous), memory=memory, trusted=trusted, versions=section_versions(SECTION_MODULES),
                    on_section=on_section, scouted=set(scouting or []), scouting_service=scouting_service, image_source=image_source,
                    imaged=current_season_collections(names) if image_source is not None else set(),
-                   calendar_source=calendar_source, calendar_names=calendar_collections(names, fbcyl_groups or {}) if calendar_source is not None else set(), groups=fbcyl_groups or {}, genders=genders or {})
+                   calendar_source=calendar_source, calendar_names=calendar_collections(names, fbcyl_groups or {}) if calendar_source is not None else set(), groups=fbcyl_groups or {}, genders=genders or {}, categories=categories or {})
     remembered = {k: v for k, v in memory["competitions"].items() if trusted and keep_others and k not in names}
     for name in names:
         rows[name], entries, reports[name] = _publish_competition(ctx, name)

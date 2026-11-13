@@ -6,24 +6,11 @@ in the catalogue (paused entries too: an older season is still read). A competit
 """
 from __future__ import annotations
 
-import re
 from typing import Any, Dict, Iterable, List
 
 from src.live_prep.competition_info import GENDERS, competition_infos
+from src.services.competition_category import competition_in
 from src.utils.collection_utils import is_fbcyl
-
-_YEAR = re.compile(r"^\d{4}$")
-
-
-def _competition_in(name: str) -> str:
-    """``L_F_-2_2025_2026_Liga_Regular_B`` -> ``L_F_-2``: what comes before the first year of the collection name."""
-    parts: List[str] = []
-    for part in name.split("_"):
-        if _YEAR.match(part):
-            break
-        parts.append(part)
-    return "_".join(parts)
-
 
 def _feb(handler: Any, names: List[str], catalogue: List[Dict[str, Any]]) -> Dict[str, str]:
     from src.scraper.schedule_client import normalize_name
@@ -32,7 +19,7 @@ def _feb(handler: Any, names: List[str], catalogue: List[Dict[str, Any]]) -> Dic
     catalog = package_catalog(catalogue)
     said = {c: i.get("gender") for c, i in competition_infos(handler, names, catalog, []).items()}
     by_name = {normalize_name(c["competition"]): c.get("gender") for c in catalog}
-    found = {c: said[c] or by_name.get(normalize_name(_competition_in(c))) for c in names}
+    found = {c: said[c] or by_name.get(normalize_name(competition_in(c))) for c in names}
     return {c: g for c, g in found.items() if g in GENDERS}
 
 
