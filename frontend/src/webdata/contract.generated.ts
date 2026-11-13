@@ -30,6 +30,7 @@ export interface RowsEntry {
   category?: 'senior' | 'formacion'
   age_group?: 'U14' | 'U16' | 'U18'
   competition_label?: string
+  group_label?: string
   gender?: 'F' | 'M'
 }
 

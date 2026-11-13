@@ -1,0 +1,1674 @@
+[
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1134",
+  "category_text": "1ª DIVISION MASCULINA",
+  "competitions": [
+   {
+    "id": "7279",
+    "text": "1ª FASE. 1ª DIV. MASCULINA-GRUPO A"
+   },
+   {
+    "id": "7280",
+    "text": "1ª FASE. 1ª DIV. MASCULINA-GRUPO B"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1132",
+  "category_text": "LIGA UEMC JUNIOR MASCULINO",
+  "competitions": [
+   {
+    "id": "7239",
+    "text": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A"
+   },
+   {
+    "id": "7240",
+    "text": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B"
+   },
+   {
+    "id": "7241",
+    "text": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C"
+   },
+   {
+    "id": "7258",
+    "text": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS"
+   },
+   {
+    "id": "7282",
+    "text": "1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A1"
+   },
+   {
+    "id": "7283",
+    "text": "1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1131",
+  "category_text": "1ªDIV. - CAD. MASC.AUT.",
+  "competitions": [
+   {
+    "id": "7245",
+    "text": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A"
+   },
+   {
+    "id": "7246",
+    "text": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B"
+   },
+   {
+    "id": "7247",
+    "text": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C"
+   },
+   {
+    "id": "7261",
+    "text": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS"
+   },
+   {
+    "id": "7284",
+    "text": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A1"
+   },
+   {
+    "id": "7285",
+    "text": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1133",
+  "category_text": "1ªDIV.- INF. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "7248",
+    "text": "1ª DIV INF MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A"
+   },
+   {
+    "id": "7269",
+    "text": "F4 PREINFANTIL MASCULINA-F4 MASC"
+   },
+   {
+    "id": "7286",
+    "text": "1ª FASE - LIGA REGULAR 1ªDIV INF MAS-GRUPO A1"
+   },
+   {
+    "id": "7287",
+    "text": "1ª FASE - LIGA REGULAR 1ªDIV INF MAS-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1138",
+  "category_text": "2ªDIV.- JUN. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "7426",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO A"
+   },
+   {
+    "id": "7427",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO B"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1141",
+  "category_text": "2ªDIV.- CAD. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "7428",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO A"
+   },
+   {
+    "id": "7429",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO B"
+   },
+   {
+    "id": "7430",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO C"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1142",
+  "category_text": "2ªDIV.- INF. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "7431",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO A"
+   },
+   {
+    "id": "7432",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO B"
+   },
+   {
+    "id": "7433",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO C"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "M",
+  "category": "1139",
+  "category_text": "MINIBASKET MASCULINO AUTONOMICO",
+  "competitions": [
+   {
+    "id": "7275",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO A"
+   },
+   {
+    "id": "7276",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO B"
+   },
+   {
+    "id": "7277",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO C"
+   },
+   {
+    "id": "7278",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO D"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1129",
+  "category_text": "1ª DIVISION FEMENINA",
+  "competitions": [
+   {
+    "id": "7298",
+    "text": "1ª FASE-GRUPO A-1"
+   },
+   {
+    "id": "7299",
+    "text": "1ª FASE-GRUPO A-2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1143",
+  "category_text": "SENIOR FBCYL FEMENINO",
+  "competitions": [
+   {
+    "id": "7424",
+    "text": "SENIOR FBCYL FEMENINO - 1ª FASE. LR-UNICO"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1130",
+  "category_text": "LIGA UEMC JUNIOR FEMENINO",
+  "competitions": [
+   {
+    "id": "7242",
+    "text": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A"
+   },
+   {
+    "id": "7243",
+    "text": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B"
+   },
+   {
+    "id": "7244",
+    "text": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C"
+   },
+   {
+    "id": "7259",
+    "text": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS"
+   },
+   {
+    "id": "7292",
+    "text": "1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A1"
+   },
+   {
+    "id": "7293",
+    "text": "1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1126",
+  "category_text": "1ªDIV. - CAD. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "7249",
+    "text": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A"
+   },
+   {
+    "id": "7250",
+    "text": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B"
+   },
+   {
+    "id": "7251",
+    "text": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C"
+   },
+   {
+    "id": "7260",
+    "text": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS"
+   },
+   {
+    "id": "7257",
+    "text": "Tº INTERNACIONAL SELECCIONES U16 F - MEDINA y CIGALES-U16F 01"
+   },
+   {
+    "id": "7294",
+    "text": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A1"
+   },
+   {
+    "id": "7295",
+    "text": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1127",
+  "category_text": "1ªDIV.-  INF. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "7252",
+    "text": "1ª DIV INF FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A"
+   },
+   {
+    "id": "7253",
+    "text": "1ª DIV INF FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B"
+   },
+   {
+    "id": "7254",
+    "text": "1ª DIV INF FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C"
+   },
+   {
+    "id": "7262",
+    "text": "1ª DIV INF FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS"
+   },
+   {
+    "id": "7270",
+    "text": "F4 PREINFANTIL FEMENINA-F4 FEM"
+   },
+   {
+    "id": "7296",
+    "text": "1ª FASE - LIGA REGULAR 1ª DIV. INF. FEM.-GRUPO A1"
+   },
+   {
+    "id": "7297",
+    "text": "1ª FASE - LIGA REGULAR 1ª DIV. INF. FEM.-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1137",
+  "category_text": "2ªDIV.- JUN. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "7434",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO A"
+   },
+   {
+    "id": "7435",
+    "text": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO B"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1135",
+  "category_text": "2ªDIV.- CAD. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "7436",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO A"
+   },
+   {
+    "id": "7437",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO B"
+   },
+   {
+    "id": "7438",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO C"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1136",
+  "category_text": "2ªDIV.- INF. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "7439",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO A"
+   },
+   {
+    "id": "7440",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO B"
+   },
+   {
+    "id": "7441",
+    "text": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO C"
+   }
+  ]
+ },
+ {
+  "season": "2026",
+  "gender": "F",
+  "category": "1140",
+  "category_text": "MINIBASKET FEMENINO AUTONOMICO",
+  "competitions": [
+   {
+    "id": "7271",
+    "text": "FASE 1. CLASIFICACION MINI FEM-GRUPO A"
+   },
+   {
+    "id": "7272",
+    "text": "FASE 1. CLASIFICACION MINI FEM-GRUPO B"
+   },
+   {
+    "id": "7273",
+    "text": "FASE 1. CLASIFICACION MINI FEM-GRUPO C"
+   },
+   {
+    "id": "7274",
+    "text": "FASE 1. CLASIFICACION MINI FEM-GRUPO D"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1023",
+  "category_text": "1ª DIVISION MASCULINA",
+  "competitions": [
+   {
+    "id": "6319",
+    "text": "1ª FASE - LIGA REGULAR-UNICO"
+   },
+   {
+    "id": "6960",
+    "text": "1ªDIV.MASC - 2ªFASE - FASE PREVIA ASCENSO TERCERA FEB-UNICO"
+   },
+   {
+    "id": "6961",
+    "text": "1ªDIV. MASC - 2ªFASE - FINAL FOUR - ASCENSO A TERCERA FEB-ASCENSO"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1022",
+  "category_text": "LIGA UEMC JUNIOR MASCULINO",
+  "competitions": [
+   {
+    "id": "6326",
+    "text": "LIGA UEMC JUNIOR MASCULINO-GR A1"
+   },
+   {
+    "id": "6327",
+    "text": "LIGA UEMC JUNIOR MASCULINO-GR A2"
+   },
+   {
+    "id": "6784",
+    "text": "2ªFASE. CLASIFICACION-ELIMINATORIAS"
+   },
+   {
+    "id": "6785",
+    "text": "3ª FASE. -TITULO"
+   },
+   {
+    "id": "6786",
+    "text": "3ª FASE. -CLASIFICACION"
+   },
+   {
+    "id": "6987",
+    "text": "4ª FASE. FASE FINAL -  LIGA UEMC JUN MASC -F4"
+   },
+   {
+    "id": "7230",
+    "text": "TORNEO INTERNACIONAL U18M - SALAMANCA-U18M"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1020",
+  "category_text": "1ªDIV. - CAD. MASC.AUT.",
+  "competitions": [
+   {
+    "id": "6328",
+    "text": "1ª DIV. CADETE MASCULINO AUT-GR A1"
+   },
+   {
+    "id": "6329",
+    "text": "1ª DIV. CADETE MASCULINO AUT-GR A2"
+   },
+   {
+    "id": "6802",
+    "text": "2ª FASE. CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6880",
+    "text": "3ª FASE.-TITULO"
+   },
+   {
+    "id": "6881",
+    "text": "3ª FASE.-CLASIFICACION"
+   },
+   {
+    "id": "6989",
+    "text": "4ª FASE. FASE FINAL - 1ªDIV CAD MAS -  -F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1021",
+  "category_text": "1ªDIV.- INF. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "6330",
+    "text": "1ª DIV. INFANTIL MASCULINO AUT-GR A1"
+   },
+   {
+    "id": "6331",
+    "text": "1ª DIV. INFANTIL MASCULINO AUT-GR A2"
+   },
+   {
+    "id": "6804",
+    "text": "2ª FASE. CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6884",
+    "text": "3ª FASE. -TITULO"
+   },
+   {
+    "id": "6885",
+    "text": "3ª FASE. -CLASIFICACION"
+   },
+   {
+    "id": "6990",
+    "text": "4ª FASE. FASE FINAL -  1ªDIV INF MAS -F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1030",
+  "category_text": "2ªDIV.- JUN. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "6495",
+    "text": "1ªF-LR - 2ªJUN.MAS--GR A"
+   },
+   {
+    "id": "6496",
+    "text": "1ªF-LR - 2ªJUN.MAS--GR B"
+   },
+   {
+    "id": "6996",
+    "text": "2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.2"
+   },
+   {
+    "id": "7111",
+    "text": "2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.1"
+   },
+   {
+    "id": "7009",
+    "text": "3ª FASE - FASE FINAL (F4) - 2ªDIV JUN MAS-F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1025",
+  "category_text": "2ªDIV.- CAD. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "6500",
+    "text": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR A"
+   },
+   {
+    "id": "6501",
+    "text": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR B"
+   },
+   {
+    "id": "6502",
+    "text": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR C"
+   },
+   {
+    "id": "7031",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. D"
+   },
+   {
+    "id": "7032",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. E"
+   },
+   {
+    "id": "7033",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. F"
+   },
+   {
+    "id": "7034",
+    "text": "3ª FASE - FASE FINAL (F4) - 2ªDIV CAD MAS-F4"
+   },
+   {
+    "id": "7115",
+    "text": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 1"
+   },
+   {
+    "id": "7116",
+    "text": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 2"
+   },
+   {
+    "id": "7117",
+    "text": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 3"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1028",
+  "category_text": "2ªDIV.- INF. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "6506",
+    "text": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR A"
+   },
+   {
+    "id": "6507",
+    "text": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR B"
+   },
+   {
+    "id": "6508",
+    "text": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR C"
+   },
+   {
+    "id": "7043",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. D"
+   },
+   {
+    "id": "7044",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. E"
+   },
+   {
+    "id": "7045",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. F"
+   },
+   {
+    "id": "7046",
+    "text": "3ª FASE - FASE FINAL (F4) - 2ªDIV INF. MAS.-F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "M",
+  "category": "1032",
+  "category_text": "MINIBASKET MASCULINO AUTONOMICO",
+  "competitions": [
+   {
+    "id": "6351",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET MASCULINO-GRUPO 01"
+   },
+   {
+    "id": "6352",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET MASCULINO-GRUPO 02"
+   },
+   {
+    "id": "6353",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET MASCULINO-GRUPO 03"
+   },
+   {
+    "id": "6354",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET MASCULINO-GRUPO 04"
+   },
+   {
+    "id": "6866",
+    "text": "FASE 1 - EQUIPO 16º-CLASIFICACION"
+   },
+   {
+    "id": "6872",
+    "text": "FASE 2. LIGA REGULAR-A"
+   },
+   {
+    "id": "6873",
+    "text": "FASE 2. LIGA REGULAR-B"
+   },
+   {
+    "id": "7086",
+    "text": "FASE 3. TITULO DE 1ª Y 2ª DIVISIÓN-GRUPO C"
+   },
+   {
+    "id": "7087",
+    "text": "FASE 3. TITULO DE 1ª Y 2ª DIVISIÓN-GRUPO D"
+   },
+   {
+    "id": "7091",
+    "text": "FASE 4. FINAL FOUR 1ª DIVISION-F4"
+   },
+   {
+    "id": "7092",
+    "text": "FASE 4 - FINAL FOUR 2ª DIVISION-F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1018",
+  "category_text": "1ª DIVISION FEMENINA",
+  "competitions": [
+   {
+    "id": "7164",
+    "text": "1ª FEMENINA - FASE FINAL-1"
+   },
+   {
+    "id": "7177",
+    "text": "1ª FEMENINA - FASE FINAL-2"
+   },
+   {
+    "id": "6343",
+    "text": "1ª DIVISION FEMENINA A-GRUPO A1"
+   },
+   {
+    "id": "6344",
+    "text": "1ª DIVISION FEMENINA A-GRUPO A2"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1024",
+  "category_text": "SENIOR FBCYL FEMENINO",
+  "competitions": [
+   {
+    "id": "6342",
+    "text": "SENIOR FBCYL FEMENINO - 1ª FASE - COPA-COPA"
+   },
+   {
+    "id": "6364",
+    "text": "SENIOR FBCYL FEMENINO - 2ªFASE - LIGA REGULAR-UNICO"
+   },
+   {
+    "id": "6962",
+    "text": "SENIOR FBCYL FEMENINO - 3ªFASE -ASCENSO"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1019",
+  "category_text": "LIGA UEMC JUNIOR FEMENINO",
+  "competitions": [
+   {
+    "id": "6320",
+    "text": "LIGA UEMC JUNIOR FEMENINO-GRUPO A1"
+   },
+   {
+    "id": "6321",
+    "text": "LIGA UEMC JUNIOR FEMENINO-GRUPO A2"
+   },
+   {
+    "id": "6787",
+    "text": "2ª FASE. CLASIFICACION-ELIMINATORIAS"
+   },
+   {
+    "id": "6788",
+    "text": "3ª FASE. -TITULO"
+   },
+   {
+    "id": "6789",
+    "text": "3ª FASE. -CLASIFICACION"
+   },
+   {
+    "id": "6986",
+    "text": "4ª FASE. FASE FINAL -  LIGA UEMC JUN FEM -F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1015",
+  "category_text": "1ªDIV. - CAD. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "6322",
+    "text": "1ª DIV. CADETE FEMENINO AUT-GR A1"
+   },
+   {
+    "id": "6323",
+    "text": "1ª DIV. CADETE FEMENINO AUT-GR A2"
+   },
+   {
+    "id": "6803",
+    "text": "2ª FASE. CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6806",
+    "text": "3ª FASE.-TITULO"
+   },
+   {
+    "id": "6807",
+    "text": "3ª FASE.-CLASIFICACION"
+   },
+   {
+    "id": "6988",
+    "text": "4ª FASE. FASE FINAL - 1ªDIV CAD FEM -  -F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1017",
+  "category_text": "1ªDIV.-  INF. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "6324",
+    "text": "1ª DIV. INFANTIL FEMENINO AUT-GR A1"
+   },
+   {
+    "id": "6325",
+    "text": "1ª DIV. INFANTIL FEMENINO AUT-GR A2"
+   },
+   {
+    "id": "6805",
+    "text": "2ª FASE. CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6882",
+    "text": "3ª FASE. -TITULO"
+   },
+   {
+    "id": "6883",
+    "text": "3ª FASE. -CLASIFICACION"
+   },
+   {
+    "id": "6991",
+    "text": "4ª FASE. FASE FINAL  - 1ªDIV INF FEM -F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1029",
+  "category_text": "2ªDIV.- JUN. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "6493",
+    "text": "2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. B"
+   },
+   {
+    "id": "6494",
+    "text": "2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. A"
+   },
+   {
+    "id": "6514",
+    "text": "2ª JUN FEM - GRUPO 6 (1 VUELTA)-GRUPO 6"
+   },
+   {
+    "id": "6983",
+    "text": "2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 1"
+   },
+   {
+    "id": "6984",
+    "text": "2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 2"
+   },
+   {
+    "id": "6985",
+    "text": "2ªDIV JUN FEM - 3ªFASE - FASE FINAL -F4"
+   },
+   {
+    "id": "7080",
+    "text": "2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 01"
+   },
+   {
+    "id": "7081",
+    "text": "2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 02"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1026",
+  "category_text": "2ªDIV.- CAD. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "6497",
+    "text": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR A"
+   },
+   {
+    "id": "6498",
+    "text": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR B"
+   },
+   {
+    "id": "6499",
+    "text": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR C"
+   },
+   {
+    "id": "7035",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. D"
+   },
+   {
+    "id": "7036",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. E"
+   },
+   {
+    "id": "7037",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. F"
+   },
+   {
+    "id": "7038",
+    "text": "3ª FASE - FASE FINAL (F4) - 2ªDIV CAD. FEM.-F4"
+   },
+   {
+    "id": "7113",
+    "text": "2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 1"
+   },
+   {
+    "id": "7114",
+    "text": "2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 2"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1027",
+  "category_text": "2ªDIV.- INF. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "6503",
+    "text": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR A"
+   },
+   {
+    "id": "6504",
+    "text": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR B"
+   },
+   {
+    "id": "6505",
+    "text": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR C"
+   },
+   {
+    "id": "7039",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. D"
+   },
+   {
+    "id": "7040",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. E"
+   },
+   {
+    "id": "7041",
+    "text": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. F"
+   },
+   {
+    "id": "7042",
+    "text": "3ª FASE - FASE FINAL (F4) - 2ªDIV INF. FEM.-F4"
+   }
+  ]
+ },
+ {
+  "season": "2025",
+  "gender": "F",
+  "category": "1031",
+  "category_text": "MINIBASKET FEMENINO AUTONOMICO",
+  "competitions": [
+   {
+    "id": "6355",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET FEMENINO-GRUPO 01"
+   },
+   {
+    "id": "6356",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET FEMENINO-GRUPO 02"
+   },
+   {
+    "id": "6357",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET FEMENINO-GRUPO 03"
+   },
+   {
+    "id": "6358",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET FEMENINO-GRUPO 04"
+   },
+   {
+    "id": "6869",
+    "text": "FASE 1 - EQUIPO 16º-CLASIFICACION"
+   },
+   {
+    "id": "6874",
+    "text": "FASE 2. LIGA REGULAR-A"
+   },
+   {
+    "id": "6875",
+    "text": "FASE 2. LIGA REGULAR-B"
+   },
+   {
+    "id": "6919",
+    "text": "MINIBASKET FEMENINO AUTONOMICO - AMISTOSO-UNICO"
+   },
+   {
+    "id": "7083",
+    "text": "FASE 3. TITULO DE 1ª y 2ª DIVISION-GRUPO C"
+   },
+   {
+    "id": "7084",
+    "text": "FASE 3. TITULO DE 1ª y 2ª DIVISION-GRUPO D"
+   },
+   {
+    "id": "7089",
+    "text": "FASE 4. FINAL FOUR 1ª DIVISION-F4"
+   },
+   {
+    "id": "7090",
+    "text": "FASE 4. FINAL FOUR 2ª DIVISION-F4"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "923",
+  "category_text": "1ª DIVISION MASCULINA",
+  "competitions": [
+   {
+    "id": "5261",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV. MASCULINA)-UNICO"
+   },
+   {
+    "id": "6030",
+    "text": "2ª FASE - COPA CASTILLA Y LEON (1ªDIV.MASCULINA)-COPA"
+   },
+   {
+    "id": "6031",
+    "text": "2ª FASE - FINAL FOUR - ASCENSO A TERCERA FEB -ASCENSO A TERCERA FEB (BLANCA CASTILLA)"
+   },
+   {
+    "id": "6254",
+    "text": "FASE ASCENSO A TERCERA FEB-ASCENSO"
+   },
+   {
+    "id": "6292",
+    "text": "INTERNACIONALES SELECCION MASCULINA U20-U20"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "934",
+  "category_text": "2ªDIV.- JUN. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "5215",
+    "text": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES"
+   },
+   {
+    "id": "5228",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 1"
+   },
+   {
+    "id": "5229",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 2"
+   },
+   {
+    "id": "5448",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS -2ª FASE"
+   },
+   {
+    "id": "5526",
+    "text": "1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO A"
+   },
+   {
+    "id": "5527",
+    "text": "1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO B"
+   },
+   {
+    "id": "6032",
+    "text": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 01"
+   },
+   {
+    "id": "6033",
+    "text": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 02"
+   },
+   {
+    "id": "6034",
+    "text": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 03"
+   },
+   {
+    "id": "6141",
+    "text": "3ª FASE - FASE FINAL COPA (JUNIOR)-F4"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "932",
+  "category_text": "2ªDIV.- CAD. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "5216",
+    "text": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES"
+   },
+   {
+    "id": "5230",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01"
+   },
+   {
+    "id": "5231",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02"
+   },
+   {
+    "id": "5446",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE"
+   },
+   {
+    "id": "5520",
+    "text": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO A"
+   },
+   {
+    "id": "5521",
+    "text": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO B"
+   },
+   {
+    "id": "5522",
+    "text": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO C"
+   },
+   {
+    "id": "6110",
+    "text": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 01"
+   },
+   {
+    "id": "6111",
+    "text": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 02"
+   },
+   {
+    "id": "6112",
+    "text": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 03"
+   },
+   {
+    "id": "6125",
+    "text": "2ª FASE - CLASIFICACION-UNICO"
+   },
+   {
+    "id": "6143",
+    "text": "3ª FASE - FASE FINAL COPA (CADETE)-F4 (CULTURAL)"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "935",
+  "category_text": "2ªDIV.- INF. MASC. AUT.",
+  "competitions": [
+   {
+    "id": "5218",
+    "text": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES"
+   },
+   {
+    "id": "5232",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01"
+   },
+   {
+    "id": "5233",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02"
+   },
+   {
+    "id": "5447",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE"
+   },
+   {
+    "id": "5523",
+    "text": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO A"
+   },
+   {
+    "id": "5524",
+    "text": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO B"
+   },
+   {
+    "id": "5525",
+    "text": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO C"
+   },
+   {
+    "id": "6117",
+    "text": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01"
+   },
+   {
+    "id": "6118",
+    "text": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02"
+   },
+   {
+    "id": "6119",
+    "text": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03"
+   },
+   {
+    "id": "6145",
+    "text": "3ª FASE - FASE FINAL COPA (INFANTIL)-F4"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "924",
+  "category_text": "1ªDIV.-JUN. MASC.AUT.",
+  "competitions": [
+   {
+    "id": "5247",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A1"
+   },
+   {
+    "id": "5248",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A2"
+   },
+   {
+    "id": "5836",
+    "text": "2ª FASE. CLASIFICACIÓN-CLASIFICACION"
+   },
+   {
+    "id": "5873",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-TITULO"
+   },
+   {
+    "id": "5874",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6021",
+    "text": "4ª FASE - FASE FINAL (1ªDIV.-JUN. MASC.AUT.)-F4    (CB LA FLECHA)"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "925",
+  "category_text": "1ªDIV.-CAD.MASC.AUT.",
+  "competitions": [
+   {
+    "id": "5249",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A1"
+   },
+   {
+    "id": "5250",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A2"
+   },
+   {
+    "id": "5837",
+    "text": "2ª FASE. CLASIFICACIÓN-CLASIFICACION"
+   },
+   {
+    "id": "5866",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-TITULO"
+   },
+   {
+    "id": "5867",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6023",
+    "text": "4ª FASE - FASE FINAL (1ªDIV.-CAD. MASC.AUT.)-F4       (CD SAN AGUSTIN)"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "926",
+  "category_text": "1ªDIV.-INF. MASC.AUT.",
+  "competitions": [
+   {
+    "id": "5251",
+    "text": "1ª FASE - LIGA REGULAR (1ª DIV.INF.MAS.AUT.)-GRUPO A1"
+   },
+   {
+    "id": "5252",
+    "text": "1ª FASE - LIGA REGULAR (1ª DIV.INF.MAS.AUT.)-GRUPO A2"
+   },
+   {
+    "id": "5285",
+    "text": "COPA CASTILLA Y LEON PREINFANTIL MASCULINA 2024-COPA"
+   },
+   {
+    "id": "5838",
+    "text": "2ª FASE. CLASIFICACIÓN-CLASIFICACION"
+   },
+   {
+    "id": "5868",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-TITULO"
+   },
+   {
+    "id": "5869",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6025",
+    "text": "4ª FASE - FINAL FOUR (1ªDIV.-INF.MAS.AUT.)-F4"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "M",
+  "category": "939",
+  "category_text": "MINIBASKET MASCULINO AUTONOMICO",
+  "competitions": [
+   {
+    "id": "5238",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO 01"
+   },
+   {
+    "id": "5239",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO 02"
+   },
+   {
+    "id": "5240",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO 03"
+   },
+   {
+    "id": "5241",
+    "text": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO 04"
+   },
+   {
+    "id": "5829",
+    "text": "FASE 1 - CLASIFICACION 16º-PUESTO 16º"
+   },
+   {
+    "id": "5834",
+    "text": "FASE 2. LIGA REGULAR-GRUPO A"
+   },
+   {
+    "id": "5835",
+    "text": "FASE 2. LIGA REGULAR-GRUPO B"
+   },
+   {
+    "id": "6028",
+    "text": "FASE 3. TITULO DE LA LIGA Y COPA-GR. C - LIGA"
+   },
+   {
+    "id": "6029",
+    "text": "FASE 3. TITULO DE LA LIGA Y COPA-GR. D - COPA"
+   },
+   {
+    "id": "6257",
+    "text": "FASE 4. FINAL FOUR-FINAL FOUR LIGA"
+   },
+   {
+    "id": "6275",
+    "text": "FASE 4. COPA-COPA"
+   },
+   {
+    "id": "6290",
+    "text": "PRD - OLMEDO - 14 JUNIO-MASCULINO"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "938",
+  "category_text": "MINIBASKET FEMENINO AUTONOMICO",
+  "competitions": [
+   {
+    "id": "5234",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET FEMENINO-GRUPO 01"
+   },
+   {
+    "id": "5235",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET FEMENINO-GRUPO 02"
+   },
+   {
+    "id": "5236",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET FEMENINO-GRUPO 03"
+   },
+   {
+    "id": "5237",
+    "text": "FASE 1. CLASIFICACION - MINIBASKET FEMENINO-GRUPO 04"
+   },
+   {
+    "id": "5831",
+    "text": "FASE 1 - CLASIFICACION 16º FEMENINO-CLASIFICACION 16º"
+   },
+   {
+    "id": "5832",
+    "text": "FASE 2. LIGA REGULAR-GRUPO A"
+   },
+   {
+    "id": "5833",
+    "text": "FASE 2. LIGA REGULAR-GRUPO B"
+   },
+   {
+    "id": "6044",
+    "text": "FASE 3. TITULO DE LA LIGA Y COPA-GR. C - LIGA"
+   },
+   {
+    "id": "6045",
+    "text": "FASE 3. TITULO DE LA LIGA Y COPA-GR. D - COPA"
+   },
+   {
+    "id": "6255",
+    "text": "FASE 4. FINAL FOUR-FINAL FOUR LIGA"
+   },
+   {
+    "id": "6274",
+    "text": "FASE 4 - FINAL COPA-COPA"
+   },
+   {
+    "id": "6289",
+    "text": "PRD - OLMEDO 14 JUNIO-FEMENINO"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "937",
+  "category_text": "1ª DIV. FEMENINA",
+  "competitions": [
+   {
+    "id": "5430",
+    "text": "Primera Fase - Liga Regular-GRUPO A-1"
+   },
+   {
+    "id": "5431",
+    "text": "Primera Fase - Liga Regular-GRUPO A-2"
+   },
+   {
+    "id": "6150",
+    "text": "Segunda Fase-FASE FINAL 1"
+   },
+   {
+    "id": "6151",
+    "text": "Segunda Fase-FASE FINAL 2"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "930",
+  "category_text": "2ª DIVISION FEMENINA",
+  "competitions": [
+   {
+    "id": "5295",
+    "text": "FASE 1. COPA FBCYL-COPA FBCYL"
+   },
+   {
+    "id": "5296",
+    "text": "FASE 2. LIGA REGULAR-LR"
+   },
+   {
+    "id": "5297",
+    "text": "FASE 3. FASE FINAL-FF"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "931",
+  "category_text": "2ªDIV.- JUN. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "5219",
+    "text": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES"
+   },
+   {
+    "id": "5223",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO"
+   },
+   {
+    "id": "5512",
+    "text": "1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO A"
+   },
+   {
+    "id": "5513",
+    "text": "1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO B"
+   },
+   {
+    "id": "6041",
+    "text": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 01"
+   },
+   {
+    "id": "6042",
+    "text": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 02"
+   },
+   {
+    "id": "6043",
+    "text": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 03"
+   },
+   {
+    "id": "6123",
+    "text": "2ª FASE - CLASIFICACION-GRUPO 01"
+   },
+   {
+    "id": "6124",
+    "text": "2ª FASE - CLASIFICACION-GRUPO 02"
+   },
+   {
+    "id": "6142",
+    "text": "3ª FASE - FASE FINAL COPA (JUNIOR)-F4  - ARELSA"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "933",
+  "category_text": "2ªDIV.- CAD.FEM.AUT.",
+  "competitions": [
+   {
+    "id": "5220",
+    "text": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES"
+   },
+   {
+    "id": "5222",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO"
+   },
+   {
+    "id": "5514",
+    "text": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO A"
+   },
+   {
+    "id": "5515",
+    "text": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO B"
+   },
+   {
+    "id": "5516",
+    "text": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO C"
+   },
+   {
+    "id": "6107",
+    "text": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01"
+   },
+   {
+    "id": "6108",
+    "text": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02"
+   },
+   {
+    "id": "6109",
+    "text": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03"
+   },
+   {
+    "id": "6144",
+    "text": "3ª FASE - FASE FINAL COPA (CADETE)-F4 (LIONESS)"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "936",
+  "category_text": "2ªDIV.- INF. FEM. AUT.",
+  "competitions": [
+   {
+    "id": "5221",
+    "text": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES"
+   },
+   {
+    "id": "5224",
+    "text": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO"
+   },
+   {
+    "id": "5517",
+    "text": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO A"
+   },
+   {
+    "id": "5518",
+    "text": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO B"
+   },
+   {
+    "id": "5519",
+    "text": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO C"
+   },
+   {
+    "id": "6113",
+    "text": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 01"
+   },
+   {
+    "id": "6114",
+    "text": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 02"
+   },
+   {
+    "id": "6115",
+    "text": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 03"
+   },
+   {
+    "id": "6146",
+    "text": "3ª FASE - FASE FINAL COPA (INFANTIL)-F4"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "927",
+  "category_text": "1ªDIV.-JUN.FEM. AUT.",
+  "competitions": [
+   {
+    "id": "5253",
+    "text": "1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A1"
+   },
+   {
+    "id": "5254",
+    "text": "1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A2"
+   },
+   {
+    "id": "5839",
+    "text": "2ª FASE. CLASIFICACIÓN-CLASIFICACION"
+   },
+   {
+    "id": "5875",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-TITULO"
+   },
+   {
+    "id": "5876",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6022",
+    "text": "4ª FASE - FASE FINAL (1ªDIV.-JUN. FEM.AUT.)-F4      (CB LIONESS)"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "928",
+  "category_text": "1ªDIV.-CAD.FEM.AUT.",
+  "competitions": [
+   {
+    "id": "5255",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A1"
+   },
+   {
+    "id": "5256",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A2"
+   },
+   {
+    "id": "5840",
+    "text": "2ª FASE. CLASIFICACIÓN-CLASIFICACION"
+   },
+   {
+    "id": "5864",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-TITULO"
+   },
+   {
+    "id": "5865",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6024",
+    "text": "4ª FASE - FINAL FOUR (1ªDIV.-CAD.FEM.AUT.)-F4     (BTO. FEMENINO BURGOS)"
+   }
+  ]
+ },
+ {
+  "season": "2024",
+  "gender": "F",
+  "category": "929",
+  "category_text": "1ªDIV.-INF.FEM.AUT.",
+  "competitions": [
+   {
+    "id": "5257",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV.INF.FEM.AUT.)-GRUPO A1"
+   },
+   {
+    "id": "5258",
+    "text": "1ª FASE - LIGA REGULAR (1ªDIV.INF.FEM.AUT.)-GRUPO A2"
+   },
+   {
+    "id": "5286",
+    "text": "COPA CASTILLA Y LEON PREINFANTIL FEMENINA 2024-COPA"
+   },
+   {
+    "id": "5841",
+    "text": "2ª FASE. CLASIFICACIÓN-CLASIFICACION"
+   },
+   {
+    "id": "5872",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-TITULO"
+   },
+   {
+    "id": "5871",
+    "text": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION"
+   },
+   {
+    "id": "6026",
+    "text": "4ª FASE - FINAL FOUR (1ªDIV.-INF.FEM.AUT.)-F4     (CD BLANCA CASTILLA)"
+   }
+  ]
+ }
+]

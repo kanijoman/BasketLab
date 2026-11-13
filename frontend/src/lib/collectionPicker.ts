@@ -62,7 +62,7 @@ export function levelsOf(c: CollectionInfo): Required<Selection> {
     category: categoryOf(c),
     season: years.length === 1 ? `${years[0]}/${Number(years[0]) + 1}` : years.join('/'),
     competition: competitionName(c),
-    group: withoutRepeats([phase, group].filter(Boolean).join(' ')),
+    group: c.group_label ?? withoutRepeats([phase, group].filter(Boolean).join(' ')),
   }
 }
 

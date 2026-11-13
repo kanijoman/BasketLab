@@ -231,3 +231,57 @@ describe('the groups and the names of the youth competitions in the selector (is
     expect(groupsOf('LIGA U', '2025/2026')).toEqual(['LIGA REGULAR GRUPO A', '2ª FASE Grupo A', 'PLAY-OUT 2ºB-7ºA', 'PLAY-OUT 6ºA-3ºB'])
   })
 })
+
+// Issue #920: the FBCYL competitions of the catalogue (autonomic, cadete upwards and senior; men and women) as the selector shows them. The entries are the REAL ones of `config/competitions.json`
+// and the collection names are made like `get_collection_name` does (spaces and dots become underscores).
+const sanitize = (text: string) => text.trim().replace(/\s+/g, '_').replace(/[:*?"<>|.$/\\]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+interface FbcylEntry extends CatalogueEntry { season_value: string; active: boolean; group_label?: string; fbcyl: { gender: string; territory: string } }
+const FBCYL_ENTRIES = (JSON.parse(readFileSync(join(__dirname, '../../../config/competitions.json'), 'utf8')).competitions as (CatalogueEntry & { league?: string })[]).filter(e => e.league === 'fbcyl') as FbcylEntry[]
+const FBCYL_LIST = collectionList(FBCYL_ENTRIES.map(e => ({
+  collection: `${sanitize(`FBCYL_${e.competition}`)}_${sanitize(e.season_value)}_`, league: 'fbcyl' as const, games: 3,
+  ...(e.category ? { category: e.category as 'senior' | 'formacion' } : {}), ...(e.age_group ? { age_group: e.age_group as 'U16' | 'U18' } : {}),
+  ...(e.label ? { competition_label: e.label } : {}), ...(e.group_label ? { group_label: e.group_label } : {}),
+})))
+const fbcyl = (wanted: Record<string, string>) => pickCollection(FBCYL_LIST, { ambito: 'FBCYL', ...wanted })
+
+describe('the FBCYL competitions in the selector (issue #920)', () => {
+  it('FBCYL has the same levels as FEB: the senior competitions and the youth ones (cadete and júnior) as a category of their own', () => {
+    expect(fbcyl({}).categories).toEqual(['Sénior', 'Formación'])
+    expect(fbcyl({ category: 'Formación' }).seasons).toEqual(['2026/2027', '2025/2026', '2024/2025'])
+  })
+
+  it('the senior ones are the two groups of the Primera Nacional Femenina that were already there and the men and the other senior women', () => {
+    expect(fbcyl({ category: 'Sénior', season: '2026/2027' }).competitions).toEqual(['1ª División Femenina', '1ª División masculina', 'Sénior FBCYL femenino'])
+  })
+
+  it('cadete and júnior, men and women, with a readable name: nothing of infantil or minibásket', () => {
+    const names = fbcyl({ category: 'Formación', season: '2026/2027' }).competitions
+    expect(names).toEqual(['1ª División cadete femenino', '1ª División cadete masculino', '2ª División cadete femenino', '2ª División cadete masculino', '2ª División júnior femenino',
+      '2ª División júnior masculino', 'Liga UEMC júnior femenino', 'Liga UEMC júnior masculino'])
+    expect(names.some(n => /infantil|mini/i.test(n))).toBe(false)
+  })
+
+  it('a group is shown as the site writes it, without the code that keeps its collection name unique', () => {
+    const groups = fbcyl({ category: 'Formación', season: '2026/2027', competition: 'Liga UEMC júnior femenino' }).groups
+    expect(groups).toContain('LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A')
+    expect(groups.some(g => /\bG\d+$/.test(g))).toBe(false)
+    expect(new Set(groups).size).toBe(groups.length)
+  })
+
+  it('the groups of the same name in different categories (the third phase, the title) are each in their own competition', () => {
+    const cadete = fbcyl({ category: 'Formación', season: '2025/2026', competition: '1ª División cadete femenino' }).groups
+    const junior = fbcyl({ category: 'Formación', season: '2025/2026', competition: 'Liga UEMC júnior femenino' }).groups
+    expect(cadete).toContain('3ª FASE.-TITULO')                                     // the same phase in another category: each competition has its own
+    expect(junior).toContain('3ª FASE. -TITULO')
+  })
+
+  it('every FBCYL collection is reachable from its own levels, and the paused seasons are listed too', () => {
+    for (const c of FBCYL_LIST) expect(pickCollection(FBCYL_LIST, selectionOf(c)).collection?.name).toBe(c.name)
+    expect(FBCYL_LIST.length).toBe(FBCYL_ENTRIES.length)
+  })
+
+  it('a FBCYL group the manifest says nothing of (older publications) keeps the way it was read before', () => {
+    const list = collectionList([{ collection: 'FBCYL_1ª_FASE-GRUPO_A-1_2026_', league: 'fbcyl', games: 3 }])
+    expect(levelsOf(list[0])).toMatchObject({ ambito: 'FBCYL', category: 'Sénior', season: '2026/2027', competition: '1ª División Femenina', group: 'FASE-GRUPO A-1' })
+  })
+})
