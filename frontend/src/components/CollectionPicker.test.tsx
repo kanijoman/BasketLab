@@ -27,10 +27,15 @@ describe('CollectionPicker (issue #761)', () => {
     expect(onChange).toHaveBeenCalledWith({ ambito: 'FBCYL', season: '2025/2026', competition: 'U16', group: '' }, expect.objectContaining({ name: 'F25' }))
   })
 
-  it('compact mode hides every level with a single option except the group, which names the phase', () => {
-    render(<CollectionPicker list={[LIST[0], LIST[1]]} value={{}} onChange={() => {}} compact />)
-    expect(screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))).toEqual(['Grupo'])
+  it('compact mode shows the same levels as the full one, with one option or many, and hides only a group with nothing to say (#912)', () => {
+    const labels = () => screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))
+    const feb = render(<CollectionPicker list={[LIST[0], LIST[1]]} value={{}} onChange={() => {}} compact />)
+    expect(labels()).toEqual(['Ámbito', 'Temporada', 'Competición', 'Grupo'])
+    feb.unmount()
+    const fbcyl = render(<CollectionPicker list={[LIST[2]]} value={{}} onChange={() => {}} compact />)
+    expect(labels()).toEqual(['Ámbito', 'Temporada', 'Competición'])               // one FBCYL competition without a group: still the levels it has
+    fbcyl.unmount()
     render(<CollectionPicker list={[c('P', 'FEB', 'PRIMERA FEB', '2026_2027_Liga_Regular_Único')]} value={{}} onChange={() => {}} compact />)
-    expect(screen.getAllByRole('combobox', { name: 'Grupo' })).toHaveLength(2)
+    expect(labels()).toEqual(['Ámbito', 'Temporada', 'Competición', 'Grupo'])
   })
 })
