@@ -2,7 +2,7 @@
 
 Parte de la épica #872 (Talent), tras la categoría explícita de #914 y #918 (U14 infantil, U15–U16 cadete, U17–U18 júnior; **U19–U22 son sénior**). Medido el 13/11/2026 con peticiones reales, de una en una y con pausa de 1 s, solo a páginas públicas y a los combos y flujos que el scraper de FBCYL ya usa. Sin credenciales.
 
-**Veredicto.** **FBCYL: GO** para la formación **autonómica** (cadete, infantil y júnior): trae lo mismo que la sénior (estadística por jugador, minutos, coordenadas de tiro) y encaja en el formato canónico sin cambios. **FIBA: GO parcial**: las plantillas (nacimiento, altura en cm y en pies-pulgadas, posición, nacionalidad, club) y los líderes por competición son públicos y sirven ya; la **caja de cada partido** solo sale de una API que el navegador de FIBA llama con una clave propia, y usarla es una decisión (ver «Decisiones»).
+**Veredicto.** **FBCYL: GO** para la formación **autonómica** (cadete, infantil y júnior): trae lo mismo que la sénior (estadística por jugador, minutos, coordenadas de tiro) y encaja en el formato canónico sin cambios. **FIBA: GO**: las plantillas (nacimiento, altura en cm y en pies-pulgadas, posición, nacionalidad, club), los líderes y, **tras la decisión del usuario de probar la clave, también la caja por partido**. Resultado: la jugada a jugada completa de cada partido terminado viene en el HTML público de su ficha, **sin clave**, y reproduce la API al detalle; la clave solo añade los minutos y no hace falta para lo demás (ver «Caja por partido»).
 
 ## FBCYL
 
@@ -49,24 +49,28 @@ Eventos de formación con página pública de estadísticas, sondeados por nombr
 - **Solo desde 2024** en la web actual: de 2014 a 2023 todas dan «Page Not Found». **No se ha mirado** el archivo antiguo de FIBA ni las divisiones B y C (existen: `…-division-b`, `…-division-c`), ni el U17 de la Copa del Mundo (no apareció con el nombre esperado).
 - **Plantillas públicas** (`/teams/<país>`, renderizadas en el servidor): `personId`, nombre, nacimiento, altura en cm **y en pies-pulgadas**, posición, nacionalidad, club y partidos jugados. Muestra (U18 EuroBasket 2025, Austria, 14 jugadores): nacimiento 14/14, altura 11/14, posición 7/14, club 10/14. La posición viene en inglés («Point Guard», «Shooting Guard», «Power Forward», **«Guard»**, **«Forward»**): `canonical_position` y `position_group` de #910 la cubren (las dos últimas solo dan grupo G/F). **Es el caso que motivó la altura en pies-pulgadas y la fusión campo a campo de #910.**
 - **Líderes públicos** (`/stats`): tabla de 50 jugadores por evento (puntos, rebotes…), no la lista completa ni por partido.
-- **Caja por partido**: la ficha de cada partido (`/games/<gameId>`) trae el listado con `gameId` y marcador, pero la **estadística por jugador y la jugada a jugada se cargan desde `digital-api.fiba.basketball` con una clave de suscripción que la propia página incrusta para su navegador**. No se ha usado. Sin ella, de FIBA formación hay plantilla y líderes, no caja.
+- **Caja por partido: dos caminos, y el público basta.** Medido sobre U18 EuroBasket 2025 (Austria–Francia, partido 125809):
+  - **Jugada a jugada pública** (en el HTML de `/games/<gameId>`, partidos terminados, sin clave): 598 eventos con `ac` (`P2`, `P3`, `FT`, `REB`, `ASS`, `TO`, `ST`, `BS`, `FOUL`, `RFOUL`, `SUBST`, `JB`…), el texto («3pt jump shot made», «Free throw made 1 of 2»), el marcador, el reloj y el `pId` del jugador. Es el mismo tipo de dato que el play-by-play de FEB: la caja se calcula con nuestro parser, **asistencias, robos, pérdidas, tapones y faltas incluidos**.
+  - **API de FIBA** (`digital-api.fiba.basketball`, cabecera `OCP-APIM-SUBSCRIPTION-KEY` con la clave que su página da a cada navegador): por jugador y partido da **minutos** (`playDurationInSeconds`), puntos, tiros (2, 3, libres) y rebotes, **pero no asistencias, robos, pérdidas, tapones ni faltas** por partido (solo en el acumulado). Se probó con la clave leída de la página en el momento (nunca guardada): 3 llamadas, todas 200.
+  - **Validación**: para un jugador y partido (Strobl, 125809) la jugada a jugada da 9 triples intentados y 2 anotados, 1 de 2 en dobles, 4 de 4 en libres, 3 rebotes defensivos y 12 puntos, **exactamente lo que da la API**.
+  - **Lo que falta**: los **minutos** (la API los da; de la jugada a jugada salen de las sustituciones, que necesitan el quinteto inicial, aún sin medir) y una **comprobación sobre más partidos**.
+  - **Cuidado**: la ficha del partido a veces devuelve una versión genérica sin datos (visto 2 veces en ~10 peticiones): el cliente debe **reintentar** y comprobar que trae `playByPlay`. Las posiciones de la jugada a jugada son códigos cortos (`PG`, `SG`, `PF`, `C`, `G`, `F`), distintos de los nombres de la plantilla.
 
 ## Decisiones (del usuario)
 
-1. **¿Se usa la API de FIBA con la clave de su web?** Es una credencial del cliente web de FIBA, no una página pública: la épica da por buena la cuestión legal de leer lo público, y esto es otra cosa. Sin ella, FIBA aporta plantillas y líderes. Con ella, caja y jugada a jugada de 2024 en adelante.
-2. **¿Se carga la formación provincial y escolar de FBCYL?** Propuesta: **autonómica primero** (cadete, infantil, júnior); provincial y escolar después, si hace falta, como tandas aparte (el principio de la épica es no descartar datos, publicación por niveles).
-3. **¿Infantil de FBCYL?** Entra con la advertencia de que la mitad no trae minutos: sin minutos no hay tasas por 40 ni percentiles (`eligible` de Talent).
+1. **La clave de FIBA: decidido (13/11/2026), se probó.** Funciona, pero **la caja no depende de ella** (la jugada a jugada es pública). Propuesta: **no depender de la clave** en la carga: es una credencial del cliente web de FIBA que puede rotar; se usaría, como mucho, para los minutos, leyéndola de la página en cada ejecución y sin guardarla en el repositorio ni en los secretos.
+2. **FBCYL: decidido (13/11/2026)**: **solo competiciones autonómicas de cadete hacia arriba y sénior, masculino y femenino**. **Fuera**: infantil, provincial, escolar, minibásket y menores. Se anota que el archivo completo (principio de la épica: no descartar datos) queda sin cargar por esa decisión.
 
 ## Qué implica para las épicas
 
 - **Catálogo** (`config/competitions.json`): las entradas de FBCYL de formación llevarán `category: formacion`, `age_group` (`U14` infantil, `U16` cadete, `U18` júnior) y `label`, como las de FEB (#914). El catálogo ya valida la edad.
 - **#885 (D1, enlace FBCYL↔FEB)**: es más necesario con formación (un jugador sube de cadete a júnior y a sénior sin id común); la corroboración será por nombre y año de nacimiento, que FBCYL no trae: la fecha solo estará en el lado FEB.
-- **#887 (D3, FIBA)**: arrancar con **plantillas** (nacimiento, altura, posición) y líderes, que son públicos y rellenan huecos de FEB (#910); la caja espera a la decisión 1. U20 y U19 entran como sénior, **no** como formación.
+- **#887 (D3, FIBA)**: **plantillas** (nacimiento, altura, posición), líderes y **caja por partido desde la jugada a jugada pública**, que rellenan huecos de FEB (#910); la clave solo para minutos y sin depender de ella. U20 y U19 entran como sénior, **no** como formación.
 - **Selector**: FBCYL tendrá nivel Categoría (Sénior / Formación) bajo su ámbito, sin cambios en el selector.
 
 ## Límites de esta evaluación
 
 - FBCYL: **solo se midieron las tres últimas temporadas** y el territorial `0` (todos); una muestra de 12 grupos de 7 categorías para la estadística por partido.
-- FIBA: sin archivo antiguo, sin divisiones B y C, sin U17 y sin caja por partido.
+- FIBA: sin archivo antiguo, sin divisiones B y C, sin U17; la caja se validó con **un** jugador y partido, y los minutos desde la jugada a jugada no se han medido.
 - Los **volúmenes** de partidos son estimados, no contados.
 - No se midió el tiempo real de una carga completa (quedan las tandas del refresco de FEB como referencia, 90 min por ejecución).
