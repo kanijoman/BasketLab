@@ -44,7 +44,7 @@ function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
   const { collection } = useCollection()
 
   return (
-    <header className="h-14 bg-surface border-b border-line flex items-center px-3 sm:px-4 gap-2 sm:gap-4 shrink-0 z-20">
+    <header className="min-h-14 bg-surface border-b border-line flex items-center px-3 sm:px-4 gap-2 sm:gap-4 md:flex-wrap md:py-1.5 xl:flex-nowrap xl:py-0 shrink-0 z-20">
       {/* Menu of the phone (the sidebar is not fixed there, issue #191) */}
       {onOpenMenu && (
         <IconButton icon={Menu} label="Abrir menú" onClick={onOpenMenu} className="-ml-1 shrink-0" />
@@ -68,7 +68,7 @@ function Header({ onOpenMenu }: { onOpenMenu?: () => void }) {
           </span>
         </nav>
       )}
-      {collection && <div className="min-w-0 hidden md:block"><CollectionSwitcher /></div>}
+      {collection && <div className="min-w-0 hidden md:block md:order-last md:basis-full xl:order-none xl:basis-auto empty:hidden"><CollectionSwitcher /></div>}
 
       {/* Right side — future: user avatar / auth */}
       <div className="ml-auto flex items-center gap-2">

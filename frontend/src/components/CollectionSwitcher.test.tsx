@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import CollectionSwitcher from './CollectionSwitcher'
@@ -26,12 +26,27 @@ afterEach(() => vi.restoreAllMocks())
 
 // Issue #191 (U4): change of competition from the header, staying on the same page.
 describe('CollectionSwitcher (issue #191)', () => {
-  it('shows only the levels with something to choose, starting on the current competition (#761)', async () => {
+  it('shows the same selectors whatever the data: ámbito, temporada, competición and grupo, starting on the current competition (#761, #912)', async () => {
     show('/LF2_2025_A/teams')
     const select = await screen.findByRole('combobox', { name: 'Grupo' })
-    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2))
     expect(select).toHaveValue('A')
-    expect(screen.getAllByRole('combobox')).toHaveLength(1)      // one ámbito, one season, one competition: nothing to choose
+    expect(screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))).toEqual(['Ámbito', 'Temporada', 'Competición', 'Grupo'])      // one ámbito, one season, one competition: still selectors
+  })
+
+  it('FBCYL shows the same selectors as FEB even with one season and one competition: the header does not change when you choose it (#912)', async () => {
+    const both = [
+      ...LIST,
+      { name: 'FBCYL_1ª_2026_FASE-GRUPO_A-1', league: 'FBCYL', competition: '1ª', season: '2026 FASE-GRUPO A-1', group: '', game_count: 20 },
+      { name: 'FBCYL_1ª_2026_FASE-GRUPO_A-2', league: 'FBCYL', competition: '1ª', season: '2026 FASE-GRUPO A-2', group: '', game_count: 20 },
+    ] as client.CollectionInfo[]
+    show('/LF2_2025_A/teams', both)
+    const feb = (await screen.findAllByRole('combobox')).map(s => s.getAttribute('aria-label'))
+    cleanup()
+    show('/FBCYL_1ª_2026_FASE-GRUPO_A-1/teams', both)
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Ámbito' })).toHaveValue('FBCYL'))
+    expect(screen.getAllByRole('combobox').map(s => s.getAttribute('aria-label'))).toEqual(feb)
+    expect(screen.getByRole('combobox', { name: 'Temporada' })).toHaveValue('2026/2027')
+    expect(screen.getByRole('combobox', { name: 'Competición' })).toHaveValue('1ª División Femenina')
   })
 
   it('the header shows the group too when it is the only one: it names the phase', async () => {
@@ -41,8 +56,8 @@ describe('CollectionSwitcher (issue #191)', () => {
     ] as client.CollectionInfo[]
     show('/PRIMERA_FEB_2026_2027_Liga_Regular_Único/teams', two)
     expect(await screen.findByRole('combobox', { name: 'Grupo' })).toHaveValue('Liga Regular')
-    expect(screen.getByRole('combobox', { name: 'Competición' })).toHaveValue('PRIMERA FEB')      // two competitions: this one has something to choose
-    expect(screen.queryByRole('combobox', { name: 'Temporada' })).toBeNull()                       // one season: nothing to choose
+    expect(screen.getByRole('combobox', { name: 'Competición' })).toHaveValue('PRIMERA FEB')
+    expect(screen.getByRole('combobox', { name: 'Temporada' })).toHaveValue('2026/2027')            // one season: still a selector (#912)
   })
 
   it('changing the season keeps the page and the competition when they exist there (#761)', async () => {

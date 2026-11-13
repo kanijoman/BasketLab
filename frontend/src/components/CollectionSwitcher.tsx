@@ -1,6 +1,6 @@
 /**
  * Change of competition from the header (issues #191, #761): the same page of the other collection (`/LF2_A/lineups` → `/LF2_B/lineups`), chosen by the levels of the data
- * (ámbito, temporada, competición, grupo) and showing only those with something to choose. With a single competition there is nothing to choose and it renders nothing.
+ * (ámbito, temporada, competición, grupo) and always showing the same ones (#912; the group only when it has a phase or a group to name). With a single competition there is nothing to choose and it renders nothing.
  * The query key and its answer are the home page's (#605).
  */
 import { useQuery } from '@tanstack/react-query'
