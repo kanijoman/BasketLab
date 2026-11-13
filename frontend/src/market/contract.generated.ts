@@ -18,7 +18,7 @@ export interface TalentCompetitionEntry extends FileEntry {
   gender?: 'F' | 'M'
   level?: number
   category?: 'senior' | 'formacion'
-  age_group?: 'U14' | 'U16' | 'U18' | 'U20'
+  age_group?: 'U14' | 'U16' | 'U18'
   competition_label?: string
 }
 

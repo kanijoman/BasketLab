@@ -25,7 +25,7 @@ class TalentCompetitionEntry(FileEntry):
     gender: NotRequired[Literal["F", "M"]]
     level: NotRequired[int]
     category: NotRequired[Literal["senior", "formacion"]]                      # #914: from the catalogue; absent when it does not know the competition
-    age_group: NotRequired[Literal["U14", "U16", "U18", "U20"]]                  # only in formacion
+    age_group: NotRequired[Literal["U14", "U16", "U18"]]                  # only in formacion
     competition_label: NotRequired[str]                                          # the name people read (the youth codes of FEB are not)
 
 
