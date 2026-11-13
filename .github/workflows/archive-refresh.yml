@@ -19,6 +19,19 @@ on:
         description: "Refresh only these competitions (comma separated, e.g. 'tercera feb, lf2'): the first load of a competition is heavy"
         required: false
         default: ""
+      season:
+        description: "Only these seasons, the year they start in (comma separated, e.g. '2025,2024'); empty: all"
+        required: false
+        default: ""
+      league:
+        description: "Only this league: feb or fbcyl; empty: both"
+        required: false
+        default: ""
+      force:
+        description: "Check the closed collections too (a collection whose last game is over 14 days old is checked every 7 days)"
+        type: boolean
+        required: false
+        default: false
   pull_request:
     paths:
       - "run_refresh.py"
@@ -77,7 +90,10 @@ jobs:
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
           ONLY: ${{ github.event.inputs.only }}
-        run: python run_refresh.py --config config/competitions.json --require-env ${ONLY:+--only "$ONLY"}
+          SEASON: ${{ github.event.inputs.season }}
+          LEAGUE: ${{ github.event.inputs.league }}
+          FORCE: ${{ github.event.inputs.force == 'true' && '1' || '' }}
+        run: python run_refresh.py --config config/competitions.json --require-env ${ONLY:+--only "$ONLY"} ${SEASON:+--season "$SEASON"} ${LEAGUE:+--league "$LEAGUE"} ${FORCE:+--force-check}
       # Games stored before a new DERIVED_VERSION get the field here; idempotent and cheap. Runs even if the scrape reported a problem.
       - name: Fill DERIVED in the games
         if: steps.restore.outcome == 'success' && !cancelled()

@@ -17,6 +17,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from src.services.refresh_state import (CLOSED_AFTER_DAYS, MAX_ATTEMPTS, MIN_DAYS_BEFORE_UNAVAILABLE, RECHECK_CLOSED_EVERY_DAYS, REVIEW_UNAVAILABLE_EVERY_DAYS, is_closed, load_state,
+                                        record_check, save_state)
+
 DEFAULT_CONFIG = "config/competitions.json"
 
 
@@ -117,6 +120,29 @@ def only_competitions(entries: List[RefreshEntry], names: List[str]) -> List[Ref
     return [e for e in entries if normalize_name(e.competition_label) in wanted]
 
 
+LEAGUES = ("feb", "fbcyl")
+
+
+def select_entries(entries: List[RefreshEntry], names: List[str], seasons: List[str], league: Optional[str]) -> List[RefreshEntry]:
+    """The entries of a partial refresh (#924): by competition (``only_competitions``), by season (the year it starts in) and by league, all of them together.
+
+    Every season asked for must have at least one entry with the other filters (a typo, or a season that is not loaded, is an error naming it, not an empty refresh)."""
+    if league is not None and league not in LEAGUES:
+        raise ValueError(f"unknown league: {league} (one of {', '.join(LEAGUES)})")
+    chosen = only_competitions(entries, names)
+    if league:
+        chosen = [e for e in chosen if e.league == league]
+    if seasons:
+        wanted = [str(s) for s in seasons]
+        lacking = [s for s in wanted if not any(str(e.season_value) == s for e in chosen)]
+        if lacking:
+            raise ValueError(f"no entries of season {', '.join(lacking)} with those filters")
+        chosen = [e for e in chosen if str(e.season_value) in wanted]
+    if not chosen:
+        raise ValueError("nothing to refresh with those filters")
+    return chosen
+
+
 def ingested_collections(db: Optional[Any], entries: List[RefreshEntry]) -> List[str]:
     """Collection names of ``entries``; the phases of a ``groups: all`` competition are the ones the refresh already stored.
 
@@ -175,36 +201,49 @@ def forgive_no_data(fresh: Dict[str, Any], job: Dict[str, Any], now: datetime) -
     score = fresh.get("missing_score") or {}
     quiet = [c for c in fresh.get("missing_codes") or []
              if c in asked and (score.get(c) in _FORFEIT_SCORES or (since.get(c) and now - datetime.fromisoformat(since[c]) > NO_DATA_AFTER))]
-    if not quiet:
+    gone = [c for c in fresh.get("missing_codes") or [] if c in set(job.get("unavailable") or [])]      # #924: failed 20 times over a week: no longer a hole, listed apart
+    if not quiet and not gone:
         return fresh
-    missing = [c for c in fresh["missing_codes"] if c not in quiet]
+    missing = [c for c in fresh["missing_codes"] if c not in quiet and c not in gone]
     return {**fresh, "missing_codes": missing, "no_data_codes": quiet, "up_to_date": not missing}
 
 
-def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]], now: Callable[[], datetime]) -> Dict[str, Any]:
+def _closed_item(name: str) -> Dict[str, Any]:
+    return {"collection": name, "closed": True, "fatal": None, "job": None, "freshness": None}
+
+
+def _refresh_one(db: Any, entry: RefreshEntry, scraper: Optional[Any], check: Callable[[str], Dict[str, Any]], now: Callable[[], datetime], force: bool = False) -> Dict[str, Any]:
+    from src.database import get_collection_name
     from src.services.feb_match_ingest import scrape_feb_collection
 
+    today = now().date()
+    name = get_collection_name(entry.competition_label, entry.season_label, entry.group_label)
+    if not force and is_closed(load_state(db, name), today):
+        return _closed_item(name)                                                 # nothing can have changed: no request at all (#924)
     label = f"{entry.competition_label}/{entry.season_label}/{entry.group_label}"
     item: Dict[str, Any] = {"collection": label, "fatal": None, "job": None, "freshness": None}
     try:
-        job = scrape_feb_collection(db, entry, scraper)
+        job = scrape_feb_collection(db, entry, scraper, today=today)
         item.update(collection=job["collection"], job=job)
         _ensure_team_index(db, job["collection"])
         _fill_derived(db, job["collection"])
         item["freshness"] = forgive_no_data(check(job["collection"]), job, now())
+        state = load_state(db, job["collection"])
+        record_check(state, item["freshness"].get("up_to_date"), item["freshness"].get("last_game"), today)
+        save_state(db, job["collection"], state)
     except Exception as exc:  # noqa: BLE001 - one failing competition must not block the others
         item["fatal"] = f"{type(exc).__name__}: {exc}"
     return item
 
 
-def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any]) -> Dict[str, Any]:
+def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any], today: Optional[Any] = None) -> Dict[str, Any]:
     """One FBCYL group: the matches not stored yet and the ``DERIVED`` of what came in. There is no calendar to compare with and the team index is of the FEB header."""
     from src.services.fbcyl_match_ingest import scrape_fbcyl_collection
 
     item: Dict[str, Any] = {"collection": f"{entry.competition_label}/{entry.season_label}", "league": "fbcyl", "fatal": None, "job": None, "freshness": None}
     try:
         params = {**entry.fbcyl, "season": entry.season_value, "competition_label": entry.competition_label}
-        job = scrape_fbcyl_collection(db, params, scraper)
+        job = scrape_fbcyl_collection(db, params, scraper, today=today)
         item.update(collection=job["collection"], job=job)
         _fill_derived(db, job["collection"])
     except Exception as exc:  # noqa: BLE001 - one failing group must not block the others
@@ -214,24 +253,30 @@ def _refresh_fbcyl(db: Any, entry: RefreshEntry, scraper: Optional[Any]) -> Dict
 
 def refresh_all(db: Any, entries: List[RefreshEntry], scraper: Optional[Any] = None,
                 freshness: Optional[Callable[[str], Dict[str, Any]]] = None, fbcyl_scraper: Optional[Any] = None,
-                now: Optional[Callable[[], datetime]] = None) -> List[Dict[str, Any]]:
+                now: Optional[Callable[[], datetime]] = None, force: bool = False) -> List[Dict[str, Any]]:
     from src.services.data_freshness_service import DataFreshnessService
     from src.services.match_schedule_service import _madrid_now
 
     check = freshness or DataFreshnessService(db).check
     now = now or _madrid_now
     report = []
+    today = now().date()
     for entry in entries:
         if entry.league == "fbcyl":
-            report.append(_refresh_fbcyl(db, entry, fbcyl_scraper))
+            report.append(_refresh_fbcyl(db, entry, fbcyl_scraper, today))
             continue
+        if not force:
+            known = ingested_collections(db, [entry])
+            if known and all(is_closed(load_state(db, n), today) for n in known):
+                report.extend(_closed_item(n) for n in known)              # every phase closed: not even discovered in FEB (a new phase shows up when the week is over)
+                continue
         try:
             concrete = expand_entries([entry], scraper)
         except Exception as exc:  # noqa: BLE001 - a failed discovery is that competition's error only
             report.append({"collection": f"{entry.competition_label}/{entry.season_label}", "fatal": f"{type(exc).__name__}: {exc}",
                            "job": None, "freshness": None})
             continue
-        report.extend(_refresh_one(db, e, scraper, check, now) for e in concrete)
+        report.extend(_refresh_one(db, e, scraper, check, now, force) for e in concrete)
     return report
 
 
@@ -241,7 +286,13 @@ def needs_attention(report: List[Dict[str, Any]]) -> bool:
 
 def to_markdown(report: List[Dict[str, Any]]) -> str:
     out = ["# Refresco de Atlas", ""]
+    closed = [r["collection"] for r in report if r.get("closed")]
+    if closed:
+        shown = ", ".join(closed[:10]) + (f" y {len(closed) - 10} más" if len(closed) > 10 else "")
+        out += [f"## Colecciones cerradas: {len(closed)}", f"- Sin comprobar este refresco (último partido de hace más de {CLOSED_AFTER_DAYS} días y al día; se comprueban cada {RECHECK_CLOSED_EVERY_DAYS} días): {shown}", ""]
     for r in report:
+        if r.get("closed"):
+            continue
         out.append(f"## {r['collection']}")
         if r["fatal"]:
             out.append(f"- **Error**: {r['fatal']}")
@@ -251,6 +302,8 @@ def to_markdown(report: List[Dict[str, Any]]) -> str:
         source = "FBCYL" if r.get("league") == "fbcyl" else "FEB"
         out.append(f"- Partidos en {source}: {job['total']} · nuevos guardados: {stored} · ya existentes o en juego: "
                    f"{job['skipped']} · errores: {len(job['errors'])}")
+        if job.get("unavailable"):
+            out.append(f"- No disponibles (fallaron {MAX_ATTEMPTS} veces en al menos {MIN_DAYS_BEFORE_UNAVAILABLE} días; se piden una vez cada {REVIEW_UNAVAILABLE_EVERY_DAYS} días): {', '.join(job['unavailable'])}")
         if source == "FBCYL":
             out.extend(f"  - {e}" for e in job["errors"][:10])
             continue                                              # FBCYL has no calendar to compare with
@@ -274,13 +327,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--only", action="append", default=[], metavar="COMPETITION",
                         help="refresh only this competition (repeatable; comma separated also works), e.g. 'tercera feb'")
+    parser.add_argument("--season", action="append", default=[], metavar="YEAR",
+                        help="refresh only this season, the year it starts in (repeatable; comma separated also works), e.g. 2025")
+    parser.add_argument("--league", choices=LEAGUES, help="refresh only this league")
+    parser.add_argument("--force-check", action="store_true", help="check the closed collections too (by default a collection whose last game is over 14 days old and was up to date is checked every 7 days)")
     parser.add_argument("--require-env", action="store_true", help="fail unless MONGODB_CONNECTION_STRING is set (CI)")
     args = parser.parse_args(argv)
     if args.require_env and not os.environ.get("MONGODB_CONNECTION_STRING"):
         print("MONGODB_CONNECTION_STRING is not set (the workflow restores the archive into an ephemeral Mongo and sets it)", file=sys.stderr)
         return 2
     try:
-        entries = only_competitions(load_config(args.config), [n.strip() for a in args.only for n in a.split(",") if n.strip()])
+        entries = select_entries(load_config(args.config), [n.strip() for a in args.only for n in a.split(",") if n.strip()],
+                                 [s.strip() for a in args.season for s in a.split(",") if s.strip()], args.league)
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 2
@@ -290,7 +348,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not db.is_connected():
         print("No se pudo conectar a la base de datos", file=sys.stderr)
         return 2
-    report = refresh_all(db, entries)
+    report = refresh_all(db, entries, force=args.force_check)
     text = to_markdown(report)
     print(text)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")

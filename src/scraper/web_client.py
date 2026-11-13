@@ -2,9 +2,46 @@
 
 import requests
 from typing import Optional, Dict, Callable
+import re
+from urllib.parse import parse_qs, urlsplit
+
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from .constants import DEFAULT_TIMEOUT, DEFAULT_HEADERS
+
+# FEB links its own pages as http:// and the server answers 301 to https:// (26 of the 87 requests of a collection were that hop, #924): for the hosts known to do it the request goes
+# straight to https. Any other host (a local fake server, for one) is left as it is.
+HTTPS_HOSTS = frozenset({"baloncestoenvivo.feb.es", "www.fbcyl.es"})
+
+
+def _feb_canonical(url: str) -> Optional[str]:
+    """The address FEB redirects calendario.aspx?g=G&t=T&nm=NM, resultados.aspx?... and Series.aspx?f=ID to (301 to http://, then another 301 to https://: three requests for one
+    page); None for anything that is not exactly one of those."""
+    parts = urlsplit(url)
+    if (parts.hostname or "").lower() != "baloncestoenvivo.feb.es":
+        return None
+    page, query = parts.path.lstrip("/").lower(), parse_qs(parts.query, keep_blank_values=True)
+    if page in ("calendario.aspx", "resultados.aspx") and set(query) == {"g", "t", "nm"} and all(len(v) == 1 for v in query.values()):
+        group, season, name = query["g"][0], query["t"][0], query["nm"][0]
+        if group.isdigit() and season.isdigit() and re.fullmatch(r"[A-Za-z0-9_-]+", name):
+            return f"https://baloncestoenvivo.feb.es/{page[:-5]}/{name}/{group}/{season}"
+    if page == "series.aspx" and set(query) == {"f"} and len(query["f"]) == 1 and query["f"][0].isdigit():
+        return f"https://baloncestoenvivo.feb.es/series/{query['f'][0]}"
+    return None
+
+
+def secure_scheme(url: str) -> str:
+    """url over https when its host is one of HTTPS_HOSTS and it says http (the only change a POST gets: it goes where its form posts)."""
+    parts = urlsplit(url)
+    if parts.scheme.lower() == "http" and (parts.hostname or "").lower() in HTTPS_HOSTS:
+        return "https://" + url.split("://", 1)[1]
+    return url
+
+
+def secure_url(url: str) -> str:
+    """The address to ask for url (GET): the canonical one FEB would redirect to, or https when the host is one of HTTPS_HOSTS and it says http; otherwise as it is."""
+    return _feb_canonical(url) or secure_scheme(url)
+
 
 # Retry decorator for transient network failures: 3 attempts with 1s/2s/4s back-off
 _retry_on_connection_error = retry(
@@ -82,14 +119,14 @@ class WebClient:
     @_retry_on_connection_error
     def _execute_get(self, url: str, headers: Dict, timeout: int) -> requests.Response:
         """Execute a GET request; retried on ConnectionError/Timeout."""
-        response = self.session.get(url, headers=headers, timeout=timeout)
+        response = self.session.get(secure_url(url), headers=headers, timeout=timeout)
         response.raise_for_status()
         return response
 
     @_retry_on_connection_error
     def _execute_post(self, url: str, data: Dict, headers: Dict, timeout: int) -> requests.Response:
         """Execute a POST request; retried on ConnectionError/Timeout."""
-        response = self.session.post(url, data=data, headers=headers, timeout=timeout)
+        response = self.session.post(secure_scheme(url), data=data, headers=headers, timeout=timeout)
         response.raise_for_status()
         return response
 

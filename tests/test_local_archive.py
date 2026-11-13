@@ -320,3 +320,28 @@ def test_the_entry_point_has_an_index_command():
     with pytest.raises(SystemExit) as stop:
         run_archive.main(["index", "--help"])
     assert stop.value.code == 0
+
+
+REFRESH = {"checked": "2026-11-13", "last_game": "2026-10-04", "failed": {"9": {"n": 3, "first": "2026-11-11", "last": "2026-11-13", "why": "No data"}}}
+
+
+def test_the_refresh_state_travels_in_the_archive_so_the_next_run_remembers_it_924(db, tmp_path):
+    """#924: the closed collections and the failing matches are remembered between runs because the archive is all that is kept: the state lives in the metadata."""
+    db[META].insert_one(_meta(NAMES[2], refresh=REFRESH))
+    dump_archive(db, tmp_path, light=lambda name: False)
+    target = new_mock_db("restored")
+    load_archive(tmp_path, target)
+    assert target[META].find_one({"_id": NAMES[2]})["refresh"] == REFRESH
+
+
+def test_saving_the_same_refresh_state_again_changes_no_byte_and_a_changed_one_changes_the_metadata_file_only_924(db, tmp_path):
+    db[META].insert_one(_meta(NAMES[2], refresh=REFRESH))
+    dump_archive(db, tmp_path, light=lambda name: False)
+    first = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    db[META].replace_one({"_id": NAMES[2]}, _meta(NAMES[2], saved_at="2026-11-14T08:00:00+00:00", refresh=REFRESH))        # the same state, a later scrape
+    dump_archive(db, tmp_path, light=lambda name: False)
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == first
+    db[META].replace_one({"_id": NAMES[2]}, _meta(NAMES[2], refresh={**REFRESH, "checked": "2026-11-20"}))
+    dump_archive(db, tmp_path, light=lambda name: False)
+    changed = {p.name for p in tmp_path.iterdir() if p.read_bytes() != first.get(p.name)}
+    assert changed == {META + ".jsonl.gz", "archive.json"}                                    # the metadata and the manifest that hashes it, no game file
