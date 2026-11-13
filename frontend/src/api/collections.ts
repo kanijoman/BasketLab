@@ -33,6 +33,8 @@ export interface CollectionInfo {
   age_group?: 'U14' | 'U16' | 'U18'
   /** The name people read, when the catalogue has one (the youth codes of FEB do not: `C ESP CLUBES JR FEM`) */
   competition_label?: string
+  /** FBCYL (#920): the group as the site writes it; the name of its collection is not readable (and ends in a code that keeps it unique) */
+  group_label?: string
 }
 
 export const getCollectionList = () =>

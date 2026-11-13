@@ -178,7 +178,7 @@ class TestTheRealCatalogue:
     def test_it_loads_with_the_feb_competitions_complete_and_the_fbcyl_groups_to_scrape(self):
         catalogue = load_catalogue(ROOT / DEFAULT_CATALOGUE)
         feb = [e for e in catalogue if e["league"] == "feb" and e.get("packages", True)]
-        assert len(feb) == 8 and all(e["active"] for e in catalogue if e.get("packages", True))
+        assert len(feb) == 8 and all(e["active"] for e in feb)
         assert all(e["groups"] == "all" for e in feb)                             # every competition complete, 3a FEB included (the archive has no 512 MB limit)
         assert all(e["recheck_days"] == 3 for e in feb)                           # the refresh of web-data looks again at the last days
         assert all("packages_groups" not in e or e["packages_groups"] == [] for e in feb)     # and the packages of every group of 3a FEB too (decided 03/11/2026)
@@ -210,10 +210,13 @@ class TestTheRealCatalogue:
         assert {(e["competition"], e["season_value"]) for e in history if e["active"]} == {
             (c, y) for c in ("LF ENDESA", "PRIMERA FEB", "SEGUNDA FEB", "L.F.-2", "LF CHALLENGE", "COPA ESPAÑA") for y in ("2024", "2025")} | {("LIGA U", "2025")}
 
-    def test_the_fbcyl_groups_are_primera_nacional_femenina_a_1_and_a_2(self):
+    def test_the_fbcyl_groups_keep_primera_nacional_femenina_a_1_and_a_2_and_add_the_autonomic_cadete_junior_and_senior_ones(self):
         fbcyl = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "fbcyl"]
-        assert [(e["competition"], e["fbcyl"]["competition_id"]) for e in fbcyl] == [("1ª FASE-GRUPO A-1", "7298"), ("1ª FASE-GRUPO A-2", "7299")]
-        assert {(e["season_value"], e["fbcyl"]["category"], e["fbcyl"]["gender"], e["fbcyl"]["territory"]) for e in fbcyl} == {("2026", "1129", "F", "1")}
+        assert [(e["competition"], e["fbcyl"]["competition_id"]) for e in fbcyl[:2]] == [("1ª FASE-GRUPO A-1", "7298"), ("1ª FASE-GRUPO A-2", "7299")]        # the two that were there, untouched
+        assert {e["fbcyl"]["territory"] for e in fbcyl} == {"1"}                                                  # autonomic only (#920): no provincial, no escolar
+        assert {e["fbcyl"]["gender"] for e in fbcyl} == {"M", "F"}                                                # men and women
+        assert {(e["season_value"], e["active"]) for e in fbcyl} == {("2026", True), ("2025", False), ("2024", False)}      # 2026 loads, the older seasons wait for their batch
+        assert not any(any(w in e["note"].upper() for w in ("INF", "MINI", "ESCOLAR", "PROVINCIAL")) for e in fbcyl)     # nothing below cadete
 
     def test_the_collection_of_a_1_is_the_one_already_stored(self):
         from src.database import get_collection_name

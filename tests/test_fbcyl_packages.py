@@ -102,8 +102,10 @@ class TestTheNextRounds:
 
 class TestTheCatalogue:
     def test_the_active_fbcyl_groups_of_the_catalogue_are_listed_by_the_name_of_their_collection(self):
-        groups = fbcyl_groups(load_catalogue(DEFAULT_CATALOGUE))
-        assert sorted(groups.values()) == ["7298", "7299"]
+        catalogue = load_catalogue(DEFAULT_CATALOGUE)
+        groups = fbcyl_groups(catalogue)
+        assert sorted(groups.values()) == sorted(str(e["fbcyl"]["competition_id"]) for e in catalogue if e["league"] == "fbcyl" and e["active"])       # only the active ones (2026): the paused seasons wait
+        assert {"7298", "7299"} <= set(groups.values())
         assert all(name.startswith("FBCYL_") for name in groups)
 
 

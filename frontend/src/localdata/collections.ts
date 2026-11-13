@@ -17,6 +17,7 @@ export interface PublishedCollection {
   category?: 'senior' | 'formacion'
   age_group?: 'U14' | 'U16' | 'U18'
   competition_label?: string
+  group_label?: string
 }
 
 /** Best-effort parsing of the competition, the season and the group of a collection name (`_parse_components`): FBCYL `FBCYL_{competition}_{season}`, FEB a slug with the year(s) of the season. */
@@ -45,7 +46,7 @@ const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)          
 export function collectionList(published: PublishedCollection[]): CollectionInfo[] {
   const rows = published.map((entry): CollectionInfo => ({
     name: entry.collection, league: entry.league === 'fbcyl' ? 'FBCYL' : 'FEB', ...parseComponents(entry.collection, entry.league === 'fbcyl' ? 'FBCYL' : 'FEB'), game_count: entry.games,
-    ...(entry.category ? { category: entry.category } : {}), ...(entry.age_group ? { age_group: entry.age_group } : {}), ...(entry.competition_label ? { competition_label: entry.competition_label } : {}),
+    ...(entry.category ? { category: entry.category } : {}), ...(entry.age_group ? { age_group: entry.age_group } : {}), ...(entry.competition_label ? { competition_label: entry.competition_label } : {}), ...(entry.group_label ? { group_label: entry.group_label } : {}),
   }))
   return rows.sort((a, b) => compare(a.league, b.league) || compare('-' + a.season, '-' + b.season) || compare(a.competition, b.competition) || compare(a.group, b.group))
 }

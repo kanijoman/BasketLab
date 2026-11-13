@@ -83,9 +83,9 @@ def _previous_reports(out_dir: Path, manifest: Optional[Dict[str, Any]]) -> Dict
 
 
 def _category_fields(category: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    """``category``, ``age_group`` and ``competition_label`` of a competition (#914), when the catalogue says them: the selector of the browser groups and names the competitions with them."""
+    """``category``, ``age_group``, ``competition_label`` and ``group_label`` of a competition (#914, #920), when the catalogue says them: the selector of the browser groups and names the competitions with them."""
     said = category or {}
-    return {**{k: said[k] for k in ("category", "age_group") if said.get(k)}, **({"competition_label": said["label"]} if said.get("label") else {})}
+    return {**{k: said[k] for k in ("category", "age_group") if said.get(k)}, **({"competition_label": said["label"]} if said.get("label") else {}), **({"group_label": said["group_label"]} if said.get("group_label") else {})}
 
 
 def _publish_rows(db: Any, collection: str, out_dir: Path, sealer: Sealer, kept: Optional[Dict[str, Any]], gender: Optional[str] = None,

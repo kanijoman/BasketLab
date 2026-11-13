@@ -1343,6 +1343,3239 @@
       "level": 4,
       "gender": "M",
       "note": "Histórico para Mercado (#876); se activa por tandas (OPERATIONS)"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR-UNICO G6319",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División masculina, 1ª FASE - LIGA REGULAR-UNICO",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "1ª FASE - LIGA REGULAR-UNICO",
+      "fbcyl": {
+        "competition_id": "6319",
+        "category": "1023",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ªDIV.MASC - 2ªFASE - FASE PREVIA ASCENSO TERCERA FEB-UNICO G6960",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División masculina, 1ªDIV.MASC - 2ªFASE - FASE PREVIA ASCENSO TERCERA FEB-UNICO",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "1ªDIV.MASC - 2ªFASE - FASE PREVIA ASCENSO TERCERA FEB-UNICO",
+      "fbcyl": {
+        "competition_id": "6960",
+        "category": "1023",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ªDIV. MASC - 2ªFASE - FINAL FOUR - ASCENSO A TERCERA FEB-ASCENSO G6961",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División masculina, 1ªDIV. MASC - 2ªFASE - FINAL FOUR - ASCENSO A TERCERA FEB-ASCENSO",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "1ªDIV. MASC - 2ªFASE - FINAL FOUR - ASCENSO A TERCERA FEB-ASCENSO",
+      "fbcyl": {
+        "competition_id": "6961",
+        "category": "1023",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR MASCULINO-GR A1 G6326",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, LIGA UEMC JUNIOR MASCULINO-GR A1",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "LIGA UEMC JUNIOR MASCULINO-GR A1",
+      "fbcyl": {
+        "competition_id": "6326",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR MASCULINO-GR A2 G6327",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, LIGA UEMC JUNIOR MASCULINO-GR A2",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "LIGA UEMC JUNIOR MASCULINO-GR A2",
+      "fbcyl": {
+        "competition_id": "6327",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªFASE. CLASIFICACION-ELIMINATORIAS G6784",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, 2ªFASE. CLASIFICACION-ELIMINATORIAS",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "2ªFASE. CLASIFICACION-ELIMINATORIAS",
+      "fbcyl": {
+        "competition_id": "6784",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE. -TITULO G6785",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, 3ª FASE. -TITULO",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "3ª FASE. -TITULO",
+      "fbcyl": {
+        "competition_id": "6785",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE. -CLASIFICACION G6786",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, 3ª FASE. -CLASIFICACION",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "3ª FASE. -CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "6786",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE. FASE FINAL - LIGA UEMC JUN MASC -F4 G6987",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, 4ª FASE. FASE FINAL - LIGA UEMC JUN MASC -F4",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "4ª FASE. FASE FINAL - LIGA UEMC JUN MASC -F4",
+      "fbcyl": {
+        "competition_id": "6987",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "TORNEO INTERNACIONAL U18M - SALAMANCA-U18M G7230",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior masculino, TORNEO INTERNACIONAL U18M - SALAMANCA-U18M",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "TORNEO INTERNACIONAL U18M - SALAMANCA-U18M",
+      "fbcyl": {
+        "competition_id": "7230",
+        "category": "1022",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV. CADETE MASCULINO AUT-GR A1 G6328",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete masculino, 1ª DIV. CADETE MASCULINO AUT-GR A1",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª DIV. CADETE MASCULINO AUT-GR A1",
+      "fbcyl": {
+        "competition_id": "6328",
+        "category": "1020",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV. CADETE MASCULINO AUT-GR A2 G6329",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete masculino, 1ª DIV. CADETE MASCULINO AUT-GR A2",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª DIV. CADETE MASCULINO AUT-GR A2",
+      "fbcyl": {
+        "competition_id": "6329",
+        "category": "1020",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACION-CLASIFICACION G6802",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete masculino, 2ª FASE. CLASIFICACION-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "2ª FASE. CLASIFICACION-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "6802",
+        "category": "1020",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE.-TITULO G6880",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete masculino, 3ª FASE.-TITULO",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "3ª FASE.-TITULO",
+      "fbcyl": {
+        "competition_id": "6880",
+        "category": "1020",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE.-CLASIFICACION G6881",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete masculino, 3ª FASE.-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "3ª FASE.-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "6881",
+        "category": "1020",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE. FASE FINAL - 1ªDIV CAD MAS - -F4 G6989",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete masculino, 4ª FASE. FASE FINAL - 1ªDIV CAD MAS - -F4",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "4ª FASE. FASE FINAL - 1ªDIV CAD MAS - -F4",
+      "fbcyl": {
+        "competition_id": "6989",
+        "category": "1020",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ªF-LR - 2ªJUN.MAS--GR A G6495",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior masculino, 1ªF-LR - 2ªJUN.MAS--GR A",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "1ªF-LR - 2ªJUN.MAS--GR A",
+      "fbcyl": {
+        "competition_id": "6495",
+        "category": "1030",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ªF-LR - 2ªJUN.MAS--GR B G6496",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior masculino, 1ªF-LR - 2ªJUN.MAS--GR B",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "1ªF-LR - 2ªJUN.MAS--GR B",
+      "fbcyl": {
+        "competition_id": "6496",
+        "category": "1030",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.2 G6996",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior masculino, 2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.2",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.2",
+      "fbcyl": {
+        "competition_id": "6996",
+        "category": "1030",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.1 G7111",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior masculino, 2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.1",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "2ªFASE-CLASIF.F4-2ªDIV.JUN.MAS. - -GR.1",
+      "fbcyl": {
+        "competition_id": "7111",
+        "category": "1030",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL (F4) - 2ªDIV JUN MAS-F4 G7009",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior masculino, 3ª FASE - FASE FINAL (F4) - 2ªDIV JUN MAS-F4",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "3ª FASE - FASE FINAL (F4) - 2ªDIV JUN MAS-F4",
+      "fbcyl": {
+        "competition_id": "7009",
+        "category": "1030",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR A G6500",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR A",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR A",
+      "fbcyl": {
+        "competition_id": "6500",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR B G6501",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR B",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR B",
+      "fbcyl": {
+        "competition_id": "6501",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR C G6502",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR C",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ªDIV.CAD.MAS - 1ª FASE - LIGA REGULAR-GR C",
+      "fbcyl": {
+        "competition_id": "6502",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. D G7031",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. D",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. D",
+      "fbcyl": {
+        "competition_id": "7031",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. E G7032",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. E",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. E",
+      "fbcyl": {
+        "competition_id": "7032",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. F G7033",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. F",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD.MAS. - -GR. F",
+      "fbcyl": {
+        "competition_id": "7033",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL (F4) - 2ªDIV CAD MAS-F4 G7034",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 3ª FASE - FASE FINAL (F4) - 2ªDIV CAD MAS-F4",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "3ª FASE - FASE FINAL (F4) - 2ªDIV CAD MAS-F4",
+      "fbcyl": {
+        "competition_id": "7034",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 1 G7115",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 1",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 1",
+      "fbcyl": {
+        "competition_id": "7115",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 2 G7116",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 2",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 2",
+      "fbcyl": {
+        "competition_id": "7116",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 3 G7117",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 3",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ªDIV CAD MAS AUT - 3ª FASE - CLASIFICACION-CLASIF 3",
+      "fbcyl": {
+        "competition_id": "7117",
+        "category": "1025",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FEMENINA - FASE FINAL-1 G7164",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División femenina, 1ª FEMENINA - FASE FINAL-1",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "1ª FEMENINA - FASE FINAL-1",
+      "fbcyl": {
+        "competition_id": "7164",
+        "category": "1018",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FEMENINA - FASE FINAL-2 G7177",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División femenina, 1ª FEMENINA - FASE FINAL-2",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "1ª FEMENINA - FASE FINAL-2",
+      "fbcyl": {
+        "competition_id": "7177",
+        "category": "1018",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIVISION FEMENINA A-GRUPO A1 G6343",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División femenina, 1ª DIVISION FEMENINA A-GRUPO A1",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "1ª DIVISION FEMENINA A-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "6343",
+        "category": "1018",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIVISION FEMENINA A-GRUPO A2 G6344",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División femenina, 1ª DIVISION FEMENINA A-GRUPO A2",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "1ª DIVISION FEMENINA A-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "6344",
+        "category": "1018",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "SENIOR FBCYL FEMENINO - 1ª FASE - COPA-COPA G6342",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Sénior FBCYL femenino, SENIOR FBCYL FEMENINO - 1ª FASE - COPA-COPA",
+      "category": "senior",
+      "label": "Sénior FBCYL femenino",
+      "group_label": "SENIOR FBCYL FEMENINO - 1ª FASE - COPA-COPA",
+      "fbcyl": {
+        "competition_id": "6342",
+        "category": "1024",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "SENIOR FBCYL FEMENINO - 2ªFASE - LIGA REGULAR-UNICO G6364",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Sénior FBCYL femenino, SENIOR FBCYL FEMENINO - 2ªFASE - LIGA REGULAR-UNICO",
+      "category": "senior",
+      "label": "Sénior FBCYL femenino",
+      "group_label": "SENIOR FBCYL FEMENINO - 2ªFASE - LIGA REGULAR-UNICO",
+      "fbcyl": {
+        "competition_id": "6364",
+        "category": "1024",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "SENIOR FBCYL FEMENINO - 3ªFASE -ASCENSO G6962",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Sénior FBCYL femenino, SENIOR FBCYL FEMENINO - 3ªFASE -ASCENSO",
+      "category": "senior",
+      "label": "Sénior FBCYL femenino",
+      "group_label": "SENIOR FBCYL FEMENINO - 3ªFASE -ASCENSO",
+      "fbcyl": {
+        "competition_id": "6962",
+        "category": "1024",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR FEMENINO-GRUPO A1 G6320",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior femenino, LIGA UEMC JUNIOR FEMENINO-GRUPO A1",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "LIGA UEMC JUNIOR FEMENINO-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "6320",
+        "category": "1019",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR FEMENINO-GRUPO A2 G6321",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior femenino, LIGA UEMC JUNIOR FEMENINO-GRUPO A2",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "LIGA UEMC JUNIOR FEMENINO-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "6321",
+        "category": "1019",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACION-ELIMINATORIAS G6787",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior femenino, 2ª FASE. CLASIFICACION-ELIMINATORIAS",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "2ª FASE. CLASIFICACION-ELIMINATORIAS",
+      "fbcyl": {
+        "competition_id": "6787",
+        "category": "1019",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE. -TITULO G6788",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior femenino, 3ª FASE. -TITULO",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "3ª FASE. -TITULO",
+      "fbcyl": {
+        "competition_id": "6788",
+        "category": "1019",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE. -CLASIFICACION G6789",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior femenino, 3ª FASE. -CLASIFICACION",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "3ª FASE. -CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "6789",
+        "category": "1019",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE. FASE FINAL - LIGA UEMC JUN FEM -F4 G6986",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "Liga UEMC júnior femenino, 4ª FASE. FASE FINAL - LIGA UEMC JUN FEM -F4",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "4ª FASE. FASE FINAL - LIGA UEMC JUN FEM -F4",
+      "fbcyl": {
+        "competition_id": "6986",
+        "category": "1019",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV. CADETE FEMENINO AUT-GR A1 G6322",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete femenino, 1ª DIV. CADETE FEMENINO AUT-GR A1",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª DIV. CADETE FEMENINO AUT-GR A1",
+      "fbcyl": {
+        "competition_id": "6322",
+        "category": "1015",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV. CADETE FEMENINO AUT-GR A2 G6323",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete femenino, 1ª DIV. CADETE FEMENINO AUT-GR A2",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª DIV. CADETE FEMENINO AUT-GR A2",
+      "fbcyl": {
+        "competition_id": "6323",
+        "category": "1015",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACION-CLASIFICACION G6803",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete femenino, 2ª FASE. CLASIFICACION-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "2ª FASE. CLASIFICACION-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "6803",
+        "category": "1015",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE.-TITULO G6806",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete femenino, 3ª FASE.-TITULO",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "3ª FASE.-TITULO",
+      "fbcyl": {
+        "competition_id": "6806",
+        "category": "1015",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE.-CLASIFICACION G6807",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete femenino, 3ª FASE.-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "3ª FASE.-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "6807",
+        "category": "1015",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE. FASE FINAL - 1ªDIV CAD FEM - -F4 G6988",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "1ª División cadete femenino, 4ª FASE. FASE FINAL - 1ªDIV CAD FEM - -F4",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "4ª FASE. FASE FINAL - 1ªDIV CAD FEM - -F4",
+      "fbcyl": {
+        "competition_id": "6988",
+        "category": "1015",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. B G6493",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. B",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. B",
+      "fbcyl": {
+        "competition_id": "6493",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. A G6494",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. A",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªDIV.JUN.FEM - 1ª FASE - LIGA REGULAR-GR. A",
+      "fbcyl": {
+        "competition_id": "6494",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª JUN FEM - GRUPO 6 (1 VUELTA)-GRUPO 6 G6514",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ª JUN FEM - GRUPO 6 (1 VUELTA)-GRUPO 6",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ª JUN FEM - GRUPO 6 (1 VUELTA)-GRUPO 6",
+      "fbcyl": {
+        "competition_id": "6514",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 1 G6983",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 1",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 1",
+      "fbcyl": {
+        "competition_id": "6983",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 2 G6984",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 2",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªFASE - CLASIFICACION F4 - 2ª DIV JUNIOR FEM - -GRUPO 2",
+      "fbcyl": {
+        "competition_id": "6984",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV JUN FEM - 3ªFASE - FASE FINAL -F4 G6985",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªDIV JUN FEM - 3ªFASE - FASE FINAL -F4",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªDIV JUN FEM - 3ªFASE - FASE FINAL -F4",
+      "fbcyl": {
+        "competition_id": "6985",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 01 G7080",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 01",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 01",
+      "fbcyl": {
+        "competition_id": "7080",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 02 G7081",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 02",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ªDIV JUN FEM - 3ªFASE - CLASIFICACION-CLASIF 02",
+      "fbcyl": {
+        "competition_id": "7081",
+        "category": "1029",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR A G6497",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR A",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR A",
+      "fbcyl": {
+        "competition_id": "6497",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR B G6498",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR B",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR B",
+      "fbcyl": {
+        "competition_id": "6498",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR C G6499",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR C",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ªDIV.CAD.FEM - 1ª FASE - LIGA REGULAR-GR C",
+      "fbcyl": {
+        "competition_id": "6499",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. D G7035",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. D",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. D",
+      "fbcyl": {
+        "competition_id": "7035",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. E G7036",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. E",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. E",
+      "fbcyl": {
+        "competition_id": "7036",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. F G7037",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. F",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV..CAD. FEM. -GR. F",
+      "fbcyl": {
+        "competition_id": "7037",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL (F4) - 2ªDIV CAD. FEM.-F4 G7038",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 3ª FASE - FASE FINAL (F4) - 2ªDIV CAD. FEM.-F4",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "3ª FASE - FASE FINAL (F4) - 2ªDIV CAD. FEM.-F4",
+      "fbcyl": {
+        "competition_id": "7038",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 1 G7113",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 1",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 1",
+      "fbcyl": {
+        "competition_id": "7113",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 2 G7114",
+      "season_label": "2025",
+      "season_value": "2025",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 2",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ªDIV. CAD.FEM. AUT - 3ª FASE - CLASIFICACIÓN-CLASIF 2",
+      "fbcyl": {
+        "competition_id": "7114",
+        "category": "1026",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV. MASCULINA)-UNICO G5261",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División masculina, 1ª FASE - LIGA REGULAR (1ªDIV. MASCULINA)-UNICO",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV. MASCULINA)-UNICO",
+      "fbcyl": {
+        "competition_id": "5261",
+        "category": "923",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - COPA CASTILLA Y LEON (1ªDIV.MASCULINA)-COPA G6030",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División masculina, 2ª FASE - COPA CASTILLA Y LEON (1ªDIV.MASCULINA)-COPA",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "2ª FASE - COPA CASTILLA Y LEON (1ªDIV.MASCULINA)-COPA",
+      "fbcyl": {
+        "competition_id": "6030",
+        "category": "923",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - FINAL FOUR - ASCENSO A TERCERA FEB -ASCENSO A TERCERA FEB (BLANCA CASTILLA) G6031",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División masculina, 2ª FASE - FINAL FOUR - ASCENSO A TERCERA FEB -ASCENSO A TERCERA FEB (BLANCA CASTILLA)",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "2ª FASE - FINAL FOUR - ASCENSO A TERCERA FEB -ASCENSO A TERCERA FEB (BLANCA CASTILLA)",
+      "fbcyl": {
+        "competition_id": "6031",
+        "category": "923",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "FASE ASCENSO A TERCERA FEB-ASCENSO G6254",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División masculina, FASE ASCENSO A TERCERA FEB-ASCENSO",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "FASE ASCENSO A TERCERA FEB-ASCENSO",
+      "fbcyl": {
+        "competition_id": "6254",
+        "category": "923",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "INTERNACIONALES SELECCION MASCULINA U20-U20 G6292",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División masculina, INTERNACIONALES SELECCION MASCULINA U20-U20",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "INTERNACIONALES SELECCION MASCULINA U20-U20",
+      "fbcyl": {
+        "competition_id": "6292",
+        "category": "923",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES G5215",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "fbcyl": {
+        "competition_id": "5215",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 1 G5228",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 1",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 1",
+      "fbcyl": {
+        "competition_id": "5228",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 2 G5229",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 2",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS -GRUPO 2",
+      "fbcyl": {
+        "competition_id": "5229",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS -2ª FASE G5448",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, B) MODALIDAD CLUBES Y EQUIPOS -2ª FASE",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS -2ª FASE",
+      "fbcyl": {
+        "competition_id": "5448",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO A G5526",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, 1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO A",
+      "fbcyl": {
+        "competition_id": "5526",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO B G5527",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, 1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (JUNIOR MASCULINO)-GRUPO B",
+      "fbcyl": {
+        "competition_id": "5527",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 01 G6032",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, 2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 01",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 01",
+      "fbcyl": {
+        "competition_id": "6032",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 02 G6033",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, 2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 02",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 02",
+      "fbcyl": {
+        "competition_id": "6033",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 03 G6034",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, 2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 03",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "2ª FASE - 2ª DIVISION JUNIOR MASCULINO-GRUPO 03",
+      "fbcyl": {
+        "competition_id": "6034",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL COPA (JUNIOR)-F4 G6141",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior masculino, 3ª FASE - FASE FINAL COPA (JUNIOR)-F4",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "3ª FASE - FASE FINAL COPA (JUNIOR)-F4",
+      "fbcyl": {
+        "competition_id": "6141",
+        "category": "934",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES G5216",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "fbcyl": {
+        "competition_id": "5216",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01 G5230",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01",
+      "fbcyl": {
+        "competition_id": "5230",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02 G5231",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02",
+      "fbcyl": {
+        "competition_id": "5231",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE G5446",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE",
+      "fbcyl": {
+        "competition_id": "5446",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO A G5520",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO A",
+      "fbcyl": {
+        "competition_id": "5520",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO B G5521",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO B",
+      "fbcyl": {
+        "competition_id": "5521",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO C G5522",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO C",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (CADETE MASCULINO)-GRUPO C",
+      "fbcyl": {
+        "competition_id": "5522",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 01 G6110",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 01",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 01",
+      "fbcyl": {
+        "competition_id": "6110",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 02 G6111",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 02",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 02",
+      "fbcyl": {
+        "competition_id": "6111",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 03 G6112",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 03",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE. CLASIFICACIÓN TITULO DE COPA CYL-GRUPO 03",
+      "fbcyl": {
+        "competition_id": "6112",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION-UNICO G6125",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 2ª FASE - CLASIFICACION-UNICO",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "2ª FASE - CLASIFICACION-UNICO",
+      "fbcyl": {
+        "competition_id": "6125",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL COPA (CADETE)-F4 (CULTURAL) G6143",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete masculino, 3ª FASE - FASE FINAL COPA (CADETE)-F4 (CULTURAL)",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "3ª FASE - FASE FINAL COPA (CADETE)-F4 (CULTURAL)",
+      "fbcyl": {
+        "competition_id": "6143",
+        "category": "932",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A1 G5247",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior masculino, 1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A1",
+      "category": "formacion",
+      "label": "1ª División júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "5247",
+        "category": "924",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A2 G5248",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior masculino, 1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A2",
+      "category": "formacion",
+      "label": "1ª División júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV.JUN.MAS.AUT.)-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "5248",
+        "category": "924",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN-CLASIFICACION G5836",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior masculino, 2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División júnior masculino",
+      "group_label": "2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5836",
+        "category": "924",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-TITULO G5873",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior masculino, 3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "category": "formacion",
+      "label": "1ª División júnior masculino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "fbcyl": {
+        "competition_id": "5873",
+        "category": "924",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION G5874",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior masculino, 3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División júnior masculino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5874",
+        "category": "924",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE - FASE FINAL (1ªDIV.-JUN. MASC.AUT.)-F4 (CB LA FLECHA) G6021",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior masculino, 4ª FASE - FASE FINAL (1ªDIV.-JUN. MASC.AUT.)-F4 (CB LA FLECHA)",
+      "category": "formacion",
+      "label": "1ª División júnior masculino",
+      "group_label": "4ª FASE - FASE FINAL (1ªDIV.-JUN. MASC.AUT.)-F4 (CB LA FLECHA)",
+      "fbcyl": {
+        "competition_id": "6021",
+        "category": "924",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A1 G5249",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete masculino, 1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A1",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "5249",
+        "category": "925",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A2 G5250",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete masculino, 1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A2",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV. CAD.MAS.AUT.)-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "5250",
+        "category": "925",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN-CLASIFICACION G5837",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete masculino, 2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5837",
+        "category": "925",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-TITULO G5866",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete masculino, 3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "fbcyl": {
+        "competition_id": "5866",
+        "category": "925",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION G5867",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete masculino, 3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5867",
+        "category": "925",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE - FASE FINAL (1ªDIV.-CAD. MASC.AUT.)-F4 (CD SAN AGUSTIN) G6023",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete masculino, 4ª FASE - FASE FINAL (1ªDIV.-CAD. MASC.AUT.)-F4 (CD SAN AGUSTIN)",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "4ª FASE - FASE FINAL (1ªDIV.-CAD. MASC.AUT.)-F4 (CD SAN AGUSTIN)",
+      "fbcyl": {
+        "competition_id": "6023",
+        "category": "925",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "Primera Fase - Liga Regular-GRUPO A-1 G5430",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División femenina, Primera Fase - Liga Regular-GRUPO A-1",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "Primera Fase - Liga Regular-GRUPO A-1",
+      "fbcyl": {
+        "competition_id": "5430",
+        "category": "937",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "Primera Fase - Liga Regular-GRUPO A-2 G5431",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División femenina, Primera Fase - Liga Regular-GRUPO A-2",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "Primera Fase - Liga Regular-GRUPO A-2",
+      "fbcyl": {
+        "competition_id": "5431",
+        "category": "937",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "Segunda Fase-FASE FINAL 1 G6150",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División femenina, Segunda Fase-FASE FINAL 1",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "Segunda Fase-FASE FINAL 1",
+      "fbcyl": {
+        "competition_id": "6150",
+        "category": "937",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "Segunda Fase-FASE FINAL 2 G6151",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División femenina, Segunda Fase-FASE FINAL 2",
+      "category": "senior",
+      "label": "1ª División femenina",
+      "group_label": "Segunda Fase-FASE FINAL 2",
+      "fbcyl": {
+        "competition_id": "6151",
+        "category": "937",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "FASE 1. COPA FBCYL-COPA FBCYL G5295",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División femenina, FASE 1. COPA FBCYL-COPA FBCYL",
+      "category": "senior",
+      "label": "2ª División femenina",
+      "group_label": "FASE 1. COPA FBCYL-COPA FBCYL",
+      "fbcyl": {
+        "competition_id": "5295",
+        "category": "930",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "FASE 2. LIGA REGULAR-LR G5296",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División femenina, FASE 2. LIGA REGULAR-LR",
+      "category": "senior",
+      "label": "2ª División femenina",
+      "group_label": "FASE 2. LIGA REGULAR-LR",
+      "fbcyl": {
+        "competition_id": "5296",
+        "category": "930",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "FASE 3. FASE FINAL-FF G5297",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División femenina, FASE 3. FASE FINAL-FF",
+      "category": "senior",
+      "label": "2ª División femenina",
+      "group_label": "FASE 3. FASE FINAL-FF",
+      "fbcyl": {
+        "competition_id": "5297",
+        "category": "930",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES G5219",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "fbcyl": {
+        "competition_id": "5219",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO G5223",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, B) MODALIDAD CLUBES Y EQUIPOS-UNICO",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO",
+      "fbcyl": {
+        "competition_id": "5223",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO A G5512",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO A",
+      "fbcyl": {
+        "competition_id": "5512",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO B G5513",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (JUNIOR FEMENINO)-GRUPO B",
+      "fbcyl": {
+        "competition_id": "5513",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 01 G6041",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 01",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 01",
+      "fbcyl": {
+        "competition_id": "6041",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 02 G6042",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 02",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 02",
+      "fbcyl": {
+        "competition_id": "6042",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 03 G6043",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 03",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ª FASE - 2ª DIVISION JUNIOR FEMENINO-GRUPO 03",
+      "fbcyl": {
+        "competition_id": "6043",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION-GRUPO 01 G6123",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ª FASE - CLASIFICACION-GRUPO 01",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ª FASE - CLASIFICACION-GRUPO 01",
+      "fbcyl": {
+        "competition_id": "6123",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION-GRUPO 02 G6124",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 2ª FASE - CLASIFICACION-GRUPO 02",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "2ª FASE - CLASIFICACION-GRUPO 02",
+      "fbcyl": {
+        "competition_id": "6124",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL COPA (JUNIOR)-F4 - ARELSA G6142",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División júnior femenino, 3ª FASE - FASE FINAL COPA (JUNIOR)-F4 - ARELSA",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "3ª FASE - FASE FINAL COPA (JUNIOR)-F4 - ARELSA",
+      "fbcyl": {
+        "competition_id": "6142",
+        "category": "931",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES G5220",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
+      "fbcyl": {
+        "competition_id": "5220",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO G5222",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, B) MODALIDAD CLUBES Y EQUIPOS-UNICO",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO",
+      "fbcyl": {
+        "competition_id": "5222",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO A G5514",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO A",
+      "fbcyl": {
+        "competition_id": "5514",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO B G5515",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO B",
+      "fbcyl": {
+        "competition_id": "5515",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO C G5516",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO C",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (CADETE FEMENINO)-GRUPO C",
+      "fbcyl": {
+        "competition_id": "5516",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01 G6107",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01",
+      "fbcyl": {
+        "competition_id": "6107",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02 G6108",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02",
+      "fbcyl": {
+        "competition_id": "6108",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03 G6109",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03",
+      "fbcyl": {
+        "competition_id": "6109",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - FASE FINAL COPA (CADETE)-F4 (LIONESS) G6144",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "2ª División cadete femenino, 3ª FASE - FASE FINAL COPA (CADETE)-F4 (LIONESS)",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "3ª FASE - FASE FINAL COPA (CADETE)-F4 (LIONESS)",
+      "fbcyl": {
+        "competition_id": "6144",
+        "category": "933",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A1 G5253",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior femenino, 1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A1",
+      "category": "formacion",
+      "label": "1ª División júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "5253",
+        "category": "927",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A2 G5254",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior femenino, 1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A2",
+      "category": "formacion",
+      "label": "1ª División júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ª DIV. JUN.FEM.AUT.)-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "5254",
+        "category": "927",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN-CLASIFICACION G5839",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior femenino, 2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División júnior femenino",
+      "group_label": "2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5839",
+        "category": "927",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-TITULO G5875",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior femenino, 3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "category": "formacion",
+      "label": "1ª División júnior femenino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "fbcyl": {
+        "competition_id": "5875",
+        "category": "927",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION G5876",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior femenino, 3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División júnior femenino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5876",
+        "category": "927",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE - FASE FINAL (1ªDIV.-JUN. FEM.AUT.)-F4 (CB LIONESS) G6022",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División júnior femenino, 4ª FASE - FASE FINAL (1ªDIV.-JUN. FEM.AUT.)-F4 (CB LIONESS)",
+      "category": "formacion",
+      "label": "1ª División júnior femenino",
+      "group_label": "4ª FASE - FASE FINAL (1ªDIV.-JUN. FEM.AUT.)-F4 (CB LIONESS)",
+      "fbcyl": {
+        "competition_id": "6022",
+        "category": "927",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A1 G5255",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete femenino, 1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A1",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "5255",
+        "category": "928",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A2 G5256",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete femenino, 1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A2",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR (1ªDIV.CAD.FEM.AUT.)-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "5256",
+        "category": "928",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "2ª FASE. CLASIFICACIÓN-CLASIFICACION G5840",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete femenino, 2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "2ª FASE. CLASIFICACIÓN-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5840",
+        "category": "928",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-TITULO G5864",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete femenino, 3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-TITULO",
+      "fbcyl": {
+        "competition_id": "5864",
+        "category": "928",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION G5865",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete femenino, 3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "3ª FASE - TITULO Y CLASIFICACION-CLASIFICACION",
+      "fbcyl": {
+        "competition_id": "5865",
+        "category": "928",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "4ª FASE - FINAL FOUR (1ªDIV.-CAD.FEM.AUT.)-F4 (BTO. FEMENINO BURGOS) G6024",
+      "season_label": "2024",
+      "season_value": "2024",
+      "active": false,
+      "note": "1ª División cadete femenino, 4ª FASE - FINAL FOUR (1ªDIV.-CAD.FEM.AUT.)-F4 (BTO. FEMENINO BURGOS)",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "4ª FASE - FINAL FOUR (1ªDIV.-CAD.FEM.AUT.)-F4 (BTO. FEMENINO BURGOS)",
+      "fbcyl": {
+        "competition_id": "6024",
+        "category": "928",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE. 1ª DIV. MASCULINA-GRUPO A G7279",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División masculina, 1ª FASE. 1ª DIV. MASCULINA-GRUPO A",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "1ª FASE. 1ª DIV. MASCULINA-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7279",
+        "category": "1134",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE. 1ª DIV. MASCULINA-GRUPO B G7280",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División masculina, 1ª FASE. 1ª DIV. MASCULINA-GRUPO B",
+      "category": "senior",
+      "label": "1ª División masculina",
+      "group_label": "1ª FASE. 1ª DIV. MASCULINA-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7280",
+        "category": "1134",
+        "gender": "M",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A G7239",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior masculino, LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7239",
+        "category": "1132",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B G7240",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior masculino, LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7240",
+        "category": "1132",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C G7241",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior masculino, LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "fbcyl": {
+        "competition_id": "7241",
+        "category": "1132",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS G7258",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior masculino, LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "LIGA UEMC JUNIOR MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "fbcyl": {
+        "competition_id": "7258",
+        "category": "1132",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A1 G7282",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior masculino, 1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A1",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "7282",
+        "category": "1132",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A2 G7283",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior masculino, 1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A2",
+      "category": "formacion",
+      "label": "Liga UEMC júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR LUEMC MASC-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "7283",
+        "category": "1132",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A G7245",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete masculino, 1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7245",
+        "category": "1131",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B G7246",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete masculino, 1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7246",
+        "category": "1131",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C G7247",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete masculino, 1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "fbcyl": {
+        "competition_id": "7247",
+        "category": "1131",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS G7261",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete masculino, 1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª DIV CADETE MASC - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "fbcyl": {
+        "competition_id": "7261",
+        "category": "1131",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A1 G7284",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete masculino, 1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A1",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "7284",
+        "category": "1131",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A2 G7285",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete masculino, 1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A2",
+      "category": "formacion",
+      "label": "1ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 1ªDIV CAD MAS-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "7285",
+        "category": "1131",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO A G7426",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División júnior masculino, 1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7426",
+        "category": "1138",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO B G7427",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División júnior masculino, 1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División júnior masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV JUN MAS-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7427",
+        "category": "1138",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO A G7428",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División cadete masculino, 1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7428",
+        "category": "1141",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO B G7429",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División cadete masculino, 1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7429",
+        "category": "1141",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO C G7430",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División cadete masculino, 1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO C",
+      "category": "formacion",
+      "label": "2ª División cadete masculino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV CAD MAS-GRUPO C",
+      "fbcyl": {
+        "competition_id": "7430",
+        "category": "1141",
+        "gender": "M",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "SENIOR FBCYL FEMENINO - 1ª FASE. LR-UNICO G7424",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Sénior FBCYL femenino, SENIOR FBCYL FEMENINO - 1ª FASE. LR-UNICO",
+      "category": "senior",
+      "label": "Sénior FBCYL femenino",
+      "group_label": "SENIOR FBCYL FEMENINO - 1ª FASE. LR-UNICO",
+      "fbcyl": {
+        "competition_id": "7424",
+        "category": "1143",
+        "gender": "F",
+        "territory": "1"
+      }
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A G7242",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior femenino, LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7242",
+        "category": "1130",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B G7243",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior femenino, LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7243",
+        "category": "1130",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C G7244",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior femenino, LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "fbcyl": {
+        "competition_id": "7244",
+        "category": "1130",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS G7259",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior femenino, LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "LIGA UEMC JUNIOR FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "fbcyl": {
+        "competition_id": "7259",
+        "category": "1130",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A1 G7292",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior femenino, 1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A1",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "7292",
+        "category": "1130",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A2 G7293",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "Liga UEMC júnior femenino, 1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A2",
+      "category": "formacion",
+      "label": "Liga UEMC júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR UEMC FEM-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "7293",
+        "category": "1130",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A G7249",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete femenino, 1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7249",
+        "category": "1126",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B G7250",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete femenino, 1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7250",
+        "category": "1126",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C G7251",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete femenino, 1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-GRUPO C",
+      "fbcyl": {
+        "competition_id": "7251",
+        "category": "1126",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS G7260",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete femenino, 1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª DIV CADETE FEM - FASE PREVIA CLASIFICACIÓN-2ª FASE - ELIMINATORIAS",
+      "fbcyl": {
+        "competition_id": "7260",
+        "category": "1126",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A1 G7294",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete femenino, 1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A1",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A1",
+      "fbcyl": {
+        "competition_id": "7294",
+        "category": "1126",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A2 G7295",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "1ª División cadete femenino, 1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A2",
+      "category": "formacion",
+      "label": "1ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 1ª DIV. CAD. FEM.-GRUPO A2",
+      "fbcyl": {
+        "competition_id": "7295",
+        "category": "1126",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO A G7434",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División júnior femenino, 1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7434",
+        "category": "1137",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO B G7435",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División júnior femenino, 1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División júnior femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV JUN FEM-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7435",
+        "category": "1137",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U18"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO A G7436",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División cadete femenino, 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO A",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO A",
+      "fbcyl": {
+        "competition_id": "7436",
+        "category": "1135",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO B G7437",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División cadete femenino, 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO B",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO B",
+      "fbcyl": {
+        "competition_id": "7437",
+        "category": "1135",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
+    },
+    {
+      "league": "fbcyl",
+      "competition": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO C G7438",
+      "season_label": "2026",
+      "season_value": "2026",
+      "active": true,
+      "note": "2ª División cadete femenino, 1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO C",
+      "category": "formacion",
+      "label": "2ª División cadete femenino",
+      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV CAD FEM-GRUPO C",
+      "fbcyl": {
+        "competition_id": "7438",
+        "category": "1135",
+        "gender": "F",
+        "territory": "1"
+      },
+      "age_group": "U16"
     }
   ]
 }

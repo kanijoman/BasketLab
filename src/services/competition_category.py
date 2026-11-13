@@ -71,6 +71,8 @@ def category_facts(entry: Dict[str, Any]) -> Dict[str, Any]:
         out["age_group"] = entry["age_group"]
     if entry.get("label"):
         out["label"] = entry["label"]
+    if entry.get("group_label"):
+        out["group_label"] = entry["group_label"]            # FBCYL: the group as the site writes it (its collection name is not readable)
     return out
 
 

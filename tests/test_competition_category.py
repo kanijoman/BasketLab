@@ -90,12 +90,14 @@ def test_a_youth_entry_needs_its_age_group_and_its_name(tmp_path):
 
 
 def test_the_six_youth_championships_of_the_real_catalogue_are_formacion_with_their_age_group_and_every_other_competition_is_not():
-    youth = [e for e in CATALOGUE if e.get("category") == "formacion"]
+    youth = [e for e in CATALOGUE if e.get("category") == "formacion" and e["league"] == "feb"]
     assert {e["competition"] for e in youth} == FORMATION
     assert all(e["age_group"] in ("U16", "U18") and e["label"] for e in youth)
     assert {e["age_group"] for e in youth if "CAD" in e["competition"] or "Cadete" in e["competition"]} == {"U16"}
     assert {e["age_group"] for e in youth if "JR" in e["competition"]} == {"U18"}
-    assert all(e.get("category", "senior") == "senior" for e in CATALOGUE if e["competition"] not in FORMATION)
+    assert all(e.get("category", "senior") == "senior" for e in CATALOGUE if e["league"] == "feb" and e["competition"] not in FORMATION)
+    fbcyl_youth = [e for e in CATALOGUE if e["league"] == "fbcyl" and e.get("category") == "formacion"]
+    assert fbcyl_youth and {e["age_group"] for e in fbcyl_youth} == {"U16", "U18"} and all(e["label"] and e["group_label"] for e in fbcyl_youth)      # #920: cadete and júnior, never infantil
 
 
 @pytest.mark.parametrize("collection, category, age_group, label", [
@@ -123,11 +125,11 @@ def test_the_result_does_not_depend_on_the_order_and_changes_nothing():
 
 
 def test_the_rows_entry_of_the_manifest_has_the_category_when_it_is_known_and_the_bytes_do_not_change_between_runs(handler, tmp_path):
-    said = {FEB: {"category": "formacion", "age_group": "U16", "label": "Cadete test"}, FBCYL: {"category": "senior"}}
+    said = {FEB: {"category": "formacion", "age_group": "U16", "label": "Cadete test", "group_label": "Fase de grupos A"}, FBCYL: {"category": "senior"}}
     manifest = publish_web_data(handler, tmp_path, ScopedSealer(MASTER), [FEB, FBCYL], categories=said)
     by = {e["collection"]: e for e in manifest["rows"]}
-    assert (by[FEB]["category"], by[FEB]["age_group"], by[FEB]["competition_label"]) == ("formacion", "U16", "Cadete test")
-    assert by[FBCYL]["category"] == "senior" and "age_group" not in by[FBCYL] and "competition_label" not in by[FBCYL]
+    assert (by[FEB]["category"], by[FEB]["age_group"], by[FEB]["competition_label"], by[FEB]["group_label"]) == ("formacion", "U16", "Cadete test", "Fase de grupos A")
+    assert by[FBCYL]["category"] == "senior" and not {"age_group", "competition_label", "group_label"} & set(by[FBCYL])
     none = publish_web_data(handler, tmp_path / "none", ScopedSealer(MASTER), [FEB])
     assert "category" not in none["rows"][0]                                # without a category the entry is what it was
     before = {p.name: p.read_bytes() for p in (tmp_path / "rows").glob("*.json")}
