@@ -41,7 +41,7 @@ const withCompetition = (entry: TalentCompetitionEntry, rows: Awaited<ReturnType
 
 export default function SearchPage() {
   const [params, setParams] = useSearchParams()
-  const manifest = useQuery({ queryKey: ['talent', 'competitions'], queryFn: loadTalentCompetitions })
+  const manifest = useQuery({ queryKey: ['talent-competitions'], queryFn: loadTalentCompetitions })
   const entries = useMemo(() => manifest.data ?? [], [manifest.data])
   const start = useMemo(() => defaultSearch(entries), [entries])
   const season = params.get('s') ?? start.season
@@ -54,7 +54,7 @@ export default function SearchPage() {
     for (const [k, v] of Object.entries(patch)) { if (v === null) next.delete(k); else next.set(k, v) }
     setParams(next, { replace: true })
   }
-  const loaded = useQueries({ queries: chosen.map(key => ({ queryKey: ['talent', 'rows', key], queryFn: () => loadCompetitionRows(key) })) })
+  const loaded = useQueries({ queries: chosen.map(key => ({ queryKey: ['talent-rows', key], queryFn: () => loadCompetitionRows(key) })) })
   const failed = chosen.filter((_, i) => loaded[i]?.isError).map(k => ofSeason.find(e => e.key === k)?.competition ?? k)
   const loading = loaded.some(q => q.isLoading)
   const all = useMemo(() => loaded.flatMap((q, i) => (q.data ? withCompetition(ofSeason.find(e => e.key === chosen[i])!, q.data.rows) : [])),
