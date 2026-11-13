@@ -8,11 +8,12 @@ the archive: a team adds up to 12,000 in FEB and to 200 in FBCYL for 5 x 40 minu
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, Iterable, List, Mapping, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+
+from src.market.bio import canonical_position, normalize_height, position_group
 
 COUNTS = ("pts", "p1m", "p1a", "p2m", "p2a", "p3m", "p3a", "assist", "ro", "rd", "rt", "st", "to", "bs", "pf", "rf", "val", "pllss")
 FBCYL_SECONDS_PER_MINUTE = 60
-BIO = ("birth", "height", "position", "nationality", "formacion", "dorsal")
 
 
 def _number(value: Any) -> float:
@@ -56,19 +57,56 @@ def season_player_rows(parts: Iterable[Tuple[str, Mapping[str, Any]]]) -> List[D
     return out
 
 
-def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str) -> List[Dict[str, Any]]:
-    """The rows with ``full_name`` and the bio of the FEB roster (``roster_sweep``): birth date, height, position, nationality, formacion and shirt number.
+def _year(season: Any) -> int:
+    try:
+        return int(str(season))
+    except ValueError:
+        return 0
 
-    The key is the person, the season and the team: the roster of the team of the row wins (position and shirt number belong to it). A team of a transfer that has no roster of its own takes
-    the person's data from another team of the same season; what nobody says is None, never a guess (FBCYL has no roster)."""
-    own: Dict[Tuple[str, str], Mapping[str, Any]] = {}
-    person: Dict[str, Mapping[str, Any]] = {}
-    for r in sorted((r for r in roster if str(r.get("season")) == str(season)), key=lambda r: (r["person_id"], str(r["team_id"]))):
-        own.setdefault((r["person_id"], str(r["team_id"])), r)
-        person.setdefault(r["person_id"], r)
-    out = []
-    for row in rows:
-        mine = own.get((row["person_id"], str(row["team_id"])))
-        anyone = mine or person.get(row["person_id"])
-        out.append({**row, "full_name": (anyone or {}).get("name"), **{f: (anyone or {}).get(f) for f in BIO}})
-    return out
+
+def _closeness(r: Mapping[str, Any], season: str, team: str) -> Tuple[int, int, int, str]:
+    """Order of the roster rows of a person for a row of ``season`` and ``team``: that team and season, another team of the season, then the nearest seasons (a tie goes to the later one)."""
+    if str(r.get("season")) == season:
+        return (0 if str(r["team_id"]) == team else 1, 0, 0, str(r["team_id"]))
+    gap = _year(r.get("season")) - _year(season)
+    return (2, abs(gap), -gap, str(r["team_id"]))
+
+
+def _first(candidates: List[Mapping[str, Any]], read: Any) -> Tuple[Any, Optional[Mapping[str, Any]]]:
+    """The first value ``read`` finds in the candidates (None where nobody says it) and the roster row it came from."""
+    for r in candidates:
+        value = read(r)
+        if value is not None:
+            return value, r
+    return None, None
+
+
+def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str) -> Dict[str, Any]:
+    """The bio of one row, FIELD BY FIELD (#910): FEB leaves height and position empty for most players, so an empty field takes the same person's value from another team of the
+    season or from the nearest season; ``bio_from`` says where each of those came from (``season:team``), and is empty when the roster of the row said it all. Formation and shirt number
+    belong to the team and the season: they come from that roster, or (a transfer without roster of its own) from another team of the season, never from another season."""
+    team = str(row["team_id"])
+    ordered = sorted(mine, key=lambda r: _closeness(r, season, team))
+    same_season = [r for r in ordered if str(r.get("season")) == season]
+    fields: Dict[str, Any] = {}
+    origin: Dict[str, str] = {}
+    reads = {"full_name": lambda r: r.get("name") or None, "birth": lambda r: r.get("birth") or None, "nationality": lambda r: r.get("nationality") or None,
+             "height": lambda r: normalize_height(r.get("height")), "position": lambda r: canonical_position(r.get("position"))}
+    for field, read in reads.items():
+        fields[field], found = _first(ordered, read)
+        if found is not None and (str(found.get("season")), str(found["team_id"])) != (season, team) and field != "full_name":
+            origin[field] = f"{found.get('season')}:{found['team_id']}"
+    fields["position_group"], _ = _first(ordered, lambda r: position_group(r.get("position")))
+    fields["formacion"], _ = _first(same_season, lambda r: r.get("formacion"))
+    fields["dorsal"], _ = _first(same_season, lambda r: r.get("dorsal"))
+    return {**fields, "bio_from": origin}
+
+
+def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str) -> List[Dict[str, Any]]:
+    """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season): birth date, height (cm), position, nationality, formacion and shirt number.
+
+    Each field is resolved on its own (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say."""
+    by_person: Dict[str, List[Mapping[str, Any]]] = {}
+    for r in roster:
+        by_person.setdefault(r["person_id"], []).append(r)
+    return [{**row, **_bio_of(row, by_person.get(row["person_id"], []), str(season))} for row in rows]

@@ -32,7 +32,9 @@ export interface TalentRow {
   assist: number; ro: number; rd: number; rt: number; st: number; to: number; bs: number; pf: number; rf: number; val: number; pllss: number
   usage_pct: number; orating: number; drating: number; net_rtg: number; ast_pct: number; tov_pct_adv: number
   stl_pct: number; blk_pct: number; drb_pct: number; orb_pct: number; pie: number
-  birth: string | null; height: number | null; position: string | null; nationality: string | null; formacion: boolean | null; dorsal: number | null
+  birth: string | null; height: number | null; position: string | null; position_group: 'G' | 'F' | 'C' | null; nationality: string | null; formacion: boolean | null; dorsal: number | null
+  /** Height, position, birth date or nationality that the roster of the row did not say and another team or season of the same person did: `{ height: '2024:10' }` (season:team). */
+  bio_from: Record<string, string>
   eligible: boolean
   per40: TalentRates | null
   role: TalentRole | null

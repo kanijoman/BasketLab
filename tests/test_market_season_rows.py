@@ -138,9 +138,40 @@ class TestBio:
         (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10")], "2025")
         assert (row["birth"], row["height"], row["position"], row["nationality"], row["formacion"], row["full_name"]) == ("2004-05-06", 178, "Base", "ESPAÑA", True, "ANA BEATRIZ CASTRO")
 
-    def test_only_the_roster_of_that_season_counts(self):
+    def test_the_roster_of_another_season_fills_what_the_season_does_not_say(self):
         (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10", season="2024", height=170)], "2025")
-        assert row["birth"] is None and row["height"] is None and row["full_name"] is None
+        assert (row["birth"], row["height"], row["full_name"], row["nationality"]) == ("2004-05-06", 170, "ANA BEATRIZ CASTRO", "ESPAÑA")
+        assert row["bio_from"]["height"] == "2024:10"
+
+    def test_formation_and_shirt_belong_to_the_roster_of_that_season_and_never_come_from_another_one(self):
+        (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10", season="2024")], "2025")
+        assert row["dorsal"] is None and row["formacion"] is None and "dorsal" not in row["bio_from"] and "formacion" not in row["bio_from"]
+
+    def test_a_field_the_own_roster_leaves_empty_is_filled_field_by_field_not_by_whole_roster(self):
+        """Bug of the first sweep (height 13 % and position 10 %): FEB leaves them as ``-`` and the row took the whole roster of the team, empty fields included."""
+        roster = [_roster("feb:1", "10", height=None, position=None), _roster("feb:1", "11", height=181, position="Escolta"), _roster("feb:1", "10", season="2024", height=170, position="Alero")]
+        (row,) = attach_bio([_row("feb:1", "10")], roster, "2025")
+        assert (row["height"], row["position"], row["birth"], row["dorsal"]) == (181, "Escolta", "2004-05-06", 7)
+        assert row["bio_from"] == {"height": "2025:11", "position": "2025:11"}
+
+    def test_the_nearest_season_wins_and_a_tie_goes_to_the_more_recent(self):
+        roster = [_roster("feb:1", "10", season=y, height=h, position=None) for y, h in (("2021", 170), ("2024", 175), ("2027", 190))]
+        (row,) = attach_bio([_row("feb:1", "10")], roster, "2025")
+        assert row["height"] == 175
+        (tie,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10", season="2024", height=170, position=None), _roster("feb:1", "10", season="2026", height=180, position=None)], "2025")
+        assert tie["height"] == 180
+
+    def test_what_the_own_roster_says_is_never_replaced_and_leaves_no_trace(self):
+        (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10"), _roster("feb:1", "10", season="2024", height=170)], "2025")
+        assert row["height"] == 178 and row["bio_from"] == {}
+
+    def test_height_and_position_come_out_normalised(self):
+        (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10", height="6-7", position="A-Pívot")], "2025")
+        assert (row["height"], row["position"], row["position_group"]) == (201, "Ala-Pívot", "F")
+
+    def test_nobody_says_it_means_none_and_an_unreadable_value_does_not_hide_a_good_one(self):
+        (row,) = attach_bio([_row("feb:1", "10")], [_roster("feb:1", "10", height="-", position="xyz"), _roster("feb:1", "10", season="2024", height=170, position=None)], "2025")
+        assert (row["height"], row["position"], row["position_group"]) == (170, None, None)
 
     def test_a_team_without_roster_takes_the_person_data_of_the_other_team_and_a_team_with_one_keeps_its_own(self):
         rows = attach_bio([_row("feb:1", "10"), _row("feb:1", "11")], [_roster("feb:1", "10", position="Escolta")], "2025")
@@ -151,7 +182,7 @@ class TestBio:
     def test_fbcyl_and_players_without_roster_keep_their_row_with_nothing_known(self):
         rows = attach_bio([_row("fbcyl:u1", "7", "fbcyl"), _row("feb:2", "10")], [_roster("feb:1", "10")], "2025")
         assert [r["person_id"] for r in rows] == ["fbcyl:u1", "feb:2"]
-        assert all(r[f] is None for r in rows for f in ("birth", "height", "position", "nationality", "formacion", "dorsal", "full_name"))
+        assert all(r[f] is None for r in rows for f in ("birth", "height", "position", "position_group", "nationality", "formacion", "dorsal", "full_name")) and all(r["bio_from"] == {} for r in rows)
 
     def test_the_inputs_are_not_changed_and_the_result_is_the_same_in_any_order(self):
         base, roster = [_row("feb:1", "10"), _row("feb:2", "10")], [_roster("feb:1", "10"), _roster("feb:2", "10", birth="2005-01-01")]
