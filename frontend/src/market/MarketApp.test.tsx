@@ -1,20 +1,25 @@
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import MarketApp from './MarketApp'
+import { resetTalentData, setTalentBase } from './data'
+import { serveTalentData, TALENT_BASE } from '@/test/talentDataHost'
 
-const at = (path: string) => render(<MemoryRouter initialEntries={[path]}><MarketApp /></MemoryRouter>)
+beforeEach(() => { resetTalentData(); setTalentBase(TALENT_BASE); serveTalentData().override['index.json'] = null })        // nothing published
+
+const at = (path: string) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={[path]}><MarketApp /></MemoryRouter></QueryClientProvider>)
 
 describe('BasketLab Talent (shell, #877)', () => {
-  it('opens on the home with the name of the product and says there is no data published yet', () => {
+  it('opens on the search and says there is no data published yet', async () => {
     at('/')
-    expect(screen.getByRole('heading', { level: 1, name: /BasketLab Talent/ })).toBeInTheDocument()
-    expect(screen.getByText(/Aún no hay datos de jugadores publicados/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /Buscador de jugadores/ })).toBeInTheDocument()
+    expect(await screen.findByText(/Aún no hay datos de jugadores publicados/)).toBeInTheDocument()
   })
 
-  it('sends any other address to the home instead of an empty page', () => {
+  it('sends any other address to the search instead of an empty page', async () => {
     at('/no-existe/de/verdad')
-    expect(screen.getByRole('heading', { level: 1, name: /BasketLab Talent/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: /Buscador de jugadores/ })).toBeInTheDocument()
   })
 
   it('has a skip link and a main landmark like the rest of the suite (keyboard and screen readers)', () => {

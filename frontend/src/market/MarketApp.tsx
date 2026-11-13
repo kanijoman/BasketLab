@@ -2,29 +2,14 @@
  * BasketLab Talent (epic #872): search, profiling and fit of players of any age and competition.
  *
  * Routes (the pages come with B2–B5):
- *   /   → home: what the product is and whether the market data is published
+ *   /   → the search of players (B3 #879); it also says when no data is published yet
  *   *   → /
  */
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { Search } from 'lucide-react'
 import talentMark from '@design/brand/talent-mark.svg'
 import BrandLogo from '@/components/BrandLogo'
 import ThemeControl from '@/components/ThemeControl'
-import EmptyState from '@/components/ui/EmptyState'
-import PageHeader from '@/components/ui/PageHeader'
-
-function Home() {
-  return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
-      <PageHeader title="BasketLab Talent" subtitle="Búsqueda, perfilado y encaje de jugadores y jugadoras de cualquier edad y competición" />
-      <EmptyState
-        icon={Search}
-        title="Aún no hay datos de jugadores publicados"
-        description="El buscador aparece aquí en cuanto se publique el primer conjunto de datos."
-      />
-    </div>
-  )
-}
+import SearchPage from './SearchPage'
 
 export default function MarketApp() {
   return (
@@ -36,7 +21,7 @@ export default function MarketApp() {
       </header>
       <main id="contenido" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto focus:outline-none">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<SearchPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
