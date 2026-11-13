@@ -96,7 +96,7 @@ describe('levels of the real competitions', () => {
     expect(groups('SEGUNDA FEB', '2026/2027')).toEqual(['Liga Regular A', 'Liga Regular B'])
     expect(groups('PRIMERA FEB', '2026/2027')).toEqual(['Liga Regular'])                       // the only group of a league is not repeated as «Único»
     expect(groups('PRIMERA FEB', '2025/2026')).toEqual(['Liga Regular', 'Play-offs 1/2 Final', 'Play-offs Final'])
-    expect(groups('SEGUNDA FEB', '2025/2026')).toEqual(['Liga Regular ESTE', '1ªE-1ªO Final', 'ELIMINATORIAS 1/8 Final'])
+    expect(groups('SEGUNDA FEB', '2025/2026')).toEqual(['Liga Regular ESTE', 'ELIMINATORIAS 1/8 Final', '1ªE-1ªO Final'])       // #908: from the biggest draw to the final, not alphabetically
     expect(groups('LIGA U', '2026/2027')).toEqual(['LIGA REGULAR GRUPO A', 'LIGA REGULAR GRUPO B'])
     expect(groups('TERCERA FEB', '2026/2027')).toEqual(['Liga Regular A-B'])
     expect(groups('COPA ESPAÑA', '2025/2026')).toEqual(['FASE DE GRUPOS A', 'FASE DE GRUPOS B', 'FASE DE GRUPOS C', 'Play-offs 1/8 Final', 'Play-offs Final'])
@@ -127,5 +127,78 @@ describe('levels of the real competitions', () => {
   it('names a collection by its competition, season and group', () => {
     expect(collectionLabel(REAL.find(c => c.name.startsWith('SEGUNDA_FEB_2026_2027_Liga_Regular_B'))!)).toBe('SEGUNDA FEB 2026/2027 Liga Regular B')
     expect(collectionLabel(REAL.find(c => c.name.startsWith('PRIMERA_FEB_2026_2027'))!)).toBe('PRIMERA FEB 2026/2027 Liga Regular')
+  })
+})
+
+// Issue #908: the youth competitions of FEB (formation, #875/#900) with the names the data gives them, as the selector shows them. The collections are REAL names of the publication.
+const FORMATION = [
+  'CE_SSAA_Cadete_Fem_2024_2025_11º-12º_11º-12º', 'CE_SSAA_Cadete_Fem_2024_2025_15º-16º_15º-16º', 'CE_SSAA_Cadete_Fem_2024_2025_17º-18º_17º-18º', 'CE_SSAA_Cadete_Fem_2024_2025_3º-4º_3º-4º',
+  'CE_SSAA_Cadete_Fem_2024_2025_7º-8º_7º-8º', 'CE_SSAA_Cadete_Fem_2024_2025_Fase_Grupos_A', 'CE_SSAA_Cadete_Fem_2024_2025_Fase_Grupos_B', 'CE_SSAA_Cadete_Fem_2024_2025_Fase_Grupos_C',
+  'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_1-8_1_2_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_1-8_1_4_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_1-8_Final',
+  'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_13-16_1_2_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_13-16_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_5-8_1_2_Final',
+  'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_5-8_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_1_2_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_1_4_Final',
+  'CE_SSAA_Cadete_Fem_2024_2025_Play-Off_9-16_Final', 'CE_SSAA_Cadete_Fem_2024_2025_Puestos_17º-19º_17º-19º',
+  'CE_SSAA_Cadete_Mas_2024_2025_PRIMERA_FASE_A', 'C_ESP_CLUBES_JR_FEM_2024_2025_PRIMERA_FASE_A', 'C_ESP_CLUBES_JR_FEM_2024_2025_3º-4º_3º-4º', 'C_ESP_CLUBES_CAD_MASC_2024_2025_PRIMERA_FASE_A',
+  'C_ESP_CLUBES_CAD_FEM_2024_2025_PRIMERA_FASE_A', 'C_ESP_CLUBES_JR_MASC_2024_2025_PRIMERA_FASE_A',
+  'LF_ENDESA_2024_2025_Liga_Regular_Único', 'LF_ENDESA_2024_2025_Play-Offs_1_2_Final', 'LF_ENDESA_2024_2025_Play-Offs_1_4_Final', 'LF_ENDESA_2024_2025_Play-Offs_Final',
+  'LF_ENDESA_2024_2025_C_SM_Reina_1_4_Final', 'LF_ENDESA_2024_2025_C_SM_Reina_1_2_Final', 'LF_ENDESA_2024_2025_C_SM_Reina_Final',
+  'PRIMERA_FEB_2024_2025_Liga_Regular_Único', 'L_F_-2_2024_2025_Fase_Final_1_2_1_2_Final', 'L_F_-2_2024_2025_Fase_Final_1_4_GR_1', 'L_F_-2_2024_2025_Fase_Final_1_4_GR_2',
+  'L_F_-2_2024_2025_Liga_Regular_A', 'LIGA_U_2025_2026_2ª_FASE_Grupo_A', 'LIGA_U_2025_2026_PLAY-OUT_2ºB-7ºA', 'LIGA_U_2025_2026_PLAY-OUT_6ºA-3ºB', 'LIGA_U_2025_2026_LIGA_REGULAR_GRUPO_A',
+]
+const FORMATION_LIST = collectionList(FORMATION.map(collection => ({ collection, league: 'feb', games: 3 })))
+const groupsOf = (competition: string, season = '2024/2025') => pickCollection(FORMATION_LIST, { ambito: 'FEB', season, competition }).groups
+const MAS = 'Selecciones autonómicas · Cadete masculino'
+const FEM = 'Selecciones autonómicas · Cadete femenino'
+
+describe('the youth competitions in the selector (issue #908)', () => {
+  it('the codes FEB gives the formation championships have a name people read', () => {
+    const names = pickCollection(FORMATION_LIST, { ambito: 'FEB', season: '2024/2025' }).competitions
+    expect(names).toEqual(expect.arrayContaining([FEM, MAS, 'Campeonato de España de clubes · Cadete femenino', 'Campeonato de España de clubes · Cadete masculino',
+      'Campeonato de España de clubes · Júnior femenino', 'Campeonato de España de clubes · Júnior masculino']))
+    expect(names.some(n => /C ESP CLUBES|CE SSAA/.test(n))).toBe(false)
+  })
+
+  it('the senior competitions come first and the formation ones after them, each alphabetically (not mixed with LF Endesa and Primera FEB)', () => {
+    expect(pickCollection(FORMATION_LIST, { ambito: 'FEB', season: '2024/2025' }).competitions).toEqual([
+      'L F -2', 'LF ENDESA', 'PRIMERA FEB',
+      'Campeonato de España de clubes · Cadete femenino', 'Campeonato de España de clubes · Cadete masculino', 'Campeonato de España de clubes · Júnior femenino',
+      'Campeonato de España de clubes · Júnior masculino', FEM, MAS,
+    ])
+  })
+
+  it('a name that is not in the table stays as FEB writes it (never renamed by guessing)', () => {
+    const list = collectionList([{ collection: 'C_ESP_CLUBES_INF_FEM_2024_2025_PRIMERA_FASE_A', league: 'feb', games: 1 }])
+    expect(levelsOf(list[0]).competition).toBe('C ESP CLUBES INF FEM')
+  })
+
+  it('the group is not repeated when the phase and the group say the same: «3º-4º», not «3º-4º 3º-4º»', () => {
+    expect(groupsOf(FEM)).toEqual(expect.arrayContaining(['3º-4º', '7º-8º', '11º-12º', 'Puestos 17º-19º']))
+    expect(groupsOf(FEM).filter(g => /(\S+) \1/.test(g))).toEqual([])
+    expect(groupsOf('L F -2')).toContain('Fase Final 1/2 Final')                      // «Fase Final 1/2 1/2 Final» in the data: the round was written twice
+  })
+
+  it('the rounds of a draw are read as fractions («1 2» is 1/2) without touching the places they play for («1-8»)', () => {
+    expect(groupsOf(FEM)).toEqual(expect.arrayContaining(['Play-Off 1-8 1/2 Final', 'Play-Off 9-16 1/4 Final', 'Play-Off 13-16 Final']))
+  })
+
+  it('the groups go: first phase, then the eliminatory rounds from the biggest draw to the final, then the classification games', () => {
+    expect(groupsOf(FEM)).toEqual([
+      'Fase Grupos A', 'Fase Grupos B', 'Fase Grupos C',
+      'Play-Off 1-8 1/4 Final', 'Play-Off 1-8 1/2 Final', 'Play-Off 1-8 Final', 'Play-Off 5-8 1/2 Final', 'Play-Off 5-8 Final',
+      'Play-Off 9-16 1/4 Final', 'Play-Off 9-16 1/2 Final', 'Play-Off 9-16 Final', 'Play-Off 13-16 1/2 Final', 'Play-Off 13-16 Final',
+      '3º-4º', '7º-8º', '11º-12º', '15º-16º', '17º-18º', 'Puestos 17º-19º',
+    ])
+    expect(groupsOf('LF ENDESA')).toEqual(['Liga Regular', 'C SM Reina 1/4 Final', 'C SM Reina 1/2 Final', 'C SM Reina Final', 'Play-Offs 1/4 Final', 'Play-Offs 1/2 Final', 'Play-Offs Final'])
+    expect(groupsOf('L F -2')).toEqual(['Liga Regular A', 'Fase Final 1/4 GR 1', 'Fase Final 1/4 GR 2', 'Fase Final 1/2 Final'])
+  })
+
+  it('a second phase goes after the first and before the eliminations, and the play-outs after the finals', () => {
+    expect(groupsOf('LIGA U', '2025/2026')).toEqual(['LIGA REGULAR GRUPO A', '2ª FASE Grupo A', 'PLAY-OUT 2ºB-7ºA', 'PLAY-OUT 6ºA-3ºB'])
+  })
+
+  it('the order does not depend on the order the collections come in, and every collection is still reachable from its own levels', () => {
+    const reversed = pickCollection([...FORMATION_LIST].reverse(), { ambito: 'FEB', season: '2024/2025', competition: FEM }).groups
+    expect(reversed).toEqual(groupsOf(FEM))
+    for (const c of FORMATION_LIST) expect(pickCollection(FORMATION_LIST, selectionOf(c)).collection?.name).toBe(c.name)
   })
 })
