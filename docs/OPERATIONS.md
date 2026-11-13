@@ -60,9 +60,11 @@ El histórico sénior y la formación de FEB (`packages: false`) están en el ca
 | Tanda | Qué | Estado |
 |---|---|---|
 | 0 | 2024 y 2025 (sénior, formación y Copa/Liga U) | cargada (#875, #900) |
-| 1 | **2023 y 2022**, sénior y formación, sin Tercera | **preparada (#876)**: integrar el lunes, tras ver la primera carga de FBCYL |
+| 1 | **2023 y 2022**, sénior y formación, sin Tercera | **preparada (#876)**: integrar tras medir un refresco con las mejoras de #924 (ver abajo) y fuera del fin de semana |
 | 2 | 2021 y 2020, sénior y formación, sin Tercera | pendiente |
 | 3–5 | Tercera FEB de dos en dos temporadas: 2025 y 2024, 2023 y 2022, 2021 y 2020 | pendiente |
+
+**Requisito (#924)**: sin el estado de colecciones cerradas cada temporada antigua activa añadiría ≈ 150 colecciones y ≈ 9 min a *cada* refresco para siempre (la tanda 1 lo llevaría de 25 a ≈ 43 min). Con #924 una colección cerrada no se comprueba cada refresco y cada una cuesta 11 peticiones en vez de 27; **antes de integrar una tanda se lanza un refresco a mano y se mira que tarde pocos minutos**, y después de integrarla se mira el siguiente (las colecciones nuevas se cargan una vez y pasan a cerradas a los 14 días de su último partido).
 
 **No integrar una tanda de viernes tarde a domingo**: los fines de semana el refresco corre cada hora (sábado desde las 18:00) y una carga larga retrasaría las estadísticas de la jornada (el grupo de concurrencia serializa los runs). Empezar a primera hora del lunes.
 
