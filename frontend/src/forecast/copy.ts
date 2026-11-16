@@ -2,8 +2,9 @@
 // happens, we win this often»: nothing here promises that making it happen wins, and the guard in `copy.test.ts` forbids «+N %», guarantees and causes. Neutral in gender: «el rival», «nuestro».
 import type { BucketId, Highlight } from './scenarios'
 import type { FactorKey } from './factors'
-import type { Lever, PaceInfo } from './levers'
+import type { Band, BandInfo, Lever } from './levers'
 import type { Reason } from './preview'
+import type { VariableId } from './projection/variables'
 
 /** `0.5664` -> `56,6 %` (decimal comma, a space before the sign). */
 export const pct = (x: number, digits = 1): string => `${(x * 100).toFixed(digits).replace('.', ',')} %`
@@ -42,18 +43,58 @@ export function leverTitle(l: Lever): string {
   return `Evitar que vayan a la línea: ${le} ${per100(t)}`
 }
 
-/** The pace as information (#857): what is expected, how the season went at a slow and at a fast pace, and that nothing says it changes the result. */
-export function paceLines(pace: PaceInfo): { summary: string; record: string; caveat: string } {
-  const slow = `ritmo lento (${le} ${Math.round(pace.slow.threshold)} posesiones)`
-  const fast = `ritmo alto (${ge} ${Math.round(pace.fast.threshold)})`
-  const played = (b: { reached: number; won: number }) => `ganamos ${b.won} de ${b.reached}`
-  const [s, f] = [pace.slow.record, pace.fast.record]
-  const record = !s.reached && !f.reached ? `Esta temporada aún no hemos jugado a ${slow} ni a ${fast}.`
-    : !s.reached ? `Esta temporada aún no hemos jugado a ${slow} y a ${fast} ${played(f)}.`
-    : !f.reached ? `Esta temporada, a ${slow} ${played(s)} y aún no hemos jugado a ${fast}.`
-    : `Esta temporada, a ${slow} ${played(s)} y a ${fast} ${played(f)}.`
-  return { summary: `Se espera un partido de unas ${Math.round(pace.expected)} posesiones por 40 minutos.`, record, caveat: 'Es solo una referencia: no se ha podido comprobar que el ritmo cambie la probabilidad de ganar.' }
+/** Every variable of the projection by name: «Nuestras pérdidas», «Su acierto de tiro (eFG)». */
+export const VARIABLE_NAMES: Record<VariableId, string> = {
+  'game.possessions': 'Posesiones',
+  'own.points': 'Nuestros puntos', 'rival.points': 'Sus puntos',
+  'own.oer': 'Nuestros puntos por 100 posesiones', 'rival.oer': 'Sus puntos por 100 posesiones',
+  'own.efg': 'Nuestro acierto de tiro (eFG)', 'rival.efg': 'Su acierto de tiro (eFG)',
+  'own.tov': 'Nuestras pérdidas', 'rival.tov': 'Sus pérdidas',
+  'own.orb': 'Nuestro rebote ofensivo', 'rival.orb': 'Su rebote ofensivo',
+  'own.ftr': 'Nuestros tiros libres por cada 100 tiros de campo', 'rival.ftr': 'Sus tiros libres por cada 100 tiros de campo',
 }
+
+/** «nuestras pérdidas», «las posesiones»: the name inside a sentence. */
+export const variableInSentence = (id: VariableId): string => (id === 'game.possessions' ? 'las posesiones' : VARIABLE_NAMES[id].charAt(0).toLowerCase() + VARIABLE_NAMES[id].slice(1))
+
+const isRatio = (id: VariableId): boolean => /\.(efg|tov|orb)$/.test(id)
+
+/** A value of a variable as the page writes it: a share with its sign (`21,2 %`), the free throws per 100 shots, the points and the possessions whole. */
+export function valueText(id: VariableId, x: number): string {
+  if (isRatio(id)) return pct(x)
+  if (id.endsWith('.ftr')) return String(Math.round(x * 100))
+  return id.endsWith('.oer') ? (Math.round(x * 10) / 10).toFixed(1).replace('.', ',') : String(Math.round(x))
+}
+
+type InfoLines = { title: string; summary: string; record: string; caveat: string }
+const won = (b: { reached: number; won: number }) => `ganamos ${b.won} de ${b.reached}`
+
+/** The pace as information (#857): what is expected, how the season went at a slow and at a fast pace, and that nothing says it changes the result. */
+function paceLines(pace: BandInfo): InfoLines {
+  const slow = `ritmo lento (${le} ${Math.round(pace.low.threshold)} posesiones)`
+  const fast = `ritmo alto (${ge} ${Math.round(pace.high.threshold)})`
+  const [s, f] = [pace.low.record, pace.high.record]
+  const record = !s.reached && !f.reached ? `Esta temporada aún no hemos jugado a ${slow} ni a ${fast}.`
+    : !s.reached ? `Esta temporada aún no hemos jugado a ${slow} y a ${fast} ${won(f)}.`
+    : !f.reached ? `Esta temporada, a ${slow} ${won(s)} y aún no hemos jugado a ${fast}.`
+    : `Esta temporada, a ${slow} ${won(s)} y a ${fast} ${won(f)}.`
+  return { title: 'Ritmo (informativo)', summary: `Se espera un partido de unas ${Math.round(pace.expected)} posesiones por 40 minutos.`, record, caveat: 'Es solo una referencia: no se ha podido comprobar que el ritmo cambie la probabilidad de ganar.' }
+}
+
+/** A factor as information (#941, our turnovers): what is expected, the season at the low and at the high end, and that knowing it did not sharpen the probability of winning. */
+function factorLines(info: BandInfo): InfoLines {
+  const of = info.variable.startsWith('own.') ? 'de nuestras posesiones' : 'de sus posesiones'
+  const unit = isRatio(info.variable) ? ` ${of}` : ' por cada 100 tiros de campo'
+  const band = (sign: string, b: Band) => `con ${sign} ${valueText(info.variable, b.threshold)}: ${b.record.reached ? won(b.record) : 'ninguno todavía'}`
+  return {
+    title: `${VARIABLE_NAMES[info.variable]} (informativo)`, summary: `Lo esperado en este partido: ${valueText(info.variable, info.expected)}${unit}.`,
+    record: `Esta temporada, ${band(le, info.low)}; ${band(ge, info.high)}.`,
+    caveat: `Es solo una referencia: en la evaluación, conocer ${variableInSentence(info.variable)} no ha afinado la probabilidad de ganar.`,
+  }
+}
+
+/** What the page tells as information (`BandInfo`): its title, what is expected, the season and why there is no probability. */
+export const infoLines = (info: BandInfo): InfoLines => (info.variable === 'game.possessions' ? paceLines(info) : factorLines(info))
 
 /** How often it happens and how often we win when it does, against how often overall. */
 export const leverDetail = (l: Lever, headline: number): string =>

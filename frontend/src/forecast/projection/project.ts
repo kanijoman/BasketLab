@@ -3,6 +3,7 @@
 // 26/10/2026: no evidence that correcting something during a game changes what follows). Without enough games like it (under 5 of every 100) or without the support of the evaluation, the
 // probability is not a figure to show (`figure` null).
 import { gamesOf } from '../gameLog'
+import type { ForecastModel } from '../pool'
 import type { Projection } from './build'
 import { queryOf, scenarioOdds, scenarioValue, truncatedMean, type ScenarioQuery } from './conditions'
 import { gameValue, meets, VARIABLES, variableOf, type Condition, type Side, type VariableId } from './variables'
@@ -60,10 +61,11 @@ function split(expected: number, given: number, playedBefore: number, playedNow:
   return { expected, given, pace, efficiency: diff - pace }
 }
 
-function recordOf(p: Projection, conditions: Condition[]): ProjectionResult['record'] {
-  const mine = gamesOf(p.model.games, p.own).filter(g => g.homeRow && g.awayRow)
-  const reached = mine.filter(g => conditions.every(c => { const v = gameValue(g, p.own, c.variable); return v !== null && meets(v, c) }))
-  return { reached: reached.length, won: reached.filter(g => (g.home === p.own ? g.margin : -g.margin) > 0).length }
+/** The games of `team` of the season with a box score that met every condition (from its side: `own` is `team`), and the ones it won. */
+export function seasonRecord(model: ForecastModel, team: string, conditions: Condition[]): ProjectionResult['record'] {
+  const mine = gamesOf(model.games, team).filter(g => g.homeRow && g.awayRow)
+  const reached = mine.filter(g => conditions.every(c => { const v = gameValue(g, team, c.variable); return v !== null && meets(v, c) }))
+  return { reached: reached.length, won: reached.filter(g => (g.home === team ? g.margin : -g.margin) > 0).length }
 }
 
 /** The answer of the projection `p` to the games where every one of `conditions` holds (none: every game like this one). */
@@ -85,6 +87,6 @@ export function project(p: Projection, conditions: Condition[]): ProjectionResul
       own: split(before.points.own, after.points.own, before.played, after.played),
       rival: split(before.points.rival, after.points.rival, before.played, after.played),
     },
-    record: recordOf(p, conditions),
+    record: seasonRecord(p.model, p.own, conditions),
   }
 }

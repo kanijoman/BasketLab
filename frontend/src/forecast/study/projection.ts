@@ -4,13 +4,13 @@
 //  - the rest of the game: knowing one variable of the game that was played (its possessions, the points of one side), what the projection foresees of the others, against what was expected
 //    without knowing it, with the league layer and with the layer of each team at several shrinkages.
 // And, over each whole season: how the game moves with the pace in the league, and whether the slope of each team is its own (the correlation of the slopes of its odd and its even games).
-import type { FactorKey } from '../factors'
 import type { GameResult } from '../gameLog'
 import { quantile } from '../levers'
 import { buildModel } from '../pool'
 import { MIN_POOL } from '../preview'
 import { hashSeed, mulberry32 } from '../prng'
 import { buildProjection, type Projection } from '../projection/build'
+import { scenarioValues } from '../projection/conditions'
 import { PACE_SHRINK_GAMES, paceResponse, RESPONSE_KEYS, type ResponseKey, type Slopes } from '../projection/paceResponse'
 import { project, type ProjectionResult } from '../projection/project'
 import { gameValue, meets, VARIABLES, variableOf, type Condition, type VariableId } from '../projection/variables'
@@ -41,16 +41,6 @@ export interface ProjectionOptions { from?: number; every?: number; ks?: number[
 const MASSES = [0.05, 0.1, 0.25, 0.5]
 const PAIRS = 3
 const GIVEN: VariableId[] = ['game.possessions', 'own.points', 'rival.points']
-
-/** What each scenario of a projection says of a variable (for the points, their mean), to put a threshold where a share of the scenarios begins. */
-function scenarioValues(p: Projection, id: VariableId): number[] {
-  const v = variableOf(id)
-  if (v.measure === 'possessions') return p.possessions
-  const points = v.side === 'own' ? p.ownPoints : p.rivalPoints
-  if (v.measure === 'points') return points
-  if (v.measure === 'oer') return points.map((x, i) => (100 * x) / (p.possessions[i] * p.minutes[i]))
-  return (v.side === 'own' ? p.fOwn : p.fRiv).map(f => f[v.measure as FactorKey])
-}
 
 /** «More than» where the top `mass` of the scenarios begins, or «less than» where the bottom one ends; the points, whole. */
 function conditionAt(p: Projection, id: VariableId, op: Condition['op'], mass: number): Condition {

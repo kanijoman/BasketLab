@@ -178,6 +178,10 @@ describe('the analysis', () => {
     expect(within(list).getByText(/Se espera un partido de unas \d+ posesiones por 40 minutos\./)).toBeInTheDocument()
     expect(within(list).getByText(/Esta temporada, a ritmo lento/)).toBeInTheDocument()
     expect(within(list).getByText(/no se ha podido comprobar que el ritmo cambie la probabilidad de ganar/)).toBeInTheDocument()
+    // our turnovers too (#941): what is expected and the season, no objective with a probability
+    expect(within(list).getByText('Nuestras pérdidas (informativo)')).toBeInTheDocument()
+    expect(within(list).getByText(/Lo esperado en este partido: \d+,\d % de nuestras posesiones\./)).toBeInTheDocument()
+    expect(list.textContent).not.toMatch(/Cuidar el balón/)
   })
 
   it('has a button to export it', async () => {

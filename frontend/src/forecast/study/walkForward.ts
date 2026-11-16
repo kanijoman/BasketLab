@@ -134,7 +134,7 @@ export function walkForwardPreviews(games: GameResult[], gender: string | undefi
       }
       const { attack, defence } = detail.levers
       const ev = evaluate(model, own, rival, court)                                 // the pace is not an objective of the page any more (#857) but the study still measures it
-      const pace = ev ? bestPaceLever(paceCandidates(model, ev)) : null
+      const pace = ev ? bestPaceLever(paceCandidates(detail.projection, ev)) : null
       study.levers.push(...leverRecords(k, g, own, [...attack, ...defence, ...(pace ? [pace] : [])], preview.headline.p, y))
     }
   }

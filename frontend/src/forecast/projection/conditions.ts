@@ -4,7 +4,7 @@
 // (our points), done with Gauss-Legendre on short pieces split where the integrand bends: exact to far below what is shown, and the same every time.
 import { phi } from '../normal'
 import type { Projection } from './build'
-import { meets, variableOf, type Condition, type Variable } from './variables'
+import { meets, variableOf, type Condition, type Variable, type VariableId } from './variables'
 
 /** An open interval of points; infinite ends when nothing bounds it. */
 export interface Interval { lo: number; hi: number }
@@ -69,6 +69,14 @@ export function scenarioValue(p: Projection, i: number, v: Variable): number {
   if (v.measure === 'possessions') return p.possessions[i]
   if (v.measure === 'points' || v.measure === 'oer') throw new Error(`${v.id} is not a value of the scenario`)
   return (v.side === 'own' ? p.fOwn : p.fRiv)[i][v.measure]
+}
+
+/** What every scenario says of a variable (the points and the points per 100 possessions: their mean), to put a threshold where a share of the scenarios begins. */
+export function scenarioValues(p: Projection, id: VariableId): number[] {
+  const v = variableOf(id)
+  if (v.kind === 'scenario') return p.possessions.map((_, i) => scenarioValue(p, i, v))
+  const points = v.side === 'own' ? p.ownPoints : p.rivalPoints
+  return v.measure === 'points' ? points : points.map((x, i) => (100 * x) / (p.possessions[i] * p.minutes[i]))
 }
 
 /** The conditions on scenario `i`: «more than 70 points» is 71 or more, so above 70.5; points per 100 possessions are points at that scenario's possessions. */
