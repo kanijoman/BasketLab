@@ -195,7 +195,8 @@ def forgive_no_data(fresh: Dict[str, Any], job: Dict[str, Any], now: datetime) -
     """#902: FEB lists matches that have no boxscore for ever (youth championships: not played, no report) and the run stayed red on every refresh, hiding real failures. A missing
     match goes to ``no_data_codes`` when this scrape asked FEB for it and got "no data" AND either the calendar shows a FORFEIT score for it (0-2 or 2-0: found in the first scheduled refresh
     after #902, where the two matches that kept the run red were forfeits with no date) or it dates the match more than ``NO_DATA_AFTER`` ago (the boxscore of yesterday's match may just
-    not be up yet). Anything else, an undated match with a real score or one missing for another reason (a network error, never asked), stays missing. It is asked again on every run."""
+    not be up yet). The calendar shows a played match with its score, not its date, so the date is that of its round, the latest of its games we have (#950,
+    ``data_freshness_service``; until then no match was ever dated and only the forfeits were forgiven; a postponed match is dated by its round, at worst forgiven early, and it is asked again anyway). Anything else, an undated match with a real score or one missing for another reason (a network error, never asked), stays missing. It is asked again on every run."""
     asked = {e[len(_NO_DATA):] for e in job["errors"] if e.startswith(_NO_DATA)}
     since = fresh.get("missing_since") or {}
     score = fresh.get("missing_score") or {}

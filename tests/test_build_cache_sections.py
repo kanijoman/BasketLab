@@ -151,3 +151,15 @@ def test_the_real_versions_are_stable_and_one_per_section():
     assert first["assist_connections"] != first["rotations"], "different exporters, different dependencies"
     assert first["possessions"] == first["possession_csv"], "the same exporter module"
     assert build_cache.EPOCH >= 1
+
+
+def test_the_thresholds_of_the_live_rules_recompute_no_published_section_regression():
+    """#945: ``live_core/four_factors.py`` (the formulas of the four factors, which the season pipelines use) also held the model of the live engine, which reads ``RuleConfig``,
+    so every section depended on ``live_core/config.py``, the thresholds of the live rules. On 16/11/2026 #934 moved ``close_remaining_s`` from 240 to 120 seconds, which changes
+    no published figure, and the next publication recomputed lineups and IN/OUT in the 366 competitions (100 minutes) and did not fit in its time. The model lives apart now
+    (``four_factors_model``): tuning a rule recomputes nothing of ``web-data``."""
+    closure = {s: {p.relative_to(REPO).as_posix() for m in ([ms] if isinstance(ms, str) else ms) for p in module_files(m)} for s, ms in SECTION_MODULES.items()}
+    for section, files in closure.items():
+        assert "src/live_core/config.py" not in files, f"{section}: the thresholds of the live rules shape nothing it publishes"
+        assert not {f for f in files if f.startswith("src/live_core/rules")}, f"{section}: nor do the live rules"
+    assert "src/live_core/four_factors.py" in closure["lineups"], "the formulas of the four factors still count: they shape the figures"

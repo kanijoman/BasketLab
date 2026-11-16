@@ -1,4 +1,4 @@
-"""Entry point of the web artifacts (#328): ``python run_web_data.py --out DIR [--collection NAME ...] [--closed]``.
+"""Entry point of the web artifacts (#328): ``python run_web_data.py --out DIR [--collection NAME ...] [--closed] [--workers N]``.
 
 Writes what the web reads (``src/local_data/web_data``): the sealed rows, reports and calendars of every games collection and the manifest ``index.json``. Needs
 ``PACKAGE_MASTER_KEY`` (or ``PACKAGE_PASSWORD``, >= 8 characters) like the live packages. The workflow ``web-data.yml`` starts from the previous
@@ -22,10 +22,12 @@ def main(argv=None) -> int:
     parser.add_argument("--no-images", action="store_true", help="do not publish the crest and the photos of the teams of the newest season (the DOCX of the individual scouting, #717)")
     parser.add_argument("--no-calendar", action="store_true", help="do not publish the calendar of the competitions of the newest season (#842: it is read from the federations on every run, about a minute)")
     parser.add_argument("--no-scouting", action="store_true", help="do not publish the full scouting of the rival (it takes about ten seconds per team)")
+    parser.add_argument("--workers", type=int, default=1, help="compute the sections whose code changed in this many processes, each with its own connection (#945; default 1: in series)")
     args = parser.parse_args(argv)
 
     from src.database.shared_handler import shared_handler
     from src.live_prep.package_sealing import make_sealer
+    from src.local_data import parallel_sections
     from src.local_data.calendar_export import CalendarSource
     from src.local_data.images_export import Source
     from src.local_data.web_data import publish_web_data
@@ -52,7 +54,8 @@ def main(argv=None) -> int:
                                 on_section=lambda name, section, seconds, reused: print(f"  {name} · {section}: {'reused' if reused else f'{seconds:.1f} s'}", flush=True),
                                 image_source=None if args.no_images else Source(),
                                 calendar_source=None if args.no_calendar else CalendarSource(), fbcyl_groups=fbcyl_groups(catalogue), genders=competition_genders(handler, names, catalogue),
-                                categories=competition_categories(names, catalogue))
+                                categories=competition_categories(names, catalogue),
+                                sections_runner=parallel_sections.in_processes(args.workers) if args.workers > 1 else None)
     size = sum(e["bytes"] for e in manifest["rows"] + manifest["reports"])
     print(f"{len(manifest['rows'])} competitions, {size / 1024:.0f} KB (manifests), {time.time() - started:.0f} s")
     return 0

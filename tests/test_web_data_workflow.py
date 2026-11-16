@@ -79,3 +79,8 @@ def test_a_failed_build_publishes_nothing_regression():
 def test_the_step_that_publishes_is_after_the_build_and_nothing_between_can_swallow_its_failure():
     between = ORDER[ORDER.index("Build the artifacts") + 1:ORDER.index("Publish to the web-data branch")]
     assert between == [] and "continue-on-error" not in STEPS["Build the artifacts"]
+
+
+def test_the_build_computes_the_sections_whose_code_changed_in_the_cores_of_the_runner():
+    """#945: a change of shared code recomputes every section of every competition; in series that was 100 of 118 minutes on a runner with 4 cores, which ``--workers`` uses."""
+    assert "--workers 4" in STEPS["Build the artifacts"]["run"]

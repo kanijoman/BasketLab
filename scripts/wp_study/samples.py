@@ -62,7 +62,8 @@ GROUPS = {
 
 
 def features(sample: Dict[str, Any]) -> Dict[str, float]:
-    from src.live_core.four_factors import FourFactorsModel, possessions
+    from src.live_core.four_factors import possessions
+    from src.live_core.four_factors_model import FourFactorsModel
 
     snap, own, rival, base = sample["snap"], sample["team"], sample["rival"], sample["baselines"]
     margin = snap["score"][own] - snap["score"][rival]

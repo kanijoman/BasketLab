@@ -7,8 +7,9 @@ the source of truth for what has been played; the collection holds what we have 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
+from src.scraper.calendar_parser import CalendarMatch
 from src.services.match_schedule_service import MatchScheduleService
 from src.utils.collection_utils import is_fbcyl
 
@@ -18,6 +19,18 @@ def _parse_starttime(text: Any) -> Optional[datetime]:
         return datetime.strptime(str(text).strip(), "%d-%m-%Y - %H:%M")
     except ValueError:
         return None
+
+
+def _round_dates(calendar: List[CalendarMatch], stored: Dict[str, Dict[str, Any]]) -> Dict[int, str]:
+    """When each round was played, by the latest of its games that we have (``YYYY-MM-DDTHH:MM``). The calendar shows a played match with its score and no date (#950), so a
+    missing result is dated by its round, which is played in a weekend; a round we have nothing of is not dated."""
+    round_of = {m.code: m.round_index for m in calendar}
+    latest: Dict[int, datetime] = {}
+    for code, game in stored.items():
+        when = _parse_starttime((game.get("HEADER") or {}).get("starttime"))
+        if when and code in round_of:
+            latest[round_of[code]] = max(when, latest.get(round_of[code], when))
+    return {r: d.strftime("%Y-%m-%dT%H:%M") for r, d in latest.items()}
 
 
 class DataFreshnessService:
@@ -49,7 +62,8 @@ class DataFreshnessService:
                                 warning=f"No se pudo leer el calendario de FEB: {exc}")
         played = [m.code for m in calendar if m.kind == "result"]
         missing = [c for c in played if c not in stored]
-        dated = {m.code: m.start or None for m in calendar if m.kind == "result"}              # #902: the refresh forgives a match without data only after a week...
+        rounds = _round_dates(calendar, stored)
+        dated = {m.code: m.start or rounds.get(m.round_index) for m in calendar if m.kind == "result"}   # #902: the refresh forgives a match without data only after a week...
         scores = {m.code: m.score or None for m in calendar if m.kind == "result"}              # ...or at once when the score is a forfeit (0-2, 2-0)
         return self._result(collection, up_to_date=not missing, games_in_db=len(stored), calendar_results=len(played),
                             missing_codes=missing, missing_since={c: dated.get(c) for c in missing}, missing_score={c: scores.get(c) for c in missing}, last_game=last, calendar_url=url)

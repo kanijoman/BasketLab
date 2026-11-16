@@ -15,7 +15,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from src.live_core.config import RuleConfig
 from src.live_core.engine import LiveEngine
-from src.live_core.four_factors import FourFactorsModel
+from src.live_core.four_factors_model import FourFactorsModel
 from src.live_core.win_prob import GAME_SECONDS, WinProbabilityModel
 
 from .eval_feed import finished_game_polls

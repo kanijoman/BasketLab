@@ -8,9 +8,9 @@ Conventions (project-wide): possessions = FGA - ORB + TOV + 0.44*FTA; TOV% = TOV
 import pytest
 
 from src.live_core.config import RuleConfig
+from src.live_core.four_factors_model import FourFactorsModel
 from src.live_core.four_factors import (
     WEIGHTS,
-    FourFactorsModel,
     differentials,
     factors,
     possessions,

@@ -69,6 +69,6 @@ def test_the_cost_of_a_free_throw_in_a_possession_is_one_constant_not_a_number_w
         for token in tokenize.generate_tokens(io.StringIO(path.read_text(encoding="utf-8-sig")).readline):
             if token.type == tokenize.NUMBER and token.string == "0.44":
                 written.append(f"{path.relative_to(SRC).as_posix()}:{token.start[0]}")
-    assert written == ["live_core/four_factors.py:22"], f"0.44 written as a number outside its definition: {written}"
+    assert written == ["live_core/four_factors.py:23"], f"0.44 written as a number outside its definition: {written}"
     assert four_factors.FT_POSSESSION_COST == 0.44
     assert profiles.FT_POSSESSION_COST is clutch.FT_POSSESSION_COST is four_factors.FT_POSSESSION_COST
