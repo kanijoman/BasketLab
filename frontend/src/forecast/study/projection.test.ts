@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildGames, type GameResult } from '../gameLog'
+import { buildModel } from '../pool'
 import { gameValue, meets, VARIABLES } from '../projection/variables'
 import { RESPONSE_KEYS } from '../projection/paceResponse'
-import { leaguePaceSlopes, pearson, splitHalf, walkForwardProjection } from './projection'
+import { leaguePaceSlopes, pearson, rivalResponse, splitHalf, walkForwardProjection } from './projection'
 import { formatProjectionSection } from './projectionReport'
 import { primera } from '@/test/forecastFixtures'
 
@@ -86,11 +87,34 @@ describe('how the variables move with the pace, and whether it is particular to 
   })
 })
 
+describe('what the rival does when the condition is put on us (#940)', () => {
+  const model = buildModel(all, 'M')
+  const r = rivalResponse(all, 'M')
+
+  it('in the league: the correlation, over every side of every game, of what the rival made over its expectation with what we made over ours, and of the points of both (by hand)', () => {
+    expect(r.league.efficiency).toBeCloseTo(pearson(model.pool.map(s => s.oRiv), model.pool.map(s => s.oOwn)), 12)
+    const sides = all.filter(g => g.homeRow && g.awayRow).flatMap(g => [[g.homePoints, g.awayPoints], [g.awayPoints, g.homePoints]])
+    expect(r.league.points).toBeCloseTo(pearson(sides.map(([, opp]) => opp), sides.map(([pts]) => pts)), 12)
+    expect(r.league.efficiency).toBeGreaterThan(0)
+  })
+
+  it('whether the response is particular to each team: correlations of its odd and its even games, between -1 and 1', () => {
+    for (const key of ['efficiency', 'points', 'wins'] as const) {
+      expect(r.reliability[key]).toBeGreaterThanOrEqual(-1)
+      expect(r.reliability[key]).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('the same games give the same answer', () => {
+    expect(rivalResponse(all, 'M')).toEqual(r)
+  })
+})
+
 describe('the section of the report', () => {
   it('has the parts of the evaluation and no NaN or undefined', () => {
     const study = walkForwardProjection(games, 'M', OPTIONS)
-    const text = formatProjectionSection([{ name: 'PRIMERA', gender: 'M', games: games.length, projection: study, slopes: leaguePaceSlopes(games, 'M'), reliability: splitHalf(games, 'M') }])
-    for (const title of ['## Proyección multifactorial', 'Cómo se mueve el juego con el ritmo', 'Si es propio de cada equipo', 'Probabilidad con condiciones', 'Prever el resto del partido']) expect(text).toContain(title)
+    const text = formatProjectionSection([{ name: 'PRIMERA', gender: 'M', games: games.length, projection: study, slopes: leaguePaceSlopes(games, 'M'), reliability: splitHalf(games, 'M'), rival: rivalResponse(all, 'M') }])
+    for (const title of ['## Proyección multifactorial', 'Cómo se mueve el juego con el ritmo', 'Si es propio de cada equipo', 'Probabilidad con condiciones', 'Prever el resto del partido', 'Lo que hace el rival']) expect(text).toContain(title)
     expect(text).not.toMatch(/NaN|undefined/)
   })
 })

@@ -123,6 +123,55 @@ export function pearson(xs: number[], ys: number[]): number {
 /** How each thing moves in the league per unit of pace over the usual one (`rho − 1`), over a whole season. */
 export const leaguePaceSlopes = (games: GameResult[], gender: string | undefined): Slopes => paceResponse(buildModel(games, gender)).league
 
+/**
+ * What the rival does when the condition is put on us (#940): «we score more than 70» is also «they concede more than 70», and the projection takes from the league how the rival's game goes
+ * with it (both sides of each scenario come from the same real game). Whether that response is particular to each rival is what decides if the card can say more than its season record:
+ *  - `league`: over every side of every game, the correlation of what the rival made over its expectation (points per 100 possessions) with what we made over ours, and of the points of both;
+ *  - `reliability`: over the teams of the season, the correlation of what a team's odd games and its even games say of its own response: the slope of its efficiency on the rival's, of its
+ *    points on the points it concedes, and how much more (or less) it wins when the rival makes more than expected.
+ */
+export interface RivalResponse { league: { efficiency: number; points: number }; reliability: { efficiency: number; points: number; wins: number } }
+
+const average = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
+/** The least-squares slope of `ys` on `xs`; NaN when `xs` does not vary. */
+function slope(xs: number[], ys: number[]): number {
+  const [mx, my] = [average(xs), average(ys)]
+  let [sxy, sxx] = [0, 0]
+  xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2 })
+  return sxx > 0 ? sxy / sxx : NaN
+}
+/** Pearson over the pairs where both are numbers. */
+const finitePearson = (xs: number[], ys: number[]): number => { const keep = xs.map((_, i) => i).filter(i => Number.isFinite(xs[i]) && Number.isFinite(ys[i])); return pearson(keep.map(i => xs[i]), keep.map(i => ys[i])) }
+
+export function rivalResponse(games: GameResult[], gender: string | undefined): RivalResponse {
+  const model = buildModel(games, gender)
+  const sides: { team: string; k: number; ours: number; theirs: number; pts: number; opp: number; won: number }[] = []
+  const played = new Map<string, number>()
+  let i = 0
+  for (const g of model.games) {
+    if (!g.homeRow || !g.awayRow) continue
+    for (const [team, pts, opp] of [[g.home, g.homePoints, g.awayPoints], [g.away, g.awayPoints, g.homePoints]] as const) {
+      const s = model.pool[i++]
+      if (s.own !== team) throw new Error('the pool is not in the order of the games')
+      const k = played.get(team) ?? 0
+      played.set(team, k + 1)
+      sides.push({ team, k, ours: s.oOwn, theirs: s.oRiv, pts, opp, won: pts > opp ? 1 : 0 })
+    }
+  }
+  const teams = [...played.keys()].sort()
+  const halves = (of: (rows: typeof sides) => number): [number[], number[]] =>
+    [0, 1].map(parity => teams.map(t => of(sides.filter(r => r.team === t && r.k % 2 === parity)))) as [number[], number[]]
+  const extraWins = (rows: typeof sides): number => { const high = rows.filter(r => r.theirs > 0); return high.length ? average(high.map(r => r.won)) - average(rows.map(r => r.won)) : NaN }
+  return {
+    league: { efficiency: pearson(sides.map(r => r.theirs), sides.map(r => r.ours)), points: pearson(sides.map(r => r.opp), sides.map(r => r.pts)) },
+    reliability: {
+      efficiency: finitePearson(...halves(rows => slope(rows.map(r => r.theirs), rows.map(r => r.ours)))),
+      points: finitePearson(...halves(rows => slope(rows.map(r => r.opp), rows.map(r => r.pts)))),
+      wins: finitePearson(...halves(extraWins)),
+    },
+  }
+}
+
 export type Reliability = Record<ResponseKey, { attack: number; defence: number }>
 
 /** The correlation, over the teams, of the slope of each team from its odd games with the one from its even games (in the order of the season). */

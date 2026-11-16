@@ -5,10 +5,10 @@ import type { ResponseKey, Slopes } from '../projection/paceResponse'
 import { RESPONSE_KEYS } from '../projection/paceResponse'
 import { VARIABLES, type VariableId } from '../projection/variables'
 import { brier } from './metrics'
-import type { ConditionRecord, PredictionRecord, ProjectionStudy, Reliability } from './projection'
+import type { ConditionRecord, PredictionRecord, ProjectionStudy, Reliability, RivalResponse } from './projection'
 import { mean, num, pc, table } from './report'
 
-export interface ProjectionCompetition { name: string; gender: string; games: number; projection: ProjectionStudy; slopes: Slopes; reliability: Reliability }
+export interface ProjectionCompetition { name: string; gender: string; games: number; projection: ProjectionStudy; slopes: Slopes; reliability: Reliability; rival: RivalResponse }
 
 const FAMILIES: [string, string][] = [['Masculina', 'M'], ['Femenina', 'F']]
 /** Below this many games where a condition happened, a family says nothing of its calibration. */
@@ -115,10 +115,25 @@ function predictionsSection(results: ProjectionCompetition[]): string {
   ].join('\n\n')
 }
 
+function rivalSection(results: ProjectionCompetition[]): string {
+  const cells = (rs: RivalResponse[]): string[] => [
+    num(mean(rs.map(r => r.league.efficiency)), 2), num(mean(rs.map(r => r.league.points)), 2),
+    ...(['efficiency', 'points', 'wins'] as const).map(k => num(mean(rs.map(r => r.reliability[k]).filter(Number.isFinite)), 2)),
+  ]
+  return [
+    '### Lo que hace el rival',
+    'Con «anotamos más de 70», ¿qué hace el rival cuando le anotan más de 70? En la liga, la correlación, sobre todos los lados de todos los partidos, de lo que el rival hizo sobre lo esperado (puntos por 100 posesiones) con lo que hicimos nosotros, y de los puntos de los dos. Propio de cada equipo: la correlación, entre los equipos de una temporada, de lo que dicen sus partidos impares y sus pares de su respuesta (la pendiente de su eficiencia frente a la del rival, la de sus puntos frente a los que encaja, y cuánto más gana cuando el rival hace más de lo esperado). Cerca de 0: ruido.',
+    table(['Competición', 'Liga: eficiencia', 'Liga: puntos', 'Propio: eficiencia', 'Propio: puntos', 'Propio: victorias'], [
+      ...results.map(r => [r.name, ...cells([r.rival])]),
+      ...FAMILIES.filter(([, g]) => results.some(r => r.gender === g)).map(([label, g]) => [`**${label}**`, ...cells(results.filter(r => r.gender === g).map(r => r.rival))]),
+    ]),
+  ].join('\n\n')
+}
+
 export function formatProjectionSection(results: ProjectionCompetition[]): string {
   return [
     '## Proyección multifactorial',
     table(['Competición', 'Familia', 'Partidos', 'Proyecciones', 'Sin escenarios suficientes'], results.map(r => [r.name, r.gender === 'F' ? 'femenina' : 'masculina', r.games, new Set(r.projection.conditions.map(c => `${c.k}|${c.court}`)).size, r.projection.skipped])),
-    slopesSection(results), reliabilitySection(results), conditionsSection(results), predictionsSection(results),
+    slopesSection(results), reliabilitySection(results), rivalSection(results), conditionsSection(results), predictionsSection(results),
   ].join('\n\n') + '\n'
 }
