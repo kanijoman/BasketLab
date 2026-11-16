@@ -30,7 +30,7 @@ _LAST_KEYS = ("pts",) + PLAYER_STAT_KEYS + ("pf", "on_court")
 
 # Recovery credited to a player who stays on court through a break (game-seconds of the
 # current stint; real minutes are never discounted). Halftime resets the stint completely.
-QUARTER_BREAK_CREDIT_S = 60
+QUARTER_BREAK_CREDIT_S = 90   # the break is 2:00 for real; 60 until #930 (feedback 2536159)
 # A timeout is a minute of rest for the players on court of BOTH teams (the clock stops for everybody): credited like the break, partly
 # (issue #316; provisional, to be tuned with the evaluator).
 TIMEOUT_CREDIT_S = 30

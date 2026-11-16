@@ -6,6 +6,7 @@ import json
 import pytest
 
 from src.live_core.engine import LiveEngine
+from src.live_core.state import QUARTER_BREAK_CREDIT_S
 
 DOC = "feb_game_doc"
 
@@ -190,15 +191,15 @@ def test_minutes_are_never_discounted_for_rest():
 
 
 def test_quarter_break_gives_partial_recovery_to_the_current_stint():
-    # Q2 starts at 600 s of play; the 2-minute break credits 60 s.
+    # Q2 starts at 600 s of play; the 2-minute break credits QUARTER_BREAK_CREDIT_S (90 s since #930).
     assert _p1(1, "05:00")["stint"] == 300
-    assert _p1(2, "08:00")["stint"] == 720 - 60
+    assert _p1(2, "08:00")["stint"] == 720 - QUARTER_BREAK_CREDIT_S
 
 
 def test_halftime_resets_the_stint_completely():
     assert _p1(3, "09:30")["stint"] == 30
     # Q4: 600 s of the second half minus the Q3->Q4 break credit.
-    assert _p1(4, "09:00")["stint"] == 660 - 60
+    assert _p1(4, "09:00")["stint"] == 660 - QUARTER_BREAK_CREDIT_S
 
 
 def test_a_player_who_re_enters_after_the_break_starts_a_fresh_stint():
@@ -221,7 +222,7 @@ def test_closed_stints_are_recorded_with_the_rest_adjusted_length():
          "text": "(A) UNO: Sustitución (Sale de pista)", "deleted": None})
     p = LiveEngine().update(doc)["players"]["P1"]
     assert p["stints_done"] == 1
-    assert p["stint_sum"] == 610 - 60  # 610 s on court, minus the Q1->Q2 break credit
+    assert p["stint_sum"] == 610 - QUARTER_BREAK_CREDIT_S  # 610 s on court, minus the Q1->Q2 break credit
 
 
 def test_open_stint_is_not_counted_as_done():
@@ -300,7 +301,7 @@ def _doc_with_timeout(team="T2", at="08:00"):
 
 
 def test_a_timeout_gives_recovery_to_the_players_on_court():
-    # Q2 starts at 600 s; the 2-minute break credits 60 s; the timeout (of EITHER team: both stop) credits TIMEOUT_CREDIT_S more.
+    # Q2 starts at 600 s; the 2-minute break credits QUARTER_BREAK_CREDIT_S; the timeout (of EITHER team: both stop) credits TIMEOUT_CREDIT_S more.
     from src.live_core.state import TIMEOUT_CREDIT_S
 
     without = LiveEngine().update(_doc(2, "07:00"))["players"]["P1"]["stint"]
@@ -334,3 +335,15 @@ def test_a_bench_player_does_not_get_credit_for_a_timeout():
                                        "text": "(A) DOS: Sustitución (Entra a pista)", "deleted": None})
     p2 = LiveEngine().update(doc)["players"]["P2"]
     assert p2["on_court"] and p2["stint"] == 30      # entered after the timeout (07:30 -> 07:00): a fresh stint, nothing credited
+
+
+# --- #930 (feedback 2536159, O. Siquier, 2nd quarter): the break between quarters weighs more in the stint ---------
+
+def test_the_break_between_quarters_credits_90_s_regression():
+    """The break between quarters is 2:00 for real: the stint of a player who stays on court gets 90 s of it back (it was 60 s: a 'fatigue risk'
+    crossed the quarter that the break had mostly cleared). A timeout stays at 30 s: with 45 s the index of the sample match was too low (#316)."""
+    from src.live_core.state import QUARTER_BREAK_CREDIT_S, TIMEOUT_CREDIT_S
+
+    assert (QUARTER_BREAK_CREDIT_S, TIMEOUT_CREDIT_S) == (90, 30)
+    assert LiveEngine().update(_doc(2, "07:00"))["players"]["P1"]["stint"] == 780 - 90
+    assert LiveEngine().update(_doc_with_timeout())["players"]["P1"]["stint"] == 780 - 90 - 30
