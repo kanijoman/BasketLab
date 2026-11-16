@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src.live_prep.package_sealing import Sealer
-from src.local_data import build_cache
+from src.local_data import build_cache, parallel_sections
 from src.local_data.calendar_export import CalendarSource, calendar_collections, export_calendar
 from src.local_data.build_cache import section_versions
 from src.live_prep.publisher import VERCEL_GUARD
@@ -134,11 +134,12 @@ def _can_reuse(section: str, same_data: bool, versions: Dict[str, str], old_vers
 
 def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: Any, out_dir: Path, sealer: Sealer, kept_sections: Dict[str, Dict[str, Any]],
                       remembered: Optional[Dict[str, Any]], on_section: Optional[Callable[[str, str, float, bool], None]],
-                      versions: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, Any]]:
+                      versions: Optional[Dict[str, str]] = None, precomputed: Optional[Dict[Any, Optional[Dict[str, Any]]]] = None) -> Dict[str, Dict[str, Any]]:
     """The entries of the files of a competition besides its rows, by section, and what to remember of it (#700, #783): the derived figures are always read (they are cheap and part of
     the fingerprint); a section reuses its sealed file and computes nothing when the fingerprint of the rows and the derived is the one of the previous publication AND the version of
-    the code of that section (the hash of the modules its exporter imports) is too; a section whose code changed, or that the memory never saw, is the only one computed."""
-    versions = versions or {}
+    the code of that section (the hash of the modules its exporter imports) is too; a section whose code changed, or that the memory never saw, is the only one computed (or comes
+    already sealed in ``precomputed``, by the runner of ``parallel_sections``, #945)."""
+    versions, precomputed = versions or {}, precomputed or {}
     entries: Dict[str, Dict[str, Any]] = {}
     started = time.time()
     derived = _publish_section("derived", handler, db, name, out_dir, sealer, kept_sections["derived"].get(name))
@@ -154,13 +155,15 @@ def _publish_sections(name: str, rows_entry: Dict[str, Any], handler: Any, db: A
         started = time.time()
         kept_entry = kept_sections[section].get(name)
         reuse = _can_reuse(section, same_data, versions, old_versions, had, kept_entry, out_dir)
-        if reuse:
+        if (name, section) in precomputed:
+            entry = precomputed[(name, section)]                       # computed by the runner and told already
+        elif reuse:
             entry = kept_entry if section in had else None
         else:
             entry = _publish_section(section, handler, db, name, out_dir, sealer, kept_entry)
         if entry:
             entries[section] = entry
-        if on_section:
+        if on_section and (name, section) not in precomputed:
             on_section(name, section, time.time() - started, reuse)
     entries["_memory"] = {"fingerprint": fp, "sections": [s for s in SECTIONS if s in entries], "versions": {s: versions[s] for s in SECTIONS if s in versions}}
     return entries
@@ -199,6 +202,7 @@ class _Context:
     groups: Dict[str, str]
     genders: Dict[str, str]
     categories: Dict[str, Dict[str, Any]]
+    precomputed: Dict[Any, Optional[Dict[str, Any]]]
 
 
 def _publish_calendar(ctx: _Context, name: str) -> Optional[Dict[str, Any]]:
@@ -232,7 +236,7 @@ def _publish_competition(ctx: _Context, name: str):
     if ctx.on_section:
         ctx.on_section(name, "rows", time.time() - started, False)
     entries = _publish_sections(name, rows_entry, ctx.handler, ctx.db, ctx.out_dir, ctx.sealer, ctx.kept_sections,
-                                ctx.memory["competitions"].get(name) if ctx.trusted else None, ctx.on_section, ctx.versions)
+                                ctx.memory["competitions"].get(name) if ctx.trusted else None, ctx.on_section, ctx.versions, ctx.precomputed)
     calendar = _publish_calendar(ctx, name)
     if calendar:
         entries["calendar"] = calendar
@@ -257,11 +261,12 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                      on_collection: Optional[Callable[[str], None]] = None, scouting: Optional[Iterable[str]] = None,
                      scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None,
                      image_source: Optional[Source] = None, calendar_source: Optional[CalendarSource] = None,
-                     fbcyl_groups: Optional[Dict[str, str]] = None, genders: Optional[Dict[str, str]] = None, categories: Optional[Dict[str, Dict[str, Any]]] = None) -> Dict[str, Any]:
+                     fbcyl_groups: Optional[Dict[str, str]] = None, genders: Optional[Dict[str, str]] = None, categories: Optional[Dict[str, Dict[str, Any]]] = None,
+                     sections_runner: Optional[parallel_sections.Runner] = None) -> Dict[str, Any]:
     """Write the artifacts of ``collections`` and the manifest (returned). With ``keep_others`` the competitions of the previous publication that are
     not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``. ``scouting`` lists the
     collections whose teams also get their full scouting by scope (``scouting_export``; ``scouting_service`` builds the service, for tests). A competition that has not
-    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700); ``calendar_source`` (the federations, or a fake) makes the competitions of the newest season publish their calendar (#842; ``fbcyl_groups`` maps a FBCYL competition to its ESB group), always read again; ``genders`` (``competition_gender.competition_genders``) puts the ``F``/``M`` of each competition in its rows entry (#843)."""
+    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700); ``calendar_source`` (the federations, or a fake) makes the competitions of the newest season publish their calendar (#842; ``fbcyl_groups`` maps a FBCYL competition to its ESB group), always read again; ``genders`` (``competition_gender.competition_genders``) puts the ``F``/``M`` of each competition in its rows entry (#843); ``sections_runner`` (``parallel_sections.in_processes``) computes first, in parallel, the sections whose code changed (#945)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     names = list(collections)
@@ -275,7 +280,11 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                    old_reports=_previous_reports(out_dir, previous), memory=memory, trusted=trusted, versions=section_versions(SECTION_MODULES),
                    on_section=on_section, scouted=set(scouting or []), scouting_service=scouting_service, image_source=image_source,
                    imaged=current_season_collections(names) if image_source is not None else set(),
-                   calendar_source=calendar_source, calendar_names=calendar_collections(names, fbcyl_groups or {}) if calendar_source is not None else set(), groups=fbcyl_groups or {}, genders=genders or {}, categories=categories or {})
+                   calendar_source=calendar_source, calendar_names=calendar_collections(names, fbcyl_groups or {}) if calendar_source is not None else set(), groups=fbcyl_groups or {}, genders=genders or {}, categories=categories or {},
+                   precomputed={})
+    if sections_runner is not None:
+        tasks = parallel_sections.changed_code(names, CACHED, ctx.versions, memory["competitions"] if trusted else {})
+        ctx.precomputed = parallel_sections.precompute(tasks, sections_runner, lambda task, payload: _seal_section(task[1], payload, task[0], out_dir, sealer, ctx.kept_sections[task[1]].get(task[0])), on_section)
     remembered = {k: v for k, v in memory["competitions"].items() if trusted and keep_others and k not in names}
     for name in names:
         rows[name], entries, reports[name] = _publish_competition(ctx, name)
