@@ -64,7 +64,7 @@ class RuleConfig:
     rest_important_today_s: int = 600
     decided_remaining_s: int = 480
     close_margin: int = 6
-    close_remaining_s: int = 240
+    close_remaining_s: int = 120   # 2:00 since #932 (feedback 2536159); it was 4:00
     # Shooting streaks (last N attempts, oldest first): own cold field goals / threes (made at most), rival hot field goals /
     # threes (made at least), own free throws at or below this share with at least this many attempts (issue #243).
     cold_fg_n: int = 8

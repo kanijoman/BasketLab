@@ -180,5 +180,5 @@ def lineup_alerts(recording, rival=None):
 def test_no_alert_about_the_lineup_comes_with_a_stoppage_as_the_last_event_in_the_real_matches_regression():
     for recording, rival in (("2524475.rec.json.gz", {"id": "1008895", "name": "BOSONIT UNIBASKET"}), ("2524470.rec.json.gz", None)):
         found = lineup_alerts(recording, rival)
-        assert len(found) > 5, "the replay must raise alerts about the lineup for the check to mean something"
+        assert len(found) > 3, "the replay must raise alerts about the lineup for the check to mean something"   # > 5 until #930 (fewer fatigue alerts)
         assert [f for f in found if f[1] in STOPPAGES] == []

@@ -37,16 +37,16 @@ def test_r4_two_fouls_do_not_raise_an_alert_in_the_second_half(period):
 
 
 @pytest.mark.parametrize("period", [1, 2])
-def test_r4_two_fouls_are_an_info_in_the_first_half_issue_622(period):
+def test_r4_two_fouls_are_a_warning_in_the_first_half_issue_622(period):
     """Decision of the user (28/10/2026, feedback 0.4.2): the notice before the 3rd foul in the first half; it was «2 fouls never alert» (#241)."""
     [alert] = by_id(engine().evaluate(foul_snap(2, period, 400)), "foul_trouble")
-    assert alert.severity == "info" and alert.evidence["pf"] == 2
+    assert alert.severity == "warning" and alert.evidence["pf"] == 2      # #929: as a minimum a warning
 
 
-def test_r4_three_fouls_in_the_first_half_is_information_the_coach_usually_already_acts_on():
+def test_r4_three_fouls_in_the_first_half_are_a_warning_too_never_below_the_second_foul_issue_929():
     for period in (1, 2):
         [alert] = by_id(engine().evaluate(foul_snap(3, period, 400)), "foul_trouble")
-        assert alert.severity == "info" and alert.category == "faltas"
+        assert alert.severity == "warning" and alert.category == "faltas"
 
 
 def test_r4_three_fouls_in_the_second_half_is_a_warning_while_there_is_time_to_be_eliminated():

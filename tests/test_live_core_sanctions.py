@@ -97,7 +97,7 @@ FINISH = dict(period=4, elapsed=2200, remaining=200, score={OWN: 60, RIVAL: 58})
 
 def test_f2_three_timeouts_left_before_the_last_two_minutes_says_to_use_one():
     [alert] = by_id(evaluate(**FINISH), "timeout_budget")
-    assert alert.severity == "critical" and alert.evidence["base_severity"] == "warning"     # raised by the close finish
+    assert alert.severity == "warning" and "base_severity" not in alert.evidence    # #932: the close finish (2:00) starts where this window ends, so it never raises it
     assert alert.category == "gestion" and "3" in alert.message and "2:00" in alert.message
     assert alert.proposal[0]["type"] == "timeout" and alert.proposal[0]["left"] == 3
     [calm] = by_id(evaluate(**{**FINISH, "score": {OWN: 75, RIVAL: 58}}), "timeout_budget")   # a game that is not close
@@ -130,7 +130,7 @@ def test_f2_each_warning_is_said_once():
 
 # --- F4: a key player with four fouls in a close finish ---------------------------------------------------------------
 
-def key_snapshot(pf=4, avg_min=1500, margin=2, remaining=200):
+def key_snapshot(pf=4, avg_min=1500, margin=2, remaining=100):
     table = copy.deepcopy(TABLE)
     table["g1"]["avg_min"] = avg_min
     players = {"g1": player("Guard Uno", OWN, pf=pf)}
@@ -144,7 +144,7 @@ def test_f4_a_key_player_with_four_fouls_in_a_close_finish_defends_without_risk(
     assert alert.proposal[0]["type"] == "tactic" and "sin riesgo" in alert.proposal[0]["message"].lower()
 
 
-@pytest.mark.parametrize("kw", [dict(pf=3), dict(avg_min=600), dict(margin=15), dict(remaining=400)])
+@pytest.mark.parametrize("kw", [dict(pf=3), dict(avg_min=600), dict(margin=15), dict(remaining=130), dict(remaining=400)])
 def test_f4_it_needs_a_key_player_four_fouls_and_a_close_finish(kw):
     assert not by_id(evaluate(**key_snapshot(**kw)), "key_fouls_close")
 

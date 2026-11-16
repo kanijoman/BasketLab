@@ -73,7 +73,7 @@
       "timeout_followup:982047:470"
      ],
      "digests": {
-      "alerts": "4d048ff3f21151d9dec926a63b9fc72317a6998d38ffb66f245d2e0cfb308ac6",
+      "alerts": "0237a2a09773f226b7b707dffda9b3f4554a4841416bbf93fd58c56fc3f7b32f",
       "analysis": "71f24c7582a2c963f79726736addfb86c7b24a4927f979bf96fde42267bce477",
       "snapshot": "14ec79d6f646a6212b53c981453d3f2578d4fa5afdf304214d58f34097200bb2"
      },
@@ -118,7 +118,7 @@
       "timeout_review:981204:1195"
      ],
      "digests": {
-      "alerts": "32957881b198f1b827b3df04dbf2f0385568a366e4392d62d1a9c6cb6c6b8594",
+      "alerts": "0408c06e4d2c23ce657406b4249cc4fd75b7102ac088347db77e1dc6b6cf413b",
       "analysis": "f2e48487ace680336104e2c6f89184ae9e17625837ec6be1f44bffe0c371b2f4",
       "snapshot": "dbbf6d1c92373f40b053be4ad002ad116fa1acbbdfb5ed55128ac50c6c9eb798"
      },
@@ -156,7 +156,7 @@
       "timeout_review:981204:1603"
      ],
      "digests": {
-      "alerts": "51d925b3ffd408b369d9611e523e6996810cc1ecafc0f369c24cbc221a9a61cb",
+      "alerts": "59b68f6534757c9c3c41ac44689e46d054de270a8309f8d9679e387339a6b127",
       "analysis": "6c1f3696fff0f53427bfbf5eea5d8692079f347f50686e0f35b4fdf1a6da8ed6",
       "snapshot": "81b7f058ad2c8029182c2f823640647f6f706d640cb76b2cd35c40eb96109572"
      },
@@ -4015,7 +4015,7 @@
    },
    {
     "margin": 6,
-    "phase": "close_late",
+    "phase": "normal",
     "remaining_s": 240
    },
    {
@@ -4262,13 +4262,11 @@
       "category": "gestion",
       "confirm": 1,
       "evidence": {
-       "base_severity": "warning",
-       "phase": "close_late",
        "remaining_s": 200,
        "timeouts_left": 3
       },
       "id": "timeout_budget",
-      "key": "timeout_budget:4~close_late",
+      "key": "timeout_budget:4",
       "message": "Quedan 3 tiempos muertos y en el último 2:00 solo se pueden pedir 2: usar uno antes de entonces o se pierde.",
       "proposal": [
        {
@@ -4278,38 +4276,7 @@
        }
       ],
       "rearm_s": null,
-      "severity": "critical"
-     },
-     {
-      "category": "gestion",
-      "confirm": 1,
-      "evidence": {
-       "base_severity": "warning",
-       "foul_targets": [],
-       "fouls": {
-        "T1": 0,
-        "T2": 0
-       },
-       "margin": 2,
-       "own_clutch": [],
-       "own_timeouts": 3,
-       "phase": "close_late",
-       "rival_clutch": [],
-       "rival_timeouts": 3,
-       "shooters": []
-      },
-      "id": "closing_briefing",
-      "key": "closing:4~close_late",
-      "message": "Cierre igualado (+2 a 3:20): quedan 3 tiempos muertos (rival 3); faltas de equipo en el periodo: 0 propias y 0 del rival.",
-      "proposal": [
-       {
-        "left": 3,
-        "message": "Tiempo muerto · quedan 3",
-        "type": "timeout"
-       }
-      ],
-      "rearm_s": null,
-      "severity": "critical"
+      "severity": "warning"
      }
     ],
     [

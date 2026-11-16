@@ -35,7 +35,7 @@ def lineup(stats_own=None):
     return {**own, **rival}
 
 
-def finish(period=4, remaining=200, margin=2, players=None, timeouts=None, fouls=None, elapsed=None):
+def finish(period=4, remaining=100, margin=2, players=None, timeouts=None, fouls=None, elapsed=None):
     s = snap(elapsed=elapsed or (period - 1) * 600 + 600 - remaining, period=period, players=players if players is not None else lineup(),
              fouls_by_period=fouls)
     s["remaining"], s["score"] = remaining, {OWN: 60, RIVAL: 60 - margin}
@@ -66,8 +66,8 @@ def test_c1_a_close_finish_gets_a_briefing_with_timeouts_fouls_and_free_throws()
     [alert] = by_id(engine(baselines=OWN_FT, rival_baselines=RIVAL_FT).evaluate(s), "closing_briefing")
     assert alert.category == "gestion" and alert.severity == "critical" and alert.evidence["base_severity"] == "warning"
     msg = alert.message
-    assert "Cierre igualado" in msg and "+2" in msg and "3:20" in msg
-    assert "3 tiempos muertos" in msg and "rival 1" in msg
+    assert "Cierre igualado" in msg and "+2" in msg and "1:40" in msg
+    assert "2 tiempos muertos" in msg and "rival 1" in msg
     assert "faltas de equipo" in msg and "3" in msg and "5" in msg
     assert "Guard Uno (88 %)" in msg and "Ala Dos (80 %)" in msg           # the best free-throw shooters on court
     assert "Rita (52 %)" in msg and "Rut (60 %)" in msg                     # who to foul
@@ -91,7 +91,7 @@ def test_c1_it_adds_our_poor_free_throws_of_the_day():
     assert "hoy" not in good.message
 
 
-@pytest.mark.parametrize("kw", [dict(remaining=300), dict(margin=9), dict(period=3, remaining=100)])
+@pytest.mark.parametrize("kw", [dict(remaining=300), dict(remaining=130), dict(margin=9), dict(period=3, remaining=100)])
 def test_c1_it_is_only_for_a_close_finish(kw):
     assert not by_id(engine(baselines=OWN_FT, rival_baselines=RIVAL_FT).evaluate(finish(**kw)), "closing_briefing")
 
@@ -434,8 +434,8 @@ def reminders(eng, *snapshots):
 def test_the_free_throw_reminder_comes_again_every_minute_of_a_close_finish_regression():
     """Copa 21/10/2026: the briefing (once per period) was the only place that said who shoots free throws well, at 4:00 and never again."""
     eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
-    first = reminders(eng, finish(remaining=235))
-    later = reminders(eng, finish(remaining=170))
+    first = reminders(eng, finish(remaining=115))
+    later = reminders(eng, finish(remaining=50))
     assert len(first) == 1 and len(later) == 1 and first[0].key != later[0].key
     for alert in first + later:
         assert alert.evidence["base_severity"] == "info" and alert.category == "gestion"        # the close finish raises it one level (game_context)
@@ -444,27 +444,27 @@ def test_the_free_throw_reminder_comes_again_every_minute_of_a_close_finish_regr
 
 def test_it_is_said_once_per_minute_not_on_every_poll():
     eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
-    assert len(reminders(eng, finish(remaining=235), finish(remaining=232), finish(remaining=231))) == 1
+    assert len(reminders(eng, finish(remaining=115), finish(remaining=112), finish(remaining=111))) == 1
 
 
 def test_it_is_said_at_once_when_who_is_on_court_changes():
     eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
-    first = reminders(eng, finish(remaining=235))
+    first = reminders(eng, finish(remaining=115))
     swapped = lineup()
     swapped["g1"]["on_court"] = False                 # the best shooter goes to the bench
-    again = reminders(eng, finish(remaining=232, players=swapped))
+    again = reminders(eng, finish(remaining=112, players=swapped))
     assert len(first) == 1 and len(again) == 1 and "Guard Uno" not in again[0].message
 
 
 def test_it_follows_the_finish_and_only_the_finish():
     eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT)
-    assert reminders(eng, finish(period=4, remaining=300, margin=2)) == []          # more than 4:00 to go
+    assert reminders(eng, finish(period=4, remaining=130, margin=2)) == []          # more than 2:00 to go (#932)
     assert reminders(eng, finish(period=4, remaining=100, margin=15)) == []         # not close
     assert reminders(eng, finish(period=4, remaining=100, margin=3)) != []
 
 
 def test_without_free_throw_data_there_is_no_reminder():
-    assert reminders(engine(), finish(remaining=150)) == []
+    assert reminders(engine(), finish(remaining=100)) == []
 
 
 def test_the_reminder_follows_the_overtime_too():
@@ -473,7 +473,7 @@ def test_the_reminder_follows_the_overtime_too():
 
 def test_the_interval_is_in_the_configuration():
     eng = engine(baselines=OWN_FT, rival_baselines=RIVAL_FT, config=RuleConfig(closing_ft_every_s=30))
-    assert len(reminders(eng, finish(remaining=235), finish(remaining=200))) == 2
+    assert len(reminders(eng, finish(remaining=115), finish(remaining=85))) == 2
 
 
 def test_g1_says_why_when_the_recent_pace_decided_it_regression():

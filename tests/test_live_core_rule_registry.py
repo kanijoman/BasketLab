@@ -112,7 +112,7 @@ SCENARIOS = {
     "disqualification": (lambda: snap(elapsed=400, players={"p1": sa_player("Ana", OWN, unsportsmanlike=1)}), {"disqualification_risk"}, {}),
     "timeout_budget": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200), {"timeout_budget"}, {}),
     "first_half_timeouts": (lambda: sa_evaluate_snap(period=2, elapsed=1100, remaining=100), {"first_half_timeouts"}, {}),
-    "key_fouls_close": (lambda: sa_evaluate_snap(period=4, elapsed=2200, remaining=200, score={OWN: 60, RIVAL: 58},
+    "key_fouls_close": (lambda: sa_evaluate_snap(period=4, elapsed=2300, remaining=100, score={OWN: 60, RIVAL: 58},
                                                  players={"g1": sa_player("Guard Uno", OWN, pf=4)}), {"key_fouls_close"}, {"baselines": REST_TABLE}),
     "rival_foul_pair": (lambda: snap(elapsed=400, players={"r1": sa_player("Rita", RIVAL, pf=3), "r2": sa_player("Rosa", RIVAL, pf=4)}),
                         {"rival_foul_pair"}, {}),

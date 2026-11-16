@@ -50,12 +50,12 @@ def test_otherwise_a_big_margin_does_not_decide_the_game(period, remaining, marg
     assert phase(period, remaining, margin) != "decided"
 
 
-@pytest.mark.parametrize("remaining,margin", [(240, 6), (240, -6), (100, 0), (1, 3)])
-def test_the_last_four_minutes_of_a_close_game_are_the_closing_stretch(remaining, margin):
+@pytest.mark.parametrize("remaining,margin", [(120, 6), (120, -6), (100, 0), (1, 3)])
+def test_the_last_two_minutes_of_a_close_game_are_the_closing_stretch(remaining, margin):
     assert phase(4, remaining, margin) == "close_late"
 
 
-@pytest.mark.parametrize("period,remaining,margin", [(4, 241, 2), (4, 100, 7), (4, 100, -7), (3, 100, 0)])
+@pytest.mark.parametrize("period,remaining,margin", [(4, 121, 2), (4, 240, 2), (4, 100, 7), (4, 100, -7), (3, 100, 0)])
 def test_an_early_or_open_game_is_normal(period, remaining, margin):
     assert phase(period, remaining, margin) == "normal"
 
@@ -223,3 +223,16 @@ def test_the_analysis_exposes_the_context_and_the_timeouts_left():
 
 def test_without_a_perspective_there_is_no_context():
     assert "context" not in AdviceEngine(own_team_id=None).analyze(mk())
+
+
+# #932 (feedback 2536159): the close-game notice and the free-throw reminder come at 2:00, not 4:00.
+@pytest.mark.parametrize("remaining, phase_expected", [(240, "normal"), (121, "normal"), (120, "close_late"), (30, "close_late")])
+def test_the_close_finish_starts_two_minutes_from_the_end_regression(remaining, phase_expected):
+    assert phase(4, remaining, 2) == phase_expected
+
+
+def test_the_clutch_window_of_the_packages_keeps_its_four_minutes():
+    """The sample of a player's close finishes (package data) must not shrink with the alert: it keeps 4:00 on its own constant."""
+    from src.live_core import clutch
+
+    assert clutch.window_start(4) == 1800 + 600 - 240
