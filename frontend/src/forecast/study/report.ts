@@ -11,10 +11,10 @@ export interface CompetitionResult {
   season: SeasonRow[]
 }
 
-const num = (x: number, digits = 3): string => (Number.isFinite(x) ? x.toFixed(digits).replace('.', ',') : '—')
-const pc = (x: number, digits = 1): string => (Number.isFinite(x) ? `${(x * 100).toFixed(digits).replace('.', ',')} %` : '—')
-const table = (head: string[], rows: (string | number)[][]): string => [`| ${head.join(' | ')} |`, `| ${head.map(() => '---').join(' | ')} |`, ...rows.map(r => `| ${r.join(' | ')} |`)].join('\n')
-const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN)
+export const num = (x: number, digits = 3): string => (Number.isFinite(x) ? x.toFixed(digits).replace('.', ',') : '—')
+export const pc = (x: number, digits = 1): string => (Number.isFinite(x) ? `${(x * 100).toFixed(digits).replace('.', ',')} %` : '—')
+export const table = (head: string[], rows: (string | number)[][]): string => [`| ${head.join(' | ')} |`, `| ${head.map(() => '---').join(' | ')} |`, ...rows.map(r => `| ${r.join(' | ')} |`)].join('\n')
+export const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN)
 
 const BUCKETS: [string, (played: number) => boolean][] = [['0-2', n => n <= 2], ['3-5', n => n >= 3 && n <= 5], ['6-9', n => n >= 6 && n <= 9], ['10+', n => n >= 10]]
 

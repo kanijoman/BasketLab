@@ -3,8 +3,8 @@
 // fast the game went compared with what the two teams usually play, and how the margin went compared with what the ratings said. Whole games are kept because the factors and the margin of a
 // game are not independent: that is what lets the preview say «when they rebound this much, we win this often» without inventing a correlation.
 // Expectations use the levels of the whole season (in-sample): the residuals are a little narrower than they will be, which the preview makes up with a kernel (`scenarios.ts`).
-import { buildRatings, matchupPace, type GameResult } from './gameLog'
-import { boxOf, FACTOR_KEYS, factors, leagueFactors, shrunkLevel, sumBoxes, type Box, type Factors, type TeamLevel } from './factors'
+import { buildRatings, gameMinutes, gamePossessions, matchupPace, type GameResult } from './gameLog'
+import { boxOf, FACTOR_KEYS, factors, leagueFactors, SHRINK_GAMES, shrunkLevel, sumBoxes, type Box, type Factors, type TeamLevel } from './factors'
 import { DEFAULT_PACE, type TeamRatings } from './teamRatings'
 import { wpParams } from './winProb'
 
@@ -17,9 +17,25 @@ export interface Scenario {
   rho: number
   /** The margin of the game over what the ratings and the home court said, per square root of its possessions. */
   z: number
+  /**
+   * The points per 100 possessions the own side made minus what was expected of it (#936). The possessions are those of the GAME (its pace times its minutes, the same for both sides), so
+   * pace × minutes × (expected + residual) / 100 gives back its points exactly.
+   */
+  oOwn: number
+  /** The same for the rival side. */
+  oRiv: number
+  /** The minutes of the game over 40 (overtime: 45 / 40, 50 / 40…). */
+  minutes: number
+  /** The teams of the game: the own side and the rival side (for what is particular to each team, #937). */
+  own: string
+  rival: string
 }
 
-export interface TeamSums { for: Box; against: Box; games: number }
+/** `possessions`: the possessions of the games of the team (pace × minutes, see `Scenario.oOwn`). */
+export interface TeamSums { for: Box; against: Box; games: number; possessions: number }
+
+/** The points per 100 possessions a team makes (attack) and lets make (defence), shrunk to the league like the factors. */
+export interface OerLevel { attack: number; defence: number }
 
 export interface ForecastModel {
   games: GameResult[]
@@ -30,6 +46,9 @@ export interface ForecastModel {
   sums: Map<string, TeamSums>
   /** The level of a team shrunk to the league; the league itself for a team with no rows. */
   level: (team: string) => TeamLevel
+  /** The points per 100 possessions of the league, and the level of a team in them (#936). */
+  oerLeague: number
+  oerLevel: (team: string) => OerLevel
   pool: Scenario[]
 }
 
@@ -40,21 +59,44 @@ export function expectedFactors(attack: TeamLevel, defender: TeamLevel, league: 
   return Object.fromEntries(FACTOR_KEYS.map(k => [k, clamp01(attack.attack[k] + defender.defence[k] - league[k])])) as Factors
 }
 
+/** The points per 100 possessions `attack` is expected to make against `defender`, the same way as its factors. */
+export const expectedOer = (model: ForecastModel, attack: string, defender: string): number =>
+  model.oerLevel(attack).attack + model.oerLevel(defender).defence - model.oerLeague
+
 function sumsOf(games: GameResult[]): Map<string, TeamSums> {
-  const per = new Map<string, { own: Box[]; opp: Box[] }>()
+  const per = new Map<string, { own: Box[]; opp: Box[]; possessions: number }>()
   for (const g of games) {
     if (!g.homeRow || !g.awayRow) continue
     for (const [team, row] of [[g.home, g.homeRow], [g.away, g.awayRow]] as const) {
-      const entry = per.get(team) ?? { own: [], opp: [] }
+      const entry = per.get(team) ?? { own: [], opp: [], possessions: 0 }
       entry.own.push(boxOf(row, 'own'))
       entry.opp.push(boxOf(row, 'opp'))
+      entry.possessions += gamePossessions(g, row)
       per.set(team, entry)
     }
   }
-  return new Map([...per].map(([team, e]) => [team, { for: sumBoxes(e.own), against: sumBoxes(e.opp), games: e.own.length }]))
+  return new Map([...per].map(([team, e]) => [team, { for: sumBoxes(e.own), against: sumBoxes(e.opp), games: e.own.length, possessions: e.possessions }]))
 }
 
-function scenariosOf(games: GameResult[], ratings: TeamRatings, level: (team: string) => TeamLevel, league: Factors, gender?: string): Scenario[] {
+/** The points per 100 possessions of the league and of each team, shrunk to the league by games / (games + 6) like the factors (`shrunkLevel`). */
+function oerOf(sums: Map<string, TeamSums>): { league: number; level: (team: string) => OerLevel } {
+  const all = [...sums.values()]
+  const possessions = all.reduce((s, t) => s + t.possessions, 0)
+  const league = possessions > 0 ? (100 * all.reduce((s, t) => s + t.for.pts, 0)) / possessions : 0
+  const level = (team: string): OerLevel => {
+    const s = sums.get(String(team))
+    if (!s || !(s.possessions > 0)) return { attack: league, defence: league }
+    const weight = s.games / (s.games + SHRINK_GAMES)
+    const shrink = (points: number): number => league + ((100 * points) / s.possessions - league) * weight
+    return { attack: shrink(s.for.pts), defence: shrink(s.against.pts) }
+  }
+  return { league, level }
+}
+
+interface Levels { level: (team: string) => TeamLevel; league: Factors; oerLevel: (team: string) => OerLevel; oerLeague: number }
+
+function scenariosOf(games: GameResult[], ratings: TeamRatings, { level, league, oerLevel, oerLeague }: Levels, gender?: string): Scenario[] {
+  const expOer = (a: string, d: string): number => oerLevel(a).attack + oerLevel(d).defence - oerLeague
   const { homeAdv } = wpParams(gender)
   const paces = new Map<string, number>()
   const usual = (a: string, b: string): number => {
@@ -73,11 +115,17 @@ function scenariosOf(games: GameResult[], ratings: TeamRatings, level: (team: st
       const pbar = usual(o, r)
       const pace = g.pace ?? (pbar || DEFAULT_PACE)
       const expectedMargin = ratings.rating(o) - ratings.rating(r) + (court * homeAdv * (pbar || DEFAULT_PACE)) / 100
+      const possessions = gamePossessions(g, rowO)
       out.push({
         dOwn: Object.fromEntries(FACTOR_KEYS.map(k => [k, fo[k] - eo[k]])) as Factors,
         dRiv: Object.fromEntries(FACTOR_KEYS.map(k => [k, fr[k] - er[k]])) as Factors,
         rho: g.pace && pbar > 0 ? g.pace / pbar : 1,
         z: (court * g.margin - expectedMargin) / Math.sqrt(pace),
+        oOwn: (100 * boxO.pts) / possessions - expOer(o, r),
+        oRiv: (100 * boxR.pts) / possessions - expOer(r, o),
+        minutes: gameMinutes(rowO),
+        own: o,
+        rival: r,
       })
     }
   }
@@ -98,5 +146,7 @@ export function buildModel(games: GameResult[], gender?: string): ForecastModel 
     }
     return cache.get(key)!
   }
-  return { games, ratings, gender, league, sums, level, pool: scenariosOf(games, ratings, level, league, gender) }
+  const oer = oerOf(sums)
+  const pool = scenariosOf(games, ratings, { level, league, oerLevel: oer.level, oerLeague: oer.league }, gender)
+  return { games, ratings, gender, league, sums, level, oerLeague: oer.league, oerLevel: oer.level, pool }
 }
