@@ -19,17 +19,25 @@ export interface Variable {
   kind: 'scenario' | 'points'
   /**
    * Whether the walk-forward evaluation backs a probability of winning in the games where it happens (#938). The rule of #857: without support, information only (how often, what those
-   * games look like and the season's record) and no figure. The possessions start without it (the evaluation of 11/11/2026 found none for the pace).
+   * games look like and the season's record) and no figure. See `UNBACKED`.
    */
   supported: boolean
 }
 
 const SIDE_MEASURES: SideMeasure[] = ['points', 'oer', ...FACTOR_KEYS]
 
+/**
+ * The variables without the support of the walk-forward evaluation of 16/11/2026 (docs/evaluaciones/2026-11-16_proyeccion-multifactorial.md: 2,994 games of 14 seasons, men and women).
+ * The other ten are calibrated and beat the headline in the games where their condition happens, in both families. These: the possessions (calibrated but no better than the headline,
+ * as on 11/11, #857), our turnovers (the same) and the rival's points per 100 possessions (in the women's leagues we won 57 % of the games where its condition happened, not the 48 %
+ * foreseen: off by more than two standard errors).
+ */
+const UNBACKED = new Set<VariableId>(['game.possessions', 'own.tov', 'rival.oer'])
+
 export const VARIABLES: Variable[] = [
-  { id: 'game.possessions', side: null, measure: 'possessions', kind: 'scenario', supported: false },
+  { id: 'game.possessions', side: null, measure: 'possessions', kind: 'scenario', supported: !UNBACKED.has('game.possessions') },
   ...(['own', 'rival'] as const).flatMap(side => SIDE_MEASURES.map((measure): Variable => ({
-    id: `${side}.${measure}`, side, measure, kind: measure === 'points' || measure === 'oer' ? 'points' : 'scenario', supported: true,
+    id: `${side}.${measure}`, side, measure, kind: measure === 'points' || measure === 'oer' ? 'points' : 'scenario', supported: !UNBACKED.has(`${side}.${measure}`),
   }))),
 ]
 

@@ -178,6 +178,15 @@ describe('a complete men season, in detail', () => {
     expect(s.figure).toBe(s.pWin)
   })
 
+  // The walk-forward evaluation of 16/11/2026 (#938, 2,994 games of 14 seasons): ten variables are calibrated and beat the headline where their condition happens, in both families; the
+  // possessions (as on 11/11, #857), our turnovers (calibrated, but no better than the headline) and the rival's points per 100 possessions (10 points off in the women's leagues) are not.
+  const UNBACKED: VariableId[] = ['game.possessions', 'own.tov', 'rival.oer']
+  it.each(VARIABLES.map(v => [v.id, !UNBACKED.includes(v.id)] as const))('%s: a figure only if the evaluation backs it (%s)', (id, backed) => {
+    const r = project(p, [cond(id, 'gt', expected(id))])
+    expect(r.rare).toBe(false)
+    expect(r.figure === null).toBe(!backed)
+  })
+
   it('the season record counts the games of ours that met every condition, and the ones we won (by hand)', () => {
     const own = mid[0]
     const conditions = [cond('own.points', 'gt', 80), cond('own.tov', 'lt', 0.16)]
