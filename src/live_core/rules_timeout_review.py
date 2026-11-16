@@ -59,7 +59,7 @@ def timeout_review_rule(snap: Dict[str, Any], ctx: RuleContext) -> List[Advice]:
             continue
         other = rival if team == own else own
         period, remaining = period_and_remaining(at)
-        start = max(at - cfg.timeout_review_window_s, period_start(period))
+        start = max(at - max(cfg.timeout_review_window_s, cfg.run_window_s), period_start(period))   # #931: never narrower than the window of the run alert
         mine, theirs = window_stats(log, team, start, at), window_stats(log, other, start, at)
         own_w, rival_w = (mine, theirs) if team == own else (theirs, mine)
         tired = _tired(snap, ctx, team)

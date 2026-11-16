@@ -224,3 +224,27 @@ def test_what_happens_in_the_next_period_does_not_count_for_the_timeout_of_the_l
     s = at(1300, log, own_timeouts=[1160], period=3, remaining=500)
     [alert] = followup(s)
     assert alert.evidence["net"] == 2 and alert.evidence["window_s"] == 40            # only what was left of the period
+
+
+# #931 (feedback 2536159, 3rd quarter): an own timeout was «sin motivo claro» after a 6-0 against. The run alert looks at 150 s (``run_window_s``) and the review
+# looked at 120 s, so a run that began 140 s before the timeout was a run for one and nothing for the other.
+def test_a_run_of_the_alert_window_is_the_reason_of_the_timeout_regression():
+    from tests.builders import Match
+
+    m = Match().lineup(OWN, ["p1"], at=1200).lineup(RIVAL, ["r1"], at=1200)
+    for t in (1360, 1380, 1400):
+        m.score(RIVAL, 2, at=t, player="r1")
+    m.timeout(OWN, at=1500)
+    [alert] = [a for a in m.evaluate() if a.id == "timeout_review"]
+    assert alert.evidence["reason"] == "run" and "6" in alert.message
+
+
+def test_a_run_older_than_the_window_is_still_no_reason():
+    from tests.builders import Match
+
+    m = Match().lineup(OWN, ["p1"], at=1200).lineup(RIVAL, ["r1"], at=1200)
+    for t in (1300, 1310, 1320):
+        m.score(RIVAL, 2, at=t, player="r1")
+    m.timeout(OWN, at=1500)
+    [alert] = [a for a in m.evaluate() if a.id == "timeout_review"]
+    assert alert.evidence["reason"] != "run"
