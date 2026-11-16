@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import AlertList, { CATEGORY_LABEL, type AlertEntry } from './AlertList'
 import type { Alert } from '../engine/types'
 
@@ -163,5 +163,25 @@ describe('alerts grouped by quarter (issue #406)', () => {
     render(<AlertList entries={FLOW} />)
     expect(group(/Cuarto 3/).open).toBe(true)
     expect(group(/Cuarto 1/).open).toBe(false)
+  })
+})
+
+describe('AlertList dismissal (issue #933)', () => {
+  it('a dismissed alert leaves the flow and the counters, and waits in a list from which it comes back', () => {
+    const onVerdict = vi.fn()
+    const { rerender } = render(<AlertList entries={MIX} verdicts={{}} onVerdict={onVerdict} />)
+    fireEvent.click(within(screen.getByText('c1').closest('li')!).getByRole('button', { name: 'Descartar aviso' }))
+    expect(onVerdict).toHaveBeenCalledWith('c1', 'descartada')
+    rerender(<AlertList entries={MIX} verdicts={{ c1: 'descartada' }} onVerdict={onVerdict} />)
+    const counts = screen.getByLabelText('Resumen de alertas')
+    expect(within(counts).queryByText(/crítica/)).toBeNull()
+    const dismissed = screen.getByText(/Descartados · 1/).closest('details')!
+    fireEvent.click(within(dismissed).getByRole('button', { name: 'Recuperar aviso' }))
+    expect(onVerdict).toHaveBeenLastCalledWith('c1', null)
+  })
+
+  it('shows no list of dismissed alerts when there is none', () => {
+    render(<AlertList entries={MIX} verdicts={{}} onVerdict={() => undefined} />)
+    expect(screen.queryByText(/Descartados/)).toBeNull()
   })
 })

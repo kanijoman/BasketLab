@@ -48,7 +48,6 @@ import { useAppUpdate, type AppUpdateDeps } from '../about/useAppUpdate'
 import PackagesTab, { type MatchKind } from './PackagesTab'
 import TabBar from './TabBar'
 import { useTab, type TabId } from './useTab'
-import FeedbackPanel from './FeedbackPanel'
 import BoxscoreTab from './boxscore/BoxscoreTab'
 import { useFeedback } from '../feedback/useFeedback'
 
@@ -141,7 +140,7 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
   const elapsedRef = useRef(0)
   const seen = useRef(new Set<string>())
   // the staff's answers belong to the match being followed: the package's match, else the demo being replayed
-  const feedback = useFeedback(liveMode ? `live:${pkg!.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null, undefined, alertMode)
+  const feedback = useFeedback(liveMode ? `live:${pkg!.match?.code ?? meta?.package_id ?? 'paquete'}` : `demo:${source}`, meta?.package_id ?? null)
   const { register: registerAlert } = feedback
 
   const liveRef = useRef<{ running: boolean; disconnect: () => void } | null>(null)
@@ -408,9 +407,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
     setElapsed(to)
     await step(to)
   }
-  // the count is about the alerts of THIS run (#314): the history of earlier runs of the same match stays in the device, not in the count
-  const shownKeys = new Set(entries.map(e => e.alert.key))
-  const shownFeedback = feedback.records.filter(r => shownKeys.has(r.key))
   const homeFirst = (snap?.home_id ?? meta?.home_id) === rival.id
   const [home, away] = homeFirst ? [rival, own] : [own, rival]
   const matchTab = (
@@ -456,10 +452,6 @@ export default function App({ engine: injected, loadDemo = loadDemoData, loadMan
       {liveMode && (
         <LiveConnect matchCode={pkg.match?.code ?? null} state={live.state} running={live.running} awake={live.awake} lag={live.lag}
           onStart={code => void live.connect(code, { fbcylGroup: pkg.match?.fbcyl_group })} onStop={live.disconnect} />
-      )}
-
-      {shownFeedback.length > 0 && (
-        <FeedbackPanel records={shownFeedback} exportJson={feedback.exportJson} fileName={feedback.fileName()} onClear={feedback.clear} />
       )}
 
       <VersionFooter version={update.installed} engineVersion={meta?.engine_version ?? null} />

@@ -69,7 +69,7 @@ describe('what styles.css paints with the orange (issue #633)', () => {
     expect(css.match(/(?<![\w-])color:\s*var\(--accent\)/g)).toBeNull()
   })
 
-  it('a filled button (selected segment, pressed verdict) is --accent-solid with the ink of --accent-ink', () => {
+  it('a filled button (selected segment) is --accent-solid with the ink of --accent-ink', () => {
     expect(css.match(/background:\s*var\(--accent\);\s*color:\s*var\(--accent-ink\)/g)).toBeNull()
   })
 })
