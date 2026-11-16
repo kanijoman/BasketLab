@@ -17,7 +17,7 @@ import json
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from . import clock, events, four_factors, game_context, possessions, profiles, rules_fouls, timeouts, windows, zones
+from . import clock, events, four_factors, four_factors_model, game_context, possessions, profiles, rules_fouls, timeouts, windows, zones
 from .advice import AdviceEngine
 from .config import RuleConfig
 from .engine import LiveEngine
@@ -103,7 +103,7 @@ def _context_phase(a: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _four_factors_evaluate(a: Dict[str, Any]) -> Any:
-    model = four_factors.FourFactorsModel(a["own"], a["rival"], a.get("baselines"),
+    model = four_factors_model.FourFactorsModel(a["own"], a["rival"], a.get("baselines"),
                                           RuleConfig.from_dict(a.get("config")))
     return model.evaluate(a["snapshot"])
 

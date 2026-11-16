@@ -16,7 +16,8 @@ from .advice_types import SEVERITY_RANK, Advice, RuleContext
 from .coherence import Coherence
 from .boxscore import build as box_score, team_totals
 from .config import RuleConfig
-from .four_factors import FourFactorsModel, side_of
+from .four_factors import side_of
+from .four_factors_model import FourFactorsModel
 from .recent_timeout import adapt_for_recent_timeout
 from .lineup_settle import LINEUP_RULES, lineup_unsettled
 from .score_settle import RECENT_ACTION_RULES, log_lags
