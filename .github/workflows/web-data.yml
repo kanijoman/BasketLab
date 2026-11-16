@@ -48,7 +48,7 @@ jobs:
     # a red archive refresh (missing matches) must not block the data; a cancelled one does
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120   # #700, #783: the first build after a change of the memory format computes everything (about 50 minutes); then only the sections whose code changed
+    timeout-minutes: 240   # #700, #783, #944: a change of shared code (src/live_core, src/database) recomputes nearly every section; with today's archive that is about 2 h (lineups and inout, #945); then only the sections whose code changed
     services:
       mongo:
         image: mongo:7

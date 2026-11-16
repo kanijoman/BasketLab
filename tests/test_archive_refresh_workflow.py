@@ -84,6 +84,12 @@ class TestTheSingleWriter:
         condition = _load("web-data.yml")["jobs"]["publish"]["if"]
         assert "cancelled" in condition
 
+    def test_the_publication_has_room_for_a_full_recompute_of_todays_archive_regression(self):
+        """#944: after #934 changed ``src/live_core`` the cache recomputed ``lineups`` and ``inout`` in every competition and the run was cancelled at 120 min with 352 of the
+        366 competitions done (118 min), so nothing was published, and every later refresh would have started over and timed out again. A full recompute must fit with room for
+        the batches of the history still to come; the repository is public, so the minutes cost nothing (GitHub's limit for a job is 360)."""
+        assert 240 <= _load("web-data.yml")["jobs"]["publish"]["timeout-minutes"] <= 360
+
 
 class TestTheGuardsOfTheWriter:
     """The job rewrites the only copy of the games (#646): what ``web-data.yml`` guarded when it was the writer is guarded here."""
