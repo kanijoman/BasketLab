@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildGames } from '../gameLog'
-import { formatReport, type CompetitionResult } from './report'
+import { formatReport, STRETCHES, type CompetitionResult } from './report'
 import { walkForwardHeadline, walkForwardPreviews, walkForwardSeason } from './walkForward'
 import { primera } from '@/test/forecastFixtures'
 
@@ -32,6 +32,20 @@ describe('the report', () => {
     expect(report).not.toContain('| Femenina |')
     const both = formatReport([result, { ...result, name: 'LF_X', gender: 'F' }], '2026-11-11')
     for (const side of ['Ataque', 'Defensa', 'Ritmo']) expect(both).toContain(`| Femenina | ${side} |`)
+  })
+
+  it('tells the objectives apart by stretch of the season, from the 15th game, where the page starts showing them (#947)', () => {
+    const early: CompetitionResult = { ...result, previews: walkForwardPreviews(games, 'M', { from: 15, every: 5 }) }
+    const text = formatReport([early], '2026-11-16')
+    expect(text).toContain('### Por tramo de la temporada')
+    for (const stretch of STRETCHES.map(([label]) => label)) expect(text).toContain(`| ${stretch} | Masculina |`)
+    expect(early.previews.levers.some(l => l.k < 25)).toBe(true)
+    expect(text).not.toMatch(/NaN|undefined|Infinity/)
+  })
+
+  it('the stretches are the games played in the competition before the one judged: 15-24, 25-39 and 40 on', () => {
+    const of = (k: number) => STRETCHES.find(([, inside]) => inside(k))?.[0] ?? null
+    expect([14, 15, 24, 25, 39, 40, 300].map(of)).toEqual([null, '15-24', '15-24', '25-39', '25-39', '40+', '40+'])
   })
 
   it('says what was evaluated and on what, and the date', () => {

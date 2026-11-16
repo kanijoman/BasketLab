@@ -3,14 +3,12 @@
 // team won, in every family with enough cases, and it does not do worse than the headline there.
 import type { ResponseKey, Slopes } from '../projection/paceResponse'
 import { RESPONSE_KEYS } from '../projection/paceResponse'
-import { VARIABLES, type VariableId } from '../projection/variables'
+import { VARIABLES, variableOf, type VariableId } from '../projection/variables'
 import { brier } from './metrics'
 import type { ConditionRecord, PredictionRecord, ProjectionStudy, Reliability, RivalResponse } from './projection'
-import { mean, num, pc, table } from './report'
+import { FAMILIES, mean, num, pc, STRETCHES, table } from './report'
 
 export interface ProjectionCompetition { name: string; gender: string; games: number; projection: ProjectionStudy; slopes: Slopes; reliability: Reliability; rival: RivalResponse }
-
-const FAMILIES: [string, string][] = [['Masculina', 'M'], ['Femenina', 'F']]
 /** Below this many games where a condition happened, a family says nothing of its calibration. */
 const MIN_MET = 30
 
@@ -100,6 +98,38 @@ function conditionsSection(results: ProjectionCompetition[]): string {
   ].join('\n\n')
 }
 
+const nonNull = <T>(x: T | null): x is T => x !== null
+const share = (rows: ConditionRecord[]): number => mean(rows.map(r => (r.met ? 1 : 0)))
+
+/**
+ * The start of the season (#947): the card and the objectives are shown from 30 scenarios (about 15 games) and the evaluation of 16/11 began at the 40th. By stretch, the single
+ * conditions with a figure (league layer, backed variables); and the rare ones (a threshold at 5 or 10 % of the scenarios) by kind, because with few scenarios a condition on the
+ * factors or the possessions goes in jumps (each scenario is in or out; only the points have a kernel): what the projection says of their share against how often they happen.
+ */
+function stretchSection(results: ProjectionCompetition[]): string {
+  const singles = (rows: ConditionRecord[]) => rows.filter(r => r.conditions.length === 1 && r.layer === 'liga')
+  const of = (g: string) => singles(results.filter(r => r.gender === g).flatMap(r => r.projection.conditions)).filter(r => variableOf(r.conditions[0].variable).supported)
+  const head = ['Preguntas', 'Se cumplen', 'Prevista si se cumple', 'Real si se cumple', '± 2 errores típicos', 'Brier de la prevista', 'Brier del pronóstico']
+  const byStretch = FAMILIES.flatMap(([label, g]) => STRETCHES.map(([stretch, inside]) => {
+    const mine = of(g).filter(r => inside(r.k))
+    return mine.length ? [stretch, label, pc(mean(mine.map(r => r.mass))), pc(share(mine)), ...calibrationCells(calibrationOf(mine))] : null
+  })).filter(nonNull)
+  const kinds: [string, 'scenario' | 'points'][] = [['Factores y posesiones', 'scenario'], ['Puntos', 'points']]
+  const all = singles(results.flatMap(r => r.projection.conditions)).filter(r => r.target <= 0.1)
+  const rare = STRETCHES.flatMap(([stretch, inside]) => kinds.map(([label, kind]) => {
+    const mine = all.filter(r => inside(r.k) && variableOf(r.conditions[0].variable).kind === kind)
+    return mine.length ? [stretch, label, mine.length, pc(mean(mine.map(r => r.target))), pc(mean(mine.map(r => r.mass))), pc(share(mine))] : null
+  })).filter(nonNull)
+  return [
+    '#### Por tramo de la temporada',
+    'Las condiciones de una variable con cifra (capa de liga) según los partidos de la competición jugados antes del que se juzga: la tarjeta se enseña desde unos 15. «Masa prevista»: la parte de los partidos como ese en que la proyección dice que pasa; «Parte que se cumple»: en cuántos pasó.',
+    table(['Tramo', 'Familia', 'Masa prevista (media)', 'Parte que se cumple', ...head], byStretch),
+    '#### Condiciones raras por tramo y tipo de variable',
+    'Las condiciones con el umbral en el 5 o el 10 % de los escenarios, todas las variables: con pocos escenarios, las de factores y posesiones van a saltos (cada escenario está dentro o fuera).',
+    table(['Tramo', 'Tipo', 'Preguntas', 'Umbral (media)', 'Masa prevista (media)', 'Parte que se cumple'], rare),
+  ].join('\n\n')
+}
+
 function predictionsSection(results: ProjectionCompetition[]): string {
   const rows = results.flatMap(r => r.projection.predictions)
   const layers = [...new Set(rows.map(r => r.layer))]
@@ -134,6 +164,6 @@ export function formatProjectionSection(results: ProjectionCompetition[]): strin
   return [
     '## Proyección multifactorial',
     table(['Competición', 'Familia', 'Partidos', 'Proyecciones', 'Sin escenarios suficientes'], results.map(r => [r.name, r.gender === 'F' ? 'femenina' : 'masculina', r.games, new Set(r.projection.conditions.map(c => `${c.k}|${c.court}`)).size, r.projection.skipped])),
-    slopesSection(results), reliabilitySection(results), rivalSection(results), conditionsSection(results), predictionsSection(results),
+    slopesSection(results), reliabilitySection(results), rivalSection(results), conditionsSection(results), stretchSection(results), predictionsSection(results),
   ].join('\n\n') + '\n'
 }
