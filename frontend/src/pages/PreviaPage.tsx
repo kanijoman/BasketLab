@@ -1,14 +1,16 @@
 /**
  * Previa del partido (issue #849): choose a team (our point of view), see ITS calendar of matches to play, choose the match to analyse and read the forecast, the scenarios, the objectives of the
- * match and the matchup for that rival and that court. Everything is computed in the browser from the published games (`forecast/`); the team and the match are in the address so that a
- * preview can be shared and reloaded, and the team is remembered per competition.
+ * match, the card «¿Y si…?» (#940) and the matchup for that rival and that court. Everything is computed in the browser from the published games (`forecast/`); the team, the match and the
+ * conditions of the card are in the address so that a preview can be shared and reloaded, and the team is remembered per competition.
  */
 import { useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CalendarX2, Crosshair } from 'lucide-react'
-import { infoLines, leverEvidence, leverTitle, pct, SCENARIO_TEXT } from '@/forecast/copy'
 import { nextFixture, teamFixtures } from '@/forecast/fixtures'
 import { buildPreview } from '@/forecast/preview'
+import { project } from '@/forecast/projection/project'
+import { conditionsParam, defaultConditions, parseConditions } from '@/forecast/projection/query'
+import type { Condition } from '@/forecast/projection/variables'
 import { loadPrefs, savePrefs } from '@/forecast/storage'
 import { useForecast } from '@/forecast/useForecast'
 import { useCollection } from '@/context/CollectionContext'
@@ -22,8 +24,10 @@ import Forecast from './previa/Forecast'
 import HowItWorks from './previa/HowItWorks'
 import MatchupTable from './previa/MatchupTable'
 import ObjectivesList from './previa/ObjectivesList'
+import ProjectionCard from './previa/ProjectionCard'
 import ScenariosChart from './previa/ScenariosChart'
 import TeamFixtures from './previa/TeamFixtures'
+import { CSV_HEADERS, previewCsv } from './previa/csv'
 import { courtText } from './previa/format'
 
 export default function PreviaPage() {
@@ -39,6 +43,12 @@ export default function PreviaPage() {
   const fixture = fixtures.find(f => f.code === params.get('partido')) ?? nextFixture(fixtures, Date.now())
   const preview = useMemo(() => (model && team && fixture ? buildPreview(model, team, fixture.rival, fixture.court) : null), [model, team, fixture])
   const ownName = teams.find(t => t.id === team)?.name ?? ''
+  const detail = preview?.detail ?? null
+  // the question of the card «¿Y si…?» (#940): in the address, and our points over what is expected when the address has none
+  const asked = params.get('si')
+  const conditions = useMemo(() => (detail ? (asked === null ? defaultConditions(detail.projection) : parseConditions(asked)) : []), [detail, asked])
+  const question = useMemo(() => (detail && conditions.length ? project(detail.projection, conditions) : null), [detail, conditions])
+  const ask = (next: Condition[]) => setParams(prev => { const p = new URLSearchParams(prev); p.set('si', conditionsParam(next)); return p }, { replace: true })
 
   const chooseTeam = (id: string) => {
     if (name) savePrefs(name, { team: id || undefined })
@@ -50,12 +60,7 @@ export default function PreviaPage() {
   if (error) return <PageTransition><div className="space-y-4">{header}<p role="alert" className="rounded-lg border border-bad/30 bg-bad/10 p-3 text-sm text-bad">{error instanceof Error ? error.message : String(error)}</p></div></PageTransition>
   if (!calendar) return <PageTransition><div className="space-y-4">{header}<EmptyState icon={CalendarX2} title="Esta competición todavía no tiene el calendario publicado." description="La previa necesita los partidos que quedan por jugar." /></div></PageTransition>
 
-  const detail = preview?.detail ?? null
-  const csv = detail ? [
-    ...[...detail.levers.attack, ...detail.levers.defence].map(l => ({ tipo: 'Objetivo', texto: leverTitle(l), victorias: pct(l.pWin, 0), temporada: leverEvidence(l) })),
-    ...detail.levers.info.map(i => { const lines = infoLines(i); return { tipo: lines.title, texto: lines.summary, victorias: '', temporada: lines.record } }),
-    ...detail.scenarios.map(b => ({ tipo: 'Escenario', texto: SCENARIO_TEXT[b.id].title, victorias: pct(b.p, 0), temporada: '' })),
-  ] : []
+  const csv = detail && fixture ? previewCsv(detail, question, fixture.rivalName) : []
 
   return (
     <PageTransition>
@@ -85,11 +90,12 @@ export default function PreviaPage() {
             <div className="flex flex-wrap items-center gap-3">
               <p data-testid="preview-title" className="text-xl font-bold text-ink">{ownName} – {fixture.rivalName} · {courtText(fixture.court)}</p>
               <ExportButton className="ml-auto" filename={`previa-${ownName}-${fixture.rivalName}`} captureRef={captureRef} pdfTitle={`Previa: ${ownName} – ${fixture.rivalName}`}
-                csvData={csv} csvHeaders={[{ key: 'tipo', label: 'Tipo' }, { key: 'texto', label: 'Qué' }, { key: 'victorias', label: 'Victorias' }, { key: 'temporada', label: 'Esta temporada' }]} />
+                csvData={csv} csvHeaders={CSV_HEADERS} />
             </div>
             <Forecast preview={preview} ownName={ownName} />
             {detail && <ScenariosChart detail={detail} />}
             {detail && <ObjectivesList detail={detail} headline={preview.headline.p} />}
+            {detail && <ProjectionCard projection={detail.projection} conditions={conditions} result={question} onChange={ask} headline={preview.headline.p} rivalName={fixture.rivalName} />}
             {detail && <MatchupTable rows={detail.matchup} />}
             <HowItWorks poolSize={detail?.poolSize ?? null} />
           </div>

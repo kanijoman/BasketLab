@@ -67,15 +67,17 @@ function leverOf(p: Projection, variable: VariableId, sign: 1 | -1, base: Pick<L
   const threshold = sign * quantile(scenarioValues(p, variable).map(v => sign * v), 1 - SHARE)
   const direction = sign > 0 ? 'up' : 'down'
   const r = project(p, [leverCondition({ variable, direction, threshold })])
-  return { ...base, variable, direction, threshold, pWin: r.pWin, gain: r.pWin - p.headline.p, mass: r.mass, record: r.record }
+  return { ...base, variable, direction, threshold, pWin: r.pWin, gain: r.pWin - p.headline.p, mass: r.mass, record: counts(r.record) }
 }
+
+const counts = ({ reached, won }: Band['record']): Band['record'] => ({ reached, won })
 
 /** The low and the high end of a variable in this matchup, and the own games of the season past each. */
 function bandsOf(p: Projection, variable: VariableId, expected: number): BandInfo {
   const values = scenarioValues(p, variable)
   const band = (op: Condition['op'], q: number): Band => {
     const threshold = quantile(values, q)
-    return { threshold, record: seasonRecord(p.model, p.own, [{ variable, op, value: threshold }]) }
+    return { threshold, record: counts(seasonRecord(p.model, p.own, [{ variable, op, value: threshold }])) }
   }
   return { variable, expected, low: band('lt', SHARE), high: band('gt', 1 - SHARE) }
 }
