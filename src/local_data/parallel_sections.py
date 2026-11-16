@@ -6,7 +6,9 @@ competition is independent, so ``publish_web_data`` hands the sections that will
 to a runner before publishing the competitions, and seals each one as it arrives; what changes because of new games (a few competitions) is computed as before, in series.
 
 ``in_processes`` is the runner of ``run_web_data.py``: ``spawn`` processes (a clean interpreter, no database client inherited from this one: a pymongo client must not cross a
-fork), each with its own handler (``shared_handler``, from the same environment). The tests run the publication with a runner in their own process (their database is there).
+fork), each with its own handler (``shared_handler``, from the same environment). A spawned process imports the script that started it again (as ``__mp_main__``): the
+entry point must keep its work under ``if __name__ == "__main__"`` (``run_web_data.py`` does; a smoke script without it made every worker publish again and fail). The tests
+run the publication with a runner in their own process (their database is there).
 """
 from __future__ import annotations
 

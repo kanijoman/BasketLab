@@ -116,3 +116,15 @@ def test_the_entry_point_computes_in_processes_only_when_it_is_asked_to(handler,
     assert made == [3]
     assert run_web_data.main(["--out", str(tmp_path / "one"), "--workers", "1", *quiet]) == 0
     assert made == [3], "one worker is in series: no processes"
+
+
+def test_the_entry_point_does_its_work_only_as_a_program():
+    """A spawned process imports the script that started it again (as ``__mp_main__``): anything at the top of ``run_web_data.py`` would run once more in every worker
+    (a smoke test without the guard made each worker publish again and fail). Only imports, the path, the definitions and the guard of ``__main__``."""
+    import ast
+
+    tree = ast.parse((Path(__file__).resolve().parents[1] / "run_web_data.py").read_text(encoding="utf-8"))
+    for node in tree.body:
+        text = ast.unparse(node)
+        harmless = isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef)) or (isinstance(node, ast.Expr) and (isinstance(node.value, ast.Constant) or text.startswith("sys.path.insert")))
+        assert harmless or (isinstance(node, ast.If) and "__main__" in ast.unparse(node.test)), f"work at the top of run_web_data.py: {text[:80]}"
