@@ -93,7 +93,7 @@ function conditionsSection(results: ProjectionCompetition[]): string {
     '### Probabilidad con condiciones',
     'Cada variable se pregunta una vez por partido y lado, en una dirección y con el umbral donde empieza una parte de los escenarios (5, 10, 25 o 50 %), sorteadas con una semilla del partido; y tres parejas por partido y lado. ¿Lo cumplió el partido que se jugó?, ¿ganó el equipo? Cuando se cumple, la probabilidad prevista debería coincidir con la frecuencia real.',
     '#### Por variable', table(['Variable', 'Familia', 'Capa', ...head], byVariable),
-    `#### Respaldo (criterio de #857: en cada familia con ${MIN_MET} o más casos, la prevista a dos errores típicos de la real y un Brier no peor que el del pronóstico)`,
+    `#### Respaldo (el criterio de los objetivos del 11/11/2026: en cada familia con ${MIN_MET} o más casos, la prevista a dos errores típicos de la real y un Brier no peor que el del pronóstico)`,
     table(['Variable', 'Capa de liga', 'Capa de equipo'], verdicts),
     '#### Por parte de los escenarios (capa de liga, todas las variables)', table(['Umbral en el', 'Masa prevista (media)', ...head], byMass),
     '#### Dos condiciones a la vez', table(['Familia', 'Capa', ...head], pairs),
@@ -117,7 +117,7 @@ function predictionsSection(results: ProjectionCompetition[]): string {
 
 export function formatProjectionSection(results: ProjectionCompetition[]): string {
   return [
-    '## Proyección multifactorial (#938)',
+    '## Proyección multifactorial',
     table(['Competición', 'Familia', 'Partidos', 'Proyecciones', 'Sin escenarios suficientes'], results.map(r => [r.name, r.gender === 'F' ? 'femenina' : 'masculina', r.games, new Set(r.projection.conditions.map(c => `${c.k}|${c.court}`)).size, r.projection.skipped])),
     slopesSection(results), reliabilitySection(results), conditionsSection(results), predictionsSection(results),
   ].join('\n\n') + '\n'
