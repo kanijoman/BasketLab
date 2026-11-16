@@ -5,7 +5,7 @@ import { parsePlayed, type GameRow } from '@/localdata/aggregateTeams'
 import type { Calendar } from '@/webdata/calendar'
 import { boxOf, possessions } from './factors'
 import { pyRound } from '@/localdata/pyMath'
-import { TeamRatings } from './teamRatings'
+import { DEFAULT_PACE, TeamRatings } from './teamRatings'
 
 export interface GameResult {
   /** The `match_id` of the game (the `_id` of its document): the same id the calendar gives a match. */
@@ -35,6 +35,15 @@ export function gamePace(row: GameRow): number | null {
   const estimate = (possessions(boxOf(row, 'own')) + possessions(boxOf(row, 'opp'))) / 2
   return estimate > 0 ? estimate : null
 }
+
+/**
+ * The minutes of a game over 40 (#936). FEB rows give them (40 plus 5 per overtime) because they scale their possessions to 40 minutes, so pace × minutes is the possessions the game had.
+ * FBCYL rows, and FEB rows published before #672, have none: their possessions are already the real ones, so they count as 1.
+ */
+export const gameMinutes = (row: GameRow): number => (row.game_minutes ?? 40) / 40
+
+/** The possessions a game had, the same for both sides: its pace times its minutes (the default pace when the game has none). */
+export const gamePossessions = (g: GameResult, row: GameRow): number => (g.pace ?? DEFAULT_PACE) * gameMinutes(row)
 
 function pair(rows: GameRow[]): Map<string, GameRow[]> {
   const byMatch = new Map<string, GameRow[]>()

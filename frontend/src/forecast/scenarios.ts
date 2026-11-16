@@ -32,8 +32,8 @@ export interface Evaluation {
   anchored: boolean
 }
 
-const KERNEL_FLOOR = 3          // points: the least spread of a scenario around its mean
-const SEARCH = 60               // points either side of the headline's expected margin the anchor is looked for in
+export const KERNEL_FLOOR = 3   // points: the least spread of a scenario around its mean
+export const SEARCH = 60        // points either side of the headline's expected margin the anchor is looked for in
 const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
 const sd = (xs: number[]): number => Math.sqrt(mean(xs.map(x => (x - mean(xs)) ** 2)))
 
