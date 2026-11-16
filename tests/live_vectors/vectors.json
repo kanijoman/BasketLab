@@ -106,9 +106,9 @@
     },
     {
      "alerts": [
-      "rival_hot:1949844:2",
       "foul:2212271:2",
       "foul:2817526:2",
+      "rival_hot:1949844:2",
       "bonus:982047:2",
       "lever:ftr:1:1",
       "rival_dependence:1949844:1",
@@ -118,7 +118,7 @@
       "timeout_review:981204:1195"
      ],
      "digests": {
-      "alerts": "18e8db30703343664aa9d05d52285b05d8c2499279e115d00eb7ee859938fb3f",
+      "alerts": "32957881b198f1b827b3df04dbf2f0385568a366e4392d62d1a9c6cb6c6b8594",
       "analysis": "f2e48487ace680336104e2c6f89184ae9e17625837ec6be1f44bffe0c371b2f4",
       "snapshot": "1058244c590f3291d16510e0a587a14986f8c2dea711d026be83baea3f029d95"
      },
@@ -727,25 +727,25 @@
     "message": "Ana: 3 faltas personales en el periodo 1. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "info"
+    "severity": "warning"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 1. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "info"
+    "severity": "warning"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 2. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "info"
+    "severity": "warning"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 2. Valorar cambio.",
     "pf": 3,
     "player_id": "p1",
-    "severity": "info"
+    "severity": "warning"
    },
    {
     "message": "Ana: 3 faltas personales en el periodo 3. Valorar cambio.",
@@ -2781,7 +2781,7 @@
       "message": "Ana: 2 faltas personales en el periodo 1. Ojo con la siguiente.",
       "proposal": [],
       "rearm_s": null,
-      "severity": "info"
+      "severity": "warning"
      }
     ],
     [],
@@ -2826,7 +2826,7 @@
       "message": "Ana: 3 faltas personales en el periodo 2. Valorar cambio.",
       "proposal": [],
       "rearm_s": null,
-      "severity": "info"
+      "severity": "warning"
      }
     ],
     [],
