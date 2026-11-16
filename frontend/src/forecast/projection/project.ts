@@ -3,14 +3,19 @@
 // 26/10/2026: no evidence that correcting something during a game changes what follows). Without enough games like it (under 5 of every 100) or without the support of the evaluation, the
 // probability is not a figure to show (`figure` null).
 import { gamesOf } from '../gameLog'
+import type { ForecastModel } from '../pool'
 import type { Projection } from './build'
-import { queryOf, scenarioOdds, scenarioValue, truncatedMean, type ScenarioQuery } from './conditions'
-import { gameValue, meets, VARIABLES, variableOf, type Condition, type Side, type VariableId } from './variables'
+import { queryOf, scenarioOdds, scenarioValue, scenarioValues, truncatedMean, type ScenarioQuery } from './conditions'
+import { gameValue, meets, mirrored, VARIABLES, variableOf, type Condition, type Side, type VariableId } from './variables'
 
 /** Below this share of the games like this one, a condition happens too rarely for its probability to be a figure. */
 export const MIN_MASS = 0.05
 
-export interface ProfileRow { variable: VariableId; expected: number; given: number }
+/** A variable in every game like this one (`expected`) and in those where the conditions hold (`given`), and how much it spreads between the scenarios (to tell what moves most). */
+export interface ProfileRow { variable: VariableId; expected: number; given: number; spread: number }
+
+/** Games of the season of a team that met the conditions: how many, how many it won, and their scores (its points first) in the order they were played. */
+export interface SeasonRecord { reached: number; won: number; scores: [number, number][] }
 
 /**
  * The points of a side in those games against what is expected, split into what the possessions and what the points per 100 possessions give: points = possessions × OER / 100, so
@@ -32,7 +37,9 @@ export interface ProjectionResult {
   profile: ProfileRow[]
   points: Record<Side, PointsSplit>
   /** Our games of the season with a box score that met every condition, and the ones we won. */
-  record: { reached: number; won: number }
+  record: SeasonRecord
+  /** The rival's games of the season in the same situation, with its opponent in our place (the conditions `mirrored`), and the ones it won: what it does when that happens to it. */
+  rivalRecord: SeasonRecord
 }
 
 const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0)
@@ -60,10 +67,32 @@ function split(expected: number, given: number, playedBefore: number, playedNow:
   return { expected, given, pace, efficiency: diff - pace }
 }
 
-function recordOf(p: Projection, conditions: Condition[]): ProjectionResult['record'] {
-  const mine = gamesOf(p.model.games, p.own).filter(g => g.homeRow && g.awayRow)
-  const reached = mine.filter(g => conditions.every(c => { const v = gameValue(g, p.own, c.variable); return v !== null && meets(v, c) }))
-  return { reached: reached.length, won: reached.filter(g => (g.home === p.own ? g.margin : -g.margin) > 0).length }
+/** The games of `team` of the season with a box score that met every condition (from its side: `own` is `team`), and the ones it won. */
+export function seasonRecord(model: ForecastModel, team: string, conditions: Condition[]): SeasonRecord {
+  const mine = gamesOf(model.games, team).filter(g => g.homeRow && g.awayRow)
+  const reached = mine.filter(g => conditions.every(c => { const v = gameValue(g, team, c.variable); return v !== null && meets(v, c) }))
+  const scores = reached.map((g): [number, number] => (g.home === team ? [g.homePoints, g.awayPoints] : [g.awayPoints, g.homePoints]))
+  return { reached: reached.length, won: scores.filter(([a, b]) => a > b).length, scores }
+}
+
+const sd = (xs: number[]): number => { const m = sum(xs) / xs.length; return Math.sqrt(sum(xs.map(x => (x - m) ** 2)) / xs.length) }
+
+/** How much a variable spreads between the scenarios; for the points (and the points per 100 possessions) the kernel around each one too. */
+function spreadOf(p: Projection, id: VariableId): number {
+  const v = variableOf(id)
+  const played = sum(p.possessions.map((n, i) => n * p.minutes[i])) / p.possessions.length
+  const within = v.kind === 'scenario' ? 0 : v.measure === 'points' ? p.kernel : (100 * p.kernel) / played
+  return Math.sqrt(sd(scenarioValues(p, id)) ** 2 + within ** 2) || 1
+}
+
+/** Below this many spreads from the usual a variable has not moved. */
+const STILL = 0.1
+
+/** The (up to) two variables that move most in those games, in spreads of the scenarios, leaving out what was asked: the marks of the table of the card. */
+export function movers(r: ProjectionResult, n = 2): VariableId[] {
+  const asked = new Set(r.conditions.map(c => c.variable))
+  const z = (row: ProfileRow): number => Math.abs(row.given - row.expected) / row.spread
+  return r.profile.filter(row => !asked.has(row.variable) && z(row) >= STILL).sort((a, b) => z(b) - z(a)).slice(0, n).map(row => row.variable)
 }
 
 /** The answer of the projection `p` to the games where every one of `conditions` holds (none: every game like this one). */
@@ -80,11 +109,12 @@ export function project(p: Projection, conditions: Condition[]): ProjectionResul
   const supported = conditions.every(c => variableOf(c.variable).supported)
   return {
     conditions, mass, pWin, figure: !rare && supported ? pWin : null, rare, supported,
-    profile: VARIABLES.map(v => ({ variable: v.id, expected: before.value(v.id), given: after.value(v.id) })),
+    profile: VARIABLES.map(v => ({ variable: v.id, expected: before.value(v.id), given: after.value(v.id), spread: spreadOf(p, v.id) })),
     points: {
       own: split(before.points.own, after.points.own, before.played, after.played),
       rival: split(before.points.rival, after.points.rival, before.played, after.played),
     },
-    record: recordOf(p, conditions),
+    record: seasonRecord(p.model, p.own, conditions),
+    rivalRecord: seasonRecord(p.model, p.rival, conditions.map(mirrored)),
   }
 }

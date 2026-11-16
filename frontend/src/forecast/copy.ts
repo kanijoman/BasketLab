@@ -2,8 +2,11 @@
 // happens, we win this often»: nothing here promises that making it happen wins, and the guard in `copy.test.ts` forbids «+N %», guarantees and causes. Neutral in gender: «el rival», «nuestro».
 import type { BucketId, Highlight } from './scenarios'
 import type { FactorKey } from './factors'
-import type { Lever, PaceInfo } from './levers'
+import type { Band, BandInfo, Lever } from './levers'
 import type { Reason } from './preview'
+import type { PointsSplit, ProjectionResult, SeasonRecord } from './projection/project'
+import { toInput } from './projection/query'
+import { variableOf, type Condition, type Side, type VariableId } from './projection/variables'
 
 /** `0.5664` -> `56,6 %` (decimal comma, a space before the sign). */
 export const pct = (x: number, digits = 1): string => `${(x * 100).toFixed(digits).replace('.', ',')} %`
@@ -42,17 +45,116 @@ export function leverTitle(l: Lever): string {
   return `Evitar que vayan a la línea: ${le} ${per100(t)}`
 }
 
+/** Every variable of the projection by name: «Nuestras pérdidas», «Su acierto de tiro (eFG)». */
+export const VARIABLE_NAMES: Record<VariableId, string> = {
+  'game.possessions': 'Posesiones',
+  'own.points': 'Nuestros puntos', 'rival.points': 'Sus puntos',
+  'own.oer': 'Nuestros puntos por 100 posesiones', 'rival.oer': 'Sus puntos por 100 posesiones',
+  'own.efg': 'Nuestro acierto de tiro (eFG)', 'rival.efg': 'Su acierto de tiro (eFG)',
+  'own.tov': 'Nuestras pérdidas', 'rival.tov': 'Sus pérdidas',
+  'own.orb': 'Nuestro rebote ofensivo', 'rival.orb': 'Su rebote ofensivo',
+  'own.ftr': 'Nuestros tiros libres por cada 100 tiros de campo', 'rival.ftr': 'Sus tiros libres por cada 100 tiros de campo',
+}
+
+/** «nuestras pérdidas», «las posesiones»: the name inside a sentence. */
+export const variableInSentence = (id: VariableId): string => (id === 'game.possessions' ? 'las posesiones' : VARIABLE_NAMES[id].charAt(0).toLowerCase() + VARIABLE_NAMES[id].slice(1))
+
+const isRatio = (id: VariableId): boolean => /\.(efg|tov|orb)$/.test(id)
+
+/** A value of a variable as the page writes it: a share with its sign (`21,2 %`), the free throws per 100 shots, the points and the possessions whole. */
+export function valueText(id: VariableId, x: number): string {
+  if (isRatio(id)) return pct(x)
+  if (id.endsWith('.ftr')) return String(Math.round(x * 100))
+  return id.endsWith('.oer') ? (Math.round(x * 10) / 10).toFixed(1).replace('.', ',') : String(Math.round(x))
+}
+
+type InfoLines = { title: string; summary: string; record: string; caveat: string }
+const won = (b: { reached: number; won: number }) => `ganamos ${b.won} de ${b.reached}`
+
 /** The pace as information (#857): what is expected, how the season went at a slow and at a fast pace, and that nothing says it changes the result. */
-export function paceLines(pace: PaceInfo): { summary: string; record: string; caveat: string } {
-  const slow = `ritmo lento (${le} ${Math.round(pace.slow.threshold)} posesiones)`
-  const fast = `ritmo alto (${ge} ${Math.round(pace.fast.threshold)})`
-  const played = (b: { reached: number; won: number }) => `ganamos ${b.won} de ${b.reached}`
-  const [s, f] = [pace.slow.record, pace.fast.record]
+function paceLines(pace: BandInfo): InfoLines {
+  const slow = `ritmo lento (${le} ${Math.round(pace.low.threshold)} posesiones)`
+  const fast = `ritmo alto (${ge} ${Math.round(pace.high.threshold)})`
+  const [s, f] = [pace.low.record, pace.high.record]
   const record = !s.reached && !f.reached ? `Esta temporada aún no hemos jugado a ${slow} ni a ${fast}.`
-    : !s.reached ? `Esta temporada aún no hemos jugado a ${slow} y a ${fast} ${played(f)}.`
-    : !f.reached ? `Esta temporada, a ${slow} ${played(s)} y aún no hemos jugado a ${fast}.`
-    : `Esta temporada, a ${slow} ${played(s)} y a ${fast} ${played(f)}.`
-  return { summary: `Se espera un partido de unas ${Math.round(pace.expected)} posesiones por 40 minutos.`, record, caveat: 'Es solo una referencia: no se ha podido comprobar que el ritmo cambie la probabilidad de ganar.' }
+    : !s.reached ? `Esta temporada aún no hemos jugado a ${slow} y a ${fast} ${won(f)}.`
+    : !f.reached ? `Esta temporada, a ${slow} ${won(s)} y aún no hemos jugado a ${fast}.`
+    : `Esta temporada, a ${slow} ${won(s)} y a ${fast} ${won(f)}.`
+  return { title: 'Ritmo (informativo)', summary: `Se espera un partido de unas ${Math.round(pace.expected)} posesiones por 40 minutos.`, record, caveat: 'Es solo una referencia: no se ha podido comprobar que el ritmo cambie la probabilidad de ganar.' }
+}
+
+/** A factor as information (#941, our turnovers): what is expected, the season at the low and at the high end, and that knowing it did not sharpen the probability of winning. */
+function factorLines(info: BandInfo): InfoLines {
+  const of = info.variable.startsWith('own.') ? 'de nuestras posesiones' : 'de sus posesiones'
+  const unit = isRatio(info.variable) ? ` ${of}` : ' por cada 100 tiros de campo'
+  const band = (sign: string, b: Band) => `con ${sign} ${valueText(info.variable, b.threshold)}: ${b.record.reached ? won(b.record) : 'ninguno todavía'}`
+  return {
+    title: `${VARIABLE_NAMES[info.variable]} (informativo)`, summary: `Lo esperado en este partido: ${valueText(info.variable, info.expected)}${unit}.`,
+    record: `Esta temporada, ${band(le, info.low)}; ${band(ge, info.high)}.`,
+    caveat: `Es solo una referencia: en la evaluación, conocer ${variableInSentence(info.variable)} no ha afinado la probabilidad de ganar.`,
+  }
+}
+
+/** What the page tells as information (`BandInfo`): its title, what is expected, the season and why there is no probability. */
+export const infoLines = (info: BandInfo): InfoLines => (info.variable === 'game.possessions' ? paceLines(info) : factorLines(info))
+
+// The card «¿Y si…?» (#940): the same rule of language as the objectives, «in the games where this happens, we win this often», never a promise.
+
+/** `18,5`, `70`: a number with up to two decimals and the decimal comma (also what the card writes in a value it suggests). */
+export const decimal = (x: number): string => String(Math.round(x * 100) / 100).replace('.', ',')
+const joined = (parts: string[]): string => (parts.length < 2 ? parts.join('') : `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`)
+
+/** `Nuestros puntos: más de 70`, `Su acierto de tiro (eFG): menos del 40 %`. */
+export function conditionText(c: Condition): string {
+  const value = decimal(toInput(c))
+  const [more, of] = [c.op === 'gt' ? 'más' : 'menos', isRatio(c.variable) ? 'del' : 'de']
+  return `${VARIABLE_NAMES[c.variable]}: ${more} ${of} ${value}${isRatio(c.variable) ? ' %' : ''}`
+}
+
+/** The conditions of one question, joined with «y». */
+export const conditionsTitle = (conditions: Condition[]): string => joined(conditions.map(conditionText))
+
+/** How often the games like this one meet the conditions, how often we win in them against how often overall, or why there is no figure. */
+export function projectionLines(r: ProjectionResult, headline: number): { badge: string | null; summary: string; caveat: string | null } {
+  if (!(r.mass > 0)) return { badge: null, summary: 'No pasa en ninguno de los partidos como este.', caveat: null }
+  if (r.rare) return { badge: null, summary: 'Pasa en menos de 5 de cada 100 partidos como este: son muy pocos para dar una cifra.', caveat: null }
+  const often = Math.round(100 * r.mass) >= 100 ? 'Pasa en prácticamente todos los partidos como este.' : `Pasa en ${Math.round(100 * r.mass)} de cada 100 partidos como este.`
+  if (r.figure === null) {
+    const unbacked = r.conditions.filter(c => !variableOf(c.variable).supported).map(c => variableInSentence(c.variable))
+    return { badge: null, summary: often, caveat: `No damos cifra de victorias: la evaluación no la ha respaldado para ${joined([...new Set(unbacked)])}. Es solo una referencia.` }
+  }
+  return { badge: `${pct(r.figure, 0)} de victorias`, summary: `${often} En esos partidos ganamos el ${pct(r.figure, 0)} (en general, el ${pct(headline, 0)}).`, caveat: null }
+}
+
+/** The scores of a few games (`75-68, 72-70 y 71-79`), the team's first; none when they are more than three. */
+const scoresText = (s: SeasonRecord): string => (s.reached <= 3 ? ` (${joined(s.scores.map(([a, b]) => `${a}-${b}`))})` : '')
+
+/** How the season went in our games that met the conditions, and in the rival's in the same situation (with its opponent in our place). */
+export function recordLines(r: ProjectionResult, rivalName: string): { own: string; rival: string } {
+  const line = (head: string, s: SeasonRecord, [one, none, some]: [(won: boolean) => string, string, (n: number) => string]): string =>
+    !s.reached ? `${head}: ninguno todavía.` : `${head}: ${s.reached}, y ${s.reached === 1 ? one(s.won === 1) : s.won === 0 ? none : some(s.won)}${scoresText(s)}.`
+  return {
+    own: line('Esta temporada, nuestros partidos así', r.record, [w => (w ? 'lo ganamos' : 'no lo ganamos'), 'no ganamos ninguno', n => `ganamos ${n}`]),
+    rival: line(`Esta temporada, los de ${rivalName} en la misma situación (con su rival en nuestro lugar)`, r.rivalRecord, [w => (w ? 'lo ganó' : 'no lo ganó'), 'no ganó ninguno', n => `ganó ${n}`]),
+  }
+}
+
+/** `+9,8`, `−4,2`, `+0,0`: one decimal and the sign (a real minus), so that the parts add up to the change. */
+const signed1 = (x: number): string => { const r = Math.round(x * 10) / 10; return `${r < 0 ? '−' : '+'}${Math.abs(r).toFixed(1).replace('.', ',')}` }
+
+/** Where the points of a side in those games come from: what the possessions and what the points per possession give. */
+export function pointsLine(side: Side, s: PointsSplit): string {
+  const who = side === 'own' ? 'Nuestros puntos' : 'Sus puntos'
+  if (Math.abs(s.given - s.expected) < 0.5) return `${who} se quedan en ${Math.round(s.given)}.`
+  return `${who} pasan de ${Math.round(s.expected)} a ${Math.round(s.given)}: ≈ ${signed1(s.pace)} por el ritmo y ≈ ${signed1(s.efficiency)} por la eficiencia (puntos por posesión).`
+}
+
+/** A value of the table «Cómo son esos partidos»: the points whole, the shares with their sign, the rest to one decimal; a dash when there is none. */
+export function profileValue(id: VariableId, x: number): string {
+  if (!Number.isFinite(x)) return '—'
+  if (isRatio(id)) return pct(x)
+  if (id.endsWith('.points')) return String(Math.round(x))
+  return (id.endsWith('.ftr') ? 100 * x : x).toFixed(1).replace('.', ',')
 }
 
 /** How often it happens and how often we win when it does, against how often overall. */

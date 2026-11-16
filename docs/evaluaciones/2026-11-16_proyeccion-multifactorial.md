@@ -11,6 +11,8 @@ Parte de la épica #935 (#938). Feedback del staff: en la «Previa del partido»
 4. **Lo que sí es propio de cada equipo es su forma de atacar**: la duración de sus posesiones (correlación par/impar 0,78, 0,88 en la temporada) y la de las que empieza tras canasta (0,76-0,80, 0,86-0,89), y su porcentaje de posesiones rápidas (0,59-0,62). Lo que anotan sus posesiones rápidas, no (≈ 0).
 5. **Diez de las trece variables tienen respaldo** como probabilidad con condiciones: calibradas en las dos familias y mejores que el pronóstico en los partidos en que pasa la condición. **Sin respaldo**: las posesiones (como el 11/11), nuestras pérdidas (calibradas, pero no mejores que el pronóstico) y los puntos por 100 posesiones del rival (en femenino, 48 % previsto frente a 57 % real). Las condiciones raras (5 % de los escenarios) y las de dos variables a la vez también están calibradas: **el mínimo del 5 % se confirma**.
 6. **Base para el estudio causal (#942)**: las posesiones rápidas anotan más **tras robo** (1,31 puntos por posesión en masculino, 1,15 en femenino) y **menos tras canasta** (0,82 frente a 1,02-1,04; 0,62 frente a 0,88-0,89), que es cuando el ritmo lo elige el equipo. Que «las rápidas anoten más» viene de las transiciones regaladas, no de jugar más rápido.
+7. **Los objetivos del partido, calculados con la proyección, siguen calibrados** (sección e): la página da una sola cifra para cada condición, y «Cuidar el balón» pasa a información.
+8. **Lo que hace el rival cuando la condición es nuestra** (sección f): la proyección lo lleva con la relación de la liga (0,13-0,16); la respuesta propia de cada rival es ruido (0,05-0,10), así que la tarjeta da su balance real en la misma situación como información.
 
 ## (a) Cómo se mueve el juego con el ritmo
 La pendiente de la liga, temporada completa: lo que cambia cada cosa de un equipo por cada 10 % más de posesiones que las habituales de esos dos equipos (factores en puntos porcentuales; puntos por 100 posesiones en puntos).
@@ -121,15 +123,42 @@ Puntos por posesión según cómo empezó y cuánto duró (2025-26, sin las pose
 
 Las rápidas tras robo son transiciones que el rival regala; las rápidas tras canasta (las que elige el equipo) rinden menos que las demás. Puede que parte de esas rápidas tras canasta sean tiros apurados al final de un cuarto o del partido (selección): es lo que tendrá que separar el estudio causal.
 
+## (e) Los objetivos del partido con el motor de la proyección (#941)
+Un objetivo es una condición en el cuarto de los escenarios que mejor va en un factor; ahora su probabilidad, la parte de los partidos y el balance de la temporada son la respuesta de la proyección a esa condición, la misma que da la tarjeta «¿Y si…?» (`levers.ts`), así que la página no da dos cifras distintas para lo mismo. La evaluación walk-forward de la previa (`cd frontend && FORECAST_STUDY_DIR=DIR npm run study:forecast`, las mismas 14 temporadas, 40 s), con el cálculo anterior (cada escenario con su margen) y con el de la proyección (los puntos de cada lado):
+
+| Familia | Lado | Cálculo | Objetivos | Prevista si se alcanza | Real si se alcanza | Brier de la prevista | Brier del pronóstico |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Masculina | Ataque | anterior | 1.580 | 61,3 % | 63,7 % | 0,174 | 0,193 |
+| | | proyección | 1.392 | 64,4 % | 66,2 % | 0,170 | 0,191 |
+| Masculina | Defensa | anterior | 1.516 | 60,2 % | 61,6 % | 0,182 | 0,202 |
+| | | proyección | 1.552 | 61,1 % | 62,8 % | 0,177 | 0,198 |
+| Femenina | Ataque | anterior | 1.966 | 62,2 % | 61,7 % | 0,165 | 0,178 |
+| | | proyección | 1.791 | 65,7 % | 65,9 % | 0,166 | 0,181 |
+| Femenina | Defensa | anterior | 1.966 | 63,2 % | 62,0 % | 0,162 | 0,174 |
+| | | proyección | 1.994 | 64,1 % | 62,5 % | 0,167 | 0,177 |
+
+Los objetivos se alcanzan en el 25-28 % de los partidos, así que dos errores típicos son ±4,5-5 puntos: **con la proyección siguen calibrados** (a menos de dos puntos de lo real en las cuatro filas) y **mejoran al pronóstico** en los partidos en que se alcanzan, como con el cálculo anterior. Los de ataque son menos porque «Cuidar el balón» ya no es un objetivo (decisión 5); el ritmo, que la página da como información, sigue sin respaldo (masculina 49,9 % previsto frente a 46,2 % real; femenina 58,9 % frente a 59,3 %, con un Brier igual al del pronóstico). El resto del informe (pronóstico, escenarios, simulación de la liga) no cambia.
+
+## (f) Lo que hace el rival cuando la condición es nuestra (#940)
+Pregunta del usuario: con «anotamos más de 70», ¿se tiene en cuenta qué hace el rival cuando le anotan más de 70? **Sí, con la relación de la liga**: cada escenario es un partido real con los dos lados juntos, así que la condición sobre nuestros puntos trae lo que hizo el rival en esos mismos partidos (en León – Lima-Horta, los puntos de Lima-Horta pasan de 67 a 69), y el resultado sale de comparar los dos. Lo que no usa es la respuesta **propia de cada rival**. ¿Haría falta? `rivalResponse` (`study/projection.ts`, sección «Lo que hace el rival» del informe de `npm run study:projection`), media de las temporadas:
+
+| Familia | Liga: eficiencia de los dos | Liga: puntos de los dos | Propio: eficiencia | Propio: puntos | Propio: victorias al encajar más |
+| --- | --- | --- | --- | --- | --- |
+| Masculina (6) | 0,16 | 0,15 | 0,07 | 0,09 | 0,07 |
+| Femenina (8) | 0,13 | −0,01 | 0,05 | 0,10 | −0,09 |
+
+Las dos primeras columnas son la correlación, sobre todos los lados de todos los partidos, de lo que el rival hizo sobre lo esperado (puntos por 100 posesiones) con lo que hicimos nosotros, y de los puntos de los dos: **la relación existe en la liga** (cuando un equipo es más eficiente de lo esperado, el otro también un poco) y la proyección ya la lleva. Las tres últimas son la fiabilidad par/impar, entre los equipos de una temporada, de la respuesta de cada uno (la pendiente de su eficiencia frente a la del rival, la de sus puntos frente a los que encaja y cuánto más gana cuando el rival hace más de lo esperado): **ruido** (de −0,54 a 0,54 según la temporada, media cercana a 0), como la respuesta al ritmo (b). Usar la de cada rival añadiría error. Por eso la tarjeta da, como información, **el balance real del rival en la misma situación** (sus partidos con las condiciones vistas desde su lado: «con su rival en nuestro lugar») junto al nuestro, sin hacerlo pasar por un modelo.
+
 ## Decisiones
 1. **Respaldo por variable** (fijado en `projection/variables.ts`, `UNBACKED`): diez con cifra (nuestros puntos, nuestros puntos por 100 posesiones, nuestro eFG, rebote ofensivo y tiros libres; sus puntos, su eFG, sus pérdidas, su rebote ofensivo y sus tiros libres) y tres solo como información: **posesiones**, **nuestras pérdidas** y **sus puntos por 100 posesiones**. Una condición que combine una con respaldo y otra sin él no da cifra.
 2. **Capa de equipo: NO-GO** para la página; la proyección usa la relación de la liga. `paceResponse.ts` se queda para que el estudio la siga midiendo (con más temporadas por equipo podría aparecer).
 3. **Mínimo del 5 % y combinaciones de dos condiciones: confirmados** (calibrados).
-4. **#939 (duración de las posesiones en las filas), propuesta: aplazarlo.** La duración es un rasgo estable de cada equipo (0,78), pero es otra forma de medir el ritmo y el ritmo no tiene respaldo como probabilidad de ganar; publicarla cambia el contrato de las filas para una variable que solo sería información. Decisión del usuario.
-5. **#941 (objetivos con el motor nuevo): viable.** Las condiciones al 25 % de los escenarios están calibradas (49,1 % previsto frente a 47,0 % real, ±3,1), pero hay que decidir qué hacer con el objetivo «Cuidar el balón»: las pérdidas propias no mejoran al pronóstico en esta evaluación.
+4. **#939 (duración de las posesiones en las filas): aplazado** (decisión del usuario, 16/11/2026). La duración es un rasgo estable de cada equipo (0,78), pero es otra forma de medir el ritmo y el ritmo no tiene respaldo como probabilidad de ganar; publicarla cambiaría el contrato de las filas para una variable que solo sería información.
+5. **#941: los objetivos se calculan con la proyección** (calibrados, sección e). **«Cuidar el balón» pasa a información** (decisión del usuario, 16/11/2026: la regla de #857 y lo que dice la tarjeta): las pérdidas propias están calibradas pero no mejoran al pronóstico, así que la página da lo esperado y cómo fue la temporada con pocas y con muchas pérdidas, sin probabilidad. La regla queda general: un factor sin respaldo en `variables.ts` es información y no objetivo.
+6. **El rival, con la relación de la liga y su balance como información** (#940, sección f): no se modela la respuesta de cada rival; la tarjeta enseña su balance en la misma situación junto al nuestro.
 
 ## Prueba del 16/11/2026 con el motor
-B.F. León – Lima-Horta (2524505, LF Challenge 2026-27, J7, en León): pronóstico 47,9 %. «León anota más de 70»: pasa en 37 de cada 100 partidos como este y en esos gana el **75 %** (el prototipo del mismo día daba un 80 % porque no contaba los minutos de las prórrogas, que suben los puntos de los dos). En esos partidos León anota 77 (habitual 67) y Lima-Horta 69 (67); los puntos de más salen del acierto (≈ +9: eFG 42,9 → 46,6 %) más que de las posesiones jugadas (≈ +1,4, prórrogas incluidas). Esta temporada León pasó de 70 en 3 partidos y ganó 2.
+B.F. León – Lima-Horta (2524505, LF Challenge 2026-27, J7, en León): pronóstico 47,9 %. «León anota más de 70»: pasa en 37 de cada 100 partidos como este y en esos gana el **75 %** (el prototipo del mismo día daba un 80 % porque no contaba los minutos de las prórrogas, que suben los puntos de los dos). En esos partidos León anota 77 (habitual 67) y Lima-Horta 69 (67); los puntos de más salen del acierto (≈ +9: eFG 42,9 → 46,6 %) más que de las posesiones jugadas (≈ +1,4, prórrogas incluidas). Esta temporada León pasó de 70 en 3 partidos y ganó 2 (73-84, 82-81 y 78-71); Lima-Horta, en la misma situación (encajando más de 70), jugó 1 y lo perdió (64-73). Es lo que da la tarjeta de la página (#940).
 
 ## Límites
 - **Una temporada por equipo**: con más temporadas la pendiente de cada equipo frente al ritmo podría dejar de ser ruido; la capa queda para medirlo.

@@ -1,6 +1,6 @@
 /** The objectives of the match (issue #849): what to do with the target, how often it happens, how often we win when it does and how the season went. Conditional, never a promise. */
-import { leverDetail, leverEvidence, leverTitle, paceLines, pct } from '@/forecast/copy'
-import type { Lever } from '@/forecast/levers'
+import { infoLines, leverDetail, leverEvidence, leverTitle, pct } from '@/forecast/copy'
+import type { BandInfo, Lever } from '@/forecast/levers'
 import type { PreviewDetail } from '@/forecast/preview'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
@@ -25,10 +25,21 @@ function Group({ title, levers, headline }: { title: string; levers: Lever[]; he
   )
 }
 
+/** What is information and not an objective (the pace, #857; our turnovers, #941): what is expected, the season and why there is no probability. */
+function Info({ info }: { info: BandInfo }) {
+  const lines = infoLines(info)
+  return (
+    <Card title={lines.title} padding="md">
+      <p className="text-sm text-ink">{lines.summary}</p>
+      <p className="mt-1 text-sm text-ink-muted">{lines.record}</p>
+      <p className="mt-1 text-xs text-ink-muted">{lines.caveat}</p>
+    </Card>
+  )
+}
+
 export default function ObjectivesList({ detail, headline }: { detail: PreviewDetail; headline: number }) {
-  const { attack, defence, pace } = detail.levers
+  const { attack, defence, info } = detail.levers
   const none = !attack.length && !defence.length
-  const lines = paceLines(pace)
   return (
     <section aria-label="Objetivos del partido" className="space-y-3">
       <h2 className="text-lg font-semibold text-ink">Objetivos del partido</h2>
@@ -39,11 +50,7 @@ export default function ObjectivesList({ detail, headline }: { detail: PreviewDe
       <div className="grid gap-3 lg:grid-cols-2">
         <Group title="Ataque" levers={attack} headline={headline} />
         <Group title="Defensa" levers={defence} headline={headline} />
-        <Card title="Ritmo (informativo)" padding="md">
-          <p className="text-sm text-ink">{lines.summary}</p>
-          <p className="mt-1 text-sm text-ink-muted">{lines.record}</p>
-          <p className="mt-1 text-xs text-ink-muted">{lines.caveat}</p>
-        </Card>
+        {info.map(i => <Info key={i.variable} info={i} />)}
       </div>
     </section>
   )

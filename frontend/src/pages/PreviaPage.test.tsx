@@ -152,7 +152,7 @@ describe('the analysis', () => {
   it('has the forecast, the scenarios, the objectives of the match and the matchup, and how it is made', async () => {
     renderPage()
     await chooseTeam(home)
-    for (const name of ['Pronóstico', 'Escenarios', 'Objetivos del partido', 'Emparejamiento']) expect(await screen.findByRole('heading', { name })).toBeInTheDocument()
+    for (const name of ['Pronóstico', 'Escenarios', 'Objetivos del partido', '¿Y si…? Probabilidad con condiciones', 'Emparejamiento']) expect(await screen.findByRole('heading', { name })).toBeInTheDocument()
     expect(screen.getByText('Probabilidad de victoria')).toBeInTheDocument()
     expect(screen.getByText('Margen esperado')).toBeInTheDocument()
     expect(screen.getByText('Cómo se calcula')).toBeInTheDocument()
@@ -178,6 +178,10 @@ describe('the analysis', () => {
     expect(within(list).getByText(/Se espera un partido de unas \d+ posesiones por 40 minutos\./)).toBeInTheDocument()
     expect(within(list).getByText(/Esta temporada, a ritmo lento/)).toBeInTheDocument()
     expect(within(list).getByText(/no se ha podido comprobar que el ritmo cambie la probabilidad de ganar/)).toBeInTheDocument()
+    // our turnovers too (#941): what is expected and the season, no objective with a probability
+    expect(within(list).getByText('Nuestras pérdidas (informativo)')).toBeInTheDocument()
+    expect(within(list).getByText(/Lo esperado en este partido: \d+,\d % de nuestras posesiones\./)).toBeInTheDocument()
+    expect(list.textContent).not.toMatch(/Cuidar el balón/)
   })
 
   it('has a button to export it', async () => {
@@ -193,6 +197,82 @@ describe('the analysis', () => {
     await chooseTeam(home)
     expect(await screen.findByText('Confianza baja')).toBeInTheDocument()
     expect(screen.getAllByText(/solo ha jugado|aún no ha jugado/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('the card «¿Y si…?» (#940)', () => {
+  const card = () => screen.findByLabelText('¿Y si…? Probabilidad con condiciones')
+  const at = (si: string) => `/?equipo=${home}&partido=${first.code}&si=${si}`
+
+  it('starts with our points over what is expected: how often it happens, how often we win then, the season of both teams and what those games look like', async () => {
+    renderPage()
+    await chooseTeam(home)
+    const section = await card()
+    expect(within(section).getByRole('heading', { name: /^Nuestros puntos: más de \d+$/ })).toBeInTheDocument()
+    expect(within(section).getByText(/^Pasa en \d+ de cada 100 partidos como este\. En esos partidos ganamos el \d+ % \(en general, el \d+ %\)\.$/)).toBeInTheDocument()
+    expect(within(section).getByText(/\d+ % de victorias/)).toBeInTheDocument()
+    expect(within(section).getByText(/^Esta temporada, nuestros partidos así: /)).toBeInTheDocument()
+    expect(within(section).getByText(new RegExp(`^Esta temporada, los de ${nameOf(away)} en la misma situación \\(con su rival en nuestro lugar\\): `))).toBeInTheDocument()
+    // what those games look like: a table of every variable (a table on a phone too: three short columns), the usual and in those games
+    const table = within(section).getByRole('table', { name: 'Cómo son esos partidos' })
+    expect(within(table).getAllByRole('row')).toHaveLength(1 + 13)
+    expect(within(table).getByRole('columnheader', { name: 'Lo habitual' })).toBeInTheDocument()
+    expect(within(table).getByRole('rowheader', { name: 'Sus pérdidas' })).toBeInTheDocument()
+    expect(within(section).getByText(/^Nuestros puntos pasan de \d+ a \d+: ≈ [+−]\d+,\d por el ritmo y ≈ [+−]\d+,\d por la eficiencia/)).toBeInTheDocument()
+    expect(section.textContent).not.toMatch(/\+\s*\d[\d,.]*\s*%/)
+  })
+
+  it('what is chosen goes to the address, and the address gives it back', async () => {
+    renderPage()
+    await chooseTeam(home)
+    const section = await card()
+    fireEvent.change(within(section).getByLabelText('Condición 1'), { target: { value: 'rival.efg' } })
+    await waitFor(() => expect(screen.getByTestId('where').textContent).toMatch(/si=rival\.efg\.gt\.\d+(\.\d+)?/))
+    expect(within(section).getByRole('heading', { name: /^Su acierto de tiro \(eFG\): más del \d+(,\d+)? %$/ })).toBeInTheDocument()
+  })
+
+  it('opens on the conditions of the address; one without the support of the evaluation has no figure, and it says why', async () => {
+    renderPage(at('own.tov.lt.18'))
+    const section = await card()
+    expect(within(section).getByRole('heading', { name: 'Nuestras pérdidas: menos del 18 %' })).toBeInTheDocument()
+    expect(within(section).getByText(/^No damos cifra de victorias: la evaluación no la ha respaldado para nuestras pérdidas\./)).toBeInTheDocument()
+    expect(within(section).queryByText(/de victorias$/)).toBeNull()
+  })
+
+  it('a condition that almost never happens gives no figure', async () => {
+    renderPage(at('own.points.gt.150'))
+    const section = await card()
+    expect(within(section).getByText(/muy pocos para dar una cifra|No pasa en ninguno de los partidos como este/)).toBeInTheDocument()
+    expect(within(section).queryByText(/de victorias$/)).toBeNull()
+  })
+
+  it('up to three conditions, which are one question joined with «y»', async () => {
+    renderPage()
+    await chooseTeam(home)
+    const section = await card()
+    fireEvent.click(within(section).getByRole('button', { name: 'Añadir condición' }))
+    fireEvent.click(within(section).getByRole('button', { name: 'Añadir condición' }))
+    expect(within(section).getAllByTestId('condition')).toHaveLength(3)
+    expect(within(section).queryByRole('button', { name: 'Añadir condición' })).toBeNull()
+    expect(within(section).getByRole('heading', { name: /^Nuestros puntos: más de \d+, Sus puntos: más de \d+ y Nuestro acierto de tiro \(eFG\): más del [\d,]+ %$/ })).toBeInTheDocument()
+  })
+
+  it('a value that is not a number is said so, and the question stays as it was', async () => {
+    renderPage(at('own.points.gt.70'))
+    const section = await card()
+    fireEvent.change(within(section).getByLabelText(/^Valor/), { target: { value: 'abc' } })
+    expect(await within(section).findByText('Escribe un número')).toBeInTheDocument()
+    expect(within(section).getByRole('heading', { name: 'Nuestros puntos: más de 70' })).toBeInTheDocument()
+    fireEvent.change(within(section).getByLabelText(/^Valor/), { target: { value: '75' } })
+    expect(await within(section).findByRole('heading', { name: 'Nuestros puntos: más de 75' })).toBeInTheDocument()
+  })
+
+  it('without conditions it asks for one, and the address remembers that there are none', async () => {
+    renderPage(at('own.points.gt.70'))
+    const section = await card()
+    fireEvent.click(within(section).getByRole('button', { name: 'Quitar la condición 1' }))
+    expect(await within(section).findByText('Añade una condición para ver cómo son esos partidos y cuántos ganamos.')).toBeInTheDocument()
+    expect(screen.getByTestId('where').textContent).toMatch(/si=(&|$)/)
   })
 })
 

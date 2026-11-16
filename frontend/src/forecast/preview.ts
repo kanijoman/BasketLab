@@ -4,6 +4,7 @@ import { gamesOf, matchupPace } from './gameLog'
 import { leversOf, type Levers } from './levers'
 import { matchupRows, type MatchupRow } from './matchup'
 import type { ForecastModel } from './pool'
+import { buildProjection, type Projection } from './projection/build'
 import { bucketsOf, density, evaluate, type Bucket } from './scenarios'
 import { headline, type Court, type Headline } from './winProb'
 
@@ -20,6 +21,8 @@ export interface PreviewDetail {
   scenarios: Bucket[]
   density: { margin: number; p: number }[]
   levers: Levers
+  /** The projection of the match (#936): the objectives are its answers, and the card «¿Y si…?» asks it what the staff chooses. */
+  projection: Projection
   matchup: MatchupRow[]
   poolSize: number
   /** The spread of the scenarios and of the kernel (points), and the expected margin that anchors them to the headline (see `scenarios.evaluate`). */
@@ -56,8 +59,9 @@ export function buildPreview(model: ForecastModel, own: string, rival: string, c
   const confidence = confidenceOf(model, own, rival)
   const head = headline({ ratings: model.ratings, own, rival, court, pace: matchupPace(model.games, own, rival), gender: model.gender })
   const ev = model.pool.length >= MIN_POOL ? evaluate(model, own, rival, court) : null
-  const detail: PreviewDetail | null = ev && {
-    scenarios: bucketsOf(ev), density: density(ev), levers: leversOf(model, ev), matchup: matchupRows(model, own, rival), poolSize: model.pool.length,
+  const projection = ev && buildProjection(model, own, rival, court)
+  const detail: PreviewDetail | null = ev && projection && {
+    scenarios: bucketsOf(ev), density: density(ev), levers: leversOf(projection, ev), projection, matchup: matchupRows(model, own, rival), poolSize: model.pool.length,
     residualSd: ev.residualSd, sigmaU: ev.sigmaU, muStar: ev.muStar, anchored: ev.anchored,
   }
   return { own, rival, court, headline: head, confidence, detail }

@@ -4,8 +4,8 @@ import { buildModel, expectedOer, type ForecastModel } from '../pool'
 import { boxOf, factors } from '../factors'
 import type { Court } from '../winProb'
 import { buildProjection } from './build'
-import { MIN_MASS, project } from './project'
-import { VARIABLES, type Condition, type VariableId } from './variables'
+import { MIN_MASS, movers, project } from './project'
+import { mirrored, VARIABLES, type Condition, type VariableId } from './variables'
 import { fbcyl, lfChallenge, lfChallengeCalendar, primera } from '@/test/forecastFixtures'
 
 // The projection of a match (#936): every scenario of the pool, played by these two teams, is a whole game (possessions, the four factors and the points per 100 possessions of each side, the
@@ -195,7 +195,62 @@ describe('a complete men season, in detail', () => {
       return { points: row.points, tov: factors(boxOf(row, 'own'), boxOf(row, 'opp')).tov, won: row.points > row.opponent_points }
     })
     const reached = mine.filter(m => m.points > 80 && m.tov < 0.16)
-    expect(project(p, conditions).record).toEqual({ reached: reached.length, won: reached.filter(m => m.won).length })
+    const { record } = project(p, conditions)
+    expect({ reached: record.reached, won: record.won }).toEqual({ reached: reached.length, won: reached.filter(m => m.won).length })
+  })
+})
+
+describe('the season of both teams in those games (#940)', () => {
+  const model = complete()
+  const { mid } = teamsBy(model)
+  const [own, rival] = mid
+  const p = buildProjection(model, own, rival, 'own')!
+  const played = (team: string) => model.games.filter(g => g.homeRow && g.awayRow && (g.home === team || g.away === team))
+  const sideOf = (g: (typeof model.games)[number], team: string) => {
+    const row = g.home === team ? g.homeRow! : g.awayRow!
+    return { pts: g.home === team ? g.homePoints : g.awayPoints, opp: g.home === team ? g.awayPoints : g.homePoints, efg: factors(boxOf(row, 'own'), boxOf(row, 'opp')).efg }
+  }
+  const recordOf = (sides: ReturnType<typeof sideOf>[]) => ({ reached: sides.length, won: sides.filter(s => s.pts > s.opp).length, scores: sides.map(s => [s.pts, s.opp]) })
+
+  it('ours: the games that met every condition, the ones we won and their scores (ours first), in the order they were played', () => {
+    const reached = played(own).map(g => sideOf(g, own)).filter(s => s.pts > 75)
+    expect(reached.length).toBeGreaterThan(1)
+    expect(project(p, [cond('own.points', 'gt', 75)]).record).toEqual(recordOf(reached))
+  })
+
+  it('the rival in the same situation: its games with its opponent in our place (what we score is what it concedes, what it shoots is its own), by hand', () => {
+    const reached = played(rival).map(g => sideOf(g, rival)).filter(s => s.opp > 70 && s.efg < 0.5)
+    expect(reached.length).toBeGreaterThan(0)
+    expect(project(p, [cond('own.points', 'gt', 70), cond('rival.efg', 'lt', 0.5)]).rivalRecord).toEqual(recordOf(reached))
+  })
+
+  it('is what the other team says of the same conditions asked from its side: swapping the teams and the sides of the conditions', () => {
+    const conditions = [cond('own.points', 'gt', 72), cond('rival.tov', 'gt', 0.15), cond('game.possessions', 'lt', 76)]
+    const [r, swapped] = [project(p, conditions), project(buildProjection(model, rival, own, 'rival')!, conditions.map(mirrored))]
+    expect(r.rivalRecord).toEqual(swapped.record)
+    expect(r.record).toEqual(swapped.rivalRecord)
+  })
+})
+
+describe('what moves most in those games (#940)', () => {
+  const model = complete()
+  const { mid } = teamsBy(model)
+  const p = buildProjection(model, mid[0], mid[1], 'own')!
+  const z = (r: ReturnType<typeof project>, id: VariableId) => { const row = r.profile.find(x => x.variable === id)!; return Math.abs(row.given - row.expected) / row.spread }
+
+  it('the two variables farthest from the usual, in spreads of the scenarios, and never one that was asked', () => {
+    const r = project(p, [cond('own.points', 'gt', 80)])
+    const moved = movers(r)
+    expect(moved).toHaveLength(2)
+    expect(moved).not.toContain('own.points')
+    expect(z(r, moved[0])).toBeGreaterThanOrEqual(z(r, moved[1]))
+    for (const row of r.profile.filter(x => x.variable !== 'own.points' && !moved.includes(x.variable))) expect(z(r, row.variable)).toBeLessThanOrEqual(z(r, moved[1]))
+  })
+
+  it('every spread is positive, and with no condition nothing moves', () => {
+    const r = project(p, [])
+    for (const row of r.profile) expect(row.spread).toBeGreaterThan(0)
+    expect(movers(r)).toEqual([])
   })
 })
 

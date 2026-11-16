@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { it } from 'vitest'
 import { readStudyCompetitions } from './competitions'
-import { leaguePaceSlopes, splitHalf, walkForwardProjection } from './projection'
+import { leaguePaceSlopes, rivalResponse, splitHalf, walkForwardProjection } from './projection'
 import { formatProjectionSection, type ProjectionCompetition } from './projectionReport'
 
 const OUT = process.env.FORECAST_STUDY_OUT ?? join(process.cwd(), 'test-results', 'projection-study.md')
@@ -17,7 +17,7 @@ const KS = (process.env.FORECAST_STUDY_KS ?? '5,20,80').split(',').map(Number)
 it('evaluates the projection walk-forward over the export and writes the report', () => {
   const results = readStudyCompetitions().map(({ name, gender, games }): ProjectionCompetition => {
     const started = Date.now()
-    const result = { name, gender, games: games.length, projection: walkForwardProjection(games, gender, { from: 40, every: EVERY, ks: KS }), slopes: leaguePaceSlopes(games, gender), reliability: splitHalf(games, gender) }
+    const result = { name, gender, games: games.length, projection: walkForwardProjection(games, gender, { from: 40, every: EVERY, ks: KS }), slopes: leaguePaceSlopes(games, gender), reliability: splitHalf(games, gender), rival: rivalResponse(games, gender) }
     process.stdout.write(`${name}: ${games.length} games, ${((Date.now() - started) / 1000).toFixed(0)} s\n`)
     return result
   })

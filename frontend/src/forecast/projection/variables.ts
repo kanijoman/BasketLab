@@ -49,6 +49,12 @@ export interface Condition { variable: VariableId; op: 'lt' | 'gt'; value: numbe
 
 export const meets = (value: number, c: Condition): boolean => (c.op === 'gt' ? value > c.value : value < c.value)
 
+/** The same condition seen from the other team: what is ours is its rival's and the other way round (the possessions are the game's). */
+export function mirrored(c: Condition): Condition {
+  const v = variableOf(c.variable)
+  return v.side ? { ...c, variable: `${v.side === 'own' ? 'rival' : 'own'}.${v.measure as SideMeasure}` } : c
+}
+
 /** What a game that was played says of a variable from the side of `team` (`own` is `team`); null when the game has no box score or `team` did not play it. */
 export function gameValue(g: GameResult, team: string, id: VariableId): number | null {
   const row = g.home === team ? g.homeRow : g.away === team ? g.awayRow : undefined
