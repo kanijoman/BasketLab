@@ -1,7 +1,8 @@
 """Clutch analytics (issue #274): what a player does in a close finish (standard library only).
 
-The window is the one of ``game_context``'s ``close_late``: a margin of ``close_margin`` (6) or less in the last
-``close_remaining_s`` (4:00) of the 4th period, or in overtime. ``state.LiveGame`` adds up, per player and per game, the field-goal
+The window is a margin of ``close_margin`` (6) or less in the last ``CLUTCH_WINDOW_S`` (4:00) of the 4th period, or in overtime. It was
+the ``close_late`` of ``game_context`` until #932 moved that alert to 2:00: the sample of the packages keeps its 4:00 (a window of 2:00 would
+leave most players under ``MIN_SECONDS``). ``state.LiveGame`` adds up, per player and per game, the field-goal
 attempts, free throws, turnovers, points and seconds on court inside the window (``empty()`` is one set of totals), and the same for
 the whole 4th period, which is the fallback when the clutch sample is too small.
 
@@ -25,6 +26,7 @@ from .config import RuleConfig
 from .four_factors import FT_POSSESSION_COST
 
 FIELDS = ("fga", "fta", "ftm", "tov", "pts", "sec")
+CLUTCH_WINDOW_S = 240      # the last 4:00 of the 4th period (not the alert's ``close_remaining_s``, #932)
 MIN_SECONDS = 240          # clutch (or 4th-period) seconds needed to say anything
 SHRINK_SECONDS = 600       # responsibility: prior weight of 10 minutes
 PPS_PRIOR_SHOTS = 60       # accuracy: a much stronger prior than the 30 attempts of the efficiency rates
@@ -43,7 +45,7 @@ def window_start(period: int) -> int:
     if period > LAST_REGULATION_PERIOD:
         return period_start(period)
     if period == LAST_REGULATION_PERIOD:
-        return period_start(period) + period_length(period) - _CFG.close_remaining_s
+        return period_start(period) + period_length(period) - CLUTCH_WINDOW_S
     return 10 ** 9
 
 

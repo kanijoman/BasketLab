@@ -92,7 +92,7 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 .alert-critical { border-left-color: var(--sev-critical); background: rgb(var(--sev-critical-rgb) / 0.12); border-color: rgb(var(--sev-critical-rgb) / 0.45); }
 .alert-warning { border-left-color: var(--sev-warning); background: rgb(var(--sev-warning-rgb) / 0.08); }
 .alert-info { border-left-color: var(--sev-info); padding: 8px 12px; }
-.alert-head { display: flex; gap: 8px; align-items: center; font-size: 0.8rem; color: var(--muted); }
+.alert-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.8rem; color: var(--muted); }
 .alert-time { margin-left: auto; font-variant-numeric: tabular-nums; }
 .badge { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .alert-critical .badge { color: var(--sev-critical); }
@@ -199,14 +199,13 @@ h2 { font-size: 1rem; color: var(--muted); font-weight: 600; margin: 8px 0; }
 
 .status.warn { color: var(--pace-fast); }
 
-/* Feedback of the staff on each alert (issue #235) */
-.verdicts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.verdict { flex: 1 1 0; min-width: 88px; padding: 0 10px; font-size: 0.85rem; }
-.verdict[aria-pressed='true'] { background: var(--accent-solid); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
-.feedback-panel { display: grid; gap: 8px; }
-.feedback-panel h2 { margin: 0; }
-.feedback-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.feedback-actions button { flex: 1 1 0; min-width: 96px; }
+/* Dismissing an alert (issue #933): a bin in the head of the card; the dismissed ones wait in a list from which they come back */
+.alert-head .alert-dismiss { margin-left: 4px; }
+.alert-head .alert-time { margin-left: auto; }
+.alert-dismissed { margin-top: 8px; }
+.alert-dismissed > summary { cursor: pointer; padding: 10px 12px; min-height: 44px; box-sizing: border-box; color: var(--muted); font-weight: 600; }
+.alert-dismissed-item { display: grid; gap: 6px; opacity: 0.85; }
+.alert-dismissed-item button { justify-self: start; }
 
 /* Formación players on court against the minimum (issue #272) */
 .formation-status { margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line); border-left-width: 5px; border-radius: 10px; background: var(--card); font-weight: 600; }

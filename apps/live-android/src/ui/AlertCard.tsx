@@ -1,6 +1,5 @@
-import { Activity, ChartColumn, ClipboardList, Coffee, Hand, ListChecks, Repeat, Swords, Timer, TrendingDown, Users, type LucideIcon } from 'lucide-react'
+import { Activity, ChartColumn, ClipboardList, Coffee, Hand, ListChecks, Repeat, Swords, Timer, Trash2, TrendingDown, Users, type LucideIcon } from 'lucide-react'
 import type { Alert, Proposal } from '../engine/types'
-import type { Verdict } from '../feedback/store'
 
 /** Spanish label of each category the engine emits (icon below, colour in styles.css). */
 export const CATEGORY_LABEL: Record<string, string> = {
@@ -46,26 +45,6 @@ export function clockLabel(period: number, remaining: number): string {
   return `${period > 4 ? `PR${period - 4}` : `Q${period}`} ${mm}:${ss}`
 }
 
-const VERDICTS: { value: Verdict; label: string }[] = [
-  { value: 'seguida', label: 'Seguida' },
-  { value: 'descartada', label: 'Descartada' },
-  { value: 'ya_hecho', label: 'Ya hecho' },
-]
-
-/** What the staff did with the alert (issue #235): pressing the chosen answer again takes it back. */
-function VerdictButtons({ verdict, onVerdict }: { verdict: Verdict | null; onVerdict: (v: Verdict | null) => void }) {
-  return (
-    <div className="verdicts" role="group" aria-label="¿Qué se hizo con esta alerta?">
-      {VERDICTS.map(v => (
-        <button key={v.value} type="button" className="secondary verdict" aria-pressed={verdict === v.value}
-          onClick={() => onVerdict(verdict === v.value ? null : v.value)}>
-          {v.label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 function CategoryTag({ category }: { category: string }) {
   const Icon = CATEGORY_ICON[category]
   return (
@@ -79,20 +58,24 @@ function CategoryTag({ category }: { category: string }) {
 interface CardProps {
   alert: Alert
   at: string
-  /** The answer of the staff; the buttons only show when somebody listens to them. */
-  verdict?: Verdict | null
-  onVerdict?: (verdict: Verdict | null) => void
+  /** Dismiss the alert (issue #933); the bin only shows when somebody listens to it. */
+  onDismiss?: () => void
   /** Arrived with the latest change of the list: enters with a highlight (issue #312). */
   fresh?: boolean
 }
 
-export default function AlertCard({ alert, at, verdict = null, onVerdict, fresh = false }: CardProps) {
+export default function AlertCard({ alert, at, onDismiss, fresh = false }: CardProps) {
   return (
     <li className={`alert alert-${alert.severity}${fresh ? ' alert-new' : ''}`}>
       <div className="alert-head">
         <span className="badge">{SEVERITY_LABEL[alert.severity]}</span>
         <CategoryTag category={alert.category} />
         <span className="alert-time">{at}</span>
+        {onDismiss && (
+          <button type="button" className="secondary icon-button alert-dismiss" aria-label="Descartar aviso" onClick={onDismiss}>
+            <Trash2 size={18} aria-hidden="true" />
+          </button>
+        )}
       </div>
       <p className="alert-message">{alert.message}</p>
       {alert.proposal.length > 0 && (
@@ -108,7 +91,6 @@ export default function AlertCard({ alert, at, verdict = null, onVerdict, fresh 
           })}
         </ul>
       )}
-      {onVerdict && <VerdictButtons verdict={verdict} onVerdict={onVerdict} />}
     </li>
   )
 }

@@ -51,5 +51,5 @@ Todas con acción propuesta y horizonte mayor que la latencia del feed (mediana 
 
 ## Datos que faltan para decidir mejor
 - Más partidos grabados de León: depende de que el planner cubra la ventana previa (#205).
-- Saber si el staff **vio y usó** las alertas, para pasar de coincidencia a obediencia: la app ya tiene los botones «seguida / descartada / ya hecho» y exporta el resultado (#235, [LIVE.md](LIVE.md)); el evaluador ya lo lee (`--feedback`); falta usarlo en partidos reales.
+- Saber si el staff **vio y usó** las alertas, para pasar de coincidencia a obediencia: la app guarda lo que se descarta (los botones «seguida / ya hecho» y la exportación se quitaron en #933; #235, [LIVE.md](LIVE.md)); el evaluador ya lo lee (`--feedback`); falta usarlo en partidos reales.
 - Paquete con más partidos previos (líneas base de jugador menos ruidosas).

@@ -46,7 +46,7 @@ function useFreshKeys(entries: AlertEntry[]): Set<string> {
 interface ListProps {
   /** The latest first (the app prepends every new alert). */
   entries: AlertEntry[]
-  /** Answer of the staff per alert key, and the way to give one (issue #235). */
+  /** What was done with each alert key: only ``descartada`` is shown (issue #933: dismissed alerts leave the flow); the store keeps the history (issue #235). */
   verdicts?: Record<string, Verdict | null>
   onVerdict?: (key: string, verdict: Verdict | null) => void
   /** The game clock now: it decides which quarter is the current one and when the previous folds. Without it the newest alert says. */
@@ -59,8 +59,10 @@ interface ListProps {
  * one hides or shows that severity. The filter goes first. The flow is split in one foldable group per quarter (#406): the current one is
  * open, the previous one folds by itself ``AUTO_FOLD_S`` into the next, and what the staff opens or folds by hand is kept.
  */
-export default function AlertList({ entries, verdicts = {}, onVerdict, clock }: ListProps) {
+export default function AlertList({ entries: all, verdicts = {}, onVerdict, clock }: ListProps) {
   const [manual, setManual] = useState<Record<number, boolean>>({})
+  const entries = all.filter(e => verdicts[e.alert.key] !== 'descartada')
+  const dismissed = all.filter(e => verdicts[e.alert.key] === 'descartada')
   const { critical, warning, info } = countBySeverity(entries)
   const fresh = useFreshKeys(entries)
   const { hidden, toggle } = useAlertFilter()
@@ -71,8 +73,8 @@ export default function AlertList({ entries, verdicts = {}, onVerdict, clock }: 
   )
   const shown = entries.filter(e => !hidden.has(e.alert.severity))
   const card = (e: AlertEntry) => (
-    <AlertCard key={e.alert.key} alert={e.alert} at={e.at} verdict={verdicts[e.alert.key] ?? null} fresh={fresh.has(e.alert.key)}
-      onVerdict={onVerdict && (v => onVerdict(e.alert.key, v))} />
+    <AlertCard key={e.alert.key} alert={e.alert} at={e.at} fresh={fresh.has(e.alert.key)}
+      onDismiss={onVerdict && (() => onVerdict(e.alert.key, 'descartada'))} />
   )
   const current = clock?.period ?? (entries.length > 0 ? periodOfLabel(entries[0].at) : 1)
   const into = clock ? periodSeconds(clock.period) - clock.remaining : 0
@@ -102,6 +104,20 @@ export default function AlertList({ entries, verdicts = {}, onVerdict, clock }: 
           <ul className="alerts">{items.map(card)}</ul>
         </details>
       ))}
+      {dismissed.length > 0 && (
+        <details className="alert-dismissed">
+          <summary>Descartados · {dismissed.length}</summary>
+          <ul className="alerts">
+            {dismissed.map(e => (
+              <li key={e.alert.key} className="alert alert-dismissed-item">
+                <p className="detail">{e.alert.message}</p>
+                <span className="alert-time">{e.at}</span>
+                {onVerdict && <button type="button" className="secondary" aria-label="Recuperar aviso" onClick={() => onVerdict(e.alert.key, null)}>Recuperar</button>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   )
 }

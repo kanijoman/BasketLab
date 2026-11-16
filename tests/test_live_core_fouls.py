@@ -14,11 +14,11 @@ def test_warn_threshold_by_period(period, expected):
 
 @pytest.mark.parametrize(
     "pf, period, severity",
-    [(1, 1, None), (2, 1, None), (1, 2, None), (2, 2, None), (3, 2, "info"),
+    [(1, 1, None), (2, 1, None), (1, 2, None), (2, 2, None), (3, 2, "warning"),
      (2, 3, None), (3, 3, "warning"), (2, 4, None), (3, 4, "warning")],
 )
 def test_warning_fires_at_threshold(pf, period, severity):
-    """Issue #241 (R4): two fouls never alert; three are information in the first half and a warning in the second."""
+    """Issue #241 (R4): two fouls never alert; three are a warning in any half (#929: the 3rd was information in the first half, below the 2nd)."""
     alert = evaluate_player_fouls("p1", "Ana", pf, period)
     assert (alert.severity if alert else None) == severity
     if alert:
@@ -55,9 +55,9 @@ def test_message_is_in_spanish_and_has_evidence():
 
 
 # Issue #622 (feedback 0.4.2, Cultural–Melilla): the staff expected the notice of the 2nd foul before the 3rd in the first half. Decision of the user (28/10/2026):
-# own players get an info at the 2nd foul in the 1st and 2nd quarters; the recommender keeps asking without it (a player with two fouls is still a swap).
-@pytest.mark.parametrize("period, severity", [(1, "info"), (2, "info"), (3, None), (4, None), (5, None)])
-def test_the_second_foul_is_an_info_of_the_first_half_when_asked(period, severity):
+# own players get a notice at the 2nd foul (a warning since #929) in the 1st and 2nd quarters; the recommender keeps asking without it (a player with two fouls is still a swap).
+@pytest.mark.parametrize("period, severity", [(1, "warning"), (2, "warning"), (3, None), (4, None), (5, None)])
+def test_the_second_foul_is_a_warning_of_the_first_half_when_asked(period, severity):
     alert = evaluate_player_fouls("p1", "Ana", 2, period, early_notice=True)
     assert (alert.severity if alert else None) == severity
     if alert:
@@ -69,12 +69,12 @@ def test_without_asking_two_fouls_still_say_nothing_so_the_recommender_is_unchan
     assert evaluate_player_fouls("p1", "Ana", 2, period) is None
 
 
-def test_an_own_player_with_two_fouls_in_the_first_quarter_gets_the_info_before_the_third_regression():
+def test_an_own_player_with_two_fouls_in_the_first_quarter_gets_a_warning_before_the_third_regression():
     from tests.builders import OWN, RIVAL, Match
 
     m = Match().lineup(OWN, ["p1", "p2"], at=0).lineup(RIVAL, ["r1"], at=0)
     m.foul(OWN, "p1", at=120, drawn_by="r1").foul(OWN, "p1", at=300, drawn_by="r1")
     [alert] = [a for a in m.evaluate() if a.id == "foul_trouble"]
-    assert alert.severity == "info" and alert.evidence["pf"] == 2
+    assert alert.severity == "warning" and alert.evidence["pf"] == 2      # #929 (2536159, A. Reyes): at least a warning, never info
     m.foul(OWN, "p1", at=420, drawn_by="r1")
     assert [a.evidence["pf"] for a in m.evaluate() if a.id == "foul_trouble"] == [3]       # each count is new: the 3rd one is said as before

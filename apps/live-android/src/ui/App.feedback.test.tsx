@@ -41,7 +41,7 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-describe('App feedback (issue #235)', () => {
+describe('App feedback (issue #235) and dismissal (issue #933)', () => {
   it('every shown alert is registered on the device, with the game second and the real time', async () => {
     await playUntilTheAlert()
     const saved = JSON.parse(localStorage.getItem(KEY)!)
@@ -51,49 +51,28 @@ describe('App feedback (issue #235)', () => {
     expect(Number.isNaN(Date.parse(saved[0].shown_at))).toBe(false)
   })
 
-  it('answering an alert marks the button, saves the verdict and updates the count', async () => {
+  it('the staff no longer sees the answers nor the feedback panel', async () => {
     await playUntilTheAlert()
-    expect(screen.getByText(/0 de 1 alertas valoradas/i)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Seguida' }))
-    expect(screen.getByRole('button', { name: 'Seguida' }).getAttribute('aria-pressed')).toBe('true')
-    expect(JSON.parse(localStorage.getItem(KEY)!)[0].verdict).toBe('seguida')
-    expect(screen.getByText(/1 de 1 alertas valoradas/i)).toBeTruthy()
+    for (const old of ['Seguida', 'Descartada', 'Ya hecho', 'Borrar']) expect(screen.queryByRole('button', { name: old })).toBeNull()
+    expect(screen.queryByText(/alertas valoradas/i)).toBeNull()
   })
 
-  it('the answer is still there after the app is opened again and the match replayed', async () => {
+  it('dismissing an alert hides it, keeps it in the list of dismissed and saves it on the device', async () => {
     await playUntilTheAlert()
-    fireEvent.click(screen.getByRole('button', { name: 'Ya hecho' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descartar aviso' }))
+    expect(screen.queryByText(/4 faltas personales/, { selector: '.alert-message' })).toBeNull()
+    expect(screen.getByText(/Descartados · 1/)).toBeTruthy()
+    expect(JSON.parse(localStorage.getItem(KEY)!)[0].verdict).toBe('descartada')
+    fireEvent.click(screen.getByRole('button', { name: 'Recuperar aviso' }))
+    expect(screen.getByText(/4 faltas personales/, { selector: '.alert-message' })).toBeTruthy()
+    expect(JSON.parse(localStorage.getItem(KEY)!)[0].verdict).toBeNull()
+  })
+
+  it('a dismissed alert stays dismissed after the app is opened again and the match replayed', async () => {
+    await playUntilTheAlert()
+    fireEvent.click(screen.getByRole('button', { name: 'Descartar aviso' }))
     document.body.innerHTML = ''
     await playUntilTheAlert()
-    expect(screen.getByRole('button', { name: 'Ya hecho' }).getAttribute('aria-pressed')).toBe('true')
-  })
-
-  it('clearing removes the history of the match', async () => {
-    await playUntilTheAlert()
-    fireEvent.click(screen.getByRole('button', { name: 'Seguida' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Borrar' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar borrado' }))
-    expect(screen.getByRole('button', { name: 'Seguida' }).getAttribute('aria-pressed')).toBe('false')
-    expect(JSON.parse(localStorage.getItem(KEY) ?? '[]')).toEqual([])
-  })
-
-  // Issue #314: "0 de 53" with 40 alerts on the screen — the history of earlier runs of the same match was counted
-  it('the count is about the alerts of this run, not the history of earlier runs', async () => {
-    const stale = ['a', 'b', 'c'].map(key => ({ key, id: 'x', severity: 'info', category: 'rival', message: 'm', elapsed: 900, shown_at: '2026-10-14T10:00:00Z', verdict: null }))
-    localStorage.setItem(KEY, JSON.stringify(stale))
-    await playUntilTheAlert()
-    expect(screen.getByText(/0 de 1 alertas valoradas/i)).toBeTruthy()
-    expect(screen.queryByText(/de 4 alertas/i)).toBeNull()
-  })
-
-  it('after a restart the count starts again from the alerts that come back, and the answers stay', async () => {
-    await playUntilTheAlert()
-    fireEvent.click(screen.getByRole('button', { name: 'Seguida' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Reiniciar' }))
-    fireEvent.click(screen.getByRole('button', { name: /sí, reiniciar/i }))
-    await waitFor(() => expect(screen.queryByText(/alertas valoradas/i)).toBeNull())      // nothing shown yet: no panel
-    fireEvent.click(screen.getByRole('button', { name: /reproducir/i }))
-    await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
-    await waitFor(() => expect(screen.getByText(/1 de 1 alertas valoradas/i)).toBeTruthy())
+    expect(screen.getByText(/Descartados · 1/)).toBeTruthy()
   })
 })
