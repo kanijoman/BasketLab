@@ -89,13 +89,23 @@ class TestCheck:
 
 
 class TestMissingSince:
-    def test_the_missing_matches_say_when_the_calendar_dates_them(self):
-        """#902: the refresh forgives a match without data only after a week, so the check hands over the date of each missing one (None when the calendar has none)."""
-        db = _db(RESULT_CODES[:-1])
+    def test_a_missing_result_is_dated_by_the_latest_game_of_its_round_we_have_regression(self):
+        """#950: the calendar shows a played match with its score, not its date (the parser leaves ``start`` empty for every result), so ``missing_since`` was always None and the
+        week of #902 never came: on 16/11/2026, four matches of 2022-23 and 2023-24 that FEB has no boxscore for (loaded with the historic batch) kept every refresh red. A missing
+        result is dated by the latest of the games of its round that we have (a round is played in a weekend)."""
+        assert all(m.start is None for m in CAL if m.kind == "result"), "what the calendar gives: the score of a played match, no date"
+        present = RESULT_CODES[:-1]
+        db = _db(present, dates={present[0]: "03-10-2026 - 18:00", present[1]: "04-10-2026 - 12:30"})
         r = _svc(db).check("LF_CHALLENGE_2026")
         missing = RESULT_CODES[-1]
         assert r["missing_codes"] == [missing]
-        assert r["missing_since"] == {missing: next(m.start for m in CAL if m.code == missing)}
+        assert r["missing_since"] == {missing: "2026-10-04T12:30"}
+
+    def test_a_missing_result_of_a_round_we_have_nothing_of_stays_undated(self):
+        """Without a game of its round there is nothing to date it by: it stays missing (the refresh does not forgive what it cannot date)."""
+        r = _svc(_db([])).check("LF_CHALLENGE_2026")
+        assert set(r["missing_codes"]) == set(RESULT_CODES)
+        assert r["missing_since"] == {c: None for c in RESULT_CODES}
 
     def test_and_the_score_the_calendar_shows_for_each_of_them(self):
         """#902: a missing match listed with 0-2 or 2-0 is a forfeit, and the refresh needs the score to know it."""
