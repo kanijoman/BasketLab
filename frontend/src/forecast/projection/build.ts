@@ -9,8 +9,9 @@
 import { bisect, phi } from '../normal'
 import { expectedOer, type ForecastModel } from '../pool'
 import { evaluate, KERNEL_FLOOR, SEARCH } from '../scenarios'
-import type { Factors } from '../factors'
+import { FACTOR_KEYS, type Factors } from '../factors'
 import type { Court, Headline } from '../winProb'
+import { extraSlope, type PaceResponse, type ResponseKey } from './paceResponse'
 
 export interface Projection {
   model: ForecastModel
@@ -33,25 +34,42 @@ export interface Projection {
   anchored: boolean
 }
 
+export interface ProjectionOptions {
+  /** The layer of each team (#937): every scenario moves by what the pace slopes of these two teams say beyond the league's at its pace. Without it, the league's. */
+  paceResponse?: PaceResponse
+}
+
 const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / xs.length
 const sd = (xs: number[]): number => Math.sqrt(mean(xs.map(x => (x - mean(xs)) ** 2)))
 
 /** The projection of `own` against `rival` on `court` (null when the competition has no scenarios). */
-export function buildProjection(model: ForecastModel, own: string, rival: string, court: Court): Projection | null {
+export function buildProjection(model: ForecastModel, own: string, rival: string, court: Court, { paceResponse }: ProjectionOptions = {}): Projection | null {
   const ev = evaluate(model, own, rival, court)
   if (!ev) return null
   const { pool } = model
   const minutes = pool.map(s => s.minutes)
+  /** What the layer of each team adds to what `attack` makes against `defender` in scenario i (nothing without the layer). */
+  const lift = (attack: string, defender: string, key: ResponseKey): ((i: number) => number) => {
+    if (!paceResponse) return () => 0
+    const extra = extraSlope(paceResponse, attack, defender, key)
+    return i => extra * (pool[i].rho - 1)
+  }
+  const moved = (fs: Factors[], attack: string, defender: string): Factors[] => {
+    if (!paceResponse) return fs
+    const lifts = FACTOR_KEYS.map(k => [k, lift(attack, defender, k)] as const)
+    return fs.map((f, i) => Object.fromEntries(lifts.map(([k, up]) => [k, Math.min(1, Math.max(0, f[k] + up(i)))])) as Factors)
+  }
   const points = (oer: number, residual: (i: number) => number): number[] => ev.pace.map((n, i) => (n * minutes[i] * (oer + residual(i))) / 100)
-  const ours = points(expectedOer(model, own, rival), i => pool[i].oOwn)
-  const theirs = points(expectedOer(model, rival, own), i => pool[i].oRiv)
+  const [upOwn, upRival] = [lift(own, rival, 'oer'), lift(rival, own, 'oer')]
+  const ours = points(expectedOer(model, own, rival), i => pool[i].oOwn + upOwn(i))
+  const theirs = points(expectedOer(model, rival, own), i => pool[i].oRiv + upRival(i))
   const margin = ours.map((x, i) => x - theirs[i])
   const kernel = Math.sqrt(Math.max(ev.headline.sigma ** 2 - sd(margin) ** 2, KERNEL_FLOOR ** 2) / 2)
   const spread = Math.SQRT2 * kernel
   const gap = (d: number): number => mean(margin.map(m => phi((m + d) / spread))) - ev.headline.p
   const shift = bisect(gap, -SEARCH, SEARCH, 1e-9)
   return {
-    model, own, rival, headline: ev.headline, possessions: ev.pace, minutes, fOwn: ev.fOwn, fRiv: ev.fRiv,
+    model, own, rival, headline: ev.headline, possessions: ev.pace, minutes, fOwn: moved(ev.fOwn, own, rival), fRiv: moved(ev.fRiv, rival, own),
     ownPoints: ours.map(x => x + shift / 2), rivalPoints: theirs.map(x => x - shift / 2), kernel, shift, anchored: Math.abs(gap(shift)) < 1e-6,
   }
 }

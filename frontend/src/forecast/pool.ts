@@ -26,6 +26,9 @@ export interface Scenario {
   oRiv: number
   /** The minutes of the game over 40 (overtime: 45 / 40, 50 / 40…). */
   minutes: number
+  /** The teams of the game: the own side and the rival side (for what is particular to each team, #937). */
+  own: string
+  rival: string
 }
 
 /** `possessions`: the possessions of the games of the team (pace × minutes, see `Scenario.oOwn`). */
@@ -121,6 +124,8 @@ function scenariosOf(games: GameResult[], ratings: TeamRatings, { level, league,
         oOwn: (100 * boxO.pts) / possessions - expOer(o, r),
         oRiv: (100 * boxR.pts) / possessions - expOer(r, o),
         minutes: gameMinutes(rowO),
+        own: o,
+        rival: r,
       })
     }
   }
