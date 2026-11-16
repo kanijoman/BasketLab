@@ -18,6 +18,16 @@ export const mean = (xs: number[]): number => (xs.length ? xs.reduce((a, b) => a
 
 const BUCKETS: [string, (played: number) => boolean][] = [['0-2', n => n <= 2], ['3-5', n => n >= 3 && n <= 5], ['6-9', n => n >= 6 && n <= 9], ['10+', n => n >= 10]]
 
+/**
+ * The stretches of the season by the games played in the competition before the one judged (#947): the preview shows its scenarios, objectives and the card «¿Y si…?» from 30
+ * scenarios (about 15 games), and the evaluations of 11/11 and 16/11 started at the 40th.
+ */
+export const STRETCHES: [string, (k: number) => boolean][] = [['15-24', k => k >= 15 && k < 25], ['25-39', k => k >= 25 && k < 40], ['40+', k => k >= 40]]
+export const FAMILIES: [string, string][] = [['Masculina', 'M'], ['Femenina', 'F']]
+
+/** Two standard errors of a frequency of `n` cases. */
+export const twoSe = (p: number, n: number): number => 2 * Math.sqrt((p * (1 - p)) / n)
+
 function headlineScores(rows: HeadlineRow[]): Scores {
   const s = new Scores()
   for (const r of rows.filter(x => x.y !== 0.5)) s.add({ hit: r.p > 0.5 === (r.y === 1), logLoss: logLoss(r.p, r.y), baseLoss: logLoss(r.baseline, r.y), brier: brier(r.p, r.y), baseBrier: brier(r.baseline, r.y) })
@@ -72,11 +82,20 @@ function leversSection(results: CompetitionResult[]): string {
   const byFamily = table(['Familia', 'Lado', 'Objetivos', 'Alcanzados', 'P(victoria) prevista si se alcanza', 'Victorias reales si se alcanza', 'Victorias reales si no', 'Brier de la prevista', 'Brier del pronóstico'],
     [...family('Masculina', 'M'), ...family('Femenina', 'F')])
   const calibration = calibrationTable(levers.filter(l => l.met).map(l => ({ p: l.pWin, y: l.y })), 5)
+  const byStretch = FAMILIES.flatMap(([label, gender]) => STRETCHES.map(([stretch, inside]) => {
+    const mine = results.filter(r => r.gender === gender).flatMap(r => r.previews.levers).filter(l => l.side !== 'pace' && inside(l.k))
+    const met = mine.filter(l => l.met)
+    const actual = mean(met.map(l => l.y))
+    return mine.length ? [stretch, label, mine.length, met.length, pc(mean(met.map(l => l.pWin))), pc(actual), `±${pc(twoSe(actual, met.length))}`, num(mean(met.map(l => brier(l.pWin, l.y)))), num(mean(met.map(l => brier(l.headline, l.y))))] : null
+  })).filter((r): r is (string | number)[] => r !== null)
   return [
     '## Objetivos del partido',
     'Cada objetivo (hasta tres de ataque, tres de defensa y el ritmo) se comprueba desde el lado de los dos equipos: ¿lo alcanzó el partido que se jugó?, ¿ganó el equipo del objetivo? Lo que se evalúa es **la probabilidad condicional** («si pasa, ganamos tanto»): coincide con la frecuencia real de los partidos en que pasó cuando está calibrada.',
     table(['', 'Objetivos', 'Alcanzados', 'P(victoria) prevista si se alcanza', 'Victorias reales si se alcanza', 'Victorias reales si no', 'Brier de la prevista', 'Brier del pronóstico'], rows),
     '### Por familia de competición', byFamily,
+    '### Por tramo de la temporada',
+    'Los objetivos de ataque y defensa según los partidos de la competición jugados antes del que se juzga: la página los enseña desde unos 15.',
+    table(['Tramo', 'Familia', 'Objetivos', 'Se alcanzan', 'Prevista si se alcanza', 'Real si se alcanza', '± 2 errores típicos', 'Brier de la prevista', 'Brier del pronóstico'], byStretch),
     '### Calibración de la probabilidad prevista cuando se alcanza el objetivo',
     table(['Prevista', 'Objetivos', 'Prevista (media)', 'Real'], calibration.map(b => [`${pc(b.from, 0)}–${pc(b.to, 0)}`, b.n, pc(b.predicted), pc(b.actual)])),
   ].join('\n\n')

@@ -13,6 +13,7 @@ Parte de la épica #935 (#938). Feedback del staff: en la «Previa del partido»
 6. **Base para el estudio causal (#942)**: las posesiones rápidas anotan más **tras robo** (1,31 puntos por posesión en masculino, 1,15 en femenino) y **menos tras canasta** (0,82 frente a 1,02-1,04; 0,62 frente a 0,88-0,89), que es cuando el ritmo lo elige el equipo. Que «las rápidas anoten más» viene de las transiciones regaladas, no de jugar más rápido.
 7. **Los objetivos del partido, calculados con la proyección, siguen calibrados** (sección e): la página da una sola cifra para cada condición, y «Cuidar el balón» pasa a información.
 8. **Lo que hace el rival cuando la condición es nuestra** (sección f): la proyección lo lleva con la relación de la liga (0,13-0,16); la respuesta propia de cada rival es ruido (0,05-0,10), así que la tarjeta da su balance real en la misma situación como información.
+9. **El principio de temporada (15-24 partidos de la competición)** (sección g): las cifras están calibradas pero no mejoran al pronóstico, y las frecuencias de las condiciones sobre factores se quedan cortas (la mitad de lo real al principio); desde el partido 25 todo cumple. Se anota y no se cambia la página (decisión del usuario).
 
 ## (a) Cómo se mueve el juego con el ritmo
 La pendiente de la liga, temporada completa: lo que cambia cada cosa de un equipo por cada 10 % más de posesiones que las habituales de esos dos equipos (factores en puntos porcentuales; puntos por 100 posesiones en puntos).
@@ -149,6 +150,48 @@ Pregunta del usuario: con «anotamos más de 70», ¿se tiene en cuenta qué hac
 
 Las dos primeras columnas son la correlación, sobre todos los lados de todos los partidos, de lo que el rival hizo sobre lo esperado (puntos por 100 posesiones) con lo que hicimos nosotros, y de los puntos de los dos: **la relación existe en la liga** (cuando un equipo es más eficiente de lo esperado, el otro también un poco) y la proyección ya la lleva. Las tres últimas son la fiabilidad par/impar, entre los equipos de una temporada, de la respuesta de cada uno (la pendiente de su eficiencia frente a la del rival, la de sus puntos frente a los que encaja y cuánto más gana cuando el rival hace más de lo esperado): **ruido** (de −0,54 a 0,54 según la temporada, media cercana a 0), como la respuesta al ritmo (b). Usar la de cada rival añadiría error. Por eso la tarjeta da, como información, **el balance real del rival en la misma situación** (sus partidos con las condiciones vistas desde su lado: «con su rival en nuestro lugar») junto al nuestro, sin hacerlo pasar por un modelo.
 
+## (g) El principio de temporada (#947)
+La previa enseña escenarios, objetivos y la tarjeta desde 30 escenarios (unos 15 partidos de la competición), pero las evaluaciones del 11/11 y de este documento empiezan en el partido 40. Repetidas desde el 15 (`FORECAST_STUDY_FROM=15` en `npm run study:forecast` y `npm run study:projection`; las mismas 14 temporadas), por tramo de partidos de la competición jugados antes del que se juzga:
+
+**Objetivos del partido** (ataque y defensa):
+
+| Tramo | Familia | Se alcanzan | Prevista si se alcanza | Real si se alcanza | ± 2 errores típicos | Brier de la prevista | Brier del pronóstico |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 15-24 | Masculina | 67 de 191 | 64,8 % | 55,2 % | ±12,2 | **0,211** | 0,200 |
+| 25-39 | Masculina | 76 de 261 | 59,3 % | 67,1 % | ±10,8 | 0,191 | 0,224 |
+| 40+ | Masculina | 756 de 2.899 | 62,9 % | 64,0 % | ±3,5 | 0,182 | 0,204 |
+| 15-24 | Femenina | 75 de 250 | 64,4 % | 65,3 % | ±11,0 | 0,172 | 0,182 |
+| 25-39 | Femenina | 108 de 353 | 66,5 % | 63,9 % | ±9,2 | 0,172 | 0,198 |
+| 40+ | Femenina | 976 de 3.714 | 63,1 % | 65,9 % | ±3,0 | 0,166 | 0,191 |
+
+**Condiciones con cifra** (una variable con respaldo, capa de liga):
+
+| Tramo | Familia | Masa prevista | Parte que se cumple | Prevista si se cumple | Real si se cumple | ± 2 errores típicos | Brier de la prevista | Brier del pronóstico |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 15-24 | Masculina | 26,5 % | **33,3 %** | 46,2 % | 45,0 % | ±9,1 | **0,198** | 0,193 |
+| 25-39 | Masculina | 21,1 % | 24,2 % | 47,7 % | 50,9 % | ±9,3 | 0,202 | 0,247 |
+| 40+ | Masculina | 24,1 % | 24,8 % | 49,8 % | 49,3 % | ±2,8 | 0,174 | 0,206 |
+| 15-24 | Femenina | 26,1 % | 27,9 % | 48,5 % | 49,3 % | ±8,6 | 0,183 | 0,184 |
+| 25-39 | Femenina | 20,2 % | 21,1 % | 50,0 % | 49,6 % | ±8,6 | 0,173 | 0,222 |
+| 40+ | Femenina | 23,8 % | 24,6 % | 50,8 % | 50,5 % | ±2,4 | 0,155 | 0,185 |
+
+**Condiciones raras** (umbral en el 5 o el 10 % de los escenarios, todas las variables):
+
+| Tramo | Tipo | Preguntas | Masa prevista | Parte que se cumple |
+| --- | --- | --- | --- | --- |
+| 15-24 | Factores y posesiones | 420 | 8,6 % | **17,6 %** |
+| 15-24 | Puntos | 112 | 13,7 % | 15,2 % |
+| 25-39 | Factores y posesiones | 546 | 7,5 % | 10,3 % |
+| 25-39 | Puntos | 322 | 11,4 % | 12,7 % |
+| 40+ | Factores y posesiones | 5.421 | 7,7 % | 9,9 % |
+| 40+ | Puntos | 2.460 | 11,2 % | 8,2 % |
+
+Lectura:
+- **Desde el partido 25 todo cumple**: calibrado y mejor que el pronóstico, en las dos familias.
+- **Entre el 15 y el 24, calibrado pero sin respaldo**: la prevista queda a dos errores típicos de la real, pero en masculino es peor que el pronóstico (objetivos 0,211 frente a 0,200; condiciones 0,198 frente a 0,193) y en femenino solo lo iguala en las condiciones. Con la regla de #857 ese tramo no tendría cifra.
+- **Las frecuencias de las condiciones sobre factores y posesiones se quedan cortas, y más al principio**: entre el 15 y el 24 las raras pasan el doble de lo previsto (17,6 % frente a 8,6 %) y los objetivos se alcanzan en uno de cada tres partidos, no en uno de cada cuatro; desde el 40, un 30 % más de lo previsto (9,9 % frente a 7,7 %). La bolsa es estrecha: sus residuos son de la propia temporada, con los niveles de esos mismos partidos, y sin núcleo en los factores (solo los puntos lo tienen). La probabilidad de ganar en esos partidos no se resiente (calibrada), lo que se queda corto es «pasa en X de cada 100».
+- **Decisión (usuario, 16/11/2026): se deja como está y se anota.** Los remedios, si hicieran falta: no dar cifra hasta el partido 25 (el tramo que cumple), o un núcleo en factores y posesiones con la covarianza de la bolsa, muestreado con semilla (el único sitio donde un Monte Carlo aportaría algo a la previa).
+
 ## Decisiones
 1. **Respaldo por variable** (fijado en `projection/variables.ts`, `UNBACKED`): diez con cifra (nuestros puntos, nuestros puntos por 100 posesiones, nuestro eFG, rebote ofensivo y tiros libres; sus puntos, su eFG, sus pérdidas, su rebote ofensivo y sus tiros libres) y tres solo como información: **posesiones**, **nuestras pérdidas** y **sus puntos por 100 posesiones**. Una condición que combine una con respaldo y otra sin él no da cifra.
 2. **Capa de equipo: NO-GO** para la página; la proyección usa la relación de la liga. `paceResponse.ts` se queda para que el estudio la siga midiendo (con más temporadas por equipo podría aparecer).
@@ -156,6 +199,7 @@ Las dos primeras columnas son la correlación, sobre todos los lados de todos lo
 4. **#939 (duración de las posesiones en las filas): aplazado** (decisión del usuario, 16/11/2026). La duración es un rasgo estable de cada equipo (0,78), pero es otra forma de medir el ritmo y el ritmo no tiene respaldo como probabilidad de ganar; publicarla cambiaría el contrato de las filas para una variable que solo sería información.
 5. **#941: los objetivos se calculan con la proyección** (calibrados, sección e). **«Cuidar el balón» pasa a información** (decisión del usuario, 16/11/2026: la regla de #857 y lo que dice la tarjeta): las pérdidas propias están calibradas pero no mejoran al pronóstico, así que la página da lo esperado y cómo fue la temporada con pocas y con muchas pérdidas, sin probabilidad. La regla queda general: un factor sin respaldo en `variables.ts` es información y no objetivo.
 6. **El rival, con la relación de la liga y su balance como información** (#940, sección f): no se modela la respuesta de cada rival; la tarjeta enseña su balance en la misma situación junto al nuestro.
+7. **El principio de temporada se anota y no cambia la página** (#947, sección g; decisión del usuario): entre los partidos 15 y 24 las cifras están calibradas pero no mejoran al pronóstico y las frecuencias de los factores se quedan cortas.
 
 ## Prueba del 16/11/2026 con el motor
 B.F. León – Lima-Horta (2524505, LF Challenge 2026-27, J7, en León): pronóstico 47,9 %. «León anota más de 70»: pasa en 37 de cada 100 partidos como este y en esos gana el **75 %** (el prototipo del mismo día daba un 80 % porque no contaba los minutos de las prórrogas, que suben los puntos de los dos). En esos partidos León anota 77 (habitual 67) y Lima-Horta 69 (67); los puntos de más salen del acierto (≈ +9: eFG 42,9 → 46,6 %) más que de las posesiones jugadas (≈ +1,4, prórrogas incluidas). Esta temporada León pasó de 70 en 3 partidos y ganó 2 (73-84, 82-81 y 78-71); Lima-Horta, en la misma situación (encajando más de 70), jugó 1 y lo perdió (64-73). Es lo que da la tarjeta de la página (#940).
@@ -163,6 +207,7 @@ B.F. León – Lima-Horta (2524505, LF Challenge 2026-27, J7, en León): pronós
 ## Límites
 - **Una temporada por equipo**: con más temporadas la pendiente de cada equipo frente al ritmo podría dejar de ser ruido; la capa queda para medirlo.
 - **FBCYL no está evaluado**, y la jugada a jugada solo es de 2025-26.
+- **Las primeras jornadas** (15-24 partidos de la competición): cifras sin respaldo y frecuencias de las condiciones sobre factores cortas (sección g); y aun después, las raras de factores y posesiones pasan algo más de lo que dice la página (un 30 %).
 - **Condicional, no causal**: la probabilidad describe los partidos en que pasó la condición; no dice que forzarla haga ganar (los entrenadores reaccionan a lo que ven, estudio del 26/10/2026). El simulador causal es #942.
 - **Los escenarios usan los niveles de la propia temporada** (residuos algo estrechos, que el núcleo compensa) y los umbrales del estudio salen de los escenarios, no de lo que pediría el staff: los de la página serán otros, pero la calibración no depende del umbral (se mantiene del 5 al 50 %).
 - Parte de la relación entre el ritmo y las pérdidas o el rebote ofensivo es de definición de posesión, no de juego.

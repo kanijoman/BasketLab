@@ -110,6 +110,24 @@ describe('what the rival does when the condition is put on us (#940)', () => {
   })
 })
 
+describe('the start of the season (#947)', () => {
+  const early = walkForwardProjection(games, 'M', { from: 15, every: 5, ks: [10] })
+
+  it('projects from the 15th game, where the page starts showing the card', () => {
+    expect(early.conditions.some(r => r.k < 25)).toBe(true)
+    expect(Math.min(...early.conditions.map(r => r.k))).toBeGreaterThanOrEqual(15)
+  })
+
+  it('the report tells the conditions apart by stretch of the season, and the rare ones by kind of variable', () => {
+    const text = formatProjectionSection([{ name: 'PRIMERA', gender: 'M', games: games.length, projection: early, slopes: leaguePaceSlopes(games, 'M'), reliability: splitHalf(games, 'M'), rival: rivalResponse(all, 'M') }])
+    expect(text).toContain('#### Por tramo de la temporada')
+    expect(text).toContain('#### Condiciones raras por tramo y tipo de variable')
+    for (const stretch of ['15-24', '25-39', '40+']) expect(text).toContain(`| ${stretch} | Masculina |`)
+    for (const kind of ['Factores y posesiones', 'Puntos']) expect(text).toContain(`| 15-24 | ${kind} |`)
+    expect(text).not.toMatch(/NaN|undefined/)
+  })
+})
+
 describe('the section of the report', () => {
   it('has the parts of the evaluation and no NaN or undefined', () => {
     const study = walkForwardProjection(games, 'M', OPTIONS)
