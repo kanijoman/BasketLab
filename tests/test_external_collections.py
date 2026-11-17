@@ -7,8 +7,9 @@ import json
 import sys
 from pathlib import Path
 
-import mongomock
 import pytest
+
+from db_helpers import new_mock_db
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
@@ -70,7 +71,7 @@ class TestNames:
 @pytest.mark.parametrize("source", EXTERNAL_LEAGUES)
 def test_the_rows_of_an_external_competition_say_their_source_as_their_league(source):
     name = {"acb": "ACB_Liga_Endesa_2026_", "fiba": "FIBA_U18_EuroBasket_2026_", "ncaa": "NCAA_D1_2026_SEC"}[source]
-    db = mongomock.MongoClient()["BASKETBALL"]
+    db = new_mock_db("BASKETBALL")
     db[name].insert_many([badged(g, source) for g in games.build_games()])
     payload = export_collection(db[name], name)
     assert payload["league"] == source and payload["games"] == 12
@@ -78,7 +79,7 @@ def test_the_rows_of_an_external_competition_say_their_source_as_their_league(so
 
 
 def test_feb_and_fbcyl_rows_keep_their_league():
-    db = mongomock.MongoClient()["BASKETBALL"]
+    db = new_mock_db("BASKETBALL")
     db["PRIMERA_FEB_2025_2026_Liga_Regular_Único"].insert_many(games.build_games())
     assert export_collection(db["PRIMERA_FEB_2025_2026_Liga_Regular_Único"], "PRIMERA_FEB_2025_2026_Liga_Regular_Único")["league"] == "feb"
 

@@ -7,8 +7,9 @@ The tests run the whole chain on real FEB games badged as FIBA: refresh -> archi
 import json
 from datetime import datetime, timedelta, timezone
 
-import mongomock
 import pytest
+
+from db_helpers import new_mock_db
 
 from market_helpers import FixtureSource  # noqa: E402  (it also puts tests/local_vectors on the path)
 
@@ -59,7 +60,7 @@ def _open(tmp_path, entry):
 
 
 def _refresh(tmp_path, catalogue, source="fiba", now=NOW):
-    return refresh_source(source, catalogue, mongomock.MongoClient()["BASKETBALL"], tmp_path / "archive-ext", now)
+    return refresh_source(source, catalogue, new_mock_db("BASKETBALL"), tmp_path / "archive-ext", now)
 
 
 def test_the_whole_chain_publishes_the_reliable_games_of_a_source_under_its_own_league(tmp_path, handler):

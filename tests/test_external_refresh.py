@@ -9,8 +9,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import mongomock
 import pytest
+
+from db_helpers import new_mock_db
 
 from market_helpers import FixtureSource  # noqa: E402  (it also puts tests/local_vectors on the path)
 
@@ -33,7 +34,7 @@ def _catalogue(tmp_path, *sources):
 
 @pytest.fixture()
 def db():
-    return mongomock.MongoClient()["BASKETBALL"]
+    return new_mock_db("BASKETBALL")
 
 
 @pytest.fixture(autouse=True)
