@@ -1,9 +1,8 @@
 """Play-by-play analyzer to track player court time and calculate IN/OUT statistics."""
 
-from typing import Dict, List, Set, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 from src.live_core.clock import GAME_SECONDS
-import re
 
 from .event_helpers import get_timestamp
 

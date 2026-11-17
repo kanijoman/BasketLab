@@ -18,7 +18,7 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 from src.live_prep.package_scopes import open_sealed, scope_key
 from src.live_prep.package_sealing import Sealer

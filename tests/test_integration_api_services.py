@@ -13,8 +13,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-import json
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient

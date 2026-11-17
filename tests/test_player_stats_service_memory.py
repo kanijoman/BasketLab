@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:

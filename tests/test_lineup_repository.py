@@ -1,7 +1,7 @@
 """Tests for lineup analysis repository functions."""
 
 import unittest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 from src.database.repository import BasketballRepository
 
 
@@ -512,7 +512,6 @@ class TestBulkLoadPlayerNames(unittest.TestCase):
 
     def test_bulk_load_missing_player_returns_fallback(self):
         """Unknown player IDs must get a 'Player {id}' fallback, not raise."""
-        col = self._make_collection([])  # empty collection
 
         result = self.repo._bulk_load_player_names('col_feb', ['X99'], is_fbcyl=False)
 

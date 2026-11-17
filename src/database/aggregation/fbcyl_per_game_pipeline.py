@@ -289,7 +289,6 @@ def enrich_fbcyl_player_row(row: Dict) -> Dict:
     pts = row.get("pts") or 0
 
     fga = p2a + p3a
-    fgm = p2m + p3m
 
     row["fg1_pct_game"] = _pct(p1m, p1a)
     row["fg2_pct_game"] = _pct(p2m, p2a)

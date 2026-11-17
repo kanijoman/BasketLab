@@ -34,7 +34,7 @@ def test_weekly_report_asks_for_teams_for_the_team_chart_and_for_players_for_the
 
 def test_the_weekly_report_does_not_scan_the_players_when_none_has_enough_shots(monkeypatch):
     asked = []
-    monkeypatch.setattr(weekly, "league_zone_distribution", lambda analyzer, coll, fbcyl=False, by="team": asked.append(by_ := by) or None)
+    monkeypatch.setattr(weekly, "league_zone_distribution", lambda analyzer, coll, fbcyl=False, by="team": asked.append(by) or None)
     monkeypatch.setattr(weekly, "_extract_shots", lambda db, collection, team_id: (_shots(4), {}, False))
     service = weekly.WeeklyReportService(MagicMock())
     with zipfile.ZipFile(io.BytesIO(), "w") as zf:

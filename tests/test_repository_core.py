@@ -9,7 +9,6 @@ import unittest
 from unittest.mock import MagicMock
 
 from db_helpers import new_mock_db  # noqa: E402
-import pytest
 
 from src.database.repository import BasketballRepository
 

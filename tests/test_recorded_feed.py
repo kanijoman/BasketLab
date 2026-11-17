@@ -5,7 +5,6 @@ the play-by-play of a match is append-only, so every line is stored once with th
 ``RecordedFeed`` (standard library only, usable on the tablet too) rebuilds the document FEB was serving at any
 second, including the windows where an endpoint answered 404 in the middle of the match.
 """
-import copy
 import gzip
 import json
 from datetime import datetime, timezone

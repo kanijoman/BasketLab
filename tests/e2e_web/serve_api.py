@@ -6,7 +6,6 @@ with uvicorn. No credentials, no network.
 """
 import copy
 import json
-import os
 import sys
 from pathlib import Path
 

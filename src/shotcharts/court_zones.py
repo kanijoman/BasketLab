@@ -13,11 +13,8 @@ All zones are properly closed polygons with no overlaps.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
 from typing import Dict, List, Tuple, Optional
 from shapely.geometry import Polygon as ShapelyPolygon, Point
-from shapely.ops import unary_union
 import matplotlib.patches as mpatches
 
 from .fiba_court import FIBACourt

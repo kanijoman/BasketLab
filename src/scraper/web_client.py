@@ -153,7 +153,7 @@ class WebClient:
             return self._execute_get(url, request_headers, timeout)
         except requests.HTTPError as e:
             if e.response.status_code == 401 and on_401:
-                print(f"[WebClient] Unauthorized (401), attempting to refresh token")
+                print("[WebClient] Unauthorized (401), attempting to refresh token")
                 new_token = on_401()
                 if new_token:
                     request_headers["Authorization"] = f"Bearer {new_token}"

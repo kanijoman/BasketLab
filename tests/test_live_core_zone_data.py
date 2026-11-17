@@ -1,6 +1,5 @@
 """Zone data for the zone rules (issue #247): shots per player (the SHOTCHART gives the jersey number, the box score maps it to a
 player), and in the package the own team's zones and the zones the rival concedes."""
-import pytest
 
 from src.live_core.engine import LiveEngine
 from src.live_core.shots import ShotTracker

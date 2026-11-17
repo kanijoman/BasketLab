@@ -104,7 +104,6 @@ def brier(p, y):
 
 
 def decile_gap(p, y, min_n: int = 400) -> float:
-    import numpy as np
 
     gaps = []
     for k in range(10):

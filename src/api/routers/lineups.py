@@ -3,7 +3,7 @@
 import asyncio
 import json
 import threading
-from datetime import datetime, timedelta
+from datetime import timedelta
 from src.utils.time_utils import utc_now_naive
 from typing import List, Dict, Any, Optional
 

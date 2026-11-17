@@ -1,6 +1,6 @@
 """Advanced statistics calculations for MongoDB aggregation pipeline."""
 
-from typing import Dict, Any
+from typing import Dict
 from ..utils import safe_divide
 from src.live_core.four_factors import FT_POSSESSION_COST
 

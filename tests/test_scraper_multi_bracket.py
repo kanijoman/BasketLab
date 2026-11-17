@@ -10,8 +10,7 @@ _get_matches_via_series visits ALL cached URLs, merging and deduplicating
 match codes.
 """
 
-import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 from bs4 import BeautifulSoup
 
 from src.scraper.feb_scraper import FEBWebScraper

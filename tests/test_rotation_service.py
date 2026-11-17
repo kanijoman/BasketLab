@@ -14,10 +14,9 @@ Coverage:
 from __future__ import annotations
 
 import sys
-from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, patch
+from typing import Dict, List
+from unittest.mock import MagicMock
 
 import pytest
 

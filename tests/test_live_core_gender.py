@@ -7,7 +7,6 @@ in doubt (nothing said) the neutral, masculine.
 import json
 from pathlib import Path
 
-import pytest
 
 from src.live_core.advice import AdviceEngine
 from src.live_core.config import RuleConfig

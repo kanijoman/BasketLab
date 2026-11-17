@@ -32,7 +32,7 @@ class IndexManager:
             True if successful, False otherwise
         """
         if not self.connection.is_connected():
-            print(f"[IndexManager] Cannot create indexes - not connected to MongoDB")
+            print("[IndexManager] Cannot create indexes - not connected to MongoDB")
             return False
 
         try:
@@ -115,7 +115,7 @@ class IndexManager:
                 background=True
             )
 
-            print(f"[IndexManager] Successfully ensured FBCYL indexes")
+            print("[IndexManager] Successfully ensured FBCYL indexes")
             return True
 
         except Exception as e:

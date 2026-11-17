@@ -8,7 +8,6 @@ import copy
 import json
 from pathlib import Path
 
-import pytest
 
 from src.live_core.vectors import unwrap_extended_json
 from src.live_prep.canary import (

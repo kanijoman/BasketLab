@@ -1,6 +1,6 @@
 ﻿"""IN/OUT repository mixin."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from pymongo.errors import PyMongoError
 
 from utils.collection_utils import is_fbcyl as _is_fbcyl

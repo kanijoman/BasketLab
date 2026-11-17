@@ -14,8 +14,7 @@ After the fix:
   get the total without loading documents.
 """
 
-import pytest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 from pymongo.cursor import Cursor
 
 

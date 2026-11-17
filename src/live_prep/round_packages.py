@@ -15,7 +15,6 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 
-from src.live_core.package import PreparationPackage
 
 from .package_builder import SeasonAccumulator
 from .package_sealing import as_sealer

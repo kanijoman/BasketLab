@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 from typing import Optional, Dict, List
 
-from .constants import BOXSCORE_API_URL, SHOTCHART_API_URL, KEYFACTS_API_URL, DEFAULT_HEADERS
+from .constants import BOXSCORE_API_URL, SHOTCHART_API_URL, KEYFACTS_API_URL
 from .web_client import WebClient
 from .token_manager import TokenManager
 from .data_processor import DataProcessor
@@ -55,7 +55,7 @@ class FEBApiClient:
 
         try:
             data = response.json()
-        except ValueError as e:
+        except ValueError:
             return None
 
         # Process boxscore data
@@ -143,7 +143,7 @@ class FEBApiClient:
         try:
             json_data = response.json()
             return json_data.get(key, [])
-        except ValueError as e:
+        except ValueError:
             return None
 
     def _refresh_token(self, match_code: str, session: requests.Session) -> Optional[str]:

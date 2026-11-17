@@ -5,7 +5,6 @@ and the BoxScore / KeyFacts / ShotChart endpoints behind a Bearer token.
 """
 
 import json
-import threading
 import urllib.error
 import urllib.request
 

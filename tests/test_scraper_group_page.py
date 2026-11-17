@@ -14,7 +14,6 @@ from unittest.mock import MagicMock
 import pytest
 from bs4 import BeautifulSoup
 
-from src.scraper.feb_scraper import FEBWebScraper
 from tests.test_scraper_year_navigation import _future_only_page_html, _make_scraper, _two_group_calendar_html
 
 GROUPS = {"88": "Grupo A", "89": "Grupo B"}

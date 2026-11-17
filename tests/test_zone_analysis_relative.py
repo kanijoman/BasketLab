@@ -1,5 +1,4 @@
 """ZoneAnalyzer PNG colouring relative to the league average per zone (issue #139)."""
-from unittest.mock import MagicMock
 
 import matplotlib
 

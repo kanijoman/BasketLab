@@ -5,7 +5,7 @@ very same rules by vectors (``tests/local_vectors/scouting_docx_vectors.py``). T
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from src.services._scouting_docx_helpers import quartile_fill
 from src.services._scouting_formatters import fmt_min, safe

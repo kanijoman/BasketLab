@@ -1,6 +1,5 @@
 """Tests for src.database.fbcyl_transformer.FBCYLTransformer."""
 
-import pytest
 from src.database.fbcyl_transformer import FBCYLTransformer
 
 
@@ -121,7 +120,7 @@ class TestExtractPlayerStatsFromMoves:
     def test_handles_non_list_gracefully(self):
         """Should not crash on None or bad input."""
         try:
-            result = FBCYLTransformer.extract_player_stats_from_moves(None)
+            FBCYLTransformer.extract_player_stats_from_moves(None)
             # If it doesn't crash, that's acceptable
         except (TypeError, AttributeError):
             pass  # expected for unimplemented TODO

@@ -15,8 +15,7 @@ Bug 2 (no data with 23 games): The frontend passed ``team_name`` as the URL
     can look it up.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 
 from src.api.app import app
@@ -105,7 +104,6 @@ class TestIncludeGameLogRegression:
         """
         from src.database import MongoDBHandler
 
-        handler = MagicMock(spec=MongoDBHandler)
         # The real method signature must accept include_game_log
         import inspect
         sig = inspect.signature(MongoDBHandler.get_lineup_analysis)

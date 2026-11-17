@@ -4,7 +4,6 @@ FEB's header (the score the staff sees) arrives before the play-by-play lines: Â
 This is the pattern of ``lineup_settle`` for the score: a rule of recent actions waits until the log has caught up with the header, and stops waiting if the difference does not go away (a correction of
 the table can leave the log with other points for the rest of the game).
 """
-import pytest
 
 from src.live_core.advice import AdviceEngine
 from src.live_core.config import RuleConfig

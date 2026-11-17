@@ -3,7 +3,6 @@ sample game: if the PBP-derived numbers equal the box score, the parser is right
 
 import json
 
-import pytest
 
 from src.live_core.engine import LiveEngine
 from src.live_core.state import QUARTER_BREAK_CREDIT_S
@@ -273,7 +272,6 @@ def test_home_id_survives_the_json_boundary_that_sorts_keys_regression(feb_game_
     tell who plays at home."""
     import json
 
-    from src.live_core.session import LiveSession
     from src.live_core.vectors import to_jsonable
 
     snap = LiveEngine().update(feb_game_doc)

@@ -123,8 +123,8 @@ def persistence(path: str) -> str:
             if b["cut"] - a["cut"] != 300:
                 continue
             own, rival = a["team"], a["rival"]
-            win_own = {k: b["snap"]["teams"][own]["stats"][k] - a["snap"]["teams"][own]["stats"][k] for k in a["snap"]["teams"][own]["stats"]}
-            win_rival = {k: b["snap"]["teams"][rival]["stats"][k] - a["snap"]["teams"][rival]["stats"][k] for k in a["snap"]["teams"][rival]["stats"]}
+            {k: b["snap"]["teams"][own]["stats"][k] - a["snap"]["teams"][own]["stats"][k] for k in a["snap"]["teams"][own]["stats"]}
+            {k: b["snap"]["teams"][rival]["stats"][k] - a["snap"]["teams"][rival]["stats"][k] for k in a["snap"]["teams"][rival]["stats"]}
             prev = [c for c in cuts if c["cut"] < a["cut"]]
             if not prev:
                 continue

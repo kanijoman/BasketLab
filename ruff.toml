@@ -1,0 +1,15 @@
+# Only pyflakes (#955): unused imports and variables, names that are not defined, a function that hides another. No style, no formatting.
+line-length = 200
+target-version = "py311"
+extend-exclude = ["frontend", "apps", "node_modules", "htmlcov", ".venv", "venv"]
+
+[lint]
+select = ["F"]
+
+[lint.per-file-ignores]
+# a pytest fixture is received by a parameter of the same name: it is not a redefinition
+"tests/**" = ["F811"]
+# the package re-exports what it imports
+"__init__.py" = ["F401"]
+# the source of the live engine is hashed (``live_core/version.py``) and runs on the tablet with its parity vectors: its findings are cleaned when that code is touched for another reason
+"src/live_core/**" = ["F401", "F841"]

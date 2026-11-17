@@ -99,7 +99,6 @@ def _extract_shots(
             ``stats.teams.teamIdExtern`` (as string) for FBCYL.
             Filters are pushed into MongoDB; the collection is never fully loaded.
     """
-    from src.utils.team_utils import resolve_team_by_id
 
     coll = db.connection.get_collection(collection_name)
     if coll is None:
@@ -150,7 +149,6 @@ def _extract_shots(
                         player_id_map[uuid] = {'id': uuid, 'name': pname, 'uuid': uuid}
     else:
         # FEB: resolve team_index once via a find_one, then stream only matching docs
-        team_idx_filter: Optional[int] = None
         probe = coll.find_one(
             {"HEADER.TEAM.id": team_id},
             {"HEADER.TEAM": 1, "_id": 0},
@@ -158,7 +156,6 @@ def _extract_shots(
         if probe:
             for idx, t in enumerate(probe.get("HEADER", {}).get("TEAM", [])):
                 if str(t.get("id", "")) == str(team_id):
-                    team_idx_filter = idx
                     break
 
         cursor = coll.find(

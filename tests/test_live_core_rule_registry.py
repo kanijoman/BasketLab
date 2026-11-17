@@ -4,7 +4,6 @@ Every rule has an id; ``RuleConfig.rules_off`` (a package ``rule_config`` entry)
 build and lets the evaluator compare configurations. Nothing is off by default and the stock behaviour must not change.
 """
 import json
-from pathlib import Path
 
 import pytest
 

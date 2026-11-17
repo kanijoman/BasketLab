@@ -7,7 +7,6 @@ eliminating code duplication across different visualizers.
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from typing import Optional
 
 from .fiba_court import FIBACourt

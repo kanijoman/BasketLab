@@ -4,7 +4,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
 
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:

@@ -15,7 +15,7 @@ from __future__ import annotations
 import copy
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from db_helpers import new_mock_db  # noqa: E402
 import pytest
@@ -26,7 +26,6 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from database.aggregation.fbcyl_per_game_pipeline import (
-    build_fbcyl_team_per_game_pipeline,
     build_fbcyl_player_per_game_pipeline,
     enrich_fbcyl_team_row,
     enrich_fbcyl_player_row,
@@ -381,7 +380,6 @@ class TestFBCYLPlayerConsistency:
 class TestDerivedIndexes:
     def _build_own_map(self):
         """Minimal own_map with two teams for index computation."""
-        from services.team_stats_service import _add_derived_indexes
         own_map = {
             "Team A": {
                 "fg3_percentage":        {"mean": 35.0, "std": 8.0, "cv": 22.9, "n": 10},

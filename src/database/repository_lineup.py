@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional, FrozenSet
 from pymongo.errors import PyMongoError
 
-from utils.collection_utils import is_fbcyl as _is_fbcyl
 from src.utils.time_utils import fbcyl_game_day
 from src.live_core.four_factors import FT_POSSESSION_COST
 
@@ -45,9 +44,6 @@ class LineupRepositoryMixin:
         Returns:
             List of lineup dictionaries with statistics, sorted by net rating
         """
-        from .playbyplay_analyzer import PlayByPlayAnalyzer
-        from .lineup_extractor import LineupExtractor
-        from .lineup_stats_calculator import LineupStatsCalculator
 
         try:
             # Define a projection to avoid loading large BOXSCORE/stats.players fields —

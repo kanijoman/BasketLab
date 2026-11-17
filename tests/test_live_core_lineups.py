@@ -3,7 +3,6 @@ seconds and points for and against of every quintet, the current quintet's stint
 his team minus the rival's while he is on court). The official box score of the sample game carries each player's +/- (``pllss``):
 the numbers must agree with it.
 """
-import pytest
 
 from src.live_core.clock import elapsed_seconds
 from src.live_core.engine import LiveEngine

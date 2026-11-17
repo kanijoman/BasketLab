@@ -14,9 +14,7 @@ season_value, derive the correct calendar URL by substituting the year and GET i
 directly before falling back to the POST-based ASP.NET season selection.
 """
 
-import pytest
 from unittest.mock import MagicMock
-from bs4 import BeautifulSoup
 
 from src.scraper.feb_scraper import FEBWebScraper
 

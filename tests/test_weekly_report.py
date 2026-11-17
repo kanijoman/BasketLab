@@ -13,7 +13,6 @@ Covers:
 
 import io
 import zipfile
-import pytest
 from unittest.mock import MagicMock, patch
 
 from src.services.weekly_report_service import (

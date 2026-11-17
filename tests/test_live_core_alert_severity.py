@@ -4,12 +4,9 @@ critical = act now (4th foul, rival run) · warning = consider acting (3rd foul,
 very high fatigue) · info = context (moderate fatigue, Four Factors lever, rival zones, rival fouls/bonus).
 Thresholds live in RuleConfig ("a confirmar con el staff").
 """
-import gzip
-import json
 from collections import Counter
 from pathlib import Path
 
-import pytest
 
 from src.live_core.config import RuleConfig
 from src.live_core.session import LiveSession

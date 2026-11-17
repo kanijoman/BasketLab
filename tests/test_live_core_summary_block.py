@@ -8,7 +8,7 @@
 from src.live_core.advice import AdviceEngine
 from tests.builders import OWN, RIVAL
 from tests.test_live_core_closing import by_id, end_of, flat, player, pts
-from tests.test_live_core_summary_scope import STARTS, attempts
+from tests.test_live_core_summary_scope import STARTS
 
 
 def summary(period, log, players=None, fouls=None, **kw):

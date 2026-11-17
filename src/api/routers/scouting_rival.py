@@ -22,7 +22,6 @@ from pydantic import BaseModel, Field
 
 from src.api.deps import get_db
 from src.services.scouting_rival_service import ScoutingRivalService
-from src.services.team_report_service import TeamNotFoundError
 
 router = APIRouter()
 

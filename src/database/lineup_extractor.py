@@ -1,6 +1,6 @@
 """Lineup extractor to identify player combinations on court from play-by-play data."""
 
-from typing import Dict, List, Set, Tuple, FrozenSet, Optional
+from typing import Dict, List, Set, Tuple, FrozenSet
 from collections import defaultdict
 from src.live_core.clock import GAME_SECONDS
 from .playbyplay_analyzer import PlayByPlayAnalyzer

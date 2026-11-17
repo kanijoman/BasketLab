@@ -5,7 +5,6 @@ it really depends on (the transitive imports of its exporter, read from the sour
 """
 from pathlib import Path
 
-import pytest
 
 from src.local_data import build_cache
 from src.local_data.build_cache import module_files, section_versions

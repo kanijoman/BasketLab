@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -24,7 +24,7 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from utils.team_utils import get_available_teams_from_collection
-from database.repository_possession import _aggregate_game_possession, _empty_possession_result
+from database.repository_possession import _aggregate_game_possession
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 
-from live_helpers import ON_COURT, OWN, RIVAL, TABLE, player, snap  # noqa: E402
+from live_helpers import OWN, RIVAL, TABLE, player, snap  # noqa: E402
 from builders import pad_to_score  # noqa: E402
 from context_cases import context_cases  # noqa: E402
 from formation_cases import formation_cases  # noqa: E402

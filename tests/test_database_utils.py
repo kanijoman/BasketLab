@@ -1,6 +1,5 @@
 """Tests for src.database.utils — get_collection_name and safe_divide."""
 
-import pytest
 from src.database.utils import get_collection_name, safe_divide, _sanitize_component
 
 

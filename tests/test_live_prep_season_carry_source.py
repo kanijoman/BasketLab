@@ -7,7 +7,6 @@ import copy
 
 import pytest
 
-from src.live_prep.package_builder import SeasonAccumulator
 from src.live_prep.round_packages import build_round_packages_from_db
 from src.live_prep.season_carry import carry_ratings, previous_collections
 from test_live_prep_game_sources import OLD, OWN, RIVAL, SEGUNDA, Handler, game

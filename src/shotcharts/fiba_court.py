@@ -11,9 +11,8 @@ All lengths are in meters.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Circle, Polygon, Arc, Wedge
-from matplotlib.collections import PatchCollection
-from typing import Dict, Tuple, Optional, List
+from matplotlib.patches import Rectangle, Circle, Polygon, Wedge
+from typing import Tuple, Optional, List
 import re
 
 
@@ -120,12 +119,6 @@ class FIBACourt:
             [0 - self.line_thick, self.height + self.line_thick],
             [self.width + self.line_thick, self.height + self.line_thick],
             [self.width + self.line_thick, 0 - self.line_thick]
-        ]
-        inner = [
-            [0, 0],
-            [0, self.height],
-            [self.width, self.height],
-            [self.width, 0]
         ]
         # Return outer boundary as polygon (inner will be the court color)
         return Polygon(outer, closed=True)

@@ -7,8 +7,6 @@ aggregation pipeline — no extra DB passes are needed.
 """
 
 from typing import Any, Dict, List, Optional
-import csv
-import io
 import logging
 
 from fastapi import APIRouter, Depends, Query

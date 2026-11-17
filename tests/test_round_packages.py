@@ -6,7 +6,6 @@ competition travel in ONE bundle: a single envelope (one key derivation) around 
 lists the bundles of every competition with a summary of their matches, so the app lists them without downloading anything.
 """
 import json
-from unittest.mock import MagicMock
 
 import pytest
 

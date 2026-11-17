@@ -57,7 +57,7 @@ def _status_timeline(polls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def _cadence_and_delay(polls: List[Dict[str, Any]]) -> Tuple[int, List[float], List[float]]:
     """Seconds between play-by-play changes, and event delay (poll time - LogTimeUtc of the newest event)."""
-    changes, delays, last_lines, last_stamp = [], [], 0, None
+    _changes, delays, last_lines, last_stamp = [], [], 0, None
     stamps: List[float] = []
     for p in polls:
         if p["endpoint"] != "keyfacts" or p.get("status") != 200 or "pbp_lines" not in p:
