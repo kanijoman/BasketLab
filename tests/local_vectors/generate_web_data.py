@@ -21,7 +21,6 @@ import fbcyl_games  # noqa: E402
 import games  # noqa: E402
 from mongomock_handler import mongomock_handler  # noqa: E402
 
-from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.local_data.calendar_export import CalendarSource  # noqa: E402
 from src.local_data.competition_gender import competition_genders  # noqa: E402

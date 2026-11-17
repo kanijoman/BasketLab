@@ -16,7 +16,6 @@ import fbcyl_games  # noqa: E402
 import games  # noqa: E402
 from mongomock_handler import mongomock_handler  # noqa: E402
 
-from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
 from src.market.publish import publish_talent_data  # noqa: E402
 
