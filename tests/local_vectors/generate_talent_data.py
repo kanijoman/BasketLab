@@ -8,14 +8,13 @@ import shutil
 import sys
 from pathlib import Path
 
-import mongomock
-import pymongo
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(Path(__file__).resolve().parent)]
 
 import fbcyl_games  # noqa: E402
 import games  # noqa: E402
+from mongomock_handler import mongomock_handler  # noqa: E402
 
 from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
@@ -37,9 +36,7 @@ ROSTER = [
 
 
 def fixture_connection():
-    pymongo.MongoClient = mongomock.MongoClient
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    handler = mongomock_handler()
     db = handler.connection.client["BASKETBALL"]
     db[FEB].insert_many(games.build_games())
     db["COLLECTION_META"].insert_one({"_id": FEB, "league": "FEB", "competition_label": "L.F.-2", "season_value": "2025", "season_label": "2025/2026", "group_label": "Liga Regular · B"})

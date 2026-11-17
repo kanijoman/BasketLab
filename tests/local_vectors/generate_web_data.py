@@ -13,14 +13,13 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-import mongomock
-import pymongo
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src"), str(Path(__file__).resolve().parent)]
 
 import fbcyl_games  # noqa: E402
 import games  # noqa: E402
+from mongomock_handler import mongomock_handler  # noqa: E402
 
 from src.api import deps  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
@@ -41,9 +40,7 @@ FBCYL = "FBCYL_1\u00aa_FASE-GRUPO_A-1_2026_"
 
 def fixture_handler():
     """A handler over a mongomock database with both leagues (the real ``deps._create_handler`` with the client swapped)."""
-    pymongo.MongoClient = mongomock.MongoClient
-    deps._create_handler.cache_clear()
-    handler = deps._create_handler()
+    handler = mongomock_handler()
     db = handler.connection.client["BASKETBALL"]
     db[FEB].insert_many(games.build_games())
     db[FBCYL].insert_many(fbcyl_games.build_games())
