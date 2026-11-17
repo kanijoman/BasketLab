@@ -262,11 +262,11 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
                      scouting_service: Optional[Callable[[Any], Any]] = None, on_section: Optional[Callable[[str, str, float, bool], None]] = None,
                      image_source: Optional[Source] = None, calendar_source: Optional[CalendarSource] = None,
                      fbcyl_groups: Optional[Dict[str, str]] = None, genders: Optional[Dict[str, str]] = None, categories: Optional[Dict[str, Dict[str, Any]]] = None,
-                     sections_runner: Optional[parallel_sections.Runner] = None) -> Dict[str, Any]:
+                     sections_runner: Optional[parallel_sections.Runner] = None, sources: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
     """Write the artifacts of ``collections`` and the manifest (returned). With ``keep_others`` the competitions of the previous publication that are
     not in ``collections`` stay as they were (a partial refresh); otherwise the directory mirrors ``collections``. ``scouting`` lists the
     collections whose teams also get their full scouting by scope (``scouting_export``; ``scouting_service`` builds the service, for tests). A competition that has not
-    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700); ``calendar_source`` (the federations, or a fake) makes the competitions of the newest season publish their calendar (#842; ``fbcyl_groups`` maps a FBCYL competition to its ESB group), always read again; ``genders`` (``competition_gender.competition_genders``) puts the ``F``/``M`` of each competition in its rows entry (#843); ``sections_runner`` (``parallel_sections.in_processes``) computes first, in parallel, the sections whose code changed (#945)."""
+    changed since the previous publication (``build_cache``) reuses its sealed files; ``image_source`` (the FEB, or a fake) makes the competitions of the newest season publish the crest and the photos of their teams (#717); ``on_section(competition, section, seconds, reused)`` says what each one cost (#700); ``calendar_source`` (the federations, or a fake) makes the competitions of the newest season publish their calendar (#842; ``fbcyl_groups`` maps a FBCYL competition to its ESB group), always read again; ``genders`` (``competition_gender.competition_genders``) puts the ``F``/``M`` of each competition in its rows entry (#843); ``sections_runner`` (``parallel_sections.in_processes``) computes first, in parallel, the sections whose code changed (#945); ``sources`` (the publication of the external sources, #884) puts the freshness of each in the manifest."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     names = list(collections)
@@ -293,7 +293,7 @@ def publish_web_data(handler: Any, out_dir: Path, sealer: Sealer, collections: I
             sections[section][name] = entry
         if on_collection:
             on_collection(name)
-    manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(),
+    manifest = {"schema": SCHEMA, "v": sealer.index_version, **sealer.index_extra(), **({"sources": sources} if sources is not None else {}),
                 "rows": [rows[n] for n in sorted(rows)], **{s: [sections[s][n] for n in sorted(sections[s])] for s in SECTIONS},
                 "reports": [reports[n] for n in sorted(reports)]}
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))

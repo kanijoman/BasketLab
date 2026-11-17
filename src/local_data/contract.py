@@ -30,7 +30,7 @@ class RowsEntry(FileEntry):
     """The sealed rows of a competition (``rows/``), or its sealed ``DERIVED`` per game (``derived/``, #676), its shots (``shots/``, #685) or the rotation analysis of its teams
     (``rotations/``, #684; ``games`` counts its teams) the list and analysis of its matches (``matches/``, #677), or the possessions page (``possessions/``) and its per-possession CSV (``possession_csv/``, #679), or the per-game counters of the lineups of its teams (``lineups/``, #686; ``games`` counts its teams) or the IN/OUT analysis of its players (``inout/``, #678, FEB; ``games`` counts its players) or the consistency of its players (``consistency/``, #709; ``games`` counts its players) or the rival-adjusted figures of its teams (``rival_adjusted/``, #710; ``games`` counts its teams) or its calendar (``calendar/``, #842: every match with its round, kick-off and score; ``games`` counts its matches; only the competitions of the newest season): same entry, other content."""
     collection: str
-    league: Literal["feb", "fbcyl"]
+    league: Literal["feb", "fbcyl", "acb", "fiba", "ncaa"]     # the source of the data (#884: the external sources are competitions of their own)
     games: int
     wraps: List[Wrap]
     category: NotRequired[Literal["senior", "formacion"]]     # #914: from the catalogue (the selector groups the competitions with it)
@@ -46,11 +46,25 @@ class ReportIndexEntry(FileEntry):
     teams: int
 
 
+class SourceFreshness(TypedDict):
+    """How fresh the data of an external source is (#884, ``web-data-ext``): its last run (``state`` ``ok`` or ``failed``), when it last worked, and how many games it holds, how many do not reconcile with their
+    official box (kept in the archive, never published) and how many were published. A failed run still publishes the rows of the last good one: the web says «data from <last_ok>»."""
+    source: Literal["acb", "fiba", "ncaa"]
+    state: str
+    ok: bool
+    last_ok: NotRequired[str]
+    finished: NotRequired[str]
+    games: int
+    unreliable: int
+    published: int
+
+
 class WebDataManifest(TypedDict):
     """``index.json``: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope)."""
     schema: int
     v: int
     open_key: NotRequired[str]
+    sources: NotRequired[List[SourceFreshness]]     # only the publication of the external sources (``web-data-ext``, #884)
     rows: List[RowsEntry]
     derived: NotRequired[List[RowsEntry]]
     shots: NotRequired[List[RowsEntry]]
@@ -83,7 +97,7 @@ class ReportIndex(TypedDict):
     reports: List[ReportEntry]
 
 
-MODELS = (Wrap, FileEntry, RowsEntry, ReportIndexEntry, WebDataManifest, ReportEntry, ReportIndex)
+MODELS = (Wrap, FileEntry, RowsEntry, ReportIndexEntry, SourceFreshness, WebDataManifest, ReportEntry, ReportIndex)
 
 
 class ContractError(ValueError):

@@ -1,0 +1,117 @@
+name: Archive ext refresh
+
+# The daily refresh of the EXTERNAL sources (ACB, FIBA, NCAA; epic #872, block D0 #884), one job per source with an active competition in config/competitions.json (the matrix is built from the
+# catalogue by `run_external_refresh.py --list-sources`: a new source gets its job without editing a list). Everything here is independent of FEB: it is not triggered by `Archive refresh`, does not wait
+# for it, does not restore nor write the archive of FEB (secret ARCHIVE_DEPLOY_KEY is not used) and a failure of NCAA, ACB or FIBA never stops the refresh of FEB nor the other sources (`fail-fast: false`,
+# one concurrency lane per source). Each job is the ONLY writer of the folder of its source in the private repository `basketlab-archive-ext` (secret ARCHIVE_EXT_DEPLOY_KEY): it restores that folder into an
+# ephemeral Mongo, asks the source for what changed since its last good run minus a rewrite window, validates and reconciles the games and writes the archive back with `status.json` (when it ran, when it
+# last worked: the freshness that `web-data-ext.yml` publishes). The status of a failed run is committed too (`last_ok` is kept) and the failure opens, or updates, an issue by itself.
+# A source with no scraper yet is `pending`: the job stays green and changes nothing. See docs/OPERATIONS.md.
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "run_external_refresh.py"
+      - "src/external/**"
+      - "config/competitions.json"
+      - ".github/workflows/archive-ext-refresh.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sources:
+    name: The sources of the catalogue
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.list.outputs.list }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: List the sources with an active competition
+        id: list
+        run: echo "list=$(python run_external_refresh.py --list-sources)" >> "$GITHUB_OUTPUT"
+
+  refresh:
+    name: Refresh ${{ matrix.source }}
+    needs: sources
+    # no active external competition (today there is none): nothing to do, and a matrix without values would be an error
+    if: ${{ github.event_name != 'pull_request' && needs.sources.outputs.list != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        source: ${{ fromJSON(needs.sources.outputs.list) }}
+    concurrency:
+      group: archive-ext-${{ matrix.source }}
+      cancel-in-progress: false
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Download the external archive
+        env:
+          ARCHIVE_EXT_DEPLOY_KEY: ${{ secrets.ARCHIVE_EXT_DEPLOY_KEY }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$ARCHIVE_EXT_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/ext_key || { echo "::error::ARCHIVE_EXT_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+          chmod 600 ~/.ssh/ext_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
+          git clone -q "git@github.com:${OWNER}/basketlab-archive-ext.git" archive-ext || { echo "::error::basketlab-archive-ext cannot be cloned"; exit 1; }
+          mkdir -p archive-ext
+      - name: Refresh the source
+        id: refresh
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+        run: python run_external_refresh.py --source "${{ matrix.source }}" --out archive-ext
+      - name: Save the archive of the source
+        # also after a failed run: its status (when it ran, `last_ok` kept) is what the freshness of the web says; nothing changed means no commit
+        if: ${{ !cancelled() && hashFiles(format('archive-ext/{0}/status.json', matrix.source)) != '' }}
+        run: |
+          cd archive-ext
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ matrix.source }}"
+          if git diff --cached --quiet; then
+            echo "Nothing changed: the archive of ${{ matrix.source }} stays as it is"
+            exit 0
+          fi
+          git commit -q -m "${{ matrix.source }} $(date -u +%Y-%m-%dT%H:%MZ)"
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
+          git push -q origin HEAD
+      - name: Open or update the issue of the source
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Fuente externa ${{ matrix.source }}: el refresco diario falla"
+          body="El workflow *Archive ext refresh* falló para **${{ matrix.source }}**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Su archivo y su última ejecución buena (\`last_ok\`) se conservan; las demás fuentes y el refresco de FEB no se ven afectados."
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi

@@ -1,0 +1,107 @@
+name: Web data ext
+
+# Publishes what the web reads of the EXTERNAL sources (ACB, FIBA, NCAA; epic #872, block D0 #884) to the `web-data-ext` branch, served through raw.githubusercontent.com (CORS open, no credentials): the sealed
+# rows of each external competition and the manifest `index.json`, with the `league` of each competition and the freshness of each source (`run_web_data_ext.py`, `src/external/publish.py`). It is its OWN
+# workflow and its OWN branch: two writers on the branch of `web-data` would race, and a failure here must not stop the data of Analytics (nor the other way round). Starts from the previous publication so that
+# what did not change keeps its bytes (sealing is random; a file never changes in place); the branch is rewritten with a single commit and only when something changed.
+#
+# Source of the games: the private repository `basketlab-archive-ext` (secret ARCHIVE_EXT_DEPLOY_KEY, read only here: `archive-ext-refresh.yml` is the only writer of each source's folder). It does NOT read the
+# archive of FEB. The games that do not reconcile with their official box stay in the archive but are left out of what is published. Runs after each refresh of the external sources (even a red one: the rows of the
+# last good run are still published, with the freshness saying so; a cancelled one does not), when the code that shapes the files is pushed to main and by hand. Needs PACKAGE_MASTER_KEY (or PACKAGE_PASSWORD,
+# >= 8 characters): the same as `web-data`, so one open key opens both publications. See docs/OPERATIONS.md.
+
+on:
+  workflow_run:
+    workflows: ["Archive ext refresh"]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - "src/external/**"
+      - "src/local_data/**"
+      - "src/market/**"
+      - "src/pbp/**"
+      - "src/database/**"
+      - "src/services/competition_catalogue.py"
+      - "run_web_data_ext.py"
+      - "config/competitions.json"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "run_web_data_ext.py"
+      - "src/external/**"
+      - "config/competitions.json"
+      - ".github/workflows/web-data-ext.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: web-data-ext
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish the external data
+    # a red refresh of one source must not block the rest; a cancelled one does
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion != 'cancelled' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      EPHEMERAL_MONGO: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate the entry points (pull requests)
+        if: github.event_name == 'pull_request'
+        run: python -c "import run_web_data_ext; from src.external.publish import publish_external; print('ok')"
+      - name: Download the external archive
+        if: github.event_name != 'pull_request'
+        env:
+          ARCHIVE_EXT_DEPLOY_KEY: ${{ secrets.ARCHIVE_EXT_DEPLOY_KEY }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$ARCHIVE_EXT_DEPLOY_KEY" | python -m src.local_data.ssh_key > ~/.ssh/ext_key || { echo "::error::ARCHIVE_EXT_DEPLOY_KEY does not contain an OpenSSH private key"; exit 1; }
+          chmod 600 ~/.ssh/ext_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
+          git clone -q --depth 1 "git@github.com:${OWNER}/basketlab-archive-ext.git" archive-ext || { echo "::error::basketlab-archive-ext cannot be cloned"; exit 1; }
+      - name: Start from the previous publication
+        if: github.event_name != 'pull_request'
+        run: |
+          git clone -q --depth 1 --branch web-data-ext "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" web-ext-out || mkdir web-ext-out
+      - name: Build the artifacts
+        id: build
+        if: github.event_name != 'pull_request'
+        env:
+          MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
+          PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY || secrets.PACKAGE_PASSWORD }}
+        run: python run_web_data_ext.py --archive archive-ext --out web-ext-out
+      - name: Publish to the web-data-ext branch
+        # only when the build succeeded: after a red build the folder holds the files of the competitions it had finished and a push would leave them orphan in the branch
+        if: ${{ steps.build.conclusion == 'success' && github.event_name != 'pull_request' && hashFiles('web-ext-out/index.json') != '' }}
+        run: |
+          cd web-ext-out
+          [ -d .git ] || git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git rev-parse -q --verify HEAD >/dev/null && git diff --cached --quiet; then
+            echo "Nothing changed: the branch stays as it is"
+            exit 0
+          fi
+          git checkout -q --orphan publish
+          git commit -q -m "Web data ext $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" publish:web-data-ext

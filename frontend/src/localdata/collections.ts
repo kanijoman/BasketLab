@@ -8,11 +8,13 @@ const GROUP = /^[A-Z0-9]{1,2}$/i
 const FBCYL_PREFIX = /^FBCYL_/i
 
 export type League = 'FEB' | 'FBCYL'
+/** The source of the data of a competition in the manifest (#884: ACB, FIBA and NCAA are competitions of their own, published in `web-data-ext`). */
+export type PublishedLeague = 'feb' | 'fbcyl' | 'acb' | 'fiba' | 'ncaa'
 
 /** What the manifest says of a competition. */
 export interface PublishedCollection {
   collection: string
-  league: 'feb' | 'fbcyl'
+  league: PublishedLeague
   games: number
   category?: 'senior' | 'formacion'
   age_group?: 'U14' | 'U16' | 'U18'
@@ -42,10 +44,13 @@ export function parseComponents(name: string, league: League): { competition: st
 
 const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)             // code units, as Python compares strings (not the locale: accents and case differ)
 
+/** The ámbito of a competition: its source in capitals (FEB, FBCYL, ACB, FIBA, NCAA). */
+const ambitoOf = (league: PublishedLeague): string => league.toUpperCase()
+
 /** The competitions of the publication as the API lists them: league, then season (the newest first), competition and group. */
 export function collectionList(published: PublishedCollection[]): CollectionInfo[] {
   const rows = published.map((entry): CollectionInfo => ({
-    name: entry.collection, league: entry.league === 'fbcyl' ? 'FBCYL' : 'FEB', ...parseComponents(entry.collection, entry.league === 'fbcyl' ? 'FBCYL' : 'FEB'), game_count: entry.games,
+    name: entry.collection, league: ambitoOf(entry.league), ...parseComponents(entry.collection, entry.league === 'fbcyl' ? 'FBCYL' : 'FEB'), game_count: entry.games,
     ...(entry.category ? { category: entry.category } : {}), ...(entry.age_group ? { age_group: entry.age_group } : {}), ...(entry.competition_label ? { competition_label: entry.competition_label } : {}), ...(entry.group_label ? { group_label: entry.group_label } : {}),
   }))
   return rows.sort((a, b) => compare(a.league, b.league) || compare('-' + a.season, '-' + b.season) || compare(a.competition, b.competition) || compare(a.group, b.group))
