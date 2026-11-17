@@ -197,12 +197,27 @@ def test_the_node_modules_of_the_branch_survive_and_the_branch_is_left_as_it_was
     assert subprocess.run(["git", "status", "--porcelain"], cwd=app_repo, capture_output=True, text=True).stdout == ""
 
 
-def test_without_npm_ci_the_app_tests_are_not_run_and_it_says_so(app_repo, capsys):
+def _npm_is(monkeypatch, found: bool):
+    """Pin whether ``npm`` is on the PATH, so the test does not depend on the machine that runs it (#958: with Node installed but ``npm`` off the PATH of the process the report said another thing)."""
+    real = shutil.which
+    monkeypatch.setattr(shutil, "which", lambda name, *a, **k: ("npm" if found else None) if name == "npm" else real(name, *a, **k))
+
+
+def test_without_npm_ci_the_app_tests_are_not_run_and_it_says_so(app_repo, capsys, monkeypatch):
+    _npm_is(monkeypatch, True)
     shutil.rmtree(app_repo / APP / "node_modules")
     fix_the_app(app_repo)
     assert prove(app_repo, "--strict") == 1         # not run is not a red proof
     out = capsys.readouterr().out
     assert "sin ejecutar" in out and "npm ci" in out
+
+
+def test_without_npm_the_app_tests_are_not_run_and_it_says_so(app_repo, capsys, monkeypatch):
+    _npm_is(monkeypatch, False)
+    fix_the_app(app_repo)
+    assert prove(app_repo, "--strict") == 1
+    out = capsys.readouterr().out
+    assert "sin ejecutar" in out and "falta `npm` en el sistema" in out and "npm ci" not in out
 
 
 # ── The suites follow the `include` of each vitest config ────────────────────
