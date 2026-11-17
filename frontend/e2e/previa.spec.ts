@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 // The preview of the match (issue #849) in a real browser against the REAL publication of the exporter (tests/local_vectors/web_data), served in place of the `web-data` branch: choose a team, see its
 // calendar of matches to play, choose one, and read the forecast. The publication is the small league of the fixtures (12 games): enough for the forecast, too few scenarios to describe the game
-// (the page says so), so what is drawn in full is covered by the unit tests; this one checks that the page works and fits a phone.
+// (the page says so), so what is drawn in full is in `previa-completa.spec.ts` (a competition of 39 games); this one checks that the page works and fits a phone.
 const DIR = join(dirname(fileURLToPath(import.meta.url)), '../../tests/local_vectors/web_data')
 const C = 'L_F_-2_2025_2026_Liga_Regular_B'
 const RAW = /^https:\/\/raw\.githubusercontent\.com\/kanijoman\/BasketLab\/web-data\/(.*)$/
