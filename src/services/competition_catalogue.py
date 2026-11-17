@@ -11,6 +11,9 @@ gender and level still come from here (``package_catalog``), because the manifes
 
 ``active: false`` pauses an entry: it is neither scraped, published nor recorded, and its data stays where it is. Removing an entry never deletes data either: that is the
 purge, a separate order that asks for confirmation. The metadata of the packages (level, gender, rules) survives a pause, because older seasons are still read.
+
+The external sources (ACB, FIBA, NCAA; #884, epic #872) are competitions whose ``league`` is their source: they carry ``division``, ``gender`` and, where the source needs it (NCAA),
+``conference`` (one competition per conference, never a flat list). They are read only by ``external_entries``: the refresh of the FEB archive, the live packages and the recorder never see them.
 """
 from __future__ import annotations
 
@@ -22,7 +25,10 @@ DEFAULT_CATALOGUE = "config/competitions.json"
 ALL_GROUPS = "all"
 _REQUIRED = ("competition", "competition_url", "season_label", "season_value")
 _REQUIRED_FBCYL = ("competition", "season_label", "season_value")
-LEAGUES = ("feb", "fbcyl")
+EXTERNAL_LEAGUES = ("acb", "fiba", "ncaa")
+LEAGUES = ("feb", "fbcyl", *EXTERNAL_LEAGUES)
+CONFERENCE_REQUIRED = ("ncaa",)                 # the sources whose competitions are split by conference
+_REQUIRED_EXTERNAL = ("competition", "season_label", "season_value", "division")
 
 
 def _norm(name: str) -> str:
@@ -43,6 +49,24 @@ def _check_fbcyl(where: str, value: Any) -> None:
             raise ValueError(f"{where}: fbcyl.{key} must be a text")
 
 
+def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
+    """An external competition (ACB, FIBA, NCAA): its division, its gender and, where the source splits by them, its conference. Nothing to scrape: no URL, no groups."""
+    from src.live_prep.competition_info import GENDERS
+
+    league = raw["league"]
+    missing = [k for k in _REQUIRED_EXTERNAL if not isinstance(raw.get(k), str) or not raw[k].strip()]
+    if missing:
+        raise ValueError(f"{where} lacks: {', '.join(missing)}")
+    if raw.get("gender") not in GENDERS:
+        raise ValueError(f"{where}: gender must be one of {GENDERS} (it lacks or is {raw.get('gender')!r})")
+    conference = raw.get("conference")
+    if conference is not None and (not isinstance(conference, str) or not conference.strip()):
+        raise ValueError(f"{where}: conference must be a text")
+    if conference is None and league in CONFERENCE_REQUIRED:
+        raise ValueError(f"{where}: a {league} competition lacks: conference (one competition per conference)")
+    return {"source": league, "groups": "", "conference": conference.strip() if conference else None}
+
+
 def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     """One entry, validated: ``ValueError`` names its position and the field."""
     from src.services.competition_category import check_category
@@ -51,11 +75,14 @@ def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     league = raw.get("league", "feb")
     if league not in LEAGUES:
         raise ValueError(f"{where}: league must be one of {LEAGUES}, not {league!r}")
-    missing = [k for k in (_REQUIRED if league == "feb" else _REQUIRED_FBCYL) if not isinstance(raw.get(k), str) or not raw[k].strip()]
+    external = _check_external(where, raw) if league in EXTERNAL_LEAGUES else {}
+    missing = [] if external else [k for k in (_REQUIRED if league == "feb" else _REQUIRED_FBCYL) if not isinstance(raw.get(k), str) or not raw[k].strip()]
     if missing:
         raise ValueError(f"{where} lacks: {', '.join(missing)}")
     groups = raw.get("groups", "")
-    if league == "fbcyl":
+    if external:
+        groups = ""
+    elif league == "fbcyl":
         groups = ""
         _check_fbcyl(where, raw.get("fbcyl"))
     else:
@@ -77,7 +104,7 @@ def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:
     for key in ("record", "packages_groups"):
         if not isinstance(raw.get(key, []), list) or any(not isinstance(v, str) for v in raw.get(key, [])):
             raise ValueError(f"{where}: {key} must be a list of texts")
-    return {**raw, **check_category(where, raw), "league": league, "groups": groups, "active": active, "packages": packages, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
+    return {**raw, **check_category(where, raw), **external, "league": league, "groups": groups, "active": active, "packages": packages, "recheck_days": days, "record": list(raw.get("record", [])), "packages_groups": list(raw.get("packages_groups", []))}
 
 
 def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
@@ -89,7 +116,7 @@ def load_catalogue(path: Any = DEFAULT_CATALOGUE) -> List[Dict[str, Any]]:
     normalize_catalog(entries)
     seen = set()
     for i, e in enumerate(entries, start=1):
-        key = (e["league"], _norm(e["competition"]), e["season_value"], e.get("group_value", "") or (e.get("fbcyl") or {}).get("competition_id", ""))
+        key = (e["league"], _norm(e["competition"]), e["season_value"], e.get("group_value", "") or (e.get("fbcyl") or {}).get("competition_id", ""), (e.get("conference") or "").lower())
         if key in seen:
             raise ValueError(f"competitions entry #{i}: {e['competition']} {e['season_label']} is listed twice")
         seen.add(key)
@@ -114,8 +141,13 @@ def _fbcyl_entry(entry: Dict[str, Any]) -> Any:
 
 
 def refresh_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
-    """What the refresh scrapes: the active entries, every group of each FEB competition and the FBCYL groups listed."""
-    return [_fbcyl_entry(e) if e["league"] == "fbcyl" else _refresh_entry(e, []) for e in catalogue if e["active"]]
+    """What the refresh scrapes: the active entries, every group of each FEB competition and the FBCYL groups listed. The external sources have their own jobs (``external_entries``): a failure of theirs never stops this one."""
+    return [_fbcyl_entry(e) if e["league"] == "fbcyl" else _refresh_entry(e, []) for e in catalogue if e["active"] and e["league"] not in EXTERNAL_LEAGUES]
+
+
+def external_entries(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The active external competitions (ACB, FIBA, NCAA), in the order of the catalogue: what their own refresh jobs and the publication of the external data read (#884)."""
+    return [e for e in catalogue if e["active"] and e["league"] in EXTERNAL_LEAGUES]
 
 
 def package_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
