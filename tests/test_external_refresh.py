@@ -4,7 +4,6 @@ A source is an object registered by name that hands over the games of a competit
 unreliable game is KEPT and flagged, nothing is discarded), merges it by ``_id`` into the archive of the source (the format of the private archive: one ``.jsonl.gz`` per competition with its sha256) and writes
 ``status.json``: when it ran, when it last worked and how many games it has. A failing source never stops another one and never touches its own archive. The tests use a source built on REAL FEB games badged as the source.
 """
-import copy
 import json
 import sys
 from datetime import datetime, timedelta, timezone
@@ -13,11 +12,9 @@ from pathlib import Path
 import mongomock
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
+from market_helpers import FixtureSource  # noqa: E402  (it also puts tests/local_vectors on the path)
 
 import games  # noqa: E402
-
-from market_helpers import badged  # noqa: E402
 
 from src.external import registry  # noqa: E402
 from src.external.refresh import refresh_source, run_sources  # noqa: E402
@@ -25,17 +22,6 @@ from src.services.competition_catalogue import external_collections, load_catalo
 
 ROOT = Path(__file__).resolve().parents[1]
 NOW = datetime(2026, 11, 17, 7, 0, tzinfo=timezone.utc)
-SAMPLE = ROOT / "src" / "JSON_samples" / "feb_game.json"
-
-
-def _unwrap(node):
-    if isinstance(node, dict):
-        if len(node) == 1 and next(iter(node)) in ("$numberInt", "$numberLong"):
-            return int(next(iter(node.values())))
-        if len(node) == 1 and next(iter(node)) == "$oid":
-            return next(iter(node.values()))
-        return {k: _unwrap(v) for k, v in node.items()}
-    return [_unwrap(v) for v in node] if isinstance(node, list) else node
 
 
 def _catalogue(tmp_path, *sources):
@@ -43,21 +29,6 @@ def _catalogue(tmp_path, *sources):
     path = tmp_path / "competitions.json"
     path.write_text(json.dumps({"competitions": entries}), encoding="utf-8")
     return load_catalogue(path)
-
-
-class FixtureSource:
-    """A source that hands over real FEB games badged as itself: the real sample (play-by-play and box that reconcile) and the 12 games of the fixture league (box only)."""
-
-    def __init__(self, name, docs=None, boom=None):
-        self.name, self.boom, self.asked = name, boom, []
-        sample = _unwrap(json.loads(SAMPLE.read_text(encoding="utf-8")))
-        self.docs = docs if docs is not None else [badged(sample, name), *[badged(g, name) for g in games.build_games()]]
-
-    def fetch(self, entry, since):
-        self.asked.append((entry["competition"], since))
-        if self.boom:
-            raise RuntimeError(self.boom)
-        return copy.deepcopy(self.docs)
 
 
 @pytest.fixture()

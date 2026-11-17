@@ -46,11 +46,25 @@ class ReportIndexEntry(FileEntry):
     teams: int
 
 
+class SourceFreshness(TypedDict):
+    """How fresh the data of an external source is (#884, ``web-data-ext``): its last run (``state`` ``ok`` or ``failed``), when it last worked, and how many games it holds, how many do not reconcile with their
+    official box (kept in the archive, never published) and how many were published. A failed run still publishes the rows of the last good one: the web says «data from <last_ok>»."""
+    source: Literal["acb", "fiba", "ncaa"]
+    state: str
+    ok: bool
+    last_ok: NotRequired[str]
+    finished: NotRequired[str]
+    games: int
+    unreliable: int
+    published: int
+
+
 class WebDataManifest(TypedDict):
     """``index.json``: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope)."""
     schema: int
     v: int
     open_key: NotRequired[str]
+    sources: NotRequired[List[SourceFreshness]]     # only the publication of the external sources (``web-data-ext``, #884)
     rows: List[RowsEntry]
     derived: NotRequired[List[RowsEntry]]
     shots: NotRequired[List[RowsEntry]]
@@ -83,7 +97,7 @@ class ReportIndex(TypedDict):
     reports: List[ReportEntry]
 
 
-MODELS = (Wrap, FileEntry, RowsEntry, ReportIndexEntry, WebDataManifest, ReportEntry, ReportIndex)
+MODELS = (Wrap, FileEntry, RowsEntry, ReportIndexEntry, SourceFreshness, WebDataManifest, ReportEntry, ReportIndex)
 
 
 class ContractError(ValueError):
