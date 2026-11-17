@@ -12,7 +12,6 @@ Per-game averages are recomputed from the summed totals.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from typing import Any, Dict, List
 
 from src.services._team_id import with_team_id

@@ -122,7 +122,6 @@ class RadarChart:
                 continue
 
             league_avg = np.mean(league_values)
-            league_std = np.std(league_values)
             league_min = np.min(league_values)
             league_max = np.max(league_values)
 

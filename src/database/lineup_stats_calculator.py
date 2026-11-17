@@ -1,7 +1,6 @@
 """Calculate statistics for lineup combinations (5, 4, or 3 players together)."""
 
 from typing import Dict, List, FrozenSet, Tuple, Optional
-from collections import defaultdict
 from src.live_core.four_factors import FT_POSSESSION_COST
 from .pbp_stat_counters import add_points, bump, count_rebound, count_shot, empty_stats, first_match
 

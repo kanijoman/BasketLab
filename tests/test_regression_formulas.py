@@ -17,13 +17,9 @@ Coverage impact: pdf_generator, stats_calculator, advanced_stats, team_stats_agg
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict
 from unittest.mock import MagicMock
 
-import numpy as np
-import pytest
 
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
@@ -294,7 +290,6 @@ class TestStatsFormulasDataQuality:
     def test_cv_formula_never_exceeds_cap(self):
         """Regression (FASE C): CV% must be capped at 200%."""
         from services._weekly_report_helpers import calc_quartiles
-        import re
         # Near-zero mean scenario (CV would be astronomical without cap)
         values = [0.001, 0.002, 0.001, 0.003, 0.001, 0.002, 0.001, 0.002]
         q_result = calc_quartiles(values)
@@ -304,9 +299,7 @@ class TestStatsFormulasDataQuality:
 
     def test_cv_formula_floor_at_near_zero_mean(self):
         """Regression (FASE C): near-zero mean should use floor, not inf CV."""
-        from services.player_stats_service import PlayerStatsService
         # Create a minimal service instance and test the CV computation
-        svc = MagicMock(spec=PlayerStatsService)
         # The floor is enforced in _compute_cv_for_player which uses max(mean, 1e-9)
         # Test the formula directly
         mean_val = 1e-10  # extremely small

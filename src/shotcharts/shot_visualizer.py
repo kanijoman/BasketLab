@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import gaussian_kde
 
-from .fiba_court import FIBACourt, plot_court
+from .fiba_court import FIBACourt
 from .coordinate_utils import convert_feb_to_fiba
 
 
@@ -484,7 +484,7 @@ class ShotChartVisualizer:
             # breaks = seq(0.1, 1.0, length.out = 10) in R
             levels = np.linspace(0.1, 1.0, 10)
 
-            contourf = ax.contourf(
+            ax.contourf(
                 X, Y, Z,
                 levels=levels,
                 cmap=cmap,

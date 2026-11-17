@@ -12,7 +12,6 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.deps import get_db
-from src.services.collection_service import CollectionService
 from src.services.match_analysis_service import MatchAnalysisService
 
 router = APIRouter()

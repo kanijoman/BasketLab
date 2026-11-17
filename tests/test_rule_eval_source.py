@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
 
 from src.live_prep.eval_source import (
     game_code, games_from_dir, games_from_mongo, parse_starttime, same_start_groups,

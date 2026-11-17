@@ -236,6 +236,6 @@ class TestWithGames:
             inst.calculate_possessions.return_value = gs
             MockPA.return_value = inst
             # FBCYL collection name → is_fbcyl=True
-            result = repo.get_team_possession_stats("FBCYL_SeniorA_2025", "t1")
+            repo.get_team_possession_stats("FBCYL_SeniorA_2025", "t1")
             # Verify PossessionAnalyzer was called with is_fbcyl=True
             MockPA.assert_called_once_with({"_id": "g1"}, is_fbcyl=True)

@@ -12,13 +12,11 @@ Covers new functions added in the dark-theme / CV-badge implementation:
 
 from __future__ import annotations
 
-import io
 import struct
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 
 src_path = Path(__file__).parent.parent / "src"
 if str(src_path) not in sys.path:
@@ -30,7 +28,6 @@ from services._weekly_report_helpers import (
     _CV_NO_BADGE,
     _CELL_BG,
     _CELL_TEXT,
-    _FIG_BG,
     apply_cv_overlay,
     calc_quartiles,
     q_color,

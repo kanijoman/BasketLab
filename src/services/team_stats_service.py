@@ -7,7 +7,6 @@ by FastAPI endpoints and tested without a display server.
 
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from cachetools import TTLCache

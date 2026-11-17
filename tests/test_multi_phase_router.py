@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, patch
+from typing import Dict, List
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient

@@ -3,7 +3,6 @@ Phase 4 quality-gate tests: IN/OUT endpoints.
 """
 from __future__ import annotations
 
-import json
 from unittest.mock import patch
 
 import pytest

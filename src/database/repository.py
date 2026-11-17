@@ -1,7 +1,7 @@
 ﻿"""Repository for basketball data operations."""
 
 import logging
-from typing import Dict, List, Optional, FrozenSet
+from typing import Dict, List, Optional
 from pymongo.errors import PyMongoError
 
 from .connection import MongoDBConnection
@@ -65,7 +65,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             # Convert to int if it's a numeric string, otherwise use as-is (UUID)
             doc_id = int(match_code) if isinstance(match_code, str) and match_code.isdigit() else match_code
             return collection.find_one({"_id": doc_id}) is not None
-        except PyMongoError as e:
+        except PyMongoError:
             return False
 
     def insert_boxscore(self, collection_name: str, match_code: str, boxscore: Dict) -> bool:
@@ -94,7 +94,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             _attach_derived_fields(boxscore)
             collection.insert_one(boxscore)
             return True
-        except PyMongoError as e:
+        except PyMongoError:
             return False
 
     def get_match_for_recheck(self, collection_name: str, match_code) -> Optional[Dict]:
@@ -144,7 +144,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             _attach_derived_fields(match_data)      # exact possessions and validated rebounds (#373)
             collection.insert_one(match_data)
             return True
-        except PyMongoError as e:
+        except PyMongoError:
             return False
 
     def get_team_stats(self, collection_name: str, date_filter: Dict = None, venue_filter: bool = None, result_filter: str = None) -> List[Dict]:
@@ -216,7 +216,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
                 pipeline = AggregationPipelineBuilder.build_opponent_stats_pipeline(date_filter, venue_filter, result_filter)
 
             return list(collection.aggregate(pipeline))
-        except PyMongoError as e:
+        except PyMongoError:
             return []
 
     def get_all_teams(self, collection_name: str) -> List[str]:
@@ -247,7 +247,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
                 teams = collection.distinct("HEADER.TEAM.name")
 
             return sorted(teams)
-        except PyMongoError as e:
+        except PyMongoError:
             return []
 
     def get_teams_with_ids(self, collection_name: str) -> List[Dict]:
@@ -331,7 +331,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
                 pipeline = AggregationPipelineBuilder.build_player_stats_pipeline(date_filter, venue_filter, result_filter, team_filter=team_filter)
 
             return list(collection.aggregate(pipeline))
-        except PyMongoError as e:
+        except PyMongoError:
             return []
 
     def get_aggregated_team_stats(self, collection_name: str, team_name: str) -> Dict:
@@ -349,7 +349,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             return {}
 
         try:
-            collection = self.connection.get_collection(collection_name)
+            self.connection.get_collection(collection_name)
             team_stats = self.get_team_stats(collection_name)
 
             for team in team_stats:
@@ -357,7 +357,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
                     return team
 
             return {}
-        except PyMongoError as e:
+        except PyMongoError:
             return {}
 
     def get_aggregated_opponent_stats(self, collection_name: str, team_name: str) -> Dict:
@@ -375,7 +375,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
             return {}
 
         try:
-            collection = self.connection.get_collection(collection_name)
+            self.connection.get_collection(collection_name)
             opp_stats = self.get_opponent_stats(collection_name)
 
             for opp in opp_stats:
@@ -383,7 +383,7 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
                     return opp
 
             return {}
-        except PyMongoError as e:
+        except PyMongoError:
             return {}
 
     def get_league_stats(self, collection_name: str) -> Dict:
@@ -492,6 +492,6 @@ class BasketballRepository(GamesRepositoryMixin, InOutRepositoryMixin, Possessio
 
             result = list(collection.aggregate(pipeline))
             return result[0] if result else {}
-        except PyMongoError as e:
+        except PyMongoError:
             return {}
 

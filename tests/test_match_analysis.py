@@ -442,7 +442,6 @@ class TestTotalBlockRegression:
 
     def _make_doc_with_total_mismatch(self) -> Dict:
         """Doc where TOTAL has the real score but the single PLAYER has a lower value."""
-        from copy import deepcopy
         doc = _make_feb_doc(match_id=5001, home_pts=72, away_pts=71)
         # Corrupt the PLAYER entry so summing players gives wrong result
         doc["BOXSCORE"]["TEAM"][0]["PLAYER"][0]["pts"] = "40"
@@ -473,7 +472,6 @@ class TestTotalBlockRegression:
 
     def test_fallback_to_player_sum_when_no_total(self):
         """If TOTAL is absent the service must still work via player-row fallback."""
-        from copy import deepcopy
         doc = _make_feb_doc(match_id=5002, home_pts=60, away_pts=55)
         # Remove TOTAL from both teams to simulate missing block
         doc["BOXSCORE"]["TEAM"][0].pop("TOTAL", None)

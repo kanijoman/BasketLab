@@ -174,7 +174,6 @@ class TestTeamsRouter:
                 r = TestClient(app).get(f"{V1}/teams/FEB_LF2_2025_A?from_date=2025-01-01")
             assert r.status_code == 200
             _, kwargs = m.call_args
-            date_filter = kwargs.get("date_filter") or m.call_args[0][1] if m.call_args[0][1:] else None
             # If called with positional args, pick up the second positional arg
             call_kwargs = m.call_args.kwargs if m.call_args.kwargs else {}
             call_args = m.call_args.args if m.call_args.args else ()

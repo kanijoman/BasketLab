@@ -9,7 +9,6 @@ import gzip
 import json
 from pathlib import Path
 
-import pytest
 
 from src.services.pbp_quality_service import PBPQualityService
 

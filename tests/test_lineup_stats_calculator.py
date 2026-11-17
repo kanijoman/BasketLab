@@ -1,7 +1,7 @@
 """Tests for LineupStatsCalculator - Statistics calculation for lineups."""
 
 import unittest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 from src.database.lineup_stats_calculator import LineupStatsCalculator
 
 
@@ -403,7 +403,6 @@ class TestLineupStatsCalculatorIntegration(unittest.TestCase):
         ]
         
         calculator = LineupStatsCalculator(mock_analyzer)
-        lineup = frozenset(['P1', 'P2', 'P3', 'P4', 'P5'])
         
         # This would normally call the full calculation
         # We're testing the structure, not the full pipeline

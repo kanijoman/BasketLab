@@ -41,7 +41,7 @@ class PossessionRepositoryMixin:
             return {}
 
         try:
-            from .playbyplay_analyzer import PossessionAnalyzer
+            from .playbyplay_analyzer import PossessionAnalyzer  # noqa: F401  (tests patch this name)
 
             is_fbcyl = _is_fbcyl(collection_name)
             # Narrow projection: only the fields PossessionAnalyzer actually reads

@@ -3,7 +3,6 @@
 The rebound rule is the tracker's: offensive when the rebounding team is the one that missed. The official FEB box
 score does not credit team rebounds (lines without a player), so they are not counted here for FEB.
 """
-import pytest
 
 from src.pbp.possession_core import count_quality_pbp_metrics
 

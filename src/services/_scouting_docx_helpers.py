@@ -16,7 +16,7 @@ def write_table(
     no_wrap: bool = False,
 ) -> None:
     """Compact table with bold header and small font. Optional per-column widths in cm."""
-    from docx.shared import Pt, Cm
+    from docx.shared import Pt
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.oxml.ns import qn
     from docx.oxml import OxmlElement

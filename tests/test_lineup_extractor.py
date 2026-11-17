@@ -1,7 +1,7 @@
 """Tests for LineupExtractor - Lineup detection and combination extraction."""
 
 import unittest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 from src.database.lineup_extractor import LineupExtractor
 
 
@@ -48,7 +48,7 @@ class TestLineupExtractor(unittest.TestCase):
         mock_analyzer.is_fbcyl = False
         mock_analyzer.parse_substitutions.return_value = self.mock_substitutions
         
-        extractor = LineupExtractor(mock_analyzer)
+        LineupExtractor(mock_analyzer)
         
         # Mock get_player_court_segments to return expected segments
         def mock_segments(player_id):
@@ -300,7 +300,6 @@ class TestLineupExtractorEdgeCases(unittest.TestCase):
     def test_no_substitutions(self):
         """Test scenario with no substitutions (same 5 players entire game)."""
         # Test the accumulation logic when one lineup plays entire game
-        lineup = frozenset(['P1', 'P2', 'P3', 'P4', 'P5'])
         game_duration = 2400  # 40 minutes
         
         # If lineup appears at every timestamp (sampling every 5s)

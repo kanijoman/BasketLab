@@ -1,6 +1,6 @@
 """Per-game raw team pipeline (one document per team per match)."""
 
-from typing import List, Dict, Optional
+from typing import List, Dict
 from .basic_stats import get_shooting_percentages, get_per_game_stats  # noqa: F401
 from .advanced_stats import get_all_advanced_stats  # noqa: F401
 from .pipeline_team_stats import TeamStatsPipelineMixin

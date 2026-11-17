@@ -1,13 +1,11 @@
 """FBCYL website scraper for seasons, gender, territory, category, and competitions."""
 
-import re
 import json
 import base64
 import requests
 from bs4 import BeautifulSoup
 from typing import List, Dict, Tuple, Optional, Any
 
-from utils import normalize_year, get_form_field_name, get_event_target
 from .web_client import WebClient
 
 
@@ -236,7 +234,7 @@ class FBCYLWebScraper:
 
             return categories
 
-        except Exception as e:
+        except Exception:
             return []
 
     def fetch_competitions_ajax(self, categoria: str, genere: str = "", territorial: str = "0") -> List[Tuple[str, str]]:
@@ -280,7 +278,7 @@ class FBCYLWebScraper:
 
             return competitions
 
-        except Exception as e:
+        except Exception:
             return []
 
     def get_hidden_fields(self, soup: BeautifulSoup) -> Dict[str, str]:
@@ -416,7 +414,7 @@ class FBCYLWebScraper:
 
             return match_uuids
 
-        except Exception as e:
+        except Exception:
             return []
 
     def _extract_match_uuids_from_json(self, json_data: Dict[str, Any], round_filter: int = 0) -> List[str]:
@@ -447,7 +445,7 @@ class FBCYLWebScraper:
                     if uuid and len(uuid) == 24:
                         match_uuids.append(uuid)
 
-        except Exception as e:
+        except Exception:
             pass
 
         return match_uuids
@@ -470,7 +468,7 @@ class FBCYLWebScraper:
 
         try:
             return response.json()
-        except Exception as e:
+        except Exception:
             return None
 
     def get_match_json_stats(self, match_uuid: str) -> Optional[Dict]:
@@ -492,7 +490,7 @@ class FBCYLWebScraper:
 
         try:
             return response.json()
-        except Exception as e:
+        except Exception:
             return None
 
     def get_match_complete_data(

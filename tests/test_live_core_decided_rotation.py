@@ -3,7 +3,6 @@
 "Decided" is the existing criterion (|margin| >= decided_margin with less than decided_remaining_s left of the 4th period).
 """
 
-import dataclasses
 
 from live_helpers import OWN, RIVAL, TABLE, snap as bench_snap
 from src.live_core.advice import AdviceEngine

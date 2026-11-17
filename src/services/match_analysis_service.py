@@ -297,7 +297,7 @@ def _with_pbp(stats: Dict, game: Optional[Dict]) -> Tuple[Dict, Optional[float]]
 def _compute_advanced(stats: Dict, opp: Dict, poss: Optional[float] = None, opp_poss: Optional[float] = None) -> Dict:
     """Compute Four Factors + possession-based ratings for one team (``poss``: exact possessions, else the estimate)."""
     fga, fgm  = stats["fga"], stats["fgm"]
-    p3m, p3a  = stats["p3m"], stats["p3a"]
+    p3m, _p3a  = stats["p3m"], stats["p3a"]
     p1a       = stats["p1a"]
     orb       = stats["orb"]
     opp_drb   = opp["drb"]

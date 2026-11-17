@@ -89,7 +89,7 @@ def test_a_group_that_is_not_a_phase_takes_every_tie_of_its_series_pages(monkeyp
 
 
 def test_a_group_with_a_calendar_does_not_touch_the_series(monkeypatch):
-    from tests.test_group_calendar_client import CALENDAR, page
+    from tests.test_group_calendar_client import page
 
     site = Site({URL: page(selected="89999")}).install(monkeypatch)
     assert schedule_client.http_group_calendar(URL, "2026", "89999")

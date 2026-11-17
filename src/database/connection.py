@@ -69,7 +69,7 @@ class MongoDBConnection:
             MongoDB collection instance or None if not connected
         """
         if not self.is_connected():
-            print(f"[MongoDBConnection] No connection to MongoDB")
+            print("[MongoDBConnection] No connection to MongoDB")
             return None
         return self.db[collection_name]
 

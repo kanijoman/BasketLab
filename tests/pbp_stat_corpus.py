@@ -11,7 +11,7 @@ import itertools
 import json
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, Tuple
 from unittest.mock import MagicMock
 
 ROOT = Path(__file__).resolve().parent.parent

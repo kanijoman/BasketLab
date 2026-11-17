@@ -7,7 +7,7 @@ import copy
 
 import pytest
 
-from live_helpers import TABLE, z
+from live_helpers import TABLE
 from src.live_core.advice import AdviceEngine
 from src.live_core.config import RuleConfig
 from tests.builders import OWN, RIVAL, _player, ff_snap, snap

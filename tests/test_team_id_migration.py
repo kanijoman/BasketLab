@@ -7,7 +7,6 @@ RED → GREEN cycle (all tests fail before implementation):
 4. test_weekly_report_no_full_load  — _extract_shots never calls coll.find({}) (OOM regression)
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 # ---------------------------------------------------------------------------

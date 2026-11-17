@@ -11,10 +11,7 @@ This script:
 5. Creates visualization with color-coded zones (Red-Amber-Green based on %)
 """
 
-import json
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from matplotlib.colors import LinearSegmentedColormap
 from typing import Dict, List, Optional, Sequence, Tuple
 from pathlib import Path
@@ -320,7 +317,7 @@ class ZoneAnalyzer:
 
                 # Get optimized label position
                 label_x, label_y = label_positions[zone_key]
-                label_text = f"0/0\n0%"
+                label_text = "0/0\n0%"
 
             # Plot zone polygon with HIGH visibility
             if hasattr(polygon, 'exterior'):
@@ -424,7 +421,7 @@ class ZoneAnalyzer:
         print(f"Total shots in game: {stats['total_shots']}")
 
         # Basketball insights
-        print(f"\\n🏀 BASKETBALL INSIGHTS:")
+        print("\\n🏀 BASKETBALL INSIGHTS:")
         print(f"   📊 Overall efficiency: {overall_percentage:.1f}%")
 
         # Analyze 2PT vs 3PT performance

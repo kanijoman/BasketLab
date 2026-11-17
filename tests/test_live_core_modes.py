@@ -7,7 +7,6 @@ from collections import Counter
 from dataclasses import fields
 from pathlib import Path
 
-import pytest
 
 from src.live_core.config import RuleConfig
 from src.live_core.package import PreparationPackage

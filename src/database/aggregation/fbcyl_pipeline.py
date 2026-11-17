@@ -17,7 +17,7 @@ Summary:
 - Play-by-play analysis → use teamIdIntern (matches moves[].idTeam)
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict
 from datetime import datetime, time
 
 from .fbcyl_date_expr import parse_day_stages

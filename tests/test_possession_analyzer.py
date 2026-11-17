@@ -11,7 +11,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
 from unittest.mock import patch
 
 src_path = Path(__file__).parent.parent / "src"

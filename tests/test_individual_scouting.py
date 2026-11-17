@@ -7,9 +7,6 @@ Covers:
 - Module-level helpers: _safe, _fmt_min, _quartile_fill
 """
 
-import io
-import zipfile
-import pytest
 from unittest.mock import MagicMock, patch
 
 from src.services.individual_scouting_service import (

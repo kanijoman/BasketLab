@@ -9,3 +9,4 @@ mongomock>=4.1.0
 httpx>=0.27.0
 pyyaml>=6.0
 hypothesis>=6.100   # invariants of the live engine on generated games (issue #544)
+ruff>=0.5   # only the pyflakes rules (ruff.toml, #955): tests/test_lint_pyflakes.py runs it with the suite

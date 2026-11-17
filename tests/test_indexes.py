@@ -9,7 +9,6 @@ Covers:
 - drop_index() behavior
 """
 
-import pytest
 from unittest.mock import MagicMock
 
 from db_helpers import new_mock_db  # noqa: E402

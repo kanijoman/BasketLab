@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-from src.local_data.archive import META, META_FILE, MANIFEST, _meta_bytes, _read_meta, _write_if_changed
+from src.local_data.archive import META_FILE, MANIFEST, _meta_bytes, _read_meta, _write_if_changed
 
 
 class NothingToPurge(ValueError):

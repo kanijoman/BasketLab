@@ -15,17 +15,13 @@ The 10-zone system provides tactical precision:
 All zones maintain non-overlapping properties and proper geometric division.
 """
 
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon as MplPolygon
-from matplotlib.collections import PatchCollection
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, Tuple, Optional
 from shapely.geometry import Polygon as ShapelyPolygon, Point
 from shapely.ops import unary_union
 import matplotlib.patches as mpatches
 
 from .court_zones import CourtZones
-from .fiba_court import FIBACourt
 
 
 class DetailedCourtZones(CourtZones):

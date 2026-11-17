@@ -6,7 +6,6 @@ and calculating league-wide quartiles for comparative analysis.
 """
 
 import numpy as np
-from typing import Dict, List, Any, Optional
 
 from utils.numeric_utils import safe_float
 
@@ -101,7 +100,7 @@ class TeamStatsAggregator:
             # Return empty dict if team not found
             return {}
 
-        except Exception as e:
+        except Exception:
             import traceback
             traceback.print_exc()
             return {}
@@ -175,7 +174,7 @@ class TeamStatsAggregator:
 
             return quartiles
 
-        except Exception as e:
+        except Exception:
             import traceback
             traceback.print_exc()
             return {}

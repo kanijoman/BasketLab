@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import io
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 from fpdf import FPDF
 from matplotlib.backends.backend_agg import FigureCanvasAgg
