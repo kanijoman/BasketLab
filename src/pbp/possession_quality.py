@@ -6,7 +6,7 @@ FBCYL carries its own offensive/defensive label.
 """
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, Iterable, List
 
 from .game_events import game_events
 
@@ -16,9 +16,14 @@ _SHOT_KEYS = {"fg2": ("T2M", "T2A"), "fg3": ("T3M", "T3A"), "ft": ("T1M", "T1A")
 
 def count_quality_pbp_metrics(game_data: Dict, is_fbcyl: bool, team_ids: List[str]) -> Dict[str, Dict[str, int]]:
     """Count per-team quality metrics from the play-by-play events."""
+    return count_quality_events(game_events(game_data, is_fbcyl), is_fbcyl, team_ids)
+
+
+def count_quality_events(events: Iterable, is_fbcyl: bool, team_ids: List[str]) -> Dict[str, Dict[str, int]]:
+    """The same counts over the events given (the reconciliation of the external sources passes them without the lines the table deleted, #884)."""
     counts = {tid: {metric: 0 for metric in QUALITY_METRICS} for tid in team_ids}
     last_miss = None
-    for ev in sorted(game_events(game_data, is_fbcyl), key=lambda e: (e.elapsed, e.num)):
+    for ev in sorted(events, key=lambda e: (e.elapsed, e.num)):
         team = counts.get(ev.team_id)
         if team is None:
             continue
