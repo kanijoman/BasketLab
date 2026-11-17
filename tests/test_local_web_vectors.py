@@ -26,7 +26,6 @@ OUT = vectors.OUT
 def handler(monkeypatch):
     monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
     yield vectors.fixture_handler()
-    vectors.deps._create_handler.cache_clear()
 
 
 def _manifest() -> dict:

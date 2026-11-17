@@ -96,7 +96,6 @@ def test_what_the_exporter_writes_today_satisfies_the_contract(tmp_path):
         manifest = publish_web_data(handler, tmp_path, ScopedSealer("a-master-secret-for-the-tests", open_access=False), [vectors.FEB])
     finally:
         pymongo.MongoClient = original
-        vectors.deps._create_handler.cache_clear()
     validate_manifest(manifest)
     for entry in manifest["reports"]:
         validate_report_index(json.loads((tmp_path / entry["file"]).read_text(encoding="utf-8")))
