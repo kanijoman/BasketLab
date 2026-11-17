@@ -121,7 +121,7 @@ export const loadWebScouting = (collection: string, teamId: string, scope: Scout
 export const loadWebCollections = async (): Promise<string[]> => (await loadManifest()).rows.map(r => r.collection)
 
 /** What the manifest says of each published competition (name, league, games and, when it is known, gender): the list of competitions of the web, issue #705; the gender picks the calibrated win probability (#843). */
-export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: 'feb' | 'fbcyl'; games: number; gender?: 'F' | 'M' }>> {
+export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: WebDataManifest['rows'][number]['league']; games: number; gender?: 'F' | 'M' }>> {
   return (await loadManifest()).rows.map(({ collection, league, games, gender }) => ({ collection, league, games, ...(gender ? { gender } : {}) }))
 }
 

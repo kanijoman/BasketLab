@@ -25,7 +25,9 @@ DEFAULT_CATALOGUE = "config/competitions.json"
 ALL_GROUPS = "all"
 _REQUIRED = ("competition", "competition_url", "season_label", "season_value")
 _REQUIRED_FBCYL = ("competition", "season_label", "season_value")
-EXTERNAL_LEAGUES = ("acb", "fiba", "ncaa")
+from src.utils.collection_utils import EXTERNAL_SOURCES
+
+EXTERNAL_LEAGUES = EXTERNAL_SOURCES
 LEAGUES = ("feb", "fbcyl", *EXTERNAL_LEAGUES)
 CONFERENCE_REQUIRED = ("ncaa",)                 # the sources whose competitions are split by conference
 _REQUIRED_EXTERNAL = ("competition", "season_label", "season_value", "division")
@@ -148,6 +150,14 @@ def refresh_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:
 def external_entries(catalogue: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """The active external competitions (ACB, FIBA, NCAA), in the order of the catalogue: what their own refresh jobs and the publication of the external data read (#884)."""
     return [e for e in catalogue if e["active"] and e["league"] in EXTERNAL_LEAGUES]
+
+
+def external_collections(catalogue: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """``{collection name: entry}`` of the active external competitions: ``<SOURCE>_<competition>_<season>_<conference>`` (``NCAA_D1_2026_SEC``), so the source reads from the name (``source_of``)
+    and a conference is its own collection (#884)."""
+    from src.database import get_collection_name
+
+    return {get_collection_name(f"{e['league'].upper()}_{e['competition']}", e["season_value"], e.get("conference") or ""): e for e in external_entries(catalogue)}
 
 
 def package_entries(catalogue: List[Dict[str, Any]]) -> List[Any]:

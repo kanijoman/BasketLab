@@ -15,7 +15,7 @@ from src.local_data.payload_format import FORMAT  # noqa: F401  (re-exported: th
 from src.database.aggregation import AggregationPipelineBuilder
 from src.database.aggregation.fbcyl_per_game_pipeline import build_fbcyl_season_rows_pipeline
 from src.database.aggregation.fbcyl_player_rows import build_fbcyl_season_player_rows_pipeline
-from src.utils.collection_utils import is_fbcyl
+from src.utils.collection_utils import is_fbcyl, source_of
 
 INDEX = "index.json"
 
@@ -75,7 +75,7 @@ def export_collection(collection: Any, name: str) -> Dict[str, Any]:
     fbcyl = is_fbcyl(name)
     team_rows = _rows(collection, build_fbcyl_season_rows_pipeline() if fbcyl else AggregationPipelineBuilder.build_season_rows_pipeline())
     player_rows = fbcyl_player_rows(collection) if fbcyl else _rows(collection, AggregationPipelineBuilder.build_season_player_rows_pipeline())
-    return {"format": FORMAT, "collection": name, "league": "fbcyl" if fbcyl else "feb", "games": len({r["match_id"] for r in team_rows}),
+    return {"format": FORMAT, "collection": name, "league": source_of(name) or ("fbcyl" if fbcyl else "feb"), "games": len({r["match_id"] for r in team_rows}),
             "team_rows": team_rows, "player_rows": player_rows}
 
 

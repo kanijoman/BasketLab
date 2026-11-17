@@ -24,7 +24,7 @@ export interface RowsEntry {
   bytes: number
   sha256: string
   collection: string
-  league: 'feb' | 'fbcyl'
+  league: 'feb' | 'fbcyl' | 'acb' | 'fiba' | 'ncaa'
   games: number
   wraps: Wrap[]
   category?: 'senior' | 'formacion'
