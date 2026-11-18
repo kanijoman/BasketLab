@@ -16,6 +16,7 @@ import { Outlet, Link, useParams } from 'react-router-dom'
 import { ChevronRight, Home, ExternalLink, Menu } from 'lucide-react'
 import Sidebar, { MobileNav } from '@/components/Sidebar'
 import CollectionSwitcher from '@/components/CollectionSwitcher'
+import SourceFreshnessNotice from '@/components/SourceFreshnessNotice'
 import { IconButton } from '@/components/ui/Button'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import ThemeControl from '@/components/ThemeControl'
@@ -110,6 +111,7 @@ function Shell() {
         {/* Page content */}
         <main id="contenido" tabIndex={-1} className="flex-1 min-w-0 overflow-y-auto focus:outline-none">
           <div className="p-3 sm:p-5 max-w-[1600px] mx-auto min-h-full">
+            <SourceFreshnessNotice />
             <PageErrorBoundary>
               <Outlet />
             </PageErrorBoundary>

@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Layout from './Layout'
 import * as client from '@/api/client'
+import * as webdata from '@/webdata/client'
 
 const phone = (matches: boolean) => vi.stubGlobal('matchMedia', (query: string) => ({
   matches: matches && query.includes('max-width'), media: query, addEventListener: () => undefined, removeEventListener: () => undefined }))
@@ -90,3 +91,25 @@ describe('Layout API data tag (issues #327, #334)', () => {
     expect(title).not.toContain('team-report,')
   })
 })
+
+// #884 (PR C): the notice of a stale external source sits under the header, above every page of an external competition, and only there.
+describe('Layout notice of a stale external source (#884)', () => {
+  const failed = { source: 'ncaa', state: 'failed', ok: false, last_ok: '2026-11-17T07:00:00Z', finished: '2026-11-18T07:00:00Z', games: 13, unreliable: 12, published: 1 } as const
+
+  it('shows it above the page of an external competition whose source failed', async () => {
+    vi.spyOn(webdata, 'loadSourceFreshness').mockResolvedValue([failed])
+    shell('/NCAA_D1_2026_SEC/teams')
+    const notice = await screen.findByRole('status')
+    expect(notice).toHaveTextContent('Datos de NCAA del 17/11: la última actualización falló.')
+    expect(notice.compareDocumentPosition(screen.getByText('Página')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()      // before the page, not after
+  })
+
+  it('does not show it on a competition of FEB, nor ask for it', async () => {
+    const asked = vi.spyOn(webdata, 'loadSourceFreshness').mockResolvedValue([failed])
+    shell('/LF2/teams')
+    await screen.findByText('Página')
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(asked).not.toHaveBeenCalled()
+  })
+})
+
