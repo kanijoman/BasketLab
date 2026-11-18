@@ -23,9 +23,13 @@ def _status(folder: Path) -> Dict[str, Any]:
 
 
 def _facts(entry: Dict[str, Any]) -> Dict[str, Any]:
-    """What the selector reads of an external competition: senior, its name and, for NCAA, its conference as the group."""
-    label = entry.get("label") or f"{entry['league'].upper()} {entry['competition']}"
-    return {"category": "senior", "label": label, **({"group_label": entry["conference"]} if entry.get("conference") else {})}
+    """What the selector reads of an external competition: its category and age group (a youth championship of FIBA is ``formacion`` with its ``U16`` or ``U18``, as in the catalogue), the name people read and,
+    for NCAA, its conference as the group."""
+    from src.services.competition_category import category_facts
+
+    facts = category_facts(entry)
+    facts.setdefault("label", f"{entry['league'].upper()} {entry['competition']}")
+    return {**facts, **({"group_label": entry["conference"]} if entry.get("conference") else {})}
 
 
 def publish_external(archive_dir: Path, out_dir: Path, catalogue: List[Dict[str, Any]], handler: Any, sealer: Any) -> Dict[str, Any]:

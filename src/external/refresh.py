@@ -22,6 +22,7 @@ STATUS = "status.json"
 DEFAULT_WINDOW_DAYS = 3                       # the sources correct games after the fact: the last days are asked again on every run
 _STAMP = "%Y-%m-%dT%H:%M:%SZ"
 _REASONS = 5                                  # how many rejected games the status lists (the count is complete)
+_NOTES = 20                                   # and how many notes of the source
 
 
 def _stamp(now: datetime) -> str:
@@ -90,15 +91,18 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
             load_archive(folder, db)
         since, rejected, totals = _since(previous, window_days), [], {"new": 0, "updated": 0}
         for name, entry in collections.items():
-            counts = _merge(db[name], SOURCES[source].fetch(entry, since), entry["gender"], rejected)
+            known = frozenset(doc["_id"] for doc in db[name].find({}, {"_id": 1}))
+            counts = _merge(db[name], SOURCES[source].fetch(entry, since, known), entry["gender"], rejected)
             totals = {k: totals[k] + counts[k] for k in totals}
         dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
     except Exception as error:  # noqa: BLE001 - whatever the source does wrong stays in its own status
         status["error"] = f"{type(error).__name__}: {error}"[:300]
     else:
         stored = [d for name in collections for d in db[name].find({}, {"_reliable": 1})]
+        notes = list(getattr(SOURCES[source], "notes", []))
         status.update({"state": "ok", "ok": True, "last_ok": _stamp(now), "window_days": window_days, "competitions": list(collections), "games": len(stored), **totals,
-                       "unreliable": sum(1 for d in stored if not d.get("_reliable")), "rejected": rejected[:_REASONS], "rejected_total": len(rejected)})
+                       "unreliable": sum(1 for d in stored if not d.get("_reliable")), "rejected": rejected[:_REASONS], "rejected_total": len(rejected),
+                       **({"notes": notes[:_NOTES], "notes_total": len(notes)} if notes else {})})
     folder.mkdir(parents=True, exist_ok=True)
     (folder / STATUS).write_text(json.dumps(status, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return status

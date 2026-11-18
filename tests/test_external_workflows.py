@@ -70,6 +70,14 @@ class TestArchiveExtRefresh:
         assert "Archive refresh" not in content and "restore-archive" not in content and "ARCHIVE_DEPLOY_KEY" not in content.replace("ARCHIVE_EXT_DEPLOY_KEY", "")     # it never reads nor writes the archive of FEB
         assert not any("needs" in job and "archive" in str(job["needs"]).lower() and job is not data["jobs"]["refresh"] for job in data["jobs"].values())
 
+    def test_a_manual_run_can_say_how_many_games_to_ask_for_and_the_scheduled_one_uses_the_default(self, wf):
+        data = wf[0]
+        inputs = data["on"]["workflow_dispatch"]["inputs"]
+        assert inputs["budget"]["required"] is False and not inputs["budget"].get("default")        # empty: the default of the source
+        step = next(s for s in data["jobs"]["refresh"]["steps"] if "run_external_refresh.py --source" in s.get("run", ""))
+        assert "--budget" in step["run"] and "BUDGET" in step["env"] and "inputs.budget" in step["env"]["BUDGET"]
+        assert '${BUDGET:+--budget "$BUDGET"}' in step["run"]                                    # no --budget at all when it is empty
+
     def test_a_failed_run_still_reports_its_freshness(self, wf):
         run = "\n".join(s.get("run", "") for s in wf[0]["jobs"]["refresh"]["steps"])
         assert "status.json" in run or "--source" in run

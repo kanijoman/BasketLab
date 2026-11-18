@@ -15,8 +15,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, List, Optional
 
-from src.external.refresh import DEFAULT_WINDOW_DAYS, refresh_source
-from src.services.competition_catalogue import DEFAULT_CATALOGUE, EXTERNAL_LEAGUES, external_entries, load_catalogue
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))                # as the other entry points: ``utils`` and the rest of ``src`` import each other by their short name
+
+from src.external.refresh import DEFAULT_WINDOW_DAYS, refresh_source  # noqa: E402
+from src.external.sources import register_defaults  # noqa: E402
+from src.services.competition_catalogue import DEFAULT_CATALOGUE, EXTERNAL_LEAGUES, external_entries, load_catalogue  # noqa: E402
 
 
 def _database(db: Any = None) -> Any:
@@ -27,12 +30,23 @@ def _database(db: Any = None) -> Any:
     return MongoClient(os.environ["MONGODB_CONNECTION_STRING"])[os.environ.get("MONGODB_DATABASE", "BASKETBALL")]
 
 
+def _positive(text: str) -> int:
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a whole number") from None
+    if value < 1:
+        raise argparse.ArgumentTypeError("the budget must be 1 or more")
+    return value
+
+
 def main(argv: Optional[List[str]] = None, db: Any = None, now: Optional[datetime] = None) -> int:
     parser = argparse.ArgumentParser(description="Refresh an external source into its own archive")
     parser.add_argument("--catalogue", default=DEFAULT_CATALOGUE)
     parser.add_argument("--out", default="archive-ext")
     parser.add_argument("--source", choices=EXTERNAL_LEAGUES)
     parser.add_argument("--window-days", type=int, default=DEFAULT_WINDOW_DAYS)
+    parser.add_argument("--budget", type=_positive, default=None, help="how many games a run may ask the source for (the default of the source when absent: 300 for FIBA, one request every 2 s)")
     parser.add_argument("--list-sources", action="store_true", help="print the sources with an active competition, as JSON, and exit")
     args = parser.parse_args(argv)
     catalogue = load_catalogue(args.catalogue)
@@ -41,6 +55,7 @@ def main(argv: Optional[List[str]] = None, db: Any = None, now: Optional[datetim
         return 0
     if not args.source:
         parser.error("--source is required (or --list-sources)")
+    register_defaults(args.source, args.budget)                         # the real source, unless one is already registered (the tests register their own)
     status = refresh_source(args.source, catalogue, _database(db), Path(args.out), now or datetime.now(timezone.utc), args.window_days)
     print(json.dumps(status, ensure_ascii=False, indent=1))
     return 1 if status["ok"] is False else 0
