@@ -15,7 +15,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
 from src.external.fiba_canonical import to_canonical  # noqa: E402
 from src.external.fiba_page import parse_game  # noqa: E402
-from src.market.box_reconciliation import CORE_STATS, UNCHECKED, reconcile_game, summarize  # noqa: E402
+from src.market.box_reconciliation import CORE_STATS, reconcile_game, summarize  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures" / "fiba"
 GAMES = ["125809", "125803", "125812", "125859", "123004", "123043"]
@@ -87,7 +87,7 @@ def build_summary() -> Dict[str, Any]:
             gaps += [abs(worked[p["person_id"]] - _seconds(p["stats"]["TP"])) for p in team["players"] if played(p)]
     summary = summarize(results)
     return {"games": summary["games"], "team_games": summary["games"] * 2, "reliable": summary["reliable"], "unreliable": summary["unreliable"], "stats": summary["stats"], "detail": detail,
-            "minutes": {"player_games": len(gaps), "exact": sum(1 for g in gaps if g == 0), "within_2_s": sum(1 for g in gaps if g <= 2), "worst_s": max(gaps)}, "unchecked": summary["unchecked"]}
+            "minutes": {"player_games": len(gaps), "exact": sum(1 for g in gaps if g == 0), "within_2_s": sum(1 for g in gaps if g <= 2), "worst_s": max(gaps)}, "reconciled_minutes": summary["minutes"], "unchecked": summary["unchecked"]}
 
 
 def render(summary: Dict[str, Any]) -> str:
@@ -100,7 +100,8 @@ def render(summary: Dict[str, Any]) -> str:
         lines.append(f"| {stat} | {entry['match']} de {entry['checked']} | {'central' if stat in CORE_STATS else 'informativa'} |")
     m = summary["minutes"]
     lines += ["", f"Minutos (calculados desde las sustituciones y el quinteto inicial de la ficha): **{m['player_games']} jugador-partido**, {m['exact']} exactos y {m['within_2_s']} a 2 s o menos de la caja oficial (el peor, {m['worst_s']} s).", "",
-              "Sin comprobar: " + ", ".join(summary["unchecked"] or UNCHECKED) + " en `reconcile_game` (#963; aquí medido aparte) y el mapa de tiro (FIBA da las coordenadas; falta llevarlas a las zonas del motor)."]
+              f"En `reconcile_game` (#963) los minutos se cuadran por jugador-partido: **{summary['reconciled_minutes']['match']} de {summary['reconciled_minutes']['checked']}** dentro de la tolerancia, sin descartar el partido.", "",
+              "Sin comprobar: " + (", ".join(summary["unchecked"]) + " y " if summary["unchecked"] else "") + "el mapa de tiro (FIBA da las coordenadas; falta llevarlas a las zonas del motor)."]
     return "\n".join(lines) + "\n"
 
 
