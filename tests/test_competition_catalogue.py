@@ -173,7 +173,7 @@ class TestViews:
 
 
 # the seasons of the history and youth championships loaded so far (#876): one batch of seasons at a time, so the refresh of FEB keeps its time
-LOADED_SEASONS = {"2022", "2023", "2024", "2025"}
+LOADED_SEASONS = {"2020", "2021", "2022", "2023", "2024", "2025"}
 
 
 class TestTheRealCatalogue:
@@ -210,11 +210,11 @@ class TestTheRealCatalogue:
         assert all(e["groups"] == "all" and e["record"] == [] for e in history)
 
     def test_only_the_seasons_of_the_batches_loaded_so_far_are_active_and_the_big_tercera_waits_for_its_own_batches(self):
-        """Batch 1 of #876 (2023 and 2022); each new batch changes ``LOADED_SEASONS`` here and in the youth test above, and nothing else."""
+        """Batches of #876 (2023 and 2022, then 2021 and 2020); each new batch changes ``LOADED_SEASONS`` here and in the youth test above, and nothing else."""
         history = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and "C ESP" not in e["competition"] and "SSAA" not in e["competition"]]
         senior = ("LF ENDESA", "PRIMERA FEB", "SEGUNDA FEB", "L.F.-2", "LF CHALLENGE")
         assert {(e["competition"], e["season_value"]) for e in history if e["active"]} == (
-            {(c, y) for c in senior for y in sorted(LOADED_SEASONS)} | {("COPA ESPAÑA", "2024"), ("COPA ESPAÑA", "2025"), ("LIGA U", "2025")})
+            {(c, y) for c in senior for y in sorted(LOADED_SEASONS) if (c, y) != ("LF CHALLENGE", "2020")} | {("COPA ESPAÑA", "2024"), ("COPA ESPAÑA", "2025"), ("LIGA U", "2025")})
         assert not any(e["active"] for e in history if e["competition"] == "TERCERA FEB")
 
     def test_the_fbcyl_groups_keep_primera_nacional_femenina_a_1_and_a_2_and_add_the_autonomic_cadete_junior_and_senior_ones(self):
