@@ -119,8 +119,9 @@ class _Lines:
             dunk = code == "P2" and "dunk" in text.lower()
             action, text = ("fthrow" if code == "FT" else "shoot"), f"{who}: " + (f"MATE {made}" if dunk else f"TIRO DE {value} {made}")
         elif code in ("REB", "TREB"):
-            kind = "OFENSIVO" if "offensive" in text else "DEFENSIVO"
-            action, text = "rebound", f"{who}: REBOTE {kind}" if code == "REB" else f"{who} REBOTE DE EQUIPO {kind}"
+            lower = text.lower()                                               # the senior game writes ``Offensive rebound``, the U18 ones ``offensive rebound``
+            kind = " OFENSIVO" if "offensive" in lower else " DEFENSIVO" if "defensive" in lower else ""        # a text that says neither is left without a label: the tracker decides
+            action, text = "rebound", f"{who}: REBOTE{kind}" if code == "REB" else f"{who} REBOTE DE EQUIPO{kind}"
         elif code in ("ASS", "ST", "TO", "TTO", "BS"):
             action = {"ASS": "assist", "ST": "recovery", "TO": "lose", "TTO": "lose", "BS": "blockshot"}[code]
             word = {"ASS": "ASISTENCIA", "ST": "RECUPERACIÓN", "TO": "PÉRDIDA", "TTO": "PÉRDIDA DE EQUIPO", "BS": "TAPÓN"}[code]

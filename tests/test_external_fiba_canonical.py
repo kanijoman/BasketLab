@@ -22,7 +22,7 @@ from src.market.canonical import validate_game
 from src.pbp.game_events import game_events
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "fiba"
-GAMES = ["125809", "125803", "125812", "125859", "123004", "123043"]
+GAMES = ["125809", "125803", "125812", "125859", "123004", "123043", "125835", "125814"]
 OVERTIME = "123043"
 WOMEN = {"125859", "123043"}
 
@@ -114,6 +114,44 @@ class TestTheDocument:
         dunks = [e for e in pages["123004"]["events"] if e["code"] == "P2" and "dunk" in (e["text"] or "").lower()]
         if dunks:
             assert sum("MATE" in l["text"] for l in docs["123004"]["PLAYBYPLAY"]["LINES"]) == len(dunks)
+
+
+class TestGamesWhoseEventsAreNotInTheOrderOfTheirClock:
+    """Found on the first real load of the source (18/11/2026): 7 of the 56 games of the U18 EuroBasket 2025 did not reconcile, and only on rebounds. FIBA writes some events late: 104 events of 13 games have a clock
+    that goes back (by a second or two, a few by up to 23), and in 125835 a missed shot entered late shares its second with the rebound that follows it and comes AFTER it in the sequence. Inferring offensive or
+    defensive from the last miss put those rebounds in the wrong place; the page says which each one is (``offensive rebound``), and its official box counts by that."""
+
+    def test_a_missed_shot_entered_late_does_not_change_whose_rebound_it_is(self, pages, docs):
+        result = reconcile_game(docs["125835"])
+        assert result.reliable and result.mismatches() == [], [(c.team_id, c.stat, c.pbp, c.official) for c in result.mismatches()]
+        late = [e for e in pages["125835"]["events"] if e["code"] == "REB"]
+        assert late                                                                    # the game has rebounds the tracker rule used to misplace
+
+    def test_a_game_with_the_clock_of_several_events_going_back_reconciles_too(self, docs):
+        assert reconcile_game(docs["125814"]).reliable
+
+    def test_the_label_of_the_page_is_what_the_lines_say(self, docs):
+        texts = [l["text"] for l in docs["125835"]["PLAYBYPLAY"]["LINES"] if l["action"] == "rebound" and l["idPlayer"]]
+        assert texts and all("REBOTE OFENSIVO" in t or "REBOTE DEFENSIVO" in t for t in texts)
+
+    def test_the_label_does_not_depend_on_how_the_page_capitalises_it(self, pages, docs):
+        """The senior men's game writes ``Offensive rebound`` where the U18 ones write ``offensive rebound``; reading only one of them labelled every rebound of the other as defensive."""
+        for name in ("123004", "125809"):
+            offensive = sum(1 for e in pages[name]["events"] if e["code"] == "REB" and "offensive" in e["text"].lower())
+            assert offensive > 0 and sum("REBOTE OFENSIVO" in l["text"] for l in docs[name]["PLAYBYPLAY"]["LINES"] if l["idPlayer"]) == offensive
+
+    def test_a_rebound_whose_text_says_neither_is_left_without_a_label_for_the_tracker_to_decide(self, pages):
+        odd = copy.deepcopy(pages["125809"])
+        victim = next(e for e in odd["events"] if e["code"] == "REB")
+        victim["text"] = "rebound"
+        line = next(l for l in to_canonical(odd)["PLAYBYPLAY"]["LINES"] if l["action"] == "rebound" and l["idPlayer"] == f"fiba:{victim['player']}" and l["time"] == victim["clock"].rjust(5, "0"))
+        assert "OFENSIVO" not in line["text"] and "DEFENSIVO" not in line["text"] and line["text"].endswith("REBOTE")
+
+    def test_the_lines_keep_the_clock_the_page_wrote_they_are_not_corrected_to_fit(self, pages, docs):
+        """Inventing times to make the sequence monotone would be inventing data: the clock of each line is the page's."""
+        by_order = {(e["period"], e["id"]): e["clock"] for e in pages["125814"]["events"] if e["code"] in ("P2", "P3", "FT")}
+        lines = [l for l in docs["125814"]["PLAYBYPLAY"]["LINES"] if l["action"] in ("shoot", "fthrow")]
+        assert sorted(l["time"] for l in lines) == sorted(f"{int(c.split(':')[0]):02d}:{c.split(':')[1]}" for c in by_order.values())
 
 
 class TestSubstitutions:

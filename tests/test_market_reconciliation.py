@@ -169,3 +169,35 @@ class TestSummary:
     def test_the_summary_of_nothing_is_empty_not_an_error(self):
         report = summarize([])
         assert report["games"] == 0 and report["reliable"] == 0 and report["unreliable"] == []
+
+
+class TestRebounds:
+    """A source that says in each rebound line whether it is offensive or defensive (FIBA's ``REBOTE OFENSIVO``) is counted by what its lines say; one that does not (FEB's ``REBOTE (Rebotes: n)``) by the rule of the
+    possession tracker: offensive when the rebounding team is the one that missed the last shot. The label wins because the official box of such a source counts by the same labels, and an event written late can
+    break the inference: a rebound before the missed shot it follows (#887)."""
+
+    def _doc(self, texts, order):
+        def line(num, action, text, team, player=None, made=None):
+            return {"num": str(num), "quarter": "1", "time": "09:00", "idTeam": team, "idPlayer": player, "idLicense": player, "action": action, "text": text, "deleted": None, "scoreA": "0", "scoreB": "0"}
+        shot = line(2, "shoot", "(A) X: TIRO DE 2 FALLADO", "a", "pa")
+        rebound = line(1, "rebound", texts, "b", "pb")                 # the rebound is written BEFORE the missed shot it follows, with the same clock
+        lines = [rebound, shot] if order == "late" else [shot, rebound]
+        for i, item in enumerate(lines, start=1):
+            item["num"] = str(i)
+        box = lambda team, **extra: {"id": team, "name": team.upper(), "TOTAL": {"p1m": "0", "p1a": "0", "p2m": "0", "p2a": "1" if team == "a" else "0", "p3m": "0", "p3a": "0", **extra}, "PLAYER": []}  # noqa: E731
+        return {"_id": "x", "HEADER": {"TEAM": [{"id": "a", "pts": "0"}, {"id": "b", "pts": "0"}]},
+                "BOXSCORE": {"TEAM": [box("a"), box("b", rd="1", ro="0")]}, "PLAYBYPLAY": {"LINES": lines}}
+
+    def test_a_label_in_the_line_wins_over_the_order_of_the_lines(self):
+        stats = {c.stat: (c.pbp, c.official) for c in reconcile_game(self._doc("(B) Y: REBOTE DEFENSIVO", "late")).checks if c.team_id == "b"}
+        assert stats["DRB"] == (1, 1) and stats["ORB"] == (0, 0)
+
+    def test_without_a_label_the_rule_of_the_tracker_decides_as_before(self):
+        stats = {c.stat: c.pbp for c in reconcile_game(self._doc("(B) Y: REBOTE (Rebotes: 1)", "in order")).checks if c.team_id == "b"}
+        assert stats["DRB"] == 1 and stats["ORB"] == 0                                    # the other team missed: it is defensive
+        late = {c.stat: c.pbp for c in reconcile_game(self._doc("(B) Y: REBOTE (Rebotes: 1)", "late")).checks if c.team_id == "b"}
+        assert late["DRB"] == 0                                                           # and a rebound before its miss is, without a label, not counted: the case the label exists for
+
+    def test_the_real_feb_game_is_counted_as_it_always_was(self, sample):
+        result = reconcile_game(sample)
+        assert result.reliable and [(c.stat, c.pbp, c.official) for c in result.mismatches()] == [("TOV", 13, 12)]

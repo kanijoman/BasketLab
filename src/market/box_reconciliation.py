@@ -75,7 +75,7 @@ def _official(team: Dict[str, Any], points: int) -> Dict[str, int]:
 def _counted(doc: Dict[str, Any], team_ids: List[str]) -> Dict[str, Dict[str, int]]:
     """What the play-by-play says, per team: shots and rebounds by the rule of the possession tracker, and the information statistics by event."""
     events = [e for e in game_events(doc, False) if not e.deleted]            # a line the table deleted is a correction: the official box does not have it either
-    shots = count_quality_events(events, False, team_ids)
+    shots = count_quality_events(events, False, team_ids, use_labels=True)          # a source that labels its rebounds is counted by its labels, one that does not by the rule of the tracker
     counted = {}
     for team_id, c in shots.items():
         counted[team_id] = {"PTS": 2 * c["T2M"] + 3 * c["T3M"] + c["T1M"], "FGM": c["T2M"] + c["T3M"], "FGA": c["T2A"] + c["T3A"], "3PM": c["T3M"], "3PA": c["T3A"],
