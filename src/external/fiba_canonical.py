@@ -58,7 +58,8 @@ def _starttime(iso: Optional[str]) -> str:
 def _player_box(person: Dict[str, Any]) -> Dict[str, Any]:
     stats = person["stats"]
     box = {feb: str(stats.get(fiba, 0)) for fiba, feb in _BOX.items()}
-    return {**box, "id": source_id(SOURCE, person["person_id"]), "name": person["name"], "no": person["number"], "min": _seconds(stats.get("TP")), "sta": "*" if stats.get("Starter") else None}
+    return {**box, "id": source_id(SOURCE, person["person_id"]), "name": person["name"], "no": person["number"], "min": _seconds(stats.get("TP")), "sta": "*" if stats.get("Starter") else None,
+            "birth": person.get("birth"), "height": str(person["height_cm"]) if person.get("height_cm") else None, "nationality": person.get("nationality"), "club": person.get("club")}
 
 
 def _team_box(team: Dict[str, Any], won: bool) -> Dict[str, Any]:
