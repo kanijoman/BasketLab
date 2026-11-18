@@ -13,7 +13,7 @@ Pure functions, no I/O. A person is its ``person_id`` (FEB rewrites the roster o
 from __future__ import annotations
 
 import unicodedata
-from typing import Any, Dict, Iterable, List, Set
+from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 
 MIN_SHARED = 2
 METHOD = "birth+name"
@@ -65,4 +65,85 @@ def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str,
             links.append({**base, "status": "linked", "feb": strong[0]["feb"], "shared": strong[0]["shared"]})
         elif fits:
             links.append({**base, "status": "review", "feb": None, "shared": [], "candidates": sorted(fits, key=lambda f: (-len(f["shared"]), f["feb"]))[:_MAX_CANDIDATES]})
+    return links
+
+
+# --- FBCYL <-> FEB (#978): FBCYL carries no date of birth, so the link is by name key and club ---------------------------------------------------------------------------------------------------------------
+_GENERIC_CLUB_WORDS = frozenset({"CB", "CD", "AD", "BC", "CLUB", "BALONCESTO", "BASKET", "BASQUET", "BASKETBALL", "ESCUELA", "DEPORTIVO", "DEPORTIVA", "ASOCIACION", "SDC", "SD", "UD", "CAD", "JR", "FEM", "MASC", "FEMENINO", "MASCULINO"})
+CLUB_MIN_SHARED = 2                                    # words of the club in common that corroborate a person with the same name key
+FBCYL_METHOD = "name+club"
+
+
+def _plain(text: Any) -> List[str]:
+    stripped = "".join(c for c in unicodedata.normalize("NFKD", str(text or "").upper()) if not unicodedata.combining(c))
+    return stripped.replace("-", " ").replace(".", " ").replace(",", " ").split()
+
+
+def name_key(name: Any) -> Optional[Tuple[str, FrozenSet[str]]]:
+    """``(initial, surnames)`` of ``V. IBAÑEZ BARREIRO`` or ``VIRGINIA IBAÑEZ BARREIRO`` (the two ways the leagues write a player), the same for both: the first word is the given name (its initial is kept) and the rest
+    are the surnames, without particles. A given name with several words (``MARIA JOSE``) gives another key than FEB's initial form: a link missed, never a wrong one. ``None`` with fewer than two words."""
+    words = _plain(name)
+    if len(words) < 2:
+        return None
+    surnames = frozenset(w for w in words[1:] if len(w) > 1 and w not in _PARTICLES)
+    return (words[0][0], surnames) if surnames else None
+
+
+def club_words(club: Any) -> Set[str]:
+    """The words of a club name that identify it: no initials (``C.D.``), no particles and none of the words every club has (``BALONCESTO``, ``CLUB``...)."""
+    return {w for w in _plain(club) if len(w) > 1 and w not in _PARTICLES and w not in _GENERIC_CLUB_WORDS}
+
+
+def _unwrapped(value: Any) -> Any:
+    return next(iter(value.values())) if isinstance(value, dict) and value else value
+
+
+def fbcyl_players(docs: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The players of FBCYL games (``stats.teams[].players[]``) once each, sorted by id: ``{id: fbcyl:<actorId>, name, team (the club), season, gender}``."""
+    found: Dict[str, Dict[str, Any]] = {}
+    for doc in docs:
+        for team in ((doc.get("stats") or {}).get("teams")) or []:
+            for player in team.get("players") or []:
+                actor = _unwrapped(player.get("actorId"))
+                if actor in (None, "") or not player.get("name"):
+                    continue
+                found.setdefault(f"fbcyl:{actor}", {"id": f"fbcyl:{actor}", "name": player["name"], "team": team.get("name") or "", "season": doc.get("_season"), "gender": doc.get("_gender")})
+    return [found[k] for k in sorted(found)]
+
+
+def feb_persons(games: Iterable[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """``{feb:<idPlayer>: {names, clubs}}`` of the FEB boxes: every spelling of the name and every club (``HEADER.TEAM[].name``) the person has been in."""
+    persons: Dict[str, Dict[str, Any]] = {}
+    for game in games:
+        clubs = {str(t.get("id")): str(t.get("name") or "").strip() for t in (game.get("HEADER") or {}).get("TEAM") or []}
+        for team in (game.get("BOXSCORE") or {}).get("TEAM") or []:
+            for player in team.get("PLAYER") or []:
+                if player.get("id") and player.get("name"):
+                    person = persons.setdefault(f"feb:{player['id']}", {"names": set(), "clubs": set()})
+                    person["names"].add(str(player["name"]))
+                    if clubs.get(str(team.get("id"))):
+                        person["clubs"].add(clubs[str(team.get("id"))])
+    return dict(sorted(persons.items()))
+
+
+def link_fbcyl(persons: Dict[str, Dict[str, Any]], players: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The links of FBCYL ``players`` to the FEB ``persons``, sorted by external id. ``linked``: a single person has the name key AND a club with at least ``CLUB_MIN_SHARED`` words in common with the club of the
+    player. ``review``: the key has several persons, or one without the club. A key nobody has is not in the answer."""
+    by_key: Dict[Tuple[str, FrozenSet[str]], List[str]] = {}
+    for person, data in persons.items():
+        for key in {k for k in (name_key(n) for n in data["names"]) if k}:
+            by_key.setdefault(key, []).append(person)
+    links: List[Dict[str, Any]] = []
+    for player in sorted(players, key=lambda p: str(p["id"])):
+        key = name_key(player.get("name"))
+        candidates = sorted(by_key.get(key, [])) if key else []
+        if not candidates:
+            continue
+        mine = club_words(player.get("team"))
+        fits = [{"feb": c, "shared": sorted(max((mine & club_words(club) for club in persons[c]["clubs"]), key=len, default=set()))} for c in candidates]
+        base = {"external": str(player["id"]), "method": FBCYL_METHOD}
+        if len(fits) == 1 and len(fits[0]["shared"]) >= CLUB_MIN_SHARED:
+            links.append({**base, "status": "linked", "feb": fits[0]["feb"], "shared": fits[0]["shared"]})
+        else:
+            links.append({**base, "status": "review", "feb": None, "shared": [], "candidates": fits[:_MAX_CANDIDATES]})
     return links
