@@ -17,7 +17,7 @@ sys.path[:0] = [str(ROOT)]
 from src.external.fiba_page import FibaPageError, extract_flight  # noqa: E402
 
 OUT = ROOT / "tests" / "fixtures" / "fiba"
-USER_AGENT = "Mozilla/5.0 (compatible; BasketLab research)"
+USER_AGENT = "Mozilla/5.0 (compatible; basketball-research-bot/1.0)"      # generic: no name of the project goes to an outside service
 PAUSE_S = 2
 
 

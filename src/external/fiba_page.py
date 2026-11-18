@@ -25,11 +25,15 @@ class GenericPage(FibaPageError):
     """The page is a version of the site with no data of the game: ask again."""
 
 
+class CutPage(FibaPageError):
+    """The page has the data of the game but cut in the middle (a response that ended early): ask again."""
+
+
 def extract_flight(html: str) -> str:
     """The text of the data chunks of a Next page, joined and unescaped."""
     chunks = _CHUNK.findall(html or "")
     if not chunks:
-        raise FibaPageError("the page has no Next data chunks")
+        raise GenericPage("the page has no Next data chunks")                  # an error page, a maintenance page: it can be asked again
     return "".join(json.loads(f'"{chunk}"') for chunk in chunks if chunk)
 
 
@@ -48,7 +52,7 @@ def _block(flight: str, name: str) -> Any:
     try:
         return _DECODER.raw_decode(flight[start:])[0]
     except ValueError as error:
-        raise FibaPageError(f"the {name} data of the page is cut or not valid JSON") from error
+        raise CutPage(f"the {name} data of the page is cut or not valid JSON") from error
 
 
 def _order(raw: Dict[str, Any]) -> int:
@@ -107,3 +111,38 @@ def parse_game(flight: str) -> Dict[str, Any]:
             "competition": {"id": competition.get("competitionId"), "code": competition.get("competitionCode"), "name": competition.get("officialName"), "season": competition.get("season"),
                             "age_category": competition.get("ageCategory"), "gender": competition.get("gender")},
             "teams": teams, "periods": periods, "events": events}
+
+
+_EVENT_MARKER = '"games":[{"gameId"'
+
+
+def _finished(game: Dict[str, Any]) -> bool:
+    """A game is finished when the page says it is valid and its last period is over; one to play is ``INIT`` and has no period status. Only a finished game has a play-by-play to read."""
+    return game.get("statusCode") == "VALID" and game.get("currentPeriodStatus") == "E" and not game.get("isLive")
+
+
+def parse_event_games(flight: str) -> List[Dict[str, Any]]:
+    """The games an event page lists, in the order they are played (by kick-off, ties by id): who plays, when, the score of the finished ones and the ``slug`` of the page of each (``<id>-<code>-<code>``).
+    ``GenericPage`` when the page lists no games (the generic version, or a page that is not an event's); ``FibaPageError`` when the list is cut."""
+    flight = flight or ""
+    if _MARKERS["game"] in flight:
+        raise FibaPageError("this is the page of a game, not of an event")                  # a game's page also mentions other games
+    at = flight.find(_EVENT_MARKER)
+    if at < 0:
+        raise GenericPage("the page lists no games")
+    try:
+        raw = _DECODER.raw_decode(flight[at + len('"games":'):])[0]
+    except ValueError as error:
+        raise CutPage("the list of games of the page is cut or not valid JSON") from error
+    games = []
+    try:
+        for item in raw:
+            home, away = item["teamA"], item["teamB"]
+            finished = _finished(item)
+            games.append({"game_id": item["gameId"], "slug": f"{item['gameId']}-{home['code']}-{away['code']}", "number": item.get("gameNumber"), "start": item.get("gameDateTime"),
+                          "start_utc": item.get("gameDateTimeUTC"), "finished": finished, "postponed": bool(item.get("isPostponed")),
+                          "teams": [{"code": t["code"], "name": t.get("officialName"), "org_id": t.get("organisationId")} for t in (home, away)],
+                          "score": (item["teamAScore"], item["teamBScore"]) if finished else None})
+    except (KeyError, TypeError) as error:
+        raise FibaPageError(f"the games of the page have a shape this reader does not know: {error!r}") from error
+    return sorted(games, key=lambda g: (g["start_utc"] or "", g["game_id"]))
