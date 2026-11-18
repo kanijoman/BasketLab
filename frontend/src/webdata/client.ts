@@ -120,9 +120,14 @@ export const loadWebScouting = (collection: string, teamId: string, scope: Scout
 /** The names of the competitions the publication has rows for (the phases of a competition are found among them), issue #671. */
 export const loadWebCollections = async (): Promise<string[]> => (await loadManifest()).rows.map(r => r.collection)
 
-/** What the manifest says of each published competition (name, league, games and, when it is known, gender): the list of competitions of the web, issue #705; the gender picks the calibrated win probability (#843). */
-export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: WebDataManifest['rows'][number]['league']; games: number; gender?: 'F' | 'M' }>> {
-  return (await loadManifest()).rows.map(({ collection, league, games, gender }) => ({ collection, league, games, ...(gender ? { gender } : {}) }))
+/** What the manifest says of a published competition: what the list of competitions and its selector read. */
+export type PublishedInfo = Pick<WebDataManifest['rows'][number], 'collection' | 'league' | 'games' | 'gender' | 'category' | 'age_group' | 'competition_label' | 'group_label'>
+
+const KEPT = ['gender', 'category', 'age_group', 'competition_label', 'group_label'] as const
+
+/** What the manifest says of each published competition (name, league, games, gender and, when the catalogue says them, category, age group and the names people read): the list of competitions of the web, issue #705; the gender picks the calibrated win probability (#843). The category and the labels reach the selector whole (#914): they were dropped here and every competition looked senior with its raw code. */
+export async function loadWebCollectionInfos(): Promise<PublishedInfo[]> {
+  return (await loadManifest()).rows.map(row => ({ collection: row.collection, league: row.league, games: row.games, ...Object.fromEntries(KEPT.filter(key => row[key] !== undefined).map(key => [key, row[key]])) }))
 }
 
 /** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
