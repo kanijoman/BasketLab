@@ -116,6 +116,36 @@ class TestTheDocument:
             assert sum("MATE" in l["text"] for l in docs["123004"]["PLAYBYPLAY"]["LINES"]) == len(dunks)
 
 
+class TestBiography:
+    """The page of a game carries the roster with each player's bio (date of birth, height, nationality, club): it is archived with the game, nothing is discarded (#887, D3b-2). A player the page says nothing
+    about has the field empty, never guessed."""
+
+    def _player(self, doc, person_id):
+        return next(p for t in doc["BOXSCORE"]["TEAM"] for p in t["PLAYER"] if p["id"] == f"fiba:{person_id}")
+
+    def test_a_player_carries_the_bio_of_the_roster_of_the_page(self, docs):
+        atamna = self._player(docs["125809"], 344984)
+        assert (atamna["birth"], atamna["height"], atamna["nationality"], atamna["club"]) == ("2007-12-06", "195", "FRA", "LDLC ASVEL")
+
+    @pytest.mark.parametrize("name", GAMES)
+    def test_every_player_of_every_real_game_has_a_birth_date_and_a_nationality(self, docs, name):
+        players = [p for t in docs[name]["BOXSCORE"]["TEAM"] for p in t["PLAYER"]]
+        assert len(players) >= 20 and all(p["birth"] and p["nationality"] for p in players)
+
+    def test_a_player_without_height_has_it_empty_not_zero(self, docs):
+        heights = [p["height"] for t in docs["125859"]["BOXSCORE"]["TEAM"] for p in t["PLAYER"]]
+        assert None in heights and "0" not in heights and all(h is None or 120 <= int(h) <= 240 for h in heights)
+
+    def test_a_page_without_the_bio_block_still_converts_with_the_fields_empty(self, pages):
+        bare = copy.deepcopy(pages["125809"])
+        for team in bare["teams"]:
+            for player in team["players"]:
+                for key in ("birth", "height_cm", "nationality", "club"):
+                    player.pop(key, None)
+        doc = to_canonical(bare)
+        assert doc["BOXSCORE"]["TEAM"][0]["PLAYER"][0]["birth"] is None and validate_game(doc, "M") == []
+
+
 class TestGamesWhoseEventsAreNotInTheOrderOfTheirClock:
     """Found on the first real load of the source (18/11/2026): 7 of the 56 games of the U18 EuroBasket 2025 did not reconcile, and only on rebounds. FIBA writes some events late: 104 events of 13 games have a clock
     that goes back (by a second or two, a few by up to 23), and in 125835 a missed shot entered late shares its second with the rebound that follows it and comes AFTER it in the sequence. Inferring offensive or

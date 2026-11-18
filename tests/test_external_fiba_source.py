@@ -212,3 +212,8 @@ class TestTheRealSourceOfTheRefresh:
         for bad in ("0", "-5", "ten"):
             with pytest.raises(SystemExit):
                 run_external_refresh.main(["--source", "fiba", "--budget", bad])
+
+
+def test_the_games_stored_without_the_bio_are_the_ones_it_asks_for_again():
+    """A game stored by the first version (no ``birth`` in its players) is not "known": it is asked for once more, and with the field (even empty) it is not asked for again."""
+    assert FibaSource.refetch_filter == {"BOXSCORE.TEAM.PLAYER.birth": {"$exists": False}}

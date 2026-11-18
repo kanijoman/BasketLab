@@ -24,6 +24,7 @@ DEFAULT_BUDGET = 300                           # games per run: ~10 minutes at o
 
 class FibaSource:
     name = "fiba"
+    refetch_filter = {"BOXSCORE.TEAM.PLAYER.birth": {"$exists": False}}          # games stored before the bio of the players was kept (#887, D3b-2) are asked for once more
 
     def __init__(self, client: FibaClient, budget: int = DEFAULT_BUDGET) -> None:
         self.client, self.remaining = client, budget

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 _CHUNK = re.compile(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)</script>', re.S)
 _DECODER = json.JSONDecoder()
@@ -74,7 +74,26 @@ def _event(period: str, raw: Dict[str, Any]) -> Dict[str, Any]:
             "made": raw.get("made"), "points": raw.get("pts"), "x": raw.get("x"), "y": raw.get("y"), "in": raw.get("in")}
 
 
-def _team(side: str, meta: Dict[str, Any], boxes: Dict[str, Dict[str, Any]], roster: List[Dict[str, Any]]) -> Dict[str, Any]:
+def _bios(flight: str, side: str) -> Dict[int, Dict[str, Any]]:
+    """The bio of the players of a team (``rosterA``/``rosterB`` of the page: date of birth, height, nationality, club) by person. Optional: a page without the block, or one that cannot be read, gives none and the
+    game is read all the same (the bio is extra, never a reason to lose a game)."""
+    marker = f'"roster{side}":{{"teamId"'
+    at = flight.find(marker)
+    if at < 0:
+        return {}
+    try:
+        block = _DECODER.raw_decode(flight[at + len(f'"roster{side}":'):])[0]
+        return {int(p["personId"]): p for p in block.get("players") or []}
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return {}
+
+
+def _bio_of(raw: Dict[str, Any]) -> Dict[str, Any]:
+    height = raw.get("heightInCm")
+    return {"birth": raw.get("dateOfBirth") or None, "height_cm": int(height) if isinstance(height, (int, float)) and height > 0 else None, "nationality": raw.get("nationality") or None, "club": raw.get("clubName") or None}
+
+
+def _team(side: str, meta: Dict[str, Any], boxes: Dict[str, Dict[str, Any]], roster: List[Dict[str, Any]], bios: Optional[Dict[int, Dict[str, Any]]] = None) -> Dict[str, Any]:
     """A team: who it is, its score by period, its official totals and its players with their official box."""
     org = meta["organisationId"]
     box = boxes.get(f"T_{org}")
@@ -86,7 +105,7 @@ def _team(side: str, meta: Dict[str, Any], boxes: Dict[str, Dict[str, Any]], ros
         person_id = int(str(child["Id"]).split("_", 1)[1])
         known = people.get(person_id, {})
         name = " ".join(part for part in (known.get("firstName"), known.get("lastName")) if part) or f"Player {person_id}"
-        players.append({"person_id": person_id, "name": name, "number": known.get("uniformNumber"), "position": known.get("position"), "captain": bool(known.get("isCaptain")), "stats": child.get("Stats") or {}})
+        players.append({"person_id": person_id, "name": name, "number": known.get("uniformNumber"), "position": known.get("position"), "captain": bool(known.get("isCaptain")), **_bio_of((bios or {}).get(person_id, {})), "stats": child.get("Stats") or {}})
     return {"side": side, "org_id": org, "team_id": meta.get("teamId"), "code": meta.get("code"), "name": meta.get("officialName"), "score": box["Score"],
             "periods": [{"period": p["Id"], "score": p["Score"]} for p in box.get("Periods") or []], "totals": {k: v for k, v in (box.get("Stats") or {}).items() if k != "Leaders"}, "players": players}
 
@@ -100,7 +119,7 @@ def parse_game(flight: str) -> Dict[str, Any]:
     game, pbp, details = blocks["game"], blocks["pbp"], blocks["details"]
     try:
         boxes = {box["Id"]: box for box in details["c"]}
-        teams = [_team("A", game["teamA"], boxes, blocks["rosterA"]), _team("B", game["teamB"], boxes, blocks["rosterB"])]
+        teams = [_team("A", game["teamA"], boxes, blocks["rosterA"], _bios(flight, "A")), _team("B", game["teamB"], boxes, blocks["rosterB"], _bios(flight, "B"))]
         periods = list(pbp["items"])
         events = [_event(period, raw) for period in periods for raw in sorted(pbp["items"][period]["items"], key=_order)]
         competition = game["competition"]
