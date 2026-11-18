@@ -51,6 +51,13 @@ def _marked(doc: Dict[str, Any]) -> Dict[str, Any]:
     return {**doc, "_reliable": result.reliable, "_reconciled_with": RECONCILE_VERSION, **({"_mismatches": failing} if failing else {})}
 
 
+def _known_filter(source: Any) -> Dict[str, Any]:
+    """The stored games the source does not need to ask for again: all, except those its ``refetch_filter`` (a Mongo filter, optional) selects, the ones stored before the source kept a field it keeps now. Once
+    asked for again they have the field (empty or not), so the filter no longer selects them."""
+    refetch = getattr(source, "refetch_filter", None)
+    return {"$nor": [refetch]} if refetch else {}
+
+
 def _rejudge(collection: Any) -> int:
     """Judge again, from what is stored (no request), the games flagged unreliable under an older version of the rule. Once per version: the stamp stops a really bad game from being judged on every run."""
     done = 0
@@ -102,7 +109,7 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
         since, rejected, totals = _since(previous, window_days), [], {"new": 0, "updated": 0}
         for name, entry in collections.items():
             rejudged = _rejudge(db[name])
-            known = frozenset(doc["_id"] for doc in db[name].find({}, {"_id": 1}))
+            known = frozenset(doc["_id"] for doc in db[name].find(_known_filter(SOURCES[source]), {"_id": 1}))
             counts = _merge(db[name], SOURCES[source].fetch(entry, since, known), entry["gender"], rejected)
             totals = {k: totals[k] + counts[k] + (rejudged if k == "updated" else 0) for k in totals}
         dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)

@@ -188,6 +188,39 @@ class TestGamesStoredAsUnreliableWhenTheRuleChanges:
         assert refresh_source("fiba", cat, db, tmp_path / "out", NOW + timedelta(days=1))["updated"] == 0
 
 
+class TestGamesStoredBeforeAFieldExisted:
+    """A source that starts to keep a new field (FIBA's bio, #887) says which stored games lack it (``refetch_filter``): they are not "known", so the source asks for them once more. After that they have the
+    field (empty or not), so it is not asked for again."""
+
+    def _run(self, tmp_path, source, db, day=0):
+        registry.register(source) if source.name not in registry.SOURCES else None
+        return refresh_source("fiba", _catalogue(tmp_path, "fiba"), db, tmp_path / "out", NOW + timedelta(days=day))
+
+    def test_a_stored_game_without_the_field_is_asked_for_again_and_one_with_it_is_not(self, tmp_path, db):
+        source = FixtureSource("fiba", docs=FixtureSource("fiba").docs[:2])
+        source.refetch_filter = {"BOXSCORE.TEAM.PLAYER.birth": {"$exists": False}}
+        self._run(tmp_path, source, db)
+        assert source.known[-1] == frozenset()                                       # the first run knows nothing
+        name = next(iter(external_collections(_catalogue(tmp_path, "fiba"))))
+        with_field, without = (d["_id"] for d in db[name].find())
+        doc = db[name].find_one({"_id": with_field})
+        for team in doc["BOXSCORE"]["TEAM"]:
+            for player in team["PLAYER"]:
+                player["birth"] = None                                                # stored by the version that keeps the field (empty is still the field)
+        db[name].replace_one({"_id": with_field}, doc)
+        from src.local_data.archive import dump_archive
+
+        dump_archive(db, tmp_path / "out" / "fiba", light=lambda _n: False, only=[name], allow_shrink=False)        # the next run restores the archive, so the change has to be in it
+        self._run(tmp_path, source, db, day=1)
+        assert source.known[-1] == frozenset({with_field}) and without not in source.known[-1]
+
+    def test_a_source_without_the_filter_knows_every_stored_game(self, tmp_path, db):
+        source = FixtureSource("fiba", docs=FixtureSource("fiba").docs[:2])
+        self._run(tmp_path, source, db)
+        self._run(tmp_path, source, db, day=1)
+        assert len(source.known[-1]) == 2
+
+
 class TestIsolation:
     def test_a_failing_source_reports_it_keeps_its_last_good_date_and_leaves_its_archive_alone(self, tmp_path, db):
         good = FixtureSource("ncaa")
