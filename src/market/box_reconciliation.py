@@ -87,6 +87,9 @@ def _counted(doc: Dict[str, Any], team_ids: List[str]) -> Dict[str, Dict[str, in
     return counted
 
 
+RECONCILE_VERSION = 2                           # raise it when the rule changes (1: rebounds inferred from the last miss; 2: from their label): games flagged unreliable are judged again, once per version
+
+
 def reconcile_game(doc: Dict[str, Any]) -> GameReconciliation:
     """The checks of a game in the FEB document shape (the canonical one of the external sources too). ``ValueError`` if it has no official box to compare with."""
     box = (doc.get("BOXSCORE") or {}).get("TEAM") or []
