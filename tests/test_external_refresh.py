@@ -131,6 +131,7 @@ class TestIsolation:
         assert _bytes(tmp_path / "out", "ncaa") == before
         saved = _status(tmp_path / "out", "ncaa")
         assert saved["ok"] is False and saved["last_ok"] == "2026-11-17T07:00:00Z" and saved["finished"] == "2026-11-18T07:00:00Z"
+        assert (saved["games"], saved["unreliable"]) == (13, 12)                  # what the archive holds does not change because a run failed: the status keeps the counts of the last good one
 
     def test_a_failure_of_one_source_does_not_stop_the_others(self, tmp_path, db):
         registry.register(FixtureSource("ncaa", boom="NCAA is down"))
