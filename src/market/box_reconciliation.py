@@ -5,7 +5,8 @@ No source (ACB, FIBA, NCAA, FBCYL youth...) is published without it. The play-by
 * the NINE **core** statistics must match the official box exactly (``CORE_STATS``: points, field goals made and attempted, threes made and attempted, free throws made and attempted, offensive and defensive
   rebounds). One difference and the game is **not reliable**: it stays out of rates, percentiles and ``eligible``, and it is never corrected by eye (the ``reliable`` of ``DERIVED`` in FEB works the same way);
 * the **information** statistics (``INFO_STATS``: assists, steals, blocks, turnovers and fouls) are measured and reported by source but do not discard a game (FEB itself has known assist differences, #378);
-* what cannot be counted from the play-by-play (``UNCHECKED``: the minutes, that need the lineups) is said in the report.
+* the **minutes** (``market.minutes_reconciliation``, #963: the starters of the box and the substitution lines) are reported per player-game and do not discard a game either; a game whose lineup is unknown has no
+  minute check and the report says it is ``UNCHECKED``.
 
 The play-by-play is counted with the same events as the rest of the pipelines (``game_events``, without the lines the table deleted) and the same rebound rule as the possession tracker (``count_quality_events``); the official box is the FEB
 document's (``BOXSCORE.TEAM[].TOTAL``, points from ``HEADER.TEAM``). Pure functions, no I/O: they do not change the game and give the same answer whatever the order of its lines.
@@ -15,6 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from src.market.minutes_reconciliation import MinuteCheck, minutes_checks
 from src.pbp.game_events import game_events
 from src.pbp.possession_quality import count_quality_events
 
@@ -43,6 +45,7 @@ class Check:
 class GameReconciliation:
     game_id: str
     checks: Tuple[Check, ...]
+    minutes: Tuple[MinuteCheck, ...] = ()
 
     @property
     def reliable(self) -> bool:
@@ -103,7 +106,7 @@ def reconcile_game(doc: Dict[str, Any]) -> GameReconciliation:
         team_id = str(team.get("id"))
         official = _official(team, header.get(team_id, 0))
         checks.extend(Check(team_id, stat, counted[team_id][stat], official[stat]) for stat in (*CORE_STATS, *INFO_STATS))
-    return GameReconciliation(str(doc.get("_id")), tuple(checks))
+    return GameReconciliation(str(doc.get("_id")), tuple(checks), minutes_checks(doc))
 
 
 def summarize(results: Iterable[GameReconciliation]) -> Dict[str, Any]:
@@ -117,5 +120,8 @@ def summarize(results: Iterable[GameReconciliation]) -> Dict[str, Any]:
             entry["match"] += check.ok
             if not check.ok:
                 entry["mismatches"].append({"game": result.game_id, "team": check.team_id, "pbp": check.pbp, "official": check.official})
+    minutes = [(r.game_id, m) for r in results for m in r.minutes]
+    minute_report = {"checked": len(minutes), "match": sum(m.ok for _g, m in minutes),
+                     "mismatches": [{"game": g, "team": m.team_id, "player": m.player_id, "pbp": m.pbp, "official": m.official} for g, m in minutes if not m.ok]}
     return {"games": len(results), "reliable": sum(r.reliable for r in results), "unreliable": [r.game_id for r in results if not r.reliable],
-            "stats": stats, "unchecked": list(UNCHECKED)}
+            "stats": stats, "minutes": minute_report, "unchecked": [] if results and all(r.minutes for r in results) else list(UNCHECKED)}

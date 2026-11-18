@@ -1,6 +1,6 @@
 """The reconciliation report of the FIBA source (#887, D3a; the common acceptance criterion of #884): ``python scripts/fiba_reconciliation_report.py`` over the real pages of ``tests/fixtures/fiba``.
 
-It says, per statistic, how many team-games of the official box the play-by-play reproduces and, for the minutes (which ``reconcile_game`` does not count yet, #963), how close the ones worked out from the substitutions and
+It says, per statistic, how many team-games of the official box the play-by-play reproduces and, for the minutes (which ``reconcile_game`` also counts since #963; here measured apart as a cross-check), how close the ones worked out from the substitutions and
 the starting five of the page come to the official ones. The numbers of ``docs/evaluaciones/2026-11-18_fiba-cuadre.md`` are the ones this prints.
 """
 import sys
