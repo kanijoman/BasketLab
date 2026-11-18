@@ -5,9 +5,10 @@
 // Everything here answers `WebDataUnavailable` when the data cannot be had (host down, schema unknown, not published) so that the caller says there is no answer (no
 // fallback to the API, #334), and lets `ScopedAccessError` through: «you have no key for this» is not «try the API».
 import { createSealedClient, type Sealed as SealedOf } from './sealedClient'
+import { sourceOf } from './sources'
 import type { ReportMode, TeamReport } from '@/api/teamReport'
 import type { ScoutingReport, ScoutingScope } from '@/api/scoutingRival'
-import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type WebDataManifest } from './contract.generated'
+import { WEB_DATA_SCHEMA, type ReportEntry, type ReportIndex, type ReportIndexEntry, type SourceFreshness, type WebDataManifest } from './contract.generated'
 import { DataUnavailable } from '@/datasource/resolve'
 import type { Competition } from '@/localdata/competition'
 import type { Lineups } from '@/localdata/lineups'
@@ -18,30 +19,39 @@ import type { InOutResult, MatchAnalysis, MatchSummary, PossessionStat, Rotation
 
 export const SCHEMA = WEB_DATA_SCHEMA
 const DEFAULT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data/'
+const DEFAULT_EXT_BASE = 'https://raw.githubusercontent.com/kanijoman/BasketLab/web-data-ext/'
 
 /** The data cannot be had from `web-data`: there is no answer (the API is not asked in its place). */
 export class WebDataUnavailable extends DataUnavailable {}
 
 // The shape of the manifest and of the report indexes is generated from the Python contract (`src/local_data/contract.py`, issue #328)
-export type { FileEntry, ReportEntry, ReportIndex, ReportIndexEntry, RowsEntry, Wrap, WebDataManifest } from './contract.generated'
+export type { FileEntry, ReportEntry, ReportIndex, ReportIndexEntry, RowsEntry, SourceFreshness, Wrap, WebDataManifest } from './contract.generated'
+export { sourceOf } from './sources'
 
 // The generic part (base, manifest, fetch and unlocking) is shared with the other publication, `talent-data` (#878): `./sealedClient.ts`.
 const web = createSealedClient<WebDataManifest>({ base: (import.meta.env.VITE_DATA_BASE as string | undefined) || DEFAULT_BASE, schema: SCHEMA, unavailable: WebDataUnavailable })
+// The external sources (ACB, FIBA, NCAA; #884) are published in `web-data-ext`, apart from `web-data`: a failure of one never stops the other. The competition decides which one is asked (`sourceOf`).
+const ext = createSealedClient<WebDataManifest>({ base: (import.meta.env.VITE_DATA_EXT_BASE as string | undefined) || DEFAULT_EXT_BASE, schema: SCHEMA, unavailable: WebDataUnavailable })
 const indexes = new Map<string, Promise<ReportIndex>>()
 web.onReset(() => indexes.clear())
+ext.onReset(() => indexes.clear())
+
+/** The publication that holds a competition. */
+const publication = (collection: string) => (sourceOf(collection) ? ext : web)
 
 /** Where the publication is (tests, or a host other than the default). */
 export const setDataBase = web.setBase
 
+/** Where the publication of the external sources is (tests). */
+export const setExtDataBase = ext.setBase
+
 /** Forget what was loaded (tests, or a manifest that was replaced). */
-export const resetWebData = web.reset
+export const resetWebData = () => { web.reset(); ext.reset() }
 
-const { fetchText, fetchJson, loadManifest, openSealed } = web
-
-function loadIndex(entry: ReportIndexEntry): Promise<ReportIndex> {
+function loadIndex(entry: ReportIndexEntry, from: typeof web): Promise<ReportIndex> {
   let load = indexes.get(entry.file)
   if (!load) {
-    load = fetchJson<ReportIndex>(entry.file)                   // the name carries the hash of the content: it can be kept for as long as the page lives
+    load = from.fetchJson<ReportIndex>(entry.file)                   // the name carries the hash of the content: it can be kept for as long as the page lives
     indexes.set(entry.file, load)
     load.catch(() => indexes.delete(entry.file))
   }
@@ -49,10 +59,11 @@ function loadIndex(entry: ReportIndexEntry): Promise<ReportIndex> {
 }
 
 async function reportIndexOf(collection: string): Promise<{ manifest: WebDataManifest; index: ReportIndex }> {
-  const manifest = await loadManifest()
+  const from = publication(collection)
+  const manifest = await from.loadManifest()
   const entry = manifest.reports.find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable('Esta competición no tiene informes publicados.')
-  return { manifest, index: await loadIndex(entry) }
+  return { manifest, index: await loadIndex(entry, from) }
 }
 
 /** The teams that have reports in the competition, by name. */
@@ -70,15 +81,15 @@ async function sealedFile(collection: string, find: (entry: ReportEntry) => bool
   const { manifest, index } = await reportIndexOf(collection)
   const entry = index.reports.find(find)
   if (!entry) throw new WebDataUnavailable('Este informe no está publicado.')
-  return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
+  return { manifest, wraps: entry.wraps, text: await publication(collection).fetchText(entry.file) }
 }
 
 /** The sealed rows of a competition (`rows/`), with the manifest they came from. */
 async function sealedRows(collection: string): Promise<Sealed> {
-  const manifest = await loadManifest()
+  const manifest = await publication(collection).loadManifest()
   const entry = manifest.rows.find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable('Esta competición no tiene datos publicados.')
-  return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
+  return { manifest, wraps: entry.wraps, text: await publication(collection).fetchText(entry.file) }
 }
 
 /** The files a competition has besides its rows, one folder of the publication each. */
@@ -86,19 +97,19 @@ export type SectionName = 'derived' | 'shots' | 'rotations' | 'matches' | 'posse
 
 /** A sealed file a competition has besides its rows (`derived/`, `shots/`, `rotations/`), with the manifest it came from. */
 async function sealedSection(section: SectionName, collection: string, missing: string): Promise<Sealed> {
-  const manifest = await loadManifest()
+  const manifest = await publication(collection).loadManifest()
   const entry = (manifest[section] ?? []).find(r => r.collection === collection)
   if (!entry) throw new WebDataUnavailable(missing)
-  return { manifest, wraps: entry.wraps, text: await fetchText(entry.file) }
+  return { manifest, wraps: entry.wraps, text: await publication(collection).fetchText(entry.file) }
 }
 
 /** The section file of a competition (`shots/`, `lineups/`, `calendar/`…), opened with the open key and the rights of the reader; `missing` is what a competition without it is told. */
 export const loadWebSection = <T>(section: SectionName, collection: string, missing: string): Promise<T> =>
-  openSealed<T>(() => sealedSection(section, collection, missing), 'El fichero')
+  publication(collection).openSealed<T>(() => sealedSection(section, collection, missing), 'El fichero')
 
 /** The report of a team (its own analysis or the rule-based report of a rival). */
 export const loadWebReport = (collection: string, teamId: string, mode: ReportMode): Promise<TeamReport> =>
-  openSealed<TeamReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === mode), 'El informe')
+  publication(collection).openSealed<TeamReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === mode), 'El informe')
 
 /** The crest and the photos of a team of the newest season, with the date of birth and height of each player (issue #717): what the DOCX of the individual scouting needs and the FEB does not let the browser fetch. */
 export interface TeamImages {
@@ -111,22 +122,43 @@ export interface TeamImages {
   players: Record<string, { name: string | null; no: string | null; photo: string | null; birth_date: string | null; height: string | null }>
 }
 export const loadWebImages = (collection: string, teamId: string): Promise<TeamImages> =>
-  openSealed<TeamImages>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'images'), 'El fichero')
+  publication(collection).openSealed<TeamImages>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'images'), 'El fichero')
 
 /** The full scouting of a rival for a scope: `liga`, `copa` (the cups of the season) or `todo` (both), issue #638. */
 export const loadWebScouting = (collection: string, teamId: string, scope: ScoutingScope): Promise<ScoutingReport> =>
-  openSealed<ScoutingReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope), 'El informe')
+  publication(collection).openSealed<ScoutingReport>(() => sealedFile(collection, r => r.team_id === teamId && r.mode === 'scouting' && r.scope === scope), 'El informe')
 
-/** The names of the competitions the publication has rows for (the phases of a competition are found among them), issue #671. */
-export const loadWebCollections = async (): Promise<string[]> => (await loadManifest()).rows.map(r => r.collection)
+/** The manifest of the external publication, or `null` when it cannot be had (down, not created yet, another schema): FEB never depends on it. */
+async function externalManifest(): Promise<WebDataManifest | null> {
+  try {
+    return await ext.loadManifest()
+  } catch (error) {
+    if (error instanceof WebDataUnavailable) return null
+    throw error
+  }
+}
 
-/** What the manifest says of each published competition (name, league, games and, when it is known, gender): the list of competitions of the web, issue #705; the gender picks the calibrated win probability (#843). */
-export async function loadWebCollectionInfos(): Promise<Array<{ collection: string; league: WebDataManifest['rows'][number]['league']; games: number; gender?: 'F' | 'M' }>> {
-  return (await loadManifest()).rows.map(({ collection, league, games, gender }) => ({ collection, league, games, ...(gender ? { gender } : {}) }))
+/** The names of the competitions the publications have rows for (the phases of a competition are found among them), issue #671: FEB and FBCYL, then the external ones. */
+export const loadWebCollections = async (): Promise<string[]> => [...(await web.loadManifest()).rows, ...((await externalManifest())?.rows ?? [])].map(r => r.collection)
+
+/** What the manifest says of a published competition: what the list of competitions and its selector read. */
+export type PublishedInfo = Pick<WebDataManifest['rows'][number], 'collection' | 'league' | 'games' | 'gender' | 'category' | 'age_group' | 'competition_label' | 'group_label'>
+
+const KEPT = ['gender', 'category', 'age_group', 'competition_label', 'group_label'] as const
+
+/** What the manifests say of each published competition (name, league, games, gender and, when the catalogue says them, category, age group and the names people read): the list of competitions of the web, issue #705; the gender picks the calibrated win probability (#843). The category and the labels reach the selector whole (#914). The external ones (#884) follow those of FEB and FBCYL; if their publication cannot be had they are simply not there. */
+export async function loadWebCollectionInfos(): Promise<PublishedInfo[]> {
+  const rows = [...(await web.loadManifest()).rows, ...((await externalManifest())?.rows ?? [])]
+  return rows.map(row => ({ collection: row.collection, league: row.league, games: row.games, ...Object.fromEntries(KEPT.filter(key => row[key] !== undefined).map(key => [key, row[key]])) }))
+}
+
+/** How fresh the data of each external source is: when its last run was, when it last worked and how many games it holds, publishes and left out as unreliable. Empty when the publication cannot be had or says nothing (#884). */
+export async function loadSourceFreshness(): Promise<SourceFreshness[]> {
+  return (await externalManifest())?.sources ?? []
 }
 
 /** The rows of the contract of a competition (what its season tables are computed from on the device), issue #673. */
-export const loadWebRows = (collection: string): Promise<Competition> => openSealed<Competition>(() => sealedRows(collection), 'El fichero')
+export const loadWebRows = (collection: string): Promise<Competition> => publication(collection).openSealed<Competition>(() => sealedRows(collection), 'El fichero')
 
 const SCOPE_ORDER: ScoutingScope[] = ['liga', 'copa', 'todo']
 
@@ -165,7 +197,7 @@ export const loadWebAssistConnections = (collection: string) => loadWebSection<P
 export async function publishedSectionsOf(collection: string): Promise<Set<string>> {
   const sections = new Set<string>()
   try {
-    const manifest = await loadManifest()
+    const manifest = await publication(collection).loadManifest()
     for (const [key, entries] of Object.entries(manifest)) {
       if (Array.isArray(entries) && entries.some(e => (e as { collection?: string })?.collection === collection)) sections.add(key)
     }

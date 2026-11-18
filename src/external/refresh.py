@@ -82,7 +82,9 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
         return _pending(source, "the catalogue has no active competition of this source")
     folder = Path(out_root) / source
     previous = _previous(folder)
-    status: Dict[str, Any] = {"source": source, "state": "failed", "ok": False, "finished": _stamp(now), "last_ok": previous.get("last_ok")}
+    # a failed run does not change what the archive holds: the status keeps the counts of the last good one (the freshness of the web must not say the source has fewer games)
+    status: Dict[str, Any] = {"source": source, "state": "failed", "ok": False, "finished": _stamp(now), "last_ok": previous.get("last_ok"),
+                              **{key: previous[key] for key in ("competitions", "games", "unreliable") if key in previous}}
     try:
         if (folder / MANIFEST).is_file():
             load_archive(folder, db)

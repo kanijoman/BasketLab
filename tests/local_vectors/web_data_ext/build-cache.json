@@ -1,0 +1,57 @@
+{
+ "epoch": 1,
+ "competitions": {
+  "FIBA_U18_EuroBasket_2026_": {
+   "fingerprint": "fd16087cf73cf2b025cd0dc709295ab03a9d34a0b96291aeb7f7c36a769cdc58",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "91d6ab94981c3224",
+    "matches": "228c8891757f491c",
+    "possessions": "4b090df42b227e98",
+    "possession_csv": "4b090df42b227e98",
+    "lineups": "a98449b771fc9f5b",
+    "inout": "ff651adad74ac0e7",
+    "consistency": "02b862510268cea9",
+    "rival_adjusted": "89bf40fff20c19be",
+    "assist_connections": "487bfdcb94311687"
+   }
+  },
+  "NCAA_D1_2026_SEC": {
+   "fingerprint": "e9238a685be5c6a25918863a2069e8ac5eec484be1e93f5d329c79b29a543947",
+   "sections": [
+    "shots",
+    "rotations",
+    "matches",
+    "possessions",
+    "possession_csv",
+    "lineups",
+    "inout",
+    "rival_adjusted",
+    "assist_connections"
+   ],
+   "versions": {
+    "shots": "41edcc322790814a",
+    "rotations": "91d6ab94981c3224",
+    "matches": "228c8891757f491c",
+    "possessions": "4b090df42b227e98",
+    "possession_csv": "4b090df42b227e98",
+    "lineups": "a98449b771fc9f5b",
+    "inout": "ff651adad74ac0e7",
+    "consistency": "02b862510268cea9",
+    "rival_adjusted": "89bf40fff20c19be",
+    "assist_connections": "487bfdcb94311687"
+   }
+  }
+ }
+}
