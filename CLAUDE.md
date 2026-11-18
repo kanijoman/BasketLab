@@ -37,6 +37,7 @@ Evitar: arreglar un bug sin test de regresión previo · añadir feature y tests
 - **Dual format**: siempre FEB + FBCYL (`is_fbcyl`, ver DATA_FORMATS).
 - **Código y comentarios en inglés; textos de UI en español.**
 - **Preguntar solo por**: umbrales de lógica de negocio, alcance ambiguo, preferencias de layout.
+- **Procesos largos (CI, workflows, cargas, builds) que monitorices**: da al usuario feedback de progreso **cada 5 minutos** (estado, qué falta, si hay fallos), sin esperar a que acabe.
 - **Testing tras features**: plan guiado por el **checklist de esquinas de docs/TESTING.md** (fronteras de periodo, determinismo y orden, vacío/None/cero, FEB y FBCYL, idempotencia, datos tardíos o corregidos) en vez de «camino feliz + bordes + errores»; sin tests de constantes o defaults sueltos (una tabla `parametrize`), texto exacto de un mensaje solo en las frases críticas, mocks solo en fronteras (red, Mongo) → ejecutar **solo los tests que cubren lo que se ha tocado** (los nuevos y los antiguos del mismo código: `pytest --no-cov tests/test_<área>*.py`, `vitest run <ruta>`; tras cambiar `live_core`, también vectores y `test_docs_consistency`). **No lanzar la suite completa en local** (≈ 6 min): la ejecuta el CI de GitHub en el PR y un fallo ahí se arregla en el mismo PR. Checklist: sin excepciones · bordes (vacío/None/cero) · FEB+FBCYL · sin regresiones en lo afectado.
 
 ## Calidad (antes de escribir y cada ~100 líneas)
