@@ -168,3 +168,27 @@ class TestTheCommand:
         path = self._catalogue(tmp_path)
         code = cli.main(["--year", "2025", "--catalogue", str(path)], client=Site({"fiba-u18-eurobasket-2025": 56}, broken={"fiba-eurobasket-2025"}), today=TODAY)
         assert code == 1 and "fiba-eurobasket-2025" in capsys.readouterr().out and len(json.loads(path.read_text(encoding="utf-8"))["competitions"]) == 2
+
+
+# The FIBA events turned ON in ``config/competitions.json``. Turning one on makes the daily refresh start loading it from the site of FIBA, so the list is written here too: a change of it is a decision that
+# shows in a diff of this test, never an accident of a bulk edit of the catalogue. Add an event here in the same pull request that sets its ``active: true``.
+ACTIVE_FIBA_EVENTS = {"fiba-u18-eurobasket-2025"}
+
+
+def test_the_fiba_events_turned_on_in_the_real_catalogue_are_exactly_the_ones_decided():
+    from pathlib import Path
+
+    catalogue = load_catalogue(Path(__file__).resolve().parents[1] / "config" / "competitions.json")
+    fiba = [e for e in catalogue if e["league"] == "fiba"]
+    assert len(fiba) >= 22 and {e["fiba"]["event"] for e in fiba if e["active"]} == ACTIVE_FIBA_EVENTS
+    assert {e["fiba"]["event"] for e in external_entries(catalogue) if e["league"] == "fiba"} == ACTIVE_FIBA_EVENTS
+
+
+def test_an_event_that_is_turned_on_is_one_the_site_of_fiba_lists_with_a_known_age_and_gender():
+    """The entry that is on has what the refresh needs to read it: its event, its sex and, for a youth championship, its age group."""
+    from pathlib import Path
+
+    catalogue = load_catalogue(Path(__file__).resolve().parents[1] / "config" / "competitions.json")
+    for entry in (e for e in catalogue if e["league"] == "fiba" and e["active"]):
+        assert entry["fiba"]["event"] in ACTIVE_FIBA_EVENTS and entry["gender"] in ("M", "F") and entry["season_value"] in entry["fiba"]["event"]
+        assert (entry.get("category"), entry.get("age_group")) == ("formacion", "U18")
