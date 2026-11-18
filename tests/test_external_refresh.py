@@ -140,6 +140,54 @@ class TestWhatTheSourceIsToldAndWhatItSays:
         assert "notes" not in refresh_source("fiba", _catalogue(tmp_path, "fiba"), db, tmp_path / "out", NOW)
 
 
+class TestGamesStoredAsUnreliableWhenTheRuleChanges:
+    """A game flagged unreliable under an older reconciliation rule is judged again from what is stored (no request to the site, no budget), once per version of the rule: a game that is really bad is not asked for again every day."""
+
+    def _stored_unreliable(self, tmp_path, stamp):
+        """A run that stores the real sample game, then an archive in which that game is flagged unreliable (as an older rule did) with ``stamp`` as the version it was judged with."""
+        from src.local_data.archive import dump_archive
+
+        source = FixtureSource("fiba", docs=FixtureSource("fiba").docs[:1])
+        registry.register(source)
+        cat = _catalogue(tmp_path, "fiba")
+        first = new_mock_db("BASKETBALL")
+        refresh_source("fiba", cat, first, tmp_path / "out", NOW)
+        name = next(iter(external_collections(cat)))
+        flagged = {"_reliable": False, "_mismatches": ["ORB", "DRB"]}
+        first[name].update_one({}, {"$set": flagged, **({"$unset": {"_reconciled_with": ""}} if stamp is None else {})})
+        if stamp is not None:
+            first[name].update_one({}, {"$set": {"_reconciled_with": stamp}})
+        dump_archive(first, tmp_path / "out" / "fiba", light=lambda _n: False, only=[name], allow_shrink=False)
+        source.docs.clear()                                                    # the site has nothing new to say
+        return source, cat, name
+
+    def test_a_game_judged_with_an_older_rule_is_judged_again_without_asking_the_site(self, tmp_path):
+        source, cat, name = self._stored_unreliable(tmp_path, stamp=None)
+        db = new_mock_db("BASKETBALL")
+        status = refresh_source("fiba", cat, db, tmp_path / "out", NOW + timedelta(days=1))
+        doc = db[name].find_one()
+        assert doc["_reliable"] is True and "_mismatches" not in doc and status["unreliable"] == 0 and status["updated"] == 1
+        assert len(source.known[-1]) == 1                                      # it was never asked for again: it is a known id
+
+    def test_a_game_judged_with_the_current_rule_is_left_as_it_is(self, tmp_path):
+        from src.market.box_reconciliation import RECONCILE_VERSION
+
+        _source, cat, name = self._stored_unreliable(tmp_path, stamp=RECONCILE_VERSION)
+        db = new_mock_db("BASKETBALL")
+        status = refresh_source("fiba", cat, db, tmp_path / "out", NOW + timedelta(days=1))
+        assert db[name].find_one()["_reliable"] is False and status["unreliable"] == 1 and status["updated"] == 0
+
+    def test_a_game_that_is_still_unreliable_is_stamped_so_it_is_not_judged_again_until_the_rule_changes(self, tmp_path, db):
+        from src.market.box_reconciliation import RECONCILE_VERSION
+
+        registry.register(FixtureSource("fiba"))
+        cat = _catalogue(tmp_path, "fiba")
+        refresh_source("fiba", cat, db, tmp_path / "out", NOW)
+        stored = list(db[next(iter(external_collections(cat)))].find())
+        assert len(stored) == 13 and all(d["_reconciled_with"] == RECONCILE_VERSION for d in stored)
+        assert refresh_source("fiba", cat, db, tmp_path / "out", NOW + timedelta(days=1))["updated"] == 0
+
+
 class TestIsolation:
     def test_a_failing_source_reports_it_keeps_its_last_good_date_and_leaves_its_archive_alone(self, tmp_path, db):
         good = FixtureSource("ncaa")

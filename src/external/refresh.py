@@ -14,7 +14,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from src.external.registry import SOURCES
 from src.local_data.archive import MANIFEST, dump_archive, load_archive
-from src.market.box_reconciliation import CORE_STATS, reconcile_game
+from src.market.box_reconciliation import CORE_STATS, RECONCILE_VERSION, reconcile_game
 from src.market.canonical import validate_game
 from src.services.competition_catalogue import external_collections
 
@@ -46,9 +46,19 @@ def _marked(doc: Dict[str, Any]) -> Dict[str, Any]:
     try:
         result = reconcile_game(doc)
     except ValueError:
-        return {**doc, "_reliable": False, "_mismatches": ["BOX"]}
+        return {**doc, "_reliable": False, "_mismatches": ["BOX"], "_reconciled_with": RECONCILE_VERSION}
     failing = sorted({c.stat for c in result.mismatches(CORE_STATS)}, key=CORE_STATS.index)
-    return {**doc, "_reliable": result.reliable, **({"_mismatches": failing} if failing else {})}
+    return {**doc, "_reliable": result.reliable, "_reconciled_with": RECONCILE_VERSION, **({"_mismatches": failing} if failing else {})}
+
+
+def _rejudge(collection: Any) -> int:
+    """Judge again, from what is stored (no request), the games flagged unreliable under an older version of the rule. Once per version: the stamp stops a really bad game from being judged on every run."""
+    done = 0
+    for stored in list(collection.find({"_reliable": False, "_reconciled_with": {"$not": {"$gte": RECONCILE_VERSION}}})):
+        doc = _marked({k: v for k, v in stored.items() if k not in ("_reliable", "_mismatches", "_reconciled_with")})
+        collection.replace_one({"_id": doc["_id"]}, doc)
+        done += doc != stored
+    return done
 
 
 def _merge(collection: Any, docs: Iterable[Dict[str, Any]], gender: str, rejected: List[Dict[str, str]]) -> Dict[str, int]:
@@ -91,9 +101,10 @@ def refresh_source(source: str, catalogue: List[Dict[str, Any]], db: Any, out_ro
             load_archive(folder, db)
         since, rejected, totals = _since(previous, window_days), [], {"new": 0, "updated": 0}
         for name, entry in collections.items():
+            rejudged = _rejudge(db[name])
             known = frozenset(doc["_id"] for doc in db[name].find({}, {"_id": 1}))
             counts = _merge(db[name], SOURCES[source].fetch(entry, since, known), entry["gender"], rejected)
-            totals = {k: totals[k] + counts[k] for k in totals}
+            totals = {k: totals[k] + counts[k] + (rejudged if k == "updated" else 0) for k in totals}
         dump_archive(db, folder, light=lambda _name: False, only=list(collections), allow_shrink=False)
     except Exception as error:  # noqa: BLE001 - whatever the source does wrong stays in its own status
         status["error"] = f"{type(error).__name__}: {error}"[:300]
