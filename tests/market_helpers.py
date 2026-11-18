@@ -45,12 +45,13 @@ class FixtureSource:
     def __init__(self, name, docs=None, boom=None):
         import games
 
-        self.name, self.boom, self.asked = name, boom, []
+        self.name, self.boom, self.asked, self.known, self.notes = name, boom, [], [], []
         sample = unwrap(json.loads(SAMPLE.read_text(encoding="utf-8")))
         self.docs = docs if docs is not None else [badged(sample, name), *[badged(g, name) for g in games.build_games()]]
 
-    def fetch(self, entry, since):
+    def fetch(self, entry, since, known=frozenset()):
         self.asked.append((entry["competition"], since))
+        self.known.append(frozenset(known))
         if self.boom:
             raise RuntimeError(self.boom)
         return copy.deepcopy(self.docs)

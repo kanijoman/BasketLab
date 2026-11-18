@@ -80,3 +80,22 @@ def test_the_page_of_a_game_is_not_the_page_of_an_event_and_asking_again_would_n
 
 def test_parsing_twice_gives_the_same_list(played):
     assert parse_event_games(flight("fiba-u18-eurobasket-2025")) == played
+
+
+class TestAPageThatExistsWithoutRealGames:
+    """The page of ``fiba-u19-basketball-world-cup-2026`` (captured 18/11/2026) exists and lists 20 games that are only a ``gameId``: no teams, no date, no status. The U19 World Cup is played in odd years; the site
+    keeps the shell of the event. Such a game is not finished and has no page to ask for, and an event that has nothing else is an event with no games yet."""
+
+    @pytest.fixture(scope="class")
+    def shell(self):
+        return parse_event_games(flight("fiba-u19-basketball-world-cup-2026"))
+
+    def test_the_games_are_listed_but_have_no_teams_no_slug_and_are_not_finished(self, shell):
+        assert len(shell) == 20 and all(g["teams"] == [] and g["slug"] is None and g["finished"] is False and g["score"] is None for g in shell)
+        assert len({g["game_id"] for g in shell}) == 20
+
+    def test_the_order_is_stable_when_nothing_has_a_date(self, shell):
+        assert [g["game_id"] for g in shell] == sorted(g["game_id"] for g in shell)
+
+    def test_none_of_them_is_a_game_to_ask_for(self, shell):
+        assert [g for g in shell if g["finished"] and g["slug"]] == []

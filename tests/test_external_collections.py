@@ -29,6 +29,8 @@ def _entry(source, **over):
     base = {"competition": "D1" if source == "ncaa" else "U18 EuroBasket", "season_label": "2026/2027", "season_value": "2026", "league": source, "division": "D1", "gender": "M"}
     if source == "ncaa":
         base["conference"] = "SEC"
+    if source == "fiba":
+        base["fiba"] = {"event": "fiba-test-event-2026"}
     return {**base, **over}
 
 

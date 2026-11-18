@@ -20,9 +20,9 @@ def html_of(text: str, chunk: int = 20000) -> str:
 class Site:
     """A fake FIBA site: ``pages`` maps the end of a URL to what it answers (an HTML text, an exception to raise, or a list of those, one per request); every request is recorded."""
 
-    def __init__(self, pages: Dict[str, object]) -> None:
+    def __init__(self, pages: Dict[str, object], default: object = None) -> None:
         self.pages = {k: (list(v) if isinstance(v, list) else [v]) for k, v in pages.items()}
-        self.requests = []
+        self.default, self.requests = default, []
 
     def fetch(self, url: str, user_agent: str) -> str:
         self.requests.append((url, user_agent))
@@ -32,6 +32,10 @@ class Site:
                 if isinstance(answer, BaseException):
                     raise answer
                 return answer
+        if self.default is not None:                                    # what every page that is not listed answers (a 404, usually)
+            if isinstance(self.default, BaseException):
+                raise self.default
+            return self.default
         raise AssertionError(f"unexpected request {url}")
 
 

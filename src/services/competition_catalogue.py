@@ -51,6 +51,16 @@ def _check_fbcyl(where: str, value: Any) -> None:
             raise ValueError(f"{where}: fbcyl.{key} must be a text")
 
 
+def _check_fiba(where: str, value: Any) -> Dict[str, Any]:
+    """The ``fiba`` object of a FIBA entry: the ``event`` of its site (``fiba-u18-eurobasket-2025``) and, optionally, ``max_games``: how many games of it a run asks for at most (#887)."""
+    if not isinstance(value, dict) or not isinstance(value.get("event"), str) or not value["event"].strip():
+        raise ValueError(f"{where}: a fiba competition needs fiba.event, the event of the site of FIBA (fiba-u18-eurobasket-2025)")
+    cap = value.get("max_games")
+    if cap is not None and (isinstance(cap, bool) or not isinstance(cap, int) or cap < 1):
+        raise ValueError(f"{where}: fiba.max_games must be a whole number of games, 1 or more, not {cap!r}")
+    return {"event": value["event"].strip(), **({"max_games": cap} if cap is not None else {})}
+
+
 def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
     """An external competition (ACB, FIBA, NCAA): its division, its gender and, where the source splits by them, its conference. Nothing to scrape: no URL, no groups."""
     from src.live_prep.competition_info import GENDERS
@@ -66,7 +76,8 @@ def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError(f"{where}: conference must be a text")
     if conference is None and league in CONFERENCE_REQUIRED:
         raise ValueError(f"{where}: a {league} competition lacks: conference (one competition per conference)")
-    return {"source": league, "groups": "", "conference": conference.strip() if conference else None}
+    extra = {"fiba": _check_fiba(where, raw.get("fiba"))} if league == "fiba" else {}
+    return {"source": league, "groups": "", "conference": conference.strip() if conference else None, **extra}
 
 
 def _check(position: int, raw: Dict[str, Any]) -> Dict[str, Any]:

@@ -12,6 +12,10 @@ on:
   schedule:
     - cron: "30 6 * * *"
   workflow_dispatch:
+    inputs:
+      budget:
+        description: "How many games each source may ask for in this run (empty: the default of the source, 300 for FIBA at one request every 2 s)"
+        required: false
   pull_request:
     paths:
       - "run_external_refresh.py"
@@ -86,7 +90,8 @@ jobs:
         id: refresh
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
-        run: python run_external_refresh.py --source "${{ matrix.source }}" --out archive-ext
+          BUDGET: ${{ inputs.budget }}
+        run: python run_external_refresh.py --source "${{ matrix.source }}" --out archive-ext ${BUDGET:+--budget "$BUDGET"}
       - name: Save the archive of the source
         # also after a failed run: its status (when it ran, `last_ok` kept) is what the freshness of the web says; nothing changed means no commit
         if: ${{ !cancelled() && hashFiles(format('archive-ext/{0}/status.json', matrix.source)) != '' }}

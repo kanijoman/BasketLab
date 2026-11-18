@@ -1,10 +1,11 @@
 """The external sources that exist, by name (#884). A source is an object with a ``name`` (``acb``, ``fiba``, ``ncaa``) and ``fetch(entry, since)``: the games of one competition of the catalogue, in the
-canonical format (``market.canonical``), changed or new since ``since`` (``YYYY-MM-DD``; ``None`` the first time: the whole history). Each block D2 to D4 registers its own; until then none is registered and
+canonical format (``market.canonical``), changed or new since ``since`` (``YYYY-MM-DD``; ``None`` the first time: the whole history). ``known`` are the ids it already has stored: a source whose games never change
+once played (FIBA's) does not ask for them again. A source may also keep ``notes``: what it wants to say of its run (a page it could not get), which go to its status. Each block D2 to D4 registers its own; until then none is registered and
 the refresh of a source says it is pending, which is not a failure.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, Optional, Protocol
+from typing import AbstractSet, Any, Dict, Iterable, Optional, Protocol
 
 from src.utils.collection_utils import EXTERNAL_SOURCES
 
@@ -12,7 +13,7 @@ from src.utils.collection_utils import EXTERNAL_SOURCES
 class Source(Protocol):
     name: str
 
-    def fetch(self, entry: Dict[str, Any], since: Optional[str]) -> Iterable[Dict[str, Any]]: ...
+    def fetch(self, entry: Dict[str, Any], since: Optional[str], known: AbstractSet[str]) -> Iterable[Dict[str, Any]]: ...
 
 
 SOURCES: Dict[str, Source] = {}

@@ -4576,6 +4576,338 @@
         "territory": "1"
       },
       "age_group": "U16"
+    },
+    {
+      "competition": "U16 EuroBasket",
+      "season_label": "2024",
+      "season_value": "2024",
+      "league": "fiba",
+      "division": "U16",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u16-eurobasket-2024"
+      },
+      "label": "FIBA U16 EuroBasket",
+      "note": "FIBA U16 EuroBasket 2024: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U16"
+    },
+    {
+      "competition": "U16 EuroBasket Women",
+      "season_label": "2024",
+      "season_value": "2024",
+      "league": "fiba",
+      "division": "U16",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u16-womens-eurobasket-2024"
+      },
+      "label": "FIBA U16 EuroBasket Women",
+      "note": "FIBA U16 EuroBasket Women 2024: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U16"
+    },
+    {
+      "competition": "U18 EuroBasket",
+      "season_label": "2024",
+      "season_value": "2024",
+      "league": "fiba",
+      "division": "U18",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u18-eurobasket-2024"
+      },
+      "label": "FIBA U18 EuroBasket",
+      "note": "FIBA U18 EuroBasket 2024: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U18"
+    },
+    {
+      "competition": "U18 EuroBasket Women",
+      "season_label": "2024",
+      "season_value": "2024",
+      "league": "fiba",
+      "division": "U18",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u18-womens-eurobasket-2024"
+      },
+      "label": "FIBA U18 EuroBasket Women",
+      "note": "FIBA U18 EuroBasket Women 2024: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U18"
+    },
+    {
+      "competition": "U20 EuroBasket",
+      "season_label": "2024",
+      "season_value": "2024",
+      "league": "fiba",
+      "division": "U20",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u20-eurobasket-2024"
+      },
+      "label": "FIBA U20 EuroBasket",
+      "note": "FIBA U20 EuroBasket 2024: 56 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U20 EuroBasket Women",
+      "season_label": "2024",
+      "season_value": "2024",
+      "league": "fiba",
+      "division": "U20",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u20-womens-eurobasket-2024"
+      },
+      "label": "FIBA U20 EuroBasket Women",
+      "note": "FIBA U20 EuroBasket Women 2024: 56 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U16 EuroBasket",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U16",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u16-eurobasket-2025"
+      },
+      "label": "FIBA U16 EuroBasket",
+      "note": "FIBA U16 EuroBasket 2025: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U16"
+    },
+    {
+      "competition": "U16 EuroBasket Women",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U16",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u16-womens-eurobasket-2025"
+      },
+      "label": "FIBA U16 EuroBasket Women",
+      "note": "FIBA U16 EuroBasket Women 2025: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U16"
+    },
+    {
+      "competition": "U18 EuroBasket",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U18",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u18-eurobasket-2025"
+      },
+      "label": "FIBA U18 EuroBasket",
+      "note": "FIBA U18 EuroBasket 2025: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U18"
+    },
+    {
+      "competition": "U18 EuroBasket Women",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U18",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u18-womens-eurobasket-2025"
+      },
+      "label": "FIBA U18 EuroBasket Women",
+      "note": "FIBA U18 EuroBasket Women 2025: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U18"
+    },
+    {
+      "competition": "U20 EuroBasket",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U20",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u20-eurobasket-2025"
+      },
+      "label": "FIBA U20 EuroBasket",
+      "note": "FIBA U20 EuroBasket 2025: 56 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U20 EuroBasket Women",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U20",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u20-womens-eurobasket-2025"
+      },
+      "label": "FIBA U20 EuroBasket Women",
+      "note": "FIBA U20 EuroBasket Women 2025: 56 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U19 World Cup",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U19",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u19-basketball-world-cup-2025"
+      },
+      "label": "FIBA U19 World Cup",
+      "note": "FIBA U19 World Cup 2025: 56 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U19 World Cup Women",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "U19",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u19-womens-basketball-world-cup-2025"
+      },
+      "label": "FIBA U19 World Cup Women",
+      "note": "FIBA U19 World Cup Women 2025: 49 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "EuroBasket",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "Senior",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-eurobasket-2025"
+      },
+      "label": "FIBA EuroBasket",
+      "note": "FIBA EuroBasket 2025: 76 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "EuroBasket Women",
+      "season_label": "2025",
+      "season_value": "2025",
+      "league": "fiba",
+      "division": "Senior",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-womens-eurobasket-2025"
+      },
+      "label": "FIBA EuroBasket Women",
+      "note": "FIBA EuroBasket Women 2025: 36 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U16 EuroBasket",
+      "season_label": "2026",
+      "season_value": "2026",
+      "league": "fiba",
+      "division": "U16",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u16-eurobasket-2026"
+      },
+      "label": "FIBA U16 EuroBasket",
+      "note": "FIBA U16 EuroBasket 2026: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U16"
+    },
+    {
+      "competition": "U16 EuroBasket Women",
+      "season_label": "2026",
+      "season_value": "2026",
+      "league": "fiba",
+      "division": "U16",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u16-womens-eurobasket-2026"
+      },
+      "label": "FIBA U16 EuroBasket Women",
+      "note": "FIBA U16 EuroBasket Women 2026: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U16"
+    },
+    {
+      "competition": "U18 EuroBasket",
+      "season_label": "2026",
+      "season_value": "2026",
+      "league": "fiba",
+      "division": "U18",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u18-eurobasket-2026"
+      },
+      "label": "FIBA U18 EuroBasket",
+      "note": "FIBA U18 EuroBasket 2026: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U18"
+    },
+    {
+      "competition": "U18 EuroBasket Women",
+      "season_label": "2026",
+      "season_value": "2026",
+      "league": "fiba",
+      "division": "U18",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u18-womens-eurobasket-2026"
+      },
+      "label": "FIBA U18 EuroBasket Women",
+      "note": "FIBA U18 EuroBasket Women 2026: 56 games listed on 18/11/2026; paused until it is turned on",
+      "category": "formacion",
+      "age_group": "U18"
+    },
+    {
+      "competition": "U20 EuroBasket",
+      "season_label": "2026",
+      "season_value": "2026",
+      "league": "fiba",
+      "division": "U20",
+      "gender": "M",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u20-eurobasket-2026"
+      },
+      "label": "FIBA U20 EuroBasket",
+      "note": "FIBA U20 EuroBasket 2026: 56 games listed on 18/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "U20 EuroBasket Women",
+      "season_label": "2026",
+      "season_value": "2026",
+      "league": "fiba",
+      "division": "U20",
+      "gender": "F",
+      "active": false,
+      "fiba": {
+        "event": "fiba-u20-womens-eurobasket-2026"
+      },
+      "label": "FIBA U20 EuroBasket Women",
+      "note": "FIBA U20 EuroBasket Women 2026: 56 games listed on 18/11/2026; paused until it is turned on"
     }
   ]
 }

@@ -123,7 +123,8 @@ def _finished(game: Dict[str, Any]) -> bool:
 
 def parse_event_games(flight: str) -> List[Dict[str, Any]]:
     """The games an event page lists, in the order they are played (by kick-off, ties by id): who plays, when, the score of the finished ones and the ``slug`` of the page of each (``<id>-<code>-<code>``).
-    ``GenericPage`` when the page lists no games (the generic version, or a page that is not an event's); ``FibaPageError`` when the list is cut."""
+    A game that is only a ``gameId`` (the shell the site keeps for an event that has not been played) has no teams, no ``slug`` and is not finished. ``GenericPage`` when the page lists no games (the generic
+    version, or a page that is not an event's); ``FibaPageError`` when the list is cut."""
     flight = flight or ""
     if _MARKERS["game"] in flight:
         raise FibaPageError("this is the page of a game, not of an event")                  # a game's page also mentions other games
@@ -137,7 +138,10 @@ def parse_event_games(flight: str) -> List[Dict[str, Any]]:
     games = []
     try:
         for item in raw:
-            home, away = item["teamA"], item["teamB"]
+            home, away = item.get("teamA"), item.get("teamB")
+            if not home or not away:                                           # the shell of an event: a game that is only a ``gameId`` (no teams, no date, no status), with no page to ask for
+                games.append({"game_id": item["gameId"], "slug": None, "number": None, "start": None, "start_utc": None, "finished": False, "postponed": False, "teams": [], "score": None})
+                continue
             finished = _finished(item)
             games.append({"game_id": item["gameId"], "slug": f"{item['gameId']}-{home['code']}-{away['code']}", "number": item.get("gameNumber"), "start": item.get("gameDateTime"),
                           "start_utc": item.get("gameDateTimeUTC"), "finished": finished, "postponed": bool(item.get("isPostponed")),

@@ -88,6 +88,8 @@ def competition_categories(names: Iterable[str], catalogue: List[Dict[str, Any]]
 
     by_name: Dict[str, Dict[str, Any]] = {}
     for entry in catalogue:
+        if entry["league"] not in ("feb", "fbcyl"):
+            continue                                       # the external sources (#887) have their own publication, ``web-data-ext``: no key of FBCYL is made up out of their name
         key = _plain(entry["competition"]) if entry["league"] == "feb" else get_collection_name(f"FBCYL_{entry['competition']}", entry["season_value"], "")
         by_name.setdefault(key, category_facts(entry))
     out: Dict[str, Dict[str, Any]] = {}

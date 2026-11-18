@@ -33,7 +33,7 @@ FIBA = "FIBA_U18_EuroBasket_2026_"
 NCAA = "NCAA_D1_2026_SEC"
 DAY = datetime(2026, 11, 17, 7, 0, tzinfo=timezone.utc)
 ENTRIES = [
-    {"competition": "U18 EuroBasket", "season_label": "2026", "season_value": "2026", "league": "fiba", "division": "U18", "gender": "F"},
+    {"competition": "U18 EuroBasket", "season_label": "2026", "season_value": "2026", "league": "fiba", "division": "U18", "gender": "F", "fiba": {"event": "fiba-u18-eurobasket-test"}},
     {"competition": "D1", "season_label": "2026/2027", "season_value": "2026", "league": "ncaa", "division": "D1", "gender": "M", "conference": "SEC"},
 ]
 

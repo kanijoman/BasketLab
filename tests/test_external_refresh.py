@@ -26,7 +26,7 @@ NOW = datetime(2026, 11, 17, 7, 0, tzinfo=timezone.utc)
 
 
 def _catalogue(tmp_path, *sources):
-    entries = [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M", **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]
+    entries = [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M", **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]
     path = tmp_path / "competitions.json"
     path.write_text(json.dumps({"competitions": entries}), encoding="utf-8")
     return load_catalogue(path)
@@ -118,6 +118,28 @@ class TestRefreshOfOneSource:
         assert refresh_source("acb", _catalogue(tmp_path, "fiba"), db, tmp_path / "out", NOW)["state"] == "pending"
 
 
+class TestWhatTheSourceIsToldAndWhatItSays:
+    def test_the_source_is_given_the_ids_it_already_has_so_that_it_does_not_ask_for_them_again(self, tmp_path, db):
+        source = FixtureSource("fiba")
+        registry.register(source)
+        cat = _catalogue(tmp_path, "fiba")
+        refresh_source("fiba", cat, db, tmp_path / "out", NOW)
+        refresh_source("fiba", cat, db, tmp_path / "out", NOW + timedelta(days=1))
+        assert source.known[0] == frozenset() and len(source.known[1]) == 13 and "fiba:9001" in source.known[1]
+
+    def test_what_the_source_has_to_say_of_its_run_goes_to_the_status_and_is_capped(self, tmp_path, db):
+        source = FixtureSource("fiba")
+        source.notes = [f"game {i}: not found" for i in range(30)]
+        registry.register(source)
+        status = refresh_source("fiba", _catalogue(tmp_path, "fiba"), db, tmp_path / "out", NOW)
+        assert status["notes"] == source.notes[:20] and status["notes_total"] == 30
+        assert _status(tmp_path / "out", "fiba")["notes"] == source.notes[:20]
+
+    def test_a_source_with_nothing_to_say_has_no_notes_in_its_status(self, tmp_path, db):
+        registry.register(FixtureSource("fiba"))
+        assert "notes" not in refresh_source("fiba", _catalogue(tmp_path, "fiba"), db, tmp_path / "out", NOW)
+
+
 class TestIsolation:
     def test_a_failing_source_reports_it_keeps_its_last_good_date_and_leaves_its_archive_alone(self, tmp_path, db):
         good = FixtureSource("ncaa")
@@ -160,7 +182,7 @@ class TestEntryPoint:
     def _argv(self, tmp_path, *sources, extra=()):
         cat = tmp_path / "competitions.json"
         cat.write_text(json.dumps({"competitions": [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M",
-                                                     **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]}), encoding="utf-8")
+                                                     **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]}), encoding="utf-8")
         return ["--catalogue", str(cat), "--out", str(tmp_path / "out"), *extra]
 
     def test_the_sources_of_the_catalogue_are_listed_for_the_matrix_of_the_workflow(self, cli, tmp_path, capsys):
