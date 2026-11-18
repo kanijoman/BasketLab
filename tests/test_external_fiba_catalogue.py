@@ -172,7 +172,8 @@ class TestTheCommand:
 
 # The FIBA events turned ON in ``config/competitions.json``. Turning one on makes the daily refresh start loading it from the site of FIBA, so the list is written here too: a change of it is a decision that
 # shows in a diff of this test, never an accident of a bulk edit of the catalogue. Add an event here in the same pull request that sets its ``active: true``.
-ACTIVE_FIBA_EVENTS = {"fiba-u18-eurobasket-2025"}
+ACTIVE_FIBA_EVENTS = {f"fiba-{kind}-{year}" for year in (2024, 2025, 2026) for kind in (
+    "u16-eurobasket", "u16-womens-eurobasket", "u18-eurobasket", "u18-womens-eurobasket", "u20-eurobasket", "u20-womens-eurobasket")}     | {"fiba-u19-basketball-world-cup-2025", "fiba-u19-womens-basketball-world-cup-2025", "fiba-eurobasket-2025", "fiba-womens-eurobasket-2025"}      # the scope of 18/11/2026 (#887): youth 2024-2026 and the absolute events
 
 
 def test_the_fiba_events_turned_on_in_the_real_catalogue_are_exactly_the_ones_decided():
@@ -180,7 +181,7 @@ def test_the_fiba_events_turned_on_in_the_real_catalogue_are_exactly_the_ones_de
 
     catalogue = load_catalogue(Path(__file__).resolve().parents[1] / "config" / "competitions.json")
     fiba = [e for e in catalogue if e["league"] == "fiba"]
-    assert len(fiba) >= 22 and {e["fiba"]["event"] for e in fiba if e["active"]} == ACTIVE_FIBA_EVENTS
+    assert len(fiba) == 22 == len(ACTIVE_FIBA_EVENTS) and {e["fiba"]["event"] for e in fiba if e["active"]} == ACTIVE_FIBA_EVENTS
     assert {e["fiba"]["event"] for e in external_entries(catalogue) if e["league"] == "fiba"} == ACTIVE_FIBA_EVENTS
 
 
@@ -191,4 +192,5 @@ def test_an_event_that_is_turned_on_is_one_the_site_of_fiba_lists_with_a_known_a
     catalogue = load_catalogue(Path(__file__).resolve().parents[1] / "config" / "competitions.json")
     for entry in (e for e in catalogue if e["league"] == "fiba" and e["active"]):
         assert entry["fiba"]["event"] in ACTIVE_FIBA_EVENTS and entry["gender"] in ("M", "F") and entry["season_value"] in entry["fiba"]["event"]
-        assert (entry.get("category"), entry.get("age_group")) == ("formacion", "U18")
+        age = entry["division"]
+        assert (entry.get("category"), entry.get("age_group")) == (("formacion", age) if age in ("U16", "U18") else (None, None))       # U19, U20 and the absolute events are senior (#918)

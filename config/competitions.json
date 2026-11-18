@@ -4584,7 +4584,7 @@
       "league": "fiba",
       "division": "U16",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u16-eurobasket-2024"
       },
@@ -4600,7 +4600,7 @@
       "league": "fiba",
       "division": "U16",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u16-womens-eurobasket-2024"
       },
@@ -4616,7 +4616,7 @@
       "league": "fiba",
       "division": "U18",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u18-eurobasket-2024"
       },
@@ -4632,7 +4632,7 @@
       "league": "fiba",
       "division": "U18",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u18-womens-eurobasket-2024"
       },
@@ -4648,7 +4648,7 @@
       "league": "fiba",
       "division": "U20",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u20-eurobasket-2024"
       },
@@ -4662,7 +4662,7 @@
       "league": "fiba",
       "division": "U20",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u20-womens-eurobasket-2024"
       },
@@ -4676,7 +4676,7 @@
       "league": "fiba",
       "division": "U16",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u16-eurobasket-2025"
       },
@@ -4692,7 +4692,7 @@
       "league": "fiba",
       "division": "U16",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u16-womens-eurobasket-2025"
       },
@@ -4724,7 +4724,7 @@
       "league": "fiba",
       "division": "U18",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u18-womens-eurobasket-2025"
       },
@@ -4740,7 +4740,7 @@
       "league": "fiba",
       "division": "U20",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u20-eurobasket-2025"
       },
@@ -4754,7 +4754,7 @@
       "league": "fiba",
       "division": "U20",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u20-womens-eurobasket-2025"
       },
@@ -4768,7 +4768,7 @@
       "league": "fiba",
       "division": "U19",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u19-basketball-world-cup-2025"
       },
@@ -4782,7 +4782,7 @@
       "league": "fiba",
       "division": "U19",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u19-womens-basketball-world-cup-2025"
       },
@@ -4796,7 +4796,7 @@
       "league": "fiba",
       "division": "Senior",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-eurobasket-2025"
       },
@@ -4810,7 +4810,7 @@
       "league": "fiba",
       "division": "Senior",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-womens-eurobasket-2025"
       },
@@ -4824,7 +4824,7 @@
       "league": "fiba",
       "division": "U16",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u16-eurobasket-2026"
       },
@@ -4840,7 +4840,7 @@
       "league": "fiba",
       "division": "U16",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u16-womens-eurobasket-2026"
       },
@@ -4856,7 +4856,7 @@
       "league": "fiba",
       "division": "U18",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u18-eurobasket-2026"
       },
@@ -4872,7 +4872,7 @@
       "league": "fiba",
       "division": "U18",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u18-womens-eurobasket-2026"
       },
@@ -4888,7 +4888,7 @@
       "league": "fiba",
       "division": "U20",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u20-eurobasket-2026"
       },
@@ -4902,7 +4902,7 @@
       "league": "fiba",
       "division": "U20",
       "gender": "F",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u20-womens-eurobasket-2026"
       },
