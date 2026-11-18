@@ -44,6 +44,8 @@ Umbrales acordados (#884): las nueve centrales exactas o el partido es no fiable
 - **Sin clave**: la caja completa sale del HTML público. La web de FIBA es de Next y su formato puede cambiar: `parse_game` lo detecta (`FibaPageError`, o `GenericPage` para la versión genérica) en vez de dar una cifra rara.
 - **Alcance de D3** (decidido el 18/11/2026): los eventos medidos (U16, U18, U20 EuroBasket, U19 Copa del Mundo, 2024–2026) más las selecciones absolutas de la web actual; **fuera**: el archivo antiguo («desde ~2006», otro formato, sin explorar), las divisiones B y C, los «líderes» (una tabla de 50 jugadores que se calcula mejor desde los partidos).
 - **Sin mapa de tiro por ahora**: FIBA da las coordenadas de cada tiro (`x`, `y`); llevarlas a las zonas del motor es un bloque aparte y necesita calibrarse.
+4. **Los rebotes se leen de la etiqueta, no del último tiro fallado.** En la primera carga real, 7 de 56 partidos no cuadraban solo en rebotes ofensivos/defensivos: FIBA no escribe los eventos en el orden de su reloj y inferir el tipo del último fallo se equivoca. El cuadre usa la etiqueta del texto (`offensive`/`defensive`, con o sin mayúscula) y solo infiere cuando el texto no dice ninguna.
+
 - **Seis partidos son una muestra pequeña** (tres competiciones, un solo año, una prórroga): el cuadre se repite sobre cada edición y categoría nueva en D3b, y un partido que no cuadre se guarda marcado como no fiable, nunca se corrige.
 
 ## Siguiente

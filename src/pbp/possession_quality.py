@@ -19,8 +19,10 @@ def count_quality_pbp_metrics(game_data: Dict, is_fbcyl: bool, team_ids: List[st
     return count_quality_events(game_events(game_data, is_fbcyl), is_fbcyl, team_ids)
 
 
-def count_quality_events(events: Iterable, is_fbcyl: bool, team_ids: List[str]) -> Dict[str, Dict[str, int]]:
-    """The same counts over the events given (the reconciliation of the external sources passes them without the lines the table deleted, #884)."""
+def count_quality_events(events: Iterable, is_fbcyl: bool, team_ids: List[str], use_labels: bool = False) -> Dict[str, Dict[str, int]]:
+    """The same counts over the events given (the reconciliation of the external sources passes them without the lines the table deleted, #884). With ``use_labels`` a rebound line that says whether it is
+    offensive or defensive (FIBA's ``REBOTE OFENSIVO``) is counted as it says and the rule of the tracker only decides the lines that do not (FEB's): an event written late can put a rebound before the missed shot
+    it follows, which breaks the inference but not the label (#887). Without it nothing changes for FEB and FBCYL."""
     counts = {tid: {metric: 0 for metric in QUALITY_METRICS} for tid in team_ids}
     last_miss = None
     for ev in sorted(events, key=lambda e: (e.elapsed, e.num)):
@@ -36,8 +38,9 @@ def count_quality_events(events: Iterable, is_fbcyl: bool, team_ids: List[str]) 
             if not is_fbcyl and ev.player_id is None:
                 last_miss = None
                 continue
-            offensive = _offensive(ev.text) if is_fbcyl else last_miss == ev.team_id
-            if offensive is not None and (is_fbcyl or last_miss is not None):
+            label = _offensive(ev.text) if use_labels and not is_fbcyl else None
+            offensive = _offensive(ev.text) if is_fbcyl else (label if label is not None else last_miss == ev.team_id)
+            if offensive is not None and (is_fbcyl or label is not None or last_miss is not None):
                 team["RebO" if offensive else "RebD"] += 1
             last_miss = None
         elif ev.kind == "turnover":
