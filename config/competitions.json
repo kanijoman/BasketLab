@@ -4708,12 +4708,12 @@
       "league": "fiba",
       "division": "U18",
       "gender": "M",
-      "active": false,
+      "active": true,
       "fiba": {
         "event": "fiba-u18-eurobasket-2025"
       },
       "label": "FIBA U18 EuroBasket",
-      "note": "FIBA U18 EuroBasket 2025: 56 games listed on 18/11/2026; paused until it is turned on",
+      "note": "FIBA U18 EuroBasket 2025: 56 games listed on 18/11/2026; the first FIBA event turned on (18/11/2026), to check the whole chain with a real source before the rest",
       "category": "formacion",
       "age_group": "U18"
     },

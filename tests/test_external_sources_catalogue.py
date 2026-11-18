@@ -142,8 +142,8 @@ class TestTheExternalSourcesStayOutOfWhatFebRunsOn:
         assert fbcyl_groups(with_external) == fbcyl_groups(plain)
 
     def test_they_are_listed_apart_for_the_jobs_that_do_read_them(self, both):
-        _, with_external, _ = both
-        assert [e["league"] for e in external_entries(with_external)] == list(EXTERNAL_LEAGUES)
+        plain, with_external, _ = both
+        assert [e["league"] for e in external_entries(with_external)] == [e["league"] for e in external_entries(plain)] + list(EXTERNAL_LEAGUES)         # the real catalogue may have some turned on already (FIBA, #887)
 
     def test_a_paused_external_competition_is_not_listed(self, tmp_path):
         entries = load_catalogue(_write(tmp_path, _external("acb"), _external("fiba", active=False)))
