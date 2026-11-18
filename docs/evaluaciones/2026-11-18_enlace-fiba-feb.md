@@ -24,15 +24,25 @@ Limitaciones: FIBA solo trae biografía de los partidos cargados desde #975 (el 
 
 ## FBCYL ↔ FEB (#978)
 
-FBCYL no trae fecha de nacimiento, así que el enlace es por **clave de nombre** (inicial del nombre y apellidos, sin partículas; la misma clave para `V. IBAÑEZ BARREIRO` y `VIRGINIA IBAÑEZ BARREIRO`, que son las dos formas en que se escribe) y **club**. Medido sobre el archivo completo (11.614 jugadores de FBCYL; las personas de las cajas de FEB, con todos los clubes en los que han estado):
+FBCYL no trae fecha de nacimiento. Medido sobre el archivo completo (520 partidos de FBCYL de 2026/27; las personas de las cajas de FEB 2022–2026 con todos sus clubes, el sexo de sus competiciones según el catálogo y, de las plantillas de FEB, el nombre completo y la fecha de nacimiento de 8.676 de ellas).
 
-| Resultado | Jugadores |
-|---|---|
-| `linked`: una única persona con esa clave y un club con ≥ 2 palabras en común con el de FBCYL | **352** |
-| `review`: una única persona con esa clave pero otro club (cambio de club, selecciones autonómicas) | ≈ 1.600 |
-| `review`: varias personas con esa clave | ≈ 130 |
-| sin ninguna persona con esa clave en FEB | el resto (FBCYL es formación autonómica: la mayoría no llega a FEB) |
+**Quién es una jugadora de FBCYL**: su `uuid`. El `actorId` cambia en cada partido (11.614 `actorId` para **2.253 personas**); la primera versión del enlace contaba cada partido como una jugadora distinta y con un solo club. El repositorio ya usaba el `uuid` (`fbcyl_pipeline`).
 
-- Las palabras que tiene cualquier club (`BALONCESTO`, `CLUB`, `CB`, `ESCUELA`…) y las partículas no corroboran: sin quitarlas salían 442 enlaces, entre ellos clubes que solo compartían «BALONCESTO».
-- Es deliberadamente prudente: un jugador que cambia de club (el caso normal de quien sube de cadete a júnior y a sénior) queda en `review` con su candidato, no enlazado. La cola de revisión (#980) es la que decide; lo que se enlaza solo es lo corroborado por el club.
-- Un nombre de pila con varias palabras (`MARIA JOSE`) da otra clave que la forma de FEB con inicial: se pierde algún enlace, nunca se hace uno falso.
+**Cuánto se puede enlazar**: el 82 % de las personas de FBCYL **no tiene a nadie en FEB** con su clave de nombre (es formación y sénior autonómica: solo llega a FEB quien juega los campeonatos de España, una selección autonómica o una liga FEB). De ellas, 962 no se parecen a nadie, 604 comparten inicial y primer apellido con otra persona (otro segundo apellido: «LARA CONDE MATE» y «LAURA CONDE JIMENEZ») y 251 comparten los dos apellidos con otra inicial (hermanos, a veces de otro sexo). Ninguna de esas es un enlace perdido.
+
+**Regla** (`src/market/identity_link`):
+
+1. **Candidatos**: misma clave de nombre (inicial del nombre y apellidos **en su orden**, sin partículas ni las marcas de FBCYL como «(REF)» o «(JUN)»; la misma para `V. IBAÑEZ BARREIRO` y `VIRGINIA IBAÑEZ BARREIRO`), el mismo nombre completo de las plantillas de FEB, o los dos últimos apellidos cuando FBCYL escribe un nombre de pila compuesto («MARIA JOSE GARCIA LOPEZ» es «M. GARCIA LOPEZ»).
+2. **No puede ser ella**: un candidato del otro sexo o **demasiado mayor para la categoría** en la que juega en FBCYL (un U16 de la temporada que empieza en S nació en S-15 o después, como en los campeonatos cadetes de FEB, donde el 99 % tiene 14 o 15 años; un año de margen; un sénior solo pide 13 años). En la primera medición 45 personas solo tenían candidatos así, y entre los enlazados por club había una U16 «corroborada por el club» que tenía 17 años: dos hermanas con la misma inicial en el mismo club.
+3. **Enlace** (`linked`) con un único candidato y una prueba: **el club** (2 palabras en común que no sean genéricas como `BALONCESTO` o `CLUB`, o todas las de uno de los dos nombres: «BALONCESTO LA FLECHA» con «BALONCESTO LA FLECHA») o **el nombre completo con un nacimiento que encaje en la categoría**, salvo que FEB tenga ese nombre completo en personas con otra fecha de nacimiento (homónimos: de 27 nombres repetidos en las plantillas, 21 son la misma persona con dos ids de FEB y 6 son personas distintas, como dos «MARIA GARCIA RODRIGUEZ» de 2008).
+4. **A revisión** (`review`): varios candidatos, o uno sin prueba.
+
+| Resultado (2.253 personas de FBCYL) | Primera versión | Ahora |
+|---|---|---|
+| `linked` por club | 68 | **106** |
+| `linked` por nombre completo y nacimiento | — | **128** (63 en categorías de formación, 65 en sénior) |
+| `review` | 123 (1.732 entradas de partido) | **110** (99 con un candidato sin prueba, 11 con varios) |
+| solo con candidatos de otro sexo o demasiado mayores | (contaban como candidatos) | 29 |
+
+- Las muestras de los enlaces nuevos son coherentes en ciudad y edad (Valladolid con Valladolid, León con León, la selección de Castilla y León); en sénior, «encaja en la categoría» solo pide ser mayor de 13, así que ahí la prueba es el nombre completo, único en FEB y del mismo sexo.
+- **Opción no aplicada**: 83 de los que quedan en revisión tienen un par de apellidos que solo lleva una persona en cada lado (ALDECOA LÓPEZ, FERNANDEZ-TRESGUERRES MUÑOZ…) y casi todos parecen la misma persona; enlazarlos exigiría decidir cuándo un apellido es «raro» en una población que crece con cada temporada cargada. Se decide con el usuario.
