@@ -8,6 +8,7 @@ import type { TalentCompetitionEntry } from './data'
 import { METRICS, mixNotice, type Metric, type PositionGroup, type SearchFilters } from './search'
 import { AlertTriangle, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { activeFilters } from './activeFilters'
+import { ENOUGH_MINUTES } from './enoughMinutes'
 import { GROUP_LABELS } from './groupLabels'
 
 /** The categories of the competitions (#914), Sénior first: a competition the manifest does not give a category is senior (older publications). */
@@ -80,7 +81,7 @@ export default function SearchFiltersPanel({ seasons, season, onSeason, competit
         </Field>
         <NumberField label="Percentil mínimo" value={filters.pctMin} onChange={pctMin => set({ pctMin })} min={0} max={100} />
         <div className="space-y-1.5">
-          <Checkbox label="Solo con minutos suficientes" checked={filters.onlyEligible} onChange={e => set({ onlyEligible: e.target.checked })} />
+          <Checkbox label="Solo con minutos suficientes" title={ENOUGH_MINUTES} checked={filters.onlyEligible} onChange={e => set({ onlyEligible: e.target.checked })} />
           <Checkbox label="Incluir los que no tienen el dato" checked={filters.includeUnknown} onChange={e => set({ includeUnknown: e.target.checked })} />
         </div>
         </div>

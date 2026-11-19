@@ -148,6 +148,12 @@ describe('the search page', () => {
     expect((await screen.findAllByRole('checkbox', { name: /^Comparar a ANA PRUEBA UNO/ }))[0]).toBeChecked()
   })
 
+  it('says what «minutos suficientes» means where it is asked for (#1010)', async () => {
+    open('/?s=2025')
+    const box = await screen.findByRole('checkbox', { name: /Solo con minutos suficientes/ })
+    expect(box.closest('label')).toHaveAttribute('title', expect.stringMatching(/10 minutos por partido.*tercio.*3 partidos/))
+  })
+
   it('has the table named for the screen reader', async () => {
     open('/?s=2025')
     const table = await screen.findByRole('region', { name: /Jugadores encontrados/i })

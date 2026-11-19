@@ -11,9 +11,9 @@ interface Props extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   className?: string
 }
 
-const Checkbox = forwardRef<HTMLInputElement, Props>(function Checkbox({ label, className, ...rest }, ref) {
+const Checkbox = forwardRef<HTMLInputElement, Props>(function Checkbox({ label, className, title, ...rest }, ref) {
   return (
-    <label className={cn('flex cursor-pointer items-center gap-1.5 text-xs text-ink-muted', rest.disabled && 'cursor-not-allowed opacity-60', className)}>
+    <label title={title} className={cn('flex cursor-pointer items-center gap-1.5 text-xs text-ink-muted', rest.disabled && 'cursor-not-allowed opacity-60', className)}>
       <input ref={ref} type="checkbox" className="rounded accent-accent" {...rest} />
       <span>{label}</span>
     </label>

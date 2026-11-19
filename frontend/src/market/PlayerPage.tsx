@@ -17,8 +17,10 @@ import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './d
 import { bioOf, personRows, radarAxes, trajectory, type BioField } from './player'
 import PlayerPhoto from '@/components/ui/PlayerPhoto'
 import { playerPhotoUrl } from '@/lib/playerPhoto'
+import { ENOUGH_MINUTES } from './enoughMinutes'
 import PlayerRadar from './PlayerRadar'
 import PlayerZones from './PlayerZones'
+import { SimilarPlayers } from './SimilarPlayers'
 import { toSearchRow, type SearchRow } from './search'
 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
@@ -117,7 +119,7 @@ export default function PlayerPage() {
               <Select value={keyOf(row)} onChange={e => setPicked(e.target.value)} options={options.map(r => ({ value: keyOf(r), label: label(r) }))} />
             </Field>
             <p className="text-xs text-ink-muted">Percentil del jugador entre los de su competición y temporada; nunca se compara entre competiciones.</p>
-            {!row.eligible && <Badge tone="warn">Pocos minutos: percentiles orientativos</Badge>}
+            {!row.eligible && <Badge tone="warn" title={`No cumple «minutos suficientes»: ${ENOUGH_MINUTES}`}>Pocos minutos: percentiles orientativos</Badge>}
             <ul aria-label="Percentiles" className="space-y-1 text-sm">
               {axes.map(a => <li key={a.key} className="flex justify-between gap-3"><span className="text-ink-muted">{a.label}</span><span className="font-medium text-ink">{a.value === null ? dash : Math.round(a.value)}</span></li>)}
             </ul>
@@ -125,6 +127,7 @@ export default function PlayerPage() {
           <PlayerRadar axes={axes} name={bio.name} />
         </div>
       </Card>
+      <SimilarPlayers row={row} targetId={personId} />
       <PlayerZones row={row} />
     </Shell>
   )

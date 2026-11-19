@@ -136,6 +136,17 @@ describe('the profile page', () => {
     expect(document.querySelector('img[src*="foto.aspx"]')).toBeNull()
   })
 
+  it('lists the five players most like him in his own competition, with the similarity, the age and a way to compare (#1010)', async () => {
+    open('feb:10101')
+    const section = (await screen.findByRole('heading', { name: /Jugadores parecidos/ })).closest('section')!
+    const list = await within(section).findByRole('list', { name: 'Jugadores parecidos' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items).toHaveLength(5)
+    expect(within(items[0]).getByText(/%/)).toBeInTheDocument()
+    expect(within(items[0]).getByRole('link', { name: /Comparar con/ }).getAttribute('href')).toMatch(/^\/comparar\?j=feb%3A10101%2C/)
+    expect(within(section).getByText(/Solo se comparan jugadores de la misma competición y temporada/)).toBeInTheDocument()
+  })
+
   it('says it when nobody has that id, and offers the way back to the search', async () => {
     open('feb:no-existe')
     expect(await screen.findByText(/No encontramos a este jugador/)).toBeInTheDocument()
