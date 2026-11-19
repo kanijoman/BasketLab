@@ -4,7 +4,7 @@ Rates and role are the ones of the live engine (``live_core.profiles``: per-40, 
 player of a live package are described the same way. A percentile says how good a player is among those of his competition who played enough: for turnovers, lower is better."""
 import pytest
 
-from src.market.profile import MIN_POPULATION_SECONDS, PERCENTILE_METRICS, add_profiles
+from src.market.profile import MIN_GAMES, MIN_MINUTES_PER_GAME, MIN_TEAM_GAMES_SHARE, PERCENTILE_METRICS, add_profiles
 
 
 def _row(person, minutes=24000, team="T", **over):
@@ -54,7 +54,7 @@ def test_ties_share_the_middle_rank_and_a_lone_player_is_in_the_middle():
 def test_players_with_few_minutes_are_ranked_but_do_not_make_the_population():
     league = _league()
     base = add_profiles(league)
-    extra = add_profiles(league + [_row("feb:rookie", minutes=MIN_POPULATION_SECONDS - 1, pts=900)])
+    extra = add_profiles(league + [_row("feb:rookie", minutes=60, games=20, pts=900)])
     assert [r["pct"] for r in extra[:-1]] == [r["pct"] for r in base]                  # the population did not move
     assert extra[-1]["eligible"] is False and extra[-1]["pct"]["pts"] is not None and all(r["eligible"] for r in base)
 
@@ -89,3 +89,55 @@ def test_the_percentile_metrics_are_all_published_and_the_run_is_deterministic_a
     assert league == before and first == add_profiles(list(league))
     assert set(first[0]["pct"]) == set(PERCENTILE_METRICS)
     assert add_profiles([]) == []
+
+
+class TestPlayedEnough:
+    """``eligible`` is «played enough» (#1010): at least 10 minutes per game he played, at least a third of the games of HIS team, and at least 3 games. It was 5 minutes in the whole season (94.6 % of the rows of
+    the published senior FEB competitions passed): the search let through players with almost no minutes and their percentiles were noise. The same rule is the population of the percentiles."""
+
+    @staticmethod
+    def _eligible(player, mates=()):
+        rows = add_profiles([player, *mates])
+        return rows[0]["eligible"]
+
+    def test_the_numbers_of_the_rule(self):
+        assert (MIN_MINUTES_PER_GAME, MIN_GAMES) == (10, 3) and MIN_TEAM_GAMES_SHARE == pytest.approx(1 / 3)
+
+    def test_ten_minutes_a_game_is_enough_and_a_second_less_is_not(self):
+        assert self._eligible(_row("feb:1", games=10, minutes=10 * 600)) is True
+        assert self._eligible(_row("feb:1", games=10, minutes=10 * 600 - 1)) is False
+
+    def test_three_games_is_enough_and_two_is_not_however_many_minutes_he_played(self):
+        mates = [_row("feb:m", team="A", games=3, minutes=3 * 1800)]
+        assert self._eligible(_row("feb:1", team="A", games=3, minutes=3 * 1800), mates) is True
+        assert self._eligible(_row("feb:1", team="A", games=2, minutes=2 * 2400), mates) is False
+
+    def test_a_third_of_the_games_of_his_team_is_enough_and_less_is_not(self):
+        team = [_row("feb:m", team="A", games=21, minutes=21 * 1800)]
+        assert self._eligible(_row("feb:1", team="A", games=7, minutes=7 * 1500), team) is True            # 7 of 21
+        assert self._eligible(_row("feb:1", team="A", games=6, minutes=6 * 1500), team) is False           # 6 of 21
+
+    def test_the_games_of_the_team_are_those_of_ITS_most_played_player_not_of_another_team(self):
+        other = [_row("feb:o", team="B", games=30, minutes=30 * 1800)]
+        own = [_row("feb:m", team="A", games=9, minutes=9 * 1800)]
+        assert self._eligible(_row("feb:1", team="A", games=3, minutes=3 * 1500), own + other) is True      # 3 of 9, whatever the others play
+
+    def test_at_the_start_of_the_season_a_player_who_played_what_his_team_did_is_enough(self):
+        team = [_row("feb:m", team="A", games=4, minutes=4 * 1800)]
+        assert self._eligible(_row("feb:1", team="A", games=4, minutes=4 * 1500), team) is True
+
+    def test_a_transfer_is_two_rows_each_against_the_games_of_its_own_team(self):
+        rows = add_profiles([_row("feb:t", team="A", games=12, minutes=12 * 1500), _row("feb:t", team="B", games=3, minutes=3 * 1500),
+                             _row("feb:a", team="A", games=36, minutes=36 * 1800), _row("feb:b", team="B", games=9, minutes=9 * 1800)])
+        assert [r["eligible"] for r in rows[:2]] == [True, True]                                                # 12 of 36 and 3 of 9
+
+    def test_those_who_did_not_play_enough_do_not_make_the_population_of_the_percentiles(self):
+        league = _league()
+        base = add_profiles(league)
+        noise = add_profiles(league + [_row("feb:few", games=20, minutes=20 * 300, pts=900)])               # 5 min a game
+        assert [r["pct"] for r in noise[:-1]] == [r["pct"] for r in base] and noise[-1]["eligible"] is False
+
+    def test_the_answer_does_not_depend_on_the_order_of_the_rows(self):
+        rows = [_row("feb:1", team="A", games=7, minutes=7 * 1500), _row("feb:m", team="A", games=21, minutes=21 * 1800), _row("feb:2", team="B", games=3, minutes=3 * 300)]
+        first = {r["person_id"]: r["eligible"] for r in add_profiles(rows)}
+        assert first == {r["person_id"]: r["eligible"] for r in add_profiles(list(reversed(rows)))}
