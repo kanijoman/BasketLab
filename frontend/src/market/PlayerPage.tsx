@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
-import { ArrowLeft, UserRound } from 'lucide-react'
+import { ArrowLeft, Scale, UserRound } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
 import DataTable from '@/components/ui/DataTable'
@@ -89,6 +89,7 @@ export default function PlayerPage() {
     <Shell>
       <Back />
       <PageHeader title={bio.name} subtitle={`${main.team_name} · ${main.competition} · ${main.season_label}`} />
+      <Link to={`/comparar?j=${encodeURIComponent(personId)}`} className="inline-flex items-center gap-1 text-sm font-medium text-accent-text hover:underline"><Scale className="h-4 w-4" aria-hidden="true" />Comparar con otros jugadores</Link>
       {failed.map(name => <p key={name} role="alert" className="text-sm text-bad">No se ha podido abrir {name}: la ficha puede estar incompleta.</p>)}
       <Card title="Datos personales">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-5">
