@@ -25,7 +25,7 @@ def _rows(directory, entry):
 @pytest.fixture(scope="module")
 def today(tmp_path_factory):
     out = tmp_path_factory.mktemp("talent")
-    publish_talent_data(vectors.fixture_connection(), out, ScopedSealer(vectors.SECRET, open_access=True), [vectors.FEB, vectors.FBCYL], vectors.CATALOGUE, roster_rows=vectors.ROSTER)
+    publish_talent_data(vectors.fixture_connection(), out, ScopedSealer(vectors.SECRET, open_access=True), [vectors.FEB, vectors.FBCYL], vectors.CATALOGUE, roster_rows=vectors.ROSTER, links=vectors.LINKS)
     return out
 
 
@@ -42,3 +42,9 @@ def test_the_committed_files_open_with_the_open_key_and_are_what_the_exporter_ma
     for old, new in zip(committed, fresh):
         assert _rows(vectors.OUT, old) == _rows(today, new), f"{old['key']}: regenerate with python tests/local_vectors/generate_talent_data.py"
         assert {k: old[k] for k in old if k not in ("file", "bytes", "sha256", "wraps")} == {k: new[k] for k in new if k not in ("file", "bytes", "sha256", "wraps")}
+
+
+def test_the_committed_identities_say_who_the_linked_fbcyl_player_is(today):
+    committed = json.loads((vectors.OUT / "index.json").read_text(encoding="utf-8"))["identities"]
+    fresh = json.loads((today / "index.json").read_text(encoding="utf-8"))["identities"]
+    assert _rows(vectors.OUT, committed) == _rows(today, fresh) == {"format": 1, "links": vectors.LINKS, "by_feb": {"feb:10100": ["fbcyl|1129-1|2026"]}}

@@ -22,6 +22,11 @@ export interface TalentCompetitionEntry extends FileEntry {
   competition_label?: string
 }
 
+/** The sealed ``identities`` file (#996): ``links`` (FBCYL person id to the FEB one it IS) and ``by_feb`` (the competitions with rows of each FEB person that has FBCYL ones linked). */
+export interface TalentIdentitiesEntry extends FileEntry {
+  wraps: Wrap[]
+}
+
 /** ``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope). */
 export interface TalentManifest {
   schema: number
@@ -29,4 +34,5 @@ export interface TalentManifest {
   v: number
   open_key?: string
   competitions: TalentCompetitionEntry[]
+  identities?: TalentIdentitiesEntry
 }

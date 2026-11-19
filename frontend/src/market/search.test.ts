@@ -17,7 +17,7 @@ beforeEach(async () => {
   localStorage.clear(); resetTalentData(); setTalentBase(TALENT_BASE); serveTalentData()
   entries = await loadTalentCompetitions()
   lf2 = asRows(LF2_KEY, entries.find(e => e.key === LF2_KEY)!, (await loadCompetitionRows(LF2_KEY)).rows)
-  fbcyl = asRows(FBCYL_KEY, entries.find(e => e.key === FBCYL_KEY)!, (await loadCompetitionRows(FBCYL_KEY)).rows)
+  fbcyl = asRows(FBCYL_KEY, entries.find(e => e.key === FBCYL_KEY)!, (await loadCompetitionRows(FBCYL_KEY)).rows).filter(r => !r.linked_to)          // the linked one inherits a bio (#996)
 })
 
 const f = (over: Partial<SearchFilters> = {}): SearchFilters => ({ ...NO_FILTERS, ...over })

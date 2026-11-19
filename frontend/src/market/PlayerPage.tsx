@@ -3,7 +3,7 @@
 // the search uses, so coming from it costs nothing more. Percentiles are the player's in HIS competition and season: the page never compares competitions.
 import { useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { ArrowLeft, UserRound } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
@@ -13,7 +13,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import { Field, Select } from '@/components/ui/Field'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
-import { loadCompetitionRows, loadTalentCompetitions } from './data'
+import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './data'
 import { bioOf, personRows, radarAxes, trajectory, type BioField } from './player'
 import PlayerRadar from './PlayerRadar'
 import { toSearchRow, type SearchRow } from './search'
@@ -35,12 +35,12 @@ function BioItem({ name, field, unit }: { name: string; field: BioField<string |
   )
 }
 
-type Line = SearchRow & { change: string | null }
+type Line = SearchRow & { change: string | null; origin: string | null }
 
 const columns: ColumnDef<Line, unknown>[] = [
   { id: 'season', header: 'Temporada', accessorFn: r => r.season_label, size: 100 },
   { id: 'competition', header: 'Competición', accessorFn: r => r.competition, size: 190 },
-  { id: 'team', header: 'Equipo', accessorFn: r => r.team_name, size: 170 },
+  { id: 'team', header: 'Equipo', accessorFn: r => r.team_name, cell: c => (c.row.original.origin ? <>{c.row.original.team_name} <Badge tone="neutral">{c.row.original.origin}</Badge></> : c.row.original.team_name), size: 230 },
   { id: 'age', header: 'Edad (31/12)', accessorFn: r => r.age ?? undefined, sortUndefined: 'last', cell: c => cell(c.row.original.age), size: 90 },
   { id: 'games', header: 'PJ', accessorFn: r => r.games, size: 55 },
   { id: 'minutes', header: 'Min', accessorFn: r => Math.round(r.minutes / 60), size: 65 },
@@ -57,7 +57,9 @@ export default function PlayerPage() {
   const { personId = '' } = useParams()
   const league = personId.startsWith('fbcyl:') ? 'fbcyl' : 'feb'
   const manifest = useQuery({ queryKey: ['talent-competitions'], queryFn: loadTalentCompetitions })
-  const entries = useMemo(() => (manifest.data ?? []).filter(e => e.league === league), [manifest.data, league])
+  const identities = useQuery({ queryKey: ['talent-identities'], queryFn: loadIdentities })
+  // a FEB person has his FEB rows and the FBCYL competitions that hold rows linked to him (`identities`); a FBCYL one, only FBCYL (unless she is linked: she is redirected below)
+  const entries = useMemo(() => (manifest.data ?? []).filter(e => e.league === league || (identities.data?.by_feb[personId] ?? []).includes(e.key)), [manifest.data, league, identities.data, personId])
   const loaded = useQueries({ queries: entries.map(e => ({ queryKey: ['talent-rows', e.key], queryFn: () => loadCompetitionRows(e.key) })) })
   const failed = entries.filter((_, i) => loaded[i]?.isError).map(e => e.competition_label ?? e.competition)
   const mine = useMemo(() => personRows(loaded.flatMap((q, i) => (q.data ? q.data.rows.map(r => toSearchRow(entries[i], r)) : [])), personId),
@@ -67,7 +69,9 @@ export default function PlayerPage() {
   const bio = useMemo(() => bioOf(mine), [mine])
   const [picked, setPicked] = useState<string | null>(null)
 
-  if (manifest.isLoading || (manifest.isSuccess && loaded.some(q => q.isLoading))) {
+  const feb = identities.data?.links[personId]
+  if (feb) return <Navigate to={`/jugador/${encodeURIComponent(feb)}`} replace />
+  if (manifest.isLoading || identities.isLoading || (manifest.isSuccess && loaded.some(q => q.isLoading))) {
     return <div className="flex flex-col items-center gap-2 p-12"><Spinner size="lg" label="Cargando la ficha" /><p className="text-sm text-ink-muted">Cargando competiciones ({loaded.filter(q => !q.isLoading).length}/{entries.length})</p></div>
   }
   if (manifest.isError || (manifest.data ?? []).length === 0) {
@@ -79,7 +83,7 @@ export default function PlayerPage() {
   const options = [...seasons].reverse().flatMap(s => s.rows)
   const main = seasons[seasons.length - 1].main
   const row = options.find(r => keyOf(r) === picked) ?? main
-  const lines: Line[] = seasons.flatMap(s => s.rows.map(r => ({ ...r, change: r === s.main ? s.change : null })))
+  const lines: Line[] = seasons.flatMap(s => s.rows.map(r => ({ ...r, change: r === s.main ? s.change : null, origin: r.person_id !== personId ? 'Enlazada de FBCYL' : null })))
   const axes = radarAxes(row)
   return (
     <Shell>
@@ -92,8 +96,9 @@ export default function PlayerPage() {
           <BioItem name="Nacimiento" field={bio.birth} />
           <BioItem name="Altura" field={bio.height} unit=" cm" />
           <BioItem name="Posición" field={bio.position} />
-          <BioItem name="Nacionalidad" field={bio.nationality} />
+          <BioItem name={bio.nationalities.length > 1 ? 'Nacionalidades' : 'Nacionalidad'} field={{ value: bio.nationalities.length ? bio.nationalities.join(' · ') : bio.nationality.value, from: bio.nationality.from }} />
         </dl>
+        {bio.birthConflict && <p role="status" className="mt-3 text-xs text-warn">Las fuentes no coinciden en la fecha de nacimiento: conviene revisarla.</p>}
       </Card>
       <Card title="Trayectoria y desglose por competición" padding="none">
         <DataTable columns={columns} data={lines} searchable={false} ariaLabel="Trayectoria por temporada y competición" emptyMessage="Sin temporadas." />

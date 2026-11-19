@@ -97,6 +97,11 @@ def _priority(candidate: Mapping[str, Any]) -> Tuple[int, str]:
     return (SOURCE_PRIORITY.index(source) if source in SOURCE_PRIORITY else len(SOURCE_PRIORITY), source)
 
 
+def source_rank(source: str) -> int:
+    """Position of ``source`` in ``SOURCE_PRIORITY`` (an unknown source is last)."""
+    return SOURCE_PRIORITY.index(source) if source in SOURCE_PRIORITY else len(SOURCE_PRIORITY)
+
+
 def _text(value: Any) -> Optional[str]:
     return value.strip() or None if isinstance(value, str) else None
 

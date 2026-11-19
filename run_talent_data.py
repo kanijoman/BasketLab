@@ -20,11 +20,18 @@ def read_external_bio(root):
     return read(root)
 
 
+def read_links(root):
+    """``{FBCYL person id: FEB person id}`` of the ``linked`` links of ``links/fbcyl.json`` of the external archive at ``root`` (#996)."""
+    from src.market.external_bio import read_person_links
+
+    return read_person_links(root, "fbcyl")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Publish the sealed player rows of BasketLab Talent")
     parser.add_argument("--out", required=True)
     parser.add_argument("--rosters", help="folder with rosters/<season>.json (default: no rosters)")
-    parser.add_argument("--ext", help="the external archive (basketlab-archive-ext) with links/fiba.json and fiba/: the linked players lend their bio to what FEB leaves empty (#979)")
+    parser.add_argument("--ext", help="the external archive (basketlab-archive-ext) with links/fiba.json and fiba/ (the linked players lend their bio, #979) and links/fbcyl.json (the FBCYL players linked to a FEB person, #996)")
     parser.add_argument("--collection", action="append", help="only this collection (repeatable); only for tests: the competitions of the others are not published")
     parser.add_argument("--closed", action="store_true", help="do not wrap for the open scope")
     args = parser.parse_args(argv)
@@ -46,15 +53,16 @@ def main(argv=None) -> int:
         print(error, file=sys.stderr)
         return 2
     external = read_external_bio(args.ext) if args.ext else {}
+    links = read_links(args.ext) if args.ext else {}
     started = time.time()
     unknown = []
-    manifest = publish_talent_data(handler.connection, args.out, sealer, names, load_catalogue(DEFAULT_CATALOGUE), roster_rows=roster, external_bio=external,
+    manifest = publish_talent_data(handler.connection, args.out, sealer, names, load_catalogue(DEFAULT_CATALOGUE), roster_rows=roster, external_bio=external, links=links,
                                    on_competition=lambda c, players, groups: print(f"{c.key}: {players} players, {groups} collections, {time.time() - started:.0f} s", flush=True),
                                    on_unknown=unknown.extend)
     if unknown:
         print(f"{len(unknown)} collections say neither their competition nor their season and are left out: {', '.join(unknown)}")
     size = sum(e["bytes"] for e in manifest["competitions"])
-    print(f"{len(manifest['competitions'])} competitions, {size / 1024:.0f} KB, {sum(e['players'] for e in manifest['competitions'])} rows, {len(roster)} roster rows, {len(external)} persons with external bio, {time.time() - started:.0f} s")
+    print(f"{len(manifest['competitions'])} competitions, {size / 1024:.0f} KB, {sum(e['players'] for e in manifest['competitions'])} rows, {len(roster)} roster rows, {len(external)} persons with external bio, {len(links)} FBCYL links, {time.time() - started:.0f} s")
     return 0
 
 

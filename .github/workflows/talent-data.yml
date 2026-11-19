@@ -94,6 +94,11 @@ jobs:
           else
             echo "No FIBA games in the external archive yet: nothing to link"
           fi
+      - name: Link the FBCYL players
+        if: github.event_name != 'pull_request'
+        # #996: the FBCYL players that ARE a person of FEB (`links/fbcyl.json`, `run_identity_links.py --source fbcyl`) are regenerated here from the archive and the rosters already downloaded; like the FIBA ones they are a derived
+        # file of THIS run, never written back (one writer per folder). Only the `linked` ones are used (the profile and the bio); a `review` waits for the staff (#980). A failing command turns the run red: no silent publication without the links
+        run: python run_identity_links.py --ext archive-ext --source fbcyl --archive archive
       - name: Start from the previous publication
         if: github.event_name != 'pull_request'
         run: |

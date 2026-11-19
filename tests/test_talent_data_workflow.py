@@ -87,3 +87,12 @@ def test_it_links_the_external_players_before_the_build_and_the_build_reads_them
 def test_a_source_with_no_games_yet_does_not_turn_the_run_red_but_a_failing_link_does():
     run = STEPS["Link the external players"]["run"]
     assert "[ -d archive-ext/fiba ]" in run and "||" not in run.split("python run_identity_links.py")[1].splitlines()[0]
+
+
+def test_it_links_the_fbcyl_players_after_the_archive_and_the_rosters_and_before_the_build_996():
+    """#996: ``links/fbcyl.json`` (#978) was consumed by nobody. It needs the restored archive (``archive``), the rosters of FEB (``archive-ext/rosters``) and the catalogue, so it goes after both downloads; it
+    is a derived file of the run (never written back) and a failing command turns the run red."""
+    assert ORDER.index("Restore the archive") < ORDER.index("Download the rosters") < ORDER.index("Link the FBCYL players") < ORDER.index("Build the artifacts")
+    step = STEPS["Link the FBCYL players"]
+    assert "run_identity_links.py --ext archive-ext --source fbcyl --archive archive" in step["run"]
+    assert "git push" not in step["run"] and "git commit" not in step["run"] and "||" not in step["run"] and "pull_request" in step["if"]

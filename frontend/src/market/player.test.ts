@@ -20,7 +20,9 @@ describe('the rows of a person', () => {
     const fbcyl = await rowsOf(FBCYL_KEY)
     const mine = personRows([...fbcyl, ...lf2].reverse(), ANA)
     expect(mine.length).toBeGreaterThan(0)
-    expect(mine.every(r => r.person_id === ANA)).toBe(true)
+    expect(mine.every(r => r.person_id === ANA || r.linked_to === ANA)).toBe(true)          // her FBCYL rows say they are hers (#996)
+    expect(mine.some(r => r.league === 'fbcyl')).toBe(true)
+    expect(personRows([...fbcyl, ...lf2], 'fbcyl:34004-08').every(r => r.person_id === 'fbcyl:34004-08')).toBe(true)
     expect(personRows([...lf2, ...fbcyl], 'feb:no-existe')).toEqual([])
   })
 })
@@ -77,6 +79,14 @@ describe('the bio', () => {
     expect(bio.height).toEqual({ value: 172, from: '2023:10' })                     // the latest that has it is 2024, whose own roster said it was another team's
     expect(bio.position).toEqual({ value: 'Escolta', from: null })
     expect(bio.birth).toEqual({ value: '2004-05-06', from: null })
+  })
+
+  it('reports every nationality of his latest row (two passports are two nationalities) and flags a birth date the sources disagree on (#996)', async () => {
+    const base = personRows(await rowsOf(LF2_KEY), ANA)[0]
+    const bio = bioOf([{ ...base, season: '2024', nationalities: ['ESPAÑA'], bio_conflict: [] }, { ...base, season: '2025', nationalities: ['ESLOVENIA', 'ESPAÑA'], bio_conflict: ['birth'] }])
+    expect(bio.nationalities).toEqual(['ESLOVENIA', 'ESPAÑA'])
+    expect(bio.birthConflict).toBe(true)
+    expect(bioOf([{ ...base, nationalities: undefined, bio_conflict: undefined } as unknown as SearchRow])).toMatchObject({ nationalities: [], birthConflict: false })
   })
 
   it('says a field nobody says as no data, never as a zero (FBCYL has no bio)', async () => {

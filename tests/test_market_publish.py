@@ -102,7 +102,7 @@ def test_the_bio_a_linked_external_player_lends_reaches_the_published_row_and_fe
     external = {"feb:10100": [{"source": "fiba", "birth": "1999-01-01", "height": "181", "nationality": "ESP"}]}
     manifest = _publish(connection, tmp_path, roster_rows=roster, external_bio=external)
     row = next(r for r in _open(tmp_path, _by(manifest, "L.F.-2"))["rows"] if r["person_id"] == "feb:10100")
-    assert (row["birth"], row["height"], row["nationality"]) == ("2004-05-06", 181, "ESP") and row["bio_from"] == {"height": "fiba", "nationality": "fiba"}
+    assert (row["birth"], row["height"], row["nationality"]) == ("2004-05-06", 181, "ESPAÑA") and row["bio_from"] == {"height": "fiba", "nationality": "fiba"}
     other = next(r for r in _open(tmp_path, _by(manifest, "L.F.-2"))["rows"] if r["person_id"] != "feb:10100")
     assert other["height"] is None and other["bio_from"] == {}
 

@@ -27,6 +27,7 @@ from src.market.season_rows import attach_bio, season_player_rows
 from src.services.competition_category import category_facts, category_of_competition
 
 INDEX = "index.json"
+IDENTITIES = "identities"
 SUBDIR = "players/"
 SCOPE = "talent"
 FORMAT = 1
@@ -67,13 +68,14 @@ def _metas(connection: Any, names: Iterable[str]) -> Dict[str, Dict[str, Any]]:
     return {d["_id"]: d for d in docs}
 
 
-def competition_rows(connection: Any, members: Sequence[Any], roster_rows: Iterable[Mapping[str, Any]], season: str, external_bio: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
+def competition_rows(connection: Any, members: Sequence[Any], roster_rows: Iterable[Mapping[str, Any]], season: str, external_bio: Optional[Mapping[str, Any]] = None,
+                     links: Optional[Mapping[str, str]] = None) -> List[Dict[str, Any]]:
     """The rows of one competition and season: totals, bio, advanced figures in the context of each team, and rates, role and percentiles of the whole competition."""
     parts = []
     for member in members:
         parts.append((member.group, export_collection(connection.get_collection(member.collection), member.collection)))
     rows = season_player_rows(parts)
-    rows = attach_bio(rows, roster_rows, season, external=external_bio)
+    rows = attach_bio(rows, roster_rows, season, external=external_bio, linked=links)
     rows = add_advanced(rows, team_context(r for _, payload in parts for r in payload["team_rows"]))
     return add_profiles(rows)
 
@@ -86,6 +88,30 @@ def _read_previous(out_dir: Path) -> Dict[str, Dict[str, Any]]:
     return {e["key"]: e for e in manifest.get("competitions", [])} if manifest.get("schema") == TALENT_SCHEMA else {}
 
 
+def _read_previous_identities(out_dir: Path) -> Optional[Dict[str, Any]]:
+    try:
+        manifest = json.loads((out_dir / INDEX).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return manifest.get("identities") if manifest.get("schema") == TALENT_SCHEMA else None
+
+
+def _identities(out_dir: Path, sealer: Any, kept: Optional[Dict[str, Any]], rows_by_key: Mapping[str, List[Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
+    """The sealed ``identities`` file (#996): ``links`` (FBCYL id to FEB id) and ``by_feb`` (the competitions that hold rows of each FEB person), only for the links whose rows are published; ``None`` when there is none."""
+    links: Dict[str, str] = {}
+    by_feb: Dict[str, List[str]] = {}
+    for key in sorted(rows_by_key):
+        for row in rows_by_key[key]:
+            if row.get("linked_to"):
+                links[row["person_id"]] = row["linked_to"]
+                if key not in by_feb.setdefault(row["linked_to"], []):
+                    by_feb[row["linked_to"]].append(key)
+    if not links:
+        return None
+    plain = json.dumps({"format": FORMAT, "links": links, "by_feb": by_feb}, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return seal_file(out_dir, IDENTITIES, plain, [SCOPE], sealer, kept, SUBDIR)
+
+
 def _write_if_changed(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists() or path.read_bytes() != data:
@@ -93,11 +119,11 @@ def _write_if_changed(path: Path, data: bytes) -> None:
 
 
 def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Iterable[str], catalogue: Sequence[Mapping[str, Any]],
-                        roster_rows: Iterable[Mapping[str, Any]] = (), external_bio: Optional[Mapping[str, Any]] = None, on_competition: Optional[Callable[[CompetitionSeason, int, int], None]] = None,
+                        roster_rows: Iterable[Mapping[str, Any]] = (), external_bio: Optional[Mapping[str, Any]] = None, links: Optional[Mapping[str, str]] = None, on_competition: Optional[Callable[[CompetitionSeason, int, int], None]] = None,
                         on_unknown: Optional[Callable[[List[str]], None]] = None) -> Dict[str, Any]:
     """Write the sealed file of every competition and season of ``names`` and ``index.json`` (returned). Files that are no longer referenced are removed.
 
-    ``roster_rows`` are the rows of ``roster_sweep`` (all seasons); ``external_bio`` the bio the linked external players lend to FEB persons (``external_bio``, #979); ``on_competition(competition, players, files)`` reports progress; ``on_unknown`` gets the collections that say neither
+    ``roster_rows`` are the rows of ``roster_sweep`` (all seasons); ``external_bio`` the bio the linked external players lend to FEB persons (``external_bio``, #979); ``links`` the ``linked`` identity links ``{person id: FEB person id}`` of FBCYL (#996: the rows say ``linked_to``, inherit the FEB bio, and ``identities`` says who is who); ``on_competition(competition, players, files)`` reports progress; ``on_unknown`` gets the collections that say neither
     their competition nor their season (they are left out, never guessed)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -107,21 +133,25 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
     if unknown and on_unknown:
         on_unknown(unknown)
     kept = _read_previous(out_dir)
+    kept_identities = _read_previous_identities(out_dir)
     entries = []
+    rows_by_key: Dict[str, List[Dict[str, Any]]] = {}
     for competition, members in found.items():
-        rows = competition_rows(connection, members, roster, competition.season, external_bio)
+        rows = competition_rows(connection, members, roster, competition.season, external_bio, links)
         attributes = _attributes(competition, catalogue)
         head = {"key": competition.key, "league": competition.league, "competition": competition.competition, "season": competition.season, "season_label": competition.season_label,
                 "groups": sorted({m.group for m in members}), **attributes}
         plain = json.dumps({"format": FORMAT, "competition": head, "rows": rows}, ensure_ascii=False, separators=(",", ":"), sort_keys=True, default=str)
         fields = seal_file(out_dir, competition.key, plain, [SCOPE], sealer, kept.get(competition.key), SUBDIR)
         entries.append({**head, "players": len(rows), **fields})
+        rows_by_key[competition.key] = rows
         if on_competition:
             on_competition(competition, len(rows), len(members))
-    manifest = {"schema": TALENT_SCHEMA, "kind": "talent", "v": sealer.index_version, **sealer.index_extra(), "competitions": entries}
+    identities = _identities(out_dir, sealer, kept_identities, rows_by_key)
+    manifest = {"schema": TALENT_SCHEMA, "kind": "talent", "v": sealer.index_version, **sealer.index_extra(), "competitions": entries, **({"identities": identities} if identities else {})}
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))      # Vercel builds every branch: this one is data, not a project (#906 regression)
     _write_if_changed(out_dir / INDEX, (json.dumps(manifest, ensure_ascii=False, separators=(",", ":"), default=str) + "\n").encode("utf-8"))
-    referenced = {e["file"] for e in entries}
+    referenced = {e["file"] for e in entries} | ({identities["file"]} if identities else set())
     for path in (out_dir / SUBDIR).glob("*.json"):
         if f"{SUBDIR}{path.name}" not in referenced:
             path.unlink()

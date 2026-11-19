@@ -29,6 +29,11 @@ class TalentCompetitionEntry(FileEntry):
     competition_label: NotRequired[str]                                          # the name people read (the youth codes of FEB are not)
 
 
+class TalentIdentitiesEntry(FileEntry):
+    """The sealed ``identities`` file (#996): ``links`` (FBCYL person id to the FEB one it IS) and ``by_feb`` (the competitions with rows of each FEB person that has FBCYL ones linked)."""
+    wraps: List[Wrap]
+
+
 class TalentManifest(TypedDict):
     """``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope)."""
     schema: int
@@ -36,9 +41,11 @@ class TalentManifest(TypedDict):
     v: int
     open_key: NotRequired[str]
     competitions: List[TalentCompetitionEntry]
+    identities: NotRequired[TalentIdentitiesEntry]
 
 
-MODELS = (TalentCompetitionEntry, TalentManifest)
+MODELS = (TalentCompetitionEntry, TalentIdentitiesEntry, TalentManifest)
+FILE_ENTRIES = (TalentCompetitionEntry, TalentIdentitiesEntry)
 
 
 def validate_talent_manifest(manifest: Any) -> None:
@@ -54,9 +61,9 @@ def render_typescript() -> str:
            "import type { FileEntry, Wrap } from '@/webdata/contract.generated'", "", f"export const TALENT_SCHEMA = {TALENT_SCHEMA}", ""]
     for model in MODELS:
         out.append(f"/** {(model.__doc__ or '').strip()} */")
-        out.append(f"export interface {model.__name__}{' extends FileEntry' if model is TalentCompetitionEntry else ''} {{")
+        out.append(f"export interface {model.__name__}{' extends FileEntry' if model in FILE_ENTRIES else ''} {{")
         for key, hint in get_type_hints(model).items():
-            if model is TalentCompetitionEntry and key in FileEntry.__annotations__:
+            if model in FILE_ENTRIES and key in FileEntry.__annotations__:
                 continue
             out.append(f"  {key}{'' if key in model.__required_keys__ else '?'}: {_ts_type(hint)}")
         out += ["}", ""]

@@ -10,7 +10,8 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
-from src.market.bio import canonical_position, merge_bio, normalize_height, position_group
+from src.market.bio import canonical_position, normalize_height, position_group, source_rank
+from src.market.countries import country, nationalities
 
 COUNTS = ("pts", "p1m", "p1a", "p2m", "p2a", "p3m", "p3a", "assist", "ro", "rd", "rt", "st", "to", "bs", "pf", "rf", "val", "pllss")
 FBCYL_SECONDS_PER_MINUTE = 60
@@ -64,62 +65,70 @@ def _year(season: Any) -> int:
         return 0
 
 
-def _closeness(r: Mapping[str, Any], season: str, team: str) -> Tuple[int, int, int, str]:
-    """Order of the roster rows of a person for a row of ``season`` and ``team``: that team and season, another team of the season, then the nearest seasons (a tie goes to the later one)."""
-    if str(r.get("season")) == season:
-        return (0 if str(r["team_id"]) == team else 1, 0, 0, str(r["team_id"]))
-    gap = _year(r.get("season")) - _year(season)
-    return (2, abs(gap), -gap, str(r["team_id"]))
+def _candidates(mine: List[Mapping[str, Any]], external: List[Mapping[str, Any]]) -> List[Dict[str, Any]]:
+    """What the sources say of one person, all alike: the FEB roster rows (source ``feb``, with their team) and the external candidates (``external_bio``, one per season, no team)."""
+    out = [{"source": "feb", "season": str(r.get("season")), "team": str(r["team_id"]), "row": r} for r in mine]
+    out += [{"source": str(c.get("source") or ""), "season": str(c["season"]) if c.get("season") else None, "team": None, "row": c} for c in external]
+    return out
 
 
-def _first(candidates: List[Mapping[str, Any]], read: Any) -> Tuple[Any, Optional[Mapping[str, Any]]]:
-    """The first value ``read`` finds in the candidates (None where nobody says it) and the roster row it came from."""
-    for r in candidates:
-        value = read(r)
+def _order(c: Mapping[str, Any], season: str, team: str) -> Tuple[int, int, int, int, str, str]:
+    """Closest season first (how far does not matter, an unknown season is the farthest); a tie goes to the same team, then the source of higher priority, then the later season."""
+    gap = _year(c["season"]) - _year(season) if c["season"] else None
+    return (10 ** 6 if gap is None else abs(gap), 0 if c["team"] == team else 1, source_rank(c["source"]), -(gap or 0), c["source"], str(c["team"]))
+
+
+def _label(c: Mapping[str, Any]) -> str:
+    """Where a value came from: ``season:team`` for a FEB roster, ``source:season`` for an external source (``source`` alone if it does not say the season)."""
+    return f"{c['season']}:{c['team']}" if c["source"] == "feb" else f"{c['source']}:{c['season']}" if c["season"] else c["source"]
+
+
+def _first(candidates: List[Dict[str, Any]], read: Any) -> Tuple[Any, Optional[Dict[str, Any]]]:
+    """The first value ``read`` finds in the candidates (None where nobody says it) and the candidate it came from."""
+    for c in candidates:
+        value = read(c["row"])
         if value is not None:
-            return value, r
+            return value, c
     return None, None
 
 
-def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str) -> Dict[str, Any]:
-    """The bio of one row, FIELD BY FIELD (#910): FEB leaves height and position empty for most players, so an empty field takes the same person's value from another team of the
-    season or from the nearest season; ``bio_from`` says where each of those came from (``season:team``), and is empty when the roster of the row said it all. Formation and shirt number
-    belong to the team and the season: they come from that roster, or (a transfer without roster of its own) from another team of the season, never from another season."""
+def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str, external: List[Mapping[str, Any]], borrowed: bool = False) -> Dict[str, Any]:
+    """The bio of one row, FIELD BY FIELD (#910, #996): every source says it (FEB rosters of any season and team, linked external players) and the CLOSEST season wins (``_order``), because
+    height, position and nationality change with the years; ``bio_from`` says where a value came from when it is not the roster of the row. The date of birth does not change: a different one
+    is in ``bio_conflict``. ``nationalities`` lists every different passport (closest first), ``nationality`` is the first. Formation and shirt number belong to the team and the season:
+    they come from that roster, or from another team of the season, never from another season, and never from the FEB club of a ``borrowed`` bio (a FBCYL player linked to a FEB person)."""
     team = str(row["team_id"])
-    ordered = sorted(mine, key=lambda r: _closeness(r, season, team))
-    same_season = [r for r in ordered if str(r.get("season")) == season]
+    ordered = sorted(_candidates(mine, external), key=lambda c: _order(c, season, team))
     fields: Dict[str, Any] = {}
     origin: Dict[str, str] = {}
-    reads = {"full_name": lambda r: r.get("name") or None, "birth": lambda r: r.get("birth") or None, "nationality": lambda r: r.get("nationality") or None,
+    reads = {"full_name": lambda r: r.get("name") or None, "birth": lambda r: r.get("birth") or None, "nationality": lambda r: country(r.get("nationality")),
              "height": lambda r: normalize_height(r.get("height")), "position": lambda r: canonical_position(r.get("position"))}
     for field, read in reads.items():
         fields[field], found = _first(ordered, read)
-        if found is not None and (str(found.get("season")), str(found["team_id"])) != (season, team) and field != "full_name":
-            origin[field] = f"{found.get('season')}:{found['team_id']}"
+        if found is not None and field != "full_name" and (found["season"], found["team"]) != (season, team):
+            origin[field] = _label(found)
     fields["position_group"], _ = _first(ordered, lambda r: position_group(r.get("position")))
+    fields["nationalities"] = nationalities(c["row"].get("nationality") for c in ordered)
+    fields["bio_conflict"] = ["birth"] if len({c["row"].get("birth") for c in ordered if c["row"].get("birth")}) > 1 else []
+    same_season = [] if borrowed else [c for c in ordered if c["source"] == "feb" and c["season"] == season]
     fields["formacion"], _ = _first(same_season, lambda r: r.get("formacion"))
     fields["dorsal"], _ = _first(same_season, lambda r: r.get("dorsal"))
     return {**fields, "bio_from": origin}
 
 
-def _lend(bio: Dict[str, Any], candidates: List[Mapping[str, Any]]) -> Dict[str, Any]:
-    """``bio`` with the fields it leaves empty taken from the external candidates (``merge_bio``: FEB first, then the sources in their priority); ``bio_from`` says which source lent each one (#979)."""
-    own = {"source": "feb", **{k: bio.get(k) for k in ("birth", "height", "position", "nationality")}}
-    merged = merge_bio([own, *candidates])
-    lent = {f: merged["bio_src"][f] for f in ("birth", "height", "nationality") if bio.get(f) is None and merged[f] is not None}
-    return {**bio, **{f: merged[f] for f in lent}, "bio_from": {**bio["bio_from"], **lent}}
+def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str, external: Optional[Mapping[str, List[Mapping[str, Any]]]] = None,
+               linked: Optional[Mapping[str, str]] = None) -> List[Dict[str, Any]]:
+    """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season) and of the linked external players (``external``, #979): birth date, height (cm), position, nationality(ies), formacion and shirt number.
 
-
-def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str, external: Optional[Mapping[str, List[Mapping[str, Any]]]] = None) -> List[Dict[str, Any]]:
-    """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season; ``external``, the bio of the linked external players, lends what FEB leaves empty, #979): birth date, height (cm), position, nationality, formacion and shirt number.
-
-    Each field is resolved on its own (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say."""
+    Each field is resolved on its own, by the closest season (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say.
+    ``linked`` is ``{person id: FEB person id}`` of the ``linked`` identity links (#996): such a row says ``linked_to`` (its own ``person_id`` is not rewritten) and takes the bio of the FEB person."""
     by_person: Dict[str, List[Mapping[str, Any]]] = {}
     for r in roster:
         by_person.setdefault(r["person_id"], []).append(r)
-    external = external or {}
+    external, linked = external or {}, linked or {}
     out = []
     for row in rows:
-        bio = _bio_of(row, by_person.get(row["person_id"], []), str(season))
-        out.append({**row, **(_lend(bio, list(external[row["person_id"]])) if row["person_id"] in external else bio)})
+        feb = linked.get(row["person_id"])
+        who = feb or row["person_id"]
+        out.append({**row, **_bio_of(row, by_person.get(who, []), str(season), list(external.get(who, [])), borrowed=feb is not None), "linked_to": feb})
     return out
