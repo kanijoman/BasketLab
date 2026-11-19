@@ -6,7 +6,8 @@ import Card from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
 import { loadCompetitionZones } from './data'
 import type { SearchRow } from './search'
-import { zoneLines, zoneTotal } from './zones'
+import FibaCourtSVG from '@/components/ui/FibaCourtSVG'
+import { zoneChart, zoneLines, zoneTotal } from './zones'
 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
 const one = (v: number | null) => (v === null ? dash : v.toFixed(1))
@@ -16,13 +17,15 @@ export default function PlayerZones({ row }: { row: SearchRow }) {
   const lines = useMemo(() => (zones.data ? zoneLines(zones.data, row.person_id, row.team_id) : null), [zones.data, row.person_id, row.team_id])
   const total = lines ? zoneTotal(lines) : null
   return (
-    <Card title="Zonas de tiro">
+    <Card id="zonas" title="Zonas de tiro">
       {zones.isLoading && <Spinner size="sm" label="Cargando las zonas" />}
       {zones.isError && <p className="text-sm text-ink-muted">Esta competición no tiene datos de zonas publicados.</p>}
       {zones.isSuccess && !lines && <p className="text-sm text-ink-muted">Sin tiros registrados de este jugador en {row.competition} {row.season_label}.</p>}
       {lines && total && (
         <>
           <p className="mb-2 text-xs text-ink-muted">{row.season_label} · {row.competition} · {row.team_name}. El porcentaje de la liga es el de todos los tiros de la competición en esa zona.</p>
+          {/* the court is the picture of the table below, which says the same in text (as the radar and its list): for a screen reader it would be repeated */}
+          <div aria-hidden="true" className="mx-auto mb-3 max-w-md"><FibaCourtSVG zones={zoneChart(lines)} /></div>
           <div role="region" tabIndex={0} aria-label="Tabla de zonas de tiro, desplazable" className="overflow-x-auto">
             <table aria-label="Tiros por zona" className="w-full border-collapse text-xs sm:text-sm">
               <thead>

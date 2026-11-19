@@ -113,6 +113,7 @@ describe('the profile page', () => {
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 10 + 1)                    // header, ten zones and the total
     expect(within(table).getByRole('columnheader', { name: /% liga/ })).toBeInTheDocument()
     expect(within(section).getByRole('region', { name: /Tabla de zonas de tiro/ })).toHaveAttribute('tabindex', '0')
+    expect(section.querySelectorAll('svg [data-zone]').length).toBeGreaterThan(0)          // the court of Analytics with a bubble per zone with shots (#1010)
   })
 
   it('does not draw a zones table for a player without shots in the file', async () => {
@@ -145,6 +146,29 @@ describe('the profile page', () => {
     expect(within(items[0]).getByText(/%/)).toBeInTheDocument()
     expect(within(items[0]).getByRole('link', { name: /Comparar con/ }).getAttribute('href')).toMatch(/^\/comparar\?j=feb%3A10101%2C/)
     expect(within(section).getByText(/Solo se comparan jugadores de la misma competición y temporada/)).toBeInTheDocument()
+  })
+
+  it('has a navigation inside the profile with a link to each section, and every link goes to a section that is there (#1010)', async () => {
+    open('feb:10101')
+    await screen.findByRole('heading', { name: /Zonas de tiro/ })
+    const nav = screen.getByRole('navigation', { name: 'En esta ficha' })
+    const links = within(nav).getAllByRole('link')
+    expect(links.map(l => l.textContent)).toEqual(['Datos personales', 'Trayectoria', 'Perfil', 'Parecidos', 'Zonas de tiro'])
+    for (const link of links) {
+      const target = document.getElementById(link.getAttribute('href')!.slice(1))
+      expect(target, link.textContent!).not.toBeNull()
+      expect(target!.tagName).toBe('SECTION')
+      expect(within(target!).getByRole('heading', { level: 2 }).textContent!.toLowerCase()).toContain(link.textContent!.toLowerCase())          // the link says what the section is about
+    }
+  })
+
+  it('can be exported as a PDF or a picture, with no CSV (it is not a table of rows), named after the player (#1010)', async () => {
+    open(ANA)
+    await screen.findByRole('heading', { level: 1, name: /ANA PRUEBA UNO/ })
+    await userEvent.click(screen.getByRole('button', { name: /Exportar/ }))
+    expect(screen.getByRole('button', { name: 'PDF' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'PNG' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'CSV' })).not.toBeInTheDocument()
   })
 
   it('says it when nobody has that id, and offers the way back to the search', async () => {

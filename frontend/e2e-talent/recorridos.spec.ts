@@ -115,6 +115,7 @@ test.describe('profile', () => {
     const zones = page.getByRole('table', { name: 'Tiros por zona' })
     await expect(zones).toBeVisible()
     await expect(zones.getByRole('row')).toHaveCount(12)                       // header, ten zones and the total
+    await expect(page.locator('svg [data-zone]').first()).toBeVisible()        // the court of Analytics with its bubbles (#1010)
   })
 
   test('lists the players most like him in his own competition and takes the staff to compare with one of them (#1010)', async ({ page }) => {
@@ -125,6 +126,34 @@ test.describe('profile', () => {
     await list.getByRole('link', { name: /^Comparar con / }).first().click()
     await expect(page).toHaveURL(/\/comparar\?j=feb%3A10101%2C/)
     await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
+  })
+
+  test('the navigation inside the profile takes you to each section and stays in sight (#1010)', async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 700 })
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    const nav = page.getByRole('navigation', { name: 'En esta ficha' })
+    await nav.getByRole('link', { name: 'Zonas de tiro' }).click()
+    const zones = page.getByRole('heading', { name: 'Zonas de tiro' })
+    await expect(zones).toBeInViewport()
+    const below = await zones.boundingBox()
+    const bar = await nav.boundingBox()
+    expect(below!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height - 1)          // the section is not hidden under the navigation
+    await expect(nav).toBeInViewport()
+    await nav.getByRole('link', { name: 'Datos personales' }).click()
+    await expect(page.getByRole('heading', { name: 'Datos personales' })).toBeInViewport()
+  })
+
+  test('downloads the profile as a PDF named after the player, with the photo swapped for the initials (#1010)', async ({ page }) => {
+    test.setTimeout(90_000)
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    await page.getByRole('button', { name: /Exportar/ }).click()
+    await expect(page.getByRole('button', { name: 'CSV' })).toHaveCount(0)
+    const download = page.waitForEvent('download', { timeout: 60_000 })
+    await page.getByRole('button', { name: 'PDF' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^ficha-.*\.pdf$/)
+    const path = await file.path()
+    expect((await import('node:fs')).statSync(path!).size).toBeGreaterThan(5_000)
   })
 
   test('says there are no shots when the file has none of the player, and draws no table of zeros', async ({ page }) => {
