@@ -1,22 +1,21 @@
-// «Mi equipo» of BasketLab Talent (epic #872, C1 #882): the squad of a team, where it has holes and the search that would fill each one, as plain functions (no React, no network).
+// «Mi equipo» of BasketLab Talent (epic #872, C1 #882): the squad of a team, where its game has holes and the search that would fill each one, as plain functions (no React, no network).
 //
 // Rules that were decided (20/11/2026):
 //  - the staff CHOOSES the team (any competition and season published, senior or youth); where it is remembered is the page's business (the address first, then the browser);
 //  - the rotation is who played enough (`eligible`: 10 minutes a game, a third of the games of the team, 3 games); the rest is the bench;
-//  - a hole of POSITION is a group (bases and guards, wings, centres) with `HOLE_MAX_PLAYERS` or fewer players of rotation, and it is only said when the rotation has `MIN_ROTATION` players or more.
-//    A player with only the group counts in it; one with no position at all is apart and could be anywhere, so a group is a hole only if even all of them together would not get it past the limit;
-//  - a hole of PROFILE is one of the three axes of the radar where the rotation is weakest: the percentile (in HIS competition) weighted by minutes; an axis needs three players with the figure;
-//  - the age is information (share of the minutes of the under 22 and the 30 or over), never a hole;
-//  - the suggestion is a search already filled in (`SUGGEST_PCT` percentile in the weak axis, or the position group, with minutes enough): no ranking of its own.
+//  - a hole is a matter of PLAYING PROFILE, not of position (three centres and nobody who rebounds is a hole in rebounding): an axis of the radar that NOBODY in the rotation covers, that is, the best
+//    player of the rotation does not reach the percentile `COVER_PCT` (75) in it, in HIS competition. It is the best, not the mean: one rebounder covers rebounding however weak the others are;
+//    it is only said when the rotation has `MIN_ROTATION` players and `MIN_WITH_AXIS` of them have the figure;
+//  - the position (bases and guards, wings, centres) is information, never a hole; the age too (share of the minutes of the under 22 and the 30 or over);
+//  - the suggestion is a search already filled in (`SUGGEST_PCT` percentile in the axis nobody covers, with minutes enough): no ranking of its own.
 import { RADAR_AXES } from './player'
 import { filtersToParams, NO_FILTERS, POSITION_GROUPS, type PositionGroup, type SearchFilters, type SearchRow } from './search'
 
-export const HOLE_MAX_PLAYERS = 1
 export const MIN_ROTATION = 5
+export const COVER_PCT = 75                // the best of the rotation must reach it in an axis for the axis to be covered
 export const SUGGEST_PCT = 75
 export const AGE_YOUNG = 22
 export const AGE_VETERAN = 30
-const PROFILE_GAPS = 3
 const MIN_WITH_AXIS = 3
 
 export interface TeamOption { team_id: string; team_name: string; players: number }
@@ -41,38 +40,36 @@ export function squadOf(rows: SearchRow[], compKey: string, teamId: string): Squ
   return { rotation: mine.filter(r => r.eligible), bench: mine.filter(r => !r.eligible) }
 }
 
-export interface GroupBalance { group: PositionGroup; players: number; /** 0 to 1 of the minutes of the rotation with a group */ minutesShare: number; hole: boolean }
-export interface PositionBalance { groups: GroupBalance[]; unknown: { players: number; minutes: number }; reliable: boolean }
+export interface GroupBalance { group: PositionGroup; players: number; /** 0 to 1 of the minutes of the rotation with a group */ minutesShare: number }
+export interface PositionBalance { groups: GroupBalance[]; unknown: { players: number; minutes: number } }
 
-/** The rotation by position group, with the share of minutes of each and the holes. */
+/** The rotation by position group, with the share of minutes of each: information (the holes are of profile). */
 export function positionBalance(rotation: SearchRow[]): PositionBalance {
   const known = rotation.filter(r => r.position_group)
   const unknown = rotation.filter(r => !r.position_group)
   const knownMinutes = known.reduce((s, r) => s + r.minutes, 0)
-  const reliable = rotation.length >= MIN_ROTATION
   const groups = POSITION_GROUPS.map(group => {
     const own = known.filter(r => r.position_group === group)
-    return {
-      group, players: own.length, minutesShare: knownMinutes ? own.reduce((s, r) => s + r.minutes, 0) / knownMinutes : 0,
-      hole: reliable && own.length + unknown.length <= HOLE_MAX_PLAYERS,
-    }
+    return { group, players: own.length, minutesShare: knownMinutes ? own.reduce((s, r) => s + r.minutes, 0) / knownMinutes : 0 }
   })
-  return { groups, unknown: { players: unknown.length, minutes: unknown.reduce((s, r) => s + r.minutes, 0) }, reliable }
+  return { groups, unknown: { players: unknown.length, minutes: unknown.reduce((s, r) => s + r.minutes, 0) } }
 }
 
-export interface ProfileGap { key: string; label: string; short: string; /** weighted percentile, 0 to 100 */ mean: number; players: number }
+export interface AxisCover { key: string; label: string; short: string; /** the best of the rotation in it (null if nobody has the figure) */ best: SearchRow | null; bestPct: number | null; /** players of the rotation with the figure */ players: number; hole: boolean }
 
-/** The three axes where the rotation is weakest (the lowest first); none for a rotation too small to say it. */
-export function profileGaps(rotation: SearchRow[]): ProfileGap[] {
-  if (rotation.length < MIN_ROTATION) return []
-  const gaps: ProfileGap[] = []
-  for (const axis of RADAR_AXES) {
-    const have = rotation.flatMap(r => (typeof r.pct?.[axis.key] === 'number' ? [{ v: r.pct![axis.key] as number, w: r.minutes }] : []))
-    const weight = have.reduce((s, h) => s + h.w, 0)
-    if (have.length < MIN_WITH_AXIS || weight <= 0) continue
-    gaps.push({ key: axis.key, label: axis.label.replace(/ \(.*\)$/, ''), short: axis.short, mean: have.reduce((s, h) => s + h.v * h.w, 0) / weight, players: have.length })
-  }
-  return gaps.sort((a, b) => a.mean - b.mean || a.key.localeCompare(b.key)).slice(0, PROFILE_GAPS)
+const axisName = (label: string) => label.replace(/ \(.*\)$/, '')
+
+/** For each axis of the radar, in its order: the best player of the rotation and whether nobody covers it (a hole). A tie of the best goes to more minutes, then name and id: independent of the order of the rows. */
+export function axisCoverage(rotation: SearchRow[]): AxisCover[] {
+  const reliable = rotation.length >= MIN_ROTATION
+  return RADAR_AXES.map(axis => {
+    const have = rotation.flatMap(r => (typeof r.pct?.[axis.key] === 'number' ? [{ row: r, v: r.pct![axis.key] as number }] : []))
+    const best = [...have].sort((a, b) => b.v - a.v || byMinutes(a.row, b.row))[0]
+    return {
+      key: axis.key, label: axisName(axis.label), short: axis.short, best: best?.row ?? null, bestPct: best?.v ?? null, players: have.length,
+      hole: reliable && have.length >= MIN_WITH_AXIS && best !== undefined && best.v < COVER_PCT,
+    }
+  })
 }
 
 export interface AgeMix { young: number | null; veteran: number | null; /** share of the minutes of players whose age is not known */ unknown: number }
@@ -94,12 +91,8 @@ const search = (season: string, patch: Partial<SearchFilters>): string => {
   return `/?${params.toString()}`
 }
 
-const GROUP_NAME: Record<PositionGroup, string> = { G: 'bases y escoltas', F: 'aleros y ala-pívots', C: 'pívots' }
-
-/** The searches that would fill each hole, already filled in: the position group of a hole of position, a percentile of ``SUGGEST_PCT`` in a weak axis. */
-export function suggestions({ season, balance, gaps }: { season: string; balance: PositionBalance; gaps: ProfileGap[] }): Suggestion[] {
-  return [
-    ...balance.groups.filter(g => g.hole).map(g => ({ key: `pos-${g.group}`, label: `Buscar ${GROUP_NAME[g.group]}`, href: search(season, { groups: [g.group] }) })),
-    ...gaps.map(g => ({ key: `axis-${g.key}`, label: `Buscar jugadores de ${g.label.toLowerCase()} (percentil ${SUGGEST_PCT} o más)`, href: search(season, { metric: g.key as SearchFilters['metric'], pctMin: SUGGEST_PCT }) })),
-  ]
+/** The searches that would fill each hole, already filled in: a percentile of ``SUGGEST_PCT`` or more in the axis nobody covers, the biggest hole (the best player furthest from the percentile) first. */
+export function suggestions({ season, coverage }: { season: string; coverage: AxisCover[] }): Suggestion[] {
+  return coverage.filter(c => c.hole).sort((a, b) => (a.bestPct as number) - (b.bestPct as number) || a.key.localeCompare(b.key))
+    .map(c => ({ key: `axis-${c.key}`, label: `Buscar jugadores de ${c.label.toLowerCase()} (percentil ${SUGGEST_PCT} o más)`, href: search(season, { metric: c.key as SearchFilters['metric'], pctMin: SUGGEST_PCT }) }))
 }

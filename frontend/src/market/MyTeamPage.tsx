@@ -11,7 +11,7 @@ import { Field, Select } from '@/components/ui/Field'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { loadCompetitionRows, loadTalentCompetitions } from './data'
-import { ageMix, positionBalance, profileGaps, squadOf, suggestions, teamsOf, AGE_VETERAN, AGE_YOUNG, MIN_ROTATION } from './myTeam'
+import { ageMix, axisCoverage, positionBalance, squadOf, suggestions, teamsOf, AGE_VETERAN, AGE_YOUNG, COVER_PCT, MIN_ROTATION } from './myTeam'
 import { recallTeam, rememberTeam } from './myTeamMemory'
 import { toSearchRow, type PositionGroup } from './search'
 
@@ -32,9 +32,9 @@ export default function MyTeamPage() {
   const team = teams.find(t => t.team_id === teamId)
   const squad = useMemo(() => squadOf(all, comp, teamId), [all, comp, teamId])
   const balance = useMemo(() => positionBalance(squad.rotation), [squad])
-  const gaps = useMemo(() => profileGaps(squad.rotation), [squad])
+  const coverage = useMemo(() => axisCoverage(squad.rotation), [squad])
   const age = useMemo(() => ageMix(squad.rotation), [squad])
-  const found = entry ? suggestions({ season: entry.season, balance, gaps }) : []
+  const found = entry ? suggestions({ season: entry.season, coverage }) : []
 
   useEffect(() => { if (team) rememberTeam({ comp, team: team.team_id }) }, [team, comp])
 
@@ -95,30 +95,38 @@ export default function MyTeamPage() {
                 {squad.rotation.length === 0 && <p className="p-4 text-sm text-ink-muted">Ningún jugador de este equipo tiene minutos suficientes todavía.</p>}
                 {squad.bench.length > 0 && <p className="border-t border-line p-3 text-xs text-ink-muted">Fondo de plantilla (sin minutos suficientes): {squad.bench.map(r => r.full_name ?? r.name).join(', ')}.</p>}
               </Card>
-              <Card title="Huecos de posición">
-                {!balance.reliable ? (
-                  <p className="text-sm text-ink-muted">Con {squad.rotation.length} {squad.rotation.length === 1 ? 'jugador' : 'jugadores'} de rotación todavía no se puede decir (hacen falta {MIN_ROTATION}).</p>
+              <Card title="Perfil de juego de la rotación">
+                {squad.rotation.length < MIN_ROTATION ? (
+                  <p className="text-sm text-ink-muted">Con {squad.rotation.length} {squad.rotation.length === 1 ? 'jugador' : 'jugadores'} de rotación todavía no se puede decir dónde hay huecos (hacen falta {MIN_ROTATION}).</p>
                 ) : (
-                  <ul aria-label="Huecos de posición" className="grid gap-2 sm:grid-cols-3">
-                    {balance.groups.map(g => (
-                      <li key={g.group} className="rounded-card border border-line p-3">
-                        <p className="flex items-center justify-between gap-2 text-sm font-medium text-ink">{GROUP_NAME[g.group]}{g.hole && <Badge tone="bad">Hueco</Badge>}</p>
-                        <p className="mt-1 text-xs text-ink-muted">{g.players} {g.players === 1 ? 'jugador' : 'jugadores'} · {pct(g.minutesShare)} de los minutos</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {balance.unknown.players > 0 && <p className="mt-2 text-xs text-ink-muted">{balance.unknown.players} {balance.unknown.players === 1 ? 'jugador' : 'jugadores'} sin posición: no cuentan en ningún grupo y un grupo solo es hueco si, aun sumándolos, no llega.</p>}
-              </Card>
-              <Card title="Huecos de perfil">
-                {gaps.length === 0 ? <p className="text-sm text-ink-muted">Todavía no hay rotación suficiente para decir dónde es más flojo el equipo.</p> : (
                   <>
-                    <p className="mb-2 text-xs text-ink-muted">Los tres ejes donde la rotación es más floja: el percentil de cada jugador en su competición, ponderado por minutos (50 es el término medio de la liga).</p>
-                    <ul aria-label="Huecos de perfil" className="space-y-1.5">
-                      {gaps.map(g => <li key={g.key} className="flex items-center justify-between gap-3 text-sm"><span className="text-ink">{g.label}</span><span className="font-semibold tabular-nums text-ink">{Math.round(g.mean)}</span></li>)}
+                    <p className="mb-2 text-xs text-ink-muted">Un hueco es un eje que nadie de la rotación cubre: el mejor jugador del equipo no llega al percentil {COVER_PCT} en él, en su competición. Un reboteador cubre los rebotes aunque los demás no lo sean, y tres pívots sin ninguno que rebote dejan el hueco.</p>
+                    <ul aria-label="Perfil de la rotación" className="divide-y divide-line/60">
+                      {coverage.map(c => (
+                        <li key={c.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+                          <span className="w-44 shrink-0 text-ink">{c.label}</span>
+                          {c.best ? (
+                            <span className="min-w-0 flex-1 text-ink-muted">
+                              el mejor: <Link to={`/jugador/${encodeURIComponent(c.best.person_id)}`} className="font-medium text-accent-text hover:underline">{c.best.full_name ?? c.best.name}</Link> · <span className="tabular-nums">{Math.round(c.bestPct as number)}</span>
+                            </span>
+                          ) : <span className="min-w-0 flex-1">{dash}</span>}
+                          {c.hole && <Badge tone="bad">Hueco</Badge>}
+                        </li>
+                      ))}
                     </ul>
                   </>
                 )}
+              </Card>
+              <Card title="Reparto por posición">
+                <ul aria-label="Reparto por posición" className="grid gap-2 sm:grid-cols-3">
+                  {balance.groups.map(g => (
+                    <li key={g.group} className="rounded-card border border-line p-3">
+                      <p className="text-sm font-medium text-ink">{GROUP_NAME[g.group]}</p>
+                      <p className="mt-1 text-xs text-ink-muted">{g.players} {g.players === 1 ? 'jugador' : 'jugadores'} · {pct(g.minutesShare)} de los minutos</p>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-ink-muted">Es información: el hueco se mide por el juego, no por la posición.{balance.unknown.players > 0 ? ` ${balance.unknown.players} ${balance.unknown.players === 1 ? 'jugador' : 'jugadores'} sin posición no cuentan en ningún grupo.` : ''}</p>
               </Card>
               <Card title="Edad de la rotación">
                 {age.young === null ? <p className="text-sm text-ink-muted">Sin edad conocida en la rotación.</p> : (

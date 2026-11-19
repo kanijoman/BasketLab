@@ -40,23 +40,36 @@ describe('«Mi equipo»', () => {
     expect(JSON.parse(localStorage.getItem('talent-my-team')!)).toMatchObject({ comp: LF2_KEY })
   })
 
-  it('shows the rotation by minutes, the holes of profile and the age of the squad', async () => {
+  it('shows the rotation by minutes, the game profile of each of the eight axes with its best player, and the age of the squad', async () => {
     open(mine())
     const rotation = await screen.findByRole('table', { name: /Rotación/ })
     expect(within(rotation).getAllByRole('row').length).toBeGreaterThan(5)
-    const profile = screen.getByRole('list', { name: 'Huecos de perfil' })
-    expect(within(profile).getAllByRole('listitem')).toHaveLength(3)
+    const profile = screen.getByRole('list', { name: 'Perfil de la rotación' })
+    const items = within(profile).getAllByRole('listitem')
+    expect(items).toHaveLength(8)
+    expect(items[0]).toHaveTextContent(/el mejor:/)
     expect(screen.getByText(/menores de 22/i)).toBeInTheDocument()
   })
 
-  it('says how many players have no position and does not call that a hole', async () => {
+  it('marks as a hole an axis nobody of the rotation covers, and explains it with the example of the rebounder', async () => {
     open(mine())
-    await screen.findByRole('table', { name: /Rotación/ })
-    expect(screen.getByText(/sin posición/i)).toBeInTheDocument()
-    expect(screen.queryByText(/Hueco de posición/i)).not.toBeInTheDocument()
+    const profile = await screen.findByRole('list', { name: 'Perfil de la rotación' })
+    const holes = within(profile).getAllByRole('listitem').filter(li => within(li).queryByText('Hueco'))
+    expect(holes.length).toBeGreaterThan(0)                      // in the vectors nobody of the team reaches the percentile 75 in every axis
+    for (const hole of holes) expect(hole.textContent).toMatch(/el mejor:.*\d+/)
+    expect(screen.getByText(/un reboteador cubre los rebotes aunque los demás no lo sean/i)).toBeInTheDocument()
   })
 
-  it('offers, for each weak axis, a search with the filters already put (percentile 75, minutes enough)', async () => {
+  it('shows the position as information, never as a hole', async () => {
+    open(mine())
+    const balance = await screen.findByRole('list', { name: 'Reparto por posición' })
+    expect(within(balance).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByText(/el hueco se mide por el juego, no por la posición/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Hueco de posición/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/sin posición/i)).toBeInTheDocument()
+  })
+
+  it('offers, for each axis nobody covers, a search with the filters already put (percentile 75, minutes enough)', async () => {
     open(mine())
     const link = (await screen.findAllByRole('link', { name: /Buscar jugadores de/ }))[0]
     const url = new URL(link.getAttribute('href')!, 'https://x.test')

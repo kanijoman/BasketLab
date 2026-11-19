@@ -261,14 +261,16 @@ test.describe('my team (#882)', () => {
     await expect(team.locator('option')).not.toHaveCount(1)
     await team.selectOption({ index: 1 })
     await expect(page.getByRole('table', { name: /Rotación de/ })).toBeVisible()
-    await expect(page.getByRole('list', { name: 'Huecos de perfil' }).getByRole('listitem')).toHaveCount(3)
+    await expect(page.getByRole('list', { name: 'Perfil de la rotación' }).getByRole('listitem')).toHaveCount(8)          // every axis, with its best player
     await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Buscar' }).click()
     await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mi equipo' }).click()
     await expect(page.getByRole('table', { name: /Rotación de/ })).toBeVisible()          // it comes back with the team of last time
   })
 
-  test('a hole opens the search with the filters already put, and the chips say which', async ({ page }) => {
+  test('a hole is an axis nobody covers, not a position, and it opens the search with the filters already put (#882)', async ({ page }) => {
     await open(page, MY_TEAM)
+    await expect(page.getByText('Hueco', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText(/el hueco se mide por el juego, no por la posición/)).toBeVisible()
     await page.getByRole('link', { name: /Buscar jugadores de/ }).first().click()
     await expect(page).toHaveURL(/p=75/)
     const chips = page.getByRole('list', { name: 'Filtros activos' })

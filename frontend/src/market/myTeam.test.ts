@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { loadCompetitionRows, loadTalentCompetitions, resetTalentData, setTalentBase } from './data'
-import { AGE_VETERAN, AGE_YOUNG, HOLE_MAX_PLAYERS, MIN_ROTATION, SUGGEST_PCT, ageMix, positionBalance, profileGaps, squadOf, suggestions, teamsOf } from './myTeam'
+import { AGE_VETERAN, AGE_YOUNG, COVER_PCT, MIN_ROTATION, SUGGEST_PCT, ageMix, axisCoverage, positionBalance, squadOf, suggestions, teamsOf } from './myTeam'
 import { filtersFromParams } from './search'
 import { toSearchRow, type PositionGroup, type SearchRow } from './search'
 import { LF2_KEY, serveTalentData, TALENT_BASE } from '@/test/talentDataHost'
@@ -47,8 +47,8 @@ describe('the teams and the squad', () => {
   })
 })
 
-describe('the holes of position', () => {
-  it('count the rotation by group (bases and guards, wings, centres) with the share of minutes of each', async () => {
+describe('the position of the rotation (information, not a hole)', () => {
+  it('counts the rotation by group (bases and guards, wings, centres) with the share of minutes of each', async () => {
     const [base] = await lf2()
     const balance = positionBalance(rotation(base, ['G', 'G', 'G', 'F', 'F', 'C']))
     expect(balance.groups.map(g => [g.group, g.players])).toEqual([['G', 3], ['F', 2], ['C', 1]])
@@ -56,53 +56,64 @@ describe('the holes of position', () => {
     expect(balance.unknown).toEqual({ players: 0, minutes: 0 })
   })
 
-  it('call a hole a group with one player of rotation or none, and only when the rotation is big enough to say it', async () => {
-    const [base] = await lf2()
-    expect(HOLE_MAX_PLAYERS).toBe(1)
-    const holes = (groups: (PositionGroup | null)[]) => positionBalance(rotation(base, groups)).groups.filter(g => g.hole).map(g => g.group)
-    expect(holes(['G', 'G', 'G', 'F', 'F', 'C'])).toEqual(['C'])
-    expect(holes(['G', 'G', 'G', 'F', 'F', 'F'])).toEqual(['C'])
-    expect(holes(['G', 'G', 'G', 'G', 'F', 'C', 'C'])).toEqual(['F'])
-    expect(MIN_ROTATION).toBe(5)
-    expect(holes(['G', 'F', 'C', 'G'])).toEqual([])                       // four players of rotation: nothing can be said yet
-    expect(positionBalance(rotation(base, ['G', 'F', 'C', 'G'])).reliable).toBe(false)
-  })
-
-  it('keep the players without a position apart: they are not a group and never make a hole by being missing', async () => {
+  it('keeps the players without a position apart: they are not a group', async () => {
     const [base] = await lf2()
     const balance = positionBalance(rotation(base, ['G', 'G', null, null, null, 'F', 'F', 'C', 'C']))
     expect(balance.unknown).toEqual({ players: 3, minutes: 3600 })
-    expect(balance.groups.filter(g => g.hole)).toEqual([])
-    const allUnknown = positionBalance(rotation(base, [null, null, null, null, null, null]))
-    expect(allUnknown.groups.every(g => g.players === 0)).toBe(true)
-    expect(allUnknown.groups.some(g => g.hole)).toBe(false)               // nobody has a position: no group can be called empty
+    expect(positionBalance(rotation(base, [null, null])).groups.every(g => g.players === 0 && g.minutesShare === 0)).toBe(true)
   })
 })
 
-describe('the holes of profile', () => {
-  it('are the three axes where the rotation is weakest, by the percentile weighted by minutes, with the lowest first', async () => {
+/** A rotation of six where each player has the percentile asked for on each axis (the rest at 50). */
+const withPcts = (base: SearchRow, each: Record<string, number | null>[]): SearchRow[] =>
+  rotation(base, each.map(() => 'C' as PositionGroup)).map((r, i) => as(r, { person_id: `feb:p${i}`, name: `P${i}`, pct: { ...r.pct!, pts: 50, ast: 50, orb: 50, drb: 50, stl: 50, blk: 50, efg: 50, tov: 50, ...each[i] } }))
+
+describe('the holes of profile: an axis that NOBODY in the rotation covers', () => {
+  it('is a hole when the best of the rotation does not reach the percentile 75, even with three centres: what matters is the game they give, not their position', async () => {
     const [base] = await lf2()
-    const players = rotation(base, ['G', 'F', 'C', 'G', 'F']).map(r => as(r, { pct: { ...r.pct!, pts: 90, ast: 20, orb: 30, drb: 40, stl: 80, blk: 85, efg: 70, tov: 60 } }))
-    const gaps = profileGaps(players)
-    expect(gaps.map(g => g.key)).toEqual(['ast', 'orb', 'drb'])
-    expect(gaps.map(g => g.mean)).toEqual([20, 30, 40])
-    expect(gaps[0]).toMatchObject({ label: 'Asistencias', players: 5 })
+    expect(COVER_PCT).toBe(75)
+    const six = withPcts(base, [{ orb: 40, drb: 60 }, { orb: 55, drb: 65 }, { orb: 62, drb: 70 }, { orb: 30 }, { orb: 20 }, { orb: 10 }])
+    const cover = axisCoverage(six)
+    const orb = cover.find(c => c.key === 'orb')!
+    expect(orb).toMatchObject({ hole: true, bestPct: 62, players: 6 })
+    expect(orb.best?.person_id).toBe('feb:p2')
+    expect(cover.find(c => c.key === 'drb')).toMatchObject({ hole: true, bestPct: 70 })          // 70 does not reach 75 either
   })
 
-  it('weigh by minutes: the one who plays more says more', async () => {
+  it('is covered with one player at 75 or more, however weak the rest are (a mean would hide him)', async () => {
     const [base] = await lf2()
-    const [a, b, c, d, e] = rotation(base, ['G', 'F', 'C', 'G', 'F'])
-    const set = (r: SearchRow, minutes: number, ast: number) => as(r, { minutes, pct: { ...r.pct!, pts: 50, orb: 50, drb: 50, stl: 50, blk: 50, efg: 50, tov: 50, ast } })
-    const [gap] = profileGaps([set(a, 3000, 10), set(b, 600, 90), set(c, 600, 90), set(d, 600, 90), set(e, 600, 90)])
-    expect(gap.key).toBe('ast')
-    expect(gap.mean).toBeCloseTo((3000 * 10 + 4 * 600 * 90) / (3000 + 4 * 600), 1)
+    const six = withPcts(base, [{ orb: 75 }, { orb: 5 }, { orb: 5 }, { orb: 5 }, { orb: 5 }, { orb: 5 }])
+    expect(axisCoverage(six).find(c => c.key === 'orb')).toMatchObject({ hole: false, bestPct: 75 })
+    expect(axisCoverage(withPcts(base, [{ orb: 74.9 }, { orb: 5 }, { orb: 5 }, { orb: 5 }, { orb: 5 }, { orb: 5 }])).find(c => c.key === 'orb')!.hole).toBe(true)
   })
 
-  it('leave an axis out when fewer than three of the rotation have it (never a mean of nothing), and give none for a tiny rotation', async () => {
+  it('says every one of the eight axes in the order of the radar, and the best player of each', async () => {
     const [base] = await lf2()
-    const players = rotation(base, ['G', 'F', 'C', 'G', 'F']).map((r, i) => as(r, { pct: { ...r.pct!, pts: 50, ast: i < 2 ? 10 : null, orb: 60, drb: 60, stl: 60, blk: 60, efg: 60, tov: 60 } }))
-    expect(profileGaps(players).map(g => g.key)).not.toContain('ast')
-    expect(profileGaps(rotation(base, ['G', 'F', 'C', 'G']))).toEqual([])
+    const cover = axisCoverage(withPcts(base, Array.from({ length: 6 }, () => ({}))))
+    expect(cover.map(c => c.key)).toEqual(['pts', 'ast', 'orb', 'drb', 'stl', 'blk', 'efg', 'tov'])
+    expect(cover.every(c => c.best !== null && c.bestPct === 50)).toBe(true)
+  })
+
+  it('does not call a hole an axis for which fewer than three of the rotation have a figure, nor anything for a rotation too small', async () => {
+    const [base] = await lf2()
+    const sparse = withPcts(base, [{ orb: 10 }, { orb: 10 }, { orb: null }, { orb: null }, { orb: null }, { orb: null }])
+    expect(axisCoverage(sparse).find(c => c.key === 'orb')).toMatchObject({ hole: false, players: 2 })
+    expect(MIN_ROTATION).toBe(5)
+    const small = withPcts(base, [{ orb: 10 }, { orb: 10 }, { orb: 10 }, { orb: 10 }])
+    expect(axisCoverage(small).every(c => !c.hole)).toBe(true)
+  })
+
+  it('leaves out an axis nobody has, with no best player, never a zero', async () => {
+    const [base] = await lf2()
+    const none = withPcts(base, Array.from({ length: 6 }, () => ({ blk: null })))
+    expect(axisCoverage(none).find(c => c.key === 'blk')).toMatchObject({ best: null, bestPct: null, players: 0, hole: false })
+  })
+
+  it('breaks a tie of the best by minutes, then by name, so the order of the rows does not matter', async () => {
+    const [base] = await lf2()
+    const six = withPcts(base, [{ orb: 80 }, { orb: 80 }, { orb: 10 }, { orb: 10 }, { orb: 10 }, { orb: 10 }]).map((r, i) => as(r, { minutes: 1000 + (i === 1 ? 500 : 0) }))
+    expect(axisCoverage(six).find(c => c.key === 'orb')!.best?.person_id).toBe('feb:p1')
+    expect(axisCoverage([...six].reverse())).toEqual(axisCoverage(six))
   })
 })
 
@@ -124,28 +135,25 @@ describe('the age of the rotation', () => {
 })
 
 describe('the search that would fill a hole', () => {
-  it('for a hole of position asks for that group, with minutes enough, in the season of the team', async () => {
-    const [base] = await lf2()
-    const out = suggestions({ season: '2025', balance: positionBalance(rotation(base, ['G', 'G', 'G', 'F', 'F', 'C'])), gaps: [] })
-    expect(out).toHaveLength(1)
-    const url = new URL(out[0].href, 'https://x.test')
-    expect(url.pathname).toBe('/')
-    expect(url.searchParams.get('s')).toBe('2025')
-    expect(filtersFromParams(url.searchParams)).toMatchObject({ groups: ['C'], onlyEligible: true, metric: '', pctMin: null })
-  })
-
-  it('for a weak axis asks for a percentile of 75 or more in it, with minutes enough', async () => {
+  it('asks for a percentile of 75 or more in the axis nobody covers, with minutes enough, in the season of the team', async () => {
     const [base] = await lf2()
     expect(SUGGEST_PCT).toBe(75)
-    const balance = positionBalance(rotation(base, ['G', 'G', 'F', 'F', 'C', 'C']))
-    const out = suggestions({ season: '2025', balance, gaps: [{ key: 'ast', label: 'Asistencias', short: 'Ast', mean: 20, players: 5 }] })
-    expect(out).toHaveLength(1)
-    expect(filtersFromParams(new URL(out[0].href, 'https://x.test').searchParams)).toMatchObject({ metric: 'ast', pctMin: 75, onlyEligible: true, groups: [] })
-    expect(out[0].label).toMatch(/asistencias/i)
+    const six = withPcts(base, [{ orb: 40 }, { orb: 55 }, { orb: 62 }, { orb: 30 }, { orb: 20 }, { orb: 10 }])
+    const out = suggestions({ season: '2025', coverage: axisCoverage(six) })
+    const orb = out.find(s => s.key === 'axis-orb')!
+    const url = new URL(orb.href, 'https://x.test')
+    expect(url.pathname).toBe('/')
+    expect(url.searchParams.get('s')).toBe('2025')
+    expect(filtersFromParams(url.searchParams)).toMatchObject({ metric: 'orb', pctMin: 75, onlyEligible: true, groups: [] })
+    expect(orb.label).toMatch(/reb\. ofensivos/i)
   })
 
-  it('is nothing when there are no holes', async () => {
+  it('puts the biggest hole first (the one whose best player is furthest from 75) and is nothing when everything is covered', async () => {
     const [base] = await lf2()
-    expect(suggestions({ season: '2025', balance: positionBalance(rotation(base, ['G', 'G', 'F', 'F', 'C', 'C'])), gaps: [] })).toEqual([])
+    const six = withPcts(base, [{ orb: 70, ast: 20 }, { orb: 60, ast: 30 }, { orb: 50, ast: 10 }, { orb: 50, ast: 5 }, { orb: 50, ast: 5 }, { orb: 50, ast: 5 }])
+    const keys = suggestions({ season: '2025', coverage: axisCoverage(six) }).map(s => s.key)
+    expect(keys.indexOf('axis-ast')).toBeLessThan(keys.indexOf('axis-orb'))
+    const covered = withPcts(base, Array.from({ length: 6 }, () => ({ pts: 90, ast: 90, orb: 90, drb: 90, stl: 90, blk: 90, efg: 90, tov: 90 })))
+    expect(suggestions({ season: '2025', coverage: axisCoverage(covered) })).toEqual([])
   })
 })
