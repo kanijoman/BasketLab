@@ -130,6 +130,19 @@ test.describe('profile', () => {
     await expect(page.getByText('Enlazada de FBCYL').first()).toBeVisible()
   })
 
+  test('shows the photo of FEB next to the name, and the initials when it does not load or the player has none (#1010)', async ({ page }) => {
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    await expect(page.locator('img[src*="foto.aspx?c=10101"]')).toBeVisible()
+    await open(page, `/jugador/${enc(FBCYL_ALONE)}`)
+    await expect(page.locator('img[src*="foto.aspx"]')).toHaveCount(0)
+  })
+
+  test('with the photo failing the profile shows initials, not a broken image (#1010)', async ({ page }) => {
+    await serveTalent(page, { photos: false })
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    await expect(page.locator('img[src*="foto.aspx"]')).toHaveCount(0)
+  })
+
   test('a FBCYL player nobody links has her own profile, with what is missing shown as a dash', async ({ page }) => {
     await open(page, `/jugador/${enc(FBCYL_ALONE)}`)
     await expect(page).toHaveURL(new RegExp(`/jugador/${enc(FBCYL_ALONE)}$`))

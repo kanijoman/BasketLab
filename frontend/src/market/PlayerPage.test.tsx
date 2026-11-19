@@ -122,6 +122,20 @@ describe('the profile page', () => {
     expect(within(section).queryByRole('table')).not.toBeInTheDocument()
   })
 
+  it('shows the photo FEB publishes for the player next to his name, and the initials of a FBCYL player without a FEB id (#1010)', async () => {
+    open(ANA)
+    const photo = await screen.findByRole('img', { name: 'ANA PRUEBA UNO' })
+    expect(photo).toHaveAttribute('src', 'https://imagenes.feb.es/foto.aspx?c=10100')
+  })
+
+  it('shows initials, not a broken image, for a FBCYL player nobody links (#1010)', async () => {
+    const fbcyl = (await loadCompetitionRows(FBCYL_KEY)).rows.find(r => !r.linked_to)!
+    resetTalentData()
+    open(fbcyl.person_id)
+    await screen.findByRole('heading', { level: 1 })
+    expect(document.querySelector('img[src*="foto.aspx"]')).toBeNull()
+  })
+
   it('says it when nobody has that id, and offers the way back to the search', async () => {
     open('feb:no-existe')
     expect(await screen.findByText(/No encontramos a este jugador/)).toBeInTheDocument()
