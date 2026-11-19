@@ -36,6 +36,8 @@ export const WITH_SHOTS = 'feb:10101'
 export const NO_SHOTS = 'feb:10200'
 export const FBCYL_LINKED = 'fbcyl:34004-08'    // linked to Ana
 export const FBCYL_ALONE = 'fbcyl:34001-00'     // nobody's link
+export const LF2_COMP = 'feb|lf2|2025'
+export const MY_TEAM = `/mi-equipo?c=${encodeURIComponent(LF2_COMP)}&e=101`
 export const enc = encodeURIComponent
 
 export const WIDTHS = [320, 412, 1280] as const
@@ -49,6 +51,8 @@ export const PAGES: [string, string][] = [
   ['ficha-unificada', `/jugador/${enc(ANA)}`],
   ['comparador', `/comparar?j=${enc(WITH_SHOTS)},${enc(NO_SHOTS)},${enc(FBCYL_ALONE)}`],
   ['comparador-vacio', '/comparar'],
+  ['mi-equipo', `/mi-equipo?c=${encodeURIComponent('feb|lf2|2025')}&e=101`],
+  ['mi-equipo-vacio', '/mi-equipo'],
 ]
 
 /** Open a page and wait until it has stopped loading: the spinner is gone and the network is quiet. */
