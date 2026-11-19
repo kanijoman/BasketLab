@@ -22,4 +22,12 @@ describe('prepareCloneForExport', () => {
     prepareCloneForExport(doc)
     expect(doc.getElementById('other')!.style.display).toBe('')
   })
+
+  it('shows a clamped text whole in the clone: html2canvas cuts a line-clamp box at the height of the cell (regression: long team names in exported tables)', () => {
+    document.body.innerHTML = '<table><tr><td><span id="name" class="line-clamp-2 break-words" style="display:-webkit-box;overflow:hidden;max-height:2.5em">Club Deportivo Baloncesto Muy Largo de la Ciudad Autónoma</span></td></tr></table><span id="plain" style="overflow:hidden">x</span>'
+    prepareCloneForExport(document)
+    const name = document.getElementById('name')!
+    expect([name.style.display, name.style.overflow, name.style.maxHeight]).toEqual(['block', 'visible', 'none'])
+    expect(document.getElementById('plain')!.style.overflow).toBe('hidden')               // only the clamped ones change
+  })
 })
