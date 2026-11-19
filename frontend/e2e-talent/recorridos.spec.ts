@@ -117,6 +117,16 @@ test.describe('profile', () => {
     await expect(zones.getByRole('row')).toHaveCount(12)                       // header, ten zones and the total
   })
 
+  test('lists the players most like him in his own competition and takes the staff to compare with one of them (#1010)', async ({ page }) => {
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    const list = page.getByRole('list', { name: 'Jugadores parecidos' })
+    await expect(list.getByRole('listitem')).toHaveCount(5)
+    await expect(list.getByRole('listitem').first()).toContainText('%')
+    await list.getByRole('link', { name: /^Comparar con / }).first().click()
+    await expect(page).toHaveURL(/\/comparar\?j=feb%3A10101%2C/)
+    await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
+  })
+
   test('says there are no shots when the file has none of the player, and draws no table of zeros', async ({ page }) => {
     await open(page, `/jugador/${enc(NO_SHOTS)}`)
     await expect(page.getByText(/Sin tiros registrados/)).toBeVisible()

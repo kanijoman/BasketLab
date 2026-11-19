@@ -20,6 +20,7 @@ import { playerPhotoUrl } from '@/lib/playerPhoto'
 import { ENOUGH_MINUTES } from './enoughMinutes'
 import PlayerRadar from './PlayerRadar'
 import PlayerZones from './PlayerZones'
+import { SimilarPlayers } from './SimilarPlayers'
 import { toSearchRow, type SearchRow } from './search'
 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
@@ -126,6 +127,7 @@ export default function PlayerPage() {
           <PlayerRadar axes={axes} name={bio.name} />
         </div>
       </Card>
+      <SimilarPlayers row={row} targetId={personId} />
       <PlayerZones row={row} />
     </Shell>
   )
