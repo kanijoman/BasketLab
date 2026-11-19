@@ -32,6 +32,20 @@ describe('the comparison page', () => {
     expect(screen.getByRole('region', { name: /Tabla de comparación/ })).toHaveAttribute('tabindex', '0')          // a scrollable table is reachable with the keyboard on a phone (axe: scrollable-region-focusable)
   })
 
+  it('has a column with the difference (the second minus the first) only when there are two players (#1009)', async () => {
+    open('?j=feb:10101,feb:10200')
+    const table = await screen.findByRole('table', { name: /Comparación de jugadores/ })
+    expect(within(table).getByRole('columnheader', { name: /Diferencia/ })).toBeInTheDocument()
+    expect(within(table).getByRole('rowheader', { name: 'Partidos' }).closest('tr')!.textContent).toMatch(/[+−]\d|0$/)
+  })
+
+  it('has no difference column with three players, and can be exported (#1009)', async () => {
+    open('?j=feb:10100,feb:10200,fbcyl:34001-00')
+    const table = await screen.findByRole('table', { name: /Comparación de jugadores/ })
+    expect(within(table).queryByRole('columnheader', { name: /Diferencia/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Exportar/ })).toBeInTheDocument()
+  })
+
   it('warns that every percentile is the one of the player in his own competition and season', async () => {
     open('?j=feb:10100,feb:10200')
     expect(await screen.findByText(/nunca se compara entre competiciones/i)).toBeInTheDocument()

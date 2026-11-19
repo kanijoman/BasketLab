@@ -82,11 +82,27 @@ test.describe('filters (#1008)', () => {
     await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeVisible()
   })
 
-  test('each player has the action to compare him next to his name', async ({ page }) => {
+  test('the players are ticked in the list, a bar says how many and takes them to the comparator, and the choice survives the trip', async ({ page }) => {
     await open(page, '/?s=2025')
     await expect(page.getByRole('columnheader', { name: 'Comparar' })).toHaveCount(0)
-    await page.getByRole('link', { name: /^Comparar a / }).first().click()
+    const boxes = page.getByRole('checkbox', { name: /^Comparar a / })
+    await boxes.nth(0).check()
+    await boxes.nth(1).check()
+    const bar = page.getByRole('region', { name: 'Selección para comparar' })
+    await expect(bar).toContainText('2 jugadores elegidos')
+    await bar.getByRole('link', { name: /Comparar 2 jugadores/ }).click()
     await expect(page).toHaveURL(/\/comparar\?j=/)
+    await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Buscar' }).click()
+    await expect(page.getByRole('region', { name: 'Selección para comparar' })).toContainText('2 jugadores elegidos')
+  })
+
+  test('with three ticked the rest are off', async ({ page }) => {
+    await open(page, '/?s=2025')
+    const boxes = page.getByRole('checkbox', { name: /^Comparar a / })
+    for (const i of [0, 1, 2]) await boxes.nth(i).check()
+    await expect(boxes.nth(3)).toBeDisabled()
+    await expect(page.getByText(/Máximo 3 jugadores/)).toBeVisible()
   })
 })
 
@@ -135,7 +151,7 @@ test.describe('comparator', () => {
     await page.getByRole('button', { name: /BEA PRUEBA DOS/ }).click()
     const table = page.getByRole('table', { name: 'Comparación de jugadores' })
     await expect(table).toBeVisible()
-    await expect(table.getByRole('columnheader')).toHaveCount(3)               // the label column and two players
+    await expect(table.getByRole('columnheader')).toHaveCount(4)               // the label column, two players and the difference
     await expect(page.getByText(/nunca se compara entre competiciones/)).toBeVisible()
     await page.getByRole('button', { name: /Quitar BEA PRUEBA DOS/ }).click()
     await expect(table).toHaveCount(0)
@@ -149,6 +165,16 @@ test.describe('comparator', () => {
     await expect(table.getByText(/Primera Nacional Femenina/).first()).toBeVisible()
     await expect(page.getByRole('searchbox', { name: 'Añadir jugador' })).toBeDisabled()
     await expect(page.getByText(/Ya hay 3 jugadores/)).toBeVisible()
+  })
+
+  test('shows the difference between two players and offers to export the comparison (#1009)', async ({ page }) => {
+    await open(page, `/comparar?j=${enc(WITH_SHOTS)},${enc(NO_SHOTS)}`)
+    const table = page.getByRole('table', { name: 'Comparación de jugadores' })
+    await expect(table.getByRole('columnheader', { name: 'Diferencia' })).toBeVisible()
+    await page.getByRole('button', { name: /Exportar/ }).click()
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'CSV' }).click()
+    expect((await download).suggestedFilename()).toMatch(/^comparacion-.*\.csv$/)
   })
 
   test('keeps the list in the address, so reloading gives the same comparison', async ({ page }) => {

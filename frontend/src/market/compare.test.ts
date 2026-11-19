@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { loadCompetitionRows, loadTalentCompetitions, resetTalentData, setTalentBase } from './data'
-import { MAX_COMPARED, compareLines, comparePlayers, findPlayers, parseCompare, toggleCompare } from './compare'
+import { MAX_COMPARED, compareCsv, compareLines, comparePlayers, findPlayers, parseCompare, toggleCompare } from './compare'
 import { RADAR_AXES } from './player'
 import { toSearchRow, type SearchRow } from './search'
 import { serveTalentData, TALENT_BASE } from '@/test/talentDataHost'
@@ -112,5 +112,44 @@ describe('finding a player to add', () => {
     expect(findPlayers(rows, 'prueba', [ANA]).map(f => f.id)).not.toContain(ANA)
     expect(findPlayers(rows, 'prueba', [], 1)).toHaveLength(1)
     expect(findPlayers([...rows].reverse(), 'prueba', [])).toEqual(findPlayers(rows, 'prueba', []))
+  })
+})
+
+describe('the differences between two players (#1009)', () => {
+  it('are in a column only when there are exactly two players, as the second minus the first, in the precision of each line', async () => {
+    const rows = await all()
+    const two = comparePlayers(rows, [ANA, BEA]).players
+    const withValues = (a: Partial<typeof two[0]['row']>, b: Partial<typeof two[0]['row']>) => compareLines([{ ...two[0], row: { ...two[0].row, ...a } }, { ...two[1], row: { ...two[1].row, ...b } }])
+    const lines = withValues({ games: 6, minutes: 600, pct: { ...two[0].row.pct!, pts: 80 }, per40: { ...two[0].row.per40!, pts: 17.25 } }, { games: 9, minutes: 540, pct: { ...two[1].row.pct!, pts: 60 }, per40: { ...two[1].row.per40!, pts: 20 } })
+    const diff = (key: string, group?: string) => lines.find(l => l.key === key && (!group || l.group === group))!.diff
+    expect(diff('games')).toBe('+3')
+    expect(diff('minutes')).toBe('−1')                                                  // 9 minutes less, in whole minutes: 540 s → 9 min, 600 s → 10 min
+    expect(diff('pts40')).toBe('+2.8')
+    expect(diff('pts', 'percentiles')).toBe('−20')
+    expect(diff('competition')).toBeNull()                                              // text has no difference
+    const three = compareLines(comparePlayers(rows, [ANA, BEA, 'fbcyl:34001-00']).players)
+    expect(three.every(l => l.diff === null)).toBe(true)
+  })
+
+  it('say nothing for a line where a player has no data (never a difference against a zero), and «0» when they are equal', async () => {
+    const two = comparePlayers(await all(), [ANA, BEA]).players
+    const same = compareLines([{ ...two[0], row: { ...two[0].row, games: 6 } }, { ...two[1], row: { ...two[1].row, games: 6 } }])
+    expect(same.find(l => l.key === 'games')!.diff).toBe('0')
+    const missing = compareLines([{ ...two[0], row: { ...two[0].row, pct: { ...two[0].row.pct!, pts: null } } }, two[1]])
+    expect(missing.find(l => l.key === 'pts' && l.group === 'percentiles')!.diff).toBeNull()
+  })
+})
+
+describe('the comparison as a table to export (#1009)', () => {
+  it('has the data column and one per player, a row per line, an empty cell where there is no data and the difference when there is one', async () => {
+    const rows = await all()
+    const players = comparePlayers(rows, [BEA, 'fbcyl:34001-00']).players          // the FBCYL player has no bio: empty cells
+    const csv = compareCsv(players, compareLines(players))
+    expect(csv.headers.map(h => h.label)).toEqual(['Dato', players[0].name, players[1].name, 'Diferencia'])
+    expect(csv.data).toHaveLength(compareLines(players).length)
+    expect(csv.data.find(r => r.dato === 'Altura')).toMatchObject({ p0: '185 cm' })
+    expect(csv.data.some(r => r.p1 === '')).toBe(true)
+    const three = comparePlayers(rows, [ANA, BEA, 'fbcyl:34001-00']).players
+    expect(compareCsv(three, compareLines(three)).headers.map(h => h.label)).not.toContain('Diferencia')
   })
 })

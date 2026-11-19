@@ -46,36 +46,58 @@ export function comparePlayers(rows: SearchRow[], ids: string[]): { players: Com
   return { players, missing }
 }
 
-export interface CompareCell { text: string | null; best: boolean }
-export interface CompareLine { key: string; label: string; group: 'bio' | 'figures' | 'percentiles'; cells: CompareCell[] }
+export interface CompareCell { text: string | null; best: boolean; value: number | null }
+/** ``diff``: the second player minus the first, as text, only with exactly two players and a number in both (null otherwise). */
+export interface CompareLine { key: string; label: string; group: 'bio' | 'figures' | 'percentiles'; cells: CompareCell[]; diff: string | null }
 
-const per = (v: number | undefined | null) => (v === null || v === undefined ? null : v.toFixed(1))
-const line = (key: string, label: string, group: CompareLine['group'], texts: (string | null)[]): CompareLine => ({ key, label, group, cells: texts.map(text => ({ text, best: false })) })
+/** A line from the number of each player (null where he has none): the text and the difference are made from it, with the decimals of the line. */
+function numeric(key: string, label: string, group: CompareLine['group'], values: (number | null)[], decimals: number, text: (v: number) => string = v => v.toFixed(decimals)): CompareLine {
+  const cells = values.map(v => ({ text: v === null ? null : text(v), best: false, value: v }))
+  const [a, b] = values
+  return { key, label, group, cells, diff: values.length === 2 && a !== null && b !== null ? signed(b - a, decimals) : null }
+}
+
+/** ``+3``, ``−1.5`` (a real minus) or ``0``; a difference that rounds to nothing is ``0``. */
+function signed(d: number, decimals: number): string {
+  const text = Math.abs(d).toFixed(decimals)
+  return Number(text) === 0 ? '0' : `${d > 0 ? '+' : '−'}${text}`
+}
+
+const words = (key: string, label: string, group: CompareLine['group'], texts: (string | null)[]): CompareLine =>
+  ({ key, label, group, cells: texts.map(text => ({ text, best: false, value: null })), diff: null })
 
 /** The rows of the table of the comparison: bio, figures per 40 and the percentile of each axis of the radar. */
 export function compareLines(players: ComparedPlayer[]): CompareLine[] {
-  const each = (read: (p: ComparedPlayer) => string | null) => players.map(read)
+  const each = <T,>(read: (p: ComparedPlayer) => T) => players.map(read)
   const bio: CompareLine[] = [
-    line('competition', 'Competición', 'bio', each(p => `${p.row.season_label} · ${p.row.competition} · ${p.row.team_name}`)),
-    line('age', 'Edad (31/12)', 'bio', each(p => (p.row.age === null ? null : String(p.row.age)))),
-    line('height', 'Altura', 'bio', each(p => (p.bio.height.value === null ? null : `${p.bio.height.value} cm`))),
-    line('position', 'Posición', 'bio', each(p => p.bio.position.value)),
-    line('nationality', 'Nacionalidad', 'bio', each(p => (p.bio.nationalities.length ? p.bio.nationalities.join(' · ') : p.bio.nationality.value))),
+    words('competition', 'Competición', 'bio', each(p => `${p.row.season_label} · ${p.row.competition} · ${p.row.team_name}`)),
+    numeric('age', 'Edad (31/12)', 'bio', each(p => p.row.age), 0),
+    numeric('height', 'Altura', 'bio', each(p => p.bio.height.value), 0, v => `${v} cm`),
+    words('position', 'Posición', 'bio', each(p => p.bio.position.value)),
+    words('nationality', 'Nacionalidad', 'bio', each(p => (p.bio.nationalities.length ? p.bio.nationalities.join(' · ') : p.bio.nationality.value))),
   ]
   const figures: CompareLine[] = [
-    line('games', 'Partidos', 'figures', each(p => String(p.row.games))),
-    line('minutes', 'Minutos', 'figures', each(p => String(Math.round(p.row.minutes / 60)))),
-    line('pts40', 'Puntos / 40', 'figures', each(p => per(p.row.per40?.pts))),
-    line('ast40', 'Asistencias / 40', 'figures', each(p => per(p.row.per40?.ast))),
-    line('reb40', 'Rebotes / 40', 'figures', each(p => (p.row.per40 ? per(p.row.per40.orb + p.row.per40.drb) : null))),
+    numeric('games', 'Partidos', 'figures', each(p => p.row.games), 0),
+    numeric('minutes', 'Minutos', 'figures', each(p => Math.round(p.row.minutes / 60)), 0),
+    numeric('pts40', 'Puntos / 40', 'figures', each(p => p.row.per40?.pts ?? null), 1),
+    numeric('ast40', 'Asistencias / 40', 'figures', each(p => p.row.per40?.ast ?? null), 1),
+    numeric('reb40', 'Rebotes / 40', 'figures', each(p => (p.row.per40 ? p.row.per40.orb + p.row.per40.drb : null)), 1),
   ]
   const percentiles: CompareLine[] = RADAR_AXES.map(a => {
-    const values = players.map(p => p.row.pct?.[a.key] ?? null)
-    const known = values.filter((v): v is number => v !== null)
+    const line = numeric(a.key, a.label, 'percentiles', each(p => p.row.pct?.[a.key] ?? null), 0, v => String(Math.round(v)))
+    const known = line.cells.map(c => c.value).filter((v): v is number => v !== null)
     const top = known.length >= 2 ? Math.max(...known) : null
-    return { key: a.key, label: a.label, group: 'percentiles' as const, cells: values.map(v => ({ text: v === null ? null : String(Math.round(v)), best: top !== null && v === top })) }
+    return { ...line, cells: line.cells.map(c => ({ ...c, best: top !== null && c.value === top })) }
   })
   return [...bio, ...figures, ...percentiles]
+}
+
+/** The comparison as a table to export: ``Dato``, a column per player and ``Diferencia`` when there are exactly two; an empty cell where there is no data. */
+export function compareCsv(players: ComparedPlayer[], lines: CompareLine[]): { headers: { key: string; label: string }[]; data: Record<string, string>[] } {
+  const withDiff = players.length === 2
+  const headers = [{ key: 'dato', label: 'Dato' }, ...players.map((p, i) => ({ key: `p${i}`, label: p.name })), ...(withDiff ? [{ key: 'diff', label: 'Diferencia' }] : [])]
+  const data = lines.map(l => ({ dato: l.label, ...Object.fromEntries(l.cells.map((c, i) => [`p${i}`, c.text ?? ''])), ...(withDiff ? { diff: l.diff ?? '' } : {}) }))
+  return { headers, data }
 }
 
 export interface Found { id: string; name: string; label: string }
