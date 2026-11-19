@@ -1,13 +1,14 @@
 // The profile of a player of BasketLab Talent (B4, #880): his bio, his trajectory with the breakdown by competition and the radar of the percentiles of a row. The rules are in `player.ts`.
 // The player is in the address (`/jugador/:personId`). His rows are in the files of the competitions: only those of his league are opened (a FEB id has no FBCYL rows), each one cached with the key
 // the search uses, so coming from it costs nothing more. Percentiles are the player's in HIS competition and season: the page never compares competitions.
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { ArrowLeft, Scale, UserRound } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
+import ExportButton from '@/components/ui/ExportButton'
 import DataTable from '@/components/ui/DataTable'
 import EmptyState from '@/components/ui/EmptyState'
 import { Field, Select } from '@/components/ui/Field'
@@ -80,6 +81,7 @@ export default function PlayerPage() {
   const seasons = useMemo(() => trajectory(mine), [mine])
   const bio = useMemo(() => bioOf(mine), [mine])
   const [picked, setPicked] = useState<string | null>(null)
+  const captureRef = useRef<HTMLDivElement>(null)          // what the PDF and the picture of the profile capture (#1010)
 
   const feb = identities.data?.links[personId]
   if (feb) return <Navigate to={`/jugador/${encodeURIComponent(feb)}`} replace />
@@ -101,11 +103,15 @@ export default function PlayerPage() {
     <Shell>
       <Back />
       <SectionNav />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link to={`/comparar?j=${encodeURIComponent(personId)}`} className="inline-flex items-center gap-1 text-sm font-medium text-accent-text hover:underline"><Scale className="h-4 w-4" aria-hidden="true" />Comparar con otros jugadores</Link>
+        <ExportButton className="ml-auto" filename={`ficha-${bio.name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`} pdfTitle={`Ficha de ${bio.name}`} captureRef={captureRef} />
+      </div>
+      <div ref={captureRef} className="space-y-4">
       <div className="flex items-center gap-4">
         <PlayerPhoto name={bio.name} src={playerPhotoUrl(personId)} size={72} />
         <PageHeader className="min-w-0 flex-1" title={bio.name} subtitle={`${main.team_name} · ${main.competition} · ${main.season_label}`} />
       </div>
-      <Link to={`/comparar?j=${encodeURIComponent(personId)}`} className="inline-flex items-center gap-1 text-sm font-medium text-accent-text hover:underline"><Scale className="h-4 w-4" aria-hidden="true" />Comparar con otros jugadores</Link>
       {failed.map(name => <p key={name} role="alert" className="text-sm text-bad">No se ha podido abrir {name}: la ficha puede estar incompleta.</p>)}
       <Card id="datos" title="Datos personales">
         <dl className="grid grid-cols-2 gap-4 sm:grid-cols-5">
@@ -137,6 +143,7 @@ export default function PlayerPage() {
       </Card>
       <SimilarPlayers row={row} targetId={personId} />
       <PlayerZones row={row} />
+      </div>
     </Shell>
   )
 }

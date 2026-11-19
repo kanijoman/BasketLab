@@ -162,6 +162,15 @@ describe('the profile page', () => {
     }
   })
 
+  it('can be exported as a PDF or a picture, with no CSV (it is not a table of rows), named after the player (#1010)', async () => {
+    open(ANA)
+    await screen.findByRole('heading', { level: 1, name: /ANA PRUEBA UNO/ })
+    await userEvent.click(screen.getByRole('button', { name: /Exportar/ }))
+    expect(screen.getByRole('button', { name: 'PDF' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'PNG' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'CSV' })).not.toBeInTheDocument()
+  })
+
   it('says it when nobody has that id, and offers the way back to the search', async () => {
     open('feb:no-existe')
     expect(await screen.findByText(/No encontramos a este jugador/)).toBeInTheDocument()

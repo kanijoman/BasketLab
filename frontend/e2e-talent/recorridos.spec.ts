@@ -143,6 +143,19 @@ test.describe('profile', () => {
     await expect(page.getByRole('heading', { name: 'Datos personales' })).toBeInViewport()
   })
 
+  test('downloads the profile as a PDF named after the player, with the photo swapped for the initials (#1010)', async ({ page }) => {
+    test.setTimeout(90_000)
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    await page.getByRole('button', { name: /Exportar/ }).click()
+    await expect(page.getByRole('button', { name: 'CSV' })).toHaveCount(0)
+    const download = page.waitForEvent('download', { timeout: 60_000 })
+    await page.getByRole('button', { name: 'PDF' }).click()
+    const file = await download
+    expect(file.suggestedFilename()).toMatch(/^ficha-.*\.pdf$/)
+    const path = await file.path()
+    expect((await import('node:fs')).statSync(path!).size).toBeGreaterThan(5_000)
+  })
+
   test('says there are no shots when the file has none of the player, and draws no table of zeros', async ({ page }) => {
     await open(page, `/jugador/${enc(NO_SHOTS)}`)
     await expect(page.getByText(/Sin tiros registrados/)).toBeVisible()
