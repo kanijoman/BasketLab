@@ -1,7 +1,7 @@
 // The comparator of BasketLab Talent (B5, #881): two or three players side by side, in the address (`/comparar?j=feb:1,feb:2`). The rules are in `compare.ts`.
 // Players of different leagues can be mixed: only the competitions that hold the chosen players are opened (a FEB person has his FEB ones and the FBCYL ones linked to him, `identities`), and all of them
 // only while the staff types a name to add one. Each player is read in HIS competition and season: the page says that a percentile is never compared across competitions.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Scale, X } from 'lucide-react'
@@ -11,6 +11,7 @@ import { Field, Input } from '@/components/ui/Field'
 import Button, { IconButton } from '@/components/ui/Button'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
+import { rememberCompare } from './compareMemory'
 import { compareLines, comparePlayers, findPlayers, MAX_COMPARED, parseCompare, toggleCompare } from './compare'
 import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './data'
 import { radarAxes } from './player'
@@ -25,6 +26,7 @@ export default function ComparePage() {
   const [params, setParams] = useSearchParams()
   const ids = useMemo(() => parseCompare(params.get('j')), [params])
   const [typed, setTyped] = useState('')
+  useEffect(() => { rememberCompare(ids) }, [ids])          // the navigation brings the comparison back (#1007)
   const manifest = useQuery({ queryKey: ['talent-competitions'], queryFn: loadTalentCompetitions })
   const identities = useQuery({ queryKey: ['talent-identities'], queryFn: loadIdentities })
   const searching = typed.trim().length >= 2

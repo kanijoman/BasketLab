@@ -4,6 +4,27 @@ import { ANA, enc, FBCYL_ALONE, FBCYL_LINKED, NO_SHOTS, open, serveTalent, WITH_
 // The ways through Talent the staff takes, over the real publication of the exporter: search, profile and comparator, and the FBCYL player that IS a FEB person.
 test.beforeEach(async ({ page }) => { await serveTalent(page) })
 
+test.describe('navigation (#1007)', () => {
+  test('the header takes you between the search and the comparator, and marks where you are', async ({ page }) => {
+    await open(page, '/')
+    const nav = page.getByRole('navigation', { name: 'Principal' })
+    await expect(nav.getByRole('link', { name: 'Buscar' })).toHaveAttribute('aria-current', 'page')
+    await nav.getByRole('link', { name: 'Comparar' }).click()
+    await expect(page).toHaveURL(/\/comparar/)
+    await expect(nav.getByRole('link', { name: 'Comparar' })).toHaveAttribute('aria-current', 'page')
+    await nav.getByRole('link', { name: 'Buscar' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Buscador de jugadores' })).toBeVisible()
+  })
+
+  test('the comparison is still there when you come back to the comparator from the search', async ({ page }) => {
+    await open(page, `/comparar?j=${enc(WITH_SHOTS)},${enc(NO_SHOTS)}`)
+    const nav = page.getByRole('navigation', { name: 'Principal' })
+    await nav.getByRole('link', { name: 'Buscar' }).click()
+    await nav.getByRole('link', { name: 'Comparar' }).click()
+    await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
+  })
+})
+
 test.describe('search', () => {
   test('opens on the latest season, says how many players and finds one by name', async ({ page }) => {
     await open(page, '/')
@@ -26,6 +47,46 @@ test.describe('search', () => {
     await page.getByRole('link', { name: /^(ANA PRUEBA UNO|J1\. ALPHA)$/ }).first().click()
     await expect(page).toHaveURL(/\/jugador\//)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  })
+})
+
+test.describe('filters (#1008)', () => {
+  test('on a phone the filters are closed behind a button and the first players are on the first screen', async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 800 })
+    await open(page, '/?s=2025')
+    const toggle = page.getByRole('button', { name: /^Filtros/ })
+    await expect(toggle).toBeVisible()
+    await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeHidden()
+    await expect(page.getByLabel('Jugador o equipo')).toBeVisible()                  // the name stays: it is what is used most
+    const first = await page.locator('a[href^="/jugador/"]').first().boundingBox()
+    expect(first!.y).toBeLessThan(800)
+    await toggle.click()
+    await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeVisible()
+  })
+
+  test('the active filters are chips that come off with a click, also with the panel closed', async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 800 })
+    await open(page, '/?s=2025&amin=60')
+    await expect(page.getByRole('button', { name: 'Filtros (1)' })).toBeVisible()
+    const chips = page.getByRole('list', { name: 'Filtros activos' })
+    await expect(chips).toContainText('Edad: desde 60')
+    await expect(page.getByText(/0 jugadores encontrados/)).toBeVisible()
+    await chips.getByRole('button', { name: /Quitar el filtro Edad/ }).click()
+    await expect(chips).toHaveCount(0)
+    await expect(page.getByText(/[1-9]\d* jugadores? encontrad/)).toBeVisible()
+  })
+
+  test('on a desktop the filters are all in sight and there is no button to open them', async ({ page }) => {
+    await open(page, '/?s=2025')
+    await expect(page.getByRole('button', { name: /^Filtros/ })).toBeHidden()
+    await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeVisible()
+  })
+
+  test('each player has the action to compare him next to his name', async ({ page }) => {
+    await open(page, '/?s=2025')
+    await expect(page.getByRole('columnheader', { name: 'Comparar' })).toHaveCount(0)
+    await page.getByRole('link', { name: /^Comparar a / }).first().click()
+    await expect(page).toHaveURL(/\/comparar\?j=/)
   })
 })
 
