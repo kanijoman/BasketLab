@@ -14,13 +14,16 @@ const point = (index: number, count: number, value: number): [number, number] =>
   return [CENTRE + r * Math.cos(angle), CENTRE + r * Math.sin(angle)]
 }
 
-export default function PlayerRadar({ axes, name }: { axes: RadarAxis[]; name: string }) {
+export interface RadarSeries { name: string; axes: RadarAxis[] }
+
+/** The radar of one player (`axes`, `name`) or, in the comparator (B5, #881), of several: `others` are drawn over it, each in the next colour of the theme. */
+export default function PlayerRadar({ axes, name, others = [] }: { axes: RadarAxis[]; name: string; others?: RadarSeries[] }) {
   const chart = useChartTheme()
-  const known = axes.map((a, i) => ({ a, i })).filter(x => x.a.value !== null)
-  const polygon = known.map(({ a, i }) => point(i, axes.length, a.value as number).join(',')).join(' ')
-  const description = known.length ? known.map(({ a }) => `${a.short} ${Math.round(a.value as number)}`).join(', ') : 'sin datos'
+  const series: RadarSeries[] = [{ name, axes }, ...others]
+  const known = (a: RadarAxis[]) => a.map((x, i) => ({ a: x, i })).filter(x => x.a.value !== null)
+  const description = series.map(s => `${s.name}: ${known(s.axes).length ? known(s.axes).map(({ a }) => `${a.short} ${Math.round(a.value as number)}`).join(', ') : 'sin datos'}`).join('; ')
   return (
-    <svg role="img" aria-label={`Perfil de ${name}: percentiles ${description}`} viewBox={`0 0 ${SIZE} ${SIZE}`} className="mx-auto h-auto w-full max-w-xs">
+    <svg role="img" aria-label={`${others.length ? 'Comparación' : 'Perfil'} de ${series.map(s => s.name).join(', ')}: percentiles ${others.length ? description : description.replace(`${name}: `, '')}`} viewBox={`0 0 ${SIZE} ${SIZE}`} className="mx-auto h-auto w-full max-w-xs">
       {RINGS.map(ring => (
         <polygon key={ring} points={axes.map((_, i) => point(i, axes.length, ring).join(',')).join(' ')} fill="none" stroke={chart.grid} strokeWidth={ring === 100 ? 1.5 : 1} />
       ))}
@@ -34,10 +37,18 @@ export default function PlayerRadar({ axes, name }: { axes: RadarAxis[]; name: s
           </g>
         )
       })}
-      {known.length >= 3 && <polygon points={polygon} fill={chart.series[0]} fillOpacity={0.25} stroke={chart.series[0]} strokeWidth={2} />}
-      {known.map(({ a, i }) => {
-        const [x, y] = point(i, axes.length, a.value as number)
-        return <circle key={a.key} cx={x} cy={y} r={3} fill={chart.series[0]} />
+      {series.map((s, k) => {
+        const own = known(s.axes)
+        const colour = chart.series[k % chart.series.length]
+        return (
+          <g key={s.name + k}>
+            {own.length >= 3 && <polygon points={own.map(({ a, i }) => point(i, s.axes.length, a.value as number).join(',')).join(' ')} fill={colour} fillOpacity={0.2} stroke={colour} strokeWidth={2} />}
+            {own.map(({ a, i }) => {
+              const [x, y] = point(i, s.axes.length, a.value as number)
+              return <circle key={a.key} cx={x} cy={y} r={3} fill={colour} />
+            })}
+          </g>
+        )
       })}
     </svg>
   )

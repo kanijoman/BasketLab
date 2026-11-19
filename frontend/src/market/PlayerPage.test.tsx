@@ -99,6 +99,12 @@ describe('the profile page', () => {
     expect(host.requested).not.toContain(manifest.competitions.find((c: { key: string }) => c.key === FBCYL_KEY).file)
   })
 
+  it('offers the comparator with this player already chosen (#881)', async () => {
+    open(ANA)
+    await screen.findByRole('heading', { level: 1, name: /ANA PRUEBA UNO/ })
+    expect(screen.getByRole('link', { name: /Comparar con otros jugadores/ })).toHaveAttribute('href', '/comparar?j=feb%3A10100')
+  })
+
   it('says it when nobody has that id, and offers the way back to the search', async () => {
     open('feb:no-existe')
     expect(await screen.findByText(/No encontramos a este jugador/)).toBeInTheDocument()

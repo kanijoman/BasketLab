@@ -4,12 +4,14 @@
  * Routes (the pages come with B2–B5):
  *   /                     → the search of players (B3 #879); it also says when no data is published yet
  *   /jugador/:personId    → the profile of a player (B4 #880)
+ *   /comparar?j=a,b,c     → the comparator of two or three players (B5 #881)
  *   *   → /
  */
 import { Navigate, Route, Routes } from 'react-router-dom'
 import talentMark from '@design/brand/talent-mark.svg'
 import BrandLogo from '@/components/BrandLogo'
 import ThemeControl from '@/components/ThemeControl'
+import ComparePage from './ComparePage'
 import PlayerPage from './PlayerPage'
 import SearchPage from './SearchPage'
 
@@ -25,6 +27,7 @@ export default function MarketApp() {
         <Routes>
           <Route path="/" element={<SearchPage />} />
           <Route path="/jugador/:personId" element={<PlayerPage />} />
+          <Route path="/comparar" element={<ComparePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

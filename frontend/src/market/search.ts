@@ -46,7 +46,7 @@ export function ageOn1231(birth: string | null, season: string): number | null {
   return age >= 0 && age <= 70 ? age : null
 }
 
-const plain = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/).filter(Boolean).join(' ')
+export const plain = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().split(/\s+/).filter(Boolean).join(' ')
 
 export interface Hidden { age: number; height: number; position: number; metric: number; total: number }
 

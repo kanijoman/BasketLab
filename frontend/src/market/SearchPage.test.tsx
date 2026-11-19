@@ -114,6 +114,12 @@ describe('the search page', () => {
     expect(link).toHaveAttribute('href', '/jugador/feb%3A10100')
   })
 
+  it('offers to compare each player: a link to the comparator with him already chosen (#881)', async () => {
+    open('/?s=2025')
+    const links = await screen.findAllByRole('link', { name: /Comparar a ANA PRUEBA UNO/ })
+    expect(links[0]).toHaveAttribute('href', '/comparar?j=feb%3A10100')
+  })
+
   it('has the table named for the screen reader', async () => {
     open('/?s=2025')
     const table = await screen.findByRole('region', { name: /Jugadores encontrados/i })
