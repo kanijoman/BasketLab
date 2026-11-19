@@ -21,12 +21,12 @@ TERCERA = "TERCERA FEB"
 
 @pytest.fixture()
 def catalogue(tmp_path):
-    """The real catalogue as it was before any batch: the history and youth of 2020 to 2023 paused (the real file moves on with every batch, and these tests must not)."""
+    """The real catalogue as it was before any batch: the history and youth of 2020 to 2023 and every Tercera paused (the real file moves on with every batch, and these tests must not)."""
     path = tmp_path / "competitions.json"
     shutil.copy(ROOT / DEFAULT_CATALOGUE, path)
     data = json.loads(path.read_text(encoding="utf-8"))
     for entry in data["competitions"]:
-        if entry.get("league", "feb") == "feb" and not entry.get("packages", True) and entry["season_value"] in ("2020", "2021", "2022", "2023"):
+        if entry.get("league", "feb") == "feb" and not entry.get("packages", True) and (entry["season_value"] in ("2020", "2021", "2022", "2023") or entry["competition"] == TERCERA):
             entry["active"] = False
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path

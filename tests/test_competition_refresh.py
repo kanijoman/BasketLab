@@ -349,7 +349,8 @@ class TestSeniorCompetitions:
     def test_the_local_database_has_every_group_of_3a_feb_too(self):
         local = self.by_competition("config/competitions.json")
         assert set(self.SENIOR) | {"TERCERA FEB"} <= set(local)
-        assert [e.groups for e in local["TERCERA FEB"]] == ["all"]
+        assert {e.groups for e in local["TERCERA FEB"]} == {"all"}                         # one entry per season (the current one and the batches of #876), each with every group
+        assert len({e.season_value for e in local["TERCERA FEB"]}) == len(local["TERCERA FEB"])
 
     def test_no_competition_is_listed_twice_in_a_config(self):
         for path in ("config/competitions.json",):
