@@ -113,6 +113,7 @@ describe('the profile page', () => {
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 10 + 1)                    // header, ten zones and the total
     expect(within(table).getByRole('columnheader', { name: /% liga/ })).toBeInTheDocument()
     expect(within(section).getByRole('region', { name: /Tabla de zonas de tiro/ })).toHaveAttribute('tabindex', '0')
+    expect(section.querySelectorAll('svg [data-zone]').length).toBeGreaterThan(0)          // the court of Analytics with a bubble per zone with shots (#1010)
   })
 
   it('does not draw a zones table for a player without shots in the file', async () => {

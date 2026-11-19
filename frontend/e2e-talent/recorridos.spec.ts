@@ -115,6 +115,7 @@ test.describe('profile', () => {
     const zones = page.getByRole('table', { name: 'Tiros por zona' })
     await expect(zones).toBeVisible()
     await expect(zones.getByRole('row')).toHaveCount(12)                       // header, ten zones and the total
+    await expect(page.locator('svg [data-zone]').first()).toBeVisible()        // the court of Analytics with its bubbles (#1010)
   })
 
   test('lists the players most like him in his own competition and takes the staff to compare with one of them (#1010)', async ({ page }) => {
