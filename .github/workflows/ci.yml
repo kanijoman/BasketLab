@@ -212,6 +212,46 @@ jobs:
           path: frontend/test-results
           retention-days: 7
 
+  # ── Talent e2e (#1006, epic #1011) ─────────────────────────────────────────
+  # Real Chromium against the production build of BasketLab Talent (`dist-talent`, so it never overwrites the one of Analytics) and the real publication of the exporter
+  # (`tests/local_vectors/talent_data`, served by the tests in place of raw.githubusercontent.com): journeys, states, layout at 320/412/1280 px and axe in both themes. No API, no Python, no network.
+  e2e-talent:
+    name: Talent e2e (Playwright)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Talent
+        working-directory: frontend
+        run: npm run build:talent
+
+      - name: Talent e2e
+        working-directory: frontend
+        run: npm run e2e:talent:ci
+
+      - name: Upload the report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: talent-e2e-results
+          path: frontend/test-results-talent
+          retention-days: 7
+
   # ── Red proof (informative, issues #542 and #610) ──────────────────────────
   # The tests that a pull request adds or changes must FAIL on the source of its base (CLAUDE.md: write the failing test first): pytest, and the vitest of the web
   # and of the live app. It never blocks a merge or a deploy: the summary of the run says whether there is proof. ``continue-on-error`` keeps a failure of the
