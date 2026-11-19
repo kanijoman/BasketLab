@@ -120,6 +120,39 @@ describe('the search page', () => {
     expect(links[0]).toHaveAttribute('href', '/comparar?j=feb%3A10100')
   })
 
+  it('shows the filters that are on as chips and takes one off with a click, leaving the others (#1008)', async () => {
+    open('/?s=2025')
+    await screen.findByText('ANA PRUEBA UNO')
+    expect(screen.queryByRole('list', { name: 'Filtros activos' })).not.toBeInTheDocument()
+    await userEvent.type(screen.getByRole('spinbutton', { name: /Edad mínima/i }), '18')
+    await userEvent.click(screen.getByRole('checkbox', { name: /^Pívots$/ }))
+    const chips = await screen.findByRole('list', { name: 'Filtros activos' })
+    expect(within(chips).getAllByRole('listitem').map(li => li.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Edad: desde 18'), expect.stringContaining('Posición: pívots')]))
+    await userEvent.click(within(chips).getByRole('button', { name: /Quitar el filtro Edad/ }))
+    await waitFor(() => expect(screen.getByRole('spinbutton', { name: /Edad mínima/i })).toHaveValue(null))
+    expect(screen.getByRole('checkbox', { name: /^Pívots$/ })).toBeChecked()
+    await userEvent.click(screen.getByRole('button', { name: /Limpiar filtros/ }))
+    await waitFor(() => expect(screen.queryByRole('list', { name: 'Filtros activos' })).not.toBeInTheDocument())
+  })
+
+  it('has a button that opens and closes the filters on a phone, and says how many are on (#1008)', async () => {
+    open('/?s=2025&amin=30')
+    await screen.findByText(/encontrad/i)
+    const toggle = screen.getByRole('button', { name: /^Filtros \(1\)$/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(document.getElementById(toggle.getAttribute('aria-controls')!)).not.toBeNull()
+  })
+
+  it('lists the player with the most minutes first, and compare is an action of the row, not a column of data (#1008)', async () => {
+    open('/?s=2025')
+    await screen.findByText('ANA PRUEBA UNO')
+    expect(screen.queryByRole('columnheader', { name: 'Comparar' })).not.toBeInTheDocument()
+    const minutes = within(screen.getByRole('region', { name: /Jugadores encontrados/ })).getAllByRole('row').slice(1).map(r => Number(within(r).getAllByRole('cell')[6]?.textContent))
+    expect([...minutes].sort((a, b) => b - a)).toEqual(minutes)
+  })
+
   it('has the table named for the screen reader', async () => {
     open('/?s=2025')
     const table = await screen.findByRole('region', { name: /Jugadores encontrados/i })

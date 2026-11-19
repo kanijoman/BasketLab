@@ -4,12 +4,14 @@ import { useMemo } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Search } from 'lucide-react'
+import { Scale, Search } from 'lucide-react'
 import DataTable from '@/components/ui/DataTable'
 import EmptyState from '@/components/ui/EmptyState'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { loadCompetitionRows, loadTalentCompetitions } from './data'
+import FilterChips from './FilterChips'
+import { byMinutes } from './activeFilters'
 import SearchFiltersPanel from './SearchFiltersPanel'
 import { applySearch, csvOf, defaultSearch, filtersFromParams, filtersToParams, MAX_AUTO_COMPETITIONS, METRICS, toSearchRow, type SearchRow } from './search'
 
@@ -19,9 +21,18 @@ const cell = (value: number | string | null | undefined) => (value === null || v
 function columns(many: boolean, metric: string): ColumnDef<SearchRow, unknown>[] {
   const cols: ColumnDef<SearchRow, unknown>[] = [
     { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 190,
-      cell: c => <Link to={`/jugador/${encodeURIComponent(c.row.original.person_id)}`} className="font-medium text-accent-text hover:underline">{c.row.original.full_name ?? c.row.original.name}</Link> },
-    { id: 'compare', header: 'Comparar', enableSorting: false, size: 90,
-      cell: c => <Link to={`/comparar?j=${encodeURIComponent(c.row.original.person_id)}`} aria-label={`Comparar a ${c.row.original.full_name ?? c.row.original.name}`} className="text-xs font-medium text-accent-text hover:underline">Comparar</Link> },
+      cell: c => {
+        const name = c.row.original.full_name ?? c.row.original.name
+        return (
+          <span className="flex items-center gap-1.5">
+            <Link to={`/jugador/${encodeURIComponent(c.row.original.person_id)}`} className="font-medium text-accent-text hover:underline">{name}</Link>
+            {/* comparing is an action of the row, next to the name, not a column of data (#1008) */}
+            <Link to={`/comparar?j=${encodeURIComponent(c.row.original.person_id)}`} aria-label={`Comparar a ${name}`} title="Comparar con otros jugadores" className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-raised hover:text-accent-text">
+              <Scale className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </span>
+        )
+      } },
     { id: 'team', header: 'Equipo', accessorFn: r => r.team_name, size: 170 },
     ...(many ? [{ id: 'competition', header: 'Competición', accessorFn: (r: SearchRow) => r.competition, size: 150 }] : []),
     { id: 'age', header: 'Edad (31/12)', accessorFn: r => r.age ?? undefined, sortUndefined: 'last', cell: c => cell(c.row.original.age), size: 90 },
@@ -60,7 +71,8 @@ export default function SearchPage() {
   const all = useMemo(() => loaded.flatMap((q, i) => (q.data ? q.data.rows.map(r => toSearchRow(ofSeason.find(e => e.key === chosen[i])!, r)) : [])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loaded.map(q => q.dataUpdatedAt).join(), chosen.join(), ofSeason])
-  const result = useMemo(() => applySearch(all, filters), [all, filters])
+  const found = useMemo(() => applySearch(all, filters), [all, filters])
+  const result = useMemo(() => ({ ...found, rows: byMinutes(found.rows) }), [found])          // the ones who played most first (#1008)
   const csv = useMemo(() => csvOf(result.rows), [result.rows])
   const seasons = [...new Map(entries.map(e => [e.season, e.season_label])).entries()].sort((a, b) => Number(b[0]) - Number(a[0])).map(([value, label]) => ({ value, label }))
   const unavailable = manifest.isError || (manifest.isSuccess && entries.length === 0)
@@ -76,6 +88,7 @@ export default function SearchPage() {
         <>
           <SearchFiltersPanel seasons={seasons} season={season} onSeason={s => update({ s, c: null }, filters)} competitions={ofSeason} chosen={chosen}
             onChosen={keys => update({ c: keys.join(',') })} filters={filters} onFilters={next => update({}, next)} />
+          <FilterChips filters={filters} onFilters={next => update({}, next)} />
           {failed.map(name => <p key={name} role="alert" className="text-sm text-bad">No se ha podido abrir {name}. Prueba de nuevo más tarde.</p>)}
           <p className="text-sm text-ink-muted" aria-live="polite">
             {loading ? 'Cargando jugadores…' : `${result.rows.length} ${result.rows.length === 1 ? 'jugador encontrado' : 'jugadores encontrados'}`}

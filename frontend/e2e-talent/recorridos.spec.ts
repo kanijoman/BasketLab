@@ -50,6 +50,46 @@ test.describe('search', () => {
   })
 })
 
+test.describe('filters (#1008)', () => {
+  test('on a phone the filters are closed behind a button and the first players are on the first screen', async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 800 })
+    await open(page, '/?s=2025')
+    const toggle = page.getByRole('button', { name: /^Filtros/ })
+    await expect(toggle).toBeVisible()
+    await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeHidden()
+    await expect(page.getByLabel('Jugador o equipo')).toBeVisible()                  // the name stays: it is what is used most
+    const first = await page.locator('a[href^="/jugador/"]').first().boundingBox()
+    expect(first!.y).toBeLessThan(800)
+    await toggle.click()
+    await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeVisible()
+  })
+
+  test('the active filters are chips that come off with a click, also with the panel closed', async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 800 })
+    await open(page, '/?s=2025&amin=60')
+    await expect(page.getByRole('button', { name: 'Filtros (1)' })).toBeVisible()
+    const chips = page.getByRole('list', { name: 'Filtros activos' })
+    await expect(chips).toContainText('Edad: desde 60')
+    await expect(page.getByText(/0 jugadores encontrados/)).toBeVisible()
+    await chips.getByRole('button', { name: /Quitar el filtro Edad/ }).click()
+    await expect(chips).toHaveCount(0)
+    await expect(page.getByText(/[1-9]\d* jugadores? encontrad/)).toBeVisible()
+  })
+
+  test('on a desktop the filters are all in sight and there is no button to open them', async ({ page }) => {
+    await open(page, '/?s=2025')
+    await expect(page.getByRole('button', { name: /^Filtros/ })).toBeHidden()
+    await expect(page.getByRole('spinbutton', { name: 'Edad mínima' })).toBeVisible()
+  })
+
+  test('each player has the action to compare him next to his name', async ({ page }) => {
+    await open(page, '/?s=2025')
+    await expect(page.getByRole('columnheader', { name: 'Comparar' })).toHaveCount(0)
+    await page.getByRole('link', { name: /^Comparar a / }).first().click()
+    await expect(page).toHaveURL(/\/comparar\?j=/)
+  })
+})
+
 test.describe('profile', () => {
   test('has the bio, the trajectory, the radar with its numbers and the shots by zone', async ({ page }) => {
     await open(page, `/jugador/${enc(WITH_SHOTS)}`)
