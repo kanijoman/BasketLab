@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
-from src.market.bio import canonical_position, normalize_height, position_group
+from src.market.bio import canonical_position, merge_bio, normalize_height, position_group
 
 COUNTS = ("pts", "p1m", "p1a", "p2m", "p2a", "p3m", "p3a", "assist", "ro", "rd", "rt", "st", "to", "bs", "pf", "rf", "val", "pllss")
 FBCYL_SECONDS_PER_MINUTE = 60
@@ -102,11 +102,24 @@ def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str) 
     return {**fields, "bio_from": origin}
 
 
-def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str) -> List[Dict[str, Any]]:
-    """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season): birth date, height (cm), position, nationality, formacion and shirt number.
+def _lend(bio: Dict[str, Any], candidates: List[Mapping[str, Any]]) -> Dict[str, Any]:
+    """``bio`` with the fields it leaves empty taken from the external candidates (``merge_bio``: FEB first, then the sources in their priority); ``bio_from`` says which source lent each one (#979)."""
+    own = {"source": "feb", **{k: bio.get(k) for k in ("birth", "height", "position", "nationality")}}
+    merged = merge_bio([own, *candidates])
+    lent = {f: merged["bio_src"][f] for f in ("birth", "height", "nationality") if bio.get(f) is None and merged[f] is not None}
+    return {**bio, **{f: merged[f] for f in lent}, "bio_from": {**bio["bio_from"], **lent}}
+
+
+def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str, external: Optional[Mapping[str, List[Mapping[str, Any]]]] = None) -> List[Dict[str, Any]]:
+    """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season; ``external``, the bio of the linked external players, lends what FEB leaves empty, #979): birth date, height (cm), position, nationality, formacion and shirt number.
 
     Each field is resolved on its own (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say."""
     by_person: Dict[str, List[Mapping[str, Any]]] = {}
     for r in roster:
         by_person.setdefault(r["person_id"], []).append(r)
-    return [{**row, **_bio_of(row, by_person.get(row["person_id"], []), str(season))} for row in rows]
+    external = external or {}
+    out = []
+    for row in rows:
+        bio = _bio_of(row, by_person.get(row["person_id"], []), str(season))
+        out.append({**row, **(_lend(bio, list(external[row["person_id"]])) if row["person_id"] in external else bio)})
+    return out

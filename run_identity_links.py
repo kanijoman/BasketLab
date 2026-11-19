@@ -17,14 +17,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 
-def _games(folder: Path) -> Iterator[Dict[str, Any]]:
-    for path in sorted(folder.glob("*.jsonl.gz")):
-        with gzip.open(path, "rt", encoding="utf-8") as handle:
-            for line in handle:
-                if line.strip():
-                    yield json.loads(line)
-
-
 def _archive_games(folder: Path, fbcyl: bool) -> Iterator[Dict[str, Any]]:
     """The games of the archive of FEB and FBCYL: the collections ``FBCYL_*`` (``fbcyl``) or all the others."""
     for path in sorted(folder.glob("*.jsonl.gz")):
@@ -37,6 +29,7 @@ def _archive_games(folder: Path, fbcyl: bool) -> Iterator[Dict[str, Any]]:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    from src.market.external_bio import read_games as _games
     from src.market.identity_link import external_players, fbcyl_age_groups, fbcyl_players, feb_genders, feb_persons, link_fbcyl, link_players
     from src.market.roster_store import read_rosters
     from src.services.competition_catalogue import DEFAULT_CATALOGUE

@@ -21,11 +21,13 @@ on:
       - "src/**"
       - "!src/api/**"
       - "run_talent_data.py"
+      - "run_identity_links.py"
       - "config/competitions.json"
   workflow_dispatch:
   pull_request:
     paths:
       - "run_talent_data.py"
+      - "run_identity_links.py"
       - "src/market/**"
       - "config/competitions.json"
       - ".github/workflows/talent-data.yml"
@@ -82,6 +84,16 @@ jobs:
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/ext_key -o IdentitiesOnly=yes"
           git clone -q --depth 1 "git@github.com:${OWNER}/basketlab-archive-ext.git" archive-ext || { echo "::error::basketlab-archive-ext cannot be cloned"; exit 1; }
           mkdir -p archive-ext/rosters
+      - name: Link the external players
+        if: github.event_name != 'pull_request'
+        # #979: the links of FIBA's players to the persons of FEB (`run_identity_links.py`, deterministic) are regenerated here from the archives already downloaded; they are a derived file of THIS run, never written
+        # back to basketlab-archive-ext (one writer per folder). Until FIBA has games in the archive there is nothing to link; a failing command does turn the run red (no silent publication without that bio)
+        run: |
+          if [ -d archive-ext/fiba ]; then
+            python run_identity_links.py --ext archive-ext --source fiba
+          else
+            echo "No FIBA games in the external archive yet: nothing to link"
+          fi
       - name: Start from the previous publication
         if: github.event_name != 'pull_request'
         run: |
@@ -92,7 +104,7 @@ jobs:
         env:
           MONGODB_CONNECTION_STRING: ${{ env.EPHEMERAL_MONGO }}
           PACKAGE_MASTER_KEY: ${{ secrets.PACKAGE_MASTER_KEY || secrets.PACKAGE_PASSWORD }}
-        run: python run_talent_data.py --out talent-out --rosters archive-ext/rosters
+        run: python run_talent_data.py --out talent-out --rosters archive-ext/rosters --ext archive-ext
       - name: Publish to the talent-data branch
         # only when the build succeeded: after a red build the folder holds the files of the competitions it had finished and a push would leave them orphan in the branch
         if: ${{ steps.build.conclusion == 'success' && github.event_name != 'pull_request' && hashFiles('talent-out/index.json') != '' }}
