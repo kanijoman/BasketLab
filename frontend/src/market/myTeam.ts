@@ -55,19 +55,42 @@ export function positionBalance(rotation: SearchRow[]): PositionBalance {
   return { groups, unknown: { players: unknown.length, minutes: unknown.reduce((s, r) => s + r.minutes, 0) } }
 }
 
-export interface AxisCover { key: string; label: string; short: string; /** the best of the rotation in it (null if nobody has the figure) */ best: SearchRow | null; bestPct: number | null; /** players of the rotation with the figure */ players: number; hole: boolean }
+export interface AxisCover {
+  key: string; label: string; short: string
+  /** the best of the rotation in it (null if nobody has the figure) */
+  best: SearchRow | null; bestPct: number | null
+  /** players of the rotation with the figure */
+  players: number; hole: boolean
+  /** what the search that would fill it asks for: the metric and how it is called (rebounds: the one of the two where the rotation is weakest) */
+  search: { metric: string; label: string }
+}
 
 const axisName = (label: string) => label.replace(/ \(.*\)$/, '')
 
-/** For each axis of the radar, in its order: the best player of the rotation and whether nobody covers it (a hole). A tie of the best goes to more minutes, then name and id: independent of the order of the rows. */
+const pctOf = (row: SearchRow, key: string): number | null => (typeof row.pct?.[key as keyof NonNullable<SearchRow['pct']>] === 'number' ? (row.pct![key as keyof NonNullable<SearchRow['pct']>] as number) : null)
+
+/** The axes the rotation is judged on: those of the radar with the two of rebounds as ONE (a player rebounds as the mean of his offensive and defensive percentiles, and needs both). */
+const AXES: { key: string; label: string; short: string; parts: string[] }[] = RADAR_AXES.flatMap(a =>
+  a.key === 'drb' ? [] : a.key === 'orb' ? [{ key: 'reb', label: 'Rebotes', short: 'Reb', parts: ['orb', 'drb'] }] : [{ key: a.key, label: axisName(a.label), short: a.short, parts: [a.key] }])
+
+const valueOf = (row: SearchRow, parts: string[]): number | null => {
+  const values = parts.map(k => pctOf(row, k))
+  return values.every((v): v is number => v !== null) ? values.reduce((s, v) => s + v, 0) / values.length : null
+}
+
+/** For each axis, in the order of the radar: the best player of the rotation and whether nobody covers it (a hole). A tie of the best goes to more minutes, then name and id: independent of the order of the rows. */
 export function axisCoverage(rotation: SearchRow[]): AxisCover[] {
   const reliable = rotation.length >= MIN_ROTATION
-  return RADAR_AXES.map(axis => {
-    const have = rotation.flatMap(r => (typeof r.pct?.[axis.key] === 'number' ? [{ row: r, v: r.pct![axis.key] as number }] : []))
+  return AXES.map(axis => {
+    const have = rotation.flatMap(r => { const v = valueOf(r, axis.parts); return v === null ? [] : [{ row: r, v }] })
     const best = [...have].sort((a, b) => b.v - a.v || byMinutes(a.row, b.row))[0]
+    // rebounds: ask for the half where the rotation is weakest (the best offensive and the best defensive percentile among the rotation)
+    const bestOf = (key: string) => Math.max(-1, ...rotation.map(r => pctOf(r, key) ?? -1))
+    const weakest = axis.key === 'reb' ? (bestOf('orb') < bestOf('drb') ? 'orb' : 'drb') : axis.key
     return {
-      key: axis.key, label: axisName(axis.label), short: axis.short, best: best?.row ?? null, bestPct: best?.v ?? null, players: have.length,
+      key: axis.key, label: axis.label, short: axis.short, best: best?.row ?? null, bestPct: best?.v ?? null, players: have.length,
       hole: reliable && have.length >= MIN_WITH_AXIS && best !== undefined && best.v < COVER_PCT,
+      search: { metric: weakest, label: axis.key === 'reb' ? (weakest === 'orb' ? 'rebotes ofensivos' : 'rebotes defensivos') : axis.label.toLowerCase() },
     }
   })
 }
@@ -94,5 +117,5 @@ const search = (season: string, patch: Partial<SearchFilters>): string => {
 /** The searches that would fill each hole, already filled in: a percentile of ``SUGGEST_PCT`` or more in the axis nobody covers, the biggest hole (the best player furthest from the percentile) first. */
 export function suggestions({ season, coverage }: { season: string; coverage: AxisCover[] }): Suggestion[] {
   return coverage.filter(c => c.hole).sort((a, b) => (a.bestPct as number) - (b.bestPct as number) || a.key.localeCompare(b.key))
-    .map(c => ({ key: `axis-${c.key}`, label: `Buscar jugadores de ${c.label.toLowerCase()} (percentil ${SUGGEST_PCT} o más)`, href: search(season, { metric: c.key as SearchFilters['metric'], pctMin: SUGGEST_PCT }) }))
+    .map(c => ({ key: `axis-${c.key}`, label: `Buscar jugadores de ${c.search.label} (percentil ${SUGGEST_PCT} o más)`, href: search(season, { metric: c.search.metric as SearchFilters['metric'], pctMin: SUGGEST_PCT }) }))
 }

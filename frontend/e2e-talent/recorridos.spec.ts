@@ -261,7 +261,7 @@ test.describe('my team (#882)', () => {
     await expect(team.locator('option')).not.toHaveCount(1)
     await team.selectOption({ index: 1 })
     await expect(page.getByRole('table', { name: /Rotación de/ })).toBeVisible()
-    await expect(page.getByRole('list', { name: 'Perfil de la rotación' }).getByRole('listitem')).toHaveCount(8)          // every axis, with its best player
+    await expect(page.getByRole('list', { name: 'Perfil de la rotación' }).getByRole('listitem')).toHaveCount(7)          // every axis (rebounds as one), with its best player
     await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Buscar' }).click()
     await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mi equipo' }).click()
     await expect(page.getByRole('table', { name: /Rotación de/ })).toBeVisible()          // it comes back with the team of last time

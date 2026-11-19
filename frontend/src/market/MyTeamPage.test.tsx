@@ -40,13 +40,13 @@ describe('«Mi equipo»', () => {
     expect(JSON.parse(localStorage.getItem('talent-my-team')!)).toMatchObject({ comp: LF2_KEY })
   })
 
-  it('shows the rotation by minutes, the game profile of each of the eight axes with its best player, and the age of the squad', async () => {
+  it('shows the rotation by minutes, the game profile of each axis (rebounds as one) with its best player, and the age of the squad', async () => {
     open(mine())
     const rotation = await screen.findByRole('table', { name: /Rotación/ })
     expect(within(rotation).getAllByRole('row').length).toBeGreaterThan(5)
     const profile = screen.getByRole('list', { name: 'Perfil de la rotación' })
     const items = within(profile).getAllByRole('listitem')
-    expect(items).toHaveLength(8)
+    expect(items).toHaveLength(7)                                // the radar axes with rebounds as one
     expect(items[0]).toHaveTextContent(/el mejor:/)
     expect(screen.getByText(/menores de 22/i)).toBeInTheDocument()
   })
@@ -58,6 +58,9 @@ describe('«Mi equipo»', () => {
     expect(holes.length).toBeGreaterThan(0)                      // in the vectors nobody of the team reaches the percentile 75 in every axis
     for (const hole of holes) expect(hole.textContent).toMatch(/el mejor:.*\d+/)
     expect(screen.getByText(/un reboteador cubre los rebotes aunque los demás no lo sean/i)).toBeInTheDocument()
+    expect(within(profile).getByText('Rebotes')).toBeInTheDocument()
+    expect(within(profile).queryByText(/Reb\. ofensivos|Reb\. defensivos/)).not.toBeInTheDocument()
+    expect(screen.getByText(/rebotes es la media de sus percentiles ofensivo y defensivo/i)).toBeInTheDocument()
   })
 
   it('shows the position as information, never as a hole', async () => {

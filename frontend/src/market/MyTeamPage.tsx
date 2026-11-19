@@ -100,7 +100,7 @@ export default function MyTeamPage() {
                   <p className="text-sm text-ink-muted">Con {squad.rotation.length} {squad.rotation.length === 1 ? 'jugador' : 'jugadores'} de rotación todavía no se puede decir dónde hay huecos (hacen falta {MIN_ROTATION}).</p>
                 ) : (
                   <>
-                    <p className="mb-2 text-xs text-ink-muted">Un hueco es un eje que nadie de la rotación cubre: el mejor jugador del equipo no llega al percentil {COVER_PCT} en él, en su competición. Un reboteador cubre los rebotes aunque los demás no lo sean, y tres pívots sin ninguno que rebote dejan el hueco.</p>
+                    <p className="mb-2 text-xs text-ink-muted">Un hueco es un eje que nadie de la rotación cubre: el mejor jugador del equipo no llega al percentil {COVER_PCT} en él, en su competición. Un reboteador cubre los rebotes aunque los demás no lo sean, y tres pívots sin ninguno que rebote dejan el hueco. El percentil de un jugador en rebotes es la media de sus percentiles ofensivo y defensivo.</p>
                     <ul aria-label="Perfil de la rotación" className="divide-y divide-line/60">
                       {coverage.map(c => (
                         <li key={c.key} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
