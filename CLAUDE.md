@@ -100,6 +100,7 @@ def get_example(collection: str, db: MongoDBHandler = Depends(get_db)):
 | texto de UI en inglés | UI en español |
 | color suelto en la web (`#hex`, `gray-500`, `text-white` sobre superficie, `dark:`) | vocabulario del preset de `design/` (`canvas`, `surface`, `ink`, `accent`, `ok`/`bad`/`warn`…; gráficos con `useChartTheme`): tema claro por defecto, lo vigila `designTokens.test.ts` (#188) |
 | `<button>`/`<select>`/`<input>`/`<h1>` a mano en una página | componentes de `components/ui` (docs/UI.md); `rawControls.test.ts` no deja sumar más (#190) |
+| página nueva de Talent (`frontend/src/market`) sin su recorrido ni su maquetación | añadirla a `PAGES` de `frontend/e2e-talent/support.ts` (maquetación a 320/412/1280 y axe, #1006) |
 | pantalla/lista nueva de la app sin comprobar su maquetación | añadirla a `apps/live-android/e2e/layout.spec.ts` (412 y 320 px, nombres largos): nada sale de la pantalla ni se superpone (#508) |
 | leer `min`/`sec` de FBCYL como tiempo transcurrido | es tiempo **restante** (#370) |
 
@@ -125,6 +126,7 @@ python run_talent_data.py --out DIR [--rosters DIR]   # publicación de BasketLa
 python run_roster_sweep.py --out DIR [--seasons 2025] [--budget N]   # barrido de plantillas FEB (rosters/ de basketlab-archive-ext), lo ejecuta talent-rosters.yml
 python -m src.live_core.fake_feb --speed 30   # FEB simulado
 PYTHONPATH=".;src" python -m src.live_prep.demo_builder --collection <col> --team <id>   # demo desde un partido terminado
+cd frontend && npm run e2e:talent   # e2e de Talent (build propio en dist-talent, publicación real de los vectores; maquetación 320/412/1280 y axe)
 cd apps/live-android && npm ci && npm run test:run   # app live: tests con Pyodide real (e2e: npm run e2e)
 # creds: MONGODB_CONNECTION_STRING o src/database/db_credentials.txt · ejemplo en .env.example
 ```
