@@ -2,13 +2,15 @@
  * BasketLab Talent (epic #872): search, profiling and fit of players of any age and competition.
  *
  * Routes (the pages come with B2–B5):
- *   /   → the search of players (B3 #879); it also says when no data is published yet
+ *   /                     → the search of players (B3 #879); it also says when no data is published yet
+ *   /jugador/:personId    → the profile of a player (B4 #880)
  *   *   → /
  */
 import { Navigate, Route, Routes } from 'react-router-dom'
 import talentMark from '@design/brand/talent-mark.svg'
 import BrandLogo from '@/components/BrandLogo'
 import ThemeControl from '@/components/ThemeControl'
+import PlayerPage from './PlayerPage'
 import SearchPage from './SearchPage'
 
 export default function MarketApp() {
@@ -22,6 +24,7 @@ export default function MarketApp() {
       <main id="contenido" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto focus:outline-none">
         <Routes>
           <Route path="/" element={<SearchPage />} />
+          <Route path="/jugador/:personId" element={<PlayerPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

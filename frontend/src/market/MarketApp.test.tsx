@@ -22,6 +22,13 @@ describe('BasketLab Talent (shell, #877)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: /Buscador de jugadores/ })).toBeInTheDocument()
   })
 
+  it('opens the profile of a player at /jugador/<id>, and the search does not swallow it (#880)', async () => {
+    at('/jugador/feb%3A10100')
+    expect(await screen.findByText(/Aún no hay datos de jugadores publicados/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Volver al buscador/ })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: /Buscador de jugadores/ })).not.toBeInTheDocument()
+  })
+
   it('has a skip link and a main landmark like the rest of the suite (keyboard and screen readers)', () => {
     at('/')
     expect(screen.getByRole('main')).toBeInTheDocument()

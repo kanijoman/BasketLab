@@ -2,7 +2,7 @@
 // the address (shareable); the rules are in `search.ts`. It starts on the latest season published with its competitions.
 import { useMemo } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Search } from 'lucide-react'
 import DataTable from '@/components/ui/DataTable'
@@ -18,7 +18,8 @@ const cell = (value: number | string | null | undefined) => (value === null || v
 
 function columns(many: boolean, metric: string): ColumnDef<SearchRow, unknown>[] {
   const cols: ColumnDef<SearchRow, unknown>[] = [
-    { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 190 },
+    { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 190,
+      cell: c => <Link to={`/jugador/${encodeURIComponent(c.row.original.person_id)}`} className="font-medium text-accent-text hover:underline">{c.row.original.full_name ?? c.row.original.name}</Link> },
     { id: 'team', header: 'Equipo', accessorFn: r => r.team_name, size: 170 },
     ...(many ? [{ id: 'competition', header: 'Competición', accessorFn: (r: SearchRow) => r.competition, size: 150 }] : []),
     { id: 'age', header: 'Edad (31/12)', accessorFn: r => r.age ?? undefined, sortUndefined: 'last', cell: c => cell(c.row.original.age), size: 90 },

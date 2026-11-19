@@ -72,12 +72,12 @@ export function bioOf(rows: SearchRow[]): Bio {
 
 /** The axes of the radar: the percentiles that describe a player at a glance, in a fixed order. Turnovers are already «more is better» in the percentile. */
 export const RADAR_AXES = [
-  { key: 'pts', label: 'Puntos' }, { key: 'ast', label: 'Asistencias' }, { key: 'orb', label: 'Reb. ofensivos' }, { key: 'drb', label: 'Reb. defensivos' },
-  { key: 'stl', label: 'Robos' }, { key: 'blk', label: 'Tapones' }, { key: 'efg', label: 'Acierto (eFG%)' }, { key: 'tov', label: 'Cuidar el balón (menos pérdidas)' },
+  { key: 'pts', label: 'Puntos', short: 'Pts' }, { key: 'ast', label: 'Asistencias', short: 'Ast' }, { key: 'orb', label: 'Reb. ofensivos', short: 'RO' }, { key: 'drb', label: 'Reb. defensivos', short: 'RD' },
+  { key: 'stl', label: 'Robos', short: 'Rob' }, { key: 'blk', label: 'Tapones', short: 'Tap' }, { key: 'efg', label: 'Acierto (eFG%)', short: 'eFG' }, { key: 'tov', label: 'Cuidar el balón (menos pérdidas)', short: 'Balón' },
 ] as const
 
-export interface RadarAxis { key: string; label: string; value: number | null }
+export interface RadarAxis { key: string; label: string; short: string; value: number | null }
 
 /** The percentiles of a row on the axes of the radar; null where the row has no profile or no value (never a zero). */
 export const radarAxes = (row: SearchRow): RadarAxis[] =>
-  RADAR_AXES.map(a => ({ key: a.key, label: a.label, value: row.pct?.[a.key] ?? null }))
+  RADAR_AXES.map(a => ({ key: a.key, label: a.label, short: a.short, value: row.pct?.[a.key] ?? null }))
