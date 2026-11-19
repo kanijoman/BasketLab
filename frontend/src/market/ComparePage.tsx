@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Scale, X } from 'lucide-react'
+import { ArrowDown, ArrowLeft, ArrowUp, Scale, X } from 'lucide-react'
+import Checkbox from '@/components/ui/Checkbox'
 import Card from '@/components/ui/Card'
 import ExportButton from '@/components/ui/ExportButton'
 import EmptyState from '@/components/ui/EmptyState'
@@ -13,9 +14,9 @@ import Button, { IconButton } from '@/components/ui/Button'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { rememberCompare } from './compareMemory'
-import { compareCsv, compareLines, comparePlayers, findPlayers, MAX_COMPARED, parseCompare, toggleCompare } from './compare'
+import { axesToParam, compareCsv, compareLines, comparePlayers, DEFAULT_AXES, findPlayers, MAX_COMPARED, MIN_AXES, moveAxis, parseAxes, parseCompare, toggleAxis, toggleCompare } from './compare'
 import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './data'
-import { radarAxes } from './player'
+import { RADAR_AXES, radarAxes } from './player'
 import PlayerRadar from './PlayerRadar'
 import { toSearchRow } from './search'
 
@@ -44,11 +45,20 @@ export default function ComparePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loaded.map(q => q.dataUpdatedAt).join(), entries])
   const { players, missing } = useMemo(() => comparePlayers(rows, ids), [rows, ids])
-  const lines = useMemo(() => compareLines(players), [players])
+  const axes = useMemo(() => parseAxes(params.get('ejes')), [params])          // the axes of the radar that are chosen (#1014)
+  const lines = useMemo(() => compareLines(players, axes), [players, axes])
   const csv = useMemo(() => compareCsv(players, lines), [players, lines])
   const tableRef = useRef<HTMLTableElement>(null)
   const found = useMemo(() => (searching ? findPlayers(rows, typed, players.map(p => p.id)) : []), [rows, typed, searching, players])
-  const setIds = (next: string[]) => setParams(next.length ? { j: next.join(',') } : {}, { replace: true })
+  /** Change the address keeping what is not changed: the players (`j`) and the axes (`ejes`) are independent. */
+  const setQuery = (patch: { j?: string[]; ejes?: string[] }) => {
+    const next = new URLSearchParams(params)
+    if (patch.j) { if (patch.j.length) next.set('j', patch.j.join(',')); else next.delete('j') }
+    if (patch.ejes) { const value = axesToParam(patch.ejes); if (value) next.set('ejes', value); else next.delete('ejes') }
+    setParams(next, { replace: true })
+  }
+  const setIds = (next: string[]) => setQuery({ j: next })
+  const hidden = RADAR_AXES.filter(a => !axes.includes(a.key))
 
   if (manifest.isError || (manifest.isSuccess && manifest.data.length === 0)) {
     return <Shell><Back /><EmptyState icon={Scale} title="Aún no hay datos de jugadores publicados" description="El comparador aparece aquí en cuanto se publique el primer conjunto de datos." /></Shell>
@@ -96,7 +106,7 @@ export default function ComparePage() {
           <p className="text-xs text-ink-muted">Cada percentil es el del jugador entre los de su competición y temporada: nunca se compara entre competiciones.</p>
           <Card title="Perfil">
             <div className="grid gap-4 sm:grid-cols-2">
-              <PlayerRadar axes={radarAxes(players[0].row)} name={players[0].name} others={players.slice(1).map(p => ({ name: p.name, axes: radarAxes(p.row) }))} />
+              <PlayerRadar axes={radarAxes(players[0].row, axes)} name={players[0].name} others={players.slice(1).map(p => ({ name: p.name, axes: radarAxes(p.row, axes) }))} />
               <ul aria-label="Leyenda" className="space-y-1 self-center text-sm">
                 {players.map((p, i) => (
                   <li key={p.id} className="flex items-center gap-2">
@@ -106,6 +116,25 @@ export default function ComparePage() {
                 ))}
               </ul>
             </div>
+          </Card>
+          <Card title="Ejes del radar" actions={axesToParam(axes) ? <Button variant="ghost" size="sm" onClick={() => setQuery({ ejes: DEFAULT_AXES })}>Restablecer los ejes</Button> : undefined}>
+            <p className="mb-2 text-xs text-ink-muted">Elige qué ejes se dibujan y en qué orden (mínimo {MIN_AXES}); la tabla y la exportación siguen la misma elección.</p>
+            <ul aria-label="Ejes del radar" className="grid gap-1 sm:grid-cols-2">
+              {[...axes.map(k => RADAR_AXES.find(a => a.key === k)!), ...hidden].map(a => {
+                const on = axes.includes(a.key)
+                return (
+                  <li key={a.key} className="flex items-center justify-between gap-2 rounded-card border border-line/60 px-2 py-1">
+                    <Checkbox label={a.label} checked={on} disabled={on && axes.length <= MIN_AXES} onChange={() => setQuery({ ejes: toggleAxis(axes, a.key) })} className="min-w-0 flex-1 text-sm text-ink" />
+                    {on && (
+                      <span className="flex shrink-0">
+                        <IconButton icon={ArrowUp} label={`Subir ${a.label}`} variant="ghost" size="sm" disabled={axes[0] === a.key} onClick={() => setQuery({ ejes: moveAxis(axes, a.key, -1) })} />
+                        <IconButton icon={ArrowDown} label={`Bajar ${a.label}`} variant="ghost" size="sm" disabled={axes[axes.length - 1] === a.key} onClick={() => setQuery({ ejes: moveAxis(axes, a.key, 1) })} />
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
           </Card>
           <Card title="Comparación" padding="none" actions={<ExportButton filename={`comparacion-${players.map(p => p.id.replace(/\W+/g, '-')).join('_')}`} pdfTitle={`Comparación — ${players.map(p => p.name).join(' · ')}`} csvHeaders={csv.headers} csvData={csv.data} captureRef={tableRef} />}>
             {/* `relative`: the «(el mejor)» of the screen reader is absolute and, without it, would stretch the page (not the scroller) to the right on a phone */}

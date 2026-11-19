@@ -85,6 +85,8 @@ export const RADAR_AXES = [
 
 export interface RadarAxis { key: string; label: string; short: string; value: number | null }
 
-/** The percentiles of a row on the axes of the radar; null where the row has no profile or no value (never a zero). */
-export const radarAxes = (row: SearchRow): RadarAxis[] =>
-  RADAR_AXES.map(a => ({ key: a.key, label: a.label, short: a.short, value: row.pct?.[a.key] ?? null }))
+/** The percentiles of a row on the axes of the radar; null where the row has no profile or no value (never a zero). ``keys`` are the axes chosen, in their order (#1014; an unknown one is left out). */
+export const radarAxes = (row: SearchRow, keys?: readonly string[]): RadarAxis[] => {
+  const axes = keys ? keys.flatMap(k => RADAR_AXES.filter(a => a.key === k)) : RADAR_AXES
+  return axes.map(a => ({ key: a.key, label: a.label, short: a.short, value: row.pct?.[a.key] ?? null }))
+}

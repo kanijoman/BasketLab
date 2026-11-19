@@ -46,6 +46,38 @@ describe('the comparison page', () => {
     expect(screen.getByRole('button', { name: /Exportar/ })).toBeInTheDocument()
   })
 
+  it('lets the staff hide an axis, move it and bring everything back, with the choice in the address (#1014)', async () => {
+    open('?j=feb:10101,feb:10200')
+    const table = await screen.findByRole('table', { name: /Comparación de jugadores/ })
+    expect(within(table).getByRole('rowheader', { name: /Tapones/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('checkbox', { name: /Tapones/ }))
+    await waitFor(() => expect(within(table).queryByRole('rowheader', { name: /Tapones/ })).not.toBeInTheDocument())
+    expect(screen.getByTestId('where')).toHaveTextContent(/ejes=/)
+    await userEvent.click(screen.getByRole('button', { name: /Subir Asistencias/ }))
+    await waitFor(() => expect(screen.getByTestId('where').textContent).toMatch(/ejes=ast(%2C|,)pts/))
+    const rows = () => within(table).getAllByRole('rowheader').map(r => r.textContent)
+    expect(rows().indexOf('Asistencias')).toBeLessThan(rows().indexOf('Puntos'))
+    await userEvent.click(screen.getByRole('button', { name: /Restablecer los ejes/ }))
+    await waitFor(() => expect(within(table).getByRole('rowheader', { name: /Tapones/ })).toBeInTheDocument())
+    expect(screen.getByTestId('where')).not.toHaveTextContent(/ejes=/)
+    expect(screen.getByTestId('where')).toHaveTextContent(/j=/)                                  // the players stay
+  })
+
+  it('never leaves fewer than three axes: the last three cannot be hidden (#1014)', async () => {
+    open('?j=feb:10101,feb:10200&ejes=pts,ast,efg')
+    await screen.findByRole('table', { name: /Comparación de jugadores/ })
+    for (const name of [/Puntos/, /Asistencias/, /Acierto/]) expect(screen.getByRole('checkbox', { name })).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: /Tapones/ })).toBeEnabled()
+  })
+
+  it('reads the axes of the address and draws only those in the radar (#1014)', async () => {
+    open('?j=feb:10101,feb:10200&ejes=tov,pts,ast')
+    await screen.findByRole('table', { name: /Comparación de jugadores/ })
+    const radar = screen.getByRole('img', { name: /Comparación de/ })
+    expect(radar.getAttribute('aria-label')).toMatch(/Balón/)
+    expect(radar.getAttribute('aria-label')).not.toMatch(/Tap /)
+  })
+
   it('warns that every percentile is the one of the player in his own competition and season', async () => {
     open('?j=feb:10100,feb:10200')
     expect(await screen.findByText(/nunca se compara entre competiciones/i)).toBeInTheDocument()
