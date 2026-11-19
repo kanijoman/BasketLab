@@ -126,23 +126,41 @@ def _data_url(kind: str, raw: bytes) -> str:
     return f"data:image/{kind};base64,{base64.b64encode(raw).decode('ascii')}"
 
 
+RECENT_SEASONS = 2                                              # the seasons ``web-data`` publishes (#991)
+
+
+def _season_of(name: str) -> str:
+    """The leading years of a collection name (``2026_2027``, FBCYL's ``2026``); empty when it says none."""
+    years = []
+    for part in name.split("_"):
+        if _YEARS.match(part):
+            years.append(part)
+        elif years:
+            break
+    return "_".join(years)
+
+
+def _newest_seasons(names: Iterable[str], count: int) -> Dict[str, str]:
+    """``{name: season}`` of the collections, with the dated ones kept only if their season is one of the ``count`` newest of their league (FEB and FBCYL write the season differently, ``2026_2027`` and
+    ``2026``: each has its own newest) and the undated ones left out."""
+    kept: Dict[str, str] = {}
+    for family in (False, True):
+        seasons = {name: _season_of(name) for name in names if is_fbcyl(name) is family}
+        newest = set(sorted({s for s in seasons.values() if s}, reverse=True)[:count])
+        kept.update({name: s for name, s in seasons.items() if s in newest and s})
+    return kept
+
+
 def current_season_collections(names: Iterable[str]) -> Set[str]:
     """The competitions of the newest season of each league among ``names`` (a season is the leading years of the name: ``2026_2027``, FBCYL's ``2026``)."""
-    def season(name: str) -> str:
-        years = []
-        for part in name.split("_"):
-            if _YEARS.match(part):
-                years.append(part)
-            elif years:
-                break
-        return "_".join(years)
+    return set(_newest_seasons(list(names), 1))
 
-    kept: Set[str] = set()
-    for family in (False, True):                                 # FEB and FBCYL write the season differently (`2026_2027`, `2026`): each has its own newest
-        seasons = {name: season(name) for name in names if is_fbcyl(name) is family}
-        newest = max((s for s in seasons.values() if s), default=None)
-        kept |= {name for name, s in seasons.items() if s and s == newest}
-    return kept
+
+def recent_season_collections(names: Iterable[str], count: int = 2) -> Set[str]:
+    """What ``web-data`` publishes (#991): the competitions of the ``count`` newest seasons of each league among ``names`` (the league's, not each competition's own newest) and the collections that
+    say no season, which are never guessed to be old. The rest stays in the private archive and in ``talent-data``."""
+    names = list(names)
+    return set(_newest_seasons(names, count)) | {n for n in names if not _season_of(n)}
 
 
 def _fbcyl_team_sources(collection: Any) -> Dict[str, Dict[str, Any]]:
