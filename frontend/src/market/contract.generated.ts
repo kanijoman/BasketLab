@@ -5,6 +5,11 @@ import type { FileEntry, Wrap } from '@/webdata/contract.generated'
 
 export const TALENT_SCHEMA = 1
 
+/** The sealed shots by zone of a competition and season (#994): ``league`` and ``players`` (``<person_id>|<team_id>``) as ``[made, attempted]`` of the 10 zones of the engine, flattened. */
+export interface TalentZonesEntry extends FileEntry {
+  wraps: Wrap[]
+}
+
 /** The sealed rows of a competition and season (``players/``): one row per player, team and competition; the groups and phases of the competition are inside. */
 export interface TalentCompetitionEntry extends FileEntry {
   key: string
@@ -19,6 +24,7 @@ export interface TalentCompetitionEntry extends FileEntry {
   level?: number
   category?: 'senior' | 'formacion'
   age_group?: 'U14' | 'U16' | 'U18'
+  zones?: TalentZonesEntry
   competition_label?: string
 }
 

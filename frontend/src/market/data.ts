@@ -88,3 +88,15 @@ export async function loadIdentities(): Promise<TalentIdentities> {
     return { manifest, wraps: manifest.identities.wraps, text: await talent.fetchText(manifest.identities.file) }
   }, 'El fichero')
 }
+
+/** The shots by zone of a competition and season (#994): `players` are `<person_id>|<team_id>`; every count is `[made, attempted]` per zone of `zones`, flattened. */
+export interface TalentZones { format: number; zones: string[]; league: number[]; players: Record<string, number[]> }
+
+/** The zones file of a competition and season, opened with the same key as its rows (only the profile reads it). */
+export const loadCompetitionZones = (key: string): Promise<TalentZones> =>
+  talent.openSealed<TalentZones>(async () => {
+    const manifest = await talent.loadManifest()
+    const entry = manifest.competitions.find(c => c.key === key)
+    if (!entry?.zones) throw new TalentDataUnavailable('Esta competición no tiene datos de zonas publicados.')
+    return { manifest, wraps: entry.zones.wraps, text: await talent.fetchText(entry.zones.file) }
+  }, 'El fichero')
