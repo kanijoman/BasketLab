@@ -102,6 +102,15 @@ describe('the bio', () => {
   })
 })
 
+describe('the radar with some axes chosen (#1014)', () => {
+  it('has only those axes, in the order asked for', async () => {
+    const row = personRows(await rowsOf(LF2_KEY), ANA)[0]
+    expect(radarAxes(row, ['tov', 'pts', 'ast']).map(a => a.key)).toEqual(['tov', 'pts', 'ast'])
+    expect(radarAxes(row).map(a => a.key)).toEqual(RADAR_AXES.map(a => a.key))
+    expect(radarAxes(row, ['zzz', 'pts']).map(a => a.key)).toEqual(['pts'])                  // an unknown axis is left out, never invented
+  })
+})
+
 describe('the radar', () => {
   it('is the percentiles of the row in its own competition, in a fixed order, with the turnovers named as «less is better»', async () => {
     const row = personRows(await rowsOf(LF2_KEY), ANA)[0]

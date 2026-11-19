@@ -12,6 +12,35 @@ import { plain, type SearchRow } from './search'
 
 export const MAX_COMPARED = 3
 
+/** The axes of the radar the comparator draws (#1014): all of them in the fixed order unless the address chooses (`?ejes=tov,pts,ast`); a polygon needs at least three. */
+export const DEFAULT_AXES: string[] = RADAR_AXES.map(a => a.key)
+export const MIN_AXES = 3
+
+/** The axes of the address, in the order asked for, without repeats or unknown ones; with fewer than three left (or nothing) it is the default. */
+export function parseAxes(value: string | null): string[] {
+  const keys = [...new Set((value ?? '').split(',').map(s => s.trim()).filter(k => DEFAULT_AXES.includes(k)))]
+  return keys.length >= MIN_AXES ? keys : DEFAULT_AXES
+}
+
+/** What goes to the address: nothing when the axes are the default, the list otherwise. */
+export const axesToParam = (axes: string[]): string | null => (axes.join(',') === DEFAULT_AXES.join(',') ? null : axes.join(','))
+
+/** The axis hidden, or shown again at the end; never leaves fewer than three. */
+export function toggleAxis(axes: string[], key: string): string[] {
+  if (!axes.includes(key)) return [...axes, key]
+  return axes.length <= MIN_AXES ? axes : axes.filter(k => k !== key)
+}
+
+/** The axis one place up (-1) or down (1); at the ends it stays. */
+export function moveAxis(axes: string[], key: string, by: -1 | 1): string[] {
+  const i = axes.indexOf(key)
+  const j = i + by
+  if (i < 0 || j < 0 || j >= axes.length) return axes
+  const out = [...axes]
+  ;[out[i], out[j]] = [out[j], out[i]]
+  return out
+}
+
 /** The people of the address, in order, without blanks or repeats, as many as the comparator takes. */
 export const parseCompare = (value: string | null): string[] =>
   [...new Set((value ?? '').split(',').map(s => s.trim()).filter(Boolean))].slice(0, MAX_COMPARED)
@@ -66,8 +95,8 @@ function signed(d: number, decimals: number): string {
 const words = (key: string, label: string, group: CompareLine['group'], texts: (string | null)[]): CompareLine =>
   ({ key, label, group, cells: texts.map(text => ({ text, best: false, value: null })), diff: null })
 
-/** The rows of the table of the comparison: bio, figures per 40 and the percentile of each axis of the radar. */
-export function compareLines(players: ComparedPlayer[]): CompareLine[] {
+/** The rows of the table of the comparison: bio, figures per 40 and the percentile of each axis of the radar that is chosen (``axes``, all by default). */
+export function compareLines(players: ComparedPlayer[], axes: string[] = DEFAULT_AXES): CompareLine[] {
   const each = <T,>(read: (p: ComparedPlayer) => T) => players.map(read)
   const bio: CompareLine[] = [
     words('competition', 'Competición', 'bio', each(p => `${p.row.season_label} · ${p.row.competition} · ${p.row.team_name}`)),
@@ -83,7 +112,7 @@ export function compareLines(players: ComparedPlayer[]): CompareLine[] {
     numeric('ast40', 'Asistencias / 40', 'figures', each(p => p.row.per40?.ast ?? null), 1),
     numeric('reb40', 'Rebotes / 40', 'figures', each(p => (p.row.per40 ? p.row.per40.orb + p.row.per40.drb : null)), 1),
   ]
-  const percentiles: CompareLine[] = RADAR_AXES.map(a => {
+  const percentiles: CompareLine[] = axes.flatMap(k => RADAR_AXES.filter(a => a.key === k)).map(a => {
     const line = numeric(a.key, a.label, 'percentiles', each(p => p.row.pct?.[a.key] ?? null), 0, v => String(Math.round(v)))
     const known = line.cells.map(c => c.value).filter((v): v is number => v !== null)
     const top = known.length >= 2 ? Math.max(...known) : null

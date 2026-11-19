@@ -177,6 +177,21 @@ test.describe('comparator', () => {
     expect((await download).suggestedFilename()).toMatch(/^comparacion-.*\.csv$/)
   })
 
+  test('chooses the axes of the radar: hides one, moves another, and the choice survives a reload (#1014)', async ({ page }) => {
+    await open(page, `/comparar?j=${enc(WITH_SHOTS)},${enc(NO_SHOTS)}`)
+    const table = page.getByRole('table', { name: 'Comparación de jugadores' })
+    await page.getByRole('checkbox', { name: /Tapones/ }).click()
+    await expect(table.getByRole('rowheader', { name: /Tapones/ })).toHaveCount(0)
+    await page.getByRole('button', { name: /Subir Asistencias/ }).click()
+    await expect(page).toHaveURL(/ejes=ast/)
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    await expect(table.getByRole('rowheader', { name: /Tapones/ })).toHaveCount(0)
+    await page.getByRole('button', { name: /Restablecer los ejes/ }).click()
+    await expect(table.getByRole('rowheader', { name: /Tapones/ })).toHaveCount(1)
+    await expect(page).not.toHaveURL(/ejes=/)
+  })
+
   test('keeps the list in the address, so reloading gives the same comparison', async ({ page }) => {
     await open(page, `/comparar?j=${enc(WITH_SHOTS)},${enc(NO_SHOTS)}`)
     await page.reload()

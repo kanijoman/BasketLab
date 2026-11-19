@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { loadCompetitionRows, loadTalentCompetitions, resetTalentData, setTalentBase } from './data'
-import { MAX_COMPARED, compareCsv, compareLines, comparePlayers, findPlayers, parseCompare, toggleCompare } from './compare'
+import { DEFAULT_AXES, MAX_COMPARED, MIN_AXES, axesToParam, compareCsv, compareLines, comparePlayers, findPlayers, moveAxis, parseAxes, parseCompare, toggleAxis, toggleCompare } from './compare'
 import { RADAR_AXES } from './player'
 import { toSearchRow, type SearchRow } from './search'
 import { serveTalentData, TALENT_BASE } from '@/test/talentDataHost'
@@ -151,5 +151,44 @@ describe('the comparison as a table to export (#1009)', () => {
     expect(csv.data.some(r => r.p1 === '')).toBe(true)
     const three = comparePlayers(rows, [ANA, BEA, 'fbcyl:34001-00']).players
     expect(compareCsv(three, compareLines(three)).headers.map(h => h.label)).not.toContain('Diferencia')
+  })
+})
+
+describe('the axes of the radar that are chosen (#1014)', () => {
+  it('are all of them, in the fixed order, when the address says nothing or says nonsense', () => {
+    expect(DEFAULT_AXES).toEqual(RADAR_AXES.map(a => a.key))
+    for (const bad of [null, '', 'xyz', 'pts', 'pts,ast', 'nope,zzz,qqq']) expect(parseAxes(bad)).toEqual(DEFAULT_AXES)          // fewer than three axes cannot draw a polygon
+    expect(MIN_AXES).toBe(3)
+  })
+
+  it('are read in the order asked for, without repeats or unknown axes', () => {
+    expect(parseAxes('tov,pts,pts,zzz,ast,efg')).toEqual(['tov', 'pts', 'ast', 'efg'])
+  })
+
+  it('go to the address as nothing when they are the default and as the list when they are not, and come back the same', () => {
+    expect(axesToParam(DEFAULT_AXES)).toBeNull()
+    expect(axesToParam(['tov', 'pts', 'ast'])).toBe('tov,pts,ast')
+    expect(parseAxes(axesToParam(['tov', 'pts', 'ast']))).toEqual(['tov', 'pts', 'ast'])
+  })
+
+  it('are hidden and shown again keeping the order of the rest, and never fewer than three', () => {
+    expect(toggleAxis(DEFAULT_AXES, 'blk')).toEqual(DEFAULT_AXES.filter(k => k !== 'blk'))
+    expect(toggleAxis(['pts', 'ast', 'efg'], 'ast')).toEqual(['pts', 'ast', 'efg'])          // it would leave two: it stays
+    expect(toggleAxis(['pts', 'ast', 'efg'], 'blk')).toEqual(['pts', 'ast', 'efg', 'blk'])    // shown again at the end
+  })
+
+  it('are moved up and down one place, and the ends stay where they are', () => {
+    expect(moveAxis(['pts', 'ast', 'efg'], 'efg', -1)).toEqual(['pts', 'efg', 'ast'])
+    expect(moveAxis(['pts', 'ast', 'efg'], 'pts', -1)).toEqual(['pts', 'ast', 'efg'])
+    expect(moveAxis(['pts', 'ast', 'efg'], 'efg', 1)).toEqual(['pts', 'ast', 'efg'])
+    expect(moveAxis(['pts', 'ast', 'efg'], 'pts', 1)).toEqual(['ast', 'pts', 'efg'])
+  })
+
+  it('shape the table and the export: only those percentiles, in that order, and the best of each is still marked', async () => {
+    const players = comparePlayers(await all(), [ANA, BEA]).players
+    const lines = compareLines(players, ['tov', 'pts', 'ast'])
+    expect(lines.filter(l => l.group === 'percentiles').map(l => l.key)).toEqual(['tov', 'pts', 'ast'])
+    expect(compareCsv(players, lines).data.filter(r => ['Cuidar el balón (menos pérdidas)', 'Puntos', 'Asistencias'].includes(r.dato))).toHaveLength(3)
+    expect(compareLines(players).filter(l => l.group === 'percentiles')).toHaveLength(8)          // without a choice, the eight
   })
 })
