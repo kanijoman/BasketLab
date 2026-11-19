@@ -29,7 +29,7 @@ def main(argv=None) -> int:
     from src.live_prep.package_sealing import make_sealer
     from src.local_data import parallel_sections
     from src.local_data.calendar_export import CalendarSource
-    from src.local_data.images_export import Source
+    from src.local_data.images_export import RECENT_SEASONS, Source, recent_season_collections
     from src.local_data.web_data import publish_web_data
     from src.local_data.scouting_export import fbcyl_interest_clubs, interest_clubs, scouting_collections
     from src.local_data.competition_gender import competition_genders
@@ -39,7 +39,8 @@ def main(argv=None) -> int:
 
     handler = shared_handler()
     db = handler.connection.client["BASKETBALL"]
-    names = args.collection or sorted(set(feb_collection_names(db)) | set(fbcyl_collection_names(db)))
+    # #991: the web publishes the current season and the previous one; older seasons stay in the private archive and in talent-data. An explicit --collection is published as asked.
+    names = args.collection or sorted(recent_season_collections(set(feb_collection_names(db)) | set(fbcyl_collection_names(db)), RECENT_SEASONS))
     try:
         sealer = make_sealer({"mode": "scoped", "open": not args.closed}, os.environ)
     except ValueError as error:
