@@ -17,7 +17,7 @@ const REASON = {
 
 export default function SimilarList({ result, targetId, loading }: { result: SimilarResult; targetId: string; loading: boolean }) {
   return (
-    <Card title="Jugadores parecidos">
+    <Card id="parecidos" title="Jugadores parecidos">
       {loading && <Spinner size="sm" label="Buscando jugadores parecidos" />}
       {!loading && result.reason && <p className="text-sm text-ink-muted">{REASON[result.reason]}</p>}
       {!loading && !result.reason && result.similar.length === 0 && <p className="text-sm text-ink-muted">Ningún jugador de la competición tiene un perfil comparable (hace falta que compartan al menos seis de los ocho ejes).</p>}

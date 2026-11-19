@@ -128,6 +128,21 @@ test.describe('profile', () => {
     await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
   })
 
+  test('the navigation inside the profile takes you to each section and stays in sight (#1010)', async ({ page }) => {
+    await page.setViewportSize({ width: 412, height: 700 })
+    await open(page, `/jugador/${enc(WITH_SHOTS)}`)
+    const nav = page.getByRole('navigation', { name: 'En esta ficha' })
+    await nav.getByRole('link', { name: 'Zonas de tiro' }).click()
+    const zones = page.getByRole('heading', { name: 'Zonas de tiro' })
+    await expect(zones).toBeInViewport()
+    const below = await zones.boundingBox()
+    const bar = await nav.boundingBox()
+    expect(below!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height - 1)          // the section is not hidden under the navigation
+    await expect(nav).toBeInViewport()
+    await nav.getByRole('link', { name: 'Datos personales' }).click()
+    await expect(page.getByRole('heading', { name: 'Datos personales' })).toBeInViewport()
+  })
+
   test('says there are no shots when the file has none of the player, and draws no table of zeros', async ({ page }) => {
     await open(page, `/jugador/${enc(NO_SHOTS)}`)
     await expect(page.getByText(/Sin tiros registrados/)).toBeVisible()

@@ -148,6 +148,20 @@ describe('the profile page', () => {
     expect(within(section).getByText(/Solo se comparan jugadores de la misma competición y temporada/)).toBeInTheDocument()
   })
 
+  it('has a navigation inside the profile with a link to each section, and every link goes to a section that is there (#1010)', async () => {
+    open('feb:10101')
+    await screen.findByRole('heading', { name: /Zonas de tiro/ })
+    const nav = screen.getByRole('navigation', { name: 'En esta ficha' })
+    const links = within(nav).getAllByRole('link')
+    expect(links.map(l => l.textContent)).toEqual(['Datos personales', 'Trayectoria', 'Perfil', 'Parecidos', 'Zonas de tiro'])
+    for (const link of links) {
+      const target = document.getElementById(link.getAttribute('href')!.slice(1))
+      expect(target, link.textContent!).not.toBeNull()
+      expect(target!.tagName).toBe('SECTION')
+      expect(within(target!).getByRole('heading', { level: 2 }).textContent!.toLowerCase()).toContain(link.textContent!.toLowerCase())          // the link says what the section is about
+    }
+  })
+
   it('says it when nobody has that id, and offers the way back to the search', async () => {
     open('feb:no-existe')
     expect(await screen.findByText(/No encontramos a este jugador/)).toBeInTheDocument()

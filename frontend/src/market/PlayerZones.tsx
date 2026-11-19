@@ -17,7 +17,7 @@ export default function PlayerZones({ row }: { row: SearchRow }) {
   const lines = useMemo(() => (zones.data ? zoneLines(zones.data, row.person_id, row.team_id) : null), [zones.data, row.person_id, row.team_id])
   const total = lines ? zoneTotal(lines) : null
   return (
-    <Card title="Zonas de tiro">
+    <Card id="zonas" title="Zonas de tiro">
       {zones.isLoading && <Spinner size="sm" label="Cargando las zonas" />}
       {zones.isError && <p className="text-sm text-ink-muted">Esta competición no tiene datos de zonas publicados.</p>}
       {zones.isSuccess && !lines && <p className="text-sm text-ink-muted">Sin tiros registrados de este jugador en {row.competition} {row.season_label}.</p>}
