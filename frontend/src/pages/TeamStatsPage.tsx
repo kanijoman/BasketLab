@@ -30,6 +30,7 @@ import StatCard from '@/components/ui/StatCard'
 import DiffBadge from '@/components/ui/DiffBadge'
 import { tippedHeader } from '@/components/ui/Tooltip'
 import CVBadge from '@/components/ui/CVBadge'
+import { roomForBadges } from '@/lib/columnRoom'
 import { ADVANCED_COL_DEFS, BASIC_COL_DEFS, REVERSE_ADV, REVERSE_BASIC, type ColDef } from '@/lib/teamColumns'
 
 // -- Column factory ------------------------------------------------------------
@@ -51,7 +52,7 @@ function buildCol(
   return {
     id: key as string,
     accessorKey: key as string,
-    size,
+    size: roomForBadges(size, { cv: showCV, trend: showTrend }),          // the badges must fit: the cell cuts what overflows, on screen and in the export
     header: tippedHeader(header),
     cell: ({ getValue, row }) => {
       const v = getValue() as number | null | undefined
@@ -67,7 +68,7 @@ function buildCol(
       const seasonVal = seasonRow ? (seasonRow[key] as number | null | undefined) : null
 
       return (
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
           <span>{formatted}</span>
           {showTrend && <DiffBadge recent={v} season={seasonVal} reverse={reverse} decimals={decimals} className="text-[10px]" />}
           {cvEntry && <CVBadge entry={cvEntry} />}

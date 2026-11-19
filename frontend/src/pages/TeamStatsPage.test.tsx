@@ -114,3 +114,20 @@ describe('TeamStatsPage: with a date filter the cells say the real difference wi
     expect(screen.queryByText('+2.0')).toBeNull()
   })
 })
+
+describe('TeamStatsPage: the dispersion badge fits in the column (regression: it was cut by the width of the cell, on screen and in the export)', () => {
+  const cv = { mean: 80, std: 20, cv: 25, n: 5 }
+
+  it('a column with the σ badge is wide enough for the figure and the badge, and the content wraps instead of being cut', async () => {
+    api.getTeamStats.mockReset().mockResolvedValue({ team_stats: rows(80), opponent_stats: rows(70) })
+    api.getTeamConsistency.mockReset().mockResolvedValue({ own: { Alfa: { points_per_game: cv } }, rival: {} })
+    api.getRivalAdjusted.mockReset().mockResolvedValue({})
+    renderPage()
+    const badge = await screen.findByText(/σ25%/)
+    const cell = badge.closest('td') as HTMLElement
+    expect(parseInt(cell.style.width, 10)).toBeGreaterThanOrEqual(58 + 40)
+    expect(cell.querySelector('span.flex-wrap')).not.toBeNull()
+    const plain = within(screen.getByText('Bravo').closest('tr') as HTMLElement).getAllByRole('cell').find(c => c !== cell && c.style.width === cell.style.width)
+    expect(plain).toBeTruthy()                                   // the whole column has the same width, with or without badge in a row
+  })
+})
