@@ -103,7 +103,8 @@ export default function ComparePage() {
             </div>
           </Card>
           <Card title="Comparación" padding="none">
-            <div className="overflow-x-auto">
+            {/* `relative`: the «(el mejor)» of the screen reader is absolute and, without it, would stretch the page (not the scroller) to the right on a phone */}
+            <div role="region" tabIndex={0} aria-label="Tabla de comparación, desplazable" className="relative overflow-x-auto">
               <table aria-label="Comparación de jugadores" className="w-full min-w-[32rem] border-collapse text-sm">
                 <thead>
                   <tr>

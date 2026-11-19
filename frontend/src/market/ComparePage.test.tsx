@@ -29,6 +29,7 @@ describe('the comparison page', () => {
     expect(within(table).getByRole('rowheader', { name: 'Altura' })).toBeInTheDocument()
     expect(within(table).getByRole('rowheader', { name: /Cuidar el balón/ })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /Comparación de ANA PRUEBA UNO, BEA PRUEBA DOS/ })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: /Tabla de comparación/ })).toHaveAttribute('tabindex', '0')          // a scrollable table is reachable with the keyboard on a phone (axe: scrollable-region-focusable)
   })
 
   it('warns that every percentile is the one of the player in his own competition and season', async () => {

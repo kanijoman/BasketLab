@@ -112,6 +112,7 @@ describe('the profile page', () => {
     expect(within(table).getByRole('rowheader', { name: 'Área restringida' })).toBeInTheDocument()
     expect(within(table).getAllByRole('row')).toHaveLength(1 + 10 + 1)                    // header, ten zones and the total
     expect(within(table).getByRole('columnheader', { name: /% liga/ })).toBeInTheDocument()
+    expect(within(section).getByRole('region', { name: /Tabla de zonas de tiro/ })).toHaveAttribute('tabindex', '0')
   })
 
   it('does not draw a zones table for a player without shots in the file', async () => {
