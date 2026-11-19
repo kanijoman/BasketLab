@@ -67,13 +67,13 @@ def _metas(connection: Any, names: Iterable[str]) -> Dict[str, Dict[str, Any]]:
     return {d["_id"]: d for d in docs}
 
 
-def competition_rows(connection: Any, members: Sequence[Any], roster_rows: Iterable[Mapping[str, Any]], season: str) -> List[Dict[str, Any]]:
+def competition_rows(connection: Any, members: Sequence[Any], roster_rows: Iterable[Mapping[str, Any]], season: str, external_bio: Optional[Mapping[str, Any]] = None) -> List[Dict[str, Any]]:
     """The rows of one competition and season: totals, bio, advanced figures in the context of each team, and rates, role and percentiles of the whole competition."""
     parts = []
     for member in members:
         parts.append((member.group, export_collection(connection.get_collection(member.collection), member.collection)))
     rows = season_player_rows(parts)
-    rows = attach_bio(rows, roster_rows, season)
+    rows = attach_bio(rows, roster_rows, season, external=external_bio)
     rows = add_advanced(rows, team_context(r for _, payload in parts for r in payload["team_rows"]))
     return add_profiles(rows)
 
@@ -93,11 +93,11 @@ def _write_if_changed(path: Path, data: bytes) -> None:
 
 
 def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Iterable[str], catalogue: Sequence[Mapping[str, Any]],
-                        roster_rows: Iterable[Mapping[str, Any]] = (), on_competition: Optional[Callable[[CompetitionSeason, int, int], None]] = None,
+                        roster_rows: Iterable[Mapping[str, Any]] = (), external_bio: Optional[Mapping[str, Any]] = None, on_competition: Optional[Callable[[CompetitionSeason, int, int], None]] = None,
                         on_unknown: Optional[Callable[[List[str]], None]] = None) -> Dict[str, Any]:
     """Write the sealed file of every competition and season of ``names`` and ``index.json`` (returned). Files that are no longer referenced are removed.
 
-    ``roster_rows`` are the rows of ``roster_sweep`` (all seasons); ``on_competition(competition, players, files)`` reports progress; ``on_unknown`` gets the collections that say neither
+    ``roster_rows`` are the rows of ``roster_sweep`` (all seasons); ``external_bio`` the bio the linked external players lend to FEB persons (``external_bio``, #979); ``on_competition(competition, players, files)`` reports progress; ``on_unknown`` gets the collections that say neither
     their competition nor their season (they are left out, never guessed)."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -109,7 +109,7 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
     kept = _read_previous(out_dir)
     entries = []
     for competition, members in found.items():
-        rows = competition_rows(connection, members, roster, competition.season)
+        rows = competition_rows(connection, members, roster, competition.season, external_bio)
         attributes = _attributes(competition, catalogue)
         head = {"key": competition.key, "league": competition.league, "competition": competition.competition, "season": competition.season, "season_label": competition.season_label,
                 "groups": sorted({m.group for m in members}), **attributes}

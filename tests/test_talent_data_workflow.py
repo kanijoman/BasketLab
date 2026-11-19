@@ -71,3 +71,19 @@ def test_the_entry_point_imports_and_the_rosters_are_optional():
 
     module = importlib.import_module("run_talent_data")
     assert callable(module.main)
+
+
+def test_it_links_the_external_players_before_the_build_and_the_build_reads_them_regression_979():
+    """#979: ``links/fiba.json`` was written by nobody and read by nobody. The workflow regenerates it from the archives it already downloaded (a derived file: it is NOT written back to
+    basketlab-archive-ext, which keeps one writer per folder) and the build gives the linked players' bio to the FEB rows."""
+    assert ORDER.index("Download the rosters") < ORDER.index("Link the external players") < ORDER.index("Build the artifacts")
+    link = STEPS["Link the external players"]
+    assert "run_identity_links.py --ext archive-ext --source fiba" in link["run"] and "git push" not in link["run"] and "git commit" not in link["run"]
+    assert "pull_request" in link["if"]
+    assert "--ext archive-ext" in STEPS["Build the artifacts"]["run"]
+    assert "run_identity_links.py" in _triggers()["push"]["paths"]
+
+
+def test_a_source_with_no_games_yet_does_not_turn_the_run_red_but_a_failing_link_does():
+    run = STEPS["Link the external players"]["run"]
+    assert "[ -d archive-ext/fiba ]" in run and "||" not in run.split("python run_identity_links.py")[1].splitlines()[0]

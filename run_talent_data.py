@@ -1,4 +1,4 @@
-"""Entry point of the Talent publication (#878): ``python run_talent_data.py --out DIR [--rosters DIR] [--collection NAME ...] [--closed]``.
+"""Entry point of the Talent publication (#878): ``python run_talent_data.py --out DIR [--rosters DIR] [--ext DIR] [--collection NAME ...] [--closed]``.
 
 Writes what BasketLab Talent reads (``src/market/publish``): one sealed file per competition and season with a row per player, team and competition, and the manifest ``index.json``. Needs
 ``PACKAGE_MASTER_KEY`` (or ``PACKAGE_PASSWORD``, >= 8 characters) like ``web-data``. ``--rosters`` is the ``rosters/`` folder of the private ``basketlab-archive-ext`` (the roster sweep writes it,
@@ -13,10 +13,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 
+def read_external_bio(root):
+    """The bio the linked external players lend to FEB persons (#979): ``links/fiba.json`` and ``fiba/`` of the external archive at ``root``."""
+    from src.market.external_bio import read_external_bio as read
+
+    return read(root)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Publish the sealed player rows of BasketLab Talent")
     parser.add_argument("--out", required=True)
     parser.add_argument("--rosters", help="folder with rosters/<season>.json (default: no rosters)")
+    parser.add_argument("--ext", help="the external archive (basketlab-archive-ext) with links/fiba.json and fiba/: the linked players lend their bio to what FEB leaves empty (#979)")
     parser.add_argument("--collection", action="append", help="only this collection (repeatable); only for tests: the competitions of the others are not published")
     parser.add_argument("--closed", action="store_true", help="do not wrap for the open scope")
     args = parser.parse_args(argv)
@@ -37,15 +45,16 @@ def main(argv=None) -> int:
     except ValueError as error:
         print(error, file=sys.stderr)
         return 2
+    external = read_external_bio(args.ext) if args.ext else {}
     started = time.time()
     unknown = []
-    manifest = publish_talent_data(handler.connection, args.out, sealer, names, load_catalogue(DEFAULT_CATALOGUE), roster_rows=roster,
+    manifest = publish_talent_data(handler.connection, args.out, sealer, names, load_catalogue(DEFAULT_CATALOGUE), roster_rows=roster, external_bio=external,
                                    on_competition=lambda c, players, groups: print(f"{c.key}: {players} players, {groups} collections, {time.time() - started:.0f} s", flush=True),
                                    on_unknown=unknown.extend)
     if unknown:
         print(f"{len(unknown)} collections say neither their competition nor their season and are left out: {', '.join(unknown)}")
     size = sum(e["bytes"] for e in manifest["competitions"])
-    print(f"{len(manifest['competitions'])} competitions, {size / 1024:.0f} KB, {sum(e['players'] for e in manifest['competitions'])} rows, {len(roster)} roster rows, {time.time() - started:.0f} s")
+    print(f"{len(manifest['competitions'])} competitions, {size / 1024:.0f} KB, {sum(e['players'] for e in manifest['competitions'])} rows, {len(roster)} roster rows, {len(external)} persons with external bio, {time.time() - started:.0f} s")
     return 0
 
 

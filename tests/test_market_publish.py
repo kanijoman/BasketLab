@@ -97,6 +97,16 @@ def test_a_row_has_the_totals_the_context_figures_the_profile_and_the_bio(connec
     assert (row["birth"], row["height"], row["position"], row["full_name"]) == ("2004-05-06", 178, "Base", "ANA PRUEBA UNO")
 
 
+def test_the_bio_a_linked_external_player_lends_reaches_the_published_row_and_feb_wins_where_it_speaks_979(connection, tmp_path):
+    roster = [{"person_id": "feb:10100", "season": "2025", "team_id": "101", "name": "ANA PRUEBA UNO", "birth": "2004-05-06", "height": None, "position": None, "nationality": None}]
+    external = {"feb:10100": [{"source": "fiba", "birth": "1999-01-01", "height": "181", "nationality": "ESP"}]}
+    manifest = _publish(connection, tmp_path, roster_rows=roster, external_bio=external)
+    row = next(r for r in _open(tmp_path, _by(manifest, "L.F.-2"))["rows"] if r["person_id"] == "feb:10100")
+    assert (row["birth"], row["height"], row["nationality"]) == ("2004-05-06", 181, "ESP") and row["bio_from"] == {"height": "fiba", "nationality": "fiba"}
+    other = next(r for r in _open(tmp_path, _by(manifest, "L.F.-2"))["rows"] if r["person_id"] != "feb:10100")
+    assert other["height"] is None and other["bio_from"] == {}
+
+
 def test_fbcyl_is_a_competition_of_its_own_with_its_minutes_in_seconds_and_no_bio(connection, tmp_path):
     entry = _by(_publish(connection, tmp_path), "Primera Nacional Femenina")
     rows = _open(tmp_path, entry)["rows"]
