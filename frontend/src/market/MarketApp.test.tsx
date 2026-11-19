@@ -46,6 +46,12 @@ describe('BasketLab Talent (shell, #877)', () => {
     expect(within(nav).getByRole('link', { name: 'Buscar' })).toHaveAttribute('aria-current', 'page')
   })
 
+  it('opens «Mi equipo» at /mi-equipo and marks it in the navigation (#882)', async () => {
+    at('/mi-equipo')
+    expect(within(screen.getByRole('navigation', { name: 'Principal' })).getByRole('link', { name: 'Mi equipo' })).toHaveAttribute('aria-current', 'page')
+    expect(await screen.findByText(/Aún no hay datos de jugadores publicados/)).toBeInTheDocument()
+  })
+
   it('brings the comparison back when you go away and come back to the comparator (#1007)', async () => {
     sessionStorage.setItem('talent-compare', JSON.stringify(['feb:10100', 'feb:10200']))
     at('/')

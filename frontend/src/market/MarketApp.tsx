@@ -5,7 +5,8 @@
  *   /                     → the search of players (B3 #879); it also says when no data is published yet
  *   /jugador/:personId    → the profile of a player (B4 #880)
  *   /comparar?j=a,b,c     → the comparator of two or three players (B5 #881)
- * The header has the main navigation (Buscar · Comparar, #1007).
+ * The header has the main navigation (Buscar · Comparar · Mi equipo, #1007, #882).
+ *   /mi-equipo?c=&e=       → the squad of a team, its holes and the searches that would fill them (C1 #882)
  *   *   → /
  */
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
@@ -13,6 +14,7 @@ import talentMark from '@design/brand/talent-mark.svg'
 import BrandLogo from '@/components/BrandLogo'
 import ThemeControl from '@/components/ThemeControl'
 import ComparePage from './ComparePage'
+import MyTeamPage from './MyTeamPage'
 import { compareHref } from './compareMemory'
 import PlayerPage from './PlayerPage'
 import SearchPage from './SearchPage'
@@ -27,6 +29,7 @@ function MainNav({ className = '' }: { className?: string }) {
     <nav aria-label="Principal" className={`flex items-center gap-1 ${className}`}>
       <NavLink to="/" end className={linkClass}>Buscar</NavLink>
       <NavLink to={compareHref()} className={linkClass}>Comparar</NavLink>
+      <NavLink to="/mi-equipo" className={linkClass}>Mi equipo</NavLink>
     </nav>
   )
 }
@@ -46,6 +49,7 @@ export default function MarketApp() {
           <Route path="/" element={<SearchPage />} />
           <Route path="/jugador/:personId" element={<PlayerPage />} />
           <Route path="/comparar" element={<ComparePage />} />
+          <Route path="/mi-equipo" element={<MyTeamPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

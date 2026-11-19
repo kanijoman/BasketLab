@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { ANA, enc, FBCYL_ALONE, FBCYL_LINKED, NO_SHOTS, open, serveTalent, WITH_SHOTS } from './support'
+import { ANA, enc, FBCYL_ALONE, FBCYL_LINKED, LF2_COMP, MY_TEAM, NO_SHOTS, open, serveTalent, WITH_SHOTS } from './support'
 
 // The ways through Talent the staff takes, over the real publication of the exporter: search, profile and comparator, and the FBCYL player that IS a FEB person.
 test.beforeEach(async ({ page }) => { await serveTalent(page) })
@@ -249,5 +249,35 @@ test.describe('comparator', () => {
     await page.reload()
     await page.waitForLoadState('networkidle')
     await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
+  })
+})
+
+test.describe('my team (#882)', () => {
+  test('the staff chooses a competition and a team, sees the rotation, the holes of profile and the age, and the choice is remembered', async ({ page }) => {
+    await open(page, '/mi-equipo')
+    await expect(page.getByText('Elige tu equipo')).toBeVisible()
+    await page.getByRole('combobox', { name: 'Competición' }).selectOption(LF2_COMP)
+    const team = page.getByRole('combobox', { name: 'Equipo' })
+    await expect(team.locator('option')).not.toHaveCount(1)
+    await team.selectOption({ index: 1 })
+    await expect(page.getByRole('table', { name: /Rotación de/ })).toBeVisible()
+    await expect(page.getByRole('list', { name: 'Huecos de perfil' }).getByRole('listitem')).toHaveCount(3)
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Buscar' }).click()
+    await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mi equipo' }).click()
+    await expect(page.getByRole('table', { name: /Rotación de/ })).toBeVisible()          // it comes back with the team of last time
+  })
+
+  test('a hole opens the search with the filters already put, and the chips say which', async ({ page }) => {
+    await open(page, MY_TEAM)
+    await page.getByRole('link', { name: /Buscar jugadores de/ }).first().click()
+    await expect(page).toHaveURL(/p=75/)
+    const chips = page.getByRole('list', { name: 'Filtros activos' })
+    await expect(chips).toContainText('percentil 75')
+    await expect(chips).toContainText('Solo con minutos suficientes')
+  })
+
+  test('a team that is not in the competition is said, not an empty page', async ({ page }) => {
+    await open(page, `/mi-equipo?c=${enc(LF2_COMP)}&e=nadie`)
+    await expect(page.getByText('No encontramos ese equipo')).toBeVisible()
   })
 })
