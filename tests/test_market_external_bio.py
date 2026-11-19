@@ -45,7 +45,7 @@ class TestWhoIsLinked:
 class TestCandidates:
     def test_a_linked_player_gives_its_bio_to_the_feb_person(self):
         found = external_bio([_game({"id": "fiba:1", "name": "ANA"})], {"fiba:1": "feb:1"})
-        assert found == {"feb:1": [{"source": "fiba", "birth": "2008-05-05", "height": "190", "nationality": "ESP"}]}
+        assert found == {"feb:1": [{"source": "fiba", "season": None, "birth": "2008-05-05", "height": "190", "nationality": "ESP"}]}
 
     def test_a_player_that_is_not_linked_gives_nothing(self):
         assert external_bio([_game({"id": "fiba:2", "name": "BEA"})], {"fiba:1": "feb:1"}) == {}
@@ -65,13 +65,13 @@ class TestAttach:
     def test_fiba_fills_what_feb_leaves_empty_and_says_so(self):
         ext = {"feb:1": [{"source": "fiba", "birth": "2008-05-05", "height": "190", "nationality": "ESP"}]}
         (row,) = attach_bio([_row()], [_roster()], "2025", external=ext)
-        assert (row["birth"], row["height"], row["nationality"]) == ("2008-05-05", 190, "ESP")
+        assert (row["birth"], row["height"], row["nationality"]) == ("2008-05-05", 190, "ESPAÑA")
         assert row["bio_from"] == {"birth": "fiba", "height": "fiba", "nationality": "fiba"}
 
     def test_feb_wins_over_fiba_where_it_says_a_field(self):
         ext = {"feb:1": [{"source": "fiba", "birth": "2008-05-05", "height": "190", "nationality": "ESP"}]}
         (row,) = attach_bio([_row()], [_roster(height=185, birth="2008-05-06")], "2025", external=ext)
-        assert (row["birth"], row["height"], row["nationality"]) == ("2008-05-06", 185, "ESP") and row["bio_from"] == {"nationality": "fiba"}
+        assert (row["birth"], row["height"], row["nationality"]) == ("2008-05-06", 185, "ESPAÑA") and row["bio_from"] == {"nationality": "fiba"}
 
     def test_a_person_with_no_roster_at_all_gets_the_bio_of_fiba(self):
         ext = {"feb:1": [{"source": "fiba", "birth": "2008-05-05", "height": "190", "nationality": "ESP"}]}

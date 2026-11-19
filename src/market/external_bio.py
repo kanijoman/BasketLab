@@ -9,7 +9,7 @@ import gzip
 import json
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple
 
 SOURCE = "fiba"
 FIELDS = ("birth", "height", "nationality")
@@ -21,22 +21,24 @@ def linked_persons(links: Optional[Mapping[str, Any]]) -> Dict[str, str]:
 
 
 def external_bio(games: Iterable[Mapping[str, Any]], persons: Mapping[str, str], source: str = SOURCE) -> Dict[str, List[Dict[str, Any]]]:
-    """``{FEB person id: [{source, birth, height, nationality}]}`` from the players of ``games`` (canonical documents) that ``persons`` links; a field no game says is left out."""
-    seen: Dict[str, Dict[str, Counter]] = {}
+    """``{FEB person id: [{source, season, birth, height, nationality}]}``, ONE candidate per season, from the players of ``games`` (canonical documents, season in ``_season``) that ``persons`` links;
+    a field no game of the season says is left out. Height and nationality change with the years, so each season keeps its own (#996)."""
+    seen: Dict[Tuple[str, Optional[str]], Dict[str, Counter]] = {}
     for game in games:
+        season = str(game["_season"]) if game.get("_season") else None
         for team in (game.get("BOXSCORE") or {}).get("TEAM") or []:
             for player in team.get("PLAYER") or []:
                 pid = str(player.get("id"))
                 if pid in persons:
-                    counts = seen.setdefault(pid, {f: Counter() for f in FIELDS})
+                    counts = seen.setdefault((pid, season), {f: Counter() for f in FIELDS})
                     for field in FIELDS:
                         if player.get(field):
                             counts[field][str(player[field])] += 1
     out: Dict[str, List[Dict[str, Any]]] = {}
-    for pid in sorted(seen):
-        values = {f: min(c.items(), key=lambda kv: (-kv[1], kv[0]))[0] for f, c in seen[pid].items() if c}
+    for (pid, season) in sorted(seen, key=lambda k: (k[0], k[1] or "")):
+        values = {f: min(c.items(), key=lambda kv: (-kv[1], kv[0]))[0] for f, c in seen[(pid, season)].items() if c}
         if values:
-            out.setdefault(persons[pid], []).append({"source": source, **values})
+            out.setdefault(persons[pid], []).append({"source": source, "season": season, **values})
     return out
 
 

@@ -33,8 +33,11 @@ export interface TalentRow {
   usage_pct: number; orating: number; drating: number; net_rtg: number; ast_pct: number; tov_pct_adv: number
   stl_pct: number; blk_pct: number; drb_pct: number; orb_pct: number; pie: number
   birth: string | null; height: number | null; position: string | null; position_group: 'G' | 'F' | 'C' | null; nationality: string | null; formacion: boolean | null; dorsal: number | null
-  /** Height, position, birth date or nationality that the roster of the row did not say and another team or season of the same person did: `{ height: '2024:10' }` (season:team). */
+  /** Height, position, birth date or nationality that the roster of the row did not say and another team or season of the same person did: `{ height: '2024:10' }` (`season:team` of a FEB roster, `source:season` of an external one). */
   bio_from: Record<string, string>
+  /** Every different nationality of the person, the closest season first (`nationality` is the first); a date of birth the sources disagree on is `['birth']` in `bio_conflict` (#996). */
+  nationalities: string[]
+  bio_conflict: string[]
   eligible: boolean
   per40: TalentRates | null
   role: TalentRole | null

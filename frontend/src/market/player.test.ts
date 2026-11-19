@@ -79,6 +79,14 @@ describe('the bio', () => {
     expect(bio.birth).toEqual({ value: '2004-05-06', from: null })
   })
 
+  it('reports every nationality of his latest row (two passports are two nationalities) and flags a birth date the sources disagree on (#996)', async () => {
+    const base = personRows(await rowsOf(LF2_KEY), ANA)[0]
+    const bio = bioOf([{ ...base, season: '2024', nationalities: ['ESPAÑA'], bio_conflict: [] }, { ...base, season: '2025', nationalities: ['ESLOVENIA', 'ESPAÑA'], bio_conflict: ['birth'] }])
+    expect(bio.nationalities).toEqual(['ESLOVENIA', 'ESPAÑA'])
+    expect(bio.birthConflict).toBe(true)
+    expect(bioOf([{ ...base, nationalities: undefined, bio_conflict: undefined } as unknown as SearchRow])).toMatchObject({ nationalities: [], birthConflict: false })
+  })
+
   it('says a field nobody says as no data, never as a zero (FBCYL has no bio)', async () => {
     const bio = bioOf(personRows(await rowsOf(FBCYL_KEY), (await rowsOf(FBCYL_KEY))[0].person_id))
     expect(bio.height).toEqual({ value: null, from: null })

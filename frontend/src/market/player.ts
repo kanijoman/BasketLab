@@ -49,6 +49,10 @@ export interface Bio {
   height: BioField<number>
   position: BioField<string>
   nationality: BioField<string>
+  /** Every different nationality (two passports are two nationalities), the closest season first. */
+  nationalities: string[]
+  /** The sources disagree on the date of birth, which never changes: worth a look. */
+  birthConflict: boolean
 }
 
 const latest = (rows: SearchRow[]) => [...rows].sort((a, b) => Number(b.season) - Number(a.season) || a.team_id.localeCompare(b.team_id))
@@ -67,6 +71,8 @@ export function bioOf(rows: SearchRow[]): Bio {
     height: field('height', r => r.height),
     position: fine.value !== null ? fine : field('position', r => r.position_group),          // the coarse group (G/F/C) only when no row has the fine position
     nationality: field('nationality', r => r.nationality),
+    nationalities: ordered.find(r => r.nationalities?.length)?.nationalities ?? [],
+    birthConflict: ordered.some(r => r.bio_conflict?.includes('birth')),
   }
 }
 

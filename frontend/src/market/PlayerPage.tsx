@@ -92,8 +92,9 @@ export default function PlayerPage() {
           <BioItem name="Nacimiento" field={bio.birth} />
           <BioItem name="Altura" field={bio.height} unit=" cm" />
           <BioItem name="Posición" field={bio.position} />
-          <BioItem name="Nacionalidad" field={bio.nationality} />
+          <BioItem name={bio.nationalities.length > 1 ? 'Nacionalidades' : 'Nacionalidad'} field={{ value: bio.nationalities.length ? bio.nationalities.join(' · ') : bio.nationality.value, from: bio.nationality.from }} />
         </dl>
+        {bio.birthConflict && <p role="status" className="mt-3 text-xs text-warn">Las fuentes no coinciden en la fecha de nacimiento: conviene revisarla.</p>}
       </Card>
       <Card title="Trayectoria y desglose por competición" padding="none">
         <DataTable columns={columns} data={lines} searchable={false} ariaLabel="Trayectoria por temporada y competición" emptyMessage="Sin temporadas." />
