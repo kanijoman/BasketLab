@@ -24,6 +24,7 @@ from src.market.competitions import CompetitionSeason, competitions_of
 from src.market.contract import TALENT_SCHEMA
 from src.market.profile import add_profiles
 from src.market.season_rows import attach_bio, season_player_rows
+from src.market.zones import ZONE_ORDER, competition_zones
 from src.services.competition_category import category_facts, category_of_competition
 
 INDEX = "index.json"
@@ -88,6 +89,15 @@ def _read_previous(out_dir: Path) -> Dict[str, Dict[str, Any]]:
     return {e["key"]: e for e in manifest.get("competitions", [])} if manifest.get("schema") == TALENT_SCHEMA else {}
 
 
+def _zones_file(out_dir: Path, sealer: Any, connection: Any, competition: CompetitionSeason, members: Sequence[Any], kept: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The sealed shots-by-zone file of a competition and season (#994, ``zones.py``) apart from the rows, so the search never downloads it; ``None`` when no shot is known."""
+    table = competition_zones(connection, [m.collection for m in members])
+    if not any(table["league"]):
+        return None
+    plain = json.dumps({"format": FORMAT, "zones": list(ZONE_ORDER), **table}, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return seal_file(out_dir, f"{competition.key}|zones", plain, [SCOPE], sealer, kept, SUBDIR)
+
+
 def _read_previous_identities(out_dir: Path) -> Optional[Dict[str, Any]]:
     try:
         manifest = json.loads((out_dir / INDEX).read_text(encoding="utf-8"))
@@ -143,7 +153,8 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
                 "groups": sorted({m.group for m in members}), **attributes}
         plain = json.dumps({"format": FORMAT, "competition": head, "rows": rows}, ensure_ascii=False, separators=(",", ":"), sort_keys=True, default=str)
         fields = seal_file(out_dir, competition.key, plain, [SCOPE], sealer, kept.get(competition.key), SUBDIR)
-        entries.append({**head, "players": len(rows), **fields})
+        zones = _zones_file(out_dir, sealer, connection, competition, members, (kept.get(competition.key) or {}).get("zones"))
+        entries.append({**head, "players": len(rows), **fields, **({"zones": zones} if zones else {})})
         rows_by_key[competition.key] = rows
         if on_competition:
             on_competition(competition, len(rows), len(members))
@@ -151,7 +162,7 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
     manifest = {"schema": TALENT_SCHEMA, "kind": "talent", "v": sealer.index_version, **sealer.index_extra(), "competitions": entries, **({"identities": identities} if identities else {})}
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))      # Vercel builds every branch: this one is data, not a project (#906 regression)
     _write_if_changed(out_dir / INDEX, (json.dumps(manifest, ensure_ascii=False, separators=(",", ":"), default=str) + "\n").encode("utf-8"))
-    referenced = {e["file"] for e in entries} | ({identities["file"]} if identities else set())
+    referenced = {e["file"] for e in entries} | {e["zones"]["file"] for e in entries if e.get("zones")} | ({identities["file"]} if identities else set())
     for path in (out_dir / SUBDIR).glob("*.json"):
         if f"{SUBDIR}{path.name}" not in referenced:
             path.unlink()

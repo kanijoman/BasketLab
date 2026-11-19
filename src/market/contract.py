@@ -12,6 +12,11 @@ from src.local_data.contract import ContractError, FileEntry, Wrap, _check, _ts_
 TALENT_SCHEMA = 1
 
 
+class TalentZonesEntry(FileEntry):
+    """The sealed shots by zone of a competition and season (#994): ``league`` and ``players`` (``<person_id>|<team_id>``) as ``[made, attempted]`` of the 10 zones of the engine, flattened."""
+    wraps: List[Wrap]
+
+
 class TalentCompetitionEntry(FileEntry):
     """The sealed rows of a competition and season (``players/``): one row per player, team and competition; the groups and phases of the competition are inside."""
     key: str
@@ -26,6 +31,7 @@ class TalentCompetitionEntry(FileEntry):
     level: NotRequired[int]
     category: NotRequired[Literal["senior", "formacion"]]                      # #914: from the catalogue; absent when it does not know the competition
     age_group: NotRequired[Literal["U14", "U16", "U18"]]                  # only in formacion
+    zones: NotRequired[TalentZonesEntry]                                       # #994: the shots by zone, a file of its own (the profile reads it, the search does not)
     competition_label: NotRequired[str]                                          # the name people read (the youth codes of FEB are not)
 
 
@@ -44,8 +50,8 @@ class TalentManifest(TypedDict):
     identities: NotRequired[TalentIdentitiesEntry]
 
 
-MODELS = (TalentCompetitionEntry, TalentIdentitiesEntry, TalentManifest)
-FILE_ENTRIES = (TalentCompetitionEntry, TalentIdentitiesEntry)
+MODELS = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentManifest)
+FILE_ENTRIES = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry)
 
 
 def validate_talent_manifest(manifest: Any) -> None:

@@ -105,6 +105,22 @@ describe('the profile page', () => {
     expect(screen.getByRole('link', { name: /Comparar con otros jugadores/ })).toHaveAttribute('href', '/comparar?j=feb%3A10100')
   })
 
+  it('shows the shots by zone of the row of the profile with the league percentage beside it, and says when the row has no shots (#994)', async () => {
+    open('feb:10101')
+    const section = (await screen.findByRole('heading', { name: /Zonas de tiro/ })).closest('section')!
+    const table = await within(section).findByRole('table', { name: /Tiros por zona/ })
+    expect(within(table).getByRole('rowheader', { name: 'Área restringida' })).toBeInTheDocument()
+    expect(within(table).getAllByRole('row')).toHaveLength(1 + 10 + 1)                    // header, ten zones and the total
+    expect(within(table).getByRole('columnheader', { name: /% liga/ })).toBeInTheDocument()
+  })
+
+  it('does not draw a zones table for a player without shots in the file', async () => {
+    open('feb:10200')
+    const section = (await screen.findByRole('heading', { name: /Zonas de tiro/ })).closest('section')!
+    expect(await within(section).findByText(/Sin tiros registrados/)).toBeInTheDocument()
+    expect(within(section).queryByRole('table')).not.toBeInTheDocument()
+  })
+
   it('says it when nobody has that id, and offers the way back to the search', async () => {
     open('feb:no-existe')
     expect(await screen.findByText(/No encontramos a este jugador/)).toBeInTheDocument()

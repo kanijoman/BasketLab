@@ -41,7 +41,8 @@ def test_the_committed_files_open_with_the_open_key_and_are_what_the_exporter_ma
     assert [e["key"] for e in committed] == [e["key"] for e in fresh]
     for old, new in zip(committed, fresh):
         assert _rows(vectors.OUT, old) == _rows(today, new), f"{old['key']}: regenerate with python tests/local_vectors/generate_talent_data.py"
-        assert {k: old[k] for k in old if k not in ("file", "bytes", "sha256", "wraps")} == {k: new[k] for k in new if k not in ("file", "bytes", "sha256", "wraps")}
+        assert {k: old[k] for k in old if k not in ("file", "bytes", "sha256", "wraps", "zones")} == {k: new[k] for k in new if k not in ("file", "bytes", "sha256", "wraps", "zones")}
+        assert _rows(vectors.OUT, old["zones"]) == _rows(today, new["zones"]), f"{old['key']} zones: regenerate with python tests/local_vectors/generate_talent_data.py"
 
 
 def test_the_committed_identities_say_who_the_linked_fbcyl_player_is(today):

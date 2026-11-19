@@ -137,7 +137,8 @@ def test_a_second_run_keeps_every_byte_and_a_corrected_game_changes_only_its_com
     after = _tree(tmp_path)
     changed = {k for k in set(before) | set(after) if before.get(k) != after.get(k)}
     assert {k for k in changed if k.startswith("players/")} and all("lfchallenge" in k for k in changed if k.startswith("players/")) and "index.json" in changed
-    assert sum(1 for k in after if k.startswith("players/")) == 2                       # the old file of the corrected competition is gone
+    assert sum(1 for k in after if k.startswith("players/") and "zones" not in k) == 2          # the old file of the corrected competition is gone
+    assert sum(1 for k in after if "zones" in k) == 2 and not [k for k in changed if "zones" in k]          # a corrected box score does not touch the shots: the zones keep their bytes (#994)
 
 
 def test_collections_that_say_nothing_are_reported_and_the_rest_is_published(connection, tmp_path):

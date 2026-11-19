@@ -16,6 +16,7 @@ import Spinner from '@/components/ui/Spinner'
 import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './data'
 import { bioOf, personRows, radarAxes, trajectory, type BioField } from './player'
 import PlayerRadar from './PlayerRadar'
+import PlayerZones from './PlayerZones'
 import { toSearchRow, type SearchRow } from './search'
 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
@@ -119,6 +120,7 @@ export default function PlayerPage() {
           <PlayerRadar axes={axes} name={bio.name} />
         </div>
       </Card>
+      <PlayerZones row={row} />
     </Shell>
   )
 }
