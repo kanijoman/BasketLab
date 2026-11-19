@@ -15,6 +15,8 @@ import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './data'
 import { bioOf, personRows, radarAxes, trajectory, type BioField } from './player'
+import PlayerPhoto from '@/components/ui/PlayerPhoto'
+import { playerPhotoUrl } from '@/lib/playerPhoto'
 import PlayerRadar from './PlayerRadar'
 import PlayerZones from './PlayerZones'
 import { toSearchRow, type SearchRow } from './search'
@@ -89,7 +91,10 @@ export default function PlayerPage() {
   return (
     <Shell>
       <Back />
-      <PageHeader title={bio.name} subtitle={`${main.team_name} · ${main.competition} · ${main.season_label}`} />
+      <div className="flex items-center gap-4">
+        <PlayerPhoto name={bio.name} src={playerPhotoUrl(personId)} size={72} />
+        <PageHeader className="min-w-0 flex-1" title={bio.name} subtitle={`${main.team_name} · ${main.competition} · ${main.season_label}`} />
+      </div>
       <Link to={`/comparar?j=${encodeURIComponent(personId)}`} className="inline-flex items-center gap-1 text-sm font-medium text-accent-text hover:underline"><Scale className="h-4 w-4" aria-hidden="true" />Comparar con otros jugadores</Link>
       {failed.map(name => <p key={name} role="alert" className="text-sm text-bad">No se ha podido abrir {name}: la ficha puede estar incompleta.</p>)}
       <Card title="Datos personales">

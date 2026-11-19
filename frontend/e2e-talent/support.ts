@@ -12,10 +12,16 @@ export interface Serve {
   missing?: (path: string) => boolean
   /** Files answered with 500. */
   broken?: (path: string) => boolean
+  /** ``false``: the photos of FEB do not load (404). */
+  photos?: boolean
 }
 
 /** Serve the real publication from the vectors: every request to the base of `talent-data` is answered from disk, so the browser opens the real sealed files with the real open key. */
+const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64')
+
 export async function serveTalent(page: Page, options: Serve = {}): Promise<void> {
+  // the photos of FEB (#1010) are a third party: the tests never go out to the network, they get a one-pixel image (or none, with `photos: false`, as when the CDN does not answer)
+  await page.route('https://imagenes.feb.es/**', route => (options.photos === false ? route.fulfill({ status: 404, body: '' }) : route.fulfill({ body: PIXEL, contentType: 'image/png' })))
   await page.route(`${BASE}**`, route => {
     const path = decodeURIComponent(route.request().url().slice(BASE.length).split('?')[0])
     const file = join(DATA, path)
