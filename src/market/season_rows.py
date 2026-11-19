@@ -92,11 +92,11 @@ def _first(candidates: List[Dict[str, Any]], read: Any) -> Tuple[Any, Optional[D
     return None, None
 
 
-def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str, external: List[Mapping[str, Any]]) -> Dict[str, Any]:
+def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str, external: List[Mapping[str, Any]], borrowed: bool = False) -> Dict[str, Any]:
     """The bio of one row, FIELD BY FIELD (#910, #996): every source says it (FEB rosters of any season and team, linked external players) and the CLOSEST season wins (``_order``), because
     height, position and nationality change with the years; ``bio_from`` says where a value came from when it is not the roster of the row. The date of birth does not change: a different one
     is in ``bio_conflict``. ``nationalities`` lists every different passport (closest first), ``nationality`` is the first. Formation and shirt number belong to the team and the season:
-    they come from that roster, or from another team of the season, never from another season."""
+    they come from that roster, or from another team of the season, never from another season, and never from the FEB club of a ``borrowed`` bio (a FBCYL player linked to a FEB person)."""
     team = str(row["team_id"])
     ordered = sorted(_candidates(mine, external), key=lambda c: _order(c, season, team))
     fields: Dict[str, Any] = {}
@@ -110,18 +110,25 @@ def _bio_of(row: Mapping[str, Any], mine: List[Mapping[str, Any]], season: str, 
     fields["position_group"], _ = _first(ordered, lambda r: position_group(r.get("position")))
     fields["nationalities"] = nationalities(c["row"].get("nationality") for c in ordered)
     fields["bio_conflict"] = ["birth"] if len({c["row"].get("birth") for c in ordered if c["row"].get("birth")}) > 1 else []
-    same_season = [c for c in ordered if c["source"] == "feb" and c["season"] == season]
+    same_season = [] if borrowed else [c for c in ordered if c["source"] == "feb" and c["season"] == season]
     fields["formacion"], _ = _first(same_season, lambda r: r.get("formacion"))
     fields["dorsal"], _ = _first(same_season, lambda r: r.get("dorsal"))
     return {**fields, "bio_from": origin}
 
 
-def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str, external: Optional[Mapping[str, List[Mapping[str, Any]]]] = None) -> List[Dict[str, Any]]:
+def attach_bio(rows: Iterable[Mapping[str, Any]], roster: Iterable[Mapping[str, Any]], season: str, external: Optional[Mapping[str, List[Mapping[str, Any]]]] = None,
+               linked: Optional[Mapping[str, str]] = None) -> List[Dict[str, Any]]:
     """The rows with ``full_name`` and the bio of the FEB rosters (``roster_sweep``, every season) and of the linked external players (``external``, #979): birth date, height (cm), position, nationality(ies), formacion and shirt number.
 
-    Each field is resolved on its own, by the closest season (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say."""
+    Each field is resolved on its own, by the closest season (``_bio_of``); what nobody says is None, never a guess (FBCYL has no roster). ``position_group`` (G/F/C) is the coarse position every source can say.
+    ``linked`` is ``{person id: FEB person id}`` of the ``linked`` identity links (#996): such a row says ``linked_to`` (its own ``person_id`` is not rewritten) and takes the bio of the FEB person."""
     by_person: Dict[str, List[Mapping[str, Any]]] = {}
     for r in roster:
         by_person.setdefault(r["person_id"], []).append(r)
-    external = external or {}
-    return [{**row, **_bio_of(row, by_person.get(row["person_id"], []), str(season), list(external.get(row["person_id"], [])))} for row in rows]
+    external, linked = external or {}, linked or {}
+    out = []
+    for row in rows:
+        feb = linked.get(row["person_id"])
+        who = feb or row["person_id"]
+        out.append({**row, **_bio_of(row, by_person.get(who, []), str(season), list(external.get(who, [])), borrowed=feb is not None), "linked_to": feb})
+    return out

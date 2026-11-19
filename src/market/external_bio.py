@@ -59,3 +59,9 @@ def read_external_bio(root: Any, source: str = SOURCE) -> Dict[str, List[Dict[st
     if not path.is_file() or not (root / source).is_dir():
         return {}
     return external_bio(read_games(root / source), linked_persons(json.loads(path.read_text(encoding="utf-8"))), source)
+
+
+def read_person_links(root: Any, source: str) -> Dict[str, str]:
+    """``{external id: FEB person id}`` of the ``linked`` links of ``links/<source>.json`` at ``root`` (no file: nobody; a file that cannot be read raises, so a broken one is not published as 'no links')."""
+    path = Path(root) / "links" / f"{source}.json"
+    return linked_persons(json.loads(path.read_text(encoding="utf-8"))) if path.is_file() else {}
