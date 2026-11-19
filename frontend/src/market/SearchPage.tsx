@@ -1,15 +1,19 @@
 // The search of BasketLab Talent (B3, #879): filters over the players of the competitions of a season, a table and its CSV. The season, the competitions and the filters live in
 // the address (shareable); the rules are in `search.ts`. It starts on the latest season published with its competitions.
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Scale, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
+import Checkbox from '@/components/ui/Checkbox'
 import DataTable from '@/components/ui/DataTable'
 import EmptyState from '@/components/ui/EmptyState'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { loadCompetitionRows, loadTalentCompetitions } from './data'
+import CompareBar from './CompareBar'
+import { MAX_COMPARED, toggleCompare } from './compare'
+import { recallCompare, rememberCompare } from './compareMemory'
 import FilterChips from './FilterChips'
 import { byMinutes } from './activeFilters'
 import SearchFiltersPanel from './SearchFiltersPanel'
@@ -18,18 +22,21 @@ import { applySearch, csvOf, defaultSearch, filtersFromParams, filtersToParams, 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
 const cell = (value: number | string | null | undefined) => (value === null || value === undefined || value === '' ? dash : value)
 
-function columns(many: boolean, metric: string): ColumnDef<SearchRow, unknown>[] {
+interface Selection { ids: string[]; onToggle: (id: string) => void }
+
+function columns(many: boolean, metric: string, selection: Selection): ColumnDef<SearchRow, unknown>[] {
   const cols: ColumnDef<SearchRow, unknown>[] = [
-    { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 190,
+    { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 220,
       cell: c => {
-        const name = c.row.original.full_name ?? c.row.original.name
+        const row = c.row.original
+        const name = row.full_name ?? row.name
+        const checked = selection.ids.includes(row.person_id)
         return (
-          <span className="flex items-center gap-1.5">
-            <Link to={`/jugador/${encodeURIComponent(c.row.original.person_id)}`} className="font-medium text-accent-text hover:underline">{name}</Link>
-            {/* comparing is an action of the row, next to the name, not a column of data (#1008) */}
-            <Link to={`/comparar?j=${encodeURIComponent(c.row.original.person_id)}`} aria-label={`Comparar a ${name}`} title="Comparar con otros jugadores" className="shrink-0 rounded p-1 text-ink-muted hover:bg-surface-raised hover:text-accent-text">
-              <Scale className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
+          <span className="flex items-center gap-2">
+            {/* comparing is ticked in the row, next to the name, not a column of data (#1008, #1009); a fourth cannot be ticked */}
+            <Checkbox label={<span className="sr-only">Comparar a {name}</span>} checked={checked} disabled={!checked && selection.ids.length >= MAX_COMPARED}
+              title={!checked && selection.ids.length >= MAX_COMPARED ? `Máximo ${MAX_COMPARED} jugadores` : 'Elegir para comparar'} onChange={() => selection.onToggle(row.person_id)} />
+            <Link to={`/jugador/${encodeURIComponent(row.person_id)}`} className="font-medium text-accent-text hover:underline">{name}</Link>
           </span>
         )
       } },
@@ -59,6 +66,8 @@ export default function SearchPage() {
   const ofSeason = useMemo(() => entries.filter(e => e.season === season), [entries, season])
   const chosen = params.has('c') ? (params.get('c') ?? '').split(',').filter(k => ofSeason.some(e => e.key === k)) : ofSeason.length > MAX_AUTO_COMPETITIONS ? [] : ofSeason.map(e => e.key)
   const filters = useMemo(() => filtersFromParams(params), [params])
+  const [selected, setSelected] = useState<string[]>(recallCompare)          // the players ticked to compare: remembered while the tab is open (#1009)
+  useEffect(() => { rememberCompare(selected) }, [selected])
   const update = (patch: Record<string, string | null>, filtersNext = filters) => {
     const next = filtersToParams(filtersNext)
     for (const key of ['s', 'c']) if (params.has(key)) next.set(key, params.get(key)!)
@@ -101,8 +110,9 @@ export default function SearchPage() {
               </span>. Marca «Incluir los que no tienen el dato» para verlos.
             </p>
           )}
-          <DataTable columns={columns(chosen.length > 1, filters.metric)} data={result.rows} loading={loading} searchable={false} ariaLabel="Jugadores encontrados"
+          <DataTable columns={columns(chosen.length > 1, filters.metric, { ids: selected, onToggle: id => setSelected(s => toggleCompare(s, id)) })} data={result.rows} loading={loading} searchable={false} ariaLabel="Jugadores encontrados"
             emptyMessage="Ningún jugador cumple los filtros." exportOptions={{ filename: `talent-${season}`, csvData: csv.data, csvHeaders: csv.headers }} />
+          <CompareBar ids={selected} onClear={() => setSelected([])} />
         </>
       )}
     </div>

@@ -10,7 +10,11 @@ import type { WebDataHost } from '@/test/webDataHost'
 
 /** The search of Talent (B3, #879) as the staff uses it, over the REAL publication of the exporter: LF2 2025 (with bio) and FBCYL 2026 (without). */
 let host: WebDataHost
-beforeEach(() => { localStorage.clear(); resetTalentData(); setTalentBase(TALENT_BASE); host = serveTalentData() })
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); resetTalentData(); setTalentBase(TALENT_BASE); host = serveTalentData() })
+
+const boxes = () => screen.getAllByRole('checkbox', { name: /^Comparar a / })
+/** Tick the i-th player: the table draws its cells again after each click, so each one is looked up when it is used. */
+const tick = async (i: number) => { await userEvent.click((await screen.findAllByRole('checkbox', { name: /^Comparar a / }))[i]) }
 
 const open = (path = '/') => render(
   <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -114,43 +118,34 @@ describe('the search page', () => {
     expect(link).toHaveAttribute('href', '/jugador/feb%3A10100')
   })
 
-  it('offers to compare each player: a link to the comparator with him already chosen (#881)', async () => {
+  it('lets the staff tick the players to compare, and a bar takes them to the comparator with them chosen (#1009)', async () => {
     open('/?s=2025')
-    const links = await screen.findAllByRole('link', { name: /Comparar a ANA PRUEBA UNO/ })
-    expect(links[0]).toHaveAttribute('href', '/comparar?j=feb%3A10100')
+    expect(screen.queryByRole('region', { name: /Selección para comparar/ })).not.toBeInTheDocument()
+    await tick(0)
+    await tick(1)
+    const bar = await screen.findByRole('region', { name: /Selección para comparar/ })
+    const go = within(bar).getByRole('link', { name: /Comparar 2 jugadores/ })
+    expect(decodeURIComponent(go.getAttribute('href')!)).toMatch(/^\/comparar\?j=[^,]+,[^,]+$/)
+    expect(JSON.parse(sessionStorage.getItem('talent-compare')!)).toHaveLength(2)          // remembered: the comparator and the navigation find it
+    await userEvent.click(within(bar).getByRole('button', { name: /Quitar la selección/ }))
+    expect(screen.queryByRole('region', { name: /Selección para comparar/ })).not.toBeInTheDocument()
+    expect(boxes()[0]).not.toBeChecked()
   })
 
-  it('shows the filters that are on as chips and takes one off with a click, leaving the others (#1008)', async () => {
+  it('stops at three: with three ticked the rest cannot be ticked and the bar says why (#1009)', async () => {
     open('/?s=2025')
-    await screen.findByText('ANA PRUEBA UNO')
-    expect(screen.queryByRole('list', { name: 'Filtros activos' })).not.toBeInTheDocument()
-    await userEvent.type(screen.getByRole('spinbutton', { name: /Edad mínima/i }), '18')
-    await userEvent.click(screen.getByRole('checkbox', { name: /^Pívots$/ }))
-    const chips = await screen.findByRole('list', { name: 'Filtros activos' })
-    expect(within(chips).getAllByRole('listitem').map(li => li.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Edad: desde 18'), expect.stringContaining('Posición: pívots')]))
-    await userEvent.click(within(chips).getByRole('button', { name: /Quitar el filtro Edad/ }))
-    await waitFor(() => expect(screen.getByRole('spinbutton', { name: /Edad mínima/i })).toHaveValue(null))
-    expect(screen.getByRole('checkbox', { name: /^Pívots$/ })).toBeChecked()
-    await userEvent.click(screen.getByRole('button', { name: /Limpiar filtros/ }))
-    await waitFor(() => expect(screen.queryByRole('list', { name: 'Filtros activos' })).not.toBeInTheDocument())
+    await screen.findAllByRole('checkbox', { name: /^Comparar a / })
+    for (const i of [0, 1, 2]) await tick(i)
+    expect(boxes()[3]).toBeDisabled()
+    expect(boxes()[0]).toBeEnabled()
+    expect(screen.getByText(/Máximo 3 jugadores/)).toBeInTheDocument()
   })
 
-  it('has a button that opens and closes the filters on a phone, and says how many are on (#1008)', async () => {
-    open('/?s=2025&amin=30')
-    await screen.findByText(/encontrad/i)
-    const toggle = screen.getByRole('button', { name: /^Filtros \(1\)$/ })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    await userEvent.click(toggle)
-    expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(document.getElementById(toggle.getAttribute('aria-controls')!)).not.toBeNull()
-  })
-
-  it('lists the player with the most minutes first, and compare is an action of the row, not a column of data (#1008)', async () => {
+  it('keeps the ticked players when you come back to the search (#1009)', async () => {
+    sessionStorage.setItem('talent-compare', JSON.stringify(['feb:10100']))
     open('/?s=2025')
-    await screen.findByText('ANA PRUEBA UNO')
-    expect(screen.queryByRole('columnheader', { name: 'Comparar' })).not.toBeInTheDocument()
-    const minutes = within(screen.getByRole('region', { name: /Jugadores encontrados/ })).getAllByRole('row').slice(1).map(r => Number(within(r).getAllByRole('cell')[6]?.textContent))
-    expect([...minutes].sort((a, b) => b - a)).toEqual(minutes)
+    expect(await screen.findByRole('region', { name: /Selección para comparar/ })).toBeInTheDocument()
+    expect((await screen.findAllByRole('checkbox', { name: /^Comparar a ANA PRUEBA UNO/ }))[0]).toBeChecked()
   })
 
   it('has the table named for the screen reader', async () => {

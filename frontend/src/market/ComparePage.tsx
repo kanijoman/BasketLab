@@ -1,18 +1,19 @@
 // The comparator of BasketLab Talent (B5, #881): two or three players side by side, in the address (`/comparar?j=feb:1,feb:2`). The rules are in `compare.ts`.
 // Players of different leagues can be mixed: only the competitions that hold the chosen players are opened (a FEB person has his FEB ones and the FBCYL ones linked to him, `identities`), and all of them
 // only while the staff types a name to add one. Each player is read in HIS competition and season: the page says that a percentile is never compared across competitions.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Scale, X } from 'lucide-react'
 import Card from '@/components/ui/Card'
+import ExportButton from '@/components/ui/ExportButton'
 import EmptyState from '@/components/ui/EmptyState'
 import { Field, Input } from '@/components/ui/Field'
 import Button, { IconButton } from '@/components/ui/Button'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { rememberCompare } from './compareMemory'
-import { compareLines, comparePlayers, findPlayers, MAX_COMPARED, parseCompare, toggleCompare } from './compare'
+import { compareCsv, compareLines, comparePlayers, findPlayers, MAX_COMPARED, parseCompare, toggleCompare } from './compare'
 import { loadCompetitionRows, loadIdentities, loadTalentCompetitions } from './data'
 import { radarAxes } from './player'
 import PlayerRadar from './PlayerRadar'
@@ -44,6 +45,8 @@ export default function ComparePage() {
     [loaded.map(q => q.dataUpdatedAt).join(), entries])
   const { players, missing } = useMemo(() => comparePlayers(rows, ids), [rows, ids])
   const lines = useMemo(() => compareLines(players), [players])
+  const csv = useMemo(() => compareCsv(players, lines), [players, lines])
+  const tableRef = useRef<HTMLTableElement>(null)
   const found = useMemo(() => (searching ? findPlayers(rows, typed, players.map(p => p.id)) : []), [rows, typed, searching, players])
   const setIds = (next: string[]) => setParams(next.length ? { j: next.join(',') } : {}, { replace: true })
 
@@ -104,14 +107,15 @@ export default function ComparePage() {
               </ul>
             </div>
           </Card>
-          <Card title="Comparación" padding="none">
+          <Card title="Comparación" padding="none" actions={<ExportButton filename={`comparacion-${players.map(p => p.id.replace(/\W+/g, '-')).join('_')}`} pdfTitle={`Comparación — ${players.map(p => p.name).join(' · ')}`} csvHeaders={csv.headers} csvData={csv.data} captureRef={tableRef} />}>
             {/* `relative`: the «(el mejor)» of the screen reader is absolute and, without it, would stretch the page (not the scroller) to the right on a phone */}
             <div role="region" tabIndex={0} aria-label="Tabla de comparación, desplazable" className="relative overflow-x-auto">
-              <table aria-label="Comparación de jugadores" className="w-full min-w-[32rem] border-collapse text-sm">
+              <table ref={tableRef} aria-label="Comparación de jugadores" className="w-full min-w-[32rem] border-collapse text-sm">
                 <thead>
                   <tr>
                     <th scope="col" className="p-2 text-left text-xs font-medium text-ink-muted"><span className="sr-only">Dato</span></th>
                     {players.map(p => <th key={p.id} scope="col" className="p-2 text-left font-medium text-ink">{p.name}</th>)}
+                    {players.length === 2 && <th scope="col" className="p-2 text-left font-medium text-ink-muted">Diferencia</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -123,6 +127,7 @@ export default function ComparePage() {
                           {c.text ?? dash}{c.best && <span className="sr-only"> (el mejor)</span>}
                         </td>
                       ))}
+                      {players.length === 2 && <td className="p-2 tabular-nums text-ink-muted">{l.diff ?? dash}</td>}
                     </tr>
                   ))}
                 </tbody>

@@ -44,3 +44,18 @@ test('the table of the comparator that scrolls sideways is a region the keyboard
   await region.focus()
   await expect(region).toBeFocused()
 })
+
+test('the bar of the players ticked to compare fits on a phone and does not cover the list for good', async ({ page }) => {
+  await serveTalent(page)
+  await page.setViewportSize({ width: 320, height: 700 })
+  await open(page, '/?s=2025')
+  const boxes = page.getByRole('checkbox', { name: /^Comparar a / })
+  for (const i of [0, 1, 2]) await boxes.nth(i).check()
+  const bar = page.getByRole('region', { name: 'Selección para comparar' })
+  await expect(bar).toBeVisible()
+  const { scroll, client } = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }))
+  expect(scroll).toBeLessThanOrEqual(client)
+  const box = await bar.boundingBox()
+  expect(box!.x).toBeGreaterThanOrEqual(0)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(320)
+})
