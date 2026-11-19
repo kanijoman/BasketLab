@@ -17,6 +17,10 @@ export type SearchRow = TalentRow & {
   comp_key: string; competition: string; season: string; season_label: string; gender?: 'F' | 'M'; level?: number; age: number | null
 }
 
+/** The row of the publication of a competition entry as a row of the search (what the page and the profile of a player read): its competition, season, gender and level, and the age on 31/12. */
+export const toSearchRow = (entry: TalentCompetitionEntry, row: TalentRow): SearchRow =>
+  ({ ...row, comp_key: entry.key, competition: entry.competition_label ?? entry.competition, season: entry.season, season_label: entry.season_label, gender: entry.gender, level: entry.level, age: ageOn1231(row.birth, entry.season) })
+
 export interface SearchFilters {
   ageMin: number | null; ageMax: number | null
   heightMin: number | null; heightMax: number | null

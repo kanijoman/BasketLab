@@ -108,6 +108,12 @@ describe('the search page', () => {
     expect(await screen.findByText(/No se ha podido abrir L\.F\.-2/)).toBeInTheDocument()
   })
 
+  it('links each player to his profile, with the id in the address (#880)', async () => {
+    open('/?s=2025')
+    const link = await screen.findByRole('link', { name: 'ANA PRUEBA UNO' })
+    expect(link).toHaveAttribute('href', '/jugador/feb%3A10100')
+  })
+
   it('has the table named for the screen reader', async () => {
     open('/?s=2025')
     const table = await screen.findByRole('region', { name: /Jugadores encontrados/i })

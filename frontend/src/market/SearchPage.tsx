@@ -2,23 +2,24 @@
 // the address (shareable); the rules are in `search.ts`. It starts on the latest season published with its competitions.
 import { useMemo } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Search } from 'lucide-react'
 import DataTable from '@/components/ui/DataTable'
 import EmptyState from '@/components/ui/EmptyState'
 import PageHeader from '@/components/ui/PageHeader'
 import Spinner from '@/components/ui/Spinner'
-import { loadCompetitionRows, loadTalentCompetitions, type TalentCompetitionEntry } from './data'
+import { loadCompetitionRows, loadTalentCompetitions } from './data'
 import SearchFiltersPanel from './SearchFiltersPanel'
-import { ageOn1231, applySearch, csvOf, defaultSearch, filtersFromParams, filtersToParams, MAX_AUTO_COMPETITIONS, METRICS, type SearchRow } from './search'
+import { applySearch, csvOf, defaultSearch, filtersFromParams, filtersToParams, MAX_AUTO_COMPETITIONS, METRICS, toSearchRow, type SearchRow } from './search'
 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
 const cell = (value: number | string | null | undefined) => (value === null || value === undefined || value === '' ? dash : value)
 
 function columns(many: boolean, metric: string): ColumnDef<SearchRow, unknown>[] {
   const cols: ColumnDef<SearchRow, unknown>[] = [
-    { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 190 },
+    { id: 'name', header: 'Jugador', accessorFn: r => r.full_name ?? r.name, size: 190,
+      cell: c => <Link to={`/jugador/${encodeURIComponent(c.row.original.person_id)}`} className="font-medium text-accent-text hover:underline">{c.row.original.full_name ?? c.row.original.name}</Link> },
     { id: 'team', header: 'Equipo', accessorFn: r => r.team_name, size: 170 },
     ...(many ? [{ id: 'competition', header: 'Competición', accessorFn: (r: SearchRow) => r.competition, size: 150 }] : []),
     { id: 'age', header: 'Edad (31/12)', accessorFn: r => r.age ?? undefined, sortUndefined: 'last', cell: c => cell(c.row.original.age), size: 90 },
@@ -35,9 +36,6 @@ function columns(many: boolean, metric: string): ColumnDef<SearchRow, unknown>[]
   }
   return cols
 }
-
-const withCompetition = (entry: TalentCompetitionEntry, rows: Awaited<ReturnType<typeof loadCompetitionRows>>['rows']): SearchRow[] =>
-  rows.map(r => ({ ...r, comp_key: entry.key, competition: entry.competition_label ?? entry.competition, season: entry.season, season_label: entry.season_label, gender: entry.gender, level: entry.level, age: ageOn1231(r.birth, entry.season) }))
 
 export default function SearchPage() {
   const [params, setParams] = useSearchParams()
@@ -57,7 +55,7 @@ export default function SearchPage() {
   const loaded = useQueries({ queries: chosen.map(key => ({ queryKey: ['talent-rows', key], queryFn: () => loadCompetitionRows(key) })) })
   const failed = chosen.filter((_, i) => loaded[i]?.isError).map(k => (ofSeason.find(e => e.key === k)?.competition_label ?? ofSeason.find(e => e.key === k)?.competition) ?? k)
   const loading = loaded.some(q => q.isLoading)
-  const all = useMemo(() => loaded.flatMap((q, i) => (q.data ? withCompetition(ofSeason.find(e => e.key === chosen[i])!, q.data.rows) : [])),
+  const all = useMemo(() => loaded.flatMap((q, i) => (q.data ? q.data.rows.map(r => toSearchRow(ofSeason.find(e => e.key === chosen[i])!, r)) : [])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loaded.map(q => q.dataUpdatedAt).join(), chosen.join(), ofSeason])
   const result = useMemo(() => applySearch(all, filters), [all, filters])
