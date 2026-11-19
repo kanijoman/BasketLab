@@ -42,7 +42,7 @@ describe('the profile page', () => {
   })
 
   it('opens only the competitions of the league of the player: a FBCYL one does not download the FEB files', async () => {
-    const fbcyl = (await (async () => { setTalentBase(TALENT_BASE); return loadCompetitionRows(FBCYL_KEY) })()).rows[0]
+    const fbcyl = (await (async () => { setTalentBase(TALENT_BASE); return loadCompetitionRows(FBCYL_KEY) })()).rows.find(r => !r.linked_to)!
     resetTalentData(); host.requested.length = 0
     open(fbcyl.person_id)
     await screen.findByRole('heading', { level: 1 })
@@ -53,7 +53,7 @@ describe('the profile page', () => {
   })
 
   it('says «no data» for what a FBCYL player does not have (no bio) and never a zero', async () => {
-    const fbcyl = (await loadCompetitionRows(FBCYL_KEY)).rows[0]
+    const fbcyl = (await loadCompetitionRows(FBCYL_KEY)).rows.find(r => !r.linked_to)!
     resetTalentData()
     open(fbcyl.person_id)
     expect(await screen.findByText(/Altura/)).toBeInTheDocument()
@@ -75,6 +75,28 @@ describe('the profile page', () => {
     await userEvent.selectOptions(choose, other)
     await waitFor(() => expect(choose).toHaveValue((other as HTMLOptionElement).value))
     expect(screen.getByRole('img', { name: /Perfil de ANA PRUEBA UNO/ })).toBeInTheDocument()
+  })
+
+  it('puts the FBCYL trajectory of a linked player in the profile of the FEB person, marked as coming from there (#996)', async () => {
+    open(ANA)
+    const trajectory = (await screen.findByRole('heading', { name: /Trayectoria/ })).closest('section')!
+    expect(await within(trajectory).findByText(/Primera Nacional Femenina/)).toBeInTheDocument()
+    expect(within(trajectory).getByText(/L\.F\.-2/)).toBeInTheDocument()
+    expect(within(trajectory).getByText('Enlazada de FBCYL')).toBeInTheDocument()
+    expect(within(trajectory).getAllByText(/2026/).length).toBeGreaterThan(0)
+  })
+
+  it('sends the profile of a linked FBCYL player to the one of her FEB person, and opens the FBCYL files only for who has them linked', async () => {
+    const linked = (await loadCompetitionRows(FBCYL_KEY)).rows.find(r => r.linked_to)!
+    resetTalentData()
+    open(linked.person_id)
+    expect(await screen.findByRole('heading', { level: 1, name: /ANA PRUEBA UNO/ })).toBeInTheDocument()
+    expect((await screen.findAllByText(/Primera Nacional Femenina/)).length).toBeGreaterThan(0)
+    resetTalentData(); host.requested.length = 0
+    open('feb:10200')
+    await screen.findByRole('heading', { level: 1, name: /BEA PRUEBA DOS/ })
+    const manifest = JSON.parse(readTalent('index.json'))
+    expect(host.requested).not.toContain(manifest.competitions.find((c: { key: string }) => c.key === FBCYL_KEY).file)
   })
 
   it('says it when nobody has that id, and offers the way back to the search', async () => {

@@ -13,7 +13,7 @@ from src.market.contract import validate_talent_manifest  # noqa: E402
 from src.market.external_bio import read_person_links  # noqa: E402
 from src.market.season_rows import attach_bio  # noqa: E402
 
-FBCYL_ID, FEB_ID = "fbcyl:34001-00", "feb:10100"
+FBCYL_ID, FEB_ID = "fbcyl:34004-08", "feb:10100"
 ROSTER = [{"person_id": FEB_ID, "season": "2025", "team_id": "101", "name": "ANA PRUEBA UNO CASTRO", "birth": "2004-05-06", "height": 178, "position": "Base", "nationality": "ESPAÑA", "formacion": True, "dorsal": 7}]
 
 

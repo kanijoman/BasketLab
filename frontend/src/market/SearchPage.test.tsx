@@ -52,8 +52,8 @@ describe('the search page', () => {
 
   it('hides the players without the data a filter asks for, says how many, and brings them back on request', async () => {
     open('/?s=2026')
-    await screen.findByText(/encontrad/i)                                    // FBCYL has no date of birth
-    await userEvent.type(screen.getByRole('spinbutton', { name: /Edad mínima/i }), '18')
+    await screen.findByText(/encontrad/i)                                    // FBCYL has no date of birth (but the linked player, who inherits it and is 22: nobody is 30)
+    await userEvent.type(screen.getByRole('spinbutton', { name: /Edad mínima/i }), '30')
     expect(await screen.findByText(/0 jugadores? encontrad/i)).toBeInTheDocument()
     expect(screen.getByText(/ocultos? por no tener el dato/i)).toBeInTheDocument()
     expect(screen.getByText(/edad/i, { selector: '[data-testid="hidden-detail"]' })).toBeInTheDocument()

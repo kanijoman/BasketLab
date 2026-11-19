@@ -33,7 +33,7 @@ ROSTER = [
     {"person_id": "feb:10200", "season": "2025", "team_id": "102", "name": "BEA PRUEBA DOS", "birth": "2001-11-20", "height": 185, "position": "Alero", "nationality": "ESPAÑA", "formacion": False, "dorsal": 9},
 ]
 
-LINKS = {"fbcyl:34001-00": "feb:10100"}          # a linked FBCYL player (#996): her rows say who she is and the profile of Ana puts the two trajectories together
+LINKS = {"fbcyl:34004-08": "feb:10100"}          # a linked FBCYL player (#996): her rows say who she is and the profile of Ana puts the two trajectories together
 
 
 def fixture_connection():

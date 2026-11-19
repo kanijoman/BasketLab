@@ -5,10 +5,11 @@
 //  - a percentile is the player's in HIS competition and season: the radar never mixes competitions, and a field nobody says is NO DATA, never a zero;
 //  - the main row of a season is the one with the most minutes (a transfer inside the season keeps both rows); a tie goes to the first by competition and team, so the order of the input
 //    does not change the answer;
-//  - a person of FBCYL has no bio and, until the identity link is consumed (#979, #980), no row in FEB: the trajectory is what his id has.
+//  - a FBCYL player whose identity link is `linked` (#996) is the FEB person: her rows say `linked_to`, are part of his trajectory and give him the bio they inherit; one without link is alone, and has no bio.
 import type { SearchRow } from './search'
 
-export const personRows = (all: SearchRow[], personId: string): SearchRow[] => all.filter(r => r.person_id === personId)
+/** The rows of a person: his own and those of FBCYL whose player is linked to him (`linked_to`, #996). */
+export const personRows = (all: SearchRow[], personId: string): SearchRow[] => all.filter(r => r.person_id === personId || r.linked_to === personId)
 
 export interface SeasonOfPlayer {
   season: string
