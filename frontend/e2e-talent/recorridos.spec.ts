@@ -4,6 +4,27 @@ import { ANA, enc, FBCYL_ALONE, FBCYL_LINKED, NO_SHOTS, open, serveTalent, WITH_
 // The ways through Talent the staff takes, over the real publication of the exporter: search, profile and comparator, and the FBCYL player that IS a FEB person.
 test.beforeEach(async ({ page }) => { await serveTalent(page) })
 
+test.describe('navigation (#1007)', () => {
+  test('the header takes you between the search and the comparator, and marks where you are', async ({ page }) => {
+    await open(page, '/')
+    const nav = page.getByRole('navigation', { name: 'Principal' })
+    await expect(nav.getByRole('link', { name: 'Buscar' })).toHaveAttribute('aria-current', 'page')
+    await nav.getByRole('link', { name: 'Comparar' }).click()
+    await expect(page).toHaveURL(/\/comparar/)
+    await expect(nav.getByRole('link', { name: 'Comparar' })).toHaveAttribute('aria-current', 'page')
+    await nav.getByRole('link', { name: 'Buscar' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Buscador de jugadores' })).toBeVisible()
+  })
+
+  test('the comparison is still there when you come back to the comparator from the search', async ({ page }) => {
+    await open(page, `/comparar?j=${enc(WITH_SHOTS)},${enc(NO_SHOTS)}`)
+    const nav = page.getByRole('navigation', { name: 'Principal' })
+    await nav.getByRole('link', { name: 'Buscar' }).click()
+    await nav.getByRole('link', { name: 'Comparar' }).click()
+    await expect(page.getByRole('table', { name: 'Comparación de jugadores' })).toBeVisible()
+  })
+})
+
 test.describe('search', () => {
   test('opens on the latest season, says how many players and finds one by name', async ({ page }) => {
     await open(page, '/')

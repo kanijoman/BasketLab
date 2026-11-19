@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -33,6 +34,22 @@ describe('BasketLab Talent (shell, #877)', () => {
     at('/comparar?j=feb%3A10100,feb%3A10200')
     expect(await screen.findByText(/Aún no hay datos de jugadores publicados/)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: /Buscador de jugadores/ })).not.toBeInTheDocument()
+  })
+
+  it('has a main navigation with the search and the comparator, marking the one you are in (#1007)', async () => {
+    at('/comparar')
+    const nav = screen.getByRole('navigation', { name: 'Principal' })
+    expect(within(nav).getByRole('link', { name: 'Comparar' })).toHaveAttribute('aria-current', 'page')
+    expect(within(nav).getByRole('link', { name: 'Buscar' })).not.toHaveAttribute('aria-current')
+    await userEvent.click(within(nav).getByRole('link', { name: 'Buscar' }))
+    expect(await screen.findByRole('heading', { level: 1, name: /Buscador de jugadores/ })).toBeInTheDocument()
+    expect(within(nav).getByRole('link', { name: 'Buscar' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('brings the comparison back when you go away and come back to the comparator (#1007)', async () => {
+    sessionStorage.setItem('talent-compare', JSON.stringify(['feb:10100', 'feb:10200']))
+    at('/')
+    expect(within(screen.getByRole('navigation', { name: 'Principal' })).getByRole('link', { name: 'Comparar' })).toHaveAttribute('href', '/comparar?j=feb%3A10100%2Cfeb%3A10200')
   })
 
   it('has a skip link and a main landmark like the rest of the suite (keyboard and screen readers)', () => {
