@@ -114,7 +114,9 @@ def summarize_notes(body: str, max_items: int = 8, max_chars: int = 600) -> str:
     return text if len(text) <= max_chars else text[: max_chars - 1].rstrip() + "…"
 
 
-PLAY_NOTES_LIMIT = 500                      # characters Play Console accepts in the notes of a release, per language
+_LIVE_TITLE = re.compile(r"\blive\b|live-app", re.I)          # a pull request that only shares code with the app (src/live_core, vectors) is news for its staff only if it says so
+_FIELD, _RECORD = "\x1f", "\x1e"           # separators of the fields and of the records of ``git log`` (they are not in a commit message)
+PLAY_NOTES_LIMIT = 500                     # characters Play Console accepts in the notes of a release, per language
 PLAY_NOTES_FALLBACK = "• Mejoras internas y de estabilidad."
 _PLUMBING = re.compile(r"^(chore|ci|docs|build|test|refactor|style)(\([^)]*\))?!?:", re.I)
 _PREFIX = re.compile(r"^[a-z]+(\([^)]*\))?!?:\s*", re.I)
@@ -171,6 +173,24 @@ def play_summary(version: str, version_code: int, repo: str, tag: str, notes: st
         f"**Notas de la versión** (pegar en Play Console, {len(text)} de {PLAY_NOTES_LIMIT} caracteres):", "", "```text", text, "```", ""])
 
 
+def app_pull_requests(run_git: Callable[..., str], since: Optional[str], until: str = "HEAD") -> List[str]:
+    """The titles, oldest first, of the pull requests merged in ``since..until`` that touched what goes into the APK (``changed_app_files``): the notes of a release are about the app, not about the
+    Analytics, Talent, data or docs changes that travel in the same weeks, nor the plumbing (dependencies, CI, ruff). A PR counts if it touched the app itself (``apps/live-android/``) or, when it only
+    touched code shared with it (the engine, the vectors), if its title says live. A merge commit says the title of its pull request in the body, a squash one in its subject."""
+    out = run_git("log", "--first-parent", f"--format=%H{_FIELD}%s{_FIELD}%b{_RECORD}", f"{since}..{until}" if since else until)
+    titles: List[str] = []
+    for record in reversed([r for r in out.split(_RECORD) if r.strip()]):
+        commit, subject, body = (record.strip("\n").split(_FIELD, 2) + ["", ""])[:3]
+        files = changed_app_files(run_git("diff", "--name-only", f"{commit.strip()}^1", commit.strip()).splitlines())
+        if not files:
+            continue
+        title = next((line.strip() for line in body.splitlines() if line.strip()), "") if subject.startswith("Merge pull request") else subject.strip()
+        in_the_app = any(path.startswith("apps/live-android/") for path in files)
+        if title and title not in titles and not _PLUMBING.match(title) and (in_the_app or _LIVE_TITLE.search(title)):
+            titles.append(title)
+    return titles
+
+
 def _git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True, encoding="utf-8").stdout
 
@@ -193,6 +213,9 @@ def main(argv: Optional[Sequence[str]] = None, run_git: Optional[Callable[..., s
     decide_parser.add_argument("--version", default=None, help="force this version (X.Y.Z, newer than the last one)")
     decide_parser.add_argument("--force", action="store_true", help="publish even without changes in the app")
     sub.add_parser("notes", help="short notes from GitHub's generated release notes (stdin)")
+    app_parser = sub.add_parser("app-notes", help="the titles of the pull requests that touched the app since a tag, as bullets (what the notes of the release are made of)")
+    app_parser.add_argument("--since", default=None, help="the tag of the previous release (empty: the whole history)")
+    app_parser.add_argument("--until", default="HEAD")
     play_parser = sub.add_parser("play-summary", help="what to upload the bundle to Play Console: link, versionCode and notes to paste (the notes on stdin)")
     play_parser.add_argument("--version", required=True)
     play_parser.add_argument("--code", type=int, required=True, help="the versionCode of the bundle")
@@ -203,6 +226,10 @@ def main(argv: Optional[Sequence[str]] = None, run_git: Optional[Callable[..., s
 
     if args.command == "notes":
         print(summarize_notes(sys.stdin.read()))
+        return 0
+    if args.command == "app-notes":
+        for title in app_pull_requests(run_git, args.since or None, args.until):
+            print(f"* {title}")
         return 0
     if args.command == "play-summary":
         print(play_summary(args.version, args.code, args.repo, args.tag, sys.stdin.read(), args.previous_code))

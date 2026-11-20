@@ -273,3 +273,80 @@ def test_the_play_notes_read_the_generated_body_of_the_release_as_it_is_with_no_
 
 def test_a_bullet_the_source_already_cut_is_not_kept_as_if_it_were_whole():
     assert release.play_notes("• feat(live): alerta completa\n• feat(live): una que acaba cor…") == "• Alerta completa"
+
+# --- the notes of the release are those of the pull requests that touched the app (not the Analytics, Talent or data ones) -----------------
+
+SEP, END = "\x1f", "\x1e"
+
+
+def history(*prs):
+    """A fake ``git`` with the first-parent history ``prs`` (newest first): each is ``(hash, subject, body, files)``."""
+    files = {h: f for h, _, _, f in prs}
+
+    def run(*args):
+        if args[0] == "log":
+            assert "--first-parent" in args and args[-1] == "live-android-v0.6.0..HEAD", args
+            return "".join(f"{h}{SEP}{s}{SEP}{b}{END}" for h, s, b, _ in prs)
+        if args[0] == "diff":
+            assert args[1] == "--name-only" and args[2].endswith("^1"), args
+            return "\n".join(files[args[3]])
+        raise AssertionError(args)
+    return run
+
+
+PRS = (
+    ("c4", "Merge pull request #1031 from u/play", "feat(app): resumen para la subida manual a Play Console\n", [".github/workflows/live-android.yml", "scripts/live_android_release.py"]),
+    ("c3", "Merge pull request #1030 from u/acb", "feat(talent): ACB paso 2 (#886)\n", ["src/external/acb_catalogue.py", "config/competitions.json"]),
+    ("c2", "Merge pull request #1020 from u/live", "Live: feedback del partido 2536159 (faltas, fatiga)\n", ["src/live_core/rules_closing.py", "tests/live_vectors/rules.json"]),
+    ("c1", "feat(live-app): botón de actualizar (#227)", "", ["apps/live-android/src/App.tsx"]),
+    ("c0", "Merge pull request #1000 from u/docs", "docs: guía del staff\n", ["docs/LIVE.md", "apps/live-android/README.md"]),
+)
+
+
+def test_only_the_pull_requests_that_touched_the_app_are_notes_oldest_first():
+    assert release.app_pull_requests(history(*PRS), "live-android-v0.6.0", "HEAD") == ["feat(live-app): botón de actualizar (#227)", "Live: feedback del partido 2536159 (faltas, fatiga)"]
+
+
+def test_a_merge_commit_says_its_title_in_the_body_and_a_squash_one_in_its_subject():
+    got = release.app_pull_requests(history(*PRS[2:4]), "live-android-v0.6.0", "HEAD")
+    assert "Merge pull request" not in " ".join(got) and got[0].startswith("feat(live-app)") and got[1].startswith("Live:")
+
+
+def test_a_pull_request_that_only_touched_docs_or_tests_of_the_app_is_not_a_note():
+    only_ignored = (("c9", "Merge pull request #9 from u/x", "test(live): más casos\n", ["apps/live-android/src/App.test.tsx", "apps/live-android/e2e/layout.spec.ts", "docs/LIVE.md"]),)
+    assert release.app_pull_requests(history(*only_ignored), "live-android-v0.6.0", "HEAD") == []
+
+
+def test_a_pull_request_that_only_shares_code_with_the_app_is_a_note_only_if_it_says_live_and_plumbing_never_is():
+    """Real cases of 0.7.0: the web-data one changed ``src/live_core`` (shared) and the dependencies and ruff ones touched files of the app, and none is news for the staff of the app."""
+    shared = (
+        ("a4", "Merge pull request #945 from u/wd", "web-data: no recalcular por un ajuste de reglas (#945)\n", ["src/live_core/advice.py", "src/live_core/four_factors.py"]),
+        ("a3", "Merge pull request #960 from u/deps", "chore(deps): Bump the live-app group\n", ["apps/live-android/package.json"]),
+        ("a2", "Merge pull request #955 from u/ruff", "chore(calidad): ruff con solo las reglas F\n", ["tests/live_vectors/generate.py"]),
+        ("a1", "Merge pull request #970 from u/rule", "feat(live): nueva regla de cierre (#970)\n", ["src/live_core/rules_closing.py"]),
+        ("a0", "Merge pull request #971 from u/ui", "Pantalla de avisos más clara\n", ["apps/live-android/src/ui/AlertList.tsx"]),
+    )
+    assert release.app_pull_requests(history(*shared), "live-android-v0.6.0", "HEAD") == ["Pantalla de avisos más clara", "feat(live): nueva regla de cierre (#970)"]
+
+
+def test_the_same_title_is_one_note_and_nothing_touching_the_app_is_no_notes():
+    twice = (PRS[2], ("cx", "Merge pull request #1021 from u/live2", "Live: feedback del partido 2536159 (faltas, fatiga)\n", ["src/live_core/a.py"]))
+    assert release.app_pull_requests(history(*twice), "live-android-v0.6.0", "HEAD") == ["Live: feedback del partido 2536159 (faltas, fatiga)"]
+    assert release.app_pull_requests(history(PRS[1]), "live-android-v0.6.0", "HEAD") == []
+
+
+def test_the_app_notes_subcommand_prints_them_as_bullets_the_other_subcommands_read(capsys):
+    assert release.main(["app-notes", "--since", "live-android-v0.6.0"], run_git=history(*PRS), env={}) == 0
+    out = capsys.readouterr().out
+    assert out.splitlines() == ["* feat(live-app): botón de actualizar (#227)", "* Live: feedback del partido 2536159 (faltas, fatiga)"]
+    assert release.play_notes(out).splitlines() == ["• Botón de actualizar", "• Feedback del partido 2536159 (faltas, fatiga)"]
+    assert release.summarize_notes(out).count("•") == 2
+
+
+def test_the_first_release_has_no_since_and_looks_at_the_whole_history(capsys):
+    def run(*args):
+        if args[0] == "log":
+            assert args[-1] == "HEAD", args
+            return f"c1{SEP}feat(live): algo{SEP}{END}"
+        return "src/live_core/a.py"
+    assert release.main(["app-notes"], run_git=run, env={}) == 0 and capsys.readouterr().out == "* feat(live): algo\n"

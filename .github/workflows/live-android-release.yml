@@ -74,7 +74,7 @@ jobs:
           gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > generated-notes.md
           {
             echo "short<<EOF_SHORT_NOTES"
-            python3 scripts/live_android_release.py notes < generated-notes.md
+            python3 scripts/live_android_release.py app-notes --since "$PREVIOUS" | python3 scripts/live_android_release.py notes
             echo "EOF_SHORT_NOTES"
           } >> "$GITHUB_OUTPUT"
 
