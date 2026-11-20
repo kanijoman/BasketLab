@@ -5,6 +5,7 @@ the staff updates from the app (#227). This script holds the decisions in plain 
 
     python scripts/live_android_release.py decide [--version X.Y.Z] [--force]   # writes release/version/... outputs
     python scripts/live_android_release.py notes < generated-notes.md           # short notes for the app's notice
+    python scripts/live_android_release.py play-summary --version X --code N --repo R --tag T < notes.md   # for the manual upload to Play
 
 Standard library only: it runs in CI without installing anything.
 """
@@ -113,6 +114,61 @@ def summarize_notes(body: str, max_items: int = 8, max_chars: int = 600) -> str:
     return text if len(text) <= max_chars else text[: max_chars - 1].rstrip() + "…"
 
 
+PLAY_NOTES_LIMIT = 500                      # characters Play Console accepts in the notes of a release, per language
+PLAY_NOTES_FALLBACK = "• Mejoras internas y de estabilidad."
+_PLUMBING = re.compile(r"^(chore|ci|docs|build|test|refactor|style)(\([^)]*\))?!?:", re.I)
+_PREFIX = re.compile(r"^[a-z]+(\([^)]*\))?!?:\s*", re.I)
+_PR_REF = re.compile(r"\s*\(#\d+\)\s*$")
+_VERSION_CODE = re.compile(r"versionCode\s+(\d+)")
+
+
+def play_notes(notes: str, limit: int = PLAY_NOTES_LIMIT) -> str:
+    """The notes of a release as Play Console takes them: what the staff notices (not dependencies, CI, docs or tests), without the commit prefix or the PR number, and in ``limit`` characters with no bullet cut in
+    the middle (the ones that do not fit are counted in a last line). ``PLAY_NOTES_FALLBACK`` when there was only plumbing."""
+    items: List[str] = []
+    for line in notes.splitlines():
+        text = line.strip().lstrip("•-* ").strip()
+        if not text or text.startswith("… y ") or _PLUMBING.match(text):
+            continue
+        text = _PR_REF.sub("", _PREFIX.sub("", text)).strip()
+        if text:
+            items.append(f"• {text[0].upper()}{text[1:]}")
+    if not items:
+        return PLAY_NOTES_FALLBACK
+    kept: List[str] = []
+    for item in items:
+        if len("\n".join([*kept, item])) <= limit - 24:          # room for the line that counts the rest
+            kept.append(item)
+    if not kept:
+        kept = [items[0][: limit - 1].rstrip() + "…"]
+    rest = len(items) - len(kept)
+    return "\n".join([*kept, f"… y {rest} cambios más"]) if rest else "\n".join(kept)
+
+
+def parse_version_code(body: str) -> Optional[int]:
+    """The ``versionCode`` a release of the app says in its body (``versionCode 48``), or ``None``."""
+    found = _VERSION_CODE.search(body or "")
+    return int(found.group(1)) if found else None
+
+
+def play_summary(version: str, version_code: int, repo: str, tag: str, notes: str, previous_code: Optional[int]) -> str:
+    """What whoever uploads the bundle to Play Console needs, as markdown for the summary of the run: the link to the ``.aab``, its ``versionCode`` (and whether Play will take it: it must be higher than the
+    last one uploaded; the one of the previous release is the best we know) and the notes ready to paste."""
+    url = f"https://github.com/{repo}/releases/download/{tag}/basketlab-live-{version}.aab"
+    if previous_code is None:
+        check = f"El de la release anterior no consta: comprueba en Play Console que {version_code} es mayor que el último subido."
+    elif version_code > previous_code:
+        check = f"Es mayor que el de la release anterior ({previous_code}): Play lo aceptará si esa fue la última que se subió."
+    else:
+        check = f"**Play lo rechazará**: no es mayor que el de la release anterior ({previous_code}). Hay que subir un `versionCode` más alto."
+    text = play_notes(notes)
+    return "\n".join([
+        f"## Subida manual a Play Console: versión {version}", "",
+        f"- **Bundle**: [basketlab-live-{version}.aab]({url})",
+        f"- **versionCode**: {version_code}. {check}", "",
+        f"**Notas de la versión** (pegar en Play Console, {len(text)} de {PLAY_NOTES_LIMIT} caracteres):", "", "```text", text, "```", ""])
+
+
 def _git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True, encoding="utf-8").stdout
 
@@ -135,10 +191,19 @@ def main(argv: Optional[Sequence[str]] = None, run_git: Optional[Callable[..., s
     decide_parser.add_argument("--version", default=None, help="force this version (X.Y.Z, newer than the last one)")
     decide_parser.add_argument("--force", action="store_true", help="publish even without changes in the app")
     sub.add_parser("notes", help="short notes from GitHub's generated release notes (stdin)")
+    play_parser = sub.add_parser("play-summary", help="what to upload the bundle to Play Console: link, versionCode and notes to paste (the notes on stdin)")
+    play_parser.add_argument("--version", required=True)
+    play_parser.add_argument("--code", type=int, required=True, help="the versionCode of the bundle")
+    play_parser.add_argument("--repo", required=True)
+    play_parser.add_argument("--tag", required=True)
+    play_parser.add_argument("--previous-code", type=int, default=None, help="the versionCode of the previous release, if it is known")
     args = parser.parse_args(argv)
 
     if args.command == "notes":
         print(summarize_notes(sys.stdin.read()))
+        return 0
+    if args.command == "play-summary":
+        print(play_summary(args.version, args.code, args.repo, args.tag, sys.stdin.read(), args.previous_code))
         return 0
     try:
         tags = run_git("tag", "--list", f"{TAG_PREFIX}*").splitlines()

@@ -200,3 +200,65 @@ def test_the_notes_subcommand_reads_the_generated_body_from_stdin(capsys, monkey
     monkeypatch.setattr(sys, "stdin", io.StringIO(GENERATED))
     assert release.main(["notes"], run_git=None, env={}) == 0
     assert capsys.readouterr().out.startswith("• feat(live): alerta de alineación indebida (#272)")
+
+
+# --- the manual upload to Google Play (the .aab is uploaded by hand to Play Console) -----------------------------------
+
+NOTES = "• feat(live): alerta de alineación indebida (#272)\n• chore(deps): Bump actions/download-artifact from 4 to 8\n• CI: web-data con 240 min para un recálculo completo\n• fix(live): el aviso de falta no se descartaba (#301)\n• docs: guía del staff"
+
+
+def test_the_play_notes_keep_what_the_staff_notices_and_drop_the_plumbing():
+    text = release.play_notes(NOTES)
+    assert "Alerta de alineación indebida" in text and "El aviso de falta no se descartaba" in text and "feat" not in text and "#272" not in text
+    assert "deps" not in text and "web-data" not in text and "guía del staff" not in text
+
+
+def test_the_play_notes_are_in_the_limit_of_play_console_with_nothing_cut_in_the_middle_of_a_bullet():
+    many = "\n".join(f"• feat(live): cambio número {i} con una descripción bastante larga para llenar el espacio" for i in range(30))
+    text = release.play_notes(many)
+    assert len(text) <= release.PLAY_NOTES_LIMIT == 500
+    assert all(line.startswith("• ") or line.startswith("… y ") for line in text.splitlines())
+
+
+def test_the_play_notes_say_something_even_when_everything_was_plumbing():
+    assert release.play_notes("• chore(deps): Bump x\n• ci: y") == release.PLAY_NOTES_FALLBACK
+    assert release.play_notes("") == release.PLAY_NOTES_FALLBACK
+
+
+@pytest.mark.parametrize("body, code", [("notas\nversionCode 41\nmás", 41), ("versionCode 7", 7), ("sin marca", None), ("", None), ("versionCode abc", None)])
+def test_the_version_code_of_a_release_is_read_back_from_its_body(body, code):
+    assert release.parse_version_code(body) == code
+
+
+def summary(**over):
+    args = dict(version="0.7.0", version_code=48, repo="kanijoman/BasketLab", tag="live-android-v0.7.0", notes=NOTES, previous_code=41)
+    return release.play_summary(**{**args, **over})
+
+
+def test_the_summary_links_the_bundle_and_says_the_version_code_and_the_notes_to_paste():
+    text = summary()
+    assert "https://github.com/kanijoman/BasketLab/releases/download/live-android-v0.7.0/basketlab-live-0.7.0.aab" in text
+    assert "0.7.0" in text and "48" in text and "Notas de la versión" in text
+    assert release.play_notes(NOTES) in text
+
+
+def test_the_summary_says_if_play_will_accept_the_version_code():
+    assert "mayor que el de la release anterior (41)" in summary()
+    assert "Play lo rechazará" in summary(version_code=41) and "Play lo rechazará" in summary(version_code=12)
+    assert "anterior no consta" in summary(previous_code=None) and "Play lo rechazará" not in summary(previous_code=None)
+
+
+def test_the_summary_counts_the_characters_of_the_notes_against_the_limit():
+    assert f"{len(release.play_notes(NOTES))} de 500" in summary()
+
+
+def test_the_play_summary_subcommand_prints_it_from_the_notes_on_stdin(capsys, monkeypatch):
+    import io
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO(NOTES))
+    argv = ["play-summary", "--version", "0.7.0", "--code", "48", "--repo", "kanijoman/BasketLab", "--tag", "live-android-v0.7.0", "--previous-code", "41"]
+    assert release.main(argv, run_git=None, env={}) == 0
+    out = capsys.readouterr().out
+    assert "basketlab-live-0.7.0.aab" in out and "Alerta de alineación indebida" in out
+    monkeypatch.setattr(sys, "stdin", io.StringIO(NOTES))
+    assert release.main(argv[:-2], run_git=None, env={}) == 0 and "anterior no consta" in capsys.readouterr().out
