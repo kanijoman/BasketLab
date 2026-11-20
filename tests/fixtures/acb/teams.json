@@ -1,0 +1,1004 @@
+{
+ "availableFilters": {
+  "competitions": [
+   {
+    "editions": [],
+    "id": 1,
+    "name": "Liga Endesa"
+   },
+   {
+    "editions": [],
+    "id": 2,
+    "name": "Copa del Rey"
+   },
+   {
+    "editions": [],
+    "id": 3,
+    "name": "Supercopa Endesa"
+   },
+   {
+    "editions": [],
+    "id": 10,
+    "name": "Minicopa Endesa"
+   }
+  ],
+  "phases": [
+   {
+    "abreviation": "LR",
+    "description": "Liga Regular",
+    "id": 107
+   },
+   {
+    "abreviation": "PO",
+    "description": "Play Off Título",
+    "id": 111
+   }
+  ],
+  "rounds": [],
+  "seasons": [
+   {
+    "id": 48,
+    "rounds": [],
+    "seasonEndYear": 1984,
+    "seasonStartYear": 1983,
+    "weeks": []
+   },
+   {
+    "id": 49,
+    "rounds": [],
+    "seasonEndYear": 1985,
+    "seasonStartYear": 1984,
+    "weeks": []
+   },
+   {
+    "id": 50,
+    "rounds": [],
+    "seasonEndYear": 1986,
+    "seasonStartYear": 1985,
+    "weeks": []
+   },
+   {
+    "id": 51,
+    "rounds": [],
+    "seasonEndYear": 1987,
+    "seasonStartYear": 1986,
+    "weeks": []
+   },
+   {
+    "id": 52,
+    "rounds": [],
+    "seasonEndYear": 1988,
+    "seasonStartYear": 1987,
+    "weeks": []
+   },
+   {
+    "id": 53,
+    "rounds": [],
+    "seasonEndYear": 1989,
+    "seasonStartYear": 1988,
+    "weeks": []
+   },
+   {
+    "id": 54,
+    "rounds": [],
+    "seasonEndYear": 1990,
+    "seasonStartYear": 1989,
+    "weeks": []
+   },
+   {
+    "id": 55,
+    "rounds": [],
+    "seasonEndYear": 1991,
+    "seasonStartYear": 1990,
+    "weeks": []
+   },
+   {
+    "id": 56,
+    "rounds": [],
+    "seasonEndYear": 1992,
+    "seasonStartYear": 1991,
+    "weeks": []
+   },
+   {
+    "id": 57,
+    "rounds": [],
+    "seasonEndYear": 1993,
+    "seasonStartYear": 1992,
+    "weeks": []
+   },
+   {
+    "id": 58,
+    "rounds": [],
+    "seasonEndYear": 1994,
+    "seasonStartYear": 1993,
+    "weeks": []
+   },
+   {
+    "id": 59,
+    "rounds": [],
+    "seasonEndYear": 1995,
+    "seasonStartYear": 1994,
+    "weeks": []
+   },
+   {
+    "id": 60,
+    "rounds": [],
+    "seasonEndYear": 1996,
+    "seasonStartYear": 1995,
+    "weeks": []
+   },
+   {
+    "id": 61,
+    "rounds": [],
+    "seasonEndYear": 1997,
+    "seasonStartYear": 1996,
+    "weeks": []
+   },
+   {
+    "id": 62,
+    "rounds": [],
+    "seasonEndYear": 1998,
+    "seasonStartYear": 1997,
+    "weeks": []
+   },
+   {
+    "id": 63,
+    "rounds": [],
+    "seasonEndYear": 1999,
+    "seasonStartYear": 1998,
+    "weeks": []
+   },
+   {
+    "id": 64,
+    "rounds": [],
+    "seasonEndYear": 2000,
+    "seasonStartYear": 1999,
+    "weeks": []
+   },
+   {
+    "id": 65,
+    "rounds": [],
+    "seasonEndYear": 2001,
+    "seasonStartYear": 2000,
+    "weeks": []
+   },
+   {
+    "id": 66,
+    "rounds": [],
+    "seasonEndYear": 2002,
+    "seasonStartYear": 2001,
+    "weeks": []
+   },
+   {
+    "id": 67,
+    "rounds": [],
+    "seasonEndYear": 2003,
+    "seasonStartYear": 2002,
+    "weeks": []
+   },
+   {
+    "id": 68,
+    "rounds": [],
+    "seasonEndYear": 2004,
+    "seasonStartYear": 2003,
+    "weeks": []
+   },
+   {
+    "id": 69,
+    "rounds": [],
+    "seasonEndYear": 2005,
+    "seasonStartYear": 2004,
+    "weeks": []
+   },
+   {
+    "id": 70,
+    "rounds": [],
+    "seasonEndYear": 2006,
+    "seasonStartYear": 2005,
+    "weeks": []
+   },
+   {
+    "id": 71,
+    "rounds": [],
+    "seasonEndYear": 2007,
+    "seasonStartYear": 2006,
+    "weeks": []
+   },
+   {
+    "id": 72,
+    "rounds": [],
+    "seasonEndYear": 2008,
+    "seasonStartYear": 2007,
+    "weeks": []
+   },
+   {
+    "id": 73,
+    "rounds": [],
+    "seasonEndYear": 2009,
+    "seasonStartYear": 2008,
+    "weeks": []
+   },
+   {
+    "id": 74,
+    "rounds": [],
+    "seasonEndYear": 2010,
+    "seasonStartYear": 2009,
+    "weeks": []
+   },
+   {
+    "id": 75,
+    "rounds": [],
+    "seasonEndYear": 2011,
+    "seasonStartYear": 2010,
+    "weeks": []
+   },
+   {
+    "id": 76,
+    "rounds": [],
+    "seasonEndYear": 2012,
+    "seasonStartYear": 2011,
+    "weeks": []
+   },
+   {
+    "id": 77,
+    "rounds": [],
+    "seasonEndYear": 2013,
+    "seasonStartYear": 2012,
+    "weeks": []
+   },
+   {
+    "id": 78,
+    "rounds": [],
+    "seasonEndYear": 2014,
+    "seasonStartYear": 2013,
+    "weeks": []
+   },
+   {
+    "id": 79,
+    "rounds": [],
+    "seasonEndYear": 2015,
+    "seasonStartYear": 2014,
+    "weeks": []
+   },
+   {
+    "id": 80,
+    "rounds": [],
+    "seasonEndYear": 2016,
+    "seasonStartYear": 2015,
+    "weeks": []
+   },
+   {
+    "id": 81,
+    "rounds": [],
+    "seasonEndYear": 2017,
+    "seasonStartYear": 2016,
+    "weeks": []
+   },
+   {
+    "id": 82,
+    "rounds": [],
+    "seasonEndYear": 2018,
+    "seasonStartYear": 2017,
+    "weeks": []
+   },
+   {
+    "id": 83,
+    "rounds": [],
+    "seasonEndYear": 2019,
+    "seasonStartYear": 2018,
+    "weeks": []
+   },
+   {
+    "id": 84,
+    "rounds": [],
+    "seasonEndYear": 2020,
+    "seasonStartYear": 2019,
+    "weeks": []
+   },
+   {
+    "id": 85,
+    "rounds": [],
+    "seasonEndYear": 2021,
+    "seasonStartYear": 2020,
+    "weeks": []
+   },
+   {
+    "id": 86,
+    "rounds": [],
+    "seasonEndYear": 2022,
+    "seasonStartYear": 2021,
+    "weeks": []
+   },
+   {
+    "id": 87,
+    "rounds": [],
+    "seasonEndYear": 2023,
+    "seasonStartYear": 2022,
+    "weeks": []
+   },
+   {
+    "id": 88,
+    "rounds": [],
+    "seasonEndYear": 2024,
+    "seasonStartYear": 2023,
+    "weeks": []
+   },
+   {
+    "id": 89,
+    "rounds": [],
+    "seasonEndYear": 2025,
+    "seasonStartYear": 2024,
+    "weeks": []
+   },
+   {
+    "id": 90,
+    "rounds": [],
+    "seasonEndYear": 2026,
+    "seasonStartYear": 2025,
+    "weeks": []
+   },
+   {
+    "id": 91,
+    "rounds": [],
+    "seasonEndYear": 2027,
+    "seasonStartYear": 2026,
+    "weeks": []
+   }
+  ],
+  "weeks": []
+ },
+ "selectedFilters": {
+  "competition": 1,
+  "season": 91
+ },
+ "teams": [
+  {
+   "latest": {
+    "abbreviatedName": "JOV",
+    "clubId": 8,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Asisa Joventut",
+    "id": 4473,
+    "logo": "https://static.acb.com/img/www/clubes2026/202526AsisaJoventutLogoPosisitvo.png",
+    "logoAlt": "Asisa Joventut logo",
+    "primaryColorHex": "#2f8e62",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202526AsisaJoventutLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Asisa Joventut",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "JOV",
+    "clubId": 8,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Asisa Joventut",
+    "id": 4473,
+    "logo": "https://static.acb.com/img/www/clubes2026/202526AsisaJoventutLogoPosisitvo.png",
+    "logoAlt": "Asisa Joventut logo",
+    "primaryColorHex": "#2f8e62",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202526AsisaJoventutLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Asisa Joventut",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "BAR",
+    "clubId": 2,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Barça",
+    "id": 4467,
+    "logo": "https://static.acb.com/img/www/clubes2024/2324BarcaLogoweb.png",
+    "logoAlt": "Barça logo",
+    "primaryColorHex": "#154284",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2324BarcaLogoweb.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Barça",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "BAR",
+    "clubId": 2,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Barça",
+    "id": 4467,
+    "logo": "https://static.acb.com/img/www/clubes2024/2324BarcaLogoweb.png",
+    "logoAlt": "Barça logo",
+    "primaryColorHex": "#154284",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2324BarcaLogoweb.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Barça",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "CAZ",
+    "clubId": 16,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Casademont Zaragoza",
+    "id": 4474,
+    "logo": "https://static.acb.com/img/www/clubes2024/2425CasademontZaragoza.png",
+    "logoAlt": "Casademont Zaragoza logo",
+    "primaryColorHex": "#C8102E",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2425CasademontZaragoza.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Casademont Zgz",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "CAZ",
+    "clubId": 16,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Casademont Zaragoza",
+    "id": 4474,
+    "logo": "https://static.acb.com/img/www/clubes2024/2425CasademontZaragoza.png",
+    "logoAlt": "Casademont Zaragoza logo",
+    "primaryColorHex": "#C8102E",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2425CasademontZaragoza.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Casademont Zgz",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "GIR",
+    "clubId": 591,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "FIATC Girona",
+    "id": 4470,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627FIATCGironaLogoPositivo.png",
+    "logoAlt": "FIATC Girona logo",
+    "primaryColorHex": "#b32836",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627FIATCGironaLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "FIATC Girona",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "GIR",
+    "clubId": 591,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "FIATC Girona",
+    "id": 4470,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627FIATCGironaLogoPositivo.png",
+    "logoAlt": "FIATC Girona logo",
+    "primaryColorHex": "#b32836",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627FIATCGironaLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "FIATC Girona",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "ILE",
+    "clubId": 658,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "iLERNA Lleida",
+    "id": 4465,
+    "logo": "https://static.acb.com/img/www/clubes2026/202526IlernaLleidaLogoPositivo.png",
+    "logoAlt": "iLERNA Lleida logo",
+    "primaryColorHex": "#ab1254",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202526IlernaLleidaLogoPositivo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "iLERNA Lleida",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "ILE",
+    "clubId": 658,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "iLERNA Lleida",
+    "id": 4465,
+    "logo": "https://static.acb.com/img/www/clubes2026/202526IlernaLleidaLogoPositivo.png",
+    "logoAlt": "iLERNA Lleida logo",
+    "primaryColorHex": "#ab1254",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202526IlernaLleidaLogoPositivo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "iLERNA Lleida",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "K&U",
+    "clubId": 10,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Kids&Us Manresa",
+    "id": 4471,
+    "logo": "https://static.acb.com/img/www/clubes2026/202526KidsUsManresa.png",
+    "logoAlt": "Kids&Us Manresa logo",
+    "primaryColorHex": "#d5001e",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627KidsUsManresaLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Kids&Us Manresa",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "K&U",
+    "clubId": 10,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Kids&Us Manresa",
+    "id": 4471,
+    "logo": "https://static.acb.com/img/www/clubes2026/202526KidsUsManresa.png",
+    "logoAlt": "Kids&Us Manresa logo",
+    "primaryColorHex": "#d5001e",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627KidsUsManresaLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Kids&Us Manresa",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "BKN",
+    "clubId": 3,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Kosner Baskonia",
+    "id": 4463,
+    "logo": "https://static.acb.com/img/www/clubes2025/2526KosnerBaskoniaLogo.png",
+    "logoAlt": "Kosner Baskonia logo",
+    "primaryColorHex": "#c8102e",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2025/2526KosnerBaskoniaLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Kosner Baskonia",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "BKN",
+    "clubId": 3,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Kosner Baskonia",
+    "id": 4463,
+    "logo": "https://static.acb.com/img/www/clubes2025/2526KosnerBaskoniaLogo.png",
+    "logoAlt": "Kosner Baskonia logo",
+    "primaryColorHex": "#c8102e",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2025/2526KosnerBaskoniaLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Kosner Baskonia",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "LLT",
+    "clubId": 28,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "La Laguna Tenerife",
+    "id": 4478,
+    "logo": "https://static.acb.com/img/www/clubes2024/2425LaLagunaTenerifeLogo.png",
+    "logoAlt": "La Laguna Tenerife logo",
+    "primaryColorHex": "#e9cd5f",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2425LaLagunaTenerifeLogoneg.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "La Laguna TFE",
+    "textColorHex": "#000000"
+   },
+   "selected": {
+    "abbreviatedName": "LLT",
+    "clubId": 28,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "La Laguna Tenerife",
+    "id": 4478,
+    "logo": "https://static.acb.com/img/www/clubes2024/2425LaLagunaTenerifeLogo.png",
+    "logoAlt": "La Laguna Tenerife logo",
+    "primaryColorHex": "#e9cd5f",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2425LaLagunaTenerifeLogoneg.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "La Laguna TFE",
+    "textColorHex": "#000000"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "COR",
+    "clubId": 657,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Leyma Coruña",
+    "id": 4480,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627LeymaCorunaLogoPositivoOK.png",
+    "logoAlt": "Leyma Coruña logo",
+    "primaryColorHex": "#e85204",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627LeymaCorunaLogoNegativoOK.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Leyma Coruña",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "COR",
+    "clubId": 657,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Leyma Coruña",
+    "id": 4480,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627LeymaCorunaLogoPositivoOK.png",
+    "logoAlt": "Leyma Coruña logo",
+    "primaryColorHex": "#e85204",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627LeymaCorunaLogoNegativoOK.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Leyma Coruña",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "MOB",
+    "clubId": 57,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Monbus Obradoiro",
+    "id": 4479,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627MonbusObradoiroLogoPositivoOK.png",
+    "logoAlt": "Monbus Obradoiro logo",
+    "primaryColorHex": "#4a96c4",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627MonbusObradoiroLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Monbus Obra",
+    "textColorHex": "#000000"
+   },
+   "selected": {
+    "abbreviatedName": "MOB",
+    "clubId": 57,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Monbus Obradoiro",
+    "id": 4479,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627MonbusObradoiroLogoPositivoOK.png",
+    "logoAlt": "Monbus Obradoiro logo",
+    "primaryColorHex": "#4a96c4",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627MonbusObradoiroLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Monbus Obra",
+    "textColorHex": "#000000"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "MBA",
+    "clubId": 22,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "MoraBanc Andorra",
+    "id": 4466,
+    "logo": "https://static.acb.com/img/www/clubes2026/20252026MorabancAndorraLogoPositivoOK.png",
+    "logoAlt": "MoraBanc Andorra logo",
+    "primaryColorHex": "#0165ba",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/20252026MorabancAndorraLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "MoraBanc And",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "MBA",
+    "clubId": 22,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "MoraBanc Andorra",
+    "id": 4466,
+    "logo": "https://static.acb.com/img/www/clubes2026/20252026MorabancAndorraLogoPositivoOK.png",
+    "logoAlt": "MoraBanc Andorra logo",
+    "primaryColorHex": "#0165ba",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/20252026MorabancAndorraLogoNegativo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "MoraBanc And",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "RMB",
+    "clubId": 9,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Real Madrid",
+    "id": 4476,
+    "logo": "https://static.acb.com/img/www/clubes2024/2324RealMadrid_Logoweb.png",
+    "logoAlt": "Real Madrid logo",
+    "primaryColorHex": "#ffffff",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2023/RealMadridLogo202223.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Real Madrid",
+    "textColorHex": "#000000"
+   },
+   "selected": {
+    "abbreviatedName": "RMB",
+    "clubId": 9,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Real Madrid",
+    "id": 4476,
+    "logo": "https://static.acb.com/img/www/clubes2024/2324RealMadrid_Logoweb.png",
+    "logoAlt": "Real Madrid logo",
+    "primaryColorHex": "#ffffff",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2023/RealMadridLogo202223.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Real Madrid",
+    "textColorHex": "#000000"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "BUR",
+    "clubId": 549,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Recoletas Salud San Pablo Burgos",
+    "id": 4469,
+    "logo": "https://static.acb.com/img/www/clubes2025/2526SanPabloLogo.png",
+    "logoAlt": "Recoletas Salud San Pablo Burgos logo",
+    "primaryColorHex": "#00669e",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2025/2526SanPabloLogo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Recoletas Salud",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "BUR",
+    "clubId": 549,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Recoletas Salud San Pablo Burgos",
+    "id": 4469,
+    "logo": "https://static.acb.com/img/www/clubes2025/2526SanPabloLogo.png",
+    "logoAlt": "Recoletas Salud San Pablo Burgos logo",
+    "primaryColorHex": "#00669e",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2025/2526SanPabloLogo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Recoletas Salud",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "BRE",
+    "clubId": 25,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Río Breogán",
+    "id": 4464,
+    "logo": "https://static.acb.com/logos/1718/breogan_00.png",
+    "logoAlt": "Río Breogán logo",
+    "primaryColorHex": "#85adea",
+    "secondaryLogo": "https://static.acb.com/logos/1718/breogan_00.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Río Breogán",
+    "textColorHex": "#000000"
+   },
+   "selected": {
+    "abbreviatedName": "BRE",
+    "clubId": 25,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Río Breogán",
+    "id": 4464,
+    "logo": "https://static.acb.com/logos/1718/breogan_00.png",
+    "logoAlt": "Río Breogán logo",
+    "primaryColorHex": "#85adea",
+    "secondaryLogo": "https://static.acb.com/logos/1718/breogan_00.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Río Breogán",
+    "textColorHex": "#000000"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "SBB",
+    "clubId": 4,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Surne Bilbao",
+    "id": 4475,
+    "logo": "https://static.acb.com/img/www/clubes2022/logo_surnebb_pos.png",
+    "logoAlt": "Surne Bilbao logo",
+    "primaryColorHex": "#000000",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2022/logo_surnebb_neg.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Surne Bilbao",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "SBB",
+    "clubId": 4,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "Surne Bilbao",
+    "id": 4475,
+    "logo": "https://static.acb.com/img/www/clubes2022/logo_surnebb_pos.png",
+    "logoAlt": "Surne Bilbao logo",
+    "primaryColorHex": "#000000",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2022/logo_surnebb_neg.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Surne Bilbao",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "UCM",
+    "clubId": 12,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "UCAM Murcia",
+    "id": 4468,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627ucamcblogoverticalcolor.png",
+    "logoAlt": "UCAM Murcia logo",
+    "primaryColorHex": "#a51a14",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627ucamcblogoverticalfondooscuro.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "UCAM Murcia",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "UCM",
+    "clubId": 12,
+    "competitionId": 1,
+    "contrastRequired": true,
+    "editionId": 91,
+    "fullName": "UCAM Murcia",
+    "id": 4468,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627ucamcblogoverticalcolor.png",
+    "logoAlt": "UCAM Murcia logo",
+    "primaryColorHex": "#a51a14",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627ucamcblogoverticalfondooscuro.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "UCAM Murcia",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "UNI",
+    "clubId": 14,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Unicaja",
+    "id": 4477,
+    "logo": "https://static.acb.com/img/www/clubes2024/2324UnicajaLogo.png",
+    "logoAlt": "Unicaja logo",
+    "primaryColorHex": "#3d9c35",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2324UnicajaLogo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Unicaja",
+    "textColorHex": "#FFFFFF"
+   },
+   "selected": {
+    "abbreviatedName": "UNI",
+    "clubId": 14,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Unicaja",
+    "id": 4477,
+    "logo": "https://static.acb.com/img/www/clubes2024/2324UnicajaLogo.png",
+    "logoAlt": "Unicaja logo",
+    "primaryColorHex": "#3d9c35",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2024/2324UnicajaLogo.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Unicaja",
+    "textColorHex": "#FFFFFF"
+   }
+  },
+  {
+   "latest": {
+    "abbreviatedName": "VBC",
+    "clubId": 13,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Valencia Basket",
+    "id": 4472,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627ValenciaBasket40Anys.png",
+    "logoAlt": "Valencia Basket logo",
+    "primaryColorHex": "#fc6c0f",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627ValenciaBasket40Anys.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Valencia Basket",
+    "textColorHex": "#000000"
+   },
+   "selected": {
+    "abbreviatedName": "VBC",
+    "clubId": 13,
+    "competitionId": 1,
+    "contrastRequired": false,
+    "editionId": 91,
+    "fullName": "Valencia Basket",
+    "id": 4472,
+    "logo": "https://static.acb.com/img/www/clubes2026/202627ValenciaBasket40Anys.png",
+    "logoAlt": "Valencia Basket logo",
+    "primaryColorHex": "#fc6c0f",
+    "secondaryLogo": "https://static.acb.com/img/www/clubes2026/202627ValenciaBasket40Anys.png",
+    "shirtColor": null,
+    "shirtTextColor": null,
+    "shortName": "Valencia Basket",
+    "textColorHex": "#000000"
+   }
+  }
+ ]
+}
