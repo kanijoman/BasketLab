@@ -40,6 +40,14 @@ class TalentIdentitiesEntry(FileEntry):
     wraps: List[Wrap]
 
 
+class TalentEquivalencesEntry(FileEntry):
+    """The sealed ``equivalences`` file (#891): per sex the levels of the senior competitions of FEB, their covariance, the noise and the reliability of one and of two seasons, the edges and the validation.
+    ``usable`` says whether the range can be shown (the model beat not translating and its 80 % interval held); ``sexes`` which graphs it holds."""
+    wraps: List[Wrap]
+    usable: bool
+    sexes: List[Literal["F", "M"]]
+
+
 class TalentManifest(TypedDict):
     """``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope)."""
     schema: int
@@ -48,10 +56,11 @@ class TalentManifest(TypedDict):
     open_key: NotRequired[str]
     competitions: List[TalentCompetitionEntry]
     identities: NotRequired[TalentIdentitiesEntry]
+    equivalences: NotRequired[TalentEquivalencesEntry]
 
 
-MODELS = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentManifest)
-FILE_ENTRIES = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry)
+MODELS = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentEquivalencesEntry, TalentManifest)
+FILE_ENTRIES = (TalentZonesEntry, TalentCompetitionEntry, TalentIdentitiesEntry, TalentEquivalencesEntry)
 
 
 def validate_talent_manifest(manifest: Any) -> None:

@@ -23,9 +23,12 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from src.market.equivalence import AXES, Movement, edge_counts
+from src.market.equivalence import AXES, Movement, Observation, blend, edge_counts
+from src.market.equivalence import movements as _movements
+from src.market.equivalence import stayers as _stayers
 
 MIN_PERSONS = 40
+MIN_HISTORY_MOVERS = 60                                           # movements with two seasons of origin a sex needs for the noise of that origin
 _NORMAL = NormalDist()
 Z80 = _NORMAL.inv_cdf(0.9)                                        # the half width of an 80 % interval in standard deviations
 MIN_STAYERS = 30                                                  # stayers a sex needs for a reliability
@@ -49,6 +52,7 @@ class Model:
     fits: Dict[str, Fit] = field(default_factory=dict)
     rho: Dict[str, List[float]] = field(default_factory=dict)          # per sex: the reliability per axis (or the fitted slope)
     edges: Dict[Tuple[str, str], Dict[str, int]] = field(default_factory=dict)
+    history: Dict[str, Dict[str, List[float]]] = field(default_factory=dict)   # per sex, for an origin of TWO seasons: "rho" and "sigma" per axis
     slope_mode: str = "reliability"
 
 
@@ -141,12 +145,27 @@ def _fit_sex(rows: List[Movement], rho: Optional[List[float]], cluster: bool) ->
     return Fit(nodes, component, np.array(theta), np.array(cov), np.array(sigma), np.array(slope), free)
 
 
-def fit(moves: Iterable[Movement], stay: Iterable[Movement], slope: str = "reliability", cluster: bool = True) -> Model:
-    """The model of every sex that has movements. ``slope`` is ``"reliability"`` (rho from the stayers) or ``"free"`` (the slope of the movers); ``cluster`` clusters the standard errors by person."""
+def _two_season_noise(found: Fit, rho2: List[float], moves2: Iterable[Movement]) -> Optional[List[float]]:
+    """The noise per axis of a prediction whose origin is two seasons averaged: the spread of ``z_to - (rho2 * z_from + theta_to - theta_from)`` over the movements with that origin on the edges of the fit."""
+    index = {n: i for i, n in enumerate(found.nodes)}
+    rows = [m for m in moves2 if m.from_node in index and m.to_node in index and found.component[m.from_node] == found.component[m.to_node]]
+    if len(rows) < MIN_HISTORY_MOVERS:
+        return None
+    out = []
+    for axis in range(len(AXES)):
+        resid = [m.z_to[axis] - (rho2[axis] * m.z_from[axis] + found.theta[axis][index[m.to_node]] - found.theta[axis][index[m.from_node]]) for m in rows]
+        out.append(float(np.sqrt(np.mean(np.square(resid)))))
+    return out
+
+
+def fit(moves: Iterable[Movement], stay: Iterable[Movement], slope: str = "reliability", cluster: bool = True,
+        moves2: Iterable[Movement] = (), stay2: Iterable[Movement] = ()) -> Model:
+    """The model of every sex that has movements. ``slope`` is ``"reliability"`` (rho from the stayers) or ``"free"`` (the slope of the movers); ``cluster`` clusters the standard errors by person.
+    ``moves2``/``stay2`` (``equivalence.movements(obs, history=2)``) give the reliability and the noise of an origin that is two seasons averaged; the LEVELS are always the ones of one season of origin."""
     if slope not in ("reliability", "free"):
         raise ValueError("slope must be 'reliability' or 'free'")
-    moves, stay = list(moves), list(stay)
-    rho = reliability(stay)
+    moves, stay, moves2 = list(moves), list(stay), list(moves2)
+    rho, rho2 = reliability(stay), reliability(stay2)
     model = Model(slope_mode=slope, edges=edge_counts(moves))
     by_sex: Dict[str, List[Movement]] = {}
     for m in moves:
@@ -158,10 +177,20 @@ def fit(moves: Iterable[Movement], stay: Iterable[Movement], slope: str = "relia
         if found:
             model.fits[sex] = found
             model.rho[sex] = [float(v) for v in found.slope]
+            if slope == "reliability" and sex in rho2:
+                noise = _two_season_noise(found, rho2[sex], [m for m in moves2 if _SEX(m.from_node) == sex])
+                if noise:
+                    model.history[sex] = {"rho": rho2[sex], "sigma": noise}
     return model
 
 
-def translate(model: Model, from_node: str, to_node: str, z_from: Sequence[float]) -> Optional[List[Dict[str, Any]]]:
+def fit_observations(obs: Iterable[Observation], **options: Any) -> Model:
+    """The model from the observations: levels and one-season reliability from every movement, the two-season reliability and noise from the movements with the previous season too."""
+    obs = list(obs)
+    return fit(_movements(obs), _stayers(obs), moves2=_movements(obs, history=2), stay2=_stayers(obs, history=2), **options)
+
+
+def translate(model: Model, from_node: str, to_node: str, z_from: Sequence[float], seasons: int = 1) -> Optional[List[Dict[str, Any]]]:
     """For a player with ``z_from`` (one per axis) in ``from_node``: per axis the expected z in ``to_node`` with its 80 % interval (``lo`` and ``hi``), the percentiles of the three, the noise of a player
     (``sd``) and the uncertainty of the shift of level alone (``se_level``). ``None`` if either competition is not in the graph, they are of different sexes or they are not connected."""
     sex = _SEX(from_node)
@@ -169,18 +198,44 @@ def translate(model: Model, from_node: str, to_node: str, z_from: Sequence[float
     if not found or _SEX(to_node) != sex or from_node not in found.nodes or to_node not in found.nodes or found.component[from_node] != found.component[to_node]:
         return None
     a, b = found.nodes.index(from_node), found.nodes.index(to_node)
+    two = model.history.get(sex) if seasons == 2 and not found.free else None
+    slope = two["rho"] if two else found.slope                 # no data for two seasons: the one-season reliability
+    noise = two["sigma"] if two else found.sigma
     out = []
     for i in range(len(AXES)):
         shift = float(found.theta[i][b] - found.theta[i][a])
         d = np.zeros(found.cov.shape[1])
-        d[b], d[a] = 1.0, -1.0
+        d[b] += 1.0                                          # += and -= so that the same competition on both sides has no shift (and no uncertainty of it)
+        d[a] -= 1.0
         level_var = float(d @ found.cov[i] @ d)
         if found.free:
             d[-1] = float(z_from[i])
         param_var = float(d @ found.cov[i] @ d)
-        mean = float(found.slope[i]) * float(z_from[i]) + shift
-        sd = (float(found.sigma[i]) ** 2 + param_var) ** 0.5
+        mean = float(slope[i]) * float(z_from[i]) + shift
+        sd = (float(noise[i]) ** 2 + param_var) ** 0.5
         lo, hi = mean - Z80 * sd, mean + Z80 * sd
         out.append({"mean": mean, "lo": lo, "hi": hi, "sd": sd, "se_level": max(level_var, 0.0) ** 0.5,
                     "pct_lo": 100 * _NORMAL.cdf(lo), "pct_mean": 100 * _NORMAL.cdf(mean), "pct_hi": 100 * _NORMAL.cdf(hi)})
     return out
+
+
+def origin(history: Sequence[Observation]) -> Optional[Tuple[Observation, Sequence[float], int]]:
+    """The origin of a player's estimate: ``(his latest observation, the z to translate, seasons used)``. His competition is that of his latest season (the one with more minutes if he played in two); if he has
+    the season before in the same competition the z is the average of both weighted by minutes (2 seasons), otherwise the last season (1). ``None`` without history."""
+    if not history:
+        return None
+    latest = max(o.season for o in history)
+    last = max((o for o in history if o.season == latest), key=lambda o: (o.minutes, o.node))
+    previous = [o for o in history if o.node == last.node and o.season == latest - 1]
+    return (last, blend(last, previous[0]), 2) if previous else (last, last.z, 1)
+
+
+def estimate(model: Model, history: Sequence[Observation], to_node: str) -> Optional[List[Dict[str, Any]]]:
+    """THE estimator of a player: what he would be expected to do in ``to_node`` from his observations (``origin`` says which season or seasons). One range per axis (``translate``) plus ``seasons`` and
+    ``from_node``; ``None`` without history or without a connection. Which reliability applies is the model's business: whoever shows the answer shows one estimate."""
+    start = origin(history)
+    if start is None:
+        return None
+    last, z, seasons = start
+    out = translate(model, last.node, to_node, z, seasons)
+    return None if out is None else [{**o, "seasons": seasons, "from_node": last.node} for o in out]

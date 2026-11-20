@@ -170,3 +170,86 @@ class TestTheRealRows:
     def test_the_intervals_are_ranges_with_a_lower_and_an_upper_bound_and_a_percentile_for_each(self, model):
         out = translate(model, "M|feb|SEGUNDA FEB", "M|feb|PRIMERA FEB", (1.0,) * len(AXES))
         assert len(out) == len(AXES) and all(o["lo"] < o["mean"] < o["hi"] and 0 < o["pct_lo"] < o["pct_mean"] < o["pct_hi"] < 100 for o in out)
+
+
+# --- the origin of two seasons (E1c): ONE estimator for the user, two reliabilities inside --------------------------------------------------------------------------------------------------------------------
+
+from src.market.equivalence import Observation  # noqa: E402
+from src.market.equivalence_model import estimate, fit_observations  # noqa: E402
+
+ABILITY = 0.8                                            # how much of a z is the player's lasting skill (the rest is the noise of a season)
+
+
+def career_world(seed=11, players=900, theta_down=-0.9):
+    """Observations of players with a lasting skill: a season is ``ABILITY * skill + noise``; some play two seasons in A and then one in B (a level ``theta_down`` below), some two in A and one more in A (stayers)."""
+    rng = random.Random(seed)
+    obs, k = [], 0
+    for _ in range(players):
+        k += 1
+        skill = [rng.gauss(0, 1) for _ in AXES]
+        make = lambda node, season, shift=0.0: Observation(f"c{k}", node, season, None, 20000, tuple(ABILITY * v + shift + rng.gauss(0, 0.6) for v in skill))      # noqa: E731
+        obs += [make(A, 2020), make(A, 2021)]
+        obs.append(make(B, 2022, theta_down) if k % 2 else make(A, 2022))
+        if k % 3 == 0:
+            obs.append(make(A, 2019))
+    return obs
+
+
+def test_the_same_competition_on_both_sides_has_no_shift_and_no_uncertainty_of_it_regression():
+    """``d[b], d[a] = 1, -1`` with a == b left a -1 and made the shift of a competition to itself uncertain."""
+    out = translate(REAL_MODEL, next(iter(REAL_MODEL.fits["F"].nodes)) if "F" in REAL_MODEL.fits else next(iter(REAL_MODEL.fits.values())).nodes[0], next(iter(REAL_MODEL.fits["F"].nodes)) if "F" in REAL_MODEL.fits else next(iter(REAL_MODEL.fits.values())).nodes[0], (0.0,) * len(AXES))
+    assert all(o["se_level"] == 0 and o["mean"] == pytest.approx(0.0, abs=1e-9) for o in out)
+
+
+class TestTheOriginOfTwoSeasons:
+    def test_the_reliability_of_two_seasons_is_higher_than_of_one_and_both_are_kept(self):
+        model = fit_observations(career_world())
+        assert all(two > one for one, two in zip(model.rho["F"], model.history["F"]["rho"]))
+
+    def test_the_translation_with_two_seasons_keeps_more_of_the_z(self):
+        model = fit_observations(career_world())
+        one = translate(model, A, B, (1.0,) * len(AXES))[0]["mean"] - translate(model, A, B, (0.0,) * len(AXES))[0]["mean"]
+        two = translate(model, A, B, (1.0,) * len(AXES), seasons=2)[0]["mean"] - translate(model, A, B, (0.0,) * len(AXES), seasons=2)[0]["mean"]
+        assert two > one + 0.03
+
+    def test_without_enough_history_the_two_season_translation_is_the_one_season_one(self):
+        moves, stay = world()
+        model = fit(moves, stay)
+        assert translate(model, A, B, (1.0,) * len(AXES), seasons=2) == translate(model, A, B, (1.0,) * len(AXES))
+
+    def test_the_estimator_of_a_player_uses_two_seasons_when_he_has_them_and_one_when_he_has_not(self):
+        model = fit_observations(career_world())
+        z1, z2 = (0.5,) * len(AXES), (1.5,) * len(AXES)
+        old = [Observation("x", A, 2023, None, 20000, z1), Observation("x", A, 2022, None, 20000, z2)]
+        young = [Observation("y", A, 2023, None, 20000, z1)]
+        both, one = estimate(model, old, B), estimate(model, young, B)
+        assert both[0]["seasons"] == 2 and one[0]["seasons"] == 1
+        assert both[0]["mean"] > one[0]["mean"]                                                       # the extra good season lifts the expectation
+        assert estimate(model, old, B)[0]["mean"] == pytest.approx(translate(model, A, B, tuple((a + b) / 2 for a, b in zip(z1, z2)), seasons=2)[0]["mean"])
+
+    def test_an_old_season_alone_is_one_season_never_an_average_with_a_gap(self):
+        model = fit_observations(career_world())
+        gap = [Observation("x", A, 2023, None, 20000, (0.5,) * len(AXES)), Observation("x", A, 2021, None, 20000, (2.0,) * len(AXES))]
+        assert estimate(model, gap, B)[0]["seasons"] == 1
+
+    def test_no_history_or_no_connection_has_no_estimate(self):
+        model = fit_observations(career_world())
+        assert estimate(model, [], B) is None and estimate(model, [Observation("x", A, 2023, None, 1, (0.0,) * len(AXES))], "F|feb|NOWHERE") is None
+
+    def test_two_seasons_predict_better_than_one_for_players_who_have_them(self):
+        """The reason for the second reliability: on new players of the same world the average of two seasons has the smaller error."""
+        model = fit_observations(career_world(seed=11))
+        fresh = [o for o in career_world(seed=99, players=1200)]
+        by_player = {}
+        for o in fresh:
+            by_player.setdefault(o.person, {})[o.season] = o
+        one_err, two_err = [], []
+        for seasons in by_player.values():
+            if 2022 in seasons and seasons[2022].node == B:
+                target = seasons[2022]
+                last_only = estimate(model, [seasons[2021]], B)
+                both = estimate(model, [seasons[2021], seasons[2020]], B)
+                for i in range(len(AXES)):
+                    one_err.append(abs(target.z[i] - last_only[i]["mean"]))
+                    two_err.append(abs(target.z[i] - both[i]["mean"]))
+        assert sum(two_err) / len(two_err) < 0.97 * sum(one_err) / len(one_err)

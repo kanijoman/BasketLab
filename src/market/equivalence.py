@@ -45,6 +45,7 @@ class Movement:
     age: Optional[int]                    # the age in the season he arrives
     z_from: Tuple[float, ...]
     z_to: Tuple[float, ...]
+    seasons: int = 1                      # how many seasons the origin ``z_from`` is the average of (1: the last one; 2: the last two, weighted by minutes)
 
 
 def node_of(entry: Mapping[str, Any]) -> Optional[str]:
@@ -91,7 +92,17 @@ def observations(rows: Iterable[Mapping[str, Any]], competitions: Mapping[str, M
     return [best[k][1] for k in sorted(best)]
 
 
-def _pairs(obs: Iterable[Observation], same_node: bool) -> List[Movement]:
+def blend(a: Observation, b: Observation) -> Tuple[float, ...]:
+    """The z of two seasons of the same player, weighted by his minutes in each (a player with no minutes in either counts half and half)."""
+    wa, wb = (a.minutes, b.minutes) if a.minutes + b.minutes > 0 else (1, 1)
+    return tuple((wa * x + wb * y) / (wa + wb) for x, y in zip(a.z, b.z))
+
+
+def _pairs(obs: Iterable[Observation], same_node: bool, history: Any) -> List[Movement]:
+    if history not in (1, 2, "auto"):
+        raise ValueError("history must be 1, 2 or 'auto'")
+    obs = list(obs)
+    by_key = {(o.person, o.node, o.season): o for o in obs}
     by_person: Dict[str, List[Observation]] = {}
     for o in obs:
         by_person.setdefault(o.person, []).append(o)
@@ -99,20 +110,25 @@ def _pairs(obs: Iterable[Observation], same_node: bool) -> List[Movement]:
     for person in sorted(by_person):
         rs = by_person[person]
         for a in rs:
+            before = by_key.get((person, a.node, a.season - 1))
+            if history == 2 and before is None:
+                continue
+            origin, seasons = (blend(a, before), 2) if before is not None and history in (2, "auto") else (a.z, 1)
             for b in rs:
                 if b.season - a.season == 1 and (a.node == b.node) == same_node and a.node.split("|")[0] == b.node.split("|")[0]:
-                    out.append(Movement(person, a.node, b.node, a.season, b.season, b.age, a.z, b.z))
+                    out.append(Movement(person, a.node, b.node, a.season, b.season, b.age, origin, b.z, seasons))
     return sorted(out, key=lambda m: (m.person, m.from_season, m.from_node, m.to_node))
 
 
-def movements(obs: Iterable[Observation]) -> List[Movement]:
-    """The same person in two different competitions of the same sex in consecutive seasons, sorted by person and season."""
-    return _pairs(list(obs), same_node=False)
+def movements(obs: Iterable[Observation], history: Any = 1) -> List[Movement]:
+    """The same person in two different competitions of the same sex in consecutive seasons, sorted by person and season. ``history``: ``1`` the last season is the origin; ``2`` the average of the last two
+    (only the movements that have the previous season); ``"auto"`` the average of two where there is a previous season and the last one where there is not."""
+    return _pairs(obs, same_node=False, history=history)
 
 
-def stayers(obs: Iterable[Observation]) -> List[Movement]:
-    """The same person in the same competition in consecutive seasons (``from_node == to_node``)."""
-    return _pairs(list(obs), same_node=True)
+def stayers(obs: Iterable[Observation], history: Any = 1) -> List[Movement]:
+    """The same person in the same competition in consecutive seasons (``from_node == to_node``); ``history`` as in ``movements``."""
+    return _pairs(obs, same_node=True, history=history)
 
 
 def node_levels(competitions: Mapping[str, Mapping[str, Any]]) -> Dict[str, Optional[int]]:
