@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple
 
 SOURCE = "fiba"
-FIELDS = ("birth", "height", "nationality")
+SOURCES = ("fiba", "acb")                           # the external sources that lend bio (the order of ``bio.SOURCE_PRIORITY`` decides who wins where two say a field)
+FIELDS = ("birth", "height", "nationality", "position")          # a source that does not say a field (FIBA has no position) simply has none
 
 
 def linked_persons(links: Optional[Mapping[str, Any]]) -> Dict[str, str]:
@@ -59,6 +60,15 @@ def read_external_bio(root: Any, source: str = SOURCE) -> Dict[str, List[Dict[st
     if not path.is_file() or not (root / source).is_dir():
         return {}
     return external_bio(read_games(root / source), linked_persons(json.loads(path.read_text(encoding="utf-8"))), source)
+
+
+def read_external_bios(root: Any, sources: Iterable[str] = SOURCES) -> Dict[str, List[Dict[str, Any]]]:
+    """``read_external_bio`` of every source that has links and games, merged: ``{FEB person id: [candidates]}``, the candidates of each person sorted by source and season (a source with nothing yet adds nothing)."""
+    merged: Dict[str, List[Dict[str, Any]]] = {}
+    for source in sources:
+        for person, candidates in read_external_bio(root, source).items():
+            merged.setdefault(person, []).extend(candidates)
+    return {person: sorted(candidates, key=lambda c: (c.get("source") or "", c.get("season") or "")) for person, candidates in sorted(merged.items())}
 
 
 def read_person_links(root: Any, source: str) -> Dict[str, str]:

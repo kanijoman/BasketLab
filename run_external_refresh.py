@@ -46,7 +46,7 @@ def main(argv: Optional[List[str]] = None, db: Any = None, now: Optional[datetim
     parser.add_argument("--out", default="archive-ext")
     parser.add_argument("--source", choices=EXTERNAL_LEAGUES)
     parser.add_argument("--window-days", type=int, default=DEFAULT_WINDOW_DAYS)
-    parser.add_argument("--budget", type=_positive, default=None, help="how many games a run may ask the source for (the default of the source when absent: 300 for FIBA, one request every 2 s)")
+    parser.add_argument("--budget", type=_positive, default=None, help="how many games (FIBA) or requests (ACB) a run may ask the source for (the default of the source when absent: 300 for FIBA, one request every 2 s)")
     parser.add_argument("--list-sources", action="store_true", help="print the sources with an active competition, as JSON, and exit")
     args = parser.parse_args(argv)
     catalogue = load_catalogue(args.catalogue)

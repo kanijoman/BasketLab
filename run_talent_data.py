@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 
 
 def read_external_bio(root):
-    """The bio the linked external players lend to FEB persons (#979): ``links/fiba.json`` and ``fiba/`` of the external archive at ``root``."""
-    from src.market.external_bio import read_external_bio as read
+    """The bio the linked external players lend to FEB persons (#979): ``links/<source>.json`` and ``<source>/`` of the external archive at ``root``, for FIBA and for ACB (#886)."""
+    from src.market.external_bio import read_external_bios as read
 
     return read(root)
 

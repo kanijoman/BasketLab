@@ -96,3 +96,13 @@ def test_it_links_the_fbcyl_players_after_the_archive_and_the_rosters_and_before
     step = STEPS["Link the FBCYL players"]
     assert "run_identity_links.py --ext archive-ext --source fbcyl --archive archive" in step["run"]
     assert "git push" not in step["run"] and "git commit" not in step["run"] and "||" not in step["run"] and "pull_request" in step["if"]
+
+
+def test_it_links_the_acb_players_like_the_fiba_ones_with_no_games_yet_not_turning_the_run_red_886():
+    """#886: ACB has birth, height and position for its players, so they are linked to FEB (``links/acb.json``) and lend it to the build like FIBA's. A source with no games yet is not an error; a failing
+    link is. A derived file of the run: it is not written back to the archive."""
+    assert ORDER.index("Download the rosters") < ORDER.index("Link the ACB players") < ORDER.index("Build the artifacts")
+    link = STEPS["Link the ACB players"]
+    run = link["run"]
+    assert "run_identity_links.py --ext archive-ext --source acb" in run and "[ -d archive-ext/acb ]" in run and "git push" not in run and "git commit" not in run
+    assert "||" not in run.split("python run_identity_links.py")[1].splitlines()[0] and "pull_request" in link["if"]

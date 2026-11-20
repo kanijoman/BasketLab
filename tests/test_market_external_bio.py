@@ -97,3 +97,44 @@ class TestTheCommand:
             handle.write(json.dumps(_game({"id": "fiba:1", "name": "ANA"})) + "\n")
         assert run_talent_data.read_external_bio(tmp_path)["feb:1"][0]["height"] == "190"
         assert run_talent_data.read_external_bio(tmp_path / "nowhere") == {}
+
+
+class TestAcbAndItsPosition:
+    """ACB (#886) says the position of a player in its box (FEB leaves it empty for ~90 % of the players), so the position is a field an external source lends too; and two sources lend to the same person."""
+
+    def test_the_position_of_a_linked_player_is_a_field_of_the_bio(self):
+        found = external_bio([_game({"id": "acb:1", "name": "ANA", "position": "Ala-pívot"})], {"acb:1": "feb:1"}, "acb")
+        assert found["feb:1"][0]["position"] == "Ala-pívot" and found["feb:1"][0]["source"] == "acb"
+
+    def test_a_player_whose_source_has_no_position_has_none_in_the_bio(self):
+        found = external_bio([_game({"id": "fiba:1", "name": "ANA"})], {"fiba:1": "feb:1"})
+        assert "position" not in found["feb:1"][0]
+
+    def test_acb_fills_the_position_feb_leaves_empty_and_feb_wins_where_it_says_one(self):
+        ext = {"feb:1": [{"source": "acb", "birth": "1997-02-07", "height": "202", "nationality": "Francia", "position": "Ala-pívot"}]}
+        (row,) = attach_bio([_row()], [_roster()], "2025", external=ext)
+        assert row["position"] == "Ala-Pívot" and row["bio_from"]["position"] == "acb"
+        (row,) = attach_bio([_row()], [_roster(position="Base")], "2025", external=ext)
+        assert row["position"] == "Base" and "position" not in row["bio_from"]
+
+    def test_the_archive_gives_the_bio_of_every_source_that_has_links_and_games(self, tmp_path):
+        import run_talent_data
+
+        (tmp_path / "links").mkdir()
+        for source, ext_id, height in (("fiba", "fiba:1", "190"), ("acb", "acb:7", "202")):
+            (tmp_path / "links" / f"{source}.json").write_text(json.dumps({"format": 1, "source": source, "links": [_link(ext_id, "feb:1")]}), encoding="utf-8")
+            (tmp_path / source).mkdir()
+            with gzip.open(tmp_path / source / f"{source.upper()}_x_.jsonl.gz", "wt", encoding="utf-8") as handle:
+                handle.write(json.dumps({**_game({"id": ext_id, "name": "ANA", "height": height}), "_season": "2025"}) + "\n")
+        bio = run_talent_data.read_external_bio(tmp_path)
+        assert [(c["source"], c["height"]) for c in bio["feb:1"]] == [("acb", "202"), ("fiba", "190")]                    # both, in the order of the sources' names
+
+    def test_a_source_that_has_nothing_yet_is_not_an_error_and_the_other_one_still_gives_its_bio(self, tmp_path):
+        import run_talent_data
+
+        (tmp_path / "links").mkdir()
+        (tmp_path / "links" / "acb.json").write_text(json.dumps({"format": 1, "source": "acb", "links": [_link("acb:7", "feb:1")]}), encoding="utf-8")
+        (tmp_path / "acb").mkdir()
+        with gzip.open(tmp_path / "acb" / "ACB_x_.jsonl.gz", "wt", encoding="utf-8") as handle:
+            handle.write(json.dumps(_game({"id": "acb:7", "name": "ANA"})) + "\n")
+        assert [c["source"] for c in run_talent_data.read_external_bio(tmp_path)["feb:1"]] == ["acb"]
