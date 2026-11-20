@@ -228,6 +228,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the history since the previous release: the notes are the pull requests that touched the app
+          fetch-tags: true
+
       - uses: actions/download-artifact@v8
         with:
           name: basketlab-live-aab
@@ -239,3 +244,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event_name == 'workflow_dispatch' && format('live-android-v{0}', inputs.version) || github.ref_name }}
         run: gh release upload "$TAG" bundle/*.aab --clobber --repo "$GITHUB_REPOSITORY"
+
+      # The bundle is uploaded to Play Console by hand (decided 20/11/2026: Google Cloud is not an option): the summary of the run has what that takes (link, versionCode, notes to paste;
+      # the decisions are in scripts/live_android_release.py, tested). The versionCode is also written in the body of the release, so the next release can say whether it is higher than this one.
+      - name: Summary for the manual upload to Play Console
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event_name == 'workflow_dispatch' && format('live-android-v{0}', inputs.version) || github.ref_name }}
+          CODE: ${{ github.run_number }}
+        run: |
+          version="${TAG#live-android-v}"
+          body=$(gh release view "$TAG" --json body --jq .body --repo "$GITHUB_REPOSITORY")
+          previous_tag=$(gh release list --limit 30 --json tagName --jq '.[].tagName' --repo "$GITHUB_REPOSITORY" | grep -E '^live-android-v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vx "$TAG" | sort -V | tail -1 || true)
+          previous_code=""
+          if [ -n "$previous_tag" ]; then
+            previous_code=$(gh release view "$previous_tag" --json body --jq .body --repo "$GITHUB_REPOSITORY" | grep -oE 'versionCode [0-9]+' | tail -1 | grep -oE '[0-9]+' || true)
+          fi
+          if ! printf '%s' "$body" | grep -q 'versionCode '; then
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes "$(printf '%s\n\nversionCode %s' "$body" "$CODE")"
+          fi
+          args=(play-summary --version "$version" --code "$CODE" --repo "$GITHUB_REPOSITORY" --tag "$TAG")
+          if [ -n "$previous_code" ]; then args+=(--previous-code "$previous_code"); fi
+          python3 scripts/live_android_release.py app-notes --since "$previous_tag" --until "$TAG" | python3 scripts/live_android_release.py "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
