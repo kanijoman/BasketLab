@@ -57,8 +57,9 @@ def match_url(home: str, away: str, match_id: int, tab: str) -> str:
     return f"{LIVE_BASE}/{slugify(home)}-vs-{slugify(away)}-{match_id}/{tab}"
 
 
-def player_url(first_name: str, last_name: str, player_id: int, tab: str) -> str:
-    return f"{SITE_BASE}/es/liga/jugadores/{slugify(first_name + ' ' + last_name)}-{player_id}/{tab}"
+def player_url(first_name: str, last_name: str, player_id: int, tab: str, edition_id: Optional[int] = None) -> str:
+    """The page of a player; ``edition_id`` asks for the season of that edition (his shots are those of a season: without it, the current one)."""
+    return f"{SITE_BASE}/es/liga/jugadores/{slugify(first_name + ' ' + last_name)}-{player_id}/{tab}" + (f"?editionId={edition_id}" if edition_id else "")
 
 
 def _fetch(url: str, headers: Dict[str, str]) -> str:
@@ -139,9 +140,9 @@ class AcbClient:
         """The data of a tab of a game (``jugadas``, ``estadisticas``) as the text of the page's chunks; ``acb_page`` reads it."""
         return self._page(match_url(home, away, match_id, tab), tab)
 
-    def player_page(self, first_name: str, last_name: str, player_id: int, tab: str) -> str:
-        """The data of a tab of a player (``temporada``: his bio; ``zonas-de-tiro``: his shots with their coordinates)."""
-        return self._page(player_url(first_name, last_name, player_id, tab), tab)
+    def player_page(self, first_name: str, last_name: str, player_id: int, tab: str, edition_id: Optional[int] = None) -> str:
+        """The data of a tab of a player (``temporada``: his bio; ``zonas-de-tiro``: his shots with their coordinates) in the season of ``edition_id`` (the current one if none)."""
+        return self._page(player_url(first_name, last_name, player_id, tab, edition_id), tab)
 
     def _api(self, path: str, **params: Any) -> Dict[str, Any]:
         if self._api_key is None:

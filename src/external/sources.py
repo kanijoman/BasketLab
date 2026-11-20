@@ -8,6 +8,9 @@ from __future__ import annotations
 from typing import Optional
 
 from src.external import registry
+from src.external.acb_client import AcbClient
+from src.external.acb_source import DEFAULT_BUDGET as ACB_BUDGET
+from src.external.acb_source import AcbSource
 from src.external.fiba_client import FibaClient
 from src.external.fiba_source import DEFAULT_BUDGET, FibaSource
 
@@ -21,6 +24,8 @@ def default_source(name: str, budget: Optional[int] = None):
     """The source of ``name`` with its client, or ``None`` when it has no scraper yet. ``budget``: how many games a run may ask for (the default of the source when absent)."""
     if name == "fiba":
         return FibaSource(make_client(), budget=budget or DEFAULT_BUDGET)
+    if name == "acb":
+        return AcbSource(AcbClient(max_requests=budget or ACB_BUDGET))
     return None
 
 
