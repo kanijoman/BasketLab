@@ -32,7 +32,7 @@ export function teamsOf(rows: SearchRow[]): TeamOption[] {
 
 export interface Squad { rotation: SearchRow[]; bench: SearchRow[] }
 
-const byMinutes = (a: SearchRow, b: SearchRow) => b.minutes - a.minutes || (a.full_name ?? a.name).localeCompare(b.full_name ?? b.name) || a.person_id.localeCompare(b.person_id)
+export const byMinutes = (a: SearchRow, b: SearchRow) => b.minutes - a.minutes || (a.full_name ?? a.name).localeCompare(b.full_name ?? b.name) || a.person_id.localeCompare(b.person_id)
 
 /** The rows of a team in a competition: the rotation (played enough) by minutes, and the bench. Independent of the order of the rows. */
 export function squadOf(rows: SearchRow[], compKey: string, teamId: string): Squad {
@@ -70,10 +70,10 @@ const axisName = (label: string) => label.replace(/ \(.*\)$/, '')
 const pctOf = (row: SearchRow, key: string): number | null => (typeof row.pct?.[key as keyof NonNullable<SearchRow['pct']>] === 'number' ? (row.pct![key as keyof NonNullable<SearchRow['pct']>] as number) : null)
 
 /** The axes the rotation is judged on: those of the radar with the two of rebounds as ONE (a player rebounds as the mean of his offensive and defensive percentiles, and needs both). */
-const AXES: { key: string; label: string; short: string; parts: string[] }[] = RADAR_AXES.flatMap(a =>
+export const AXES: { key: string; label: string; short: string; parts: string[] }[] = RADAR_AXES.flatMap(a =>
   a.key === 'drb' ? [] : a.key === 'orb' ? [{ key: 'reb', label: 'Rebotes', short: 'Reb', parts: ['orb', 'drb'] }] : [{ key: a.key, label: axisName(a.label), short: a.short, parts: [a.key] }])
 
-const valueOf = (row: SearchRow, parts: string[]): number | null => {
+export const valueOf = (row: SearchRow, parts: string[]): number | null => {
   const values = parts.map(k => pctOf(row, k))
   return values.every((v): v is number => v !== null) ? values.reduce((s, v) => s + v, 0) / values.length : null
 }

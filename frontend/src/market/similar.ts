@@ -26,6 +26,12 @@ function gap(a: SearchRow, b: SearchRow): { rms: number; axes: number } | null {
   return diffs.length >= MIN_SHARED_AXES ? { rms: Math.sqrt(diffs.reduce((s, d) => s + d * d, 0) / diffs.length), axes: diffs.length } : null
 }
 
+/** How alike two rows are, 0 to 100 (null when they share fewer than `MIN_SHARED_AXES` axes): the rule of the parallels of the profile, also used to find whom a player would replace (#883). */
+export function profileSimilarity(a: SearchRow, b: SearchRow): { similarity: number; axes: number } | null {
+  const g = gap(a, b)
+  return g ? { similarity: Math.round((100 - g.rms) * 10) / 10, axes: g.axes } : null
+}
+
 const order = (a: Similar, b: Similar) =>
   b.similarity - a.similarity || b.row.minutes - a.row.minutes || (a.row.full_name ?? a.row.name).localeCompare(b.row.full_name ?? b.row.name) || a.row.team_id.localeCompare(b.row.team_id) || a.row.person_id.localeCompare(b.row.person_id)
 
@@ -36,9 +42,9 @@ export function similarPlayers(rows: SearchRow[], target: SearchRow, limit = SIM
   const best = new Map<string, Similar>()
   for (const row of rows) {
     if (row.comp_key !== target.comp_key || !row.eligible || row.person_id === target.person_id || row.linked_to === target.person_id) continue
-    const g = gap(target, row)
+    const g = profileSimilarity(target, row)
     if (!g) continue
-    const mine: Similar = { row, similarity: Math.round((100 - g.rms) * 10) / 10, axes: g.axes }
+    const mine: Similar = { row, ...g }
     const have = best.get(row.person_id)
     if (!have || order(mine, have) < 0) best.set(row.person_id, mine)
   }
