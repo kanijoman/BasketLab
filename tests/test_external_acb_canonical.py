@@ -124,7 +124,7 @@ class TestThePlayByPlay:
 
     def test_the_codes_that_are_not_known_are_kept_as_other_lines_and_listed_not_dropped(self, doc, parsed):
         others = [l for l in doc["PLAYBYPLAY"]["LINES"] if l["action"] == "other"]
-        assert others and all("ACB" in l["text"] or "RECIBIDA" in l["text"] or "TAPÓN RECIBIDO" in l["text"] or "QUINTETO" in l["text"] for l in others)
+        assert others and all("ACB" in l["text"] or "RECIBIDA" in l["text"] or "TAPÓN RECIBIDO" in l["text"] or "QUINTETO" in l["text"] or "SALTO" in l["text"] or "PARTIDO" in l["text"] for l in others)
         assert any("TAPÓN RECIBIDO" in l["text"] for l in others) and not any("BLOQUEO" in l["text"] for l in doc["PLAYBYPLAY"]["LINES"])          # in Spanish basketball a block is a «tapón»
         seen = {p["type"] for p in parsed["plays"]}
         assert seen <= KNOWN_CODES | UNKNOWN_CODES and not (KNOWN_CODES & UNKNOWN_CODES)          # every code of the real game is either proved or listed as not known
@@ -141,6 +141,37 @@ class TestThePlayByPlay:
         for i in received:
             before, after = plays[i - 1], plays[i + 1]
             assert before["type"] in (97, 98, 533) and before["player_id"] == plays[i]["player_id"] and after["type"] == 102
+
+    def test_599_is_the_starting_lineup_it_names_exactly_the_five_starters_of_each_team_of_the_official_box(self, parsed, doc):
+        lineup = {p["player_id"] for p in parsed["plays"] if p["type"] == 599}
+        starters = {p["id"] for side in ("home", "away") for p in parsed[side]["players"] if p["started"]}
+        assert lineup == starters and len(lineup) == 10
+        assert [l["text"] for l in doc["PLAYBYPLAY"]["LINES"] if "QUINTETO INICIAL" in l["text"]].__len__() == 10
+
+    @pytest.mark.parametrize("name", ["105383", "18665"])
+    def test_123_is_the_end_of_the_match_it_is_the_last_play_right_after_the_end_of_the_last_quarter(self, name):
+        from src.external.acb_page import parse_plays
+
+        plays = parse_plays(flight(f"{name}.jugadas"))
+        assert [p["type"] for p in plays[-2:]] == [116, 123] and sum(1 for p in plays if p["type"] == 123) == 1
+
+    @pytest.mark.parametrize("name", ["105383", "18665"])
+    def test_178_and_179_are_the_jump_ball_won_and_lost_the_team_of_the_one_who_wins_it_takes_the_first_shot(self, name):
+        """The opening jump ball: one player of each team at the start of the game; in both games the first shot after it is of the team of the player of 178, so 178 is won and 179 lost (the page translates
+        «Won jump ball» and «Lost jump ball» in that order)."""
+        from src.external.acb_page import parse_plays
+
+        plays = parse_plays(flight(f"{name}.jugadas"))
+        won = next(p for p in plays if p["type"] == 178)
+        lost = next(p for p in plays if p["type"] == 179)
+        first_shot = next(p for p in plays if p["order"] > lost["order"] and p["type"] in (92, 93, 94, 96, 97, 98, 100, 533))
+        assert won["team_id"] != lost["team_id"] and first_shot["team_id"] == won["team_id"]
+
+    def test_the_codes_the_real_games_prove_are_known_and_written_in_spanish_as_lines_that_change_no_statistic(self, doc):
+        assert {105, 599, 123, 178, 179} <= KNOWN_CODES and not ({105, 599, 123, 178, 179} & UNKNOWN_CODES)
+        texts = [l["text"] for l in doc["PLAYBYPLAY"]["LINES"] if l["action"] == "other"]
+        for wanted in ("TAPÓN RECIBIDO", "QUINTETO INICIAL", "FIN DEL PARTIDO", "SALTO GANADO", "SALTO PERDIDO"):
+            assert any(wanted in t for t in texts), wanted
 
     def test_the_game_of_2019_20_has_no_code_that_nobody_has_seen(self):
         from src.external.acb_page import parse_plays

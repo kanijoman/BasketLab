@@ -32,10 +32,14 @@ _FOULS = {109, 159, 160, 161, 162}                                              
 _FOUL_DRAWN = 110
 _SUBSTITUTIONS = {115: "OUT", 112: "IN"}                                                   # the first one of every starter is 115: he leaves
 _BLOCK_RECEIVED = 105                                                                      # the shooter of a miss that is blocked: after his miss and before the block (102) of the other team, in every game; it changes no statistic
+# lines that change no statistic and that FEB has no type for: they stay ``other`` lines with a Spanish text. Each one is proved by its place in the real games: 599 names exactly the ten starters of the box at
+# 10:00 of the first quarter, 123 is the last play of the game right after the end of the last quarter, 178 and 179 are the opening jump ball (the team of 178 takes the first shot in both games)
+_INFO = {_BLOCK_RECEIVED: "TAPÓN RECIBIDO", 599: "QUINTETO INICIAL", 123: "FIN DEL PARTIDO", 178: "SALTO GANADO", 179: "SALTO PERDIDO"}
 _STRUCTURE = {113: "TIMO", 121: "STARTP", 116: "ENDP"}                                      # a time-out (7 in the game, with a team and no player); the start (10:00) and the end (0:00) of each quarter
-KNOWN_CODES = frozenset({*_SHOTS, *_REBOUNDS, *_ACTIONS, *_FOULS, _FOUL_DRAWN, *_SUBSTITUTIONS, *_STRUCTURE, _BLOCK_RECEIVED})
-# seen in the real games and not understood: kept as ``other`` lines (599 looks like the starting lineup and 123 the end of the match, but nothing proves it)
-UNKNOWN_CODES = frozenset({118, 123, 599, 178, 179, 405, 406, 411, 416, 417, 541, 748, 749})
+KNOWN_CODES = frozenset({*_SHOTS, *_REBOUNDS, *_ACTIONS, *_FOULS, _FOUL_DRAWN, *_SUBSTITUTIONS, *_STRUCTURE, *_INFO})
+# seen in the real games and not understood: kept as ``other`` lines. 416, 417, 748, 749, 406 and 411 gather around fouls and substitutions with no team or with the team that was fouled (they could be what the
+# foul brings: free throws, the bonus, the throw-in) and nothing proves it; 118, 405 and 541 are only in the game of 2019/20
+UNKNOWN_CODES = frozenset({118, 405, 406, 411, 416, 417, 541, 748, 749})
 
 
 def _period(number: int) -> str:
@@ -98,10 +102,8 @@ def _events(game: Dict[str, Any]) -> List[Dict[str, Any]]:
             base.update(code="SUBST", **{"in": _SUBSTITUTIONS[code]})
         elif code in _STRUCTURE:
             base.update(code=_STRUCTURE[code], text="")
-        elif code == _BLOCK_RECEIVED:
-            base["text"] = "TAPÓN RECIBIDO"
-        elif code == 599:
-            base["text"] = "QUINTETO INICIAL"
+        elif code in _INFO:
+            base["text"] = _INFO[code]
         events.append(base)
     return events
 
