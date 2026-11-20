@@ -20,7 +20,8 @@ from tests.test_local_web_data import FBCYL, FEB, MASTER, cheap_lineups, handler
 CATALOGUE = load_catalogue(DEFAULT_CATALOGUE)
 FORMATION = {"C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas.",
              # the national championships of infantil and minibásket (20/11/2026: all the youth of the first level come in)
-             "C ESP CLUBES INF FEM", "C ESP CLUBES INF MASC", "C ESP CLUBES MINI FEM", "C ESP CLUBES MINI MASC", "CE SSAA Infantil Fem.", "CE SSAA Infantil Mas.", "CE SSAA Mini Fem.", "CE SSAA Mini Mas."}
+             "C ESP CLUBES INF FEM", "C ESP CLUBES INF MASC", "C ESP CLUBES MINI FEM", "C ESP CLUBES MINI MASC", "CE SSAA Infantil Fem.", "CE SSAA Infantil Mas.", "CE SSAA Mini Fem.", "CE SSAA Mini Mas.",
+             "MINICOPA LF ENDESA"}
 
 
 def test_the_age_groups_are_infantil_cadete_and_junior_and_u20_is_not_one_of_them():
@@ -98,7 +99,7 @@ def test_the_six_youth_championships_of_the_real_catalogue_are_formacion_with_th
     assert all(e["age_group"] in ("U12", "U14", "U16", "U18") and e["label"] for e in youth)
     assert {e["age_group"] for e in youth if "INF" in e["competition"].upper()} == {"U14"} and {e["age_group"] for e in youth if "MINI" in e["competition"].upper()} == {"U12"}
     seasons = {e["season_value"] for e in youth}
-    assert all({e["season_value"] for e in youth if e["competition"] == name} == seasons for name in FORMATION)          # every championship has every season, as the cadete ones
+    assert all({e["season_value"] for e in youth if e["competition"] == name} == seasons for name in FORMATION - {"MINICOPA LF ENDESA"})          # every championship has every season, as the cadete ones; the minicopa has none in 2020
     assert {e["age_group"] for e in youth if "CAD" in e["competition"] or "Cadete" in e["competition"]} == {"U16"}
     assert {e["age_group"] for e in youth if "JR" in e["competition"]} == {"U18"}
     assert all(e.get("category", "senior") == "senior" for e in CATALOGUE if e["league"] == "feb" and e["competition"] not in FORMATION)

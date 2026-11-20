@@ -25,7 +25,8 @@ EXISTING_2026 = [{"league": "fbcyl", "competition": "1ª FASE-GRUPO A-1", "fbcyl
     ("SENIOR FBCYL FEMENINO", ("senior", None)),
     ("1ªDIV. - CAD. FEM. AUT.", ("formacion", "U16")), ("1ªDIV. - CAD. MASC.AUT.", ("formacion", "U16")), ("2ªDIV.- CAD. MASC. AUT.", ("formacion", "U16")), ("1ªDIV.-CAD.FEM.AUT.", ("formacion", "U16")),
     ("LIGA UEMC JUNIOR MASCULINO", ("formacion", "U18")), ("LIGA UEMC JUNIOR FEMENINO", ("formacion", "U18")), ("2ªDIV.- JUN. FEM. AUT.", ("formacion", "U18")), ("1ªDIV.-JUN. MASC.AUT.", ("formacion", "U18")),
-    ("1ªDIV.- INF. MASC. AUT.", ("formacion", "U14")), ("2ªDIV.- INF. FEM. AUT.", ("formacion", "U14")), ("1ªDIV.-INF.FEM. AUT.", ("formacion", "U14")),
+    ("1ªDIV.- INF. MASC. AUT.", ("formacion", "U14")), ("1ªDIV.-INF.FEM. AUT.", ("formacion", "U14")),
+    ("2ªDIV.- INF. FEM. AUT.", ("excluded", None)), ("2ªDIV.- INF. MASC. AUT.", ("excluded", None)),                  # infantil: only the first division (20/11/2026)
     ("MINIBASKET MASCULINO AUTONOMICO", ("formacion", "U12")), ("MINIBASKET FEMENINO AUTONOMICO", ("formacion", "U12")),
     ("ALEVIN MASCULINO", ("excluded", None)), ("BENJAMIN FEMENINO", ("excluded", None)), ("PREMINI MASCULINO", ("excluded", None)), ("LIGA 3X3", ("excluded", None)),
     ("TORNEO DE PRUEBA NUEVO", ("unknown", None)), ("", ("unknown", None)),
@@ -40,7 +41,7 @@ def test_a_category_is_senior_cadete_junior_excluded_or_unknown_and_what_is_not_
     ("1ªDIV. - CAD. FEM. AUT.", "F", "1ª División cadete femenino"), ("1ªDIV.-CAD.FEM.AUT.", "F", "1ª División cadete femenino"), ("2ªDIV.- CAD. MASC. AUT.", "M", "2ª División cadete masculino"),
     ("2ªDIV.- JUN. FEM. AUT.", "F", "2ª División júnior femenino"), ("1ªDIV.-JUN. MASC.AUT.", "M", "1ª División júnior masculino"),
     ("LIGA UEMC JUNIOR MASCULINO", "M", "Liga UEMC júnior masculino"), ("LIGA UEMC JUNIOR FEMENINO", "F", "Liga UEMC júnior femenino"),
-    ("1ªDIV.- INF. MASC. AUT.", "M", "1ª División infantil masculino"), ("2ªDIV.- INF. FEM. AUT.", "F", "2ª División infantil femenino"),
+    ("1ªDIV.- INF. MASC. AUT.", "M", "1ª División infantil masculino"), ("1ªDIV.-INF.FEM. AUT.", "F", "1ª División infantil femenino"),
     ("MINIBASKET MASCULINO AUTONOMICO", "M", "Minibásket masculino"), ("MINIBASKET FEMENINO AUTONOMICO", "F", "Minibásket femenino"),
 ])
 def test_every_category_has_a_readable_name_with_its_division_level_and_gender(text, gender, label):
@@ -62,7 +63,7 @@ def test_2026_has_the_senior_cadete_junior_infantil_and_minibasket_groups_men_an
     by_age = {}
     for e in entries:
         by_age.setdefault((e["category"], e.get("age_group")), []).append(e)
-    assert {k: len(v) for k, v in by_age.items()} == {("senior", None): 3, ("formacion", "U12"): 8, ("formacion", "U14"): 17, ("formacion", "U16"): 18, ("formacion", "U18"): 16}       # the two groups already in the catalogue are not added again
+    assert {k: len(v) for k, v in by_age.items()} == {("senior", None): 3, ("formacion", "U12"): 8, ("formacion", "U14"): 11, ("formacion", "U16"): 18, ("formacion", "U18"): 16}       # the two groups already in the catalogue are not added again
     labels = {e["label"] for e in entries}
     assert "1ª División masculina" in labels and "Liga UEMC júnior masculino" in labels and "Liga UEMC júnior femenino" in labels and "1ª División cadete masculino" in labels
     assert not any(w in e["note"].upper() for e in entries for w in ("ALEV", "BENJAM", "PREMINI"))             # alevín, benjamín and premini stay out
@@ -173,7 +174,7 @@ def test_the_runner_adds_the_seasons_it_is_told_to_and_leaves_the_rest_of_the_fi
     report = update_catalogue_file(path, COMBOS, {"2026": True, "2025": False})
     written = json.loads(path.read_text(encoding="utf-8"))["competitions"]
     assert written[:3] == original["competitions"] and len(written) == 3 + report["added"]
-    assert report["added"] == 62 + report["paused_added"] and report["unknown"] == []
+    assert report["added"] == 56 + report["paused_added"] and report["unknown"] == []
     assert {e["season_value"] for e in written[3:]} == {"2026", "2025"} and all(e["active"] == (e["season_value"] == "2026") for e in written[3:])
     again = update_catalogue_file(path, COMBOS, {"2026": True, "2025": False})
     assert again["added"] == 0 and json.loads(path.read_text(encoding="utf-8"))["competitions"] == written          # idempotent, and no byte moves

@@ -254,10 +254,10 @@ describe('the FBCYL competitions in the selector (issue #920)', () => {
     expect(fbcyl({ category: 'Sénior', season: '2026/2027' }).competitions).toEqual(['1ª División Femenina', '1ª División masculina', 'Sénior FBCYL femenino'])
   })
 
-  it('minibásket, infantil, cadete and júnior, men and women, with a readable name: nothing of the smaller ones', () => {
+  it('minibásket, infantil (first division only), cadete and júnior, men and women, with a readable name: nothing of the smaller ones', () => {
     const names = fbcyl({ category: 'Formación', season: '2026/2027' }).competitions
     expect(names).toEqual(['1ª División cadete femenino', '1ª División cadete masculino', '1ª División infantil femenino', '1ª División infantil masculino', '2ª División cadete femenino', '2ª División cadete masculino',
-      '2ª División infantil femenino', '2ª División infantil masculino', '2ª División júnior femenino', '2ª División júnior masculino', 'Liga UEMC júnior femenino', 'Liga UEMC júnior masculino',
+      '2ª División júnior femenino', '2ª División júnior masculino', 'Liga UEMC júnior femenino', 'Liga UEMC júnior masculino',
       'Minibásket femenino', 'Minibásket masculino'])
     expect(names.some(n => /alevín|benjamín|premini/i.test(n))).toBe(false)
   })

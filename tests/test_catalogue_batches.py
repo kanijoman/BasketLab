@@ -43,13 +43,13 @@ def _active(path, season, only_history=True):
 def test_a_batch_turns_on_the_history_and_youth_of_those_seasons_without_tercera(catalogue):
     before = {(e["competition"], e["season_value"]): e["active"] for e in _entries(catalogue)}
     report = activate_seasons(catalogue, ["2023", "2022"], exclude=[TERCERA])
-    assert report["activated"] == 38 and report["by_season"] == {"2023": 19, "2022": 19}
+    assert report["activated"] == 40 and report["by_season"] == {"2023": 20, "2022": 20}
     for season in ("2023", "2022"):
         active = _active(catalogue, season)
-        assert TERCERA not in active and len(active) == 19
+        assert TERCERA not in active and len(active) == 20
         assert {"LF ENDESA", "PRIMERA FEB", "SEGUNDA FEB", "L.F.-2", "LF CHALLENGE", "C ESP CLUBES JR FEM", "CE SSAA Cadete Mas."} <= active
     changed = {(e["competition"], e["season_value"]) for e in _entries(catalogue) if e["active"] != before[(e["competition"], e["season_value"])]}
-    assert {s for _, s in changed} == {"2023", "2022"} and len(changed) == 38                    # nothing else moved
+    assert {s for _, s in changed} == {"2023", "2022"} and len(changed) == 40                    # nothing else moved
 
 
 def test_it_never_touches_the_current_season_the_seasons_already_active_fbcyl_or_other_seasons(catalogue):
@@ -91,5 +91,5 @@ def test_a_season_with_no_entries_or_nothing_to_turn_on_activates_nothing(catalo
 
 def test_fbcyl_seasons_are_turned_on_the_same_way_when_asked(catalogue):
     report = activate_seasons(catalogue, ["2025"], league="fbcyl")
-    assert report["activated"] == 117 and all(e["active"] for e in _entries(catalogue) if e.get("league") == "fbcyl" and e["season_value"] == "2025")
+    assert report["activated"] == 103 and all(e["active"] for e in _entries(catalogue) if e.get("league") == "fbcyl" and e["season_value"] == "2025")
     assert not any(e["active"] for e in _entries(catalogue) if e.get("league") == "fbcyl" and e["season_value"] == "2024")

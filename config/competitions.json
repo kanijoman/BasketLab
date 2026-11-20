@@ -5037,132 +5037,6 @@
     },
     {
       "league": "fbcyl",
-      "competition": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR A G6506",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR A",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR A",
-      "fbcyl": {
-        "competition_id": "6506",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR B G6507",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR B",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR B",
-      "fbcyl": {
-        "competition_id": "6507",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR C G6508",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR C",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ªDIV.INF.MASC - 1ª FASE - LIGA REGULAR-GR C",
-      "fbcyl": {
-        "competition_id": "6508",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. D G7043",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. D",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. D",
-      "fbcyl": {
-        "competition_id": "7043",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. E G7044",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. E",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. E",
-      "fbcyl": {
-        "competition_id": "7044",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. F G7045",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. F",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.MAS. - -GR. F",
-      "fbcyl": {
-        "competition_id": "7045",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "3ª FASE - FASE FINAL (F4) - 2ªDIV INF. MAS.-F4 G7046",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil masculino, 3ª FASE - FASE FINAL (F4) - 2ªDIV INF. MAS.-F4",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "3ª FASE - FASE FINAL (F4) - 2ªDIV INF. MAS.-F4",
-      "fbcyl": {
-        "competition_id": "7046",
-        "category": "1028",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
       "competition": "FASE 1. CLASIFICACION - MINIBASKET MASCULINO-GRUPO 01 G6351",
       "season_label": "2025",
       "season_value": "2025",
@@ -5469,132 +5343,6 @@
     },
     {
       "league": "fbcyl",
-      "competition": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR A G6503",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR A",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR A",
-      "fbcyl": {
-        "competition_id": "6503",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR B G6504",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR B",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR B",
-      "fbcyl": {
-        "competition_id": "6504",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR C G6505",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR C",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ªDIV.INF.FEM - 1ª FASE - LIGA REGULAR-GR C",
-      "fbcyl": {
-        "competition_id": "6505",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. D G7039",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. D",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. D",
-      "fbcyl": {
-        "competition_id": "7039",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. E G7040",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. E",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. E",
-      "fbcyl": {
-        "competition_id": "7040",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. F G7041",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. F",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ª FASE - CLASIFICACION F4 - 2ªDIV.INF.FEM. -GR. F",
-      "fbcyl": {
-        "competition_id": "7041",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "3ª FASE - FASE FINAL (F4) - 2ªDIV INF. FEM.-F4 G7042",
-      "season_label": "2025",
-      "season_value": "2025",
-      "active": false,
-      "note": "2ª División infantil femenino, 3ª FASE - FASE FINAL (F4) - 2ªDIV INF. FEM.-F4",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "3ª FASE - FASE FINAL (F4) - 2ªDIV INF. FEM.-F4",
-      "fbcyl": {
-        "competition_id": "7042",
-        "category": "1027",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
       "competition": "FASE 1 - CLASIFICACION - MINIBASKET FEMENINO-GRUPO 01 G6355",
       "season_label": "2025",
       "season_value": "2025",
@@ -5808,204 +5556,6 @@
         "territory": "1"
       },
       "age_group": "U12"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES G5218",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
-      "fbcyl": {
-        "competition_id": "5218",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01 G5232",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 01",
-      "fbcyl": {
-        "competition_id": "5232",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02 G5233",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-GRUPO 02",
-      "fbcyl": {
-        "competition_id": "5233",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE G5447",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-2ª FASE",
-      "fbcyl": {
-        "competition_id": "5447",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO A G5523",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO A",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO A",
-      "fbcyl": {
-        "competition_id": "5523",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO B G5524",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO B",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO B",
-      "fbcyl": {
-        "competition_id": "5524",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO C G5525",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO C",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "1ª FASE - LIGA REGULAR (INFANTIL MASCULINO)-GRUPO C",
-      "fbcyl": {
-        "competition_id": "5525",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01 G6117",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 01",
-      "fbcyl": {
-        "competition_id": "6117",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02 G6118",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 02",
-      "fbcyl": {
-        "competition_id": "6118",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03 G6119",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "2ª FASE - CLASIFICACION TITULO COPA CASTILLA Y LEON-GRUPO 03",
-      "fbcyl": {
-        "competition_id": "6119",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "3ª FASE - FASE FINAL COPA (INFANTIL)-F4 G6145",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil masculino, 3ª FASE - FASE FINAL COPA (INFANTIL)-F4",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "3ª FASE - FASE FINAL COPA (INFANTIL)-F4",
-      "fbcyl": {
-        "competition_id": "6145",
-        "category": "935",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
     },
     {
       "league": "fbcyl",
@@ -6567,168 +6117,6 @@
     },
     {
       "league": "fbcyl",
-      "competition": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES G5221",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "A) MODALIDAD CLUBES - FASE PREVIA CLASIFICACIÓN-CLUBES",
-      "fbcyl": {
-        "competition_id": "5221",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO G5224",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, B) MODALIDAD CLUBES Y EQUIPOS-UNICO",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "B) MODALIDAD CLUBES Y EQUIPOS-UNICO",
-      "fbcyl": {
-        "competition_id": "5224",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO A G5517",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO A",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO A",
-      "fbcyl": {
-        "competition_id": "5517",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO B G5518",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO B",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO B",
-      "fbcyl": {
-        "competition_id": "5518",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO C G5519",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO C",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "1ª FASE - LIGA REGULAR (INFANTIL FEMENINO)-GRUPO C",
-      "fbcyl": {
-        "competition_id": "5519",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 01 G6113",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 01",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 01",
-      "fbcyl": {
-        "competition_id": "6113",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 02 G6114",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 02",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 02",
-      "fbcyl": {
-        "competition_id": "6114",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 03 G6115",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 03",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "2ª FASE . CLASIFICACION POR EL TITULO DE COPA CYL-GRUPO 03",
-      "fbcyl": {
-        "competition_id": "6115",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "3ª FASE - FASE FINAL COPA (INFANTIL)-F4 G6146",
-      "season_label": "2024",
-      "season_value": "2024",
-      "active": false,
-      "note": "2ª División infantil femenino, 3ª FASE - FASE FINAL COPA (INFANTIL)-F4",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "3ª FASE - FASE FINAL COPA (INFANTIL)-F4",
-      "fbcyl": {
-        "competition_id": "6146",
-        "category": "936",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
       "competition": "1ª FASE - LIGA REGULAR (1ªDIV.INF.FEM.AUT.)-GRUPO A1 G5257",
       "season_label": "2024",
       "season_value": "2024",
@@ -6927,60 +6315,6 @@
     },
     {
       "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO A G7431",
-      "season_label": "2026",
-      "season_value": "2026",
-      "active": true,
-      "note": "2ª División infantil masculino, 1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO A",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO A",
-      "fbcyl": {
-        "competition_id": "7431",
-        "category": "1142",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO B G7432",
-      "season_label": "2026",
-      "season_value": "2026",
-      "active": true,
-      "note": "2ª División infantil masculino, 1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO B",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO B",
-      "fbcyl": {
-        "competition_id": "7432",
-        "category": "1142",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO C G7433",
-      "season_label": "2026",
-      "season_value": "2026",
-      "active": true,
-      "note": "2ª División infantil masculino, 1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO C",
-      "category": "formacion",
-      "label": "2ª División infantil masculino",
-      "group_label": "1ª FASE - LIGA REGULAR 2ª DIV INF MAS-GRUPO C",
-      "fbcyl": {
-        "competition_id": "7433",
-        "category": "1142",
-        "gender": "M",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
       "competition": "FASE 1 - CLASIFICACION - MINIBASKET MASCULINO-GRUPO A G7275",
       "season_label": "2026",
       "season_value": "2026",
@@ -7172,60 +6506,6 @@
       "fbcyl": {
         "competition_id": "7297",
         "category": "1127",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO A G7439",
-      "season_label": "2026",
-      "season_value": "2026",
-      "active": true,
-      "note": "2ª División infantil femenino, 1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO A",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO A",
-      "fbcyl": {
-        "competition_id": "7439",
-        "category": "1136",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO B G7440",
-      "season_label": "2026",
-      "season_value": "2026",
-      "active": true,
-      "note": "2ª División infantil femenino, 1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO B",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO B",
-      "fbcyl": {
-        "competition_id": "7440",
-        "category": "1136",
-        "gender": "F",
-        "territory": "1"
-      },
-      "age_group": "U14"
-    },
-    {
-      "league": "fbcyl",
-      "competition": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO C G7441",
-      "season_label": "2026",
-      "season_value": "2026",
-      "active": true,
-      "note": "2ª División infantil femenino, 1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO C",
-      "category": "formacion",
-      "label": "2ª División infantil femenino",
-      "group_label": "1ª FASE - LIGA REGULAR 2ªDIV INF FEM-GRUPO C",
-      "fbcyl": {
-        "competition_id": "7441",
-        "category": "1136",
         "gender": "F",
         "territory": "1"
       },
@@ -8118,6 +7398,91 @@
       "label": "Selecciones autonómicas · Minibásket masculino",
       "record": [],
       "note": "Campeonato de España de selecciones autonómicas minibásket masculino (menores, 20/11/2026)"
+    },
+    {
+      "competition": "MINICOPA LF ENDESA",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "year": "2025",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=55&t=2025&nm=minicopalfendesa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "packages": false,
+      "gender": "F",
+      "category": "formacion",
+      "age_group": "U12",
+      "label": "Minicopa LF Endesa · Minibásket femenino",
+      "record": [],
+      "note": "Minicopa LF Endesa, minibásket femenino (menores, 20/11/2026)"
+    },
+    {
+      "competition": "MINICOPA LF ENDESA",
+      "season_label": "2024/2025",
+      "season_value": "2024",
+      "year": "2024",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=55&t=2024&nm=minicopalfendesa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "packages": false,
+      "gender": "F",
+      "category": "formacion",
+      "age_group": "U12",
+      "label": "Minicopa LF Endesa · Minibásket femenino",
+      "record": [],
+      "note": "Minicopa LF Endesa, minibásket femenino (menores, 20/11/2026)"
+    },
+    {
+      "competition": "MINICOPA LF ENDESA",
+      "season_label": "2023/2024",
+      "season_value": "2023",
+      "year": "2023",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=55&t=2023&nm=minicopalfendesa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "packages": false,
+      "gender": "F",
+      "category": "formacion",
+      "age_group": "U12",
+      "label": "Minicopa LF Endesa · Minibásket femenino",
+      "record": [],
+      "note": "Minicopa LF Endesa, minibásket femenino (menores, 20/11/2026)"
+    },
+    {
+      "competition": "MINICOPA LF ENDESA",
+      "season_label": "2022/2023",
+      "season_value": "2022",
+      "year": "2022",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=55&t=2022&nm=minicopalfendesa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "packages": false,
+      "gender": "F",
+      "category": "formacion",
+      "age_group": "U12",
+      "label": "Minicopa LF Endesa · Minibásket femenino",
+      "record": [],
+      "note": "Minicopa LF Endesa, minibásket femenino (menores, 20/11/2026)"
+    },
+    {
+      "competition": "MINICOPA LF ENDESA",
+      "season_label": "2021/2022",
+      "season_value": "2021",
+      "year": "2021",
+      "competition_url": "https://baloncestoenvivo.feb.es/calendario.aspx?g=55&t=2021&nm=minicopalfendesa",
+      "groups": "all",
+      "recheck_days": 3,
+      "active": true,
+      "packages": false,
+      "gender": "F",
+      "category": "formacion",
+      "age_group": "U12",
+      "label": "Minicopa LF Endesa · Minibásket femenino",
+      "record": [],
+      "note": "Minicopa LF Endesa, minibásket femenino (menores, 20/11/2026)"
     }
   ]
 }

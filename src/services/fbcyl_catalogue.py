@@ -19,6 +19,7 @@ TERRITORY = "1"                                   # «FBCYL» in the territories
 _EXCLUDED = re.compile(r"BENJAM|ALEV|PREMINI|3X3")                  # checked first: «PREMINI» must not read as minibásket
 _MINI = re.compile(r"MINIBASKET|MINIBALONCESTO")
 _INFANTIL = re.compile(r"\bINF\b|INFANTIL")
+_SECOND_DIVISION = re.compile(r"\b2A\s*DIV")
 _CADETE = re.compile(r"\bCAD\b|CADETE")
 _JUNIOR = re.compile(r"JUNIOR|\bJUN\b")
 _SENIOR = re.compile(r"SENIOR|\bDIV(?:ISION)?\.? (?:MASCULINA|FEMENINA)\b")
@@ -30,7 +31,7 @@ def _plain(text: str) -> str:
 
 
 def classify_category(text: str) -> Tuple[str, Optional[str]]:
-    """``("senior", None)``, ``("formacion", "U16")`` (cadete), ``("formacion", "U18")`` (júnior), ``("formacion", "U14")`` (infantil), ``("formacion", "U12")`` (minibásket), ``("excluded", None)`` (alevín, benjamín, premini, 3x3) or ``("unknown", None)``."""
+    """``("senior", None)``, ``("formacion", "U16")`` (cadete), ``("formacion", "U18")`` (júnior), ``("formacion", "U14")`` (infantil, first division only), ``("formacion", "U12")`` (minibásket), ``("excluded", None)`` (alevín, benjamín, premini, 3x3) or ``("unknown", None)``."""
     plain = _plain(text)
     if not plain.strip():
         return ("unknown", None)
@@ -39,7 +40,7 @@ def classify_category(text: str) -> Tuple[str, Optional[str]]:
     if _MINI.search(plain):
         return ("formacion", "U12")
     if _INFANTIL.search(plain):
-        return ("formacion", "U14")
+        return ("excluded", None) if _SECOND_DIVISION.search(plain) else ("formacion", "U14")          # infantil: only the first division (20/11/2026)
     if _CADETE.search(plain):
         return ("formacion", "U16")
     if _JUNIOR.search(plain):
