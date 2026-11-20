@@ -13,10 +13,12 @@ coordinates are on the page of each player, a block of its own) nor the bio of t
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from zoneinfo import ZoneInfo
 
+from src.external.acb_page import shots_of_game
 from src.external.fiba_canonical import Lines
+from src.live_core.zones import FEB_COURT_LENGTH, FEB_COURT_WIDTH
 from src.market.canonical import source_id
 
 SOURCE = "acb"
@@ -32,6 +34,8 @@ _FOULS = {109, 159, 160, 161, 162}                                              
 _FOUL_DRAWN = 110
 _SUBSTITUTIONS = {115: "OUT", 112: "IN"}                                                   # the first one of every starter is 115: he leaves
 _BLOCK_RECEIVED = 105                                                                      # the shooter of a miss that is blocked: after his miss and before the block (102) of the other team, in every game; it changes no statistic
+FIELD_GOALS = frozenset(code for code, (kind, _, _) in _SHOTS.items() if kind != "FT")      # the plays that have a shot on the court (the free throws have none)
+_HOOP_Y, _CX = 1.575, 7.5                                                                    # the basket on the half court of the engine: 1.575 m from the baseline, in the middle of the width
 # lines that change no statistic and that FEB has no type for: they stay ``other`` lines with a Spanish text. Each one is proved by its place in the real games: 599 names exactly the ten starters of the box at
 # 10:00 of the first quarter, 123 is the last play of the game right after the end of the last quarter, 178 and 179 are the opening jump ball (the team of 178 takes the first shot in both games)
 _INFO = {_BLOCK_RECEIVED: "TAPÓN RECIBIDO", 599: "QUINTETO INICIAL", 123: "FIN DEL PARTIDO", 178: "SALTO GANADO", 179: "SALTO PERDIDO"}
@@ -54,16 +58,26 @@ def _starttime(iso: Optional[str]) -> str:
     return moment.strftime("%d-%m-%Y - %H:%M")
 
 
-def _player_box(player: Dict[str, Any]) -> Dict[str, Any]:
+def feb_coordinates(x_mm: float, y_mm: float, team: int) -> Tuple[float, float]:
+    """A shot of ACB (millimetres from the basket: ``x`` along the court, ``y`` across it, negative to the left) as FEB's percentages of the WHOLE court. ACB gives every shot at the basket it is taken at; FEB
+    gives it where it is on the court, so the team of slot 0 is put at the left basket and the one of slot 1 at the right one: the engine (``feb_to_fiba``) folds each back to the same half court, and the zones
+    are the same (checked on the real shots against the zone ACB itself gives). The teams do not change baskets at half-time here: nothing reads which basket it was."""
+    across, along = _CX + y_mm / 1000.0, _HOOP_Y + x_mm / 1000.0
+    x_pct = along / FEB_COURT_LENGTH * 100 if team == 0 else (FEB_COURT_LENGTH - along) / FEB_COURT_LENGTH * 100
+    return round(min(max(x_pct, 0.0), 100.0), 2), round(min(max(across / FEB_COURT_WIDTH * 100, 0.0), 100.0), 2)
+
+
+def _player_box(player: Dict[str, Any], bio: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    bio = bio or {}
     stats = player["totals"]
     box = {feb: str(stats.get(acb, 0)) for acb, feb in _BOX.items()}
     box["fgm"] = str(stats.get("twoPointersMade", 0) + stats.get("threePointersMade", 0))
     box["fga"] = str(stats.get("twoPointersAttempted", 0) + stats.get("threePointersAttempted", 0))
     return {**box, "id": source_id(SOURCE, player["id"]), "name": player["name"], "no": player["number"], "min": str(player["seconds"]), "sta": "*" if player["started"] else None,
-            "birth": None, "height": None, "nationality": None, "club": None}
+            "birth": bio.get("birth"), "height": str(bio["height_cm"]) if bio.get("height_cm") else None, "nationality": bio.get("nationality"), "position": player.get("role") or bio.get("position"), "club": None}
 
 
-def _team_box(team: Dict[str, Any], won: bool) -> Dict[str, Any]:
+def _team_box(team: Dict[str, Any], won: bool, bios: Optional[Dict[int, Dict[str, Any]]] = None) -> Dict[str, Any]:
     totals, own = team["totals"], team["team_extra"]
     total = {feb: str(totals.get(acb, 0)) for acb, feb in _BOX.items()}
     total["fgm"] = str(totals.get("twoPointersMade", 0) + totals.get("threePointersMade", 0))
@@ -73,7 +87,7 @@ def _team_box(team: Dict[str, Any], won: bool) -> Dict[str, Any]:
         total[feb] = str(totals.get(acb, 0) - own.get(acb, 0))
     actions = {"ro": str(own.get("offRebounds", 0)), "rd": str(own.get("defRebounds", 0)), "rt": str(own.get("totalRebounds", 0)), "to": str(own.get("turnovers", 0)), "pf": str(own.get("personalFouls", 0))}
     return {"id": source_id(SOURCE, team["team"]["id"]), "name": team["team"]["name"], "teamCode": team["team"].get("short"), "win_lose": "W" if won else "L", "TOTAL": total, "TEAMACTIONS": actions,
-            "PLAYER": [_player_box(p) for p in team["players"]]}
+            "PLAYER": [_player_box(p, (bios or {}).get(p["id"])) for p in team["players"]]}
 
 
 def _events(game: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -118,8 +132,31 @@ def _round(match: Dict[str, Any]) -> str:
     return f"Jornada {number}" if match.get("roundType") == "LR" and number else " ".join(str(x) for x in (match.get("roundType"), number) if x)
 
 
-def to_canonical(game: Dict[str, Any], match: Dict[str, Any], entry: Dict[str, Any]) -> Dict[str, Any]:
+def chart_shots(game: Dict[str, Any], shots: Dict[int, List[Dict[str, Any]]]) -> Tuple[List[Dict[str, Any]], int, int]:
+    """``(FEB shots, how many field goals have one, how many field goals there are)``: the shots of the players (``{player id: parse_shots(...)["shots"]}``) put on the field goals of the play by play of the
+    game (``acb_page.shots_of_game``) and written as FEB writes them: ``m`` (``1`` in), ``t`` (the clock that remains), ``x`` and ``y`` (percentages of the court), ``team`` (the slot), ``player`` (the dorsal) and
+    ``quarter``. In the order of the game."""
+    numbers = {p["id"]: p["number"] for side in ("home", "away") for p in game[side]["players"]}
+    home_id = game["home"]["team"]["id"]
+    placed: Dict[int, Tuple[Dict[str, Any], Dict[str, Any]]] = {}
+    for player_id, own in shots.items():
+        for order, shot in shots_of_game(game["plays"], own, player_id, game["match_id"]).items():
+            placed[order] = (shot, next(p for p in game["plays"] if p["order"] == order))
+    chart = []
+    for order in sorted(placed):
+        shot, play = placed[order]
+        slot = 0 if play["team_id"] == home_id else 1
+        x_pct, y_pct = feb_coordinates(shot["x"], shot["y"], slot)
+        chart.append({"m": "1" if shot["made"] else "0", "t": f"{play['minute']:02d}:{play['second']:02d}", "x": str(x_pct), "y": str(y_pct), "team": str(slot), "player": str(numbers.get(play["player_id"], "")),
+                      "quarter": str(play["period"])})
+    return chart, len(placed), sum(1 for p in game["plays"] if p["type"] in FIELD_GOALS)
+
+
+def to_canonical(game: Dict[str, Any], match: Dict[str, Any], entry: Dict[str, Any], bios: Optional[Dict[int, Dict[str, Any]]] = None,
+                 shots: Optional[Dict[int, List[Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """The canonical document of a finished game as ``acb_page.parse_game`` read it, with its calendar line (``match``: the id, the kick-off and the round) and its catalogue entry (the competition and the season).
+    ``bios`` (``{player id: acb_page.parse_player(...)}``) fills the birth, height and nationality of the players; ``shots`` (``{player id: parse_shots(...)["shots"]}``) the shot chart, **only if every field goal of
+    the game has its shot**: FEB's chart is exactly the field goals of the play by play, and a chart with some of them would make every zone look different (an incomplete one is left empty).
     ``ValueError`` if the game is not finished or the calendar line is of another game. The game read is not changed."""
     if not game["finished"]:
         raise ValueError("the game is not finished: only a finished game is converted")
@@ -134,7 +171,11 @@ def to_canonical(game: Dict[str, Any], match: Dict[str, Any], entry: Dict[str, A
                        for t, pts in zip((home, away), points)],
               "QUARTERS": {"QUARTER": quarters}, "game_code": str(game["match_id"])}
     lines = Lines(_lines_game(game), SOURCE).build(_events(game))
+    boxes = [_team_box(home, points[0] > points[1], bios), _team_box(away, points[1] > points[0], bios)]
+    chart, covered, total = chart_shots(game, shots or {})
+    chart_complete = bool(shots) and total > 0 and covered == total
+    chart_teams = [{"id": b["id"], "name": b["name"], "teamCode": b["teamCode"], "PLAYER": [{"id": p["id"], "no": p["no"], "name": p["name"]} for p in b["PLAYER"]]} for b in boxes]
     return {"_id": source_id(SOURCE, game["match_id"]), "_league": SOURCE, "_season": str(entry["season_value"]), "HEADER": header,
             "PLAYBYPLAY": {"duration": None, "hasExtension": len(quarters) > 4, "LINES": lines},
-            "BOXSCORE": {"duration": None, "TEAM": [_team_box(home, points[0] > points[1]), _team_box(away, points[1] > points[0])]},
-            "SHOTCHART": {"SHOTS": [], "TEAM": []}}
+            "BOXSCORE": {"duration": None, "TEAM": boxes},
+            "SHOTCHART": {"quarters": None, "duration": None, "TEAM": chart_teams if chart_complete else [], "SHOTS": chart if chart_complete else []}}
