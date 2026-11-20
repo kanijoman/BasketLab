@@ -127,8 +127,10 @@ def play_notes(notes: str, limit: int = PLAY_NOTES_LIMIT) -> str:
     the middle (the ones that do not fit are counted in a last line). ``PLAY_NOTES_FALLBACK`` when there was only plumbing."""
     items: List[str] = []
     for line in notes.splitlines():
-        text = line.strip().lstrip("•-* ").strip()
-        if not text or text.startswith("… y ") or _PLUMBING.match(text):
+        if not line.lstrip().startswith(("• ", "* ", "- ")):          # the headings and the link to the changelog of the generated notes are not changes
+            continue
+        text = _AUTHOR_SUFFIX.sub("", line.strip()[2:]).strip()
+        if not text or text.startswith("… y ") or text.endswith("…") or _PLUMBING.match(text):          # a bullet the source cut in the middle is not a whole one
             continue
         text = _PR_REF.sub("", _PREFIX.sub("", text)).strip()
         if text:

@@ -263,4 +263,4 @@ jobs:
           fi
           args=(play-summary --version "$version" --code "$CODE" --repo "$GITHUB_REPOSITORY" --tag "$TAG")
           if [ -n "$previous_code" ]; then args+=(--previous-code "$previous_code"); fi
-          printf '%s' "$body" | python3 scripts/live_android_release.py notes | python3 scripts/live_android_release.py "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          printf '%s' "$body" | python3 scripts/live_android_release.py "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"

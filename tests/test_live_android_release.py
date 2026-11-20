@@ -262,3 +262,14 @@ def test_the_play_summary_subcommand_prints_it_from_the_notes_on_stdin(capsys, m
     assert "basketlab-live-0.7.0.aab" in out and "Alerta de alineación indebida" in out
     monkeypatch.setattr(sys, "stdin", io.StringIO(NOTES))
     assert release.main(argv[:-2], run_git=None, env={}) == 0 and "anterior no consta" in capsys.readouterr().out
+
+
+def test_the_play_notes_read_the_generated_body_of_the_release_as_it_is_with_no_author_urls_or_headings():
+    """Regression: the summary of the run piped the body through the short notes of the app first, which cut the last bullet in the middle («Tarjet…»); the notes for Play come from the body itself."""
+    text = release.play_notes(GENERATED)
+    assert text.splitlines() == ["• Alerta de alineación indebida", "• El check post-despliegue ya no falla", "• Versión instalada y botón de actualizar"]
+    assert "@" not in text and "http" not in text and "Changed" not in text and "Changelog" not in text
+
+
+def test_a_bullet_the_source_already_cut_is_not_kept_as_if_it_were_whole():
+    assert release.play_notes("• feat(live): alerta completa\n• feat(live): una que acaba cor…") == "• Alerta completa"
