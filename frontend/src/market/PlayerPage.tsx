@@ -144,7 +144,7 @@ export default function PlayerPage() {
         </div>
       </Card>
       <SimilarPlayers row={row} targetId={personId} />
-      <TeamFit row={row} />
+      <TeamFit row={row} personRows={mine} entries={entries} />
       <PlayerEquivalence rows={mine} entries={entries} />
       <PlayerZones row={row} />
       </div>
