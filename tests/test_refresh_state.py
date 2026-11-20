@@ -1,7 +1,7 @@
 """What the refresh remembers between runs (#924): which collections are CLOSED (nothing left to check for a week) and which matches keep failing (asked a limited number of times).
 
 The thresholds are the user's (13/11/2026): a collection whose last game is more than 14 days old and that was up to date at its last check is checked again every 7 days, not every run;
-a match that fails is asked again until it has failed 20 times over at least 7 days, then it is «unavailable» and asked once a month. The state lives in ``COLLECTION_META`` (it travels in the
+a match that fails is asked again until it has failed 6 times over at least 3 days, then it is «unavailable» and asked once a month. The state lives in ``COLLECTION_META`` (it travels in the
 archive) and is saved with DAYS, never times: a time would change the archive on every refresh.
 """
 import sys
@@ -26,7 +26,7 @@ def _days_ago(n):
 
 
 def test_the_thresholds_are_the_ones_the_user_set():
-    assert (CLOSED_AFTER_DAYS, RECHECK_CLOSED_EVERY_DAYS, MAX_ATTEMPTS, MIN_DAYS_BEFORE_UNAVAILABLE, REVIEW_UNAVAILABLE_EVERY_DAYS) == (14, 7, 20, 7, 30)
+    assert (CLOSED_AFTER_DAYS, RECHECK_CLOSED_EVERY_DAYS, MAX_ATTEMPTS, MIN_DAYS_BEFORE_UNAVAILABLE, REVIEW_UNAVAILABLE_EVERY_DAYS) == (14, 7, 6, 3, 30)
 
 
 @pytest.mark.parametrize("last_game, checked, closed", [
@@ -63,17 +63,17 @@ def test_checking_keeps_the_failed_matches_it_does_not_touch_them():
     assert record_check(state, True, _days_ago(30), TODAY)["failed"] == state["failed"]
 
 
-def test_a_match_that_fails_is_asked_again_until_it_has_failed_20_times_over_at_least_7_days():
+def test_a_match_that_fails_is_asked_again_until_it_has_failed_6_times_over_at_least_3_days():
     state = {}
-    for i in range(MAX_ATTEMPTS - 1):                                                             # 19 attempts over 19 days: not enough attempts
+    for i in range(MAX_ATTEMPTS - 1):                                                             # 5 attempts over 5 days: not enough attempts
         record_failure(state, "9", "No data", date.fromordinal(TODAY.toordinal() - 30 + i))
-    assert state["failed"]["9"]["n"] == 19 and not state["failed"]["9"].get("unavailable") and should_ask(state, "9", TODAY)
-    record_failure(state, "9", "No data", TODAY)                                                  # the 20th, over more than 7 days
-    assert state["failed"]["9"]["n"] == 20 and state["failed"]["9"]["unavailable"] is True and unavailable_codes(state) == ["9"]
+    assert state["failed"]["9"]["n"] == 5 and not state["failed"]["9"].get("unavailable") and should_ask(state, "9", TODAY)
+    record_failure(state, "9", "No data", TODAY)                                                  # the 6th, over more than 3 days
+    assert state["failed"]["9"]["n"] == 6 and state["failed"]["9"]["unavailable"] is True and unavailable_codes(state) == ["9"]
     assert should_ask(state, "9", TODAY) is False
 
 
-def test_20_failures_in_less_than_7_days_are_not_enough():
+def test_6_failures_in_less_than_3_days_are_not_enough():
     state = {}
     for i in range(25):                                                                           # hourly refreshes of a weekend: 25 attempts in a day
         record_failure(state, "9", "No data", TODAY)
@@ -83,7 +83,7 @@ def test_20_failures_in_less_than_7_days_are_not_enough():
 
 
 def test_an_unavailable_match_is_asked_again_once_a_month_and_a_new_failure_restarts_the_month():
-    state = {"failed": {"9": {"n": 20, "first": _days_ago(60), "last": _days_ago(10), "why": "No data", "unavailable": True}}}
+    state = {"failed": {"9": {"n": 6, "first": _days_ago(60), "last": _days_ago(10), "why": "No data", "unavailable": True}}}
     assert should_ask(state, "9", TODAY) is False                                                 # 10 days: still quiet
     state["failed"]["9"]["last"] = _days_ago(30)
     assert should_ask(state, "9", TODAY) is True                                                  # 30 days: reviewed

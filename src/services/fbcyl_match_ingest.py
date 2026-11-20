@@ -14,7 +14,7 @@ from src.utils.time_utils import utc_now_naive
 
 def store_fbcyl_match(job: Dict[str, Any], db: Any, scraper: Any, collection_name: str, uuid: str, league_ctx: Dict[str, str],
                       state: Optional[Dict[str, Any]] = None, today: Optional[date] = None) -> None:
-    """Fetch and store a single FBCYL match; update the job counters. A match that keeps failing (the site answers 500 for some) stops being asked after 20 failures over a week (#924)."""
+    """Fetch and store a single FBCYL match; update the job counters. A match that keeps failing (the site answers 500 for some) stops being asked after 6 failures over 3 days (#924)."""
     job["current_match"] = uuid
     today = today or utc_now_naive().date()
     try:
