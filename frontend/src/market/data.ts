@@ -1,6 +1,7 @@
 // What BasketLab Talent reads (epic #872, B2 #878): the `talent-data` branch, one sealed file per competition and season with a row per player, team and competition. Same static host, same
 // sealing and same unlocking as `web-data` (`@/webdata/sealedClient`), another manifest (`./contract.generated`) and another branch: the two publications are written by two workflows and
 // a failure of one does not stop the other. The base is fixed here, not in an environment variable: the Vercel project of Talent needs none.
+import type { EquivalenceDocument } from './equivalence'
 import { DataUnavailable } from '@/datasource/resolve'
 import { createSealedClient } from '@/webdata/sealedClient'
 import { TALENT_SCHEMA, type TalentCompetitionEntry, type TalentManifest } from './contract.generated'
@@ -100,3 +101,13 @@ export const loadCompetitionZones = (key: string): Promise<TalentZones> =>
     if (!entry?.zones) throw new TalentDataUnavailable('Esta competición no tiene datos de zonas publicados.')
     return { manifest, wraps: entry.zones.wraps, text: await talent.fetchText(entry.zones.file) }
   }, 'El fichero')
+
+/** The equivalences between the senior competitions of FEB (#891), or null when the publication has none: levels, covariance and reliability per sex, and whether the range can be shown (`usable`). */
+export async function loadEquivalences(): Promise<EquivalenceDocument | null> {
+  if (!(await talent.loadManifest()).equivalences) return null
+  return talent.openSealed<EquivalenceDocument>(async () => {
+    const manifest = await talent.loadManifest()
+    if (!manifest.equivalences) throw new TalentDataUnavailable('Esta publicación no tiene equivalencias.')
+    return { manifest, wraps: manifest.equivalences.wraps, text: await talent.fetchText(manifest.equivalences.file) }
+  }, 'El fichero')
+}

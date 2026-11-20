@@ -19,6 +19,7 @@ import { bioOf, personRows, radarAxes, trajectory, type BioField } from './playe
 import PlayerPhoto from '@/components/ui/PlayerPhoto'
 import { playerPhotoUrl } from '@/lib/playerPhoto'
 import { ENOUGH_MINUTES } from './enoughMinutes'
+import PlayerEquivalence from './PlayerEquivalence'
 import PlayerRadar from './PlayerRadar'
 import PlayerZones from './PlayerZones'
 import { SimilarPlayers } from './SimilarPlayers'
@@ -59,7 +60,7 @@ const columns: ColumnDef<Line, unknown>[] = [
 
 const Shell = ({ children }: { children: React.ReactNode }) => <div className="mx-auto w-full max-w-5xl space-y-4 p-4 sm:p-6">{children}</div>
 /** The sections of the profile, in the order of the page: the navigation inside it (#1010). */
-const SECTIONS = [['datos', 'Datos personales'], ['trayectoria', 'Trayectoria'], ['perfil', 'Perfil'], ['parecidos', 'Parecidos'], ['encaje', 'Encaje'], ['zonas', 'Zonas de tiro']] as const
+const SECTIONS = [['datos', 'Datos personales'], ['trayectoria', 'Trayectoria'], ['perfil', 'Perfil'], ['parecidos', 'Parecidos'], ['encaje', 'Encaje'], ['equivalencias', 'En otra competición'], ['zonas', 'Zonas de tiro']] as const
 const SectionNav = () => (
   <nav aria-label="En esta ficha" className="sticky top-0 z-10 -mx-4 flex flex-wrap gap-x-4 gap-y-1 border-b border-line bg-canvas/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
     {SECTIONS.map(([id, label]) => <a key={id} href={`#${id}`} className="text-sm font-medium text-accent-text hover:underline">{label}</a>)}
@@ -144,6 +145,7 @@ export default function PlayerPage() {
       </Card>
       <SimilarPlayers row={row} targetId={personId} />
       <TeamFit row={row} />
+      <PlayerEquivalence rows={mine} entries={entries} />
       <PlayerZones row={row} />
       </div>
     </Shell>

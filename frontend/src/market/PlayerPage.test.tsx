@@ -153,7 +153,7 @@ describe('the profile page', () => {
     await screen.findByRole('heading', { name: /Zonas de tiro/ })
     const nav = screen.getByRole('navigation', { name: 'En esta ficha' })
     const links = within(nav).getAllByRole('link')
-    expect(links.map(l => l.textContent)).toEqual(['Datos personales', 'Trayectoria', 'Perfil', 'Parecidos', 'Encaje', 'Zonas de tiro'])
+    expect(links.map(l => l.textContent)).toEqual(['Datos personales', 'Trayectoria', 'Perfil', 'Parecidos', 'Encaje', 'En otra competición', 'Zonas de tiro'])
     for (const link of links) {
       const target = document.getElementById(link.getAttribute('href')!.slice(1))
       expect(target, link.textContent!).not.toBeNull()
@@ -214,5 +214,11 @@ describe('the fit with my team (C2, #883)', () => {
     open(ANA)
     const card = (await screen.findByRole('heading', { name: 'Encaje con tu equipo' })).closest('section')!
     expect(await within(card).findByRole('list', { name: 'Huecos del equipo' })).toBeInTheDocument()
+  })
+
+  it('says that the publication has no equivalences yet instead of leaving the card empty', async () => {
+    open(ANA)
+    const card = (await screen.findByRole('heading', { name: /En otra competición/ })).closest('section')!
+    expect(await within(card).findByText(/todavía no tiene equivalencias/)).toBeInTheDocument()
   })
 })

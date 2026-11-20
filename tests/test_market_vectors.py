@@ -10,6 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "local_vectors"))
 
+import generate_equivalence  # noqa: E402
 import generate_talent_data as vectors  # noqa: E402
 from src.live_prep.package_scopes import open_sealed, scope_key  # noqa: E402
 from src.live_prep.package_sealing import ScopedSealer  # noqa: E402
@@ -49,3 +50,24 @@ def test_the_committed_identities_say_who_the_linked_fbcyl_player_is(today):
     committed = json.loads((vectors.OUT / "index.json").read_text(encoding="utf-8"))["identities"]
     fresh = json.loads((today / "index.json").read_text(encoding="utf-8"))["identities"]
     assert _rows(vectors.OUT, committed) == _rows(today, fresh) == {"format": 1, "links": vectors.LINKS, "by_feb": {"feb:10100": ["fbcyl|1129-1|2026"]}}
+
+
+def _same(a, b, path="") -> None:
+    """Equal structure and strings; numbers within 2e-5 (the document is rounded to 5 decimals and the least squares of numpy differs in the last bits between platforms: the CI is Linux)."""
+    if isinstance(a, dict):
+        assert isinstance(b, dict) and a.keys() == b.keys(), path
+        for k in a:
+            _same(a[k], b[k], f"{path}/{k}")
+    elif isinstance(a, list):
+        assert isinstance(b, list) and len(a) == len(b), path
+        for i, (x, y) in enumerate(zip(a, b)):
+            _same(x, y, f"{path}[{i}]")
+    elif isinstance(a, (int, float)) and not isinstance(a, bool):
+        assert b == pytest.approx(a, abs=2e-5), path
+    else:
+        assert a == b, path
+
+
+def test_the_committed_equivalence_vectors_are_what_the_estimator_gives_today():
+    committed = json.loads(generate_equivalence.OUT.read_text(encoding="utf-8"))
+    _same(committed, json.loads(json.dumps(generate_equivalence.build())))
