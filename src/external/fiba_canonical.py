@@ -82,10 +82,11 @@ def _foul_text(text: str, name: str, count: int) -> str:
     return f"{name}: FALTA PERSONAL. Faltas: {count}."
 
 
-class _Lines:
-    """The play-by-play of the page written as the lines of a FEB document."""
+class Lines:
+    """The play-by-play of a page written as the lines of a FEB document. ``source`` prefixes the ids (``fiba``, ``acb``): the other sources build the same events and reuse it (#886)."""
 
-    def __init__(self, game: Dict[str, Any]) -> None:
+    def __init__(self, game: Dict[str, Any], source: str = SOURCE) -> None:
+        self.source = source
         self.teams = {t["org_id"]: t["name"] for t in game["teams"]}
         self.players = {p["person_id"]: p["name"] for t in game["teams"] for p in t["players"]}
         self.fouls: Counter = Counter()
@@ -139,19 +140,22 @@ class _Lines:
             overtime = number > 4
             action = "period"
             text = ("Comienzo" if code == "STARTP" else "Fin") + (f" de la Prórroga {number - 4}" if overtime else f" del Cuarto {number}")
-        return {"num": "", "quarter": str(_period_number(event["period"])), "time": _clock(event["clock"]), "idTeam": source_id(SOURCE, event["team"]) if event["team"] is not None else None,
-                "idPlayer": source_id(SOURCE, event["player"]) if event["player"] is not None else None, "idLicense": source_id(SOURCE, event["player"]) if event["player"] is not None else None,
+        return {"num": "", "quarter": str(_period_number(event["period"])), "time": _clock(event["clock"]), "idTeam": source_id(self.source, event["team"]) if event["team"] is not None else None,
+                "idPlayer": source_id(self.source, event["player"]) if event["player"] is not None else None, "idLicense": source_id(self.source, event["player"]) if event["player"] is not None else None,
                 "action": action, "text": text, "deleted": None, "scoreA": str(event["score_a"]), "scoreB": str(event["score_b"])}
 
     def _attach(self, event: Dict[str, Any]) -> None:
         """A «foul drawn» goes on the foul of the other team with the same clock; with none, it stays as a line that the engine ignores."""
-        victim = source_id(SOURCE, event["player"])
+        victim = source_id(self.source, event["player"])
         clock, period = _clock(event["clock"]), str(_period_number(event["period"]))
         for line in self.lines:
-            if line["action"] == "foul" and (line["quarter"], line["time"]) == (period, clock) and not line.get("logParam4") and line["idTeam"] != source_id(SOURCE, event["team"]):
+            if line["action"] == "foul" and (line["quarter"], line["time"]) == (period, clock) and not line.get("logParam4") and line["idTeam"] != source_id(self.source, event["team"]):
                 line["logParam4"] = victim
                 return
         self.lines.append({**self._line({**event, "code": "RFOUL"}), "action": "other", "text": f"{self._who(event)}: FALTA RECIBIDA"})
+
+
+_Lines = Lines                      # the name it had
 
 
 def to_canonical(game: Dict[str, Any]) -> Dict[str, Any]:
