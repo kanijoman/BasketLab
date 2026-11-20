@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
-from src.market.equivalence import observations  # noqa: E402
+from src.market.equivalence import observations, person_of  # noqa: E402
 from src.market.equivalence_publish import build_document, estimate_from_document  # noqa: E402
 
 FIXTURE = ROOT / "tests" / "fixtures" / "talent_rows_movers.json.gz"
@@ -34,7 +34,19 @@ def build() -> dict:
             result = estimate_from_document(document, history, to)
             cases.append({"history": [{"node": o.node, "season": o.season, "minutes": o.minutes, "z": list(o.z)} for o in history], "to": to,
                           "estimate": None if result is None else [{k: v for k, v in r.items()} for r in result]})
-    return {"document": document, "cases": cases}
+    return {"document": document, "cases": cases, "histories": _histories(data, by_person)}
+
+
+def _histories(data: dict, by_person: dict) -> list:
+    """The observations of some persons from their RAW rows (what the browser has before it can estimate): the rows with their competitions and what ``observations`` makes of them."""
+    out = []
+    for person in sorted(by_person)[:PERSONS]:
+        rows = [r for r in data["rows"] if person_of(r) == person]
+        keys = sorted({r["comp"] for r in rows})
+        out.append({"rows": [{k: r.get(k) for k in ("comp", "person_id", "linked_to", "minutes", "eligible", "pct")} for r in rows],
+                    "competitions": {k: {f: data["competitions"][k].get(f) for f in ("competition", "league", "gender", "category", "season")} for k in keys},
+                    "expected": [{"node": o.node, "season": o.season, "minutes": o.minutes, "z": list(o.z)} for o in observations(rows, data["competitions"])]})
+    return out
 
 
 if __name__ == "__main__":
