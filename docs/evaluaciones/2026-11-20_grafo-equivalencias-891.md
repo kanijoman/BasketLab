@@ -50,7 +50,7 @@ Subir de nivel resta, bajar suma, y casi con la misma magnitud en los dos sentid
 - `δ_AB,s`: el cambio de nivel, la media de `z_B − ρ_s · z_A` de los que se movieron en ese paso, **en los dos sentidos a la vez** (A→B con su signo, B→A cambiado de signo: se usan los 480 de LF2↔Challenge y no 388 y 95 por separado).
 - Su error típico viene de **remuestrear por persona** (una persona puede aparecer varias temporadas), y se guarda con N.
 
-**Grafo y caminos**: las competiciones son nodos y los pasos estimados, aristas. Para ir de A a C sin arista directa se **compone** el camino de menor varianza (los cambios de nivel se suman y las varianzas también, más un término por cada salto; se prefiere el camino más corto). Un salto de dos niveles hereda así su incertidumbre y se nota en el intervalo.
+**Grafo, estimación conjunta y caminos**: las competiciones son nodos y los pasos con N movimientos o más, aristas. En lugar de estimar cada par por separado y componer caminos (que suma errores a ojo), se estima **un valor de nivel por competición y eje** (`θ_c`) con todos los movimientos a la vez, por mínimos cuadrados sobre el grafo (una regresión con un efecto por competición: `z_B − ρ·z_A = θ_B − θ_A + ruido`). Con eso **cualquier par conectado** (también los que nadie ha cruzado) sale como `θ_B − θ_A`, y su incertidumbre sale de la covarianza del ajuste, no de una suma de pasos. Dos competiciones no conectadas no tienen traducción. Es un ajuste pequeño (una incógnita por competición), sin ML.
 
 **Salida**: para un jugador con `z_A` en un eje, el valor esperado en B y un intervalo (la dispersión de lo que el modelo no explica, medida en los mismos movimientos). Sin camino o con intervalo demasiado ancho: **no se da cifra**, se dice «sin datos suficientes».
 
@@ -64,13 +64,28 @@ Una competición-temporada fuera cada vez: se estiman las aristas **sin** esa te
 Si no mejora a las líneas base o la cobertura se aleja más de 5 puntos del nominal, no se publica la cifra y E4 mantiene «orientativo». Informe y script a mano (como `study:forecast`), no en el CI.
 
 ## Qué se publica
-`equivalences.json` en `talent-data` (mismo alcance y sellado que lo demás): versión del método, nodos, aristas con `n`, `δ` y su error por eje, y `ρ` por competición. Determinista (se regenera igual). La cuenta de traducir vive en el navegador (TypeScript con vectores de paridad, como el predictivo): **E4**.
+`equivalences.json` en `talent-data` (mismo alcance y sellado que lo demás): versión del método, nodos, aristas con `n`, `θ` y su error por eje, la covarianza de los niveles y `ρ` por competición. Determinista (se regenera igual). La cuenta de traducir vive en el navegador (TypeScript con vectores de paridad, como el predictivo): **E4**.
 
 ## Troceado en PR
 1. **E1a**: tabla de movimientos y de quedados desde las filas publicadas (`src/market/equivalence.py`), con tests sobre filas reales de `tests/local_vectors`.
 2. **E1b**: estimador, grafo, composición e incertidumbre, y el estudio walk-forward con su informe.
 3. **E1c**: publicación de `equivalences.json` (contrato Python y TypeScript generado).
 El puerto a TypeScript y su uso en la ficha son E4.
+
+## Enlazar todas las competiciones entre sí (coste)
+No se enlazan «todas las combinaciones»: se estiman **los pasos que alguien ha cruzado** y el resto sale del ajuste conjunto. El coste real no es de cómputo:
+
+| Coste | Estimación |
+|---|---|
+| **Nodos** (familias de competición, hombres y mujeres por separado) | ~150 si NCAA entra por conferencias (D1 y D2, ~110), FEB y FBCYL ~35, FIBA ~10, ACB 1, Euroliga 2 |
+| **Pares posibles** | ~5.600 (2 × 75²/2); los que de verdad tendrán N ≥ 40 movimientos, del orden de 200 a 400 |
+| **Cómputo** | despreciable: un sistema de ~150 incógnitas por eje (milisegundos); se publican los `θ` y su covarianza (< 2 MB), no la matriz de pares |
+| **Datos** | lo que cuesta es cargar las fuentes (NCAA, Euroliga, ACB ya existe): cada una es su propio bloque; E1 no añade peticiones |
+| **Identidad** | **el trabajo grande**: hoy un jugador de una fuente externa se enlaza con una persona de FEB. ACB↔NCAA o Euroliga↔FIBA no pasan por FEB: hace falta un registro de personas **entre fuentes** (componentes conexos de los enlaces, con un id estable, p. ej. el id de FEB si lo hay y, si no, el menor id de fuente). Es un bloque aparte (~2 PR), y cada enlace cruzado se corrobora como ahora (nacimiento y dos palabras del nombre) |
+| **Estadística** | los saltos largos tienen intervalos anchos: se publican con su ancho y se limita el camino a 3 saltos; los puentes más fuertes son los que juegan **a la vez** en dos competiciones (Euroliga y ACB con el mismo club; las selecciones de FIBA y la liga de su país), no solo los que cambian de temporada |
+| **Riesgo** | un enlace falso entre fuentes mueve el nivel de una competición entera: la regla es la conservadora (corroboración doble, y ante la duda no se enlaza: pierde movimientos, no sesga) |
+
+**Orden razonable**: E1 con las competiciones de FEB ya cargadas (E1a a E1c); el registro de personas entre fuentes cuando haya dos fuentes externas con datos (ACB y NCAA o Euroliga); y cada fuente nueva añade sus nodos sin cambiar el método.
 
 ## Decisiones que necesito
 1. **Estadísticas**: los 8 ejes del radar (recomendado) o también uso y ritmo.
