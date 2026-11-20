@@ -26,7 +26,7 @@ NOW = datetime(2026, 11, 17, 7, 0, tzinfo=timezone.utc)
 
 
 def _catalogue(tmp_path, *sources):
-    entries = [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M", **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]
+    entries = [{"competition": f"{s.upper()} test", "season_label": "2026/2027", "season_value": "2026", "league": s, "division": "Top", "gender": "M", **({"fiba": {"event": "fiba-test-event-2026"}} if s == "fiba" else {}), **({"acb": {"competition_id": 1, "edition_id": 91}} if s == "acb" else {}), **({"conference": "SEC"} if s == "ncaa" else {})} for s in sources]
     path = tmp_path / "competitions.json"
     path.write_text(json.dumps({"competitions": entries}), encoding="utf-8")
     return load_catalogue(path)

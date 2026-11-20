@@ -31,6 +31,8 @@ def _entry(source, **over):
         base["conference"] = "SEC"
     if source == "fiba":
         base["fiba"] = {"event": "fiba-test-event-2026"}
+    if source == "acb":
+        base["acb"] = {"competition_id": 1, "edition_id": 91}
     return {**base, **over}
 
 

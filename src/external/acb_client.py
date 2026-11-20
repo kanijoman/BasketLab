@@ -78,6 +78,11 @@ def fetch_api_key(fetch: Callable[[str, Dict[str, str]], str] = _fetch, sleep: C
     raise AcbFetchError("the JavaScript of the site has no API key any more: the calendar cannot be asked for")
 
 
+def editions_of(answer: Dict[str, Any]) -> Dict[int, int]:
+    """``{year the season starts: edition id}`` of the answer of the teams API: the id of an edition is the site's, not a formula (an edition without its year is left out, never guessed)."""
+    return {s["seasonStartYear"]: s["id"] for s in answer.get("availableFilters", {}).get("seasons", []) if isinstance(s.get("seasonStartYear"), int) and isinstance(s.get("id"), int)}
+
+
 class AcbClient:
     def __init__(self, fetch: Callable[[str, Dict[str, str]], str] = _fetch, sleep: Callable[[float], None] = time.sleep, clock: Callable[[], float] = time.monotonic,
                  pause: float = PAUSE_S, attempts: int = ATTEMPTS, user_agent: str = USER_AGENT, api_key: Optional[Callable[[], str]] = None, max_requests: Optional[int] = None) -> None:
@@ -147,6 +152,10 @@ class AcbClient:
     def team_matches(self, club_id: int, edition_id: int, competition_id: int = 1) -> List[Dict[str, Any]]:
         """Every game of a club in an edition (its calendar and results)."""
         return self._api("/api/seasondata/TeamProfile/team-matches", clubId=club_id, competitionId=competition_id, editionId=edition_id)["matches"]
+
+    def editions(self, competition_id: int = 1) -> Dict[int, int]:
+        """``{year: edition id}`` of every edition the site has of a competition."""
+        return editions_of(self._api("/api/seasondata/TeamProfile/teams", competitionId=competition_id))
 
     def teams(self, edition_id: int, competition_id: int = 1) -> List[Dict[str, Any]]:
         """The clubs of an edition (``clubId``, ``fullName``…), as they were in it."""
