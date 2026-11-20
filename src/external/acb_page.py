@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from src.external import fiba_page
@@ -154,3 +155,72 @@ def parse_game(box_flight: str, plays_flight: str) -> Dict[str, Any]:
         raise _format("the team that plays at home")
     away = next(t for tid, t in teams.items() if tid != home_id)
     return {"match_id": first, "finished": box["finished"], "arena": box["arena"], "attendance": box["attendance"], "referees": box["referees"], "home": teams[home_id], "away": away, "plays": plays}
+
+
+# --- the player: his bio and his shots ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+_SHOT_PLAYS = {92: True, 96: False, 93: True, 97: False, 94: True, 98: False, 100: True, 533: False}
+_FIELD_SHOTS = (93, 94, 97, 98, 100, 533)                       # the plays a shot of the court is the coordinates of (the free throws have none)
+
+
+def _birth(raw: Any) -> Optional[str]:
+    """``07-02-1997`` (day, month, year: the way the page writes it) as ``1997-02-07``; ``None`` for what is not a date, never guessed."""
+    found = re.fullmatch(r"(\d{1,2})-(\d{1,2})-(\d{4})", str(raw or "").strip())
+    if not found:
+        return None
+    day, month, year = (int(g) for g in found.groups())
+    try:
+        return datetime(year, month, day).strftime("%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _height_cm(raw: Any) -> Optional[int]:
+    """``2,02`` (metres with a comma) as 202 centimetres; ``None`` when it is not a plausible height of a player (1.20 m to 2.40 m)."""
+    try:
+        centimetres = round(float(str(raw).replace(",", ".")) * 100)
+    except (TypeError, ValueError):
+        return None
+    return centimetres if 120 <= centimetres <= 240 else None
+
+
+def parse_player(flight: str) -> Dict[str, Any]:
+    """The bio page of a player (``temporada``): his id, name, number, position, birth (``AAAA-MM-DD``), birth place, nationality and height in centimetres. What the page does not say is ``None``."""
+    marker = flight.find('"birthDate"')
+    start = flight.rfind('{"player":{', 0, marker) if marker >= 0 else -1
+    if start < 0:
+        raise CutPage("the page has no player data")
+    try:
+        data = _DECODER.raw_decode(flight[start:])[0]
+    except ValueError as error:
+        raise CutPage("the player data of the page is cut in the middle") from error
+    try:
+        person = data["player"]
+        return {"id": person["id"], "name": person.get("nickname") or f"{person['firstName']} {person['lastName']}", "first_name": person["firstName"], "last_name": person["lastName"],
+                "number": None if data.get("playerNumber") is None else str(data["playerNumber"]), "position": person.get("gameRole"), "birth": _birth(data.get("birthDate")),
+                "birth_place": data.get("birthPlace"), "birth_country": data.get("birthCountry"), "nationality": data.get("nationality"), "height_cm": _height_cm(data.get("height"))}
+    except (KeyError, TypeError) as error:
+        raise _format(f"the bio of a player ({error})") from error
+
+
+def parse_shots(flight: str) -> Dict[str, Any]:
+    """The shots page of a player (``zonas-de-tiro``): ``{attempts, made, without_coordinates, shots}``, one shot per row with its game, court coordinates (millimetres from the basket), the type of play, whether it
+    went in, its points and its zone. A shot has no id of its own that means anything outside its game: it is joined to its play by ``shots_of_game``."""
+    data = _value_after(flight, '"seasonShots":', "shots")
+    try:
+        shots = [{"id": s["id"], "match_id": s["matchId"], "x": s.get("posX"), "y": s.get("posY"), "play_type": s["playType"], "made": bool(s["made"]), "points": s["points"], "zone": s.get("zone"),
+                  "hex_q": s.get("hexQ"), "hex_r": s.get("hexR")} for s in data["shots"]]
+        return {"attempts": data["attempts"], "made": data["made"], "without_coordinates": data.get("withoutCoordinates", 0), "shots": shots}
+    except (KeyError, TypeError) as error:
+        raise _format(f"the shots of a player ({error})") from error
+
+
+def shots_of_game(plays: List[Dict[str, Any]], shots: List[Dict[str, Any]], player_id: int, match_id: int) -> Dict[int, Dict[str, Any]]:
+    """``{order of the play: shot}`` for the shots of the court of ``player_id`` in a game: the n-th shot of the player in the game is his n-th shot play (the ids of the shots and the orders of the plays are
+    on different scales but go the same way). Only if the two lists say the same thing, the same number of shots and the same types in the same order; if they do not, ``{}``: a game with no coordinates
+    is better than a game with the coordinates of another shot. Free throws have none."""
+    mine = sorted((s for s in shots if s["match_id"] == match_id and s["play_type"] in _FIELD_SHOTS), key=lambda s: s["id"])
+    played = sorted((p for p in plays if p["player_id"] == player_id and p["type"] in _FIELD_SHOTS), key=lambda p: p["order"])
+    if not mine or [s["play_type"] for s in mine] != [p["type"] for p in played]:
+        return {}
+    return {p["order"]: s for p, s in zip(played, mine)}
