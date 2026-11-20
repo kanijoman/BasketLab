@@ -124,7 +124,8 @@ class TestThePlayByPlay:
 
     def test_the_codes_that_are_not_known_are_kept_as_other_lines_and_listed_not_dropped(self, doc, parsed):
         others = [l for l in doc["PLAYBYPLAY"]["LINES"] if l["action"] == "other"]
-        assert others and all("ACB" in l["text"] or "RECIBIDA" in l["text"] or "BLOQUEO" in l["text"] or "QUINTETO" in l["text"] for l in others)
+        assert others and all("ACB" in l["text"] or "RECIBIDA" in l["text"] or "TAPÓN RECIBIDO" in l["text"] or "QUINTETO" in l["text"] for l in others)
+        assert any("TAPÓN RECIBIDO" in l["text"] for l in others) and not any("BLOQUEO" in l["text"] for l in doc["PLAYBYPLAY"]["LINES"])          # in Spanish basketball a block is a «tapón»
         seen = {p["type"] for p in parsed["plays"]}
         assert seen <= KNOWN_CODES | UNKNOWN_CODES and not (KNOWN_CODES & UNKNOWN_CODES)          # every code of the real game is either proved or listed as not known
 

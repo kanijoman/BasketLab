@@ -99,7 +99,7 @@ def _events(game: Dict[str, Any]) -> List[Dict[str, Any]]:
         elif code in _STRUCTURE:
             base.update(code=_STRUCTURE[code], text="")
         elif code == _BLOCK_RECEIVED:
-            base["text"] = "BLOQUEO RECIBIDO"
+            base["text"] = "TAPÓN RECIBIDO"
         elif code == 599:
             base["text"] = "QUINTETO INICIAL"
         events.append(base)
