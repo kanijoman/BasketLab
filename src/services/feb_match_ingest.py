@@ -84,7 +84,7 @@ def store_feb_match(job: Dict[str, Any], db: Any, scraper: Any, session: Any, co
                     recheck_since: Optional[datetime] = None, state: Optional[Dict[str, Any]] = None, today: Optional[date] = None) -> None:
     """Fetch and store a single FEB match; update job counters. With ``recheck_since`` a stored game played since then is downloaded again and
     replaced if it changed (late corrections of FEB, issue #646). With ``state`` (the refresh state of the collection, #924) a match that keeps failing stops being asked: after
-    20 failures over a week it is «unavailable» (``job["unavailable"]``, not an error) and asked once a month."""
+    6 failures over 3 days it is «unavailable» (``job["unavailable"]``, not an error) and asked once a month."""
     job["current_match"] = code
     today = today or utc_now_naive().date()
     try:

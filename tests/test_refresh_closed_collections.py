@@ -1,7 +1,7 @@
 """The refresh stops checking what cannot have changed and stops asking for ever for what does not arrive (#924).
 
 Measured on 13/11/2026: a refresh with nothing new took 25 minutes because every active collection cost ~27 requests and 2.5 MB, 327 of them, and the matches that fail were asked on every
-run. A collection that is CLOSED (last game over 14 days old, up to date at its last check) is checked every 7 days; a match that failed 20 times over 7 days is UNAVAILABLE and asked monthly.
+run. A collection that is CLOSED (last game over 14 days old, up to date at its last check) is checked every 7 days; a match that failed 6 times over 3 days is UNAVAILABLE and asked monthly.
 """
 import sys
 from datetime import date, datetime, timedelta
@@ -150,19 +150,19 @@ class TestMatchesThatKeepFailing:
             last = _run(db, scraper or _failing(), fresh or _fresh(up_to_date=False, last_game=RECENT, missing=["9"]), now=start + timedelta(days=i))
         return last
 
-    def test_the_match_is_asked_every_run_until_it_has_failed_20_times_over_7_days(self):
+    def test_the_match_is_asked_every_run_until_it_has_failed_6_times_over_3_days(self):
         db = _db()
-        self._days(db, 19)
+        self._days(db, 5)
         entry = load_state(db, NAME)["failed"]["9"]
-        assert entry["n"] == 19 and not entry.get("unavailable") and entry["first"] == "2026-11-13" and entry["why"].startswith("No data")
-        self._days(db, 1, start=NOW + timedelta(days=19))
+        assert entry["n"] == 5 and not entry.get("unavailable") and entry["first"] == "2026-11-13" and entry["why"].startswith("No data")
+        self._days(db, 1, start=NOW + timedelta(days=5))
         assert load_state(db, NAME)["failed"]["9"]["unavailable"] is True
 
     def test_an_unavailable_match_is_not_asked_nor_listed_as_an_error_nor_does_it_turn_the_run_red(self):
         db = _db()
-        self._days(db, 20)
+        self._days(db, 6)
         quiet = _failing()
-        report = _run(db, quiet, _fresh(up_to_date=False, last_game=OLD, missing=["9"]), now=NOW + timedelta(days=21))
+        report = _run(db, quiet, _fresh(up_to_date=False, last_game=OLD, missing=["9"]), now=NOW + timedelta(days=7))
         quiet.fetch_boxscore.assert_not_called()
         assert report[0]["job"]["unavailable"] == ["9"] and report[0]["job"]["errors"] == []
         assert report[0]["freshness"]["up_to_date"] is True and needs_attention(report) is False
@@ -171,9 +171,9 @@ class TestMatchesThatKeepFailing:
 
     def test_it_is_asked_again_a_month_later_and_if_it_arrived_it_is_stored_and_forgotten(self):
         db = _db()
-        self._days(db, 20)
+        self._days(db, 6)
         arrived = _scraper(["9"])
-        _run(db, arrived, _fresh(), now=NOW + timedelta(days=19 + 30))
+        _run(db, arrived, _fresh(), now=NOW + timedelta(days=5 + 30))
         arrived.fetch_boxscore.assert_called_once()
         assert db.stored[NAME] == {9} and "failed" not in load_state(db, NAME)
 
@@ -219,11 +219,11 @@ class TestFbcylMatchesThatKeepFailing:
         db.insert_fbcyl_match.side_effect = lambda col, uid, doc: db.stored.setdefault(col, set()).add(uid)
         return db
 
-    def test_a_match_that_fails_20_times_over_a_week_stops_being_asked_and_is_reported_apart(self):
+    def test_a_match_that_fails_6_times_over_3_days_stops_being_asked_and_is_reported_apart(self):
         from src.services.fbcyl_match_ingest import scrape_fbcyl_collection
 
         db = self._db()
-        for i in range(20):
+        for i in range(6):
             job = scrape_fbcyl_collection(db, self.PARAMS, self._scraper(), today=date(2026, 11, 13) + timedelta(days=i))
         name = job["collection"]
         assert load_state(db, name)["failed"]["bad"]["unavailable"] is True

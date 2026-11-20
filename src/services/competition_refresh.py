@@ -202,7 +202,7 @@ def forgive_no_data(fresh: Dict[str, Any], job: Dict[str, Any], now: datetime) -
     score = fresh.get("missing_score") or {}
     quiet = [c for c in fresh.get("missing_codes") or []
              if c in asked and (score.get(c) in _FORFEIT_SCORES or (since.get(c) and now - datetime.fromisoformat(since[c]) > NO_DATA_AFTER))]
-    gone = [c for c in fresh.get("missing_codes") or [] if c in set(job.get("unavailable") or [])]      # #924: failed 20 times over a week: no longer a hole, listed apart
+    gone = [c for c in fresh.get("missing_codes") or [] if c in set(job.get("unavailable") or [])]      # #924: failed 6 times over 3 days: no longer a hole, listed apart
     if not quiet and not gone:
         return fresh
     missing = [c for c in fresh["missing_codes"] if c not in quiet and c not in gone]
