@@ -31,10 +31,11 @@ _ACTIONS = {107: "ASS", 108: "ASS", 119: "ASS", 103: "ST", 106: "TO", 102: "BS"}
 _FOULS = {109, 159, 160, 161, 162}                                                         # the ``personalFouls`` of the player moves with each one (162 is in a game of 2019/20)
 _FOUL_DRAWN = 110
 _SUBSTITUTIONS = {115: "OUT", 112: "IN"}                                                   # the first one of every starter is 115: he leaves
+_BLOCK_RECEIVED = 105                                                                      # the shooter of a miss that is blocked: after his miss and before the block (102) of the other team, in every game; it changes no statistic
 _STRUCTURE = {113: "TIMO", 121: "STARTP", 116: "ENDP"}                                      # a time-out (7 in the game, with a team and no player); the start (10:00) and the end (0:00) of each quarter
-KNOWN_CODES = frozenset({*_SHOTS, *_REBOUNDS, *_ACTIONS, *_FOULS, _FOUL_DRAWN, *_SUBSTITUTIONS, *_STRUCTURE})
-# seen in the real games and not understood: kept as ``other`` lines. 105 is «block received» (it changes no statistic), 599 the starting lineup and 123 the end of the match.
-UNKNOWN_CODES = frozenset({105, 118, 123, 599, 178, 179, 405, 406, 411, 416, 417, 541, 748, 749})
+KNOWN_CODES = frozenset({*_SHOTS, *_REBOUNDS, *_ACTIONS, *_FOULS, _FOUL_DRAWN, *_SUBSTITUTIONS, *_STRUCTURE, _BLOCK_RECEIVED})
+# seen in the real games and not understood: kept as ``other`` lines (599 looks like the starting lineup and 123 the end of the match, but nothing proves it)
+UNKNOWN_CODES = frozenset({118, 123, 599, 178, 179, 405, 406, 411, 416, 417, 541, 748, 749})
 
 
 def _period(number: int) -> str:
@@ -97,7 +98,7 @@ def _events(game: Dict[str, Any]) -> List[Dict[str, Any]]:
             base.update(code="SUBST", **{"in": _SUBSTITUTIONS[code]})
         elif code in _STRUCTURE:
             base.update(code=_STRUCTURE[code], text="")
-        elif code == 105:
+        elif code == _BLOCK_RECEIVED:
             base["text"] = "BLOQUEO RECIBIDO"
         elif code == 599:
             base["text"] = "QUINTETO INICIAL"

@@ -128,6 +128,19 @@ class TestThePlayByPlay:
         seen = {p["type"] for p in parsed["plays"]}
         assert seen <= KNOWN_CODES | UNKNOWN_CODES and not (KNOWN_CODES & UNKNOWN_CODES)          # every code of the real game is either proved or listed as not known
 
+    @pytest.mark.parametrize("name", ["105383", "18665"])
+    def test_105_is_the_block_received_by_the_shooter_it_sits_between_his_miss_and_a_block(self, name):
+        """The meaning of 105 is proved by its place: in both games (2026/27 and 2019/20) every one comes right after a missed shot of the same player and right before a block (102). The ``team`` it carries is not reliable (the blocker's in 2019/20, the shooter's in
+        2026/27): it is a line that changes no statistic, so nothing reads it."""
+        from src.external.acb_page import parse_plays
+
+        plays = parse_plays(flight(f"{name}.jugadas"))
+        received = [i for i, p in enumerate(plays) if p["type"] == 105]
+        assert received
+        for i in received:
+            before, after = plays[i - 1], plays[i + 1]
+            assert before["type"] in (97, 98, 533) and before["player_id"] == plays[i]["player_id"] and after["type"] == 102
+
     def test_the_game_of_2019_20_has_no_code_that_nobody_has_seen(self):
         from src.external.acb_page import parse_plays
 
