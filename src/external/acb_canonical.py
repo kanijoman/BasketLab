@@ -12,8 +12,8 @@ coordinates are on the page of each player, a block of its own) nor the bio of t
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 from src.external.fiba_canonical import Lines
