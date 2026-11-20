@@ -29,14 +29,15 @@ def _words(name: Any) -> Set[str]:
 
 
 def external_players(docs: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """The players with minutes of canonical documents with a bio (``birth``), once each, sorted by id: ``{id, name, birth, nationality}``."""
+    """The players with minutes of canonical documents with a bio (``birth``), once each, sorted by id: ``{id, name, birth, nationality}`` and, where the source has it, ``full_name`` (ACB shows the name a player
+    is known by and says the one of his papers, which is how FEB writes him: the link has the words of both, #886)."""
     found: Dict[str, Dict[str, Any]] = {}
     for doc in docs:
         for team in (doc.get("BOXSCORE") or {}).get("TEAM") or []:
             for player in team.get("PLAYER") or []:
                 pid = str(player.get("id"))
                 if pid not in found and player.get("birth") and player.get("name") and str(player.get("min") or "0") not in ("0", ""):
-                    found[pid] = {"id": pid, "name": player["name"], "birth": player["birth"], "nationality": player.get("nationality")}
+                    found[pid] = {"id": pid, "name": player["name"], "birth": player["birth"], "nationality": player.get("nationality"), **({"full_name": player["full_name"]} if player.get("full_name") else {})}
     return [found[k] for k in sorted(found)]
 
 
@@ -54,7 +55,7 @@ def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str,
     by_birth = _persons_by_birth(feb_rows)
     links: List[Dict[str, Any]] = []
     for player in sorted(players, key=lambda p: str(p["id"])):
-        words = _words(player.get("name"))
+        words = _words(player.get("name")) | _words(player.get("full_name"))
         fits = []
         for person, theirs in sorted(by_birth.get(str(player.get("birth")), {}).items()):
             shared = sorted(words & theirs)

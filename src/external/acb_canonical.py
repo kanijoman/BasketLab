@@ -73,7 +73,7 @@ def _player_box(player: Dict[str, Any], bio: Optional[Dict[str, Any]] = None) ->
     box = {feb: str(stats.get(acb, 0)) for acb, feb in _BOX.items()}
     box["fgm"] = str(stats.get("twoPointersMade", 0) + stats.get("threePointersMade", 0))
     box["fga"] = str(stats.get("twoPointersAttempted", 0) + stats.get("threePointersAttempted", 0))
-    return {**box, "id": source_id(SOURCE, player["id"]), "name": player["name"], "no": player["number"], "min": str(player["seconds"]), "sta": "*" if player["started"] else None,
+    return {**box, "id": source_id(SOURCE, player["id"]), "name": player["name"], "full_name": f"{player.get('first_name') or ''} {player.get('last_name') or ''}".strip() or None, "no": player["number"], "min": str(player["seconds"]), "sta": "*" if player["started"] else None,
             "birth": bio.get("birth"), "height": str(bio["height_cm"]) if bio.get("height_cm") else None, "nationality": bio.get("nationality"), "position": player.get("role") or bio.get("position"), "club": None}
 
 

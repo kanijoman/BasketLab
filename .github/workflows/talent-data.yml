@@ -94,6 +94,16 @@ jobs:
           else
             echo "No FIBA games in the external archive yet: nothing to link"
           fi
+      - name: Link the ACB players
+        if: github.event_name != 'pull_request'
+        # #886: the same for ACB (`links/acb.json`): its players have birth, height and position, so they are linked to the persons of FEB and lend what FEB leaves empty. A derived file of THIS run, never written back
+        # (one writer per folder). Until ACB has games in the archive there is nothing to link; a failing command does turn the run red.
+        run: |
+          if [ -d archive-ext/acb ]; then
+            python run_identity_links.py --ext archive-ext --source acb
+          else
+            echo "No ACB games in the external archive yet: nothing to link"
+          fi
       - name: Link the FBCYL players
         if: github.event_name != 'pull_request'
         # #996: the FBCYL players that ARE a person of FEB (`links/fbcyl.json`, `run_identity_links.py --source fbcyl`) are regenerated here from the archive and the rosters already downloaded; like the FIBA ones they are a derived
