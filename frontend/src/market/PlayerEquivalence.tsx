@@ -14,7 +14,7 @@ import type { SearchRow } from './search'
 
 const name = (node: string) => node.split('|')[2]
 
-function Band({ lo, mean, hi }: { lo: number; mean: number; hi: number }) {
+export function Band({ lo, mean, hi }: { lo: number; mean: number; hi: number }) {
   const clamp = (v: number) => Math.min(100, Math.max(0, v))
   return (
     <div aria-hidden="true" className="relative h-2 w-full min-w-24 rounded-pill bg-line/50">
