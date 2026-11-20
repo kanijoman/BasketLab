@@ -16,13 +16,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / "scripts")]
 from src.market.equivalence import movements, observations, stayers  # noqa: E402
 from src.market.equivalence_model import fit as fit_graph  # noqa: E402
 from src.market.formation import formation_observations, leave_one_season_out, pairs  # noqa: E402
-
-
-def levels_of(model):
-    def levels(node):
-        found = model.fits.get(node.split("|")[0])
-        return None if not found or node not in found.nodes else tuple(float(v) for v in found.theta[:, found.nodes.index(node)])
-    return levels
+from src.market.formation_publish import levels_of, levels_without  # noqa: E402
 
 
 def main() -> None:
@@ -37,12 +31,7 @@ def main() -> None:
         rows, competitions = load_rows()
     senior, formation = observations(rows, competitions), formation_observations(rows, competitions)
 
-    def without(season):
-        moves = [m for m in movements(senior) if season not in (m.from_season, m.to_season)]
-        stay = [s for s in stayers(senior) if season not in (s.from_season, s.to_season)]
-        return levels_of(fit_graph(moves, stay))
-
-    study = leave_one_season_out(formation, senior, without)
+    study = leave_one_season_out(formation, senior, levels_without(senior))
     print(f"formation observations {len(formation)}, senior {len(senior)}, pairs {len(pairs(formation, senior, levels_of(fit_graph(movements(senior), stayers(senior)))))}")
     f = lambda v: "-" if v is None else f"{v:.3f}"      # noqa: E731
     o = study["overall"]
