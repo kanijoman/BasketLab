@@ -259,3 +259,14 @@ class TestTheCommand:
 
     def test_without_the_archive_it_is_an_error(self, cli, tmp_path):
         assert cli.main(["--source", "fbcyl", "--ext", str(tmp_path)]) == 1
+
+
+@pytest.mark.parametrize("group, born, fits", [
+    ("U12", "2015-03-01", True), ("U12", "2014-01-01", True), ("U12", "2013-12-31", False),       # minibásket of the season 2026: born in 2014 or later (one year of tolerance)
+    ("U14", "2012-06-01", True), ("U14", "2011-12-31", False),
+])
+def test_minibasket_and_infantil_players_have_an_upper_age_like_cadete_and_junior(group, born, fits):
+    """#1025: the widened catalogue brings U12 and U14: a birth that cannot be of that category discards the FEB person (it was «unknown» and discarded nobody)."""
+    from src.market.identity_link import _age_fits
+
+    assert _age_fits({"age_groups": [group], "seasons": [2026]}, [born]) is fits

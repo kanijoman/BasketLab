@@ -188,20 +188,21 @@ class TestTheRealCatalogue:
         assert all(e["recheck_days"] == 3 for e in feb)                           # the refresh of web-data looks again at the last days
         assert all("packages_groups" not in e or e["packages_groups"] == [] for e in feb)     # and the packages of every group of 3a FEB too (decided 03/11/2026)
 
-    def test_the_youth_championships_of_mercado_are_six_per_season_for_both_genders_and_have_no_packages(self):
-        youth = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and ("C ESP" in e["competition"] or "SSAA" in e["competition"])]
-        assert {e["competition"] for e in youth} == {"C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas."}
+    def test_the_youth_championships_are_fourteen_per_season_and_the_minicopa_since_2021_and_have_no_packages(self):
+        youth = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and e.get("category") == "formacion"]
+        assert {e["competition"] for e in youth} == {"C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas.",
+                                                      "C ESP CLUBES INF FEM", "C ESP CLUBES INF MASC", "C ESP CLUBES MINI FEM", "C ESP CLUBES MINI MASC", "CE SSAA Infantil Fem.", "CE SSAA Infantil Mas.", "CE SSAA Mini Fem.", "CE SSAA Mini Mas.", "MINICOPA LF ENDESA"}
         assert {e["season_value"] for e in youth} == {"2020", "2021", "2022", "2023", "2024", "2025"}       # 2019/20 had no championship
-        assert len(youth) == 36 and all(e["groups"] == "all" and e["record"] == [] for e in youth)
+        assert len(youth) == 89 and all(e["groups"] == "all" and e["record"] == [] for e in youth)
         assert {e["gender"] for e in youth if "Fem" in e["competition"] or "FEM" in e["competition"]} == {"F"}
         assert {e["gender"] for e in youth if "Mas" in e["competition"] or "MASC" in e["competition"]} == {"M"}
 
     def test_the_old_youth_seasons_are_loaded_in_batches_so_the_refresh_of_feb_keeps_its_time(self):
-        youth = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and ("C ESP" in e["competition"] or "SSAA" in e["competition"])]
+        youth = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and e.get("category") == "formacion"]
         assert {e["season_value"] for e in youth if e["active"]} == LOADED_SEASONS
 
     def test_the_senior_history_has_every_edition_that_exists_and_no_packages(self):
-        history = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and e["gender"] and "C ESP" not in e["competition"] and "SSAA" not in e["competition"]]
+        history = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and e["gender"] and e.get("category") != "formacion"]
         seasons = {}
         for e in history:
             seasons.setdefault(e["competition"], set()).add(e["season_value"])
@@ -212,19 +213,19 @@ class TestTheRealCatalogue:
 
     def test_only_the_seasons_of_the_batches_loaded_so_far_are_active_and_the_big_tercera_waits_for_its_own_batches(self):
         """Batches of #876 (2023 and 2022, then 2021 and 2020); each new batch changes ``LOADED_SEASONS`` here and in the youth test above, and nothing else."""
-        history = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and "C ESP" not in e["competition"] and "SSAA" not in e["competition"]]
+        history = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "feb" and not e.get("packages", True) and e.get("category") != "formacion"]
         senior = ("LF ENDESA", "PRIMERA FEB", "SEGUNDA FEB", "L.F.-2", "LF CHALLENGE")
         assert {(e["competition"], e["season_value"]) for e in history if e["active"] and e["competition"] != "TERCERA FEB"} == (
             {(c, y) for c in senior for y in sorted(LOADED_SEASONS) if (c, y) != ("LF CHALLENGE", "2020")} | {("COPA ESPAÑA", "2024"), ("COPA ESPAÑA", "2025"), ("LIGA U", "2025")})
         assert {e["season_value"] for e in history if e["active"] and e["competition"] == "TERCERA FEB"} == TERCERA_LOADED
 
-    def test_the_fbcyl_groups_keep_primera_nacional_femenina_a_1_and_a_2_and_add_the_autonomic_cadete_junior_and_senior_ones(self):
+    def test_the_fbcyl_groups_keep_primera_nacional_femenina_a_1_and_a_2_and_add_the_autonomic_minibasket_to_junior_and_senior_ones(self):
         fbcyl = [e for e in load_catalogue(ROOT / DEFAULT_CATALOGUE) if e["league"] == "fbcyl"]
         assert [(e["competition"], e["fbcyl"]["competition_id"]) for e in fbcyl[:2]] == [("1ª FASE-GRUPO A-1", "7298"), ("1ª FASE-GRUPO A-2", "7299")]        # the two that were there, untouched
         assert {e["fbcyl"]["territory"] for e in fbcyl} == {"1"}                                                  # autonomic only (#920): no provincial, no escolar
         assert {e["fbcyl"]["gender"] for e in fbcyl} == {"M", "F"}                                                # men and women
         assert {(e["season_value"], e["active"]) for e in fbcyl} == {("2026", True), ("2025", False), ("2024", False)}      # 2026 loads, the older seasons wait for their batch
-        assert not any(any(w in e["note"].upper() for w in ("INF", "MINI", "ESCOLAR", "PROVINCIAL")) for e in fbcyl)     # nothing below cadete
+        assert not any(any(w in e["note"].upper() for w in ("ALEV", "BENJAM", "PREMINI", "ESCOLAR", "PROVINCIAL")) for e in fbcyl)     # nothing below minibásket (20/11/2026: infantil and minibásket are in)
 
     def test_the_collection_of_a_1_is_the_one_already_stored(self):
         from src.database import get_collection_name

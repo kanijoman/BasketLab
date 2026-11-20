@@ -18,14 +18,18 @@ from src.services.competition_category import AGE_GROUPS, CATEGORIES, category_o
 from tests.test_local_web_data import FBCYL, FEB, MASTER, cheap_lineups, handler  # noqa: E402,F401  (fixtures)
 
 CATALOGUE = load_catalogue(DEFAULT_CATALOGUE)
-FORMATION = {"C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas."}
+FORMATION = {"C ESP CLUBES CAD FEM", "C ESP CLUBES CAD MASC", "C ESP CLUBES JR FEM", "C ESP CLUBES JR MASC", "CE SSAA Cadete Fem.", "CE SSAA Cadete Mas.",
+             # the national championships of infantil and minibásket (20/11/2026: all the youth of the first level come in)
+             "C ESP CLUBES INF FEM", "C ESP CLUBES INF MASC", "C ESP CLUBES MINI FEM", "C ESP CLUBES MINI MASC", "CE SSAA Infantil Fem.", "CE SSAA Infantil Mas.", "CE SSAA Mini Fem.", "CE SSAA Mini Mas.",
+             "MINICOPA LF ENDESA"}
 
 
 def test_the_age_groups_are_infantil_cadete_and_junior_and_u20_is_not_one_of_them():
-    assert AGE_GROUPS == {"U14": "Infantil", "U16": "Cadete", "U18": "Júnior"} and CATEGORIES == ("senior", "formacion")
+    assert AGE_GROUPS == {"U12": "Minibásket", "U14": "Infantil", "U16": "Cadete", "U18": "Júnior"} and CATEGORIES == ("senior", "formacion")
 
 
 @pytest.mark.parametrize("raw, code", [
+    ("U12", "U12"), ("sub12", "U12"), ("Sub-12", "U12"), ("mini", "U12"), ("Minibásket", "U12"), ("minibasket", "U12"),
     ("U14", "U14"), ("u14", "U14"), ("U-14", "U14"), ("sub14", "U14"), ("Sub-14", "U14"), ("infantil", "U14"), ("INF", "U14"), ("Infantil", "U14"),
     ("U16", "U16"), ("cadete", "U16"), ("CAD", "U16"), ("Cadete", "U16"), ("sub-16", "U16"), ("U15", "U16"), ("u-15", "U16"), ("sub15", "U16"),
     ("U18", "U18"), ("junior", "U18"), ("Júnior", "U18"), ("JR", "U18"), ("JÚNIOR", "U18"), ("sub 18", "U18"), ("U17", "U18"), ("sub-17", "U18"),
@@ -40,7 +44,7 @@ def test_what_is_not_an_age_group_is_none_and_never_forced_into_one(raw):
 
 
 @pytest.mark.parametrize("raw, category", [
-    ("U14", "formacion"), ("infantil", "formacion"), ("U15", "formacion"), ("U16", "formacion"), ("cadete", "formacion"), ("U17", "formacion"), ("U18", "formacion"), ("Júnior", "formacion"),
+    ("U12", "formacion"), ("minibasket", "formacion"), ("U14", "formacion"), ("infantil", "formacion"), ("U15", "formacion"), ("U16", "formacion"), ("cadete", "formacion"), ("U17", "formacion"), ("U18", "formacion"), ("Júnior", "formacion"),
     ("U19", "senior"), ("U20", "senior"), ("sub-20", "senior"), ("u21", "senior"), ("U-22", "senior"), ("sub 22", "senior"),
 ])
 def test_the_category_of_an_age_u14_to_u18_is_formacion_and_u19_to_u22_are_senior_players_over_18(raw, category):
@@ -92,12 +96,15 @@ def test_a_youth_entry_needs_its_age_group_and_its_name(tmp_path):
 def test_the_six_youth_championships_of_the_real_catalogue_are_formacion_with_their_age_group_and_every_other_competition_is_not():
     youth = [e for e in CATALOGUE if e.get("category") == "formacion" and e["league"] == "feb"]
     assert {e["competition"] for e in youth} == FORMATION
-    assert all(e["age_group"] in ("U16", "U18") and e["label"] for e in youth)
+    assert all(e["age_group"] in ("U12", "U14", "U16", "U18") and e["label"] for e in youth)
+    assert {e["age_group"] for e in youth if "INF" in e["competition"].upper()} == {"U14"} and {e["age_group"] for e in youth if "MINI" in e["competition"].upper()} == {"U12"}
+    seasons = {e["season_value"] for e in youth}
+    assert all({e["season_value"] for e in youth if e["competition"] == name} == seasons for name in FORMATION - {"MINICOPA LF ENDESA"})          # every championship has every season, as the cadete ones; the minicopa has none in 2020
     assert {e["age_group"] for e in youth if "CAD" in e["competition"] or "Cadete" in e["competition"]} == {"U16"}
     assert {e["age_group"] for e in youth if "JR" in e["competition"]} == {"U18"}
     assert all(e.get("category", "senior") == "senior" for e in CATALOGUE if e["league"] == "feb" and e["competition"] not in FORMATION)
     fbcyl_youth = [e for e in CATALOGUE if e["league"] == "fbcyl" and e.get("category") == "formacion"]
-    assert fbcyl_youth and {e["age_group"] for e in fbcyl_youth} == {"U16", "U18"} and all(e["label"] and e["group_label"] for e in fbcyl_youth)      # #920: cadete and júnior, never infantil
+    assert fbcyl_youth and {e["age_group"] for e in fbcyl_youth} == {"U12", "U14", "U16", "U18"} and all(e["label"] and e["group_label"] for e in fbcyl_youth)      # #920 and 20/11/2026: minibásket to júnior
 
 
 @pytest.mark.parametrize("collection, category, age_group, label", [

@@ -17,7 +17,7 @@ export interface PublishedCollection {
   league: PublishedLeague
   games: number
   category?: 'senior' | 'formacion'
-  age_group?: 'U14' | 'U16' | 'U18'
+  age_group?: 'U12' | 'U14' | 'U16' | 'U18'
   competition_label?: string
   group_label?: string
 }
