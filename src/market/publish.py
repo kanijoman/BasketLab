@@ -23,6 +23,7 @@ from src.market.advanced import add_advanced, team_context
 from src.market.competitions import CompetitionSeason, competitions_of
 from src.market.contract import TALENT_SCHEMA
 from src.market.equivalence_publish import build_document
+from src.market.formation_publish import build_document as build_formation
 from src.market.profile import add_profiles
 from src.market.season_rows import attach_bio, season_player_rows
 from src.market.zones import ZONE_ORDER, competition_zones
@@ -31,6 +32,7 @@ from src.services.competition_category import category_facts, category_of_compet
 INDEX = "index.json"
 IDENTITIES = "identities"
 EQUIVALENCES = "equivalences"
+FORMATION = "formation"
 SUBDIR = "players/"
 SCOPE = "talent"
 FORMAT = 1
@@ -124,22 +126,33 @@ def _identities(out_dir: Path, sealer: Any, kept: Optional[Dict[str, Any]], rows
     return seal_file(out_dir, IDENTITIES, plain, [SCOPE], sealer, kept, SUBDIR)
 
 
-def _read_previous_equivalences(out_dir: Path) -> Optional[Dict[str, Any]]:
+def _read_previous_entry(out_dir: Path, name: str) -> Optional[Dict[str, Any]]:
     try:
         manifest = json.loads((out_dir / INDEX).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    return manifest.get("equivalences") if manifest.get("schema") == TALENT_SCHEMA else None
+    return manifest.get(name) if manifest.get("schema") == TALENT_SCHEMA else None
 
 
-def _equivalences(out_dir: Path, sealer: Any, kept: Optional[Dict[str, Any]], rows_by_key: Mapping[str, List[Dict[str, Any]]], entries: Sequence[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
-    """The sealed ``equivalences`` file (#891, E1c): the graph of levels between the senior competitions of FEB fitted on the rows just published (``equivalence_publish``); ``None`` when no sex has a graph."""
+def _modelled(out_dir: Path, sealer: Any, name: str, builder: Callable[..., Optional[Dict[str, Any]]], kept: Optional[Dict[str, Any]], rows_by_key: Mapping[str, List[Dict[str, Any]]],
+              entries: Sequence[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
+    """A sealed document fitted on the rows just published (``builder(rows, competitions)``) with its ``usable`` and ``sexes`` for the manifest; ``None`` when there is nothing to publish."""
     rows = [{**row, "comp": key} for key, group in rows_by_key.items() for row in group]
-    document = build_document(rows, {e["key"]: e for e in entries})
+    document = builder(rows, {e["key"]: e for e in entries})
     if not document:
         return None
     plain = json.dumps(document, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
-    return {**seal_file(out_dir, EQUIVALENCES, plain, [SCOPE], sealer, kept, SUBDIR), "usable": document["usable"], "sexes": sorted(document["sexes"])}
+    return {**seal_file(out_dir, name, plain, [SCOPE], sealer, kept, SUBDIR), "usable": document["usable"], "sexes": sorted(document["sexes"])}
+
+
+def _equivalences(out_dir: Path, sealer: Any, kept: Optional[Dict[str, Any]], rows_by_key: Mapping[str, List[Dict[str, Any]]], entries: Sequence[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The sealed ``equivalences`` file (#891, E1c): the graph of levels between the senior competitions of FEB (``equivalence_publish``); ``None`` when no sex has a graph."""
+    return _modelled(out_dir, sealer, EQUIVALENCES, build_document, kept, rows_by_key, entries)
+
+
+def _formation(out_dir: Path, sealer: Any, kept: Optional[Dict[str, Any]], rows_by_key: Mapping[str, List[Dict[str, Any]]], entries: Sequence[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
+    """The sealed ``formation`` file (#893, E3b): the index of the formation (``formation_publish``); ``None`` without formation, graph or players who made it to the senior game."""
+    return _modelled(out_dir, sealer, FORMATION, build_formation, kept, rows_by_key, entries)
 
 
 def _write_if_changed(path: Path, data: bytes) -> None:
@@ -164,7 +177,7 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
         on_unknown(unknown)
     kept = _read_previous(out_dir)
     kept_identities = _read_previous_identities(out_dir)
-    kept_equivalences = _read_previous_equivalences(out_dir)
+    kept_equivalences, kept_formation = _read_previous_entry(out_dir, "equivalences"), _read_previous_entry(out_dir, "formation")
     entries = []
     rows_by_key: Dict[str, List[Dict[str, Any]]] = {}
     for competition, members in found.items():
@@ -181,11 +194,12 @@ def publish_talent_data(connection: Any, out_dir: Any, sealer: Any, names: Itera
             on_competition(competition, len(rows), len(members))
     identities = _identities(out_dir, sealer, kept_identities, rows_by_key)
     equivalences = _equivalences(out_dir, sealer, kept_equivalences, rows_by_key, entries)
+    formation = _formation(out_dir, sealer, kept_formation, rows_by_key, entries)
     manifest = {"schema": TALENT_SCHEMA, "kind": "talent", "v": sealer.index_version, **sealer.index_extra(), "competitions": entries, **({"identities": identities} if identities else {}),
-                **({"equivalences": equivalences} if equivalences else {})}
+                **({"equivalences": equivalences} if equivalences else {}), **({"formation": formation} if formation else {})}
     _write_if_changed(out_dir / "frontend" / "vercel.json", json.dumps(VERCEL_GUARD, indent=1).encode("utf-8"))      # Vercel builds every branch: this one is data, not a project (#906 regression)
     _write_if_changed(out_dir / INDEX, (json.dumps(manifest, ensure_ascii=False, separators=(",", ":"), default=str) + "\n").encode("utf-8"))
-    referenced = {e["file"] for e in entries} | {e["zones"]["file"] for e in entries if e.get("zones")} | ({identities["file"]} if identities else set()) | ({equivalences["file"]} if equivalences else set())
+    referenced = {e["file"] for e in entries} | {e["zones"]["file"] for e in entries if e.get("zones")} | ({identities["file"]} if identities else set()) | ({equivalences["file"]} if equivalences else set()) | ({formation["file"]} if formation else set())
     for path in (out_dir / SUBDIR).glob("*.json"):
         if f"{SUBDIR}{path.name}" not in referenced:
             path.unlink()

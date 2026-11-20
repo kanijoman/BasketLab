@@ -20,6 +20,7 @@ import PlayerPhoto from '@/components/ui/PlayerPhoto'
 import { playerPhotoUrl } from '@/lib/playerPhoto'
 import { ENOUGH_MINUTES } from './enoughMinutes'
 import PlayerEquivalence from './PlayerEquivalence'
+import PlayerFormation from './PlayerFormation'
 import PlayerRadar from './PlayerRadar'
 import PlayerZones from './PlayerZones'
 import { SimilarPlayers } from './SimilarPlayers'
@@ -146,6 +147,7 @@ export default function PlayerPage() {
       <SimilarPlayers row={row} targetId={personId} />
       <TeamFit row={row} personRows={mine} entries={entries} />
       <PlayerEquivalence rows={mine} entries={entries} />
+      <PlayerFormation rows={mine} entries={entries} />
       <PlayerZones row={row} />
       </div>
     </Shell>

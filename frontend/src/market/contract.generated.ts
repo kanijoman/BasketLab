@@ -41,6 +41,14 @@ export interface TalentEquivalencesEntry extends FileEntry {
   sexes: ('F' | 'M')[]
 }
 
+/** The sealed ``formation`` file (#893): per sex the coefficients and the noise of the index of the formation (what he would be in the senior game IF he gets there), the groups it speaks of and its validation.
+    ``usable`` says whether the range can be shown; ``sexes`` which sexes it holds. */
+export interface TalentFormationEntry extends FileEntry {
+  wraps: Wrap[]
+  usable: boolean
+  sexes: ('F' | 'M')[]
+}
+
 /** ``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope). */
 export interface TalentManifest {
   schema: number
@@ -50,4 +58,5 @@ export interface TalentManifest {
   competitions: TalentCompetitionEntry[]
   identities?: TalentIdentitiesEntry
   equivalences?: TalentEquivalencesEntry
+  formation?: TalentFormationEntry
 }
