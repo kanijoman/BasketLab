@@ -168,3 +168,40 @@ class TestTheEdges:
                  "b|2025": {"competition": "TERCERA FEB", "league": "feb", "gender": "M", "category": "senior", "level": 4, "season": "2025"}}
         counts = edge_counts(movements(observations([row("feb:1", comp="a|2024"), row("feb:1", comp="b|2025")], comps)), node_levels(comps))
         assert counts == {("M|feb|LIGA U", "M|feb|TERCERA FEB"): {"up": 0, "down": 0, "unranked": 1, "persons": 1}}
+
+
+class TestTheHistory:
+    """The origin of a translation can be the average of the last TWO seasons of the player in his competition (weighted by minutes) when he has them: measured on the real rows, it narrows the range a little
+    (docs/evaluaciones/2026-11-20_estudio-estimador-891.md). ``history=1`` is the last season only (the default), ``2`` only the movements that have the previous season too, ``"auto"`` the average
+    where there is a previous season and the last season where there is not (what the user sees is ONE estimator; the number of seasons is the movement's ``seasons``)."""
+
+    ROWS = [row("feb:1", comp="feb|l.f.-2|2024", pct=70.0, minutes=10000), row("feb:1", comp="feb|l.f.-2|2025", pct=40.0, minutes=30000), row("feb:1", comp="feb|lfchallenge|2026", pct=55.0)]
+    COMPS_H = {**COMPS, "feb|lfchallenge|2026": {**COMPS["feb|lfchallenge|2025"], "season": "2026"}, "feb|l.f.-2|2025": COMPS["feb|l.f.-2|2025"]}
+
+    def test_the_default_is_the_last_season_only_and_says_so(self):
+        (move,) = movements(observations(self.ROWS, self.COMPS_H))
+        assert move.seasons == 1 and move.z_from[0] == pytest.approx(z_of(40.0))
+
+    def test_with_two_seasons_the_origin_is_the_average_weighted_by_minutes(self):
+        (move,) = movements(observations(self.ROWS, self.COMPS_H), history=2)
+        expected = (10000 * z_of(70.0) + 30000 * z_of(40.0)) / 40000
+        assert move.seasons == 2 and move.z_from[0] == pytest.approx(expected) and move.from_season == 2025 and move.z_to[0] == pytest.approx(z_of(55.0))
+
+    def test_a_movement_without_the_previous_season_is_not_one_of_two_seasons(self):
+        rows = [row("feb:1", comp="feb|l.f.-2|2025", pct=40.0), row("feb:1", comp="feb|lfchallenge|2026", pct=55.0)]
+        assert movements(observations(rows, self.COMPS_H), history=2) == [] and len(movements(observations(rows, self.COMPS_H))) == 1
+
+    def test_auto_gives_one_movement_per_pair_with_two_seasons_where_there_are_and_one_where_there_are_not(self):
+        rows = self.ROWS + [row("feb:2", comp="feb|l.f.-2|2025", pct=40.0), row("feb:2", comp="feb|lfchallenge|2026", pct=60.0)]
+        auto = movements(observations(rows, self.COMPS_H), history="auto")
+        assert {(m.person, m.seasons) for m in auto} == {("feb:1", 2), ("feb:2", 1)}
+
+    def test_the_stayers_have_their_history_too(self):
+        rows = [row("feb:1", comp="feb|lfchallenge|2024", pct=70.0), row("feb:1", comp="feb|lfchallenge|2025", pct=50.0), row("feb:1", comp="feb|lfchallenge|2026", pct=60.0)]
+        comps = {**COMPS, "feb|lfchallenge|2026": {**COMPS["feb|lfchallenge|2025"], "season": "2026"}}
+        two = stayers(observations(rows, comps), history=2)
+        assert [(s.from_season, s.to_season, s.seasons) for s in two] == [(2025, 2026, 2)]
+
+    def test_a_bad_history_is_refused(self):
+        with pytest.raises(ValueError):
+            movements([], history=3)

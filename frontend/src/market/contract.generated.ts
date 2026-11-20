@@ -33,6 +33,14 @@ export interface TalentIdentitiesEntry extends FileEntry {
   wraps: Wrap[]
 }
 
+/** The sealed ``equivalences`` file (#891): per sex the levels of the senior competitions of FEB, their covariance, the noise and the reliability of one and of two seasons, the edges and the validation.
+    ``usable`` says whether the range can be shown (the model beat not translating and its 80 % interval held); ``sexes`` which graphs it holds. */
+export interface TalentEquivalencesEntry extends FileEntry {
+  wraps: Wrap[]
+  usable: boolean
+  sexes: ('F' | 'M')[]
+}
+
 /** ``index.json`` of the ``talent-data`` branch: the only file that keeps its name. ``v`` and ``open_key`` are those of the live packages' index (the key of the ``abierto`` scope). */
 export interface TalentManifest {
   schema: number
@@ -41,4 +49,5 @@ export interface TalentManifest {
   open_key?: string
   competitions: TalentCompetitionEntry[]
   identities?: TalentIdentitiesEntry
+  equivalences?: TalentEquivalencesEntry
 }
