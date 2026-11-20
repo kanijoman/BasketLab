@@ -6,8 +6,10 @@ import { Link } from 'react-router-dom'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
-import { loadCompetitionRows, loadTalentCompetitions } from './data'
-import { fitIn, SUBSTITUTE_SIMILARITY, type Fit } from './fit'
+import { loadCompetitionRows, loadEquivalences, loadTalentCompetitions, type TalentCompetitionEntry } from './data'
+import { historyOf, nodeOf } from './equivalence'
+import { SUBSTITUTE_SIMILARITY, type Fit } from './fit'
+import { fitTranslated, type Translated } from './fitTranslated'
 import { COVER_PCT, MIN_ROTATION, AXES, squadOf, teamsOf } from './myTeam'
 import { recallTeam } from './myTeamMemory'
 import { toSearchRow, type SearchRow } from './search'
@@ -30,6 +32,19 @@ function Verdict({ fit, team }: { fit: Fit; team: string }) {
   return <p className="text-sm text-ink"><Badge tone="neutral">Neutro</Badge> No destaca en ningún eje (percentil {COVER_PCT} o más): ni cubre un hueco de {team} ni coincide con nadie.</p>
 }
 
+const placeOf = (node: string) => node.split('|')[2]
+
+/** What was done to the percentiles of a candidate of another competition, and how much of the verdict survives the low end of the range. */
+function Translation({ t, fit, steady }: { t: Translated; fit: Fit; steady: string[] }) {
+  const standing = [...fit.fills.map(a => a.key), ...fit.collides.map(c => c.axis.key)]
+  return (
+    <p className="text-xs text-ink-muted">
+      Sus percentiles se han traducido a {placeOf(t.to)} (el centro de un margen del 80 %, a partir de {t.seasons === 2 ? 'la media de sus dos últimas temporadas' : 'su última temporada'} en {placeOf(t.from)}).
+      {standing.length > 0 && (steady.length ? <> Se mantienen incluso en el extremo bajo del margen: {names(steady)}.</> : ' Ninguno de los ejes del veredicto se mantiene en el extremo bajo del margen: es una estimación frágil.')}
+    </p>
+  )
+}
+
 export function FitDetail({ fit, team }: { fit: Fit; team: string }) {
   if (fit.reason) return <p className="text-sm text-ink-muted">{REASON[fit.reason]}</p>
   const none = 'ninguno'
@@ -50,14 +65,18 @@ export function FitDetail({ fit, team }: { fit: Fit; team: string }) {
   )
 }
 
-export default function TeamFit({ row }: { row: SearchRow }) {
+export default function TeamFit({ row, personRows, entries }: { row: SearchRow; personRows: SearchRow[]; entries: TalentCompetitionEntry[] }) {
   const chosen = useMemo(recallTeam, [])
   const manifest = useQuery({ queryKey: ['talent-competitions'], queryFn: loadTalentCompetitions })
   const entry = chosen ? manifest.data?.find(e => e.key === chosen.comp) : undefined
   const rows = useQuery({ queryKey: ['talent-rows', chosen?.comp], queryFn: () => loadCompetitionRows(chosen!.comp), enabled: Boolean(entry) })
   const all = useMemo(() => (rows.data && entry ? rows.data.rows.map(r => toSearchRow(entry, r)) : []), [rows.data, entry])
   const team = useMemo(() => teamsOf(all).find(t => t.team_id === chosen?.team), [all, chosen])
-  const fit = useMemo(() => (chosen && team ? fitIn(squadOf(all, chosen.comp, chosen.team).rotation, row) : null), [all, chosen, team, row])
+  const equivalences = useQuery({ queryKey: ['talent-equivalences'], queryFn: loadEquivalences, retry: false })
+  const history = useMemo(() => { const byKey = new Map(entries.map(e => [e.key, e])); return historyOf(personRows.flatMap(r => { const e = byKey.get(r.comp_key); return e ? [{ entry: e, row: r }] : [] })) }, [personRows, entries])
+  const result = useMemo(() => (chosen && team ? fitTranslated(squadOf(all, chosen.comp, chosen.team).rotation, row, chosen.comp, entry ? nodeOf(entry) : null, equivalences.data, history) : null),
+    [all, chosen, team, row, entry, equivalences.data, history])
+  const fit = result?.fit ?? null
   const toMyTeam = <Link to="/mi-equipo" className="font-medium text-accent-text hover:underline">Mi equipo</Link>
   return (
     <Card id="encaje" title="Encaje con tu equipo">
@@ -68,8 +87,9 @@ export default function TeamFit({ row }: { row: SearchRow }) {
         <>
           <p className="mb-2 text-xs text-ink-muted">Equipo: <span className="font-medium text-ink">{team.team_name}</span> ({entry?.season_label} · {entry?.competition_label ?? entry?.competition}) · {toMyTeam}</p>
           <FitDetail fit={fit} team={team.team_name} />
+          {result?.translated && !fit.reason && <div className="mt-3"><Translation t={result.translated} fit={fit} steady={result.steady} /></div>}
           <p className="mt-3 text-xs text-ink-muted">
-            Los percentiles son los de cada jugador en su competición, sin traducir de una a otra{row.comp_key !== chosen.comp ? ': este jugador compite en otra, así que el encaje es orientativo' : ''}.
+            {result?.translated ? 'Los jugadores del equipo van con sus percentiles; el del candidato es el traducido.' : `Los percentiles son los de cada jugador en su competición, sin traducir de una a otra${row.comp_key !== chosen.comp ? ': este jugador compite en otra, así que el encaje es orientativo' : ''}.`}
             El perfil que se juzga es el de la temporada elegida arriba. Es información para el staff, no una orden de fichar.
           </p>
         </>
