@@ -22,6 +22,7 @@ import { ENOUGH_MINUTES } from './enoughMinutes'
 import PlayerRadar from './PlayerRadar'
 import PlayerZones from './PlayerZones'
 import { SimilarPlayers } from './SimilarPlayers'
+import TeamFit from './TeamFit'
 import { toSearchRow, type SearchRow } from './search'
 
 const dash = <span className="text-ink-faint" title="Sin dato">—</span>
@@ -58,7 +59,7 @@ const columns: ColumnDef<Line, unknown>[] = [
 
 const Shell = ({ children }: { children: React.ReactNode }) => <div className="mx-auto w-full max-w-5xl space-y-4 p-4 sm:p-6">{children}</div>
 /** The sections of the profile, in the order of the page: the navigation inside it (#1010). */
-const SECTIONS = [['datos', 'Datos personales'], ['trayectoria', 'Trayectoria'], ['perfil', 'Perfil'], ['parecidos', 'Parecidos'], ['zonas', 'Zonas de tiro']] as const
+const SECTIONS = [['datos', 'Datos personales'], ['trayectoria', 'Trayectoria'], ['perfil', 'Perfil'], ['parecidos', 'Parecidos'], ['encaje', 'Encaje'], ['zonas', 'Zonas de tiro']] as const
 const SectionNav = () => (
   <nav aria-label="En esta ficha" className="sticky top-0 z-10 -mx-4 flex flex-wrap gap-x-4 gap-y-1 border-b border-line bg-canvas/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
     {SECTIONS.map(([id, label]) => <a key={id} href={`#${id}`} className="text-sm font-medium text-accent-text hover:underline">{label}</a>)}
@@ -142,6 +143,7 @@ export default function PlayerPage() {
         </div>
       </Card>
       <SimilarPlayers row={row} targetId={personId} />
+      <TeamFit row={row} />
       <PlayerZones row={row} />
       </div>
     </Shell>

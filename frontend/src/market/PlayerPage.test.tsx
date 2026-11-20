@@ -153,7 +153,7 @@ describe('the profile page', () => {
     await screen.findByRole('heading', { name: /Zonas de tiro/ })
     const nav = screen.getByRole('navigation', { name: 'En esta ficha' })
     const links = within(nav).getAllByRole('link')
-    expect(links.map(l => l.textContent)).toEqual(['Datos personales', 'Trayectoria', 'Perfil', 'Parecidos', 'Zonas de tiro'])
+    expect(links.map(l => l.textContent)).toEqual(['Datos personales', 'Trayectoria', 'Perfil', 'Parecidos', 'Encaje', 'Zonas de tiro'])
     for (const link of links) {
       const target = document.getElementById(link.getAttribute('href')!.slice(1))
       expect(target, link.textContent!).not.toBeNull()
@@ -181,5 +181,38 @@ describe('the profile page', () => {
     host.override['index.json'] = null
     open(ANA)
     expect(await screen.findByText(/Aún no hay datos de jugadores publicados/)).toBeInTheDocument()
+  })
+})
+
+describe('the fit with my team (C2, #883)', () => {
+  const choose = (team: string) => localStorage.setItem('talent-my-team', JSON.stringify({ comp: LF2_KEY, team }))
+
+  it('asks to choose the team in «Mi equipo» when none is remembered, with the way there', async () => {
+    open(ANA)
+    const card = (await screen.findByRole('heading', { name: 'Encaje con tu equipo' })).closest('section')!
+    expect(within(card).getByRole('link', { name: /Mi equipo/ })).toHaveAttribute('href', '/mi-equipo')
+  })
+
+  it('says the verdict with the team and the squad it was judged on, and that the percentile is the one of his competition', async () => {
+    choose('102')
+    open(ANA)
+    const card = (await screen.findByRole('heading', { name: 'Encaje con tu equipo' })).closest('section')!
+    expect(await within(card).findByText(/Equipo:/)).toHaveTextContent(/BRAVO/)
+    expect(await within(card).findByText(/Solo destaca en cuidar el balón/)).toBeInTheDocument()
+    expect(within(card).getByText(/en su competición/)).toBeInTheDocument()
+  })
+
+  it('says he is already in the team when it is his own', async () => {
+    choose('101')
+    open(ANA)
+    const card = (await screen.findByRole('heading', { name: 'Encaje con tu equipo' })).closest('section')!
+    expect(await within(card).findByText(/ya está en este equipo/)).toBeInTheDocument()
+  })
+
+  it('shows the holes of the team before and after he takes the place of the one he resembles, as a list a screen reader reads', async () => {
+    choose('102')
+    open(ANA)
+    const card = (await screen.findByRole('heading', { name: 'Encaje con tu equipo' })).closest('section')!
+    expect(await within(card).findByRole('list', { name: 'Huecos del equipo' })).toBeInTheDocument()
   })
 })
