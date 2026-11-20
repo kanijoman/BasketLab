@@ -22,7 +22,11 @@ async function servePublications(page: Page) {
   })
 }
 
+// The publication is a fixture frozen on 18/11/2026: the notice of freshness compares it with the clock, so the browser's clock is frozen the day after (#1023); with the real one the fine source went stale.
+const TODAY = new Date('2026-11-19T07:00:00Z')
+
 test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(TODAY)
   await page.addInitScript(() => {
     if (!sessionStorage.getItem('e2e-started')) { localStorage.clear(); sessionStorage.setItem('e2e-started', '1') }
   })
