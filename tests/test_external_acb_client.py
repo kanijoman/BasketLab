@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.external.acb_client import (API_BASE, PAUSE_S, AcbBudgetExhausted, AcbClient, AcbFetchError, AcbNotFound, fetch_api_key, match_url, player_url, slugify)
+from src.external.acb_client import (API_BASE, PAUSE_S, AcbBudgetExhausted, AcbClient, AcbFetchError, AcbNotFound, editions_of, fetch_api_key, match_url, player_url, slugify)
 from src.external.acb_page import PAGE_MARKERS, CutPage, GenericPage, check_page, extract_flight
 
 FIX = Path(__file__).parent / "fixtures" / "acb"
@@ -194,3 +194,12 @@ def test_a_site_whose_javascript_has_no_key_any_more_says_so_instead_of_asking_w
     net = Net({page: '<script src="/_next/static/chunks/aaa.js"></script>', "https://acb.com/_next/static/chunks/aaa.js": "var a=1;"})
     with pytest.raises(AcbFetchError, match="key"):
         fetch_api_key(net.fetch, net.sleep)
+
+
+def test_the_editions_of_a_competition_are_read_from_the_real_answer_by_their_year_and_are_not_a_formula():
+    answer = json.loads((FIX / "teams.json").read_text(encoding="utf-8"))
+    editions = editions_of(answer)
+    assert editions[2019] == 84 and editions[2026] == 91 and editions[1983] == 48
+    assert editions_of({"availableFilters": {"seasons": [{"id": 5, "seasonStartYear": 2001}, {"id": 6}]}}) == {2001: 5}          # one without its year is left out, never guessed
+    url = f"{API_BASE}/api/seasondata/TeamProfile/teams?competitionId=1"
+    assert Net({url: (FIX / "teams.json").read_text(encoding="utf-8")}).client().editions()[2023] == 88

@@ -61,6 +61,17 @@ def _check_fiba(where: str, value: Any) -> Dict[str, Any]:
     return {"event": value["event"].strip(), **({"max_games": cap} if cap is not None else {})}
 
 
+def _check_acb(where: str, value: Any) -> Dict[str, Any]:
+    """The ``acb`` object of an ACB entry: the ``competition_id`` and the ``edition_id`` of its API (the Liga Endesa 2019/20 is 1 and 84) and, optionally, ``max_games``: how many games of it a run asks for at most (#886)."""
+    ids = ("competition_id", "edition_id")
+    if not isinstance(value, dict) or any(isinstance(value.get(k), bool) or not isinstance(value.get(k), int) or value[k] < 1 for k in ids):
+        raise ValueError(f"{where}: an acb competition needs acb.competition_id and acb.edition_id, whole numbers of the API of ACB (1 and 84: the Liga Endesa 2019/20)")
+    cap = value.get("max_games")
+    if cap is not None and (isinstance(cap, bool) or not isinstance(cap, int) or cap < 1):
+        raise ValueError(f"{where}: acb.max_games must be a whole number of games, 1 or more, not {cap!r}")
+    return {**{k: value[k] for k in ids}, **({"max_games": cap} if cap is not None else {})}
+
+
 def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
     """An external competition (ACB, FIBA, NCAA): its division, its gender and, where the source splits by them, its conference. Nothing to scrape: no URL, no groups."""
     from src.live_prep.competition_info import GENDERS
@@ -76,7 +87,7 @@ def _check_external(where: str, raw: Dict[str, Any]) -> Dict[str, Any]:
         raise ValueError(f"{where}: conference must be a text")
     if conference is None and league in CONFERENCE_REQUIRED:
         raise ValueError(f"{where}: a {league} competition lacks: conference (one competition per conference)")
-    extra = {"fiba": _check_fiba(where, raw.get("fiba"))} if league == "fiba" else {}
+    extra = {"fiba": _check_fiba(where, raw.get("fiba"))} if league == "fiba" else {"acb": _check_acb(where, raw.get("acb"))} if league == "acb" else {}
     return {"source": league, "groups": "", "conference": conference.strip() if conference else None, **extra}
 
 

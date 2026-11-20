@@ -23,6 +23,8 @@ def _external(source: str, **over):
         base["conference"] = "SEC"
     if source == "fiba":
         base["fiba"] = {"event": "fiba-test-event-2026"}
+    if source == "acb":
+        base["acb"] = {"competition_id": 1, "edition_id": 91}
     return {**base, **over}
 
 
@@ -50,6 +52,25 @@ class TestTheFibaEvent:
     def test_the_other_sources_do_not_need_it_and_do_not_keep_one(self, tmp_path):
         entries = load_catalogue(_write(tmp_path, _external("acb"), _external("ncaa")))
         assert all("fiba" not in e for e in entries)
+
+
+class TestTheAcbEdition:
+    """An ACB competition is an EDITION of a competition of its site (the Liga Endesa, 2019/20: competition 1, edition 84): the entry says which, or the source would not know what to ask for (#886, D2c)."""
+
+    def test_the_entry_says_its_competition_and_edition_and_may_cap_the_games_of_a_run(self, tmp_path):
+        [entry] = load_catalogue(_write(tmp_path, _external("acb", acb={"competition_id": 1, "edition_id": 84, "max_games": 40})))
+        assert entry["acb"] == {"competition_id": 1, "edition_id": 84, "max_games": 40}
+
+    @pytest.mark.parametrize("bad", [None, "acb", {}, {"competition_id": 1}, {"edition_id": 84}, {"competition_id": 0, "edition_id": 84}, {"competition_id": 1, "edition_id": -1}, {"competition_id": "1", "edition_id": 84},
+                                      {"competition_id": True, "edition_id": 84}, {"competition_id": 1, "edition_id": 84, "max_games": 0}, {"competition_id": 1, "edition_id": 84, "max_games": "ten"}])
+    def test_an_entry_without_usable_ids_or_with_a_bad_cap_is_refused_naming_its_position_and_field(self, tmp_path, bad):
+        entry = _external("acb")
+        entry["acb"] = bad
+        with pytest.raises(ValueError, match=r"#1.*acb"):
+            load_catalogue(_write(tmp_path, entry))
+
+    def test_the_other_sources_do_not_keep_one(self, tmp_path):
+        assert all("acb" not in e for e in load_catalogue(_write(tmp_path, _external("fiba"), _external("ncaa"))))
 
 
 def test_the_categories_of_the_feb_and_fbcyl_publication_know_nothing_of_the_external_competitions(tmp_path):
