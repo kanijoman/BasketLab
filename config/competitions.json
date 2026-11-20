@@ -7483,6 +7483,126 @@
       "label": "Minicopa LF Endesa · Minibásket femenino",
       "record": [],
       "note": "Minicopa LF Endesa, minibásket femenino (menores, 20/11/2026)"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2019/2020",
+      "season_value": "2019",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 84
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2019/2020: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2020/2021",
+      "season_value": "2020",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 85
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2020/2021: 19 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2021/2022",
+      "season_value": "2021",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 86
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2021/2022: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2022/2023",
+      "season_value": "2022",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 87
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2022/2023: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2023/2024",
+      "season_value": "2023",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 88
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2023/2024: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2024/2025",
+      "season_value": "2024",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 89
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2024/2025: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2025/2026",
+      "season_value": "2025",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 90
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2025/2026: 18 clubs listed on 20/11/2026; paused until it is turned on"
+    },
+    {
+      "competition": "Liga Endesa",
+      "season_label": "2026/2027",
+      "season_value": "2026",
+      "league": "acb",
+      "division": "Liga Endesa",
+      "gender": "M",
+      "active": false,
+      "acb": {
+        "competition_id": 1,
+        "edition_id": 91
+      },
+      "label": "ACB Liga Endesa",
+      "note": "ACB Liga Endesa 2026/2027: 18 clubs listed on 20/11/2026; paused until it is turned on"
     }
   ]
 }
