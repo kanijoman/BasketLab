@@ -59,7 +59,7 @@ Eventos de formación con página pública de estadísticas, sondeados por nombr
 ## Decisiones (del usuario)
 
 1. **La clave de FIBA: decidido (13/11/2026), se probó.** Funciona, pero **la caja no depende de ella** (la jugada a jugada es pública). Propuesta: **no depender de la clave** en la carga: es una credencial del cliente web de FIBA que puede rotar; se usaría, como mucho, para los minutos, leyéndola de la página en cada ejecución y sin guardarla en el repositorio ni en los secretos.
-2. **FBCYL: decidido (13/11/2026)**: **solo competiciones autonómicas de cadete hacia arriba y sénior, masculino y femenino**. **Fuera**: infantil, provincial, escolar, minibásket y menores. Se anota que el archivo completo (principio de la épica: no descartar datos) queda sin cargar por esa decisión.
+2. **FBCYL: decidido (13/11/2026), ampliado el 20/11/2026 (#1025): entran infantil y minibásket (grupo de edad `U12`) y los campeonatos de España de FEB de esas categorías; el resto sigue fuera.** Decisión original: **solo competiciones autonómicas de cadete hacia arriba y sénior, masculino y femenino**. **Fuera**: infantil, provincial, escolar, minibásket y menores. Se anota que el archivo completo (principio de la épica: no descartar datos) queda sin cargar por esa decisión.
 
 ## Qué implica para las épicas
 

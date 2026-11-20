@@ -1,7 +1,7 @@
 """The FBCYL youth competitions in the catalogue (#920, epic #872): which of the autonomic competitions of fbcyl.es go to ``config/competitions.json``, and how they are named.
 
 Decided by the user (13/11/2026) after the spike #915 (docs/evaluaciones/2026-11-13_formacion-fbcyl-fiba.md): only the **autonomic** competitions (the ``FBCYL`` territory of the site, ``territorial=1``),
-**from cadete upwards and the senior ones**, men and women. Infantil, provincial, escolar, minibásket and menores are out. The text of a group is not unique (every category has a «3ª FASE - TÍTULO»), and the collection is named after it, so the entry's ``competition`` ends in ``G<id of the group>``: unique, and never
+**from minibásket upwards and the senior ones**, men and women (widened on 20/11/2026: infantil and minibásket come in; alevín, benjamín, premini, provincial and escolar stay out). The text of a group is not unique (every category has a «3ª FASE - TÍTULO»), and the collection is named after it, so the entry's ``competition`` ends in ``G<id of the group>``: unique, and never
 four digits (the selector would read them as a year); what people read is ``label`` and ``group_label``. The names of the categories change from one season to the next
 (``1ªDIV.-CAD.FEM.AUT.``, ``1ªDIV. - CAD. FEM. AUT.``), so they are read by what they say; what is not recognised is reported and left out, never guessed. Pure: the network is in ``run_fbcyl_catalogue.py``.
 """
@@ -16,7 +16,9 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 TERRITORY = "1"                                   # «FBCYL» in the territories of the site: the autonomic competitions
 
-_EXCLUDED = re.compile(r"MINI|BENJAM|ALEV|PREMINI|3X3|\bINF\b|INFANTIL")
+_EXCLUDED = re.compile(r"BENJAM|ALEV|PREMINI|3X3")                  # checked first: «PREMINI» must not read as minibásket
+_MINI = re.compile(r"MINIBASKET|MINIBALONCESTO")
+_INFANTIL = re.compile(r"\bINF\b|INFANTIL")
 _CADETE = re.compile(r"\bCAD\b|CADETE")
 _JUNIOR = re.compile(r"JUNIOR|\bJUN\b")
 _SENIOR = re.compile(r"SENIOR|\bDIV(?:ISION)?\.? (?:MASCULINA|FEMENINA)\b")
@@ -28,12 +30,16 @@ def _plain(text: str) -> str:
 
 
 def classify_category(text: str) -> Tuple[str, Optional[str]]:
-    """``("senior", None)``, ``("formacion", "U16")`` (cadete), ``("formacion", "U18")`` (júnior), ``("excluded", None)`` (infantil, minibásket and smaller, 3x3) or ``("unknown", None)``."""
+    """``("senior", None)``, ``("formacion", "U16")`` (cadete), ``("formacion", "U18")`` (júnior), ``("formacion", "U14")`` (infantil), ``("formacion", "U12")`` (minibásket), ``("excluded", None)`` (alevín, benjamín, premini, 3x3) or ``("unknown", None)``."""
     plain = _plain(text)
     if not plain.strip():
         return ("unknown", None)
     if _EXCLUDED.search(plain):
         return ("excluded", None)
+    if _MINI.search(plain):
+        return ("formacion", "U12")
+    if _INFANTIL.search(plain):
+        return ("formacion", "U14")
     if _CADETE.search(plain):
         return ("formacion", "U16")
     if _JUNIOR.search(plain):
@@ -46,7 +52,9 @@ def classify_category(text: str) -> Tuple[str, Optional[str]]:
 def category_label(text: str, gender: str) -> str:
     """The name people read of a category: ``1ª División cadete femenino``, ``Liga UEMC júnior masculino``, ``1ª División masculina``, ``Sénior FBCYL femenino``."""
     plain = _plain(text)
-    level = "cadete" if _CADETE.search(plain) else "júnior" if _JUNIOR.search(plain) else None
+    if _MINI.search(plain):
+        return "Minibásket masculino" if gender == "M" else "Minibásket femenino"          # no division: the autonomic minibásket is one league
+    level = "infantil" if _INFANTIL.search(plain) else "cadete" if _CADETE.search(plain) else "júnior" if _JUNIOR.search(plain) else None
     division = _DIVISION.search(plain)
     if "UEMC" in plain:
         base = "Liga UEMC"

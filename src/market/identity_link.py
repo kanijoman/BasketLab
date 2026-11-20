@@ -74,7 +74,7 @@ def link_players(feb_rows: Iterable[Dict[str, Any]], players: Iterable[Dict[str,
 # only one left. Measured on the whole archive (docs/evaluaciones/2026-11-18_enlace-fiba-feb.md).
 _GENERIC_CLUB_WORDS = frozenset({"CB", "CD", "AD", "BC", "CLUB", "BALONCESTO", "BASKET", "BASQUET", "BASKETBALL", "ESCUELA", "DEPORTIVO", "DEPORTIVA", "ASOCIACION", "SDC", "SD", "UD", "CAD", "JR", "FEM", "MASC", "FEMENINO", "MASCULINO"})
 CLUB_MIN_SHARED = 2                                    # words of the club in common that corroborate (or every distinctive word of one of the two names)
-AGE_LIMITS = {"U14": 14, "U16": 16, "U18": 18}        # a U16 of the season that starts in S was born in S-15 or later (FEB's cadete championships: 14 or 15 years old); one year of tolerance
+AGE_LIMITS = {"U12": 12, "U14": 14, "U16": 16, "U18": 18}        # a U16 of the season that starts in S was born in S-15 or later (FEB's cadete championships: 14 or 15 years old); one year of tolerance
 SENIOR_MIN_AGE = 13
 CLUB_METHOD, BIRTH_METHOD, REVIEW_METHOD = "name+club", "name+birth", "name"
 
